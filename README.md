@@ -1,6 +1,6 @@
-# Getting Started with Create React App
+# Quantitative Financial Analysis Application
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+This is the React frontend that consumes a bespoke django API
 
 ## Available Scripts
 
