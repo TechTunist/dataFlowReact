@@ -1,8 +1,9 @@
 import { Box, Card, CardContent, Typography, Grid } from "@mui/material";
 import Header from "../../components/Header";
-import BitcoinRisk from "../../components/BitcoinRisk"; // Thumbnail component
-import BitcoinPrice from "../../components/BitcoinPrice"; // Thumbnail component
-import BitcoinCycles from "../../components/BitcoinCycles"; // Thumbnail component
+import BitcoinRisk from "../../components/BitcoinRisk"; 
+import BitcoinPrice from "../../components/BitcoinPrice"; 
+import BitcoinCycles from "../../components/BitcoinCycles"; 
+import '../../styling/bitcoinChart.css';
 
 const Dashboard = () => {
   return (
@@ -17,12 +18,17 @@ const Dashboard = () => {
               <Typography variant="h5" gutterBottom>
                 Bitcoin Historical Price
               </Typography>
-              <Typography variant="body2" color="textSecondary">
+              <Typography variant="body1" color="textSecondary">
                 Log or linear
               </Typography>
-              <Box height="250px" m="20px 0 0 0">
+              <Box height="350px" m="20px 0 0 0" style={{ margin: "0 0 10px 0" }}>
                 <BitcoinPrice isDashboard={true} />
               </Box>
+              
+              <Typography variant="body3" color="textSecondary">
+                A simple chart of the entire bitcoin daily close price history.
+              </Typography>
+
             </CardContent>
           </Card>
         </Grid>
@@ -37,9 +43,16 @@ const Dashboard = () => {
               <Typography variant="body2" color="textSecondary">
                 Measured between 0 and 1
               </Typography>
-              <Box height="250px" m="20px 0 0 0">
+              <Box height="350px" m="20px 0 0 0" style={{ margin: "0 0 10px 0" }}>
                 <BitcoinRisk isDashboard={true} />
               </Box>
+
+              <Typography
+                variant="body3" color="textSecondary">
+                The risk metric demonstrates the risk of holding bitcoin at any given time.
+                The closer to 1, the higher the risk.
+              </Typography>
+
             </CardContent>
           </Card>
         </Grid>
@@ -55,9 +68,13 @@ const Dashboard = () => {
                 Measured from bottom to top
               </Typography>
 
-              <Box height="250px" m="20px 0 0 0">
+              <Box height="350px" m="20px 0 0 0" style={{ margin: "0 0 10px 0" }}>
                 <BitcoinCycles isDashboard={true} />
               </Box>
+
+              <Typography variant="body3" color="textSecondary">
+                Each cycle is measured in days from the macro bottom to the macro top.
+              </Typography>
 
               {/* <BitcoinCycles /> */}
             </CardContent>
