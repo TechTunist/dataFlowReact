@@ -3,7 +3,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { createChart } from 'lightweight-charts';
 import '../styling/bitcoinChart.css'
 
-const BitcoinPrice = () => {
+const BitcoinCycles = () => {
     const chartContainerRef = useRef();
     const [chartData, setChartData] = useState([]);
     const [scaleMode, setScaleMode] = useState(1);
@@ -103,4 +103,4 @@ const BitcoinPrice = () => {
     
 };
 
-export default BitcoinPrice;
+export default BitcoinCycles;

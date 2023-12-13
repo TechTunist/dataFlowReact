@@ -159,7 +159,7 @@ const BitcoinRisk = () => {
 
     return (
         <div className="chart-container" style={{ position: 'relative', height: '100%', width: '100%' }}>
-          <div className="legend" style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', backgroundColor: '#222', color: 'white', padding: '10px', zIndex: 2 }}>
+          <div className="legend" style={{ position: 'absolute', top: 0, left: '30%', transform: 'translateX(-50%)', backgroundColor: '#222', color: 'white', padding: '10px', zIndex: 2 }}>
             <span style={{ marginRight: '20px', display: 'inline-block' }}>
               <span style={{ backgroundColor: 'gray', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
               Bitcoin Price

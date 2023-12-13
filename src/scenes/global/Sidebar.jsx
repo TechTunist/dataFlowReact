@@ -5,6 +5,8 @@ import { Link } from "react-router-dom";
 import "react-pro-sidebar/dist/css/styles.css";
 import { tokens } from "../../theme";
 import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
+import InputBase from "@mui/material/InputBase";
+import SearchIcon from "@mui/icons-material/Search";
 import PeopleOutlinedIcon from "@mui/icons-material/PeopleOutlined";
 import ContactsOutlinedIcon from "@mui/icons-material/ContactsOutlined";
 import ReceiptOutlinedIcon from "@mui/icons-material/ReceiptOutlined";
@@ -116,6 +118,18 @@ const Sidebar = () => {
             </Box>
           )}
 
+          {/* SEARCH BAR */}
+          <Box
+            display="flex"
+            backgroundColor={colors.primary[400]}
+            borderRadius="3px"
+          >
+            <InputBase sx={{ ml: 2, flex: 1 }} placeholder="Search" />
+            <IconButton type="button" sx={{ p: 1 }}>
+              <SearchIcon />
+            </IconButton>
+          </Box>
+
           <Box paddingLeft={isCollapsed ? undefined : "10%"}>
             <Item
               title="Dashboard"
@@ -142,6 +156,13 @@ const Sidebar = () => {
             <Item
               title="Risk Chart"
               to="/risk"
+              icon={<TimelineOutlinedIcon />}
+              selected={selected}
+              setSelected={setSelected}
+            />
+            <Item
+              title="Bitcoin Cycles"
+              to="/cycles"
               icon={<TimelineOutlinedIcon />}
               selected={selected}
               setSelected={setSelected}
