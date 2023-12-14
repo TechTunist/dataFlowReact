@@ -3,7 +3,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { createChart } from 'lightweight-charts';
 import '../styling/bitcoinChart.css'
 
-const BitcoinCycles = () => {
+const BitcoinCycles = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
     const [chartData, setChartData] = useState([]);
     const [scaleMode, setScaleMode] = useState(1);
@@ -76,6 +76,12 @@ const BitcoinCycles = () => {
         });
         lineSeries.setData(chartData);
 
+        // Disable all interactions
+        chart.applyOptions({
+            handleScroll: !isDashboard,
+            handleScale: !isDashboard,
+        });
+
         chart.timeScale().fitContent();
 
         return () => {
@@ -86,7 +92,7 @@ const BitcoinCycles = () => {
 
     return (
         <div style={{ height: '100%' }}> {/* Set a specific height for the entire container */}
-            <div style={{ textAlign: 'left', marginBottom: '10px' }}>
+            <div style={{ textAlign: 'left', marginBottom: '0px', height: '30px' }}>
                 <label className="switch">
                     <input type="checkbox" checked={scaleMode === 1} onChange={toggleScaleMode} />
                     <span className="slider round"></span>

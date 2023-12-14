@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { createChart } from 'lightweight-charts';
 
-const BitcoinRisk = () => {
+const BitcoinRisk = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
     const [chartData, setChartData] = useState([]);
 
@@ -80,13 +80,7 @@ const BitcoinRisk = () => {
             },
             timeScale: {
                 minBarSpacing: 0.001,
-                fixLeftEdge: true,
-                fixRightEdge: true,
-                mouseWheel: false,
-                lockVisibleTimeRangeOnResize: true,
             },
-            handleScroll: false,
-            handleScale: false,
         });
         
         // Series for Risk Metric
@@ -109,27 +103,9 @@ const BitcoinRisk = () => {
         
         // Disable all interactions
         chart.applyOptions({
-            handleScroll: false,
-            handleScale: false,
+            handleScroll: !isDashboard,
+            handleScale: !isDashboard,
         });
-
-        // // Configure the specific price scale for the risk series
-        // chart.priceScale('risk-metric-scale').applyOptions({
-        //     autoScale: false,
-        //     scaleMargins: {
-        //         top: 0.1,
-        //         bottom: 0,
-        //     },
-        //     borderVisible: false,
-        //     entireTextOnly: true,
-        //     mode: 2, // Log scale
-        //     invertScale: false,
-        //     alignLabels: true,
-        //     drawTicks: true,
-        //     visible: true,
-        //     highPrice: 1,
-        //     lowPrice: 0,
-        // });
         
         chart.priceScale('left').applyOptions({
             mode: 1, // Logarithmic scale
@@ -158,19 +134,24 @@ const BitcoinRisk = () => {
     }, [chartData]);
 
     return (
-        <div className="chart-container" style={{ position: 'relative', height: '100%', width: '100%' }}>
-          <div className="legend" style={{ position: 'absolute', top: 0, left: '30%', transform: 'translateX(-50%)', backgroundColor: '#222', color: 'white', padding: '10px', zIndex: 2 }}>
-            <span style={{ marginRight: '20px', display: 'inline-block' }}>
-              <span style={{ backgroundColor: 'gray', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
-              Bitcoin Price
-            </span>
-            <span style={{ display: 'inline-block' }}>
-              <span style={{ backgroundColor: 'red', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
-              Risk Metric
-            </span>
-          </div>
-          <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
+
+        <div style={{ height: '100%' }}> {/* Set a specific height for the entire container */}
+            <div style={{ textAlign: 'left', marginBottom: '0px', height: '30px' }}>
+                <span style={{ marginRight: '20px', display: 'inline-block' }}>
+                    <span style={{ backgroundColor: 'gray', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
+                    Bitcoin Price
+                </span>
+                <span style={{ display: 'inline-block' }}>
+                    <span style={{ backgroundColor: 'red', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
+                    Risk Metric
+                </span>
+            </div>
+            <div className="chart-container" style={{ position: 'relative', height: 'calc(100% - 40px)', width: '100%', border: '2px solid white' }}>
+                {/* Adjust the height calculation based on the height of your button and margin */}
+                <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
+            </div>
         </div>
+
       );
       
       

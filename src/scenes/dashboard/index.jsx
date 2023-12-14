@@ -18,14 +18,16 @@ const Dashboard = () => {
               <Typography variant="h5" gutterBottom>
                 Bitcoin Historical Price
               </Typography>
-              <Typography variant="body1" color="textSecondary">
-                Log or linear
-              </Typography>
-              <Box height="350px" m="20px 0 0 0" style={{ margin: "0 0 10px 0" }}>
+              <Box m="20px 0 0 0" style={{ margin: "0 0 10px 0" }}>
+                <Typography variant="body1" color="textSecondary">
+                  Log or linear
+                </Typography>
+              </Box>
+              <Box height="350px" m="20px 0 0 0" style={{ margin: "0 0 20px 0" }}>
                 <BitcoinPrice isDashboard={true} />
               </Box>
               
-              <Typography variant="body3" color="textSecondary">
+              <Typography variant="body3" color="textSecondary" >
                 A simple chart of the entire bitcoin daily close price history.
               </Typography>
 
@@ -40,10 +42,12 @@ const Dashboard = () => {
               <Typography variant="h5" gutterBottom>
                 Bitcoin Risk Metric
               </Typography>
-              <Typography variant="body2" color="textSecondary">
-                Measured between 0 and 1
-              </Typography>
-              <Box height="350px" m="20px 0 0 0" style={{ margin: "0 0 10px 0" }}>
+              <Box m="20px 0 0 0" style={{ margin: "0 0 10px 0" }}>
+                <Typography variant="body1" color="textSecondary">
+                    Measured between 0 and 1
+                </Typography>
+              </Box>
+              <Box height="350px" m="20px 0 0 0" style={{ margin: "0 0 20px 0" }}>
                 <BitcoinRisk isDashboard={true} />
               </Box>
 
@@ -64,11 +68,13 @@ const Dashboard = () => {
               <Typography variant="h5" gutterBottom>
                 Bitcoin Cycles
               </Typography>
-              <Typography variant="body2" color="textSecondary">
-                Measured from bottom to top
-              </Typography>
+              <Box m="20px 0 0 0" style={{ margin: "0 0 10px 0" }}>
+                <Typography variant="body1" color="textSecondary">
+                  Measured from cycle bottom to cycle top
+                </Typography>
+              </Box>
 
-              <Box height="350px" m="20px 0 0 0" style={{ margin: "0 0 10px 0" }}>
+              <Box height="350px" m="20px 0 0 0" style={{ margin: "0 0 20px 0" }}>
                 <BitcoinCycles isDashboard={true} />
               </Box>
 
