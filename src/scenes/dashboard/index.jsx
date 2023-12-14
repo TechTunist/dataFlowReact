@@ -1,11 +1,16 @@
-import { Box, Card, CardContent, Typography, Grid } from "@mui/material";
+import { Box, Card, CardContent, Typography, Grid, useTheme } from "@mui/material";
 import Header from "../../components/Header";
 import BitcoinRisk from "../../components/BitcoinRisk"; 
 import BitcoinPrice from "../../components/BitcoinPrice"; 
 import BitcoinCycles from "../../components/BitcoinCycles"; 
 import '../../styling/bitcoinChart.css';
+import { tokens } from "../../theme";
+
 
 const Dashboard = () => {
+  const theme = useTheme();
+  const colors = tokens(theme.palette.mode);
+
   return (
     <Box m="20px">
       <Header title="DASHBOARD" subtitle="Welcome to your dashboard" />
@@ -13,7 +18,7 @@ const Dashboard = () => {
       <Grid container spacing={3}>
         {/* Bitcoin Price Card */}
         <Grid item xs={12} md={6}>
-          <Card>
+          <Card style={{backgroundColor: colors.blueAccent[900]}}>
             <CardContent>
               <Typography variant="h5" gutterBottom>
                 Bitcoin Historical Price
@@ -37,7 +42,7 @@ const Dashboard = () => {
 
         {/* Bitcoin Risk Metric Card */}
         <Grid item xs={12} md={6}>
-          <Card>
+          <Card style={{backgroundColor: colors.blueAccent[900]}}>
             <CardContent>
               <Typography variant="h5" gutterBottom>
                 Bitcoin Risk Metric
@@ -63,7 +68,7 @@ const Dashboard = () => {
 
         {/* Bitcoin Cycles Card */}
         <Grid item xs={12} md={6}>
-          <Card>
+          <Card style={{backgroundColor: colors.blueAccent[900]}}>
             <CardContent>
               <Typography variant="h5" gutterBottom>
                 Bitcoin Cycles

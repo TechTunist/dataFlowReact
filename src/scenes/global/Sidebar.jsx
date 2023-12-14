@@ -7,6 +7,7 @@ import { tokens } from "../../theme";
 import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
 import InputBase from "@mui/material/InputBase";
 import SearchIcon from "@mui/icons-material/Search";
+import CloseIcon from "@mui/icons-material/Close"; 
 import PeopleOutlinedIcon from "@mui/icons-material/PeopleOutlined";
 import ContactsOutlinedIcon from "@mui/icons-material/ContactsOutlined";
 import ReceiptOutlinedIcon from "@mui/icons-material/ReceiptOutlined";
@@ -42,6 +43,26 @@ const Sidebar = () => {
   const colors = tokens(theme.palette.mode);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [selected, setSelected] = useState("Dashboard");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const itemsData = [
+    { title: "Dashboard", to: "/", icon: <HomeOutlinedIcon /> },
+    { title: "Bitcoin Chart", to: "/bitcoin", icon: <TimelineOutlinedIcon /> },
+    { title: "Risk Chart", to: "/risk", icon: <TimelineOutlinedIcon /> },
+    { title: "Bitcoin Cycles", to: "/cycles", icon: <TimelineOutlinedIcon /> },
+  ];
+
+  const filteredItems = itemsData.filter(item =>
+    item.title.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+  const handleSearchChange = (event) => {
+    setSearchQuery(event.target.value);
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery("");
+  };
 
   return (
     <Box
@@ -124,14 +145,34 @@ const Sidebar = () => {
             backgroundColor={colors.primary[400]}
             borderRadius="3px"
           >
-            <InputBase sx={{ ml: 2, flex: 1 }} placeholder="Search" />
+            <InputBase
+              sx={{ ml: 2, flex: 1 }}
+              placeholder="Search"
+              value={searchQuery}
+              onChange={handleSearchChange}
+            />
+            {searchQuery && (
+              <IconButton onClick={handleClearSearch} sx={{ p:1 }}>
+                <CloseIcon />
+              </IconButton>
+            )}
             <IconButton type="button" sx={{ p: 1 }}>
               <SearchIcon />
             </IconButton>
           </Box>
 
           <Box paddingLeft={isCollapsed ? undefined : "10%"}>
-            <Item
+            {filteredItems.map((item, index) => (
+              <Item
+                key={index}
+                title={item.title}
+                to={item.to}
+                icon={item.icon}
+                selected={selected}
+                setSelected={setSelected}
+                />
+            ))}
+            {/* <Item
               title="Dashboard"
               to="/"
               icon={<HomeOutlinedIcon />}
@@ -166,7 +207,7 @@ const Sidebar = () => {
               icon={<TimelineOutlinedIcon />}
               selected={selected}
               setSelected={setSelected}
-            />
+            /> */}
           </Box>
         </Menu>
       </ProSidebar>
