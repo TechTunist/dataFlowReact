@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ProSidebar, Menu, MenuItem } from "react-pro-sidebar";
+import { ProSidebar, Menu, MenuItem, SubMenu} from "react-pro-sidebar";
 import { Box, IconButton, Typography, useTheme } from "@mui/material";
 import { Link } from "react-router-dom";
 import "react-pro-sidebar/dist/css/styles.css";
@@ -47,9 +47,9 @@ const Sidebar = () => {
 
   const itemsData = [
     { title: "Dashboard", to: "/", icon: <HomeOutlinedIcon /> },
-    { title: "Bitcoin Chart", to: "/bitcoin", icon: <TimelineOutlinedIcon /> },
-    { title: "Risk Chart", to: "/risk", icon: <TimelineOutlinedIcon /> },
-    { title: "Bitcoin Cycles", to: "/cycles", icon: <TimelineOutlinedIcon /> },
+    { title: "Bitcoin Chart", to: "/bitcoin", category: 'Bitcoin', icon: <TimelineOutlinedIcon /> },
+    { title: "Bitcoin Risk", to: "/risk", category: 'Bitcoin', icon: <TimelineOutlinedIcon /> },
+    { title: "Bitcoin Cycles", to: "/cycles", category: 'Bitcoin', icon: <TimelineOutlinedIcon /> },
   ];
 
   const filteredItems = itemsData.filter(item =>
@@ -62,6 +62,24 @@ const Sidebar = () => {
 
   const handleClearSearch = () => {
     setSearchQuery("");
+  };
+
+  // Function to render menu items
+  const renderMenuItem = (item, index) => (
+    <Item
+      key={index}
+      title={item.title}
+      to={item.to}
+      icon={item.icon}
+      selected={selected}
+      setSelected={setSelected}
+    />
+  );
+
+  const renderMenuItemsByCategory = (category) => {
+    return itemsData
+      .filter(item => item.category === category)
+      .map(renderMenuItem);
   };
 
   return (
@@ -162,52 +180,22 @@ const Sidebar = () => {
           </Box>
 
           <Box paddingLeft={isCollapsed ? undefined : "10%"}>
-            {filteredItems.map((item, index) => (
-              <Item
-                key={index}
-                title={item.title}
-                to={item.to}
-                icon={item.icon}
-                selected={selected}
-                setSelected={setSelected}
-                />
-            ))}
-            {/* <Item
-              title="Dashboard"
-              to="/"
-              icon={<HomeOutlinedIcon />}
-              selected={selected}
-              setSelected={setSelected}
-            />
+            {/* Render Dashboard item always */}
+            {renderMenuItem(itemsData.find(item => item.title === "Dashboard"), 0)}
 
-            <Typography
-              variant="h6"
-              color={colors.grey[300]}
-              sx={{ m: "15px 0 5px 20px" }}
-            >
-              Charts
-            </Typography>
-            <Item
-              title="Bitcoin Chart"
-              to="/bitcoin"
-              icon={<TimelineOutlinedIcon />}
-              selected={selected}
-              setSelected={setSelected}
-            />
-            <Item
-              title="Risk Chart"
-              to="/risk"
-              icon={<TimelineOutlinedIcon />}
-              selected={selected}
-              setSelected={setSelected}
-            />
-            <Item
-              title="Bitcoin Cycles"
-              to="/cycles"
-              icon={<TimelineOutlinedIcon />}
-              selected={selected}
-              setSelected={setSelected}
-            /> */}
+            {/* Check if there is a search query */}
+            {searchQuery ? (
+              // If search query exists, render filtered items directly
+              filteredItems.map(renderMenuItem)
+            ) : (
+              // Otherwise, render items within their categories
+              <>
+                <SubMenu title="Bitcoin" icon={<BarChartOutlinedIcon />} style={{ color: colors.grey[100] }}>
+                  {renderMenuItemsByCategory("Bitcoin")}
+                </SubMenu>
+                {/* Render other categories similarly */}
+              </>
+            )}
           </Box>
         </Menu>
       </ProSidebar>

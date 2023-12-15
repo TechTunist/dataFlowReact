@@ -4,6 +4,14 @@ import { createChart } from 'lightweight-charts';
 const BitcoinRisk = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
     const [chartData, setChartData] = useState([]);
+    const chartRef = useRef(null); // ref to store chart for use in return statement
+
+    // Function to reset the chart view
+    const resetChartView = () => {
+        if (chartRef.current) {
+            chartRef.current.timeScale().fitContent();
+        }
+    };
 
     // function to calculate the risk metric
     const calculateRiskMetric = (data) => {
@@ -101,7 +109,7 @@ const BitcoinRisk = ({ isDashboard = false }) => {
         priceSeries.setData(chartData.map(data => ({ time: data.time, value: data.value })));
 
         
-        // Disable all interactions
+        // Disable all interactions if the chart is displayed on the dashboard
         chart.applyOptions({
             handleScroll: !isDashboard,
             handleScale: !isDashboard,
@@ -126,6 +134,7 @@ const BitcoinRisk = ({ isDashboard = false }) => {
         resizeChart();
 
         chart.timeScale().fitContent();
+        chartRef.current = chart; // Store the chart instance
 
         return () => {
             chart.remove();
@@ -136,7 +145,8 @@ const BitcoinRisk = ({ isDashboard = false }) => {
     return (
 
         <div style={{ height: '100%' }}> {/* Set a specific height for the entire container */}
-            <div style={{ textAlign: 'left', marginBottom: '0px', height: '30px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', textAlign: 'left', marginBottom: '0px', height: '30px' }}>
+                <div>
                 <span style={{ marginRight: '20px', display: 'inline-block' }}>
                     <span style={{ backgroundColor: 'gray', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
                     Bitcoin Price
@@ -145,6 +155,11 @@ const BitcoinRisk = ({ isDashboard = false }) => {
                     <span style={{ backgroundColor: 'red', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
                     Risk Metric
                 </span>
+                </div>
+                
+                <button onClick={resetChartView} style={{ marginRight: '0px' }}>
+                    Reset Chart
+                </button>
             </div>
             <div className="chart-container" style={{ position: 'relative', height: 'calc(100% - 40px)', width: '100%', border: '2px solid white' }}>
                 {/* Adjust the height calculation based on the height of your button and margin */}
