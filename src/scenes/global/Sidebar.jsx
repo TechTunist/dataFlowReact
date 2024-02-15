@@ -35,8 +35,9 @@ const Sidebar = () => {
   const itemsData = [
     { title: "Dashboard", to: "/", icon: <HomeOutlinedIcon />, category: null },
     { title: "Bitcoin Chart", to: "/bitcoin", category: 'Bitcoin', icon: <BarChartOutlinedIcon /> },
-    { title: "Risk Metric", to: "/risk", category: 'Bitcoin', icon: <BarChartOutlinedIcon /> },
-    { title: "ROI from Cycle Bottom", to: "/cycles", category: 'Bitcoin', icon: <BarChartOutlinedIcon /> },
+    { title: "Bitcoin Risk Metric", to: "/risk", category: 'Bitcoin', icon: <BarChartOutlinedIcon /> },
+    { title: "Ethereum Chart", to: "/ethereum", category: 'Ethereum', icon: <BarChartOutlinedIcon /> },
+    { title: "Ethereum Risk Metric", to: "/risk-eth", category: 'Ethereum', icon: <BarChartOutlinedIcon /> },
   ];
 
   const filteredItems = itemsData.filter(item =>
@@ -122,6 +123,7 @@ const Sidebar = () => {
           ) : (
             <SubMenu title="Bitcoin" icon={<BarChartOutlinedIcon />} style={{ color: colors.grey[100] }}>
               {itemsData.filter(item => item.category === "Bitcoin").map((item, index) => renderMenuItem(item, index, true))}
+              {itemsData.filter(item => item.category === "Ethereum").map((item, index) => renderMenuItem(item, index, true))}
             </SubMenu>
             // Render other categories similarly
           )}

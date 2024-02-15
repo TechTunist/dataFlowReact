@@ -1,9 +1,9 @@
-// BitcoinChart.jsx
+// EthereumChart.jsx
 import React, { useRef, useEffect, useState } from 'react';
 import { createChart } from 'lightweight-charts';
 import '../styling/bitcoinChart.css'
 
-const BitcoinCycles = ({ isDashboard = false }) => {
+const EthereumPrice = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
     const [chartData, setChartData] = useState([]);
     const [scaleMode, setScaleMode] = useState(1);
@@ -16,7 +16,7 @@ const BitcoinCycles = ({ isDashboard = false }) => {
 
     useEffect(() => {
         // Replace with your API call function
-        fetch('http://127.0.0.1:8000/api/btc/price/')
+        fetch('http://127.0.0.1:8000/api/eth/price/')
             .then(response => response.json())
             .then(data => {
                 const formattedData = data.map(item => ({
@@ -92,7 +92,7 @@ const BitcoinCycles = ({ isDashboard = false }) => {
 
     return (
         <div style={{ height: '100%' }}> {/* Set a specific height for the entire container */}
-            <div style={{ textAlign: 'left', marginBottom: '0px', height: '30px' }}>
+            <div style={{ textAlign: 'left', marginBottom: '0px', height: '30px'}}>
                 <label className="switch">
                     <input type="checkbox" checked={scaleMode === 1} onChange={toggleScaleMode} />
                     <span className="slider round"></span>
@@ -109,4 +109,4 @@ const BitcoinCycles = ({ isDashboard = false }) => {
     
 };
 
-export default BitcoinCycles;
+export default EthereumPrice;

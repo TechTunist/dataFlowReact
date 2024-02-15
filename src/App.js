@@ -3,8 +3,9 @@ import { Routes, Route } from "react-router-dom";
 import Topbar from "./scenes/global/Topbar";
 import Sidebar from "./scenes/global/Sidebar";
 import Bitcoin from "./scenes/bitcoin";
-import Cycles from "./scenes/cycles";
+import Ethereum from "./scenes/ethereum";
 import Risk from "./scenes/risk";
+import RiskEthereum from "./scenes/riskEthereum";
 import Dashboard from "./scenes/dashboard";
 import { CssBaseline, ThemeProvider } from "@mui/material";
 import { ColorModeContext, useMode } from "./theme";
@@ -25,7 +26,8 @@ function App() {
               <Route path="/" element={<Dashboard />} />
               <Route path="/bitcoin" element={<Bitcoin />} />
               <Route path="/risk" element={<Risk />} />
-              <Route path="/cycles" element={<Cycles />} />
+              <Route path="/ethereum" element={<Ethereum />} />
+              <Route path="/risk-eth" element={<RiskEthereum />} />
             </Routes>
           </main>
         </div>

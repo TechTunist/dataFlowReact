@@ -2,7 +2,6 @@ import { Box, Card, CardContent, Typography, Grid, useTheme } from "@mui/materia
 import Header from "../../components/Header";
 import BitcoinRisk from "../../components/BitcoinRisk"; 
 import BitcoinPrice from "../../components/BitcoinPrice"; 
-import BitcoinCycles from "../../components/BitcoinCycles"; 
 import '../../styling/bitcoinChart.css';
 import { tokens } from "../../theme";
 
@@ -62,32 +61,6 @@ const Dashboard = () => {
                 The closer to 1, the higher the risk.
               </Typography>
 
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Bitcoin Cycles Card */}
-        <Grid item xs={12} md={6}>
-          <Card style={{backgroundColor: colors.blueAccent[900]}}>
-            <CardContent>
-              <Typography variant="h5" gutterBottom>
-                Bitcoin Cycles
-              </Typography>
-              <Box m="20px 0 0 0" style={{ margin: "0 0 10px 0" }}>
-                <Typography variant="body1" color="textSecondary">
-                  Measured from cycle bottom to cycle top
-                </Typography>
-              </Box>
-
-              <Box height="350px" m="20px 0 0 0" style={{ margin: "0 0 20px 0" }}>
-                <BitcoinCycles isDashboard={true} />
-              </Box>
-
-              <Typography variant="body3" color="textSecondary">
-                Each cycle is measured in days from the macro bottom to the macro top.
-              </Typography>
-
-              {/* <BitcoinCycles /> */}
             </CardContent>
           </Card>
         </Grid>
