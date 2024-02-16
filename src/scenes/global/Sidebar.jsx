@@ -20,8 +20,9 @@ const Item = ({ title, to, icon, selected, setSelected, isNested }) => {
       onClick={() => setSelected(title)}
       icon={icon}
     >
-      <Typography variant={isNested ? 'h6' : 'h5'}>{title}</Typography>
-      <Link to={to} />
+      <Link to={to} style={{ textDecoration: 'none', color: 'inherit' }}>
+        <Typography variant={isNested ? 'body1' : 'h6'}>{title}</Typography>
+      </Link>
     </MenuItem>
   );
 };
@@ -64,11 +65,24 @@ const Sidebar = () => {
     />
   );
 
-  const renderMenuItemsByCategory = (category) => {
-    return itemsData
-      .filter(item => item.category === category)
-      .map(renderMenuItem);
-  };
+  // Group items by category
+  const itemsByCategory = itemsData.reduce((acc, item) => {
+    const { category } = item;
+    if (category) {
+      if (!acc[category]) acc[category] = [];
+      acc[category].push(item);
+    }
+    return acc;
+  }, {});
+
+  // Render SubMenu for each category
+  const renderSubMenus = () => (
+    Object.entries(itemsByCategory).map(([category, items]) => (
+      <SubMenu key={category} title={category} icon={<BarChartOutlinedIcon />} style={{ color: colors.grey[100] }}>
+        {items.map(renderMenuItem)}
+      </SubMenu>
+    ))
+  );
 
   return (
     <Box sx={{
@@ -117,15 +131,11 @@ const Sidebar = () => {
           {/* Render Dashboard item */}
           {renderMenuItem(itemsData.find(item => item.title === "Dashboard"), 0)}
 
-          {/* Render other categories */}
+          {/* Render categories */}
           {searchQuery ? (
             filteredItems.map(renderMenuItem)
           ) : (
-            <SubMenu title="Bitcoin" icon={<BarChartOutlinedIcon />} style={{ color: colors.grey[100] }}>
-              {itemsData.filter(item => item.category === "Bitcoin").map((item, index) => renderMenuItem(item, index, true))}
-              {itemsData.filter(item => item.category === "Ethereum").map((item, index) => renderMenuItem(item, index, true))}
-            </SubMenu>
-            // Render other categories similarly
+            renderSubMenus()
           )}
         </Menu>
       </ProSidebar>

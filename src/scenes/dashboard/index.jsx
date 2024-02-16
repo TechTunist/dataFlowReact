@@ -1,7 +1,9 @@
 import { Box, Card, CardContent, Typography, Grid, useTheme } from "@mui/material";
 import Header from "../../components/Header";
 import BitcoinRisk from "../../components/BitcoinRisk"; 
-import BitcoinPrice from "../../components/BitcoinPrice"; 
+import BitcoinPrice from "../../components/BitcoinPrice";
+import EthereumRisk from "../../components/EthereumRisk"; 
+import EthereumPrice from "../../components/EthereumPrice"; 
 import '../../styling/bitcoinChart.css';
 import { tokens } from "../../theme";
 
@@ -15,6 +17,7 @@ const Dashboard = () => {
       <Header title="DASHBOARD" subtitle="Welcome to your dashboard" />
 
       <Grid container spacing={3}>
+        
         {/* Bitcoin Price Card */}
         <Grid item xs={12} md={6}>
           <Card style={{backgroundColor: colors.blueAccent[900]}}>
@@ -64,6 +67,54 @@ const Dashboard = () => {
             </CardContent>
           </Card>
         </Grid>
+
+
+                {/* Ethereum Price Card */}
+                <Grid item xs={12} md={6}>
+          <Card style={{backgroundColor: colors.blueAccent[900]}}>
+            <CardContent>
+              <Typography variant="h5" gutterBottom>
+                Ethereum Historical Price
+              </Typography>
+              <Box m="20px 0 0 0">
+                <Typography variant="body1" color="textSecondary">
+                  Log or linear
+                </Typography>
+              </Box>
+              <Box height="350px" m="20px 0 20px 0">
+                <EthereumPrice isDashboard={true} />
+              </Box>
+              <Typography variant="body2" color="textSecondary">
+                A simple chart of the entire Ethereum daily close price history.
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Ethereum Risk Metric Card */}
+        <Grid item xs={12} md={6}>
+          <Card style={{backgroundColor: colors.blueAccent[900]}}>
+            <CardContent>
+              <Typography variant="h5" gutterBottom>
+                Ethereum Risk Metric
+              </Typography>
+              <Box m="20px 0 0 0">
+                <Typography variant="body1" color="textSecondary">
+                    Measured between 0 and 1
+                </Typography>
+              </Box>
+              <Box height="350px" m="20px 0 20px 0">
+                <EthereumRisk isDashboard={true} />
+              </Box>
+              <Typography variant="body2" color="textSecondary">
+                The risk metric demonstrates the risk of holding Ethereum at any given time.
+                The closer to 1, the higher the risk.
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+
       </Grid>
     </Box>
   );
