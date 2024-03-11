@@ -43,7 +43,13 @@ const BitcoinRisk = ({ isDashboard = false }) => {
 
     // Fetch and process data
     useEffect(() => {
-        fetch('http://127.0.0.1:8000/api/btc/price/')
+        const cacheKey = 'btcData';
+        const cachedData = localStorage.getItem(cacheKey);
+
+        if (cachedData) {
+            setChartData(JSON.parse(cachedData));
+        } else {
+            fetch('http://127.0.0.1:8000/api/btc/price/')
             .then(response => response.json())
             .then(data => {
                 const formattedData = data.map(item => ({
@@ -51,9 +57,12 @@ const BitcoinRisk = ({ isDashboard = false }) => {
                     value: parseFloat(item.close)
                 }));             
                 const withRiskMetric = calculateRiskMetric(formattedData);
+
+                localStorage.setItem(cacheKey, JSON.stringify(withRiskMetric));
                 setChartData(withRiskMetric);
             })
             .catch(error => console.error('Error fetching data: ', error));
+        }
     }, []);
 
     // Render chart
@@ -147,14 +156,14 @@ const BitcoinRisk = ({ isDashboard = false }) => {
         <div style={{ height: '100%' }}> {/* Set a specific height for the entire container */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', textAlign: 'left', marginBottom: '0px', height: '30px' }}>
                 <div>
-                <span style={{ marginRight: '20px', display: 'inline-block' }}>
-                    <span style={{ backgroundColor: 'gray', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
-                    Bitcoin Price
-                </span>
-                <span style={{ display: 'inline-block' }}>
-                    <span style={{ backgroundColor: 'red', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
-                    Risk Metric
-                </span>
+                    <span style={{ marginRight: '20px', display: 'inline-block' }}>
+                        <span style={{ backgroundColor: 'gray', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
+                        Bitcoin Price
+                    </span>
+                    <span style={{ display: 'inline-block' }}>
+                        <span style={{ backgroundColor: 'red', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
+                        Risk Metric
+                    </span>
                 </div>
                 
                 <button onClick={resetChartView} style={{ marginRight: '0px' }}>

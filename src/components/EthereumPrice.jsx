@@ -7,15 +7,23 @@ const EthereumPrice = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
     const [chartData, setChartData] = useState([]);
     const [scaleMode, setScaleMode] = useState(1);
+    const chartRef = useRef(null); // ref to store chart for use in return statement
 
     // Function to toggle scale mode
     const toggleScaleMode = () => {
         setScaleMode(prevMode => (prevMode === 1 ? 2 : 1));
     };
 
+    // Function to reset the chart view
+    const resetChartView = () => {
+        if (chartRef.current) {
+            chartRef.current.timeScale().fitContent();
+        }
+    };
+
 
     useEffect(() => {
-        // Replace with your API call function
+        
         fetch('http://127.0.0.1:8000/api/eth/price/')
             .then(response => response.json())
             .then(data => {
@@ -50,6 +58,9 @@ const EthereumPrice = ({ isDashboard = false }) => {
                     color: 'rgba(70, 70, 70, 0.5)', // Darker shade for horizontal lines
                 },
             },
+            timeScale: {
+                minBarSpacing: 0.001,
+            },
         });
 
         chart.priceScale('right').applyOptions({
@@ -83,6 +94,7 @@ const EthereumPrice = ({ isDashboard = false }) => {
         });
 
         chart.timeScale().fitContent();
+        chartRef.current = chart; // Store the chart instance
 
         return () => {
             chart.remove();
@@ -91,16 +103,28 @@ const EthereumPrice = ({ isDashboard = false }) => {
     }, [chartData, scaleMode]);
 
     return (
-        <div style={{ height: '100%' }}> {/* Set a specific height for the entire container */}
-            <div style={{ textAlign: 'left', marginBottom: '0px', height: '30px'}}>
-                <label className="switch">
-                    <input type="checkbox" checked={scaleMode === 1} onChange={toggleScaleMode} />
-                    <span className="slider round"></span>
-                </label>
-                <span className="scale-mode-label">{scaleMode === 1 ? 'Logarithmic' : 'Linear'}</span>
+        <div style={{ height: '100%' }}>
+            <div style={{ 
+                display: 'flex', // Use flex display for the container
+                justifyContent: 'space-between', // This spreads out the child elements
+                alignItems: 'center', // This vertically centers the children
+                marginBottom: '0px', 
+                height: '30px'
+            }}>
+                <div>
+                    {/* The switch and label go here */}
+                    <label className="switch">
+                        <input type="checkbox" checked={scaleMode === 1} onChange={toggleScaleMode} />
+                        <span className="slider round"></span>
+                    </label>
+                    <span className="scale-mode-label">{scaleMode === 1 ? 'Logarithmic' : 'Linear'}</span>
+                </div>
+                {/* The button is now in its own container div */}
+                <button onClick={resetChartView} style={{ marginRight: '0px' }}>
+                    Reset Chart
+                </button>
             </div>
             <div className="chart-container" style={{ position: 'relative', height: 'calc(100% - 40px)', width: '100%', border: '2px solid white' }}>
-                {/* Adjust the height calculation based on the height of your button and margin */}
                 <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
             </div>
         </div>
