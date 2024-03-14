@@ -25,31 +25,32 @@ const BitcoinPrice = ({ isDashboard = false }) => {
     useEffect(() => {
         const cacheKey = 'btcData';
         const cachedData = localStorage.getItem(cacheKey);
-
+    
         if (cachedData) {
             // if cached data is found, parse it and set it to the state
             setChartData(JSON.parse(cachedData));
         } else {
             // if no cached data is found, fetch new data
-            fetch('http://127.0.0.1:8000/api/btc/price/')
+            fetch('http://tunist.pythonanywhere.com/api/btc/price/')
             .then(response => response.json())
             .then(data => {
                 const formattedData = data.map(item => ({
-                    time: item.date,
-                    value: parseFloat(item.close)
+                    time: item.date, // Make sure 'time' is in a format accepted by your charting library
+                    value: parseFloat(item.close) // Convert 'close' to a float
                 }));             
                 
                 setChartData(formattedData);
-
+    
                 // save the data to local storage
                 localStorage.setItem(cacheKey, JSON.stringify(formattedData));
-
+    
             })
             .catch(error => {
                 console.error('Error fetching data: ', error);
             });
         }
     }, []);
+    
 
     useEffect(() => {
         if (chartData.length === 0) return;

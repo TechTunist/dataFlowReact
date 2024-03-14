@@ -43,7 +43,16 @@ const EthereumRisk = ({ isDashboard = false }) => {
 
     // Fetch and process data
     useEffect(() => {
-        fetch('http://127.0.0.1:8000/api/eth/price/')
+        const cacheKey = 'ethRiskData';
+        const cachedData = localStorage.getItem(cacheKey);
+        const apiKey = '4O8RCM0Q1WYUC73J';
+
+        if (cachedData) {
+            setChartData(JSON.parse(cachedData));
+        } else {
+            // fetch('http://127.0.0.1:8000/api/btc/price/')
+            // fetch(`https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&outputsize=full&symbol=BTCUSD&apikey=${apiKey}`)
+            fetch('http://tunist.pythonanywhere.com/api/eth/price/')
             .then(response => response.json())
             .then(data => {
                 const formattedData = data.map(item => ({
@@ -51,9 +60,12 @@ const EthereumRisk = ({ isDashboard = false }) => {
                     value: parseFloat(item.close)
                 }));             
                 const withRiskMetric = calculateRiskMetric(formattedData);
+
+                localStorage.setItem(cacheKey, JSON.stringify(withRiskMetric));
                 setChartData(withRiskMetric);
             })
             .catch(error => console.error('Error fetching data: ', error));
+        }
     }, []);
 
     // Render chart
