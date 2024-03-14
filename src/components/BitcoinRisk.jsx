@@ -43,12 +43,25 @@ const BitcoinRisk = ({ isDashboard = false }) => {
 
     // Fetch and process data
     useEffect(() => {
-        const cacheKey = 'btcData';
+        const cacheKey = 'btcRiskData';
         const cachedData = localStorage.getItem(cacheKey);
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
 
         if (cachedData) {
-            setChartData(JSON.parse(cachedData));
+            const parsedData = JSON.parse(cachedData);
+            const lastCachedDate = new Date(parsedData[parsedData.length - 1].time);
+
+            if (lastCachedDate.setHours(0, 0, 0, 0) === yesterday.setHours(0, 0, 0, 0)) {
+                setChartData(JSON.parse(cachedData));
+            } else {
+                fetchData();
+            }
         } else {
+            fetchData();
+        }
+
+        function fetchData() {
             fetch('http://127.0.0.1:8000/api/btc/price/')
             .then(response => response.json())
             .then(data => {

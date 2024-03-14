@@ -21,15 +21,28 @@ const BitcoinPrice = ({ isDashboard = false }) => {
         }
     };
 
-
     useEffect(() => {
         const cacheKey = 'btcData';
         const cachedData = localStorage.getItem(cacheKey);
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
 
         if (cachedData) {
-            // if cached data is found, parse it and set it to the state
-            setChartData(JSON.parse(cachedData));
+            const parsedData = JSON.parse(cachedData);
+            const lastCachedDate = new Date(parsedData[parsedData.length - 1].time);
+
+            if (lastCachedDate.setHours(0, 0, 0, 0) === yesterday.setHours(0, 0, 0, 0)) {
+                // if cached data is found, parse it and set it to the state
+                setChartData(JSON.parse(cachedData));
+            } else {
+                fetchData();
+            }
+            
         } else {
+            fetchData();
+        }
+
+        function fetchData() {
             // if no cached data is found, fetch new data
             fetch('http://127.0.0.1:8000/api/btc/price/')
             .then(response => response.json())
@@ -140,8 +153,6 @@ const BitcoinPrice = ({ isDashboard = false }) => {
             </div>
         </div>
     );
-    
-    
 };
 
 export default BitcoinPrice;

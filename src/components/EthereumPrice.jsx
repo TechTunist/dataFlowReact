@@ -23,8 +23,28 @@ const EthereumPrice = ({ isDashboard = false }) => {
 
 
     useEffect(() => {
-        
-        fetch('http://127.0.0.1:8000/api/eth/price/')
+        const cacheKey = 'ethData';
+        const cachedData = localStorage.getItem(cacheKey);
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+
+        if (cachedData) {
+            const parsedData = JSON.parse(cachedData);
+            const lastCachedDate = new Date(parsedData[parsedData.length - 1].time);
+
+            if (lastCachedDate.setHours(0, 0, 0, 0) === yesterday.setHours(0, 0, 0, 0)) {
+                // if cached data is found, parse it and set it to the state
+                setChartData(JSON.parse(cachedData));
+            } else {
+                fetchData();
+            }
+            
+        } else {
+            fetchData();
+        }
+
+        function fetchData() {
+            fetch('http://127.0.0.1:8000/api/eth/price/')
             .then(response => response.json())
             .then(data => {
                 const formattedData = data.map(item => ({
@@ -34,10 +54,13 @@ const EthereumPrice = ({ isDashboard = false }) => {
                 
                 setChartData(formattedData);
 
+                // save the data to local storage
+                localStorage.setItem(cacheKey, JSON.stringify(formattedData));
             })
             .catch(error => {
                 console.error('Error fetching data: ', error);
             });
+        }
     }, []);
 
     useEffect(() => {
