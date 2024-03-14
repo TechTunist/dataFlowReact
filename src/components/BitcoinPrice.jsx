@@ -30,9 +30,6 @@ const BitcoinPrice = ({ isDashboard = false }) => {
             const parsedData = JSON.parse(cachedData);
             const lastCachedDate = new Date(parsedData[parsedData.length - 1].time);
 
-            console.log("Last Cached Date:", lastCachedDate);
-            console.log("today's date:", today);
-
             if (lastCachedDate.setHours(0, 0, 0, 0) === today.setHours(0, 0, 0, 0)) {
                 // if cached data is found, parse it and set it to the state
                 setChartData(JSON.parse(cachedData));
