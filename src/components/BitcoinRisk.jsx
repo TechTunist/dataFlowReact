@@ -45,14 +45,13 @@ const BitcoinRisk = ({ isDashboard = false }) => {
     useEffect(() => {
         const cacheKey = 'btcRiskData';
         const cachedData = localStorage.getItem(cacheKey);
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
+        const today = new Date();
 
         if (cachedData) {
             const parsedData = JSON.parse(cachedData);
             const lastCachedDate = new Date(parsedData[parsedData.length - 1].time);
 
-            if (lastCachedDate.setHours(0, 0, 0, 0) === yesterday.setHours(0, 0, 0, 0)) {
+            if (lastCachedDate.setHours(0, 0, 0, 0) === today.setHours(0, 0, 0, 0)) {
                 setChartData(JSON.parse(cachedData));
             } else {
                 fetchData();

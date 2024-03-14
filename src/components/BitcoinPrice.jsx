@@ -24,14 +24,16 @@ const BitcoinPrice = ({ isDashboard = false }) => {
     useEffect(() => {
         const cacheKey = 'btcData';
         const cachedData = localStorage.getItem(cacheKey);
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
+        const today = new Date();
 
         if (cachedData) {
             const parsedData = JSON.parse(cachedData);
             const lastCachedDate = new Date(parsedData[parsedData.length - 1].time);
 
-            if (lastCachedDate.setHours(0, 0, 0, 0) === yesterday.setHours(0, 0, 0, 0)) {
+            console.log("Last Cached Date:", lastCachedDate);
+            console.log("today's date:", today);
+
+            if (lastCachedDate.setHours(0, 0, 0, 0) === today.setHours(0, 0, 0, 0)) {
                 // if cached data is found, parse it and set it to the state
                 setChartData(JSON.parse(cachedData));
             } else {
