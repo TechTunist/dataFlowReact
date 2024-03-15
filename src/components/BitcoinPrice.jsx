@@ -35,7 +35,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
             .then(response => response.json())
             .then(data => {
                 const formattedData = data.map(item => ({
-                    time: item.date, // Make sure 'time' is in a format accepted by your charting library
+                    time: item.date, 
                     value: parseFloat(item.close) // Convert 'close' to a float
                 }));             
                 
