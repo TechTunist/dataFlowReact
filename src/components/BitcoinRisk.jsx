@@ -52,7 +52,7 @@ const BitcoinRisk = ({ isDashboard = false }) => {
         } else {
             // fetch('http://127.0.0.1:8000/api/btc/price/')
             // fetch(`https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&outputsize=full&symbol=BTCUSD&apikey=${apiKey}`)
-            fetch('http://tunist.pythonanywhere.com/api/btc/price/')
+            fetch('https://tunist.pythonanywhere.com/api/btc/price/')
             .then(response => response.json())
             .then(data => {
                 const formattedData = data.map(item => ({

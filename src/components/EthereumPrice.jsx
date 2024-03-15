@@ -31,7 +31,7 @@ const EthereumPrice = ({ isDashboard = false }) => {
             setChartData(JSON.parse(cachedData));
         } else {
             // if no cached data is found, fetch new data
-            fetch('http://tunist.pythonanywhere.com/api/eth/price/')
+            fetch('https://tunist.pythonanywhere.com/api/eth/price/')
             .then(response => response.json())
             .then(data => {
                 const formattedData = data.map(item => ({
