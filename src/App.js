@@ -19,7 +19,10 @@ function App() {
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <div className="app">
-          <Sidebar isSidebar={isSidebar} />
+          <div className="sidebar">
+            <Sidebar isSidebar={isSidebar} />
+          </div>
+          
           <main className="content">
             <Topbar setIsSidebar={setIsSidebar} />
             <Routes>
