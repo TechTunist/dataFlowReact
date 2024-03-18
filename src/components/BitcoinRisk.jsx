@@ -45,13 +45,22 @@ const BitcoinRisk = ({ isDashboard = false }) => {
     useEffect(() => {
         const cacheKey = 'btcRiskData';
         const cachedData = localStorage.getItem(cacheKey);
-        const apiKey = '4O8RCM0Q1WYUC73J';
+        const today = new Date();
 
         if (cachedData) {
-            setChartData(JSON.parse(cachedData));
+            const parsedData = JSON.parse(cachedData);
+            const lastCachedDate = new Date(parsedData[parsedData.length - 1].time);
+
+            if (lastCachedDate.setHours(0, 0, 0, 0) === today.setHours(0, 0, 0, 0)) {
+                setChartData(JSON.parse(cachedData));
+            } else {
+                fetchData();
+            }
         } else {
-            // fetch('http://127.0.0.1:8000/api/btc/price/')
-            // fetch(`https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&outputsize=full&symbol=BTCUSD&apikey=${apiKey}`)
+            fetchData();
+        }
+
+        function fetchData() {
             fetch('https://tunist.pythonanywhere.com/api/btc/price/')
             .then(response => response.json())
             .then(data => {

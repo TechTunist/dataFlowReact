@@ -25,25 +25,36 @@ const EthereumPrice = ({ isDashboard = false }) => {
     useEffect(() => {
         const cacheKey = 'ethData';
         const cachedData = localStorage.getItem(cacheKey);
-    
+        const today = new Date();
+
         if (cachedData) {
-            // if cached data is found, parse it and set it to the state
-            setChartData(JSON.parse(cachedData));
+            const parsedData = JSON.parse(cachedData);
+            const lastCachedDate = new Date(parsedData[parsedData.length - 1].time);
+
+            if (lastCachedDate.setHours(0, 0, 0, 0) === today.setHours(0, 0, 0, 0)) {
+                // if cached data is found, parse it and set it to the state
+                setChartData(JSON.parse(cachedData));
+            } else {
+                fetchData();
+            }
+            
         } else {
-            // if no cached data is found, fetch new data
+            fetchData();
+        }
+
+        function fetchData() {
             fetch('https://tunist.pythonanywhere.com/api/eth/price/')
             .then(response => response.json())
             .then(data => {
                 const formattedData = data.map(item => ({
-                    time: item.date, // Make sure 'time' is in a format accepted by your charting library
-                    value: parseFloat(item.close) // Convert 'close' to a float
+                    time: item.date,
+                    value: parseFloat(item.close)
                 }));             
                 
                 setChartData(formattedData);
-    
+
                 // save the data to local storage
                 localStorage.setItem(cacheKey, JSON.stringify(formattedData));
-    
             })
             .catch(error => {
                 console.error('Error fetching data: ', error);
