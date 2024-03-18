@@ -141,10 +141,13 @@ const EthereumPrice = ({ isDashboard = false }) => {
                     </label>
                     <span className="scale-mode-label">{scaleMode === 1 ? 'Logarithmic' : 'Linear'}</span>
                 </div>
-                {/* The button is now in its own container div */}
-                <button onClick={resetChartView} style={{ marginRight: '0px' }}>
-                    Reset Chart
-                </button>
+                {
+                    !isDashboard && (
+                        <button onClick={resetChartView} style={{ marginRight: '0px' }}>
+                            Reset Chart
+                        </button>
+                    )   
+                }
             </div>
             <div className="chart-container" style={{ position: 'relative', height: 'calc(100% - 40px)', width: '100%', border: '2px solid white' }}>
                 <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />

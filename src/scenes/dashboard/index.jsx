@@ -6,6 +6,7 @@ import EthereumRisk from "../../components/EthereumRisk";
 import EthereumPrice from "../../components/EthereumPrice"; 
 import '../../styling/bitcoinChart.css';
 import { tokens } from "../../theme";
+import { Link } from "react-router-dom";
 
 
 const Dashboard = () => {
@@ -22,7 +23,7 @@ const Dashboard = () => {
         <Grid item xs={12} md={6}>
           <Card style={{backgroundColor: colors.blueAccent[900]}}>
             <CardContent>
-              <Typography variant="h5" gutterBottom>
+              <Typography variant="h5" gutterBottom component={Link} to="/bitcoin" style={{ textDecoration: 'none', color: 'inherit' }}>
                 Bitcoin Historical Price
               </Typography>
               <Box m="20px 0 0 0" style={{ margin: "0 0 10px 0" }}>
@@ -46,7 +47,7 @@ const Dashboard = () => {
         <Grid item xs={12} md={6}>
           <Card style={{backgroundColor: colors.blueAccent[900]}}>
             <CardContent>
-              <Typography variant="h5" gutterBottom>
+              <Typography variant="h5" gutterBottom component={Link} to="/risk" style={{ textDecoration: 'none', color: 'inherit' }}>
                 Bitcoin Risk Metric
               </Typography>
               <Box m="20px 0 0 0" style={{ margin: "0 0 10px 0" }}>
@@ -73,7 +74,7 @@ const Dashboard = () => {
                 <Grid item xs={12} md={6}>
           <Card style={{backgroundColor: colors.blueAccent[900]}}>
             <CardContent>
-              <Typography variant="h5" gutterBottom>
+              <Typography variant="h5" gutterBottom component={Link} to="/ethereum" style={{ textDecoration: 'none', color: 'inherit' }}>
                 Ethereum Historical Price
               </Typography>
               <Box m="20px 0 0 0">
@@ -95,7 +96,7 @@ const Dashboard = () => {
         <Grid item xs={12} md={6}>
           <Card style={{backgroundColor: colors.blueAccent[900]}}>
             <CardContent>
-              <Typography variant="h5" gutterBottom>
+              <Typography variant="h5" gutterBottom component={Link} to="/risk-eth" style={{ textDecoration: 'none', color: 'inherit' }}>
                 Ethereum Risk Metric
               </Typography>
               <Box m="20px 0 0 0">

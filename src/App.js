@@ -7,6 +7,7 @@ import Ethereum from "./scenes/ethereum";
 import Risk from "./scenes/risk";
 import RiskEthereum from "./scenes/riskEthereum";
 import Dashboard from "./scenes/dashboard";
+import Footer from "./components/Footer";
 import { CssBaseline, ThemeProvider } from "@mui/material";
 import { ColorModeContext, useMode } from "./theme";
 
@@ -18,21 +19,24 @@ function App() {
     <ColorModeContext.Provider value={colorMode}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <div className="app">
-          <div className="sidebar">
-            <Sidebar isSidebar={isSidebar} />
+        <div className="app" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+          <div style={{ flex: 1, display: 'flex' }}> {/* Ensuring content takes up available space */}
+            <div className="sidebar">
+              <Sidebar isSidebar={isSidebar} />
+            </div>
+            
+            <main className="content">
+              <Topbar setIsSidebar={setIsSidebar} />
+              <Routes>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/bitcoin" element={<Bitcoin />} />
+                <Route path="/risk" element={<Risk />} />
+                <Route path="/ethereum" element={<Ethereum />} />
+                <Route path="/risk-eth" element={<RiskEthereum />} />
+              </Routes>
+            </main>
           </div>
-          
-          <main className="content">
-            <Topbar setIsSidebar={setIsSidebar} />
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/bitcoin" element={<Bitcoin />} />
-              <Route path="/risk" element={<Risk />} />
-              <Route path="/ethereum" element={<Ethereum />} />
-              <Route path="/risk-eth" element={<RiskEthereum />} />
-            </Routes>
-          </main>
+          {/* <Footer /> */}
         </div>
       </ThemeProvider>
     </ColorModeContext.Provider>

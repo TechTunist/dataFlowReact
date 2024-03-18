@@ -178,9 +178,13 @@ const BitcoinRisk = ({ isDashboard = false }) => {
                     </span>
                 </div>
                 
-                <button onClick={resetChartView} style={{ marginRight: '0px' }}>
-                    Reset Chart
-                </button>
+                {
+                    !isDashboard && (
+                        <button onClick={resetChartView} style={{ marginRight: '0px' }}>
+                            Reset Chart
+                        </button>
+                    )   
+                }
             </div>
             <div className="chart-container" style={{ position: 'relative', height: 'calc(100% - 40px)', width: '100%', border: '2px solid white' }}>
                 {/* Adjust the height calculation based on the height of your button and margin */}
