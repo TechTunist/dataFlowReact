@@ -3,6 +3,8 @@ import React, { useRef, useEffect, useState } from 'react';
 import { createChart } from 'lightweight-charts';
 import '../styling/bitcoinChart.css'
 
+
+
 const BitcoinPrice = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
     const [chartData, setChartData] = useState([]);
@@ -40,6 +42,8 @@ const BitcoinPrice = ({ isDashboard = false }) => {
         } else {
             fetchData();
         }
+
+    
 
         function fetchData() {
             // if no cached data is found, fetch new data
@@ -97,24 +101,27 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                     width: chartContainerRef.current.clientWidth,
                     height: chartContainerRef.current.clientHeight,
                 });
-                chart.timeScale().fitContent(); // Adjusting the fitContent call to be after resizing
+                chart.timeScale().fitContent();
             }
         };
     
         window.addEventListener('resize', resizeChart);
+        window.addEventListener('resize', resetChartView);
     
-        const lineSeries = chart.addLineSeries({
+        const areaSeries = chart.addAreaSeries({
             priceScaleId: 'right',
-            lineWidth: 1
+            topColor: 'rgba(38, 198, 218, 0.56)', 
+            bottomColor: 'rgba(38, 198, 218, 0.04)', 
+            lineColor: 'rgba(38, 198, 218, 1)', 
+            lineWidth: 2, 
         });
-        lineSeries.setData(chartData);
+        areaSeries.setData(chartData);
     
         chart.applyOptions({
             handleScroll: !isDashboard,
             handleScale: !isDashboard,
         });
     
-        // Ensuring fitContent is called after the data is set and potentially after a resize
         resizeChart(); // Ensure initial resize and fitContent call
         chart.timeScale().fitContent(); // Additional call to fitContent to ensure coverage
         chartRef.current = chart; // Store the chart instance
@@ -122,6 +129,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
         return () => {
             chart.remove();
             window.removeEventListener('resize', resizeChart);
+            window.removeEventListener('resize', resetChartView);
         };
     }, [chartData, scaleMode, isDashboard]);
 

@@ -155,6 +155,7 @@ const EthereumRisk = ({ isDashboard = false }) => {
         };
 
         window.addEventListener('resize', resizeChart);
+        window.addEventListener('resize', resetChartView);
         resizeChart();
 
         chart.timeScale().fitContent();
@@ -163,6 +164,7 @@ const EthereumRisk = ({ isDashboard = false }) => {
         return () => {
             chart.remove();
             window.removeEventListener('resize', resizeChart);
+            window.removeEventListener('resize', resetChartView);
         };
     }, [chartData]);
 

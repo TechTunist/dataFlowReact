@@ -8,8 +8,6 @@ const Ethereum = () => {
   const colors = tokens(theme.palette.mode);
   return (
     <Box m="20px">
-      <Header title="Ethereum" subtitle="Simple Ethereum Chart" />
-
       <Box
         height="75vh"
         // border={`1px solid ${colors.grey[100]}`}

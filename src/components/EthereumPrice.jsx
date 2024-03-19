@@ -64,65 +64,67 @@ const EthereumPrice = ({ isDashboard = false }) => {
 
     useEffect(() => {
         if (chartData.length === 0) return;
-
+    
         const chart = createChart(chartContainerRef.current, {
             width: chartContainerRef.current.clientWidth,
             height: chartContainerRef.current.clientHeight,
             layout: {
-                background: {type: 'solid', color: 'black'},
+                background: { type: 'solid', color: 'black' },
                 textColor: 'white',
             },
             grid: {
                 vertLines: {
-                    color: 'rgba(70, 70, 70, 0.5)', // Darker shade for vertical lines
+                    color: 'rgba(70, 70, 70, 0.5)',
                 },
                 horzLines: {
-                    color: 'rgba(70, 70, 70, 0.5)', // Darker shade for horizontal lines
+                    color: 'rgba(70, 70, 70, 0.5)',
                 },
             },
             timeScale: {
                 minBarSpacing: 0.001,
             },
         });
-
+    
         chart.priceScale('right').applyOptions({
-            mode: scaleMode, // Logarithmic scale
+            mode: scaleMode,
             borderVisible: false,
         });
-
-        // Function to update chart size
+    
         const resizeChart = () => {
             if (chart && chartContainerRef.current) {
                 chart.applyOptions({
                     width: chartContainerRef.current.clientWidth,
                     height: chartContainerRef.current.clientHeight,
                 });
+                chart.timeScale().fitContent();
             }
         };
-
+    
         window.addEventListener('resize', resizeChart);
-        resizeChart();
-
-        const lineSeries = chart.addLineSeries({
+    
+        const areaSeries = chart.addAreaSeries({
             priceScaleId: 'right',
-            lineWidth: 1
+            topColor: 'rgba(38, 198, 218, 0.56)', 
+            bottomColor: 'rgba(38, 198, 218, 0.04)', 
+            lineColor: 'rgba(38, 198, 218, 1)', 
+            lineWidth: 2, 
         });
-        lineSeries.setData(chartData);
-
-        // Disable all interactions
+        areaSeries.setData(chartData);
+    
         chart.applyOptions({
             handleScroll: !isDashboard,
             handleScale: !isDashboard,
         });
-
-        chart.timeScale().fitContent();
+    
+        resizeChart(); // Ensure initial resize and fitContent call
+        chart.timeScale().fitContent(); // Additional call to fitContent to ensure coverage
         chartRef.current = chart; // Store the chart instance
-
+    
         return () => {
             chart.remove();
             window.removeEventListener('resize', resizeChart);
         };
-    }, [chartData, scaleMode]);
+    }, [chartData, scaleMode, isDashboard]);
 
     return (
         <div style={{ height: '100%' }}>

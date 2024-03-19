@@ -152,6 +152,7 @@ const BitcoinRisk = ({ isDashboard = false }) => {
         };
 
         window.addEventListener('resize', resizeChart);
+        window.addEventListener('resize', resetChartView);
         resizeChart();
 
         chart.timeScale().fitContent();
@@ -160,6 +161,7 @@ const BitcoinRisk = ({ isDashboard = false }) => {
         return () => {
             chart.remove();
             window.removeEventListener('resize', resizeChart);
+            window.removeEventListener('resize', resetChartView);
         };
     }, [chartData]);
 

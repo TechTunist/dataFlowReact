@@ -9,6 +9,7 @@ import InputBase from "@mui/material/InputBase";
 import SearchIcon from "@mui/icons-material/Search";
 import CloseIcon from "@mui/icons-material/Close";
 import BarChartOutlinedIcon from "@mui/icons-material/BarChartOutlined";
+import WarningOutlinedIcon from "@mui/icons-material/WarningOutlined";
 
 const Item = ({ title, to, icon, selected, setSelected, isNested }) => {
   const theme = useTheme();
@@ -36,9 +37,9 @@ const Sidebar = () => {
   const itemsData = [
     { title: "Dashboard", to: "/", icon: <HomeOutlinedIcon />, category: null },
     { title: "Bitcoin Chart", to: "/bitcoin", category: 'Bitcoin', icon: <BarChartOutlinedIcon /> },
-    { title: "Bitcoin Risk Metric", to: "/risk", category: 'Bitcoin', icon: <BarChartOutlinedIcon /> },
+    { title: "Bitcoin Risk Metric", to: "/risk", category: 'Bitcoin', icon: <WarningOutlinedIcon /> },
     { title: "Ethereum Chart", to: "/ethereum", category: 'Ethereum', icon: <BarChartOutlinedIcon /> },
-    { title: "Ethereum Risk Metric", to: "/risk-eth", category: 'Ethereum', icon: <BarChartOutlinedIcon /> },
+    { title: "Ethereum Risk Metric", to: "/risk-eth", category: 'Ethereum', icon: <WarningOutlinedIcon /> },
   ];
 
   const filteredItems = itemsData.filter(item =>

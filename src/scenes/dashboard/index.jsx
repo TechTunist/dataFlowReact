@@ -15,9 +15,8 @@ const Dashboard = () => {
 
   return (
     <Box m="20px">
-      <Header title="DASHBOARD" subtitle="Welcome to your dashboard" />
 
-      <Grid container spacing={3}>
+      <Grid container spacing={4}>
         
         {/* Bitcoin Price Card */}
         <Grid item xs={12} md={6}>
@@ -33,6 +32,7 @@ const Dashboard = () => {
               </Box>
               <Box height="350px" m="20px 0 0 0" style={{ margin: "0 0 20px 0" }}>
                 <BitcoinPrice isDashboard={true} />
+
               </Box>
               
               <Typography variant="body3" color="textSecondary" >
