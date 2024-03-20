@@ -2,12 +2,16 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { createChart } from 'lightweight-charts';
 import '../styling/bitcoinChart.css'
+import { tokens } from "../theme";
+import { useTheme } from "@mui/material";
 
 const EthereumPrice = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
     const [chartData, setChartData] = useState([]);
     const [scaleMode, setScaleMode] = useState(1);
     const chartRef = useRef(null); // ref to store chart for use in return statement
+    const theme = useTheme();
+    const colors = tokens(theme.palette.mode);
 
     // Function to toggle scale mode
     const toggleScaleMode = () => {
@@ -141,7 +145,7 @@ const EthereumPrice = ({ isDashboard = false }) => {
                         <input type="checkbox" checked={scaleMode === 1} onChange={toggleScaleMode} />
                         <span className="slider round"></span>
                     </label>
-                    <span className="scale-mode-label">{scaleMode === 1 ? 'Logarithmic' : 'Linear'}</span>
+                    <span className="scale-mode-label" style={{color: colors.primary[100]}}>{scaleMode === 1 ? 'Logarithmic' : 'Linear'}</span>
                 </div>
                 {
                     !isDashboard && (

@@ -35,7 +35,7 @@ const Topbar = () => {
   };
 
   return (
-    <Box display="flex" justifyContent="space-between" alignItems="center" p={2} style={{ backgroundColor: colors.primary[500] }}>
+    <Box display="flex" justifyContent="space-between" alignItems="center" p={2} style={{ backgroundColor: colors.primary[400] }}>
       <Typography variant="h6" color="inherit">
         {getTitle(location.pathname)} {/* Set the dynamic title based on the route */}
       </Typography>
