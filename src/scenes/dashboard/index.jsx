@@ -20,7 +20,7 @@ const Dashboard = () => {
         
         {/* Bitcoin Price Card */}
         <Grid item xs={12} md={6}>
-          <Card style={{backgroundColor: colors.blueAccent[900]}}>
+          <Card style={{backgroundColor: colors.primary[500]}}>
             <CardContent>
               <Typography variant="h5" gutterBottom component={Link} to="/bitcoin" style={{ textDecoration: 'none', color: 'inherit' }}>
                 Bitcoin Historical Price
@@ -45,7 +45,7 @@ const Dashboard = () => {
 
         {/* Bitcoin Risk Metric Card */}
         <Grid item xs={12} md={6}>
-          <Card style={{backgroundColor: colors.blueAccent[900]}}>
+          <Card style={{backgroundColor: colors.primary[500]}}>
             <CardContent>
               <Typography variant="h5" gutterBottom component={Link} to="/risk" style={{ textDecoration: 'none', color: 'inherit' }}>
                 Bitcoin Risk Metric
@@ -72,7 +72,7 @@ const Dashboard = () => {
 
                 {/* Ethereum Price Card */}
                 <Grid item xs={12} md={6}>
-          <Card style={{backgroundColor: colors.blueAccent[900]}}>
+          <Card style={{backgroundColor: colors.primary[500]}}>
             <CardContent>
               <Typography variant="h5" gutterBottom component={Link} to="/ethereum" style={{ textDecoration: 'none', color: 'inherit' }}>
                 Ethereum Historical Price
@@ -94,7 +94,7 @@ const Dashboard = () => {
 
         {/* Ethereum Risk Metric Card */}
         <Grid item xs={12} md={6}>
-          <Card style={{backgroundColor: colors.blueAccent[900]}}>
+          <Card style={{backgroundColor: colors.primary[500]}}>
             <CardContent>
               <Typography variant="h5" gutterBottom component={Link} to="/risk-eth" style={{ textDecoration: 'none', color: 'inherit' }}>
                 Ethereum Risk Metric

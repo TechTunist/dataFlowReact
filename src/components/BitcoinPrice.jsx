@@ -78,7 +78,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
             width: chartContainerRef.current.clientWidth,
             height: chartContainerRef.current.clientHeight,
             layout: {
-                background: { type: 'solid', color: 'black' },
+                background: { type: 'solid', color: colors.primary[700] },
                 textColor: 'white',
             },
             grid: {
