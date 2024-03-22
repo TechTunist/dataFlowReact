@@ -3,7 +3,8 @@ import Header from "../../components/Header";
 import BitcoinRisk from "../../components/BitcoinRisk"; 
 import BitcoinPrice from "../../components/BitcoinPrice";
 import EthereumRisk from "../../components/EthereumRisk"; 
-import EthereumPrice from "../../components/EthereumPrice"; 
+import EthereumPrice from "../../components/EthereumPrice";
+import PiCycleTop from "../../components/PiCycleTop";
 import '../../styling/bitcoinChart.css';
 import { tokens } from "../../theme";
 import { Link } from "react-router-dom";
@@ -115,6 +116,27 @@ const Dashboard = () => {
           </Card>
         </Grid>
 
+        {/* PiCycle Card */}
+        <Grid item xs={12} md={6}>
+          <Card style={{backgroundColor: colors.primary[500]}}>
+            <CardContent>
+              <Typography variant="h5" gutterBottom component={Link} to="/pi-cycle" style={{ textDecoration: 'none', color: 'inherit' }}>
+                PiCycle Top Indicator
+              </Typography>
+              <Box m="20px 0 0 0" style={{ margin: "0 0 10px 0" }}>
+                <Typography variant="body1" color="textSecondary">
+                  Log or linear
+                </Typography>
+              </Box>
+              <Box height="350px" m="20px 0 0 0" style={{ margin: "0 0 20px 0" }}>
+                <PiCycleTop isDashboard={true} />
+              </Box>
+              <Typography variant="body3" color="textSecondary" >
+                The PiCycle Top Indicator was created by Philip Swift and is used to identify the top of the bitcoin market to within 3 days.
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
 
       </Grid>
     </Box>

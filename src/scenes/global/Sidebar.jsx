@@ -40,6 +40,7 @@ const Sidebar = () => {
     { title: "Bitcoin Risk Metric", to: "/risk", category: 'Bitcoin', icon: <WarningOutlinedIcon /> },
     { title: "Ethereum Chart", to: "/ethereum", category: 'Ethereum', icon: <BarChartOutlinedIcon /> },
     { title: "Ethereum Risk Metric", to: "/risk-eth", category: 'Ethereum', icon: <WarningOutlinedIcon /> },
+    { title: "PiCycleTop Indicator", to: "/pi-cycle", category: 'Indicators', icon: <WarningOutlinedIcon /> },
   ];
 
   const filteredItems = itemsData.filter(item =>

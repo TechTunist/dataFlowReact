@@ -192,7 +192,7 @@ const BitcoinRisk = ({ isDashboard = false }) => {
                     )   
                 }
             </div>
-            <div className="chart-container" style={{ position: 'relative', height: 'calc(100% - 40px)', width: '100%', border: '2px solid white' }}>
+            <div className="chart-container" style={{ position: 'relative', height: 'calc(100% - 40px)', width: '100%' }}>
                 {/* Adjust the height calculation based on the height of your button and margin */}
                 <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
             </div>

@@ -12,6 +12,7 @@ import BitcoinPrice from "./components/BitcoinPrice";
 import Risk from "./components/BitcoinRisk";
 import EthereumPrice from "./components/EthereumPrice";
 import EthereumRisk from "./components/EthereumRisk";
+import PiCycleTop from "./components/PiCycleTop";
 
 
 function App() {
@@ -36,6 +37,7 @@ function App() {
                 <Route path="/ethereum" element={<BasicChart ChartComponent={EthereumPrice} />} />
                 <Route path="/risk" element={<BasicChart ChartComponent={Risk} />} />
                 <Route path="/risk-eth" element={<BasicChart ChartComponent={EthereumRisk} />} />
+                <Route path="/pi-cycle" element={<BasicChart ChartComponent={PiCycleTop} />} />
               </Routes>
             </main>
           </div>
