@@ -23,7 +23,7 @@ export const tokens = (mode) => ({
           400: "#1F2A40",
           500: "#111729",
           600: "#101624",
-          700: "#0c101b",
+          700: "#0c101b", // chart background
           800: "#080b12",
           900: "#040509",
         },
@@ -34,7 +34,7 @@ export const tokens = (mode) => ({
           400: "#70d8bd",
           500: "#4cceac",
           600: "#3da58a",
-          700: "#2e7c67",
+          700: 'rgba(70, 70, 70, 0.5)',
           800: "#1e5245",
           900: "#0f2922",
         },
@@ -81,7 +81,7 @@ export const tokens = (mode) => ({
           400: "#f2f0f0", // manually changed
           500: "#E7F7F5 ", // darker shade for light mode
           600: "#4f5560",
-          700: "#646a78",
+          700: "#c0c0c0", // chart background light grey
           800: "#79808f",
           900: "#8e96a6",
         },
@@ -92,7 +92,7 @@ export const tokens = (mode) => ({
           400: "#3da58a",
           500: "#4cceac",
           600: "#70d8bd",
-          700: "#94e2cd",
+          700: 'rgba(70, 70, 70, 0.1)',
           800: "#b7ebde",
           900: "#dbf5ee",
         },
@@ -158,8 +158,10 @@ export const themeSettings = (mode) => {
               main: colors.grey[500],
               light: colors.grey[100],
             },
+            // background to charts
             background: {
-              default: colors.grey[600],
+              default: colors.grey[700],
+              // default: colors.greenAccent[900],
             },
           }),
     },

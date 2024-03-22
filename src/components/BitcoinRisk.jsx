@@ -1,10 +1,14 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { createChart } from 'lightweight-charts';
+import { tokens } from "../theme";
+import { useTheme } from "@mui/material";
 
 const BitcoinRisk = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
     const [chartData, setChartData] = useState([]);
     const chartRef = useRef(null); // ref to store chart for use in return statement
+    const theme = useTheme();
+    const colors = tokens(theme.palette.mode);
 
     // Function to reset the chart view
     const resetChartView = () => {
@@ -85,8 +89,8 @@ const BitcoinRisk = ({ isDashboard = false }) => {
             width: chartContainerRef.current.clientWidth,
             height: chartContainerRef.current.clientHeight,
             layout: {
-                background: { type: 'solid', color: 'black' },
-                textColor: 'white',
+                background: { type: 'solid', color: colors.primary[700] },
+                textColor: colors.primary[100],
             },
             grid: {
                 vertLines: { color: 'rgba(70, 70, 70, 0.5)' },
@@ -163,7 +167,7 @@ const BitcoinRisk = ({ isDashboard = false }) => {
             window.removeEventListener('resize', resizeChart);
             window.removeEventListener('resize', resetChartView);
         };
-    }, [chartData]);
+    }, [chartData, theme.palette.mode]);
 
     return (
 

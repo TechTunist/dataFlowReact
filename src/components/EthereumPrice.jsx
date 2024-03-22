@@ -74,14 +74,14 @@ const EthereumPrice = ({ isDashboard = false }) => {
             height: chartContainerRef.current.clientHeight,
             layout: {
                 background: { type: 'solid', color: colors.primary[700] },
-                textColor: 'white',
+                textColor: colors.primary[100],
             },
             grid: {
                 vertLines: {
-                    color: 'rgba(70, 70, 70, 0.5)',
+                    color: colors.greenAccent[700],
                 },
                 horzLines: {
-                    color: 'rgba(70, 70, 70, 0.5)',
+                    color: colors.greenAccent[700],
                 },
             },
             timeScale: {
@@ -106,11 +106,35 @@ const EthereumPrice = ({ isDashboard = false }) => {
     
         window.addEventListener('resize', resizeChart);
     
-        const areaSeries = chart.addAreaSeries({
-            priceScaleId: 'right',
+            // Define your light and dark theme colors for the area series
+        const lightThemeColors = {
+            topColor: 'rgba(255, 165, 0, 0.56)', // Soft orange for the top gradient
+            bottomColor: 'rgba(255, 165, 0, 0.2)', // Very subtle orange for the bottom gradient
+            lineColor: 'rgba(255, 140, 0, 0.8)', // A vibrant, slightly deeper orange for the line
+        };
+
+        const darkThemeColors = {
             topColor: 'rgba(38, 198, 218, 0.56)', 
             bottomColor: 'rgba(38, 198, 218, 0.04)', 
             lineColor: 'rgba(38, 198, 218, 1)', 
+        };
+
+        // Select colors based on the theme mode
+        const { topColor, bottomColor, lineColor } = theme.palette.mode === 'dark' ? darkThemeColors : lightThemeColors;
+
+    
+        // const areaSeries = chart.addAreaSeries({
+        //     priceScaleId: 'right',
+        //     topColor: 'rgba(38, 198, 218, 0.56)', 
+        //     bottomColor: 'rgba(38, 198, 218, 0.04)', 
+        //     lineColor: 'rgba(38, 198, 218, 1)', 
+        //     lineWidth: 2, 
+        // });
+        const areaSeries = chart.addAreaSeries({
+            priceScaleId: 'right',
+            topColor: topColor, 
+            bottomColor: bottomColor, 
+            lineColor: lineColor, 
             lineWidth: 2, 
         });
         areaSeries.setData(chartData);
@@ -128,7 +152,7 @@ const EthereumPrice = ({ isDashboard = false }) => {
             chart.remove();
             window.removeEventListener('resize', resizeChart);
         };
-    }, [chartData, scaleMode, isDashboard]);
+    }, [chartData, scaleMode, isDashboard, theme.palette.mode]);
 
     return (
         <div style={{ height: '100%' }}>

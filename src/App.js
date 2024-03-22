@@ -2,14 +2,17 @@ import { useState } from "react";
 import { Routes, Route } from "react-router-dom";
 import Topbar from "./scenes/global/Topbar";
 import Sidebar from "./scenes/global/Sidebar";
-import Bitcoin from "./scenes/bitcoin";
-import Ethereum from "./scenes/ethereum";
-import Risk from "./scenes/risk";
-import RiskEthereum from "./scenes/riskEthereum";
+import BasicChart from "./scenes/ChartTemplates/BasicChart";
 import Dashboard from "./scenes/dashboard";
 import Footer from "./components/Footer";
 import { CssBaseline, ThemeProvider } from "@mui/material";
 import { ColorModeContext, useMode } from "./theme";
+
+import BitcoinPrice from "./components/BitcoinPrice";
+import Risk from "./components/BitcoinRisk";
+import EthereumPrice from "./components/EthereumPrice";
+import EthereumRisk from "./components/EthereumRisk";
+
 
 function App() {
   const [theme, colorMode] = useMode();
@@ -29,10 +32,10 @@ function App() {
               <Topbar setIsSidebar={setIsSidebar} />
               <Routes>
                 <Route path="/" element={<Dashboard />} />
-                <Route path="/bitcoin" element={<Bitcoin />} />
-                <Route path="/risk" element={<Risk />} />
-                <Route path="/ethereum" element={<Ethereum />} />
-                <Route path="/risk-eth" element={<RiskEthereum />} />
+                <Route path="/bitcoin" element={<BasicChart ChartComponent={BitcoinPrice} />} />
+                <Route path="/ethereum" element={<BasicChart ChartComponent={EthereumPrice} />} />
+                <Route path="/risk" element={<BasicChart ChartComponent={Risk} />} />
+                <Route path="/risk-eth" element={<BasicChart ChartComponent={EthereumRisk} />} />
               </Routes>
             </main>
           </div>

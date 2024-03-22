@@ -68,3 +68,14 @@ input:checked + .slider:before {
     color: white; /* Choose the color that fits your design */
     font-size: 14px; /* Adjust as necessary */
 }
+
+.mobile {
+    height: 75vh; /* Default height */
+  }
+  
+  /* Media query for devices with a max-width of 600px (common breakpoint for mobile devices) */
+  @media (max-width: 600px) {
+    .mobile {
+      height: 50vh; /* Reduced height for mobile devices */
+    }
+  }
