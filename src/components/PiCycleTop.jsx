@@ -102,23 +102,29 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
                 timeScale: {
                     minBarSpacing: 0.001,
                 },
+                priceLineVisible: false,
             });
-            chartRef.current = chart;
 
             // Add the series to the chart
             const bitcoinSeries = chart.addLineSeries({
                 color: 'rgba(255, 207, 64, 1)',
                 lineWidth: 2,
+                priceLineVisible: false,
             });
 
             const sma111Series = chart.addLineSeries({
                 color: 'rgba(76, 175, 80, 0.5)',
-                lineWidth: 1,
+                lineWidth: 2,
+                priceLineVisible: false,
+                lastValueVisible: false,
+                
             });
 
             const sma350Series = chart.addLineSeries({
                 color: 'rgba(244, 67, 54, 0.5)',
-                lineWidth: 1,
+                lineWidth: 2,
+                priceLineVisible: false,
+                lastValueVisible: false,
             });
 
             chart.priceScale('right').applyOptions({
@@ -146,8 +152,6 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
                 lineColor: 'rgba(255, 140, 0, 0.8)', // A vibrant, slightly deeper orange for the line
             };
             
-            
-    
             const darkThemeColors = {
                 topColor: 'rgba(38, 198, 218, 0.56)', 
                 bottomColor: 'rgba(38, 198, 218, 0.04)', 
@@ -183,11 +187,42 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
     }, [chartData, colors, theme.palette.mode]);
 
 
-  return (
-    <div className="chart-container" style={{ position: 'relative', height: 'calc(100% - 40px)', width: '100%' }}>
-    <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
-</div>
-  );
+    return (
+        <div style={{ height: '100%' }}>
+            <div style={{ 
+                display: 'flex', // Use flex display for the container
+                justifyContent: 'space-between', // This spreads out the child elements
+                alignItems: 'center', // This vertically centers the children
+                marginBottom: '0px', 
+                height: '30px'
+                }}>
+                <div>
+                    {/* placeholder for styling purposes */}
+                </div>
+                {
+                    !isDashboard && (
+                        <button onClick={resetChartView} style={{ marginRight: '0px'}}>
+                            Reset Chart
+                        </button>
+                    )   
+                }
+            </div>
+            <div className="chart-container" style={{ position: 'relative', height: 'calc(100% - 40px)', width: '100%' }}>
+                <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
+            </div>
+            <div>
+                {
+                    !isDashboard && (
+                        <p>
+                            The PiCycle Top indicator was created by Phillip Swift with the intention of calling the top of the Bitcoin bull market within 3 days.
+                            The indicator is calculated by dividing the 111-day moving average of the Bitcoin price by the 350-day moving average of the Bitcoin price.
+                            When the indicator crosses above 1, it is considered a bearish signal, and when it crosses below 1, it is considered a bullish signal.
+                        </p>
+                    )   
+                }
+            </div>
+        </div>
+    );
 };
 
 export default PiCycleTopChart;

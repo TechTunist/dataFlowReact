@@ -29,6 +29,8 @@ const Topbar = () => {
         return <Header title="Ethereum" subtitle="Simple Ethereum Chart" />;
       case "/risk-eth":
         return <Header title="Ethereum" subtitle="Ethereum Risk Chart" />;
+        case "/pi-cycle":
+          return <Header title="PiCycle Top" subtitle="Top Calling Indicator" />;
       default:
         return "Welcome"; // Default title or could be a 404 page title
     }

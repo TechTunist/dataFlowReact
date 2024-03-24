@@ -13,7 +13,7 @@ const Footer = () => {
             borderTop: '1px solid #ddd' // Add visual separation from content
           }}>
           <p style={{ margin: 0 }}>
-            © {currentYear} Your Name. All rights reserved.
+            © {currentYear} Matthew Jackson. All rights reserved.
           </p>
           <p style={{ margin: '5px 0 0' }}>
             Contact: <a href="mailto:your.email@example.com">your.email@example.com</a>
