@@ -5,6 +5,7 @@ import BitcoinPrice from "../../components/BitcoinPrice";
 import EthereumRisk from "../../components/EthereumRisk"; 
 import EthereumPrice from "../../components/EthereumPrice";
 import PiCycleTop from "../../components/PiCycleTop";
+import FearandGreed from "../../components/FearAndGreed";
 import '../../styling/bitcoinChart.css';
 import { tokens } from "../../theme";
 import { Link } from "react-router-dom";
@@ -105,6 +106,23 @@ const Dashboard = () => {
               </Box>
               <Typography variant="body3" color="textSecondary" >
                 The PiCycle Top Indicator was created by Philip Swift and is used to identify the top of the bitcoin market to within 3 days.
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Fear and Greed Card */}
+        <Grid item xs={12} md={6}>
+          <Card style={{backgroundColor: colors.primary[500]}}>
+            <CardContent>
+              <Typography variant="h5" gutterBottom component={Link} to="/fear-and-greed" style={{ textDecoration: 'none', color: 'inherit' }}>
+                Fear and Greed Indicator
+              </Typography>
+              <Box height="350px" m="20px 0 0 0" style={{ margin: "0 0 20px 0" }}>
+                <FearandGreed isDashboard={true} />
+              </Box>
+              <Typography variant="body3" color="textSecondary" >
+                The Feed and Greed index is a metric that measures the sentiment of the market by analyzing various sources of data
               </Typography>
             </CardContent>
           </Card>

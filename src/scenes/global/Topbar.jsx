@@ -31,6 +31,8 @@ const Topbar = () => {
         return <Header title="Ethereum" subtitle="Ethereum Risk Chart" />;
         case "/pi-cycle":
           return <Header title="PiCycle Top" subtitle="Top Calling Indicator" />;
+        case "/fear-and-greed":
+          return <Header title="Fear and Greed" subtitle="Market Sentiment Analyzer" />;
       default:
         return "Welcome"; // Default title or could be a 404 page title
     }
