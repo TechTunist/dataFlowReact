@@ -196,12 +196,15 @@ const BitcoinRisk = ({ isDashboard = false }) => {
                 {/* Adjust the height calculation based on the height of your button and margin */}
                 <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
             </div>
-
             <div>
-                <p>
-                The risk metric is designed to assess the risk associated
-                with an asset over time based on its price movements relative to a 374-day moving average.
-                </p>
+                {
+                    !isDashboard && (
+                        <p>
+                            The risk metric is designed to assess the risk associated
+                            with an asset over time based on its price movements relative to a 374-day moving average.
+                        </p>
+                    )   
+                }
             </div>
         </div>
 
