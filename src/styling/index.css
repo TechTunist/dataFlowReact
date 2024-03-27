@@ -43,14 +43,6 @@ body,
   }
 }
 
-@media (max-width: 768px) {
-  .home-button {
-    position: fixed; /* Or absolute, depending on your layout */
-    top: 10px; /* Adjust as needed */
-    left: 10px; /* Adjust as needed */
-    z-index: 1000; /* Ensure it's above other content */
-  }
-}
 
 
 /* 
