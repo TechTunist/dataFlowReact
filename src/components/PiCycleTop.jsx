@@ -130,23 +130,23 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
                 {
                     time: '2015-04-30',
                     position: 'belowBar',
-                    color: '#2196F3',
+                    color: colors.greenAccent[400],
                     shape: 'arrowUp',
-                    text: 'Maximum extension between 350 and 111 day SMA', 
+                    text: 'Indicated Bottom', 
                 },
                 {
                     time: '2019-03-19',
                     position: 'belowBar',
-                    color: '#2196F3',
+                    color: colors.greenAccent[400],
                     shape: 'arrowUp',
-                    text: 'Maximum extension between 350 and 111 day SMA', 
+                    text: 'Indicated Bottom', 
                 },
                 {
                     time: '2022-12-25',
                     position: 'belowBar',
-                    color: '#2196F3',
+                    color: colors.greenAccent[400],
                     shape: 'arrowUp',
-                    text: 'Maximum extension between 350 and 111 day SMA',
+                    text: 'Indicated Bottom',
                 },
             ];
 
@@ -241,7 +241,7 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
                 </div>
                 {
                     !isDashboard && (
-                        <button onClick={resetChartView} style={{ marginRight: '0px'}}>
+                        <button onClick={resetChartView} className="button-reset" >
                             Reset Chart
                         </button>
                     )   
@@ -261,9 +261,11 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
                         
                             <br/> <br/>The indicator can also be used to get a decent idea of the bottom of the market by marking the largest distance between the 111 and 350 day SMA:   
                             {/* Button to toggle markers */}
-                            <button onClick={toggleMarkers}>
+                            <button onClick={toggleMarkers} className="button-reset">
                                 {showMarkers ? 'Hide Market Bottom Markers' : 'Show Market Bottom Markers'}
                             </button>
+                            <br/> <br/>
+                            <br/> <br/>
                         </h3>
                     )   
                 }

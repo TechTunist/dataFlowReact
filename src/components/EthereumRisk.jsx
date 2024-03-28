@@ -189,7 +189,7 @@ const EthereumRisk = ({ isDashboard = false }) => {
                 
                 {
                     !isDashboard && (
-                        <button onClick={resetChartView} style={{ marginRight: '0px' }}>
+                        <button onClick={resetChartView} className="button-reset">
                             Reset Chart
                         </button>
                     )   

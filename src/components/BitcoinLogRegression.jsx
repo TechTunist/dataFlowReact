@@ -117,8 +117,6 @@ const BitcoinLogRegression = ({ isDashboard = false }) => {
             lineColor: 'rgba(255, 140, 0, 0.8)', // A vibrant, slightly deeper orange for the line
         };
         
-        
-
         const darkThemeColors = {
             topColor: 'rgba(38, 198, 218, 0.56)', 
             bottomColor: 'rgba(38, 198, 218, 0.04)', 
@@ -127,15 +125,7 @@ const BitcoinLogRegression = ({ isDashboard = false }) => {
 
         // Select colors based on the theme mode
         const { topColor, bottomColor, lineColor } = theme.palette.mode === 'dark' ? darkThemeColors : lightThemeColors;
-
-    
-        // const areaSeries = chart.addAreaSeries({
-        //     priceScaleId: 'right',
-        //     topColor: 'rgba(38, 198, 218, 0.56)', 
-        //     bottomColor: 'rgba(38, 198, 218, 0.04)', 
-        //     lineColor: 'rgba(38, 198, 218, 1)', 
-        //     lineWidth: 2, 
-        // });
+ 
         const areaSeries = chart.addAreaSeries({
             priceScaleId: 'right',
             topColor: topColor, 
@@ -146,16 +136,22 @@ const BitcoinLogRegression = ({ isDashboard = false }) => {
         areaSeries.setData(chartData);
 
         // Calculate Logarithmic Regression Points
-        const [a, b] = [0.21733286, 1.14640918]; // Given parameters
+        const [a, b] = [0.21733286, 1.54640918]; // Given parameters
+        
+        // Calculate Logarithmic Regression Points
+        const startDate = new Date("2011-08-19").getTime();
         const logRegressionPoints = chartData.map(({ time, value }) => {
-            const x = new Date(time).getTime() / (24*3600*1000); // Convert time to days as a simple x value
-            const logValue = 10 ** (a * Math.log(x) - b); // Calculate y using the logarithmic regression formula
-            return { time, value: logValue };
+            const currentTime = new Date(time).getTime();
+            // Calculate x as the number of days since the start date
+            const x = (currentTime - startDate) / (24 * 3600 * 1000);
+            // Calculate y using the logarithmic regression formula
+            const y = Math.exp(a * Math.log(x) + b);
+            return { time, value: y };
         });
 
         // Plot Logarithmic Regression Line
         const logRegressionSeries = chart.addLineSeries({
-            color: 'rgba(255, 0, 0, 1)', // Example color: Red
+            color: 'rgba(255, 0, 0, 1)', // Red for visibility
             lineWidth: 2,
         });
         logRegressionSeries.setData(logRegressionPoints);

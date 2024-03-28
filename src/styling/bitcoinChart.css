@@ -72,6 +72,33 @@ input:checked + .slider:before {
 .mobile {
     height: 75vh; /* Default height */
   }
+
+  .button-reset {
+    margin-bottom: 20px;
+    color: #70d8bd; /* Set text color to white */
+    border: 2px solid #70d8bd; /* Set border to white */
+    background-color: transparent; /* Make background transparent */
+    padding: 5px 15px; /* Adjust padding as needed */
+    font-size: 0.8rem;
+    border-radius: 5px;
+    cursor: pointer;
+    box-shadow: none; /* No shadow by default */
+    transition: background-color 0.3s ease, box-shadow 0.3s ease, color 0.3s ease;
+}
+
+.button-reset:hover {
+    color: white; /* Keep text white on hover */
+    background-color: transparent; /* Maintain a transparent background */
+    border: 2px solid white; /* Maintain white border */
+    
+}
+
+.button-reset:active {
+    background-color: white; /* Neon green background when clicked */
+    box-shadow: 0 0 5px white; /* Slightly smaller glow effect */
+}
+
+  
   
   /* Media query for devices with a max-width of 600px (common breakpoint for mobile devices) */
   @media (max-width: 600px) {
