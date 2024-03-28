@@ -1,4 +1,3 @@
-// Import necessary items from lightweight-charts and React
 import React, { useRef, useEffect, useState } from 'react';
 import { createChart, ISeriesApi } from 'lightweight-charts';
 import '../styling/bitcoinChart.css'
@@ -18,6 +17,7 @@ const calculateSMA = (data, windowSize) => {
   return sma;
 };
 
+
 const PiCycleTopChart = ({ isDashboard = false }) => {
   const chartContainerRef = useRef();
   const [chartData, setChartData] = useState([]);
@@ -25,6 +25,12 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const chartRef = useRef(null);
+  const [showMarkers, setShowMarkers] = useState(false);
+
+    // Function to toggle the visibility of markers
+    const toggleMarkers = () => {
+        setShowMarkers(!showMarkers);
+    };
 
     // Function to toggle scale mode
     const toggleScaleMode = () => {
@@ -120,12 +126,37 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
                 
             });
 
+            const markers = [
+                {
+                    time: '2015-04-30',
+                    position: 'belowBar',
+                    color: '#2196F3',
+                    shape: 'arrowUp',
+                    text: 'Maximum extension between 350 and 111 day SMA', 
+                },
+                {
+                    time: '2019-03-19',
+                    position: 'belowBar',
+                    color: '#2196F3',
+                    shape: 'arrowUp',
+                    text: 'Maximum extension between 350 and 111 day SMA', 
+                },
+                {
+                    time: '2022-12-25',
+                    position: 'belowBar',
+                    color: '#2196F3',
+                    shape: 'arrowUp',
+                    text: 'Maximum extension between 350 and 111 day SMA',
+                },
+            ];
+
             const sma350Series = chart.addLineSeries({
                 color: 'rgba(244, 67, 54, 0.5)',
                 lineWidth: 2,
                 priceLineVisible: false,
                 lastValueVisible: false,
             });
+            
 
             chart.priceScale('right').applyOptions({
                 mode: scaleMode,
@@ -175,7 +206,16 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
             resizeChart(); // Ensure initial resize and fitContent call
             chart.timeScale().fitContent(); // Additional call to fitContent to ensure coverage
             chartRef.current = chart; // Store the chart instance
+
+            // Add or remove markers based on `showMarkers` state
+            if (showMarkers) {
+                bitcoinSeries.setMarkers(markers);
+            } else {
+                bitcoinSeries.setMarkers([]);
+            }
         }
+
+
 
         // Cleanup function
         return () => {
@@ -184,7 +224,7 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
                 chartRef.current = null;
             }
         };
-    }, [chartData, colors, theme.palette.mode]);
+    }, [chartData, colors, theme.palette.mode, showMarkers]);
 
 
     return (
@@ -213,11 +253,18 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
             <div>
                 {
                     !isDashboard && (
-                        <p>
+                        <h3>
                             The PiCycle Top indicator was created by Phillip Swift with the intention of calling the top of the Bitcoin bull market within 3 days.
                             The indicator is calculated by dividing the 111-day moving average of the Bitcoin price by the 350-day moving average of the Bitcoin price.
-                            When the indicator crosses above 1, it is considered a bearish signal, and when it crosses below 1, it is considered a bullish signal.
-                        </p>
+                            When the 111 day SMA crosses above the 350 day SMA, it is considered a bearish signal, and has historically been able to predict the
+                            2 market peaks in 2013, the bull market peak in 2017 and the first market peak in 2021.
+                        
+                            <br/> <br/>The indicator can also be used to get a decent idea of the bottom of the market by marking the largest distance between the 111 and 350 day SMA:   
+                            {/* Button to toggle markers */}
+                            <button onClick={toggleMarkers}>
+                                {showMarkers ? 'Hide Market Bottom Markers' : 'Show Market Bottom Markers'}
+                            </button>
+                        </h3>
                     )   
                 }
             </div>
