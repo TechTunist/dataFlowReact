@@ -126,40 +126,151 @@ const BitcoinLogRegression = ({ isDashboard = false }) => {
         // Select colors based on the theme mode
         const { topColor, bottomColor, lineColor } = theme.palette.mode === 'dark' ? darkThemeColors : lightThemeColors;
  
-        const areaSeries = chart.addAreaSeries({
+        const lineSeries = chart.addLineSeries({
             priceScaleId: 'right',
             topColor: topColor, 
             bottomColor: bottomColor, 
             lineColor: lineColor, 
-            lineWidth: 2, 
+            lineWidth: 2,
+            lastValueVisible: false,
+            priceLineVisible: false,
         });
-        areaSeries.setData(chartData);
+        lineSeries.setData(chartData);
+
+        ////////////////////// Plot Base Logarithmic Trend Line ////////////////////////////
+
+        // Assuming the last date in your dataset is in chartData[chartData.length - 1].time
+        const lastDataPointDate = new Date(chartData[chartData.length - 1].time);
+        const oneYearLater = new Date(lastDataPointDate);
+        oneYearLater.setFullYear(oneYearLater.getFullYear() + 1); // Project one year into the future
+
+        const additionalDays = (oneYearLater - lastDataPointDate) / (24 * 3600 * 1000); // Calculate the additional days to project
 
         // Calculate Logarithmic Regression Points
-        const [a, b] = [0.21733286, 1.54640918]; // Given parameters
-        
-        // Calculate Logarithmic Regression Points
-        const startDate = new Date("2011-08-19").getTime();
-        const logRegressionPoints = chartData.map(({ time, value }) => {
+        const [a, b] = [6.31733286, 2.04640918]; // Given parameters
+
+        // Calculate Base Logarithmic Regression Points
+        const startDateBase = new Date("2008-06-19").getTime();
+        let logRegressionBasePoints = chartData.map(({ time, value }) => {
             const currentTime = new Date(time).getTime();
             // Calculate x as the number of days since the start date
-            const x = (currentTime - startDate) / (24 * 3600 * 1000);
+            const x = (currentTime - startDateBase) / (21 * 3200000 * 2000);
             // Calculate y using the logarithmic regression formula
             const y = Math.exp(a * Math.log(x) + b);
             return { time, value: y };
         });
 
+        // Extend Logarithmic Regression Points by 1 Year
+        const lastX = (new Date(chartData[chartData.length - 1].time).getTime() - startDateBase) / (21 * 3200000 * 2000);
+        const daysInYear = 730;
+        for (let i = 1; i <= daysInYear; i++) {
+            const futureTime = new Date(lastDataPointDate.getTime() + i * (24 * 3600 * 1000));
+            const x = (futureTime.getTime() - startDateBase) / (21 * 3200000 * 2000);
+            const y = Math.exp(a * Math.log(x) + b);
+            // Format the date to "yyyy-mm-dd"
+            const formattedTime = futureTime.toISOString().split('T')[0];
+            logRegressionBasePoints.push({ time: formattedTime, value: y });
+        }
+
         // Plot Logarithmic Regression Line
-        const logRegressionSeries = chart.addLineSeries({
+        const logRegressionBaseSeries = chart.addLineSeries({
             color: 'rgba(255, 0, 0, 1)', // Red for visibility
             lineWidth: 2,
+            lastValueVisible: false,
+            priceLineVisible: false,
         });
-        logRegressionSeries.setData(logRegressionPoints);
-    
+        logRegressionBaseSeries.setData(logRegressionBasePoints);
+        ///////////////////////////////////////////////////////////////
+
+        /////// Calculate Mid Logarithmic Regression Points ///////////
+        oneYearLater.setFullYear(oneYearLater.getFullYear() + 1); // Project one year into the future
+
+        // Calculate Mid Logarithmic Regression Points
+        const [aa, bb] = [6.31733286, 2.04640918]; // Given parameters
+        const startDateMid = new Date("2007-06-19").getTime();
+        let logRegressionMidPoints = chartData.map(({ time, value }) => {
+            const currentTime = new Date(time).getTime();
+            // Calculate x as the number of days since the start date
+            const x = (currentTime - startDateMid) / (14 * 4000000 * 2200);
+            // Calculate y using the logarithmic regression formula
+            const y = Math.exp(aa * Math.log(x) + bb);
+            // Format the date to "yyyy-mm-dd"
+            const formattedTime = new Date(time).toISOString().split('T')[0];
+            return { time: formattedTime, value: y };
+        });
+
+        // Extend Mid Logarithmic Regression Points by 1 Year
+        const lastDataPointTime = new Date(chartData[chartData.length - 1].time).getTime();
+        for (let i = 1; i <= 730; i++) { // Assuming 365 days in a year
+            const futureTime = new Date(lastDataPointDate.getTime() + i * (24 * 3600 * 1000));
+            const x = (futureTime.getTime() - startDateMid) / (14 * 4000000 * 2200);
+            const y = Math.exp(aa * Math.log(x) + bb);
+            const formattedTime = futureTime.toISOString().split('T')[0];
+            logRegressionMidPoints.push({ time: formattedTime, value: y });
+        }
+
+                // Plot Logarithmic Regression Line
+                const logRegressionMidSeries = chart.addLineSeries({
+                    color: 'rgba(255, 0, 255, 1)', // Red for visibility
+                    lineWidth: 2,
+                    lastValueVisible: false,
+                    priceLineVisible: false,
+                });
+
+        // Plot Extended Mid Logarithmic Regression Line
+        logRegressionMidSeries.setData(logRegressionMidPoints);
+        ///////////////////////////////////////////////////////////////
+
+        /////// Calculate Top Logarithmic Regression Points ///////////
+        // Given parameters for top logarithmic regression
+        const [aaa, bbb] = [5.71733286, 2.44640918];
+        const startDateTop = new Date("2006-05-19").getTime();
+
+        // Calculate current top logarithmic regression points
+        let logRegressionTopPoints = chartData.map(({ time, value }) => {
+            const currentTime = new Date(time).getTime();
+            // Calculate x as the number of days since the start date
+            const x = (currentTime - startDateTop) / (22 * 3700000 * 1300);
+            // Calculate y using the logarithmic regression formula
+            const y = Math.exp(aaa * Math.log(x) + bbb);
+            // Format the date to "yyyy-mm-dd"
+            const formattedTime = new Date(time).toISOString().split('T')[0];
+            return { time: formattedTime, value: y };
+        });
+
+        for (let i = 1; i <= 730; i++) { // Assuming 365 days in a year
+            const futureTime = new Date(lastDataPointDate.getTime() + i * (24 * 3600 * 1000));
+            const x = (futureTime.getTime() - startDateTop) / (22 * 3700000 * 1300);
+            const y = Math.exp(aaa * Math.log(x) + bbb);
+            const formattedTime = futureTime.toISOString().split('T')[0];
+            logRegressionTopPoints.push({ time: formattedTime, value: y });
+        }
+
+        // Plot Extended Top Logarithmic Regression Line
+        const logRegressionTopSeries = chart.addLineSeries({
+            color: 'rgba(0, 255, 0, 1)', // Green for the top series
+            lineWidth: 2,
+            lastValueVisible: false,
+            priceLineVisible: false,
+        });
+        logRegressionTopSeries.setData(logRegressionTopPoints);
+        ///////////////////////////////////////////////////////////////
+
         chart.applyOptions({
             handleScroll: !isDashboard,
             handleScale: !isDashboard,
         });
+
+        const priceScaleOptions = {
+            // Example option, adjust as per actual API and needs
+            scaleMargins: {
+                top: 0.1, // Reduces space at the top; adjust the value as needed
+                bottom: 0.1, // Adjusts space at the bottom
+            },
+        };
+
+        // Apply the options to the price scale
+        chart.priceScale('right').applyOptions(priceScaleOptions);
     
         resizeChart(); // Ensure initial resize and fitContent call
         chart.timeScale().fitContent(); // Additional call to fitContent to ensure coverage
@@ -182,16 +293,11 @@ const BitcoinLogRegression = ({ isDashboard = false }) => {
                 height: '30px'
             }}>
                 <div>
-                    {/* The switch and label go here */}
-                    <label className="switch">
-                        <input type="checkbox" checked={scaleMode === 1} onChange={toggleScaleMode} />
-                        <span className="slider round"></span>
-                    </label>
-                    <span className="scale-mode-label" style={{color: colors.primary[100]}}>{scaleMode === 1 ? 'Logarithmic' : 'Linear'}</span>
+                    {/* Placeholder for styling */}
                 </div>
                 {
                     !isDashboard && (
-                        <button onClick={resetChartView} style={{ marginRight: '0px'}}>
+                        <button onClick={resetChartView} className="button-reset">
                             Reset Chart
                         </button>
                     )   
@@ -199,6 +305,21 @@ const BitcoinLogRegression = ({ isDashboard = false }) => {
             </div>
             <div className="chart-container" style={{ position: 'relative', height: 'calc(100% - 40px)', width: '100%' }}>
                 <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
+            </div>
+            <div>
+            {
+                    !isDashboard && (
+                        <h3>
+                            The logarithmic regression of Bitcoin's price history captures the essence of its volatile yet upward-trending journey through upper,
+                            mid, and lower range trendlines. These trendlines illustrate the expansive growth potential, the average trajectory,
+                            and the foundational support levels of Bitcoin's price action over time.
+                            The upper range highlights periods of exuberant market optimism and speculative peaks, while the lower range marks significant buying
+                            opportunities during market corrections. The mid-range trendline serves as a more stable reference point, indicating the long-term growth
+                            path of Bitcoin amidst its cyclical price movements. Together, these logarithmic regression lines offer a comprehensive view of Bitcoin's
+                            historical and potential future price behavior, emphasizing its resilience and the increasing adoption curve.
+                        </h3>
+                    )   
+                }
             </div>
         </div>
     );
