@@ -43,6 +43,7 @@ const Sidebar = () => {
     { title: "PiCycleTop Indicator", to: "/pi-cycle", category: 'Indicators', icon: <WarningOutlinedIcon /> },
     { title: "Fear And Greed Indicator", to: "/fear-and-greed", category: 'Indicators', icon: <WarningOutlinedIcon /> },
     { title: "Bitcoin Logarithmic Regression", to: "/logarithmic-regression", category: 'Indicators', icon: <WarningOutlinedIcon /> },
+    { title: "Bitcoin Risk Colour Chart", to: "/risk-color", category: 'Bitcoin', icon: <WarningOutlinedIcon /> },
   ];
 
   const filteredItems = itemsData.filter(item =>

@@ -15,6 +15,7 @@ import EthereumRisk from "./components/EthereumRisk";
 import PiCycleTop from "./components/PiCycleTop";
 import FearAndGreed from "./components/FearAndGreed";
 import BitcoinLogRegression from "./components/BitcoinLogRegression";
+import BitcoinRiskColor from "./components/BitcoinRiskColor";
 
 
 function App() {
@@ -42,6 +43,7 @@ function App() {
                 <Route path="/pi-cycle" element={<BasicChart ChartComponent={PiCycleTop} />} />
                 <Route path="/fear-and-greed" element={<BasicChart ChartComponent={FearAndGreed} />} />
                 <Route path="/logarithmic-regression" element={<BasicChart ChartComponent={BitcoinLogRegression} />} />
+                <Route path="/risk-color" element={<BasicChart ChartComponent={BitcoinRiskColor} />} />
               </Routes>
             </main>
           </div>

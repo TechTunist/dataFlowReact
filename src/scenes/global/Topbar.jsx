@@ -33,8 +33,10 @@ const Topbar = () => {
           return <Header title="PiCycle Top" subtitle="Top Calling Indicator" />;
         case "/fear-and-greed":
           return <Header title="Fear and Greed" subtitle="Market Sentiment Analyzer" />;
-          case "/logarithmic-regression":
-            return <Header title="Bitcoin" subtitle="Logarithmic Regression" />;
+        case "/logarithmic-regression":
+          return <Header title="Bitcoin" subtitle="Logarithmic Regression" />;
+        case "/risk-color":
+          return <Header title="Bitcoin Risk Colour Chart" subtitle="Colour-Coded Risk Levels" />;
       default:
         return "Welcome"; // Default title or could be a 404 page title
     }
