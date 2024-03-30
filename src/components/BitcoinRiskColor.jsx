@@ -51,11 +51,26 @@ const BitcoinRiskColor = ({ isDashboard = false }) => {
     }, []);
 
     // Adjust the size of the chart based on the context
-    const chartSize = isDashboard ? { width: 720, height: 300 } : { width: 1200, height: 600 };
+    const chartSize = isDashboard ? { width: 720, height: 310 } : { width: 1200, height: 600 };
     const chartMargin = isDashboard ? { l: 50, r: 10, t: 45, b: 50 } : { l: 60, r: 10, t: 45, b: 60 };
 
     return (
-        <Plot
+
+
+        <div style={{ height: '100%' }}> {/* Set a specific height for the entire container */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', textAlign: 'left', marginBottom: '0px', height: '30px' }}>
+            
+            {/* {
+                !isDashboard && (
+                    <button onClick={resetChartView} className="button-reset">
+                        Reset Chart
+                    </button>
+                )   
+            } */}
+        </div>
+        <div className="chart-container" style={{ position: 'relative', height: 'calc(100% - 40px)', width: '100%' }}>
+            {/* <div style={{ height: '100%', width: '100%', zIndex: 1 }} /> */}
+            <Plot
             data={[
                 {
                     type: 'scatter',
@@ -67,23 +82,51 @@ const BitcoinRiskColor = ({ isDashboard = false }) => {
                         colorscale: 'RdBu',
                         cmin: 0,
                         cmax: 1,
-                        size: isDashboard ? 8 : 12,
+                        size: 10,
                     },
                 },
             ]}
             layout={{
-                title: 'Bitcoin Price vs. Risk Level',
-                xaxis: { title: 'Date' },
-                yaxis: { title: 'Price (USD)', type: 'log' },
-                ...chartSize,
-                margin: chartMargin,
+                title: isDashboard ? '' : 'Bitcoin Price vs. Risk Level', // Title only if not on the dashboard
+                xaxis: { title: isDashboard ? '' : 'Date' },
+                yaxis: { title: isDashboard ? '' : 'Price (USD)', type: 'log' },
+                autosize: true, // Make the plot responsive
+                margin: {
+                    l: 50,
+                    r: 50,
+                    b: 30,
+                    t: 30,
+                    pad: 4
+                },
                 plot_bgcolor: '#0c101b',
                 paper_bgcolor: '#0c101b',
                 font: {
                     color: '#ffffff'
-                }
+                },
             }}
+            config={{
+                staticPlot: isDashboard, // Disable interaction when on the dashboard
+                displayModeBar: !isDashboard, // Optionally hide the mode bar when on the dashboard
+                responsive: true
+            }}
+            useResizeHandler={true} // Enable resize handler
+            style={{ width: "100%", height: isDashboard ? "100%" : "600px" }} // Dynamically adjust size
         />
+        </div>
+        <div>
+            {
+                !isDashboard && (
+                    <h3>
+                        The risk metric assesses Bitcoin's investment risk over time by comparing its daily prices to a 374-day moving average.
+                        It does so by calculating the normalized logarithmic difference between the price and the moving average,
+                        producing a score between 0 and 1. A higher score indicates higher risk, and a lower score indicates lower risk.
+                        This method provides a simplified view of when it might be riskier or safer to invest in Bitcoin based on historical price movements.
+                    </h3>
+                )   
+            }
+        </div>
+    </div>
+        
     );
 };
 
