@@ -122,7 +122,7 @@ const EthereumRisk = ({ isDashboard = false }) => {
         // Series for Risk Metric
         const riskSeries = chart.addLineSeries({
             color: 'red',
-            lastValueVisible: false,
+            lastValueVisible: true,
             priceScaleId: 'right',
             lineWidth: 1
         });
