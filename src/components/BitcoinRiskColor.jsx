@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import Plot from 'react-plotly.js';
 import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
+import '../styling/bitcoinChart.css'
 
 const BitcoinRiskColor = ({ isDashboard = false }) => {
     const [chartData, setChartData] = useState([]);
@@ -114,7 +115,7 @@ const BitcoinRiskColor = ({ isDashboard = false }) => {
                 responsive: true
             }}
             useResizeHandler={true} // Enable resize handler
-            style={{ width: "100%", height: isDashboard ? "100%" : "600px" }} // Dynamically adjust size
+            style={{ width: "100%", height: "100%" }} // Dynamically adjust size
         />
         </div>
         <div>
