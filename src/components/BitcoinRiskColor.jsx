@@ -1,8 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import Plot from 'react-plotly.js';
+import { tokens } from "../theme";
+import { useTheme } from "@mui/material";
 
 const BitcoinRiskColor = ({ isDashboard = false }) => {
     const [chartData, setChartData] = useState([]);
+    const theme = useTheme();
+    const colors = tokens(theme.palette.mode);
 
     // Function to calculate the risk metric
     const calculateRiskMetric = (data) => {
@@ -79,7 +83,7 @@ const BitcoinRiskColor = ({ isDashboard = false }) => {
                     y: chartData.map(d => d.value),
                     marker: {
                         color: chartData.map(d => d.Risk),
-                        colorscale: 'RdBu',
+                        colorscale: theme.palette.mode === 'dark' ? 'RdBu' : 'Viridis',
                         cmin: 0,
                         cmax: 1,
                         size: 10,
@@ -98,10 +102,10 @@ const BitcoinRiskColor = ({ isDashboard = false }) => {
                     t: 30,
                     pad: 4
                 },
-                plot_bgcolor: '#0c101b',
-                paper_bgcolor: '#0c101b',
+                plot_bgcolor: colors.primary[700],
+                paper_bgcolor: colors.primary[700],
                 font: {
-                    color: '#ffffff'
+                    color: colors.primary[100]
                 },
             }}
             config={{

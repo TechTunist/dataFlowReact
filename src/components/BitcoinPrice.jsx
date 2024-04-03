@@ -194,3 +194,5 @@ const BitcoinPrice = ({ isDashboard = false }) => {
 };
 
 export default BitcoinPrice;
+
+

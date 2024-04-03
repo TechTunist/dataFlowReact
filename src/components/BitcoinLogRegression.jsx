@@ -13,6 +13,8 @@ const BitcoinLogRegression = ({ isDashboard = false }) => {
     const chartRef = useRef(null); // ref to store chart for use in return statement
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
+    const [tooltipContent, setTooltipContent] = useState('');
+    const [tooltipVisible, setTooltipVisible] = useState(false);
 
     // Function to toggle scale mode
     const toggleScaleMode = () => {
