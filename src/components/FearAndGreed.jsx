@@ -3,7 +3,8 @@ function CryptoFearAndGreedIndex({ isDashboard }) {
     const dashboardStyle = {
         width: '50%', 
         height: '50%', 
-        maxWidth: '50%', // Ensure the image does not exceed its container
+        maxWidth: '50%',
+        minWidth: '300px' // Ensure the image does not exceed its container
     };
 
     // Define alternative styles for non-dashboard view or leave as undefined for default behavior
