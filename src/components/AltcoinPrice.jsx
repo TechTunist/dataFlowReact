@@ -64,8 +64,6 @@ const AltcoinPrice = ({ isDashboard = false }) => {
     
         function fetchData() {
             // if no cached data is found, fetch new data
-            // fetch('https://tunist.pythonanywhere.com/api/btc/price/')
-            // fetch('https://tunist.pythonanywhere.com/api/sol/price/')
             // Adjust the URL dynamically based on the selected altcoin
             fetch(`https://tunist.pythonanywhere.com/api/${selectedCoin.toLowerCase()}/price/`)
             .then(response => response.json())
