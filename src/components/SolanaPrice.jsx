@@ -50,7 +50,7 @@ const SolanaPrice = ({ isDashboard = false }) => {
         function fetchData() {
             // if no cached data is found, fetch new data
             // fetch('https://tunist.pythonanywhere.com/api/btc/price/')
-            fetch('http://127.0.0.1:8000/api/sol/price/')
+            fetch('https://tunist.pythonanywhere.com/api/sol/price/')
             .then(response => response.json())
             .then(data => {
                 const formattedData = data.map(item => ({
