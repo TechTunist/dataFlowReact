@@ -44,7 +44,7 @@ const Sidebar = () => {
     { title: "Fear And Greed Indicator", to: "/fear-and-greed", category: 'Indicators', icon: <WarningOutlinedIcon /> },
     { title: "Bitcoin Logarithmic Regression", to: "/logarithmic-regression", category: 'Indicators', icon: <WarningOutlinedIcon /> },
     { title: "Bitcoin Risk Colour Chart", to: "/risk-color", category: 'Bitcoin', icon: <WarningOutlinedIcon /> },
-    { title: "Solana Chart", to: "/solana", category: 'Altcoins', icon: <BarChartOutlinedIcon /> },
+    { title: "Altcoin Chart", to: "/altcoin-price", category: 'Altcoins', icon: <BarChartOutlinedIcon /> },
   ];
 
   const filteredItems = itemsData.filter(item =>

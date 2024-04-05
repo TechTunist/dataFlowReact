@@ -37,8 +37,8 @@ const Topbar = () => {
           return <Header title="Bitcoin" subtitle="Logarithmic Regression" />;
         case "/risk-color":
           return <Header title="Bitcoin Risk Colour Chart" subtitle="Colour-Coded Risk Levels" />;
-        case "/solana":
-          return <Header title="Solana Chart" subtitle="Simple Solana Chart" />;
+        case "/altcoin-price":
+          return <Header title="Altcoin Charts" subtitle="Simple Altcoin Price Chart" />;
       default:
         return "Welcome"; // Default title or could be a 404 page title
     }
