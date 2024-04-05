@@ -2,6 +2,7 @@ import { Box, Card, CardContent, Typography, Grid, useTheme } from "@mui/materia
 import Header from "../../components/Header";
 import BitcoinRisk from "../../components/BitcoinRisk"; 
 import BitcoinPrice from "../../components/BitcoinPrice";
+import SolanaPrice from "../../components/SolanaPrice";
 import EthereumRisk from "../../components/EthereumRisk"; 
 import EthereumPrice from "../../components/EthereumPrice";
 import PiCycleTop from "../../components/PiCycleTop";
@@ -161,7 +162,23 @@ const Dashboard = () => {
               <Typography variant="body3" color="textSecondary" >
                 Colour coded bitcoin risk levels.
               </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
 
+        {/* Solana Colour Card */}
+        <Grid item xs={12} md={6}>
+          <Card style={{backgroundColor: colors.primary[500]}}>
+            <CardContent>
+              <Typography variant="h5" gutterBottom component={Link} to="/solana" style={{ textDecoration: 'none', color: 'inherit' }}>
+                Solana Chart
+              </Typography>
+              <Box height="350px" m="20px 0 0 0" style={{ margin: "0 0 20px 0" }}>
+                <SolanaPrice isDashboard={true} />
+              </Box>
+              <Typography variant="body3" color="textSecondary" >
+                Solana simple price chart.
+              </Typography>
             </CardContent>
           </Card>
         </Grid>
