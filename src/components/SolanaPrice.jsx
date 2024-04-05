@@ -16,7 +16,7 @@ const SolanaPrice = ({ isDashboard = false }) => {
 
     // Function to toggle scale mode
     const toggleScaleMode = () => {
-        setScaleMode(prevMode => (prevMode === 1 ? 2 : 1));
+        setScaleMode(prevMode => (prevMode === 1 ? 0 : 1));
     };
 
     // Function to reset the chart view
