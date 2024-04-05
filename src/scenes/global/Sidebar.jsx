@@ -48,8 +48,12 @@ const Sidebar = () => {
   ];
 
   const filteredItems = itemsData.filter(item =>
-    item.title.toLowerCase().includes(searchQuery.toLowerCase())
+    (item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (item.category && item.category.toLowerCase().includes(searchQuery.toLowerCase()))) &&
+    item.title !== "Dashboard" // Exclude the Dashboard from the filtered results
   );
+  
+  
 
   const handleSearchChange = (event) => {
     setSearchQuery(event.target.value);
