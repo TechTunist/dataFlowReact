@@ -16,7 +16,7 @@ function CryptoFearAndGreedIndex({ isDashboard }) {
     };
 
     return (
-        <div style={{ maxWidth: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <div style={{ border: '2px solid #a9a9a9', maxWidth: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <img 
                 src="https://alternative.me/crypto/fear-and-greed-index.png" 
                 alt="Latest Crypto Fear & Greed Index"

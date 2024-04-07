@@ -73,7 +73,12 @@ const BitcoinRiskColor = ({ isDashboard = false }) => {
                 )   
             } */}
         </div>
-        <div className="chart-container" style={{ position: 'relative', height: 'calc(100% - 40px)', width: '100%' }}>
+        <div className="chart-container" style={{ 
+                    position: 'relative', 
+                    height: 'calc(100% - 40px)', 
+                    width: '100%', 
+                    border: '2px solid #a9a9a9' // Adds dark border with your specified color
+                    }}> 
             {/* <div style={{ height: '100%', width: '100%', zIndex: 1 }} /> */}
             <Plot
             data={[
