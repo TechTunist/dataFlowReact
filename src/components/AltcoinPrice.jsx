@@ -21,6 +21,7 @@ const AltcoinPrice = ({ isDashboard = false }) => {
         { label: 'Solana', value: 'SOL' },
         { label: 'Ethereum', value: 'ETH' },
         { label: 'Cardano', value: 'ADA' },
+        { label: 'Dogecoin', value: 'DOGE' },
         // Add more altcoins as needed
     ];
 
@@ -196,15 +197,17 @@ const AltcoinPrice = ({ isDashboard = false }) => {
                     <span className="scale-mode-label" style={{color: colors.primary[100]}}>{scaleMode === 1 ? 'Logarithmic' : 'Linear'}</span>
                 </div>
                 <div>
-                    {
-                        !isDashboard && (
+                {
+                    !isDashboard && (
+                        <div className="select-reset-wrapper">
                             <select className="select-reset" value={selectedCoin} onChange={handleSelectChange}>
                                 {altcoins.map((coin) => (
-                                <option key={coin.value} value={coin.value}>{coin.label}</option>
+                                    <option key={coin.value} value={coin.value}>{coin.label}</option>
                                 ))}
                             </select>
-                        )   
-                    }
+                        </div>
+                    )   
+                }
                 </div>
                 <div>
                     {

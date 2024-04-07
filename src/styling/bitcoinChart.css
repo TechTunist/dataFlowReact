@@ -129,9 +129,7 @@ input:checked + .slider:before {
     }
 }
 
-
-
-.select-reset-background:after {
+.select-reset:after {
     content: '▼'; /* Unicode character for down arrow */
     font-size: 0.8rem; /* Match select font size */
     color: #70d8bd; /* Arrow color */
@@ -142,8 +140,28 @@ input:checked + .slider:before {
     pointer-events: none; /* Click through it */
 }
 
-  
-  
+.select-reset-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.select-reset {
+    /* Existing styles */
+    padding-right: 30px; /* Increase right padding to accommodate custom arrow */
+}
+
+.select-reset-wrapper:after {
+    content: '▼';
+    font-size: 0.8rem;
+    color: #70d8bd;
+    position: absolute;
+    right: 15px;
+    top: 35%;
+    transform: translateY(-50%);
+    pointer-events: none;
+}
+
+
   /* Media query for devices with a max-width of 600px (common breakpoint for mobile devices) */
   @media (max-width: 600px) {
     .mobile {
