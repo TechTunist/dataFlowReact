@@ -43,11 +43,17 @@ const Sidebar = () => {
     { title: "PiCycleTop Indicator", to: "/pi-cycle", category: 'Indicators', icon: <WarningOutlinedIcon /> },
     { title: "Fear And Greed Indicator", to: "/fear-and-greed", category: 'Indicators', icon: <WarningOutlinedIcon /> },
     { title: "Bitcoin Logarithmic Regression", to: "/logarithmic-regression", category: 'Indicators', icon: <WarningOutlinedIcon /> },
+    { title: "Bitcoin Risk Colour Chart", to: "/risk-color", category: 'Bitcoin', icon: <WarningOutlinedIcon /> },
+    { title: "Altcoin Chart", to: "/altcoin-price", category: 'Altcoins', icon: <BarChartOutlinedIcon /> },
   ];
 
   const filteredItems = itemsData.filter(item =>
-    item.title.toLowerCase().includes(searchQuery.toLowerCase())
+    (item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (item.category && item.category.toLowerCase().includes(searchQuery.toLowerCase()))) &&
+    item.title !== "Dashboard" // Exclude the Dashboard from the filtered results
   );
+  
+  
 
   const handleSearchChange = (event) => {
     setSearchQuery(event.target.value);

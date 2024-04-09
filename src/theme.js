@@ -70,7 +70,7 @@ export const tokens = (mode) => ({
           400: "#989898",
           500: "#adadad",
           600: "#c2c2c2",
-          700: "#d7d7d7",
+          700: "#e6e6e6", // this is the background colour
           800: "#ececec",
           900: "#f1f1f1", // lightest grey in the new range
         },
@@ -79,9 +79,9 @@ export const tokens = (mode) => ({
           200: "#080b12",
           300: "#0c101b",
           400: "#f2f0f0", // manually changed
-          500: "#E7F7F5 ", // darker shade for light mode
+          500: "#dfdfdf ", // darker shade for light mode
           600: "#4f5560",
-          700: "#c0c0c0", // chart background light grey
+          700: "#f2f2f2", // chart background light grey
           800: "#79808f",
           900: "#8e96a6",
         },
@@ -160,7 +160,7 @@ export const themeSettings = (mode) => {
             },
             // background to charts
             background: {
-              default: colors.grey[700],
+              default: colors.grey[700], // main background color
               // default: colors.greenAccent[900],
             },
           }),

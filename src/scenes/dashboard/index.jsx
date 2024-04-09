@@ -2,11 +2,13 @@ import { Box, Card, CardContent, Typography, Grid, useTheme } from "@mui/materia
 import Header from "../../components/Header";
 import BitcoinRisk from "../../components/BitcoinRisk"; 
 import BitcoinPrice from "../../components/BitcoinPrice";
+import AltcoinPrice from "../../components/AltcoinPrice";
 import EthereumRisk from "../../components/EthereumRisk"; 
 import EthereumPrice from "../../components/EthereumPrice";
 import PiCycleTop from "../../components/PiCycleTop";
 import FearandGreed from "../../components/FearAndGreed";
 import BitcoinLogRegression from "../../components/BitcoinLogRegression";
+import BitcoinRiskColor from "../../components/BitcoinRiskColor";
 import '../../styling/bitcoinChart.css';
 import { tokens } from "../../theme";
 import { Link } from "react-router-dom";
@@ -143,6 +145,40 @@ const Dashboard = () => {
                 Logarithmic Regression trend lines fit to the lower, upper and mid-range of Bitcoin's price history.
               </Typography>
 
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Bitcoin Risk Colour Card */}
+        <Grid item xs={12} md={6}>
+          <Card style={{backgroundColor: colors.primary[500]}}>
+            <CardContent>
+              <Typography variant="h5" gutterBottom component={Link} to="/risk-color" style={{ textDecoration: 'none', color: 'inherit' }}>
+                Bitcoin Risk Colour Chart
+              </Typography>
+              <Box height="350px" m="20px 0 0 0" style={{ margin: "0 0 20px 0" }}>
+                <BitcoinRiskColor isDashboard={true} />
+              </Box>
+              <Typography variant="body3" color="textSecondary" >
+                Colour coded bitcoin risk levels.
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Altcoin Colour Card */}
+        <Grid item xs={12} md={6}>
+          <Card style={{backgroundColor: colors.primary[500]}}>
+            <CardContent>
+              <Typography variant="h5" gutterBottom component={Link} to="/altcoin-price" style={{ textDecoration: 'none', color: 'inherit' }}>
+                Altcoin Chart
+              </Typography>
+              <Box height="350px" m="20px 0 0 0" style={{ margin: "0 0 20px 0" }}>
+                <AltcoinPrice isDashboard={true} />
+              </Box>
+              <Typography variant="body3" color="textSecondary" >
+                Simple price chart for altcoins.
+              </Typography>
             </CardContent>
           </Card>
         </Grid>

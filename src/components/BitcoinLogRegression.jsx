@@ -13,6 +13,8 @@ const BitcoinLogRegression = ({ isDashboard = false }) => {
     const chartRef = useRef(null); // ref to store chart for use in return statement
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
+    const [tooltipContent, setTooltipContent] = useState('');
+    const [tooltipVisible, setTooltipVisible] = useState(false);
 
     // Function to toggle scale mode
     const toggleScaleMode = () => {
@@ -303,7 +305,12 @@ const BitcoinLogRegression = ({ isDashboard = false }) => {
                     )   
                 }
             </div>
-            <div className="chart-container" style={{ position: 'relative', height: 'calc(100% - 40px)', width: '100%' }}>
+            <div className="chart-container" style={{ 
+                    position: 'relative', 
+                    height: 'calc(100% - 40px)', 
+                    width: '100%', 
+                    border: '2px solid #a9a9a9' // Adds dark border with your specified color
+                    }}>
                 <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
             </div>
             <div>

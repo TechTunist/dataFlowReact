@@ -1,4 +1,4 @@
-// BitcoinChart.jsx
+// SolanaChart.jsx
 import React, { useRef, useEffect, useState } from 'react';
 import { createChart } from 'lightweight-charts';
 import '../styling/bitcoinChart.css'
@@ -6,13 +6,29 @@ import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
 
 
-const BitcoinPrice = ({ isDashboard = false }) => {
+const AltcoinPrice = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
     const [chartData, setChartData] = useState([]);
     const [scaleMode, setScaleMode] = useState(1);
     const chartRef = useRef(null); // ref to store chart for use in return statement
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
+    const [selectedCoin, setSelectedCoin] = useState('sol');
+
+    // Hardcoded list of altcoin options
+    const altcoins = [
+        // { label: 'Bitcoin', value: 'BTC' },
+        { label: 'Solana', value: 'SOL' },
+        { label: 'Ethereum', value: 'ETH' },
+        { label: 'Cardano', value: 'ADA' },
+        { label: 'Dogecoin', value: 'DOGE' },
+        // Add more altcoins as needed
+    ];
+
+    // Handle change event for the dropdown
+    const handleSelectChange = (event) => {
+        setSelectedCoin(event.target.value);
+    };
 
     // Function to toggle scale mode
     const toggleScaleMode = () => {
@@ -27,7 +43,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
     };
 
     useEffect(() => {
-        const cacheKey = 'btcData';
+        const cacheKey = selectedCoin.toLowerCase() + 'Data'; // cache data key every time the selected coin changes
         const cachedData = localStorage.getItem(cacheKey);
         const today = new Date();
 
@@ -49,7 +65,8 @@ const BitcoinPrice = ({ isDashboard = false }) => {
     
         function fetchData() {
             // if no cached data is found, fetch new data
-            fetch('https://tunist.pythonanywhere.com/api/btc/price/')
+            // Adjust the URL dynamically based on the selected altcoin
+            fetch(`https://tunist.pythonanywhere.com/api/${selectedCoin.toLowerCase()}/price/`)
             .then(response => response.json())
             .then(data => {
                 const formattedData = data.map(item => ({
@@ -67,7 +84,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                 console.error('Error fetching data: ', error);
             });
         }
-    }, []);
+    }, [selectedCoin]);
 
     useEffect(() => {
         if (chartData.length === 0) return;
@@ -136,6 +153,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
         //     lineColor: 'rgba(38, 198, 218, 1)', 
         //     lineWidth: 2, 
         // });
+
         const areaSeries = chart.addAreaSeries({
             priceScaleId: 'right',
             topColor: topColor, 
@@ -178,26 +196,39 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                     </label>
                     <span className="scale-mode-label" style={{color: colors.primary[100]}}>{scaleMode === 1 ? 'Logarithmic' : 'Linear'}</span>
                 </div>
+                <div>
                 {
                     !isDashboard && (
-                        <button onClick={resetChartView} className="button-reset">
-                            Reset Chart
-                        </button>
+                        <div className="select-reset-wrapper">
+                            <select className="select-reset" value={selectedCoin} onChange={handleSelectChange}>
+                                {altcoins.map((coin) => (
+                                    <option key={coin.value} value={coin.value}>{coin.label}</option>
+                                ))}
+                            </select>
+                        </div>
                     )   
                 }
+                </div>
+                <div>
+                    {
+                        !isDashboard && (
+                            <button onClick={resetChartView} className="button-reset">
+                                Reset Chart
+                            </button>
+                        )   
+                    }
+                </div>               
             </div>
             <div className="chart-container" style={{ 
                     position: 'relative', 
                     height: 'calc(100% - 40px)', 
                     width: '100%', 
                     border: '2px solid #a9a9a9' // Adds dark border with your specified color
-                    }}> 
+                    }}>                
                 <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
             </div>
         </div>
     );
 };
 
-export default BitcoinPrice;
-
-
+export default AltcoinPrice;

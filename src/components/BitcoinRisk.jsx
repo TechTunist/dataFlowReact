@@ -119,7 +119,7 @@ const BitcoinRisk = ({ isDashboard = false }) => {
         // Series for Risk Metric
         const riskSeries = chart.addLineSeries({
             color: 'red',
-            lastValueVisible: false,
+            lastValueVisible: true,
             priceScaleId: 'right',
             lineWidth: 1
         });
@@ -192,7 +192,12 @@ const BitcoinRisk = ({ isDashboard = false }) => {
                     )   
                 }
             </div>
-            <div className="chart-container" style={{ position: 'relative', height: 'calc(100% - 40px)', width: '100%' }}>
+            <div className="chart-container" style={{ 
+                    position: 'relative', 
+                    height: 'calc(100% - 40px)', 
+                    width: '100%', 
+                    border: '2px solid #a9a9a9' // Adds dark border with your specified color
+                    }}> 
                 {/* Adjust the height calculation based on the height of your button and margin */}
                 <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
             </div>
@@ -200,7 +205,7 @@ const BitcoinRisk = ({ isDashboard = false }) => {
                 {
                     !isDashboard && (
                         <h3>
-                            The risk metric in the React component assesses Bitcoin's investment risk over time by comparing its daily prices to a 374-day moving average.
+                            The risk metric assesses Bitcoin's investment risk over time by comparing its daily prices to a 374-day moving average.
                             It does so by calculating the normalized logarithmic difference between the price and the moving average,
                             producing a score between 0 and 1. A higher score indicates higher risk, and a lower score indicates lower risk.
                             This method provides a simplified view of when it might be riskier or safer to invest in Bitcoin based on historical price movements.
