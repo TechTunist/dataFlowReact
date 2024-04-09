@@ -142,6 +142,19 @@ const Sidebar = () => {
             renderSubMenus()
           )}
         </Menu>
+        <Box sx={{ padding: theme.spacing(2), // Use theme spacing for consistent padding
+        }}>
+      {/* Bitcoin Donations Address */}
+      <Box display="flex" justifyContent="center" alignItems="center">
+        <img alt="main-logo" width="100px" height="100px" src={`../../assets/bc1qnekceuntjc2ga3vm8r85l842umzh35xs6yxyvx.JPG`} style={{ cursor: "pointer", borderRadius: "10%", marginTop: '50px', }} />
+      </Box>
+      <Box textAlign="center" padding={theme.spacing(1)}> {/* Adjusted for consistent spacing */}
+        <Typography variant="h2" color={colors.grey[100]} fontWeight="bold" sx={{ m: "10px 0 20px 0" }}>BTC Donations</Typography>
+        <Typography variant="h5" color={colors.greenAccent[500]}>
+          This application is maintained at my own personal expense and effort, and is free to use. If this app provides any value to you, consider donating BTC. The more donations I receive, the more time I will be able to spend building further services into the app. Thanks
+        </Typography>
+      </Box>
+    </Box>
       </ProSidebar>
     </Box>
   );
