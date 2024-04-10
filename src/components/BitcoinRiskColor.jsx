@@ -97,7 +97,7 @@ const BitcoinRiskColor = ({ isDashboard = false }) => {
                 },
             ]}
             layout={{
-                title: isDashboard ? '' : 'Bitcoin Price vs. Risk Level', // Title only if not on the dashboard
+                // title: isDashboard ? '' : 'Bitcoin Price vs. Risk Level',
                 xaxis: { title: isDashboard ? '' : 'Date' },
                 yaxis: { title: isDashboard ? '' : 'Price (USD)', type: 'log' },
                 autosize: true, // Make the plot responsive
@@ -126,12 +126,12 @@ const BitcoinRiskColor = ({ isDashboard = false }) => {
         <div>
             {
                 !isDashboard && (
-                    <h3>
+                    <p className='chart-info'>
                         The risk metric assesses Bitcoin's investment risk over time by comparing its daily prices to a 374-day moving average.
                         It does so by calculating the normalized logarithmic difference between the price and the moving average,
                         producing a score between 0 and 1. A higher score indicates higher risk, and a lower score indicates lower risk.
                         This method provides a simplified view of when it might be riskier or safer to invest in Bitcoin based on historical price movements.
-                    </h3>
+                    </p>
                 )   
             }
         </div>

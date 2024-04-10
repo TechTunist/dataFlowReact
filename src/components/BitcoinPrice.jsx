@@ -115,8 +115,6 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                 });
             }
         });
-
-        console.log(chartData);
     
         chart.priceScale('right').applyOptions({
             mode: scaleMode,

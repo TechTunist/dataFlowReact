@@ -204,12 +204,12 @@ const BitcoinRisk = ({ isDashboard = false }) => {
             <div>
                 {
                     !isDashboard && (
-                        <h3>
+                        <p className='chart-info'>
                             The risk metric assesses Bitcoin's investment risk over time by comparing its daily prices to a 374-day moving average.
                             It does so by calculating the normalized logarithmic difference between the price and the moving average,
                             producing a score between 0 and 1. A higher score indicates higher risk, and a lower score indicates lower risk.
                             This method provides a simplified view of when it might be riskier or safer to invest in Bitcoin based on historical price movements.
-                        </h3>
+                        </p>
                     )   
                 }
             </div>

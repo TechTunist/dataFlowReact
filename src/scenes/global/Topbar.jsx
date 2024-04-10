@@ -36,7 +36,7 @@ const Topbar = () => {
         case "/logarithmic-regression":
           return <Header title="Bitcoin" subtitle="Logarithmic Regression" />;
         case "/risk-color":
-          return <Header title="Bitcoin Risk Colour Chart" subtitle="Colour-Coded Risk Levels" />;
+          return <Header title="Bitcoin Risk (Colour)" subtitle="Colour-Coded Risk Levels" />;
         case "/altcoin-price":
           return <Header title="Altcoin Charts" subtitle="Simple Altcoin Price Chart" />;
       default:

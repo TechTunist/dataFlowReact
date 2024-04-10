@@ -27,13 +27,13 @@ const Dashboard = () => {
         <Grid item xs={12} md={6}>
           <Card style={{backgroundColor: colors.primary[500]}}>
             <CardContent>
-              <Typography variant="h5" gutterBottom component={Link} to="/bitcoin" style={{ textDecoration: 'none', color: 'inherit' }}>
+              <Typography variant="h4" gutterBottom component={Link} to="/bitcoin" style={{ textDecoration: 'none', color: 'inherit' }}>
                 Bitcoin Historical Price
               </Typography>
               <Box height="350px" m="20px 0 0 0" style={{ margin: "0 0 20px 0" }}>
                 <BitcoinPrice isDashboard={true} />
               </Box>
-              <Typography variant="body3" color="textSecondary" >
+              <Typography variant="body3" color="textSecondary" className='dashboard-info'>
                 A simple chart of the entire bitcoin daily close price history.
               </Typography>
 
@@ -45,14 +45,14 @@ const Dashboard = () => {
         <Grid item xs={12} md={6}>
           <Card style={{backgroundColor: colors.primary[500]}}>
             <CardContent>
-              <Typography variant="h5" gutterBottom component={Link} to="/risk" style={{ textDecoration: 'none', color: 'inherit' }}>
+              <Typography variant="h4" gutterBottom component={Link} to="/risk" style={{ textDecoration: 'none', color: 'inherit' }}>
                 Bitcoin Risk Metric
               </Typography>
               <Box height="350px" m="20px 0 0 0" style={{ margin: "0 0 20px 0" }}>
                 <BitcoinRisk isDashboard={true} />
               </Box>
               <Typography
-                variant="body3" color="textSecondary">
+                variant="body3" color="textSecondary" className='dashboard-info'>
                 The risk metric demonstrates the risk of holding bitcoin at any given time.
                 The closer to 1, the higher the risk.
               </Typography>
@@ -66,13 +66,13 @@ const Dashboard = () => {
         <Grid item xs={12} md={6}>
           <Card style={{backgroundColor: colors.primary[500]}}>
             <CardContent>
-              <Typography variant="h5" gutterBottom component={Link} to="/ethereum" style={{ textDecoration: 'none', color: 'inherit' }}>
+              <Typography variant="h4" gutterBottom component={Link} to="/ethereum" style={{ textDecoration: 'none', color: 'inherit' }}>
                 Ethereum Historical Price
               </Typography>
               <Box height="350px" m="20px 0 20px 0">
                 <EthereumPrice isDashboard={true} />
               </Box>
-              <Typography variant="body3" color="textSecondary">
+              <Typography variant="body3" color="textSecondary" className='dashboard-info'>
                 A simple chart of the entire Ethereum daily close price history.
               </Typography>
             </CardContent>
@@ -83,13 +83,13 @@ const Dashboard = () => {
         <Grid item xs={12} md={6}>
           <Card style={{backgroundColor: colors.primary[500]}}>
             <CardContent>
-              <Typography variant="h5" gutterBottom component={Link} to="/risk-eth" style={{ textDecoration: 'none', color: 'inherit' }}>
+              <Typography variant="h4" gutterBottom component={Link} to="/risk-eth" style={{ textDecoration: 'none', color: 'inherit' }}>
                 Ethereum Risk Metric
               </Typography>
               <Box height="350px" m="20px 0 20px 0">
                 <EthereumRisk isDashboard={true} />
               </Box>
-              <Typography variant="body3" color="textSecondary">
+              <Typography variant="body3" color="textSecondary" className='dashboard-info'>
                 The risk metric demonstrates the risk of holding Ethereum at any given time.
                 The closer to 1, the higher the risk.
               </Typography>
@@ -101,13 +101,13 @@ const Dashboard = () => {
         <Grid item xs={12} md={6}>
           <Card style={{backgroundColor: colors.primary[500]}}>
             <CardContent>
-              <Typography variant="h5" gutterBottom component={Link} to="/pi-cycle" style={{ textDecoration: 'none', color: 'inherit' }}>
+              <Typography variant="h4" gutterBottom component={Link} to="/pi-cycle" style={{ textDecoration: 'none', color: 'inherit' }}>
                 PiCycle Top Indicator
               </Typography>
               <Box height="350px" m="20px 0 0 0" style={{ margin: "0 0 20px 0" }}>
                 <PiCycleTop isDashboard={true} />
               </Box>
-              <Typography variant="body3" color="textSecondary" >
+              <Typography variant="body3" color="textSecondary" className='dashboard-info'>
                 The PiCycle Top Indicator was created by Philip Swift and is used to identify the top of the bitcoin market to within 3 days.
               </Typography>
             </CardContent>
@@ -118,13 +118,13 @@ const Dashboard = () => {
         <Grid item xs={12} md={6}>
           <Card style={{backgroundColor: colors.primary[500]}}>
             <CardContent>
-              <Typography variant="h5" gutterBottom component={Link} to="/fear-and-greed" style={{ textDecoration: 'none', color: 'inherit' }}>
+              <Typography variant="h4" gutterBottom component={Link} to="/fear-and-greed" style={{ textDecoration: 'none', color: 'inherit' }}>
                 Fear and Greed Indicator
               </Typography>
               <Box height="350px" m="20px 0 0 0" style={{ margin: "0 0 20px 0" }}>
                 <FearandGreed isDashboard={true} />
               </Box>
-              <Typography variant="body3" color="textSecondary" >
+              <Typography variant="body3" color="textSecondary" className='dashboard-info'>
                 The Feed and Greed index is a metric that measures the sentiment of the market by analyzing various sources of data
               </Typography>
             </CardContent>
@@ -135,13 +135,13 @@ const Dashboard = () => {
         <Grid item xs={12} md={6}>
           <Card style={{backgroundColor: colors.primary[500]}}>
             <CardContent>
-              <Typography variant="h5" gutterBottom component={Link} to="/logarithmic-regression" style={{ textDecoration: 'none', color: 'inherit' }}>
+              <Typography variant="h4" gutterBottom component={Link} to="/logarithmic-regression" style={{ textDecoration: 'none', color: 'inherit' }}>
                 Bitcoin Logarithmic Regression
               </Typography>
               <Box height="350px" m="20px 0 0 0" style={{ margin: "0 0 20px 0" }}>
                 <BitcoinLogRegression isDashboard={true} />
               </Box>
-              <Typography variant="body3" color="textSecondary" >
+              <Typography variant="body3" color="textSecondary" className='dashboard-info'>
                 Logarithmic Regression trend lines fit to the lower, upper and mid-range of Bitcoin's price history.
               </Typography>
 
@@ -153,13 +153,13 @@ const Dashboard = () => {
         <Grid item xs={12} md={6}>
           <Card style={{backgroundColor: colors.primary[500]}}>
             <CardContent>
-              <Typography variant="h5" gutterBottom component={Link} to="/risk-color" style={{ textDecoration: 'none', color: 'inherit' }}>
+              <Typography variant="h4" gutterBottom component={Link} to="/risk-color" style={{ textDecoration: 'none', color: 'inherit' }}>
                 Bitcoin Risk Colour Chart
               </Typography>
               <Box height="350px" m="20px 0 0 0" style={{ margin: "0 0 20px 0" }}>
                 <BitcoinRiskColor isDashboard={true} />
               </Box>
-              <Typography variant="body3" color="textSecondary" >
+              <Typography variant="body3" color="textSecondary" className='dashboard-info'>
                 Colour coded bitcoin risk levels.
               </Typography>
             </CardContent>
@@ -170,13 +170,13 @@ const Dashboard = () => {
         <Grid item xs={12} md={6}>
           <Card style={{backgroundColor: colors.primary[500]}}>
             <CardContent>
-              <Typography variant="h5" gutterBottom component={Link} to="/altcoin-price" style={{ textDecoration: 'none', color: 'inherit' }}>
+              <Typography variant="h4" gutterBottom component={Link} to="/altcoin-price" style={{ textDecoration: 'none', color: 'inherit' }}>
                 Altcoin Chart
               </Typography>
               <Box height="350px" m="20px 0 0 0" style={{ margin: "0 0 20px 0" }}>
                 <AltcoinPrice isDashboard={true} />
               </Box>
-              <Typography variant="body3" color="textSecondary" >
+              <Typography variant="body3" color="textSecondary" className='dashboard-info'>
                 Simple price chart for altcoins.
               </Typography>
             </CardContent>

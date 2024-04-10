@@ -14,6 +14,7 @@ const AltcoinPrice = ({ isDashboard = false }) => {
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
     const [selectedCoin, setSelectedCoin] = useState('sol');
+    const [tooltipData, setTooltipData] = useState(null);
 
     // Hardcoded list of altcoin options
     const altcoins = [
@@ -107,6 +108,29 @@ const AltcoinPrice = ({ isDashboard = false }) => {
             timeScale: {
                 minBarSpacing: 0.001,
             },
+        });
+
+        // update tooltip data on crosshairMove event
+        chart.subscribeCrosshairMove(param => {
+            if (
+                param.point === undefined ||
+                !param.time ||
+                param.point.x < 0 ||
+                param.point.x > chartContainerRef.current.clientWidth ||
+                param.point.y < 0 ||
+                param.point.y > chartContainerRef.current.clientHeight
+            ) {
+                setTooltipData(null);
+            } else {
+                const dateStr = param.time;
+                const data = param.seriesData.get(areaSeries);
+                setTooltipData({
+                    date: dateStr,
+                    price: data.value,
+                    x: param.point.x,
+                    y: param.point.y,
+                });
+            }
         });
     
         chart.priceScale('right').applyOptions({
@@ -227,6 +251,20 @@ const AltcoinPrice = ({ isDashboard = false }) => {
                     }}>                
                 <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
             </div>
+            {/* Conditional Rendering for the Tooltip */}
+            {!isDashboard && tooltipData && (
+                <div
+                    className="tooltip"
+                    style={{
+                        left: `${tooltipData.x > (chartContainerRef.current.clientWidth / 2) ? tooltipData.x + (chartContainerRef.current.clientWidth / 10) : tooltipData.x + (chartContainerRef.current.clientWidth / 5)}px`,
+                        top: `${tooltipData.y + 100}px`,                        
+                    }}
+                >
+                    <div style={{fontSize: '15px' }}>{selectedCoin}</div>
+                    <div style={{fontSize: '20px' }}>${tooltipData.price.toFixed(3)}</div>
+                    <div>{tooltipData.date.toString()}</div>
+                </div>
+            )}
         </div>
     );
 };

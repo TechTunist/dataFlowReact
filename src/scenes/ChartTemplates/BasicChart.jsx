@@ -9,8 +9,8 @@ const BasicChart = ({ ChartComponent }) => {
         sx={{
           height: "75vh", // Default height
           maxHeight: {
-            xs: "55vh", // On extra-small devices (mobile)
-            sm: "75vh", // On small devices and up, use the default height
+            xs: "35vh", // On extra-small devices (mobile)
+            sm: "70vh", // On small devices and up, use the default height
           },
         }}
       >
