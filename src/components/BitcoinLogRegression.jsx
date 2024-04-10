@@ -13,8 +13,7 @@ const BitcoinLogRegression = ({ isDashboard = false }) => {
     const chartRef = useRef(null); // ref to store chart for use in return statement
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
-    const [tooltipContent, setTooltipContent] = useState('');
-    const [tooltipVisible, setTooltipVisible] = useState(false);
+    const [tooltipData, setTooltipData] = useState(null);
 
     // Function to toggle scale mode
     const toggleScaleMode = () => {
@@ -93,6 +92,39 @@ const BitcoinLogRegression = ({ isDashboard = false }) => {
                 minBarSpacing: 0.001,
             },
         });
+
+        // update tooltip data on crosshairMove event
+        chart.subscribeCrosshairMove(param => {
+            if (
+                !param.time ||
+                param.point.x < 0 ||
+                param.point.x > chartContainerRef.current.clientWidth ||
+                param.point.y < 0 ||
+                param.point.y > chartContainerRef.current.clientHeight
+            ) {
+                setTooltipData(null);
+            } else {
+                const dateStr = param.time;
+                // Safely attempt to access price data
+                const priceData = param.seriesData.get(priceSeries);
+                const price = priceData?.value; // Use optional chaining to avoid errors when priceData is undefined
+        
+                const logBaseData = param.seriesData.get(logRegressionBaseSeries);
+                const logMidData = param.seriesData.get(logRegressionMidSeries);
+                const logTopData = param.seriesData.get(logRegressionTopSeries);
+        
+                // Even if price data is undefined, we can still set tooltip data for the regression lines
+                setTooltipData({
+                    date: dateStr,
+                    price, // May be undefined, which is handled in rendering
+                    logBase: logBaseData?.value, // Assuming logBaseData could also potentially be undefined
+                    logMid: logMidData?.value,
+                    logTop: logTopData?.value,
+                    x: param.point.x,
+                    y: param.point.y,
+                });
+            }
+        });
     
         chart.priceScale('right').applyOptions({
             mode: scaleMode,
@@ -128,7 +160,7 @@ const BitcoinLogRegression = ({ isDashboard = false }) => {
         // Select colors based on the theme mode
         const { topColor, bottomColor, lineColor } = theme.palette.mode === 'dark' ? darkThemeColors : lightThemeColors;
  
-        const lineSeries = chart.addLineSeries({
+        const priceSeries = chart.addLineSeries({
             priceScaleId: 'right',
             topColor: topColor, 
             bottomColor: bottomColor, 
@@ -137,7 +169,7 @@ const BitcoinLogRegression = ({ isDashboard = false }) => {
             lastValueVisible: false,
             priceLineVisible: false,
         });
-        lineSeries.setData(chartData);
+        priceSeries.setData(chartData);
 
         ////////////////////// Plot Base Logarithmic Trend Line ////////////////////////////
 
@@ -313,6 +345,22 @@ const BitcoinLogRegression = ({ isDashboard = false }) => {
                     }}>
                 <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
             </div>
+            {/* Conditional Rendering for the Tooltip */}
+            {!isDashboard && tooltipData && (
+                <div
+                    className="tooltip"
+                    style={{
+                        left: `${tooltipData.x > (chartContainerRef.current.clientWidth / 2) ? tooltipData.x + (chartContainerRef.current.clientWidth / 10) : tooltipData.x + (chartContainerRef.current.clientWidth / 5)}px`,
+                        top: `${tooltipData.y + 200}px`,                        
+                    }}
+                >
+                    {tooltipData.price && <div>Actual Price: ${tooltipData.price.toFixed(2)}</div>}
+                    {tooltipData.logBase && <div style={{color: 'lime'}}>Upper Band: ${tooltipData.logTop.toFixed(2)}</div>}
+                    {tooltipData.logMid && <div style={{color: 'violet'}}>Mid Band: ${tooltipData.logMid.toFixed(2)}</div>}
+                    {tooltipData.logTop && <div style={{color: 'red'}}>Lower Band: ${tooltipData.logBase.toFixed(2)}</div>}
+                    {tooltipData.date && <div style={{fontSize: '13px'}}>{tooltipData.date}</div>}
+                </div>
+            )}
             <div>
             {
                     !isDashboard && (
