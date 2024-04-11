@@ -106,7 +106,7 @@ input:checked + .slider:before {
     border: 2px solid #70d8bd; /* Set border to match button */
     background-color: transparent; /* Make background transparent */
     padding: 5px 15px; /* Adjust padding to match button */
-    font-size: 1.2rem; /* Font size to match button */
+    font-size: 1.1rem; /* Font size to match button */
     border-radius: 5px; /* Border-radius to match button */
     cursor: pointer; /* Cursor to pointer to indicate it's clickable */
     appearance: none; /* Remove default browser styles */

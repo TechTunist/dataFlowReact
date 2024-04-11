@@ -13,7 +13,7 @@ const AltcoinPrice = ({ isDashboard = false }) => {
     const chartRef = useRef(null); // ref to store chart for use in return statement
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
-    const [selectedCoin, setSelectedCoin] = useState('sol');
+    const [selectedCoin, setSelectedCoin] = useState('SOL');
     const [tooltipData, setTooltipData] = useState(null);
     const [denominator, setDenominator] = useState('USD');
     const [btcData, setBtcData] = useState([]);
@@ -221,15 +221,6 @@ const AltcoinPrice = ({ isDashboard = false }) => {
         // Select colors based on the theme mode
         const { topColor, bottomColor, lineColor } = theme.palette.mode === 'dark' ? darkThemeColors : lightThemeColors;
 
-    
-        // const areaSeries = chart.addAreaSeries({
-        //     priceScaleId: 'right',
-        //     topColor: 'rgba(38, 198, 218, 0.56)', 
-        //     bottomColor: 'rgba(38, 198, 218, 0.04)', 
-        //     lineColor: 'rgba(38, 198, 218, 1)', 
-        //     lineWidth: 2, 
-        // });
-
         const areaSeries = chart.addAreaSeries({
             priceScaleId: 'right',
             topColor: topColor, 
@@ -344,7 +335,11 @@ const AltcoinPrice = ({ isDashboard = false }) => {
                     }}
                 >
                     <div style={{fontSize: '15px' }}>{selectedCoin}</div>
-                    <div style={{fontSize: '20px' }}>${tooltipData.price.toFixed(3)}</div>
+                    {/* Update currency symbol and decimal places based on the denominator */}
+                    <div style={{fontSize: '20px' }}>
+                        {denominator === 'BTC' ? '₿' : '$'}
+                        {denominator === 'BTC' ? tooltipData.price.toFixed(6) : tooltipData.price.toFixed(3)}
+                    </div>
                     <div>{tooltipData.date.toString()}</div>
                 </div>
             )}
