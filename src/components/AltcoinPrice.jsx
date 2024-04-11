@@ -297,7 +297,7 @@ const AltcoinPrice = ({ isDashboard = false }) => {
                 {
                     !isDashboard && (
                         <button className="select-reset" onClick={() => setDenominator(denominator === 'USD' ? 'BTC' : 'USD')}>
-                            {selectedCoin} / {denominator} pair
+                            {selectedCoin} / {denominator}
                         </button>
 
                     )   

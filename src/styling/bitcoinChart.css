@@ -115,6 +115,7 @@ input:checked + .slider:before {
     box-shadow: none; /* No shadow by default, to match button */
     transition: border-color 0.3s ease, color 0.3s ease; /* Transition for color and border */
     outline: none; /* Remove outline */
+    padding-right: 30px; /* Increase right padding to accommodate custom arrow */
 }
 
 .select-reset:hover {
@@ -130,25 +131,9 @@ input:checked + .slider:before {
     }
 }
 
-.select-reset:after {
-    content: '▼'; /* Unicode character for down arrow */
-    font-size: 0.8rem; /* Match select font size */
-    color: #70d8bd; /* Arrow color */
-    position: absolute; /* Position it within the parent */
-    right: 10px; /* Distance from right */
-    top: 50%; /* Center vertically */
-    transform: translateY(-50%); /* Center correctly */
-    pointer-events: none; /* Click through it */
-}
-
 .select-reset-wrapper {
     position: relative;
     display: inline-block;
-}
-
-.select-reset {
-    /* Existing styles */
-    padding-right: 30px; /* Increase right padding to accommodate custom arrow */
 }
 
 .select-reset-wrapper:after {
@@ -202,5 +187,13 @@ input:checked + .slider:before {
         height: '20%';
         width: '100%';
         z-index: 1;
+    }
+
+    .select-reset,
+    .select-pair,
+    .select-reset-wrapper:after {
+        font-size: 0.8rem; /* Adjust font size for mobile */
+        padding: 5px;
+        content: '';
     }
   }
