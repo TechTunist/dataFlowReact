@@ -265,7 +265,14 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
                 height: '30px'
                 }}>
                 <div>
-                    {/* placeholder for styling purposes */}
+                    {/* Button to toggle markers */}
+                    {
+                        !isDashboard && (
+                        <button onClick={toggleMarkers} className="button-reset">
+                                    {showMarkers ? 'Hide Markers' : 'Show Markers'}
+                        </button>)
+                        
+                    }
                 </div>
                 {
                     !isDashboard && (
@@ -292,13 +299,6 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
                             When the 111 day SMA crosses above the 350 day SMA, it is considered a bearish signal, and has historically been able to predict the
                             2 market peaks in 2013, the bull market peak in 2017 and the first market peak in 2021.
                             <br/>The market bottom can also be indicated by the maximum difference between the 111 day SMA and the 350 day SMA.
-                        
-                            {/* Button to toggle markers */}
-                            <button onClick={toggleMarkers} className="button-reset">
-                                {showMarkers ? 'Hide Markers' : 'Show Markers'}
-                            </button>
-                            <br/> <br/>
-                            <br/> <br/>
                         </p>
                     )   
                 }

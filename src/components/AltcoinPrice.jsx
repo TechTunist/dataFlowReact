@@ -15,6 +15,10 @@ const AltcoinPrice = ({ isDashboard = false }) => {
     const colors = tokens(theme.palette.mode);
     const [selectedCoin, setSelectedCoin] = useState('sol');
     const [tooltipData, setTooltipData] = useState(null);
+    const [denominator, setDenominator] = useState('USD');
+    const [btcData, setBtcData] = useState([]);
+    const [altData, setAltData] = useState([]);
+
 
     // Hardcoded list of altcoin options
     const altcoins = [
@@ -46,6 +50,11 @@ const AltcoinPrice = ({ isDashboard = false }) => {
     useEffect(() => {
         const cacheKey = selectedCoin.toLowerCase() + 'Data'; // cache data key every time the selected coin changes
         const cachedData = localStorage.getItem(cacheKey);
+
+        // for bitcoin data
+        const cacheKeyBtc = 'btcData';
+        const cachedDataBtc = localStorage.getItem(cacheKeyBtc);
+
         const today = new Date();
 
         if (cachedData) {
@@ -54,17 +63,57 @@ const AltcoinPrice = ({ isDashboard = false }) => {
 
             if (lastCachedDate.setHours(0, 0, 0, 0) === today.setHours(0, 0, 0, 0)) {
                 // if cached data is found, parse it and set it to the state
-                setChartData(JSON.parse(cachedData));
+                setChartData(JSON.parse(cachedData)); // data to be plotted on chart
+                setAltData(JSON.parse(cachedData)); // selected altcoin data stored in state
             } else {
-                fetchData();
+                fetchAltData();
             }
             
         } else {
-            fetchData();
+            fetchAltData();
         }
 
-    
-        function fetchData() {
+        if (cachedDataBtc) {
+            const parsedDataBtc = JSON.parse(cachedDataBtc);
+            const lastCachedDateBtc = new Date(parsedDataBtc[parsedDataBtc.length - 1].time);
+
+            if (lastCachedDateBtc.setHours(0, 0, 0, 0) === today.setHours(0, 0, 0, 0)) {
+                // if cached data is found, parse it and set it to the state
+                // setChartData(JSON.parse(cachedDataBtc));
+                setBtcData(JSON.parse(cachedDataBtc));
+                
+            } else {
+                fetchBtcData();
+            }
+            
+        } else {
+            fetchBtcData();
+        }
+
+        // fetch bitcoin price data to act as denominator
+        function fetchBtcData() {
+            // if no cached data is found, fetch new data
+            // Adjust the URL dynamically based on the selected altcoin
+            fetch('https://tunist.pythonanywhere.com/api/btc/price/')
+            .then(response => response.json())
+            .then(data => {
+                const formattedData = data.map(item => ({
+                    time: item.date,
+                    value: parseFloat(item.close)
+                }));             
+                
+                setBtcData(formattedData);
+
+                // save the data to local storage
+                localStorage.setItem(cacheKeyBtc, JSON.stringify(formattedData));
+
+            })
+            .catch(error => {
+                console.error('Error fetching data: ', error);
+            });
+        }
+
+        function fetchAltData() {
             // if no cached data is found, fetch new data
             // Adjust the URL dynamically based on the selected altcoin
             fetch(`https://tunist.pythonanywhere.com/api/${selectedCoin.toLowerCase()}/price/`)
@@ -73,9 +122,10 @@ const AltcoinPrice = ({ isDashboard = false }) => {
                 const formattedData = data.map(item => ({
                     time: item.date,
                     value: parseFloat(item.close)
-                }));             
+                }));  
                 
-                setChartData(formattedData);
+                setChartData(formattedData); // data to be plotted on chart
+                setAltData(formattedData); // selected altcoin data stored in state
 
                 // save the data to local storage
                 localStorage.setItem(cacheKey, JSON.stringify(formattedData));
@@ -85,8 +135,10 @@ const AltcoinPrice = ({ isDashboard = false }) => {
                 console.error('Error fetching data: ', error);
             });
         }
-    }, [selectedCoin]);
+    }, [selectedCoin, denominator]
+);
 
+    
     useEffect(() => {
         if (chartData.length === 0) return;
     
@@ -203,6 +255,27 @@ const AltcoinPrice = ({ isDashboard = false }) => {
         };
     }, [chartData, scaleMode, isDashboard, theme.palette.mode ]);
 
+
+    const computeNewDataset = () => {
+        if (denominator === 'USD') {
+            setChartData(altData); // Directly use altData if USD is the denominator
+            return;
+        }
+    
+        // For BTC as the denominator
+        const newDataset = altData.map(altEntry => {
+            const btcEntry = btcData.find(btc => btc.time === altEntry.time);
+            return btcEntry ? { ...altEntry, value: altEntry.value / btcEntry.value } : null;
+        }).filter(Boolean); // Remove any null entries where BTC data was not found
+    
+        setChartData(newDataset);
+    };
+    
+    useEffect(() => {
+        computeNewDataset();
+    }, [selectedCoin, denominator, btcData, altData]); // Re-compute dataset when any of these dependencies change
+    
+
     return (
         <div style={{ height: '100%' }}>
             <div style={{ 
@@ -219,6 +292,16 @@ const AltcoinPrice = ({ isDashboard = false }) => {
                         <span className="slider round"></span>
                     </label>
                     <span className="scale-mode-label" style={{color: colors.primary[100]}}>{scaleMode === 1 ? 'Logarithmic' : 'Linear'}</span>
+                </div>
+                <div>
+                {
+                    !isDashboard && (
+                        <button className="select-reset" onClick={() => setDenominator(denominator === 'USD' ? 'BTC' : 'USD')}>
+                            {selectedCoin} / {denominator} pair
+                        </button>
+
+                    )   
+                }
                 </div>
                 <div>
                 {
