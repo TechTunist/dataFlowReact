@@ -177,7 +177,7 @@ const Dashboard = () => {
                 <AltcoinPrice isDashboard={true} />
               </Box>
               <Typography variant="body3" color="textSecondary" className='dashboard-info'>
-                Simple price chart for altcoins.
+                Simple price chart for a selection of altcoins and their USD / BTC pairs.
               </Typography>
             </CardContent>
           </Card>
