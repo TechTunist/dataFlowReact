@@ -37,14 +37,18 @@
 // export default CryptoFearAndGreedIndex;
 
 
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import GaugeChart from 'react-gauge-chart'
+import { tokens } from "../theme";
+import { useTheme } from "@mui/material";
+
 
 function CryptoFearAndGreedIndex({ isDashboard }) {
   // Assuming `fearAndGreedValue` is a value between 0 and 1, where 0 represents "Extreme Fear" and 1 represents "Extreme Greed"
   // You might need to normalize your actual Fear and Greed index value to this range.
-  const fearAndGreedValueExample = 0.75; // Example value
   const [fearAndGreedValue, setFearAndGreedValue] = useState([]);
+  const theme = useTheme();
+  const colors = tokens(theme.palette.mode);
 
 
     // Fetch and process data
@@ -89,23 +93,18 @@ function CryptoFearAndGreedIndex({ isDashboard }) {
     width: isDashboard ? '50%' : '90%', // Adjust based on your styling needs
   };
 
-  const value = fearAndGreedValue.length ? fearAndGreedValue[fearAndGreedValue.length - 1].value / 100 : 0;
+  let value = fearAndGreedValue.length ? fearAndGreedValue[fearAndGreedValue.length - 1].value / 100 : 0;
   const value_classification = fearAndGreedValue.length ? fearAndGreedValue[fearAndGreedValue.length - 1].value_classification : '';
 
-//   return (
-//     <div style={{ border: '2px solid #a9a9a9', maxWidth: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingLeft: '8%', paddingRight: '8%' }}>
-//       <GaugeChart id="gauge-chart3"
-//         nrOfLevels={10}
-//         colors={["green", "red"]}
-//         arcWidth={0.3}
-//         percent={value}
-//         needleColor={"#4cceac"}
-//         needleBaseColor={"#345243"} 
-//         />
-        
+  const gaugeColors = ["#4BC0C8", "#33D1FF", "#66A3FF", "#9996FF", "#CC89FF", "#FF7DFF", "#FF61C3", "#FF4590", "#FF295D", "#FF0033", "#FF0033"];
 
-//     </div>
-//   );
+  const getColorByPercent = (percent) => {
+    const index = Math.min(Math.floor(percent * gaugeColors.length), gaugeColors.length - 1);
+    return gaugeColors[index];
+  };
+
+  const textColor = getColorByPercent(value);
+
 return (
     <div style={{ height: '100%' }}>
         <div style={{ 
@@ -120,25 +119,39 @@ return (
             </div>
            
         </div>
+        
         <div className="chart-container" style={{ 
-                position: 'relative',
-                height: 'calc(100% - 40px)', 
-                width: '100%', 
-                border: '2px solid #a9a9a9' // Adds dark border with your specified color
-                }}> 
-            <GaugeChart id="gauge-chart3"
-                nrOfLevels={10}
-                colors={["green", "red"]}
-                arcWidth={0.3}
-                percent={value}
-                needleColor={"#4cceac"}
-                needleBaseColor={"#345243"} 
+            position: 'relative',
+            height: 'calc(100% - 40px)', 
+            width: '100%', 
+            border: '2px solid #a9a9a9', // Adds dark border with your specified color
+            display: 'flex', 
+            flexDirection: 'column', // Stack children vertically
+            justifyContent: 'center', // Centers vertically
+            alignItems: 'center', // Centers horizontally
+        }}> 
+            <div style={{
+                width: '100%', // Takes the full width of the container
+                maxWidth: isDashboard ? '500px' : '1000px', // Maximum width the gauge can grow to only if isDashboard is true
+                display: 'flex',
+                justifyContent: 'center',
+            }}>
+                <GaugeChart id="gauge-chart3"
+                    nrOfLevels={10}
+                    colors={["#4BC0C8",  "#FF0033"]}
+                    arcWidth={0.3}
+                    percent={value}
+                    needleColor="#4BC0C8"
+                    needleBaseColor="#4BC0C8"
+                    // textColor={colors.greenAccent[500]}
+                    textColor={textColor}
                 />
+            </div>
+            <h1 style={{ marginTop: '5px', color: textColor }}>{value_classification}</h1>
         </div>
         {
             !isDashboard && (
-                <p className='chart-info' style={{ marginTop: '20px', textAlign: 'center', width: '90%' }}> {/* Adjust width as necessary */}
-                <h1>{value_classification}</h1>
+                <p className='chart-info' style={{ marginTop: '20px', textAlign: 'center', width: '100%' }}> {/* Adjust width as necessary */}
                     The Fear and Greed index is a metric that measures the sentiment of the market by analyzing various sources of data, including surveys, social media, volatility, market momentum, and volume among others.
                     <br/> The information has been provided here: <a href="https://alternative.me/crypto/fear-and-greed-index/">https://alternative.me/crypto/fear-and-greed-index/</a>
                 </p>

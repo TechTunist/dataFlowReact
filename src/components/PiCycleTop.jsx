@@ -113,13 +113,13 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
 
             // Add the series to the chart
             const bitcoinSeries = chart.addLineSeries({
-                color: 'rgba(255, 207, 64, 1)',
+                color: '#4ba1c8',
                 lineWidth: 2,
                 priceLineVisible: false,
             });
 
             const sma111Series = chart.addLineSeries({
-                color: 'rgba(76, 175, 80, 0.5)',
+                color: '#66ff00',
                 lineWidth: 2,
                 priceLineVisible: false,
                 lastValueVisible: false,
@@ -179,7 +179,7 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
             ];
 
             const sma350Series = chart.addLineSeries({
-                color: 'rgba(244, 67, 54, 0.5)',
+                color: '#fe2bc9',
                 lineWidth: 2,
                 priceLineVisible: false,
                 lastValueVisible: false,
@@ -189,6 +189,10 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
             chart.priceScale('right').applyOptions({
                 mode: scaleMode,
                 borderVisible: false,
+                scaleMargins: {
+                    top: 0.1, // 10% empty space at the top
+                    bottom: 0.1 // 10% empty space at the bottom
+                },
             });
         
             const resizeChart = () => {
@@ -205,20 +209,20 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
             window.addEventListener('resize', resetChartView);
     
              // Define your light and dark theme colors for the area series
-             const lightThemeColors = {
-                topColor: 'rgba(255, 165, 0, 0.56)', // Soft orange for the top gradient
-                bottomColor: 'rgba(255, 165, 0, 0.2)', // Very subtle orange for the bottom gradient
-                lineColor: 'rgba(255, 140, 0, 0.8)', // A vibrant, slightly deeper orange for the line
-            };
+            //  const lightThemeColors = {
+            //     topColor: 'rgba(255, 165, 0, 0.56)', // Soft orange for the top gradient
+            //     bottomColor: 'rgba(255, 165, 0, 0.2)', // Very subtle orange for the bottom gradient
+            //     lineColor: 'rgba(255, 140, 0, 0.8)', // A vibrant, slightly deeper orange for the line
+            // };
             
-            const darkThemeColors = {
-                topColor: 'rgba(38, 198, 218, 0.56)', 
-                bottomColor: 'rgba(38, 198, 218, 0.04)', 
-                lineColor: 'rgba(38, 198, 218, 1)', 
-            };
+            // const darkThemeColors = {
+            //     topColor: 'rgba(38, 198, 218, 0.56)', 
+            //     bottomColor: 'rgba(38, 198, 218, 0.04)', 
+            //     lineColor: 'rgba(38, 198, 218, 1)', 
+            // };
     
-            // Select colors based on the theme mode
-            const { topColor, bottomColor, lineColor } = theme.palette.mode === 'dark' ? darkThemeColors : lightThemeColors;
+            // const { topColor, bottomColor, lineColor } = theme.palette.mode === 'dark' ? darkThemeColors : lightThemeColors;
+
             bitcoinSeries.setData(chartData);
             sma111Series.setData(calculateSMA(chartData, 111));
             sma350Series.setData(calculateSMA(chartData, 350).map(point => ({

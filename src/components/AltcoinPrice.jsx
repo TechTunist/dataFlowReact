@@ -343,6 +343,17 @@ const AltcoinPrice = ({ isDashboard = false }) => {
                     <div>{tooltipData.date.toString()}</div>
                 </div>
             )}
+            {
+                !isDashboard && (
+                    <p className='chart-info'>
+                        The altcoin market is the wild-west of the crypto world. This asset class faces regulatory uncertainty, scams perpetuated by bad actors,
+                        extreme volatility and the tendancy to lose anywhere between 70-99% of a token's value in a bear market. There is however a potential upside
+                        far greater than that of traditional markets and Bitcoin, under certain economic conditions. Since Bitcoin is the lowest risk crypto asset,
+                        it makes sense to value these altcoins against not only their USD pair, but also their BTC pair. If the altcoin is underperforming against BTC, 
+                        it makes no sense to hold the far riskier asset. This chart allows you to compare the performance of various altcoins against Bitcoin.
+                    </p>
+                )   
+            }
         </div>
     );
 };
