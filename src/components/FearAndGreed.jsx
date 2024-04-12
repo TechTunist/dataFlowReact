@@ -72,8 +72,8 @@ function CryptoFearAndGreedIndex({ isDashboard }) {
             .then(response => response.json())
             .then(data => {
                 const formattedData = data.map(item => ({
-                    time: item.date,
-                    value: parseFloat(item.close)
+                    value: parseInt(item.value),
+                    value_classification: item.value_classification,
                 }));             
                 // save the data to local storage
                 localStorage.setItem(cacheKey, JSON.stringify(formattedData));
@@ -89,35 +89,62 @@ function CryptoFearAndGreedIndex({ isDashboard }) {
     width: isDashboard ? '50%' : '90%', // Adjust based on your styling needs
   };
 
-  return (
-    <div style={{ border: '2px solid #a9a9a9', maxWidth: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      {/* <GaugeChart id="gauge-chart" 
-        nrOfLevels={30} 
-        percent={fearAndGreedValue} 
-        textColor={"#000000"} 
-        needleColor={"#345243"} 
-        needleBaseColor={"#345243"} 
-        style={chartStyle} 
-      /> */}
-      <GaugeChart id="gauge-chart3"
-        nrOfLevels={20}
-        colors={["green", "red"]}
-        arcWidth={0.3}
-        percent={fearAndGreedValueExample}
-        needleColor={"#345243"}
-        needleBaseColor={"#345243"} 
+  const value = fearAndGreedValue.length ? fearAndGreedValue[fearAndGreedValue.length - 1].value / 100 : 0;
+  const value_classification = fearAndGreedValue.length ? fearAndGreedValue[fearAndGreedValue.length - 1].value_classification : '';
 
-        />
+//   return (
+//     <div style={{ border: '2px solid #a9a9a9', maxWidth: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingLeft: '8%', paddingRight: '8%' }}>
+//       <GaugeChart id="gauge-chart3"
+//         nrOfLevels={10}
+//         colors={["green", "red"]}
+//         arcWidth={0.3}
+//         percent={value}
+//         needleColor={"#4cceac"}
+//         needleBaseColor={"#345243"} 
+//         />
+        
+
+//     </div>
+//   );
+return (
+    <div style={{ height: '100%' }}>
+        <div style={{ 
+            display: 'flex', // Use flex display for the container
+            justifyContent: 'space-between', // This spreads out the child elements
+            alignItems: 'center', // This vertically centers the children
+            marginBottom: '0px', 
+            height: '30px'
+        }}>
+            <div>
+                
+            </div>
+           
+        </div>
+        <div className="chart-container" style={{ 
+                position: 'relative', 
+                width: '100%', 
+                border: '2px solid #a9a9a9' // Adds dark border with your specified color
+                }}> 
+            <GaugeChart id="gauge-chart3"
+                nrOfLevels={10}
+                colors={["green", "red"]}
+                arcWidth={0.3}
+                percent={value}
+                needleColor={"#4cceac"}
+                needleBaseColor={"#345243"} 
+                />
+        </div>
         {
             !isDashboard && (
                 <p className='chart-info' style={{ marginTop: '20px', textAlign: 'center', width: '90%' }}> {/* Adjust width as necessary */}
+                <h1>{value_classification}</h1>
                     The Fear and Greed index is a metric that measures the sentiment of the market by analyzing various sources of data, including surveys, social media, volatility, market momentum, and volume among others.
                     <br/> The information has been provided here: <a href="https://alternative.me/crypto/fear-and-greed-index/">https://alternative.me/crypto/fear-and-greed-index/</a>
                 </p>
             )   
         }
     </div>
-  );
+);
 }
 
 export default CryptoFearAndGreedIndex;
