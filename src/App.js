@@ -28,13 +28,17 @@ function App() {
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <div className="app" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-          <div style={{ flex: 1, display: 'flex' }}> {/* Ensuring content takes up available space */}
-            <div className="sidebar">
-              <Sidebar isSidebar={isSidebar} />
-            </div>
+          {/* Topbar outside the main flexbox container to allow full width */}
+          <Topbar setIsSidebar={setIsSidebar} isSidebar={isSidebar} />
+
+          <div style={{ display: 'flex', flex: 1 }}> {/* Flex container for sidebar and content */}
+            {isSidebar && <div className="sidebar">
+              <Sidebar />
+            </div>}
             
-            <main className="content">
-              <Topbar setIsSidebar={setIsSidebar} />
+            <main className="content" style={{ flex: 1 }}>
+              {/* Spacer to ensure content starts below the fixed Topbar */}
+              <div style={{ height: '100px' }}></div>
               <Routes>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/bitcoin" element={<BasicChart ChartComponent={BitcoinPrice} />} />

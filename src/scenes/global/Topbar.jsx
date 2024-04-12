@@ -9,12 +9,29 @@ import { Link } from 'react-router-dom';
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
 import useIsMobile from '../../hooks/useIsMobile';
 
-const Topbar = () => {
+const Topbar = ({ setIsSidebar, isSidebar }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const colorMode = useContext(ColorModeContext);
   const location = useLocation();
   const isMobile = useIsMobile(); // Custom hook to detect mobile devices
+  const sidebarWidth = isSidebar ? 270 : 0; // Assuming 250px is your sidebar's width
+  const mobileTopbar = window.innerWidth <= 600; // Check if the viewport width is 600px or less
+
+  const topBarStyle = {
+    position: 'fixed',
+    top: 0,
+    left: isMobile ? 0 : sidebarWidth, // Adjust left position based on mobile view
+    right: 0,
+    height: '100px',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '0 10px',
+    backgroundColor: colors.primary[400],
+    zIndex: 1000,
+    width: isMobile ? '100%' : `calc(100% - ${mobileTopbar ? 0 : sidebarWidth}px)` // Adjust width based on the sidebar and mobile view
+  };
 
   // Function to determine the title based on the current location
   const getTitle = (pathname) => {
@@ -45,7 +62,7 @@ const Topbar = () => {
   };
 
   return (
-    <Box height='100px' display="flex" justifyContent="space-between" alignItems="center" p={2} style={{ backgroundColor: colors.primary[400] }}>
+    <Box style={topBarStyle}>
       <Typography variant="h6" color="inherit">
         {getTitle(location.pathname)} {/* Set the dynamic title based on the route */}
       </Typography>
