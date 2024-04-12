@@ -121,7 +121,8 @@ return (
            
         </div>
         <div className="chart-container" style={{ 
-                position: 'relative', 
+                position: 'relative',
+                height: 'calc(100% - 40px)', 
                 width: '100%', 
                 border: '2px solid #a9a9a9' // Adds dark border with your specified color
                 }}> 
