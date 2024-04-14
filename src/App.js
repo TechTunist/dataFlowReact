@@ -38,7 +38,7 @@ function App() {
             
             <main className="content" style={{ flex: 1 }}>
               {/* Spacer to ensure content starts below the fixed Topbar */}
-              <div style={{ height: '100px' }}></div>
+              <div style={{ height: '85px' }}></div>
               <Routes>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/bitcoin" element={<BasicChart ChartComponent={BitcoinPrice} />} />

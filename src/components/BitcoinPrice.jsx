@@ -14,6 +14,29 @@ const BitcoinPrice = ({ isDashboard = false }) => {
     const chartRef = useRef(null); // ref to store chart for use in return statement
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
+    const [show8Week, setShow8Week] = useState(false);
+
+    // Function to toggle the visibility of markers
+    const toggle8Week = () => {
+        setShow8Week(!show8Week);
+    };
+
+    const calculateMovingAverage = (data, period) => {
+        let movingAverages = [];
+        
+        for (let i = period - 1; i < data.length; i++) {
+          let sum = 0;
+          for (let j = 0; j < period; j++) {
+            sum += data[i - j].value;
+          }
+          movingAverages.push({
+            time: data[i].time,
+            value: sum / period
+          });
+        }
+        
+        return movingAverages;
+      };
 
     // Function to toggle scale mode
     const toggleScaleMode = () => {
@@ -153,7 +176,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
         const { topColor, bottomColor, lineColor } = theme.palette.mode === 'dark' ? darkThemeColors : lightThemeColors;
 
     
-        // const areaSeries = chart.addAreaSeries({
+        // const areaSeries = chart.addLineSeries({
         //     priceScaleId: 'right',
         //     topColor: 'rgba(38, 198, 218, 0.56)', 
         //     bottomColor: 'rgba(38, 198, 218, 0.04)', 
@@ -168,6 +191,20 @@ const BitcoinPrice = ({ isDashboard = false }) => {
             lineWidth: 2, 
         });
         areaSeries.setData(chartData);
+
+        // Calculate and plot the 8-week moving average
+        const movingAverageData = calculateMovingAverage(chartData, (8*6));
+        const maSeries = chart.addLineSeries({
+            priceScaleId: 'right',
+            color: 'blue', // or any color that fits the theme
+            lineWidth: 2,
+        });
+
+        if (show8Week) {
+            maSeries.setData(movingAverageData);
+        } else {
+            maSeries.setData([]);
+        }
     
         chart.applyOptions({
             handleScroll: !isDashboard,
@@ -183,7 +220,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
             window.removeEventListener('resize', resizeChart);
             window.removeEventListener('resize', resetChartView);
         };
-    }, [chartData, scaleMode, isDashboard, theme.palette.mode ]);
+    }, [chartData, scaleMode, isDashboard, theme.palette.mode, show8Week]);
 
     return (
         <div style={{ height: '100%' }}>
@@ -201,6 +238,16 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                         <span className="slider round"></span>
                     </label>
                     <span className="scale-mode-label" style={{color: colors.primary[100]}}>{scaleMode === 1 ? 'Logarithmic' : 'Linear'}</span>
+                </div>
+                <div>
+                    {/* Button to toggle markers */}
+                    {
+                        !isDashboard && (
+                        <button onClick={toggle8Week} className="button-reset">
+                                    {show8Week ? 'Disable 8 Week MA' : 'Show 8 Week MA'}
+                        </button>)
+                        
+                    }
                 </div>
                 {
                     !isDashboard && (

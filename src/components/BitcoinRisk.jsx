@@ -172,7 +172,14 @@ const BitcoinRisk = ({ isDashboard = false }) => {
     return (
 
         <div style={{ height: '100%' }}> {/* Set a specific height for the entire container */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', textAlign: 'left', marginBottom: '0px', height: '30px' }}>
+            <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                textAlign: 'left',
+                marginBottom: '0px',
+                height: '30px'
+                }}>
                 <div>
                     <span style={{ marginRight: '20px', display: 'inline-block' }}>
                         <span style={{ backgroundColor: 'gray', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>

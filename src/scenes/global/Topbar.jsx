@@ -23,7 +23,7 @@ const Topbar = ({ setIsSidebar, isSidebar }) => {
     top: 0,
     left: isMobile ? 0 : sidebarWidth, // Adjust left position based on mobile view
     right: 0,
-    height: '100px',
+    height: '85px',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
