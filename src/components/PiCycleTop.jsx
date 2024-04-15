@@ -141,13 +141,13 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
                     shape: 'arrowDown',
                     text: 'Indicated Top', 
                 },
-                {
-                    time: '2015-04-30',
-                    position: 'belowBar',
-                    color: colors.greenAccent[400],
-                    shape: 'arrowUp',
-                    text: 'Indicated Bottom', 
-                },
+                // {
+                //     time: '2015-04-30',
+                //     position: 'belowBar',
+                //     color: colors.greenAccent[400],
+                //     shape: 'arrowUp',
+                //     text: 'Indicated Bottom', 
+                // },
                 {
                     time: '2017-12-17',
                     position: 'aboveBar',
@@ -155,13 +155,13 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
                     shape: 'arrowDown',
                     text: 'Indicated Top', 
                 },
-                {
-                    time: '2019-03-19',
-                    position: 'belowBar',
-                    color: colors.greenAccent[400],
-                    shape: 'arrowUp',
-                    text: 'Indicated Bottom', 
-                },
+                // {
+                //     time: '2019-03-19',
+                //     position: 'belowBar',
+                //     color: colors.greenAccent[400],
+                //     shape: 'arrowUp',
+                //     text: 'Indicated Bottom', 
+                // },
                 {
                     time: '2021-04-12',
                     position: 'aboveBar',
@@ -169,13 +169,13 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
                     shape: 'arrowDown',
                     text: 'Indicated Top', 
                 },
-                {
-                    time: '2022-12-28',
-                    position: 'belowBar',
-                    color: colors.greenAccent[400],
-                    shape: 'arrowUp',
-                    text: 'Indicated Bottom', 
-                },
+                // {
+                //     time: '2022-10-13',
+                //     position: 'belowBar',
+                //     color: colors.greenAccent[400],
+                //     shape: 'arrowUp',
+                //     text: 'Indicated Bottom', 
+                // },
             ];
 
             const sma350Series = chart.addLineSeries({
