@@ -8,6 +8,7 @@ import Header from "../../components/Header";
 import { Link } from 'react-router-dom';
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
 import useIsMobile from '../../hooks/useIsMobile';
+import { BorderColor } from "@mui/icons-material";
 
 const Topbar = ({ setIsSidebar, isSidebar }) => {
   const theme = useTheme();
@@ -30,7 +31,10 @@ const Topbar = ({ setIsSidebar, isSidebar }) => {
     padding: '0 10px',
     backgroundColor: colors.primary[400],
     zIndex: 1000,
-    width: isMobile ? '100%' : `calc(100% - ${mobileTopbar ? 0 : sidebarWidth}px)` // Adjust width based on the sidebar and mobile view
+    width: isMobile ? '100%' : `calc(100% - ${mobileTopbar ? 0 : sidebarWidth}px)`, // Adjust width based on the sidebar and mobile view
+    borderBottom: '1px',
+    borderBottomStyle: 'solid',
+    borderBottomColor: colors.greenAccent[500] // This adds a 1px solid border with color #ccc (light gray)
   };
 
   // Function to determine the title based on the current location
@@ -73,6 +77,13 @@ const Topbar = ({ setIsSidebar, isSidebar }) => {
                 </IconButton>
                 </Link>
       )}
+      {/* Placeholder links */}
+      <Link to="/new-page-1" className="button-reset">
+        <div>Signup / Login</div>
+      </Link>
+      <Link to="/new-page-2" className="button-reset">
+        <div>About</div>
+      </Link>
       <IconButton onClick={colorMode.toggleColorMode} color="inherit">
         {theme.palette.mode === "dark" ? <LightModeOutlinedIcon /> : <DarkModeOutlinedIcon />}
       </IconButton>
