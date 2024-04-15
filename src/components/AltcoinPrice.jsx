@@ -17,8 +17,7 @@ const AltcoinPrice = ({ isDashboard = false }) => {
     const [tooltipData, setTooltipData] = useState(null);
     const [denominator, setDenominator] = useState('USD');
     const [btcData, setBtcData] = useState([]);
-    const [altData, setAltData] = useState([]);
-
+    const [altData, setAltData] = useState([]);   
 
     // Hardcoded list of altcoin options
     const altcoins = [
@@ -176,6 +175,7 @@ const AltcoinPrice = ({ isDashboard = false }) => {
             } else {
                 const dateStr = param.time;
                 const data = param.seriesData.get(areaSeries);
+                const formattedPrice = data.value.toFixed(priceScaleDecimals); // Use dynamic decimal places based on the denominator
                 setTooltipData({
                     date: dateStr,
                     price: data.value,
@@ -211,7 +211,6 @@ const AltcoinPrice = ({ isDashboard = false }) => {
         };
         
         
-
         const darkThemeColors = {
             topColor: 'rgba(38, 198, 218, 0.56)', 
             bottomColor: 'rgba(38, 198, 218, 0.04)', 
@@ -221,12 +220,20 @@ const AltcoinPrice = ({ isDashboard = false }) => {
         // Select colors based on the theme mode
         const { topColor, bottomColor, lineColor } = theme.palette.mode === 'dark' ? darkThemeColors : lightThemeColors;
 
+        // change decimal places based on the denominator (for satoshis)
+        const priceScaleDecimals = denominator === 'BTC' ? 8 : 2;
+
         const areaSeries = chart.addAreaSeries({
             priceScaleId: 'right',
             topColor: topColor, 
             bottomColor: bottomColor, 
             lineColor: lineColor, 
-            lineWidth: 2, 
+            lineWidth: 2,
+            priceFormat: {
+                type: 'price',
+                precision: priceScaleDecimals,
+                minMove: 1 / Math.pow(10, priceScaleDecimals),
+            }
         });
         areaSeries.setData(chartData);
     
@@ -338,7 +345,7 @@ const AltcoinPrice = ({ isDashboard = false }) => {
                     {/* Update currency symbol and decimal places based on the denominator */}
                     <div style={{fontSize: '20px' }}>
                         {denominator === 'BTC' ? '₿' : '$'}
-                        {denominator === 'BTC' ? tooltipData.price.toFixed(6) : tooltipData.price.toFixed(3)}
+                        {denominator === 'BTC' ? tooltipData.price.toFixed(8) : tooltipData.price.toFixed(3)}
                     </div>
                     <div>{tooltipData.date.toString()}</div>
                 </div>

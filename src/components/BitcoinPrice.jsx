@@ -283,7 +283,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
             {
                 !isDashboard && (
                     <p className='chart-info'>
-                        Bitcoin is the Mona Lisa of digital scarcity. It's a cryptographic marvel, a masterpiece of computer science.
+                        Bitcoin is a cryptographic marvel, a masterpiece of computer science.
                         Here we have a globally distributed, permissionless ledger, secured by an army of miners – a system that's incorruptible,
                         transparent, and nearly impossible to shut down. It's a revolution in value transfer, a store of value unlike anything the world has ever seen.
                         Bitcoin is a technological breakthrough, a finite digital asset that can be transferred instantly anywhere on the planet.
