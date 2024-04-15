@@ -25,7 +25,7 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const chartRef = useRef(null);
-  const [showMarkers, setShowMarkers] = useState(false);
+  const [showMarkers, setShowMarkers] = useState(true);
 
     // Function to toggle the visibility of markers
     const toggleMarkers = () => {

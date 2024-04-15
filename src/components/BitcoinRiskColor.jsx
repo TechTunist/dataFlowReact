@@ -8,6 +8,25 @@ const BitcoinRiskColor = ({ isDashboard = false }) => {
     const [chartData, setChartData] = useState([]);
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
+    const [layout, setLayout] = useState({
+        title: 'Bitcoin Price vs. Risk Level',
+        autosize: true,
+        margin: { l: 50, r: 50, b: 30, t: 30, pad: 4 },
+        plot_bgcolor: 'colors.primary[700]',
+        paper_bgcolor: 'colors.primary[700]',
+        font: { color: 'colors.primary[100]' },
+        xaxis: { title: '' },
+        yaxis: { title: 'Price (USD)', type: 'log' }
+    });
+
+    const resetChartView = () => {
+        setLayout({
+            ...layout,
+            // Resetting zoom and pan by setting the 'autorange' to true
+            xaxis: { ...layout.xaxis, autorange: true },
+            yaxis: { ...layout.yaxis, autorange: true }
+        });
+    };
 
     // Function to calculate the risk metric
     const calculateRiskMetric = (data) => {
@@ -64,14 +83,20 @@ const BitcoinRiskColor = ({ isDashboard = false }) => {
 
         <div style={{ height: '100%' }}> {/* Set a specific height for the entire container */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', textAlign: 'left', marginBottom: '0px', height: '30px' }}>
+            <div>
+                {/* placeholder for styling */}
+            </div>
+            <div>
+                {/* placeholder for styling */}
+            </div>
             
-            {/* {
+            {
                 !isDashboard && (
                     <button onClick={resetChartView} className="button-reset">
                         Reset Chart
                     </button>
                 )   
-            } */}
+            }
         </div>
         <div className="chart-container" style={{ 
                     position: 'relative', 
@@ -97,8 +122,8 @@ const BitcoinRiskColor = ({ isDashboard = false }) => {
                 },
             ]}
             layout={{
-                // title: isDashboard ? '' : 'Bitcoin Price vs. Risk Level',
-                xaxis: { title: isDashboard ? '' : 'Date' },
+                title: isDashboard ? '' : 'Bitcoin Price vs. Risk Level',
+                xaxis: { title: isDashboard ? '' : '' },
                 yaxis: { title: isDashboard ? '' : 'Price (USD)', type: 'log' },
                 autosize: true, // Make the plot responsive
                 margin: {
@@ -117,6 +142,7 @@ const BitcoinRiskColor = ({ isDashboard = false }) => {
             config={{
                 staticPlot: isDashboard, // Disable interaction when on the dashboard
                 displayModeBar: !isDashboard, // Optionally hide the mode bar when on the dashboard
+                displayModeBar: false,
                 responsive: true
             }}
             useResizeHandler={true} // Enable resize handler
