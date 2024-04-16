@@ -9,7 +9,8 @@ const About = () => {
                 with the objective of helping retail investors arm themselves with the knowledge to make better informed decisions.</h3>
             <h1>App Creator:</h1>
             <h2>Matthew Jackson</h2>
-            <p>I hold an undergrad degree in Computer Science and have been involved in crypto since 2020.
+            
+                I hold an undergrad degree in Computer Science and have been involved in crypto since 2020.
                 The thing that really got me interested in financial markets was the infamous GameStop shortsqueeze,
                 but like most retail investors, I was too late to the party and ended up losing money rather than making any. <br /><br />
                 This experience taught me a lot about how the existing financial system can be abused by people in positions of power and influence,
@@ -25,7 +26,7 @@ const About = () => {
                 certain indicators have been created that appear to be able to help us make better investment decisions and come up with our own strategies, 
                 taking the emotion out of the decision-making process and taking a data-centric approach.
                 Many of these indicators have been fit to or created in response to historical data, and have stood up to at least one market cycle. 
-            </p>
+            
         </div>
     );
 };

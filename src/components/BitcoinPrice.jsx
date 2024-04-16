@@ -15,10 +15,23 @@ const BitcoinPrice = ({ isDashboard = false }) => {
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
     const [show8Week, setShow8Week] = useState(false);
+    const [show20Week, setShow20Week] = useState(false);
+    const [show100Week, setShow100Week] = useState(false);
+
 
     // Function to toggle the visibility of markers
     const toggle8Week = () => {
         setShow8Week(!show8Week);
+    };
+    
+    // Function to toggle the visibility of markers
+    const toggle20Week = () => {
+        setShow20Week(!show20Week);
+    };
+
+    // Function to toggle the visibility of markers
+    const toggle100Week = () => {
+        setShow100Week(!show100Week);
     };
 
     const calculateMovingAverage = (data, period) => {
@@ -175,14 +188,6 @@ const BitcoinPrice = ({ isDashboard = false }) => {
         // Select colors based on the theme mode
         const { topColor, bottomColor, lineColor } = theme.palette.mode === 'dark' ? darkThemeColors : lightThemeColors;
 
-    
-        // const areaSeries = chart.addLineSeries({
-        //     priceScaleId: 'right',
-        //     topColor: 'rgba(38, 198, 218, 0.56)', 
-        //     bottomColor: 'rgba(38, 198, 218, 0.04)', 
-        //     lineColor: 'rgba(38, 198, 218, 1)', 
-        //     lineWidth: 2, 
-        // });
         const areaSeries = chart.addAreaSeries({
             priceScaleId: 'right',
             topColor: topColor, 
@@ -193,17 +198,44 @@ const BitcoinPrice = ({ isDashboard = false }) => {
         areaSeries.setData(chartData);
 
         // Calculate and plot the 8-week moving average
-        const movingAverageData = calculateMovingAverage(chartData, (8*6));
-        const maSeries = chart.addLineSeries({
+        const movingAverage8Week = calculateMovingAverage(chartData, (8*6));
+        const movingAverage20Week = calculateMovingAverage(chartData, (20*7));
+        const movingAverage100Week = calculateMovingAverage(chartData, (100*7));
+
+        const ma8WeekSeries = chart.addLineSeries({
             priceScaleId: 'right',
-            color: 'blue', // or any color that fits the theme
+            color: 'blue', 
+            lineWidth: 2,
+        });
+
+        const ma20WeekSeries = chart.addLineSeries({
+            priceScaleId: 'right',
+            color: 'green', 
+            lineWidth: 2,
+        });
+
+        const ma100WeekSeries = chart.addLineSeries({
+            priceScaleId: 'right',
+            color: 'white', 
             lineWidth: 2,
         });
 
         if (show8Week) {
-            maSeries.setData(movingAverageData);
+            ma8WeekSeries.setData(movingAverage8Week);
         } else {
-            maSeries.setData([]);
+            ma8WeekSeries.setData([]);
+        }
+
+        if (show20Week) {
+            ma20WeekSeries.setData(movingAverage20Week);
+        } else {
+            ma20WeekSeries.setData([]);
+        }
+
+        if (show100Week) {
+            ma100WeekSeries.setData(movingAverage100Week);
+        } else {
+            ma100WeekSeries.setData([]);
         }
     
         chart.applyOptions({
@@ -220,7 +252,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
             window.removeEventListener('resize', resizeChart);
             window.removeEventListener('resize', resetChartView);
         };
-    }, [chartData, scaleMode, isDashboard, theme.palette.mode, show8Week]);
+    }, [chartData, scaleMode, isDashboard, theme.palette.mode, show8Week, show20Week, show100Week]);
 
     return (
         <div style={{ height: '100%' }}>
@@ -246,7 +278,24 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                         <button onClick={toggle8Week} className="button-reset">
                                     {show8Week ? 'Disable 8 Week MA' : 'Show 8 Week MA'}
                         </button>)
-                        
+                    }
+                </div>
+                <div>
+                    {/* Button to toggle markers */}
+                    {
+                        !isDashboard && (
+                        <button onClick={toggle20Week} className="button-reset">
+                                    {show20Week ? 'Disable 20 Week SMA' : 'Show 20 Week SMA'}
+                        </button>)
+                    }
+                </div>
+                <div>
+                    {/* Button to toggle markers */}
+                    {
+                        !isDashboard && (
+                        <button onClick={toggle100Week} className="button-reset">
+                                    {show20Week ? 'Disable 100 Week SMA' : 'Show 100 Week SMA'}
+                        </button>)
                     }
                 </div>
                 {
