@@ -1,5 +1,4 @@
 import { Box, Card, CardContent, Typography, Grid, useTheme } from "@mui/material";
-import Header from "../../components/Header";
 import BitcoinRisk from "../../components/BitcoinRisk"; 
 import BitcoinPrice from "../../components/BitcoinPrice";
 import AltcoinPrice from "../../components/AltcoinPrice";

@@ -9,6 +9,7 @@ import { Link } from 'react-router-dom';
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
 import useIsMobile from '../../hooks/useIsMobile';
 import { BorderColor } from "@mui/icons-material";
+import '../../styling/bitcoinChart.css'
 
 const Topbar = ({ setIsSidebar, isSidebar }) => {
   const theme = useTheme();
@@ -32,9 +33,9 @@ const Topbar = ({ setIsSidebar, isSidebar }) => {
     backgroundColor: colors.primary[400],
     zIndex: 1000,
     width: isMobile ? '100%' : `calc(100% - ${mobileTopbar ? 0 : sidebarWidth}px)`, // Adjust width based on the sidebar and mobile view
-    borderBottom: '1px',
-    borderBottomStyle: 'solid',
-    borderBottomColor: colors.greenAccent[500] // This adds a 1px solid border with color #ccc (light gray)
+    // borderBottom: '1px',
+    // borderBottomStyle: 'solid',
+    // borderBottomColor: colors.greenAccent[500]
   };
 
   // Function to determine the title based on the current location
@@ -60,6 +61,10 @@ const Topbar = ({ setIsSidebar, isSidebar }) => {
           return <Header title="Bitcoin Risk (Colour)" subtitle="Colour-Coded Risk Levels" />;
         case "/altcoin-price":
           return <Header title="Altcoin Charts" subtitle="Simple Altcoin Price Chart" />;
+        case "/about":
+          return <Header title="About" subtitle="Why did I create Data Flow?" />;
+        case "/login-signup":
+          return <Header title="Login / Signup" subtitle="Under Construnction" />;
       default:
         return "Welcome"; // Default title or could be a 404 page title
     }
@@ -77,13 +82,15 @@ const Topbar = ({ setIsSidebar, isSidebar }) => {
                 </IconButton>
                 </Link>
       )}
-      {/* Placeholder links */}
-      <Link to="/new-page-1" className="button-reset">
-        <div>Signup / Login</div>
-      </Link>
-      <Link to="/new-page-2" className="button-reset">
-        <div>About</div>
-      </Link>
+      <div className='topbar-links'>
+        <Link to="/login-signup" className="topbar-link">
+          <div>Signup / Login</div>
+        </Link>
+        <Link to="/about" className="topbar-link">
+          <div>About</div>
+        </Link>
+      </div>
+      
       <IconButton onClick={colorMode.toggleColorMode} color="inherit">
         {theme.palette.mode === "dark" ? <LightModeOutlinedIcon /> : <DarkModeOutlinedIcon />}
       </IconButton>

@@ -11,6 +11,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import BarChartOutlinedIcon from "@mui/icons-material/BarChartOutlined";
 import WarningOutlinedIcon from "@mui/icons-material/WarningOutlined";
 
+
 const Item = ({ title, to, icon, selected, setSelected, isNested }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
@@ -98,6 +99,7 @@ const Sidebar = () => {
     <Box sx={{
       "& .pro-sidebar-inner": {
         background: `${colors.primary[400]} !important`,
+        // borderRight: `1px solid ${colors.greenAccent[500]}`
       },
       "& .pro-icon-wrapper": {
         backgroundColor: "transparent !important",

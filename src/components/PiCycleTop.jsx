@@ -298,7 +298,7 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
                 {
                     !isDashboard && (
                         <p className='chart-info'>
-                            The PiCycle Top indicator was created by Phillip Swift with the intention of calling the top of the Bitcoin bull market within 3 days.
+                            The PiCycle Top indicator was created by Phillip Swift in 2019, with the intention of calling the top of the Bitcoin bull market within 3 days.
                             The indicator is calculated by dividing the 111-day moving average of the Bitcoin price by the 350-day moving average of the Bitcoin price.
                             When the 111 day SMA crosses above the 350 day SMA, it is considered a bearish signal, and has historically been able to predict the
                             2 market peaks in 2013, the bull market peak in 2017 and the first market peak in 2021.

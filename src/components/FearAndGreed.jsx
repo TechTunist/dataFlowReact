@@ -60,11 +60,11 @@ function CryptoFearAndGreedIndex({ isDashboard }) {
   const gaugeColors = ["#4BC0C8", "#33D1FF", "#66A3FF", "#9996FF", "#CC89FF", "#FF7DFF", "#FF61C3", "#FF4590", "#FF295D", "#FF0033", "#FF0033"];
 
   const getColorByPercent = (percent) => {
-    const index = Math.min(Math.floor(percent * gaugeColors.length), gaugeColors.length - 1);
+    const index = Math.min(Math.floor((percent) * gaugeColors.length), gaugeColors.length - 1);
     return gaugeColors[index];
   };
 
-  const textColor = getColorByPercent(value);
+  const textColor = getColorByPercent(value-0.05);
 
 return (
     <div style={{ height: '100%' }}>

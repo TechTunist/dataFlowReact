@@ -177,6 +177,58 @@ input:checked + .slider:before {
     z-index: 1;
 }
 
+.topbar-links {
+    display: flex;
+    justify-content: space-between; /* This will space the links evenly across the container */
+    align-items: center; /* This will vertically center the links in the container */
+}
+
+/* CSS for styled links */
+.topbar-link {
+    font-size: 1rem; /* Set the font size */
+    color: white; /* Set the text color */
+    text-decoration: none; /* Remove the underline */
+    padding: 20px;
+}
+
+.topbar-link:hover {
+    color: #86eed4; /* Change color on hover */
+}
+
+.about-page {
+    background-color: #0c101b; /* Dark background for better contrast */
+    color: #E0E0E0; /* Soft white text */
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Modern, readable font */
+    padding: 40px; /* Adequate padding around the text */
+    max-width: 95%; /* Max width for optimal reading */
+    margin: 10px auto; /* Center align the container */
+    line-height: 1.6; /* Improve line spacing for readability */
+    border: 1px solid #4cceac;
+}
+
+.about-page h1 {
+    color: #868dfb; /* Highlight color for headings */
+    margin-bottom: 20px; /* Space below the heading */
+}
+
+.about-page h2 {
+    margin-top: 20px; /* Space above subheadings */
+    color: #4cceac; /* Soft green for subheadings */
+}
+
+.about-page p {
+    margin-top: 20px; /* Space above paragraphs */
+    text-align: justify; /* Justify text for clean alignment */
+    text-indent: 20px; /* First line indent for paragraphs */
+}
+
+.about-page h3 {
+    font-weight: normal; /* Regular weight for subtler emphasis */
+    color: #4cceac; /* Light blue for introductory text */
+    margin-bottom: 20px; /* Space below the introductory text */
+}
+
+
   /* Media query for devices with a max-width of 600px (common breakpoint for mobile devices) */
   @media (max-width: 600px) {
     .mobile {
