@@ -84,7 +84,7 @@ const Topbar = ({ setIsSidebar, isSidebar }) => {
       )}
       <div className='topbar-links'>
         <Link to="/login-signup" className="topbar-link">
-          <div>Signup / Login</div>
+          <div>Login</div>
         </Link>
         <Link to="/about" className="topbar-link">
           <div>About</div>
