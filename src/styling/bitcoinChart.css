@@ -75,7 +75,6 @@ input:checked + .slider:before {
 
 .button-reset {
     margin-bottom: 20px;
-    margin-left: 10px;
     color: #70d8bd; /* Set text color to white */
     border: 2px solid #70d8bd; /* Set border to white */
     background-color: transparent; /* Make background transparent */
@@ -196,8 +195,6 @@ input:checked + .slider:before {
 }
 
 .about-page {
-    background-color: #0c101b; /* Dark background for better contrast */
-    color: #E0E0E0; /* Soft white text */
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Modern, readable font */
     padding: 40px; /* Adequate padding around the text */
     max-width: 95%; /* Max width for optimal reading */
@@ -207,13 +204,11 @@ input:checked + .slider:before {
 }
 
 .about-page h1 {
-    color: #868dfb; /* Highlight color for headings */
     margin-bottom: 20px; /* Space below the heading */
 }
 
 .about-page h2 {
     margin-top: 20px; /* Space above subheadings */
-    color: #4cceac; /* Soft green for subheadings */
 }
 
 .about-page p {
@@ -224,7 +219,6 @@ input:checked + .slider:before {
 
 .about-page h3 {
     font-weight: normal; /* Regular weight for subtler emphasis */
-    color: #4cceac; /* Light blue for introductory text */
     margin-bottom: 20px; /* Space below the introductory text */
 }
 

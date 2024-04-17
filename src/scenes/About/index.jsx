@@ -1,14 +1,31 @@
 import '../../styling/bitcoinChart.css';
 
 import { tokens } from "../../theme";
+import { useTheme } from "@mui/material";
 
 const About = () => {
+    const theme = useTheme();
+    const colors = tokens(theme.palette.mode);
+
     return (
-        <div className='about-page'>
-            <h3>This app attempts to concentrate the most popular, accurate, and useful charts and indicators in a convenient dashboard,
+        <div
+            className='about-page'
+            style={{
+                backgroundColor: colors.primary[500],
+                color: colors.primary[200]}}>
+            <h3 style={{
+                color: '#4cceac'
+            }}>
+                This app attempts to concentrate the most popular, accurate, and useful charts and indicators in a convenient dashboard,
                 with the objective of helping retail investors arm themselves with the knowledge to make better informed decisions.</h3>
-            <h1>App Creator:</h1>
-            <h2>Matthew Jackson</h2>
+            <h1 style={{
+                color: '868dfb'
+            }}>
+            App Creator:</h1>
+            <h2 style={{
+                color: '4cceac'
+            }}>
+                Matthew Jackson</h2>
             
                 I hold an undergrad degree in Computer Science and have been involved in crypto since 2020.
                 The thing that really got me interested in financial markets was the infamous GameStop shortsqueeze,

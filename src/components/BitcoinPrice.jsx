@@ -17,6 +17,13 @@ const BitcoinPrice = ({ isDashboard = false }) => {
     const [show8Week, setShow8Week] = useState(false);
     const [show20Week, setShow20Week] = useState(false);
     const [show100Week, setShow100Week] = useState(false);
+    const [show200Week, setShow200Week] = useState(false);
+    const color8Week = 'blue';
+    const color20Week = 'green';
+    const color100Week = 'white';
+    const color200Week = 'yellow';
+
+
 
 
     // Function to toggle the visibility of markers
@@ -32,6 +39,11 @@ const BitcoinPrice = ({ isDashboard = false }) => {
     // Function to toggle the visibility of markers
     const toggle100Week = () => {
         setShow100Week(!show100Week);
+    };
+
+    // Function to toggle the visibility of markers
+    const toggle200Week = () => {
+        setShow200Week(!show200Week);
     };
 
     const calculateMovingAverage = (data, period) => {
@@ -50,6 +62,30 @@ const BitcoinPrice = ({ isDashboard = false }) => {
         
         return movingAverages;
       };
+
+    // Test function to calculate the EMA for the bull market support band
+      const calculateEMA = (data, period) => {
+        let emaArray = [];
+        let multiplier = 2 / (period + 1);
+        
+        // Start by calculating the initial EMA value which can be the first data point or an SMA of the first few points
+        let initialSMA = 0;
+        for (let i = 0; i < period; i++) {
+            initialSMA += data[i].value;
+        }
+        initialSMA /= period;
+        emaArray.push({ time: data[period-1].time, value: initialSMA });
+    
+        // Calculate the rest of the EMA values
+        for (let i = period; i < data.length; i++) {
+            let todayPrice = data[i].value;
+            let yesterdayEMA = emaArray[emaArray.length - 1].value;
+            let todayEMA = (todayPrice - yesterdayEMA) * multiplier + yesterdayEMA;
+            emaArray.push({ time: data[i].time, value: todayEMA });
+        }
+    
+        return emaArray;
+    };
 
     // Function to toggle scale mode
     const toggleScaleMode = () => {
@@ -105,6 +141,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
             });
         }
     }, []);
+    
 
     useEffect(() => {
         if (chartData.length === 0) return;
@@ -177,8 +214,6 @@ const BitcoinPrice = ({ isDashboard = false }) => {
             lineColor: 'rgba(255, 140, 0, 0.8)', // A vibrant, slightly deeper orange for the line
         };
         
-        
-
         const darkThemeColors = {
             topColor: 'rgba(38, 198, 218, 0.56)', 
             bottomColor: 'rgba(38, 198, 218, 0.04)', 
@@ -196,48 +231,8 @@ const BitcoinPrice = ({ isDashboard = false }) => {
             lineWidth: 2, 
         });
         areaSeries.setData(chartData);
+        
 
-        // Calculate and plot the 8-week moving average
-        const movingAverage8Week = calculateMovingAverage(chartData, (8*6));
-        const movingAverage20Week = calculateMovingAverage(chartData, (20*7));
-        const movingAverage100Week = calculateMovingAverage(chartData, (100*7));
-
-        const ma8WeekSeries = chart.addLineSeries({
-            priceScaleId: 'right',
-            color: 'blue', 
-            lineWidth: 2,
-        });
-
-        const ma20WeekSeries = chart.addLineSeries({
-            priceScaleId: 'right',
-            color: 'green', 
-            lineWidth: 2,
-        });
-
-        const ma100WeekSeries = chart.addLineSeries({
-            priceScaleId: 'right',
-            color: 'white', 
-            lineWidth: 2,
-        });
-
-        if (show8Week) {
-            ma8WeekSeries.setData(movingAverage8Week);
-        } else {
-            ma8WeekSeries.setData([]);
-        }
-
-        if (show20Week) {
-            ma20WeekSeries.setData(movingAverage20Week);
-        } else {
-            ma20WeekSeries.setData([]);
-        }
-
-        if (show100Week) {
-            ma100WeekSeries.setData(movingAverage100Week);
-        } else {
-            ma100WeekSeries.setData([]);
-        }
-    
         chart.applyOptions({
             handleScroll: !isDashboard,
             handleScale: !isDashboard,
@@ -252,7 +247,75 @@ const BitcoinPrice = ({ isDashboard = false }) => {
             window.removeEventListener('resize', resizeChart);
             window.removeEventListener('resize', resetChartView);
         };
-    }, [chartData, scaleMode, isDashboard, theme.palette.mode, show8Week, show20Week, show100Week]);
+    }, [chartData, scaleMode, isDashboard, theme.palette.mode]);
+
+    // Initialize state for series references
+    const [maSeries, setMaSeries] = useState({
+        ma8Week: null,
+        ma20Week: null,
+        ma100Week: null,
+        ma200Week: null,
+    });
+
+    useEffect(() => {
+        if (chartData.length === 0 || !chartRef.current) return;
+
+        // Only create series once and store their references
+        if (!maSeries.ma8Week) {
+            const series = {
+                ma8Week: chartRef.current.addLineSeries({
+                    priceScaleId: 'right',
+                    color: color8Week,
+                    lineWidth: 2,
+                    priceLineVisible: false,
+                }),
+                ma20Week: chartRef.current.addLineSeries({
+                    priceScaleId: 'right',
+                    color: color20Week,
+                    lineWidth: 2,
+                    priceLineVisible: false,
+                }),
+                ma100Week: chartRef.current.addLineSeries({
+                    priceScaleId: 'right',
+                    color: color100Week,
+                    lineWidth: 2,
+                    priceLineVisible: false,
+                }),
+                ma200Week: chartRef.current.addLineSeries({
+                    priceScaleId: 'right',
+                    color: color200Week,
+                    lineWidth: 2,
+                    priceLineVisible: false,
+                }),
+            };
+            setMaSeries(series);
+        }
+
+        // Update data and visibility based on toggles
+        const updateSeries = (series, data, show) => {
+            if (show) {
+                series.setData(data);
+                series.applyOptions({ visible: true });
+            } else {
+                series.setData([]);
+                series.applyOptions({ visible: false });
+            }
+        };
+
+        // Calculate SMAs
+        const movingAverage8Week = calculateMovingAverage(chartData, 8 * 7);
+        const movingAverage20Week = calculateMovingAverage(chartData, 20 * 7);
+        const movingAverage100Week = calculateMovingAverage(chartData, 100 * 7);
+        const movingAverage200Week = calculateMovingAverage(chartData, 200 * 7);
+
+        // Apply data and visibility
+        if (maSeries.ma8Week) updateSeries(maSeries.ma8Week, movingAverage8Week, show8Week);
+        if (maSeries.ma20Week) updateSeries(maSeries.ma20Week, movingAverage20Week, show20Week);
+        if (maSeries.ma100Week) updateSeries(maSeries.ma100Week, movingAverage100Week, show100Week);
+        if (maSeries.ma200Week) updateSeries(maSeries.ma200Week, movingAverage200Week, show200Week);
+
+    }, [chartData, show8Week, show20Week, show100Week, show200Week, maSeries, color8Week, color20Week, color100Week, color200Week]);
+
 
     return (
         <div style={{ height: '100%' }}>
@@ -272,32 +335,9 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                     <span className="scale-mode-label" style={{color: colors.primary[100]}}>{scaleMode === 1 ? 'Logarithmic' : 'Linear'}</span>
                 </div>
                 <div>
-                    {/* Button to toggle markers */}
-                    {
-                        !isDashboard && (
-                        <button onClick={toggle8Week} className="button-reset">
-                                    {show8Week ? 'Disable 8 Week MA' : 'Show 8 Week MA'}
-                        </button>)
-                    }
+                    {/* placeholder for styling */}
                 </div>
-                <div>
-                    {/* Button to toggle markers */}
-                    {
-                        !isDashboard && (
-                        <button onClick={toggle20Week} className="button-reset">
-                                    {show20Week ? 'Disable 20 Week SMA' : 'Show 20 Week SMA'}
-                        </button>)
-                    }
-                </div>
-                <div>
-                    {/* Button to toggle markers */}
-                    {
-                        !isDashboard && (
-                        <button onClick={toggle100Week} className="button-reset">
-                                    {show20Week ? 'Disable 100 Week SMA' : 'Show 100 Week SMA'}
-                        </button>)
-                    }
-                </div>
+                
                 {
                     !isDashboard && (
                         <button onClick={resetChartView} className="button-reset">
@@ -313,6 +353,78 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                     border: '2px solid #a9a9a9' // Adds dark border with your specified color
                     }}> 
                 <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
+            </div>
+            
+            <div style={{
+                display: 'flex', // Use flex display for the container
+                justifyContent: 'center', // Center the child elements horizontally
+                alignItems: 'center', // This vertically centers the children
+                marginBottom: '20px', // Space after the container to avoid overlap with the paragraph
+                height: 'auto', // Adjust height automatically based on content
+                flexWrap: 'wrap', // Allows items to wrap onto the next line
+                gap: '10px 20px', // Sets vertical and horizontal gaps between items
+                padding: '10px' // Adds padding inside the flex container
+            }}>
+            {!isDashboard && (
+                <>
+                    <button
+                        onClick={toggle8Week}
+                        className="button-reset"
+                        style={{
+                            marginTop: '10px',
+                            width: '130px',
+                            minWidth: '130px',
+                            backgroundColor: show8Week ? '#4cceac' : 'transparent', // Highlight background when active
+                            color: show8Week ? color8Week : '#70d8bd', // Change text color when active
+                            borderColor: show8Week ? '#fff' : '#70d8bd' // Change border color when active
+                        }}
+                    >
+                        8 Week SMA
+                    </button>
+                    <button
+                        onClick={toggle20Week}
+                        className="button-reset"
+                        style={{
+                            marginTop: '10px',
+                            width: '130px',
+                            minWidth: '130px',
+                            backgroundColor: show20Week ? '#4cceac' : 'transparent',
+                            color: show20Week ? color20Week : '#70d8bd',
+                            borderColor: show20Week ? '#fff' : '#70d8bd'
+                        }}
+                    >
+                        20 Week SMA
+                    </button>
+                    <button
+                        onClick={toggle100Week}
+                        className="button-reset"
+                        style={{
+                            marginTop: '10px',
+                            width: '130px',
+                            minWidth: '130px',
+                            backgroundColor: show100Week ? '#4cceac' : 'transparent',
+                            color: show100Week ? color100Week : '#70d8bd',
+                            borderColor: show100Week ? '#fff' : '#70d8bd'
+                        }}
+                    >
+                        100 Week SMA
+                    </button>
+                    <button
+                        onClick={toggle200Week}
+                        className="button-reset"
+                        style={{
+                            marginTop: '10px',
+                            width: '130px',
+                            minWidth: '130px',
+                            backgroundColor: show200Week ? '#4cceac' : 'transparent',
+                            color: show200Week ? color200Week : '#70d8bd',
+                            borderColor: show200Week ? '#fff' : '#70d8bd'
+                        }}
+                    >
+                        200 Week SMA
+                    </button>
+                </>
+            )}
             </div>
 
             {/* Conditional Rendering for the Tooltip */}
