@@ -21,7 +21,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: #3c4596;
+    background-color: #614d91;
     -webkit-transition: .4s;
     transition: .4s;
 }
@@ -33,14 +33,15 @@
     width: 20px;
     left: -2px;
     bottom: 0px;
-    background-color: rgb(32, 39, 97);
+    background-color: rgb(61, 201, 131);
     -webkit-transition: .4s;
     transition: .4s;
 }
 
 input:checked + .slider {
-    background-color: #1f415e;
+    background-color: rgb(61, 201, 131);
 }
+
 
 input:focus + .slider {
     box-shadow: 0 0 1px #234c6d;
@@ -50,6 +51,7 @@ input:checked + .slider:before {
     -webkit-transform: translateX(26px);
     -ms-transform: translateX(26px);
     transform: translateX(26px);
+    background-color: #614d91;
 }
 
 /* Rounded sliders */
@@ -59,6 +61,7 @@ input:checked + .slider:before {
 
 .slider.round:before {
     border-radius: 50%;
+    border: 2px solid #614d91;
 }
 
 .scale-mode-label {
@@ -76,8 +79,8 @@ input:checked + .slider:before {
 .button-reset {
     /* margin-bottom: 20px; */
     /* margin-top: 10px; */
-    color: #70d8bd; /* Set text color to white */
-    border: 2px solid #70d8bd; /* Set border to white */
+    color: #00b685; /* Set text color to white */
+    border: 2px solid #31d6aa; /* Set border to white */
     background-color: transparent; /* Make background transparent */
     padding: 5px 15px; /* Adjust padding as needed */
     font-size: 0.8rem;
@@ -192,7 +195,7 @@ input:checked + .slider:before {
 }
 
 .topbar-link:hover {
-    color: #86eed4 !important; /* Change color on hover */
+    color: #1ece61 !important; /* Change color on hover */
 }
 
 .about-page {

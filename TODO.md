@@ -11,6 +11,20 @@
 - Increase the number of altcoins available
 - Add other financial information than crypto (inflation, interests, liquidity, monetary policy etc)
 
+## TOOLS
+- The "Bleed Factor" can be constructed by integrating the above metrics into a formula. Here’s a simple version to start with:
+
+    Bleed Factor=w1⋅RP+w2⋅DT+w3⋅V+w4⋅DD+w5⋅RTBleed Factor=w1​⋅RP+w2​⋅DT+w3​⋅V+w4​⋅DD+w5​⋅RT
+
+    Where:
+
+        RP = Relative Performance index (normalized)
+        DT = Downtrend/Uptrend duration ratio
+        V = Volatility score (relative to Bitcoin)
+        DD = Drawdown severity index
+        RT = Recovery Time index
+        w1,w2,w3,w4,w5w1​,w2​,w3​,w4​,w5​ = Weights for each factor based on perceived importance
+
 ### DESIGN
 
 - Add a splash page

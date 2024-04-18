@@ -18,7 +18,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
     const [show100Week, setShow100Week] = useState(false);
     const [show200Week, setShow200Week] = useState(false);
     const color8Week = 'blue';
-    const color20Week = 'green';
+    const color20Week = 'limegreen';
     const color100Week = 'white';
     const color200Week = 'yellow';
 
@@ -393,8 +393,8 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                             width: '130px',
                             minWidth: '130px',
                             backgroundColor: show8Week ? '#4cceac' : 'transparent', // Highlight background when active
-                            color: show8Week ? color8Week : '#70d8bd', // Change text color when active
-                            borderColor: show8Week ? '#fff' : '#70d8bd' // Change border color when active
+                            color: show8Week ? color8Week : '#00b685', // Change text color when active
+                            borderColor: show8Week ? color8Week : '#70d8bd' // Change border color when active
                         }}
                     >
                         8 Week SMA
@@ -407,8 +407,8 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                             width: '130px',
                             minWidth: '130px',
                             backgroundColor: show20Week ? '#4cceac' : 'transparent',
-                            color: show20Week ? color20Week : '#70d8bd',
-                            borderColor: show20Week ? '#fff' : '#70d8bd'
+                            color: show20Week ? 'green' : '#00b685',
+                            borderColor: show20Week ? color20Week : '#70d8bd'
                         }}
                     >
                         20 Week SMA
@@ -421,8 +421,8 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                             width: '130px',
                             minWidth: '130px',
                             backgroundColor: show100Week ? '#4cceac' : 'transparent',
-                            color: show100Week ? color100Week : '#70d8bd',
-                            borderColor: show100Week ? '#fff' : '#70d8bd'
+                            color: show100Week ? color100Week : '#00b685',
+                            borderColor: show100Week ? color100Week : '#70d8bd'
                         }}
                     >
                         100 Week SMA
@@ -435,8 +435,8 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                             width: '130px',
                             minWidth: '130px',
                             backgroundColor: show200Week ? '#4cceac' : 'transparent',
-                            color: show200Week ? color200Week : '#70d8bd',
-                            borderColor: show200Week ? '#fff' : '#70d8bd'
+                            color: show200Week ? color200Week : '#00b685',
+                            borderColor: show200Week ? color200Week : '#70d8bd'
                         }}
                     >
                         200 Week SMA

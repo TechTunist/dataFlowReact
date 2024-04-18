@@ -10,6 +10,22 @@ const BitcoinRisk = ({ isDashboard = false }) => {
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
 
+    // State for user inputs
+    const [lowRisk, setLowRisk] = useState(0.2);
+    const [highRisk, setHighRisk] = useState(0.8);
+    const [usdInvest, setUsdInvest] = useState(1000);
+    const [btcSell, setBtcSell] = useState(0.1);
+    const [startDate, setStartDate] = useState("2021-01-01");  // Example start date
+
+    // State to store simulation results
+    const [simulationResult, setSimulationResult] = useState({
+        finalUsdHeld: 0,
+        finalBtcHeld: 0,
+        totalValue: 0,
+        transactionHistory: []
+    });
+
+
     // Function to format numbers to 'k', 'M', etc.
     function compactNumberFormatter(value) {
         if (value >= 1000000) {
@@ -21,6 +37,46 @@ const BitcoinRisk = ({ isDashboard = false }) => {
         }
     }
 
+    const simulateInvestment = (data, lowRisk, highRisk, usdInvest, btcSell, startDate) => {
+        // Filter data to start from the specified start date
+        const filteredData = data.filter(item => new Date(item.time) >= new Date(startDate));
+    
+        let usdHeld = 0;
+        let btcHeld = 0;
+        let totalValue = 0;
+        let transactionHistory = [];
+    
+        filteredData.forEach(day => {
+            if (day.Risk <= lowRisk) {
+                // Buy Bitcoin with the specified USD amount
+                let btcPurchased = usdInvest / day.value;
+                btcHeld += btcPurchased;
+                transactionHistory.push({ time: day.time, action: 'Buy', amount: btcPurchased, price: day.value });
+            } else if (day.Risk >= highRisk) {
+                // Sell the specified amount of Bitcoin
+                let usdReceived = btcSell * day.value;
+                btcHeld -= btcSell;
+                usdHeld += usdReceived;
+                transactionHistory.push({ time: day.time, action: 'Sell', amount: btcSell, price: day.value });
+            }
+    
+            // Update total value for each day
+            totalValue = (btcHeld * day.value) + usdHeld;
+        });
+    
+        return {
+            finalUsdHeld: usdHeld,
+            finalBtcHeld: btcHeld,
+            totalValue: totalValue,
+            transactionHistory: transactionHistory
+        };
+    };
+
+    const handleSimulation = () => {
+        const results = simulateInvestment(chartData, parseFloat(lowRisk), parseFloat(highRisk), parseFloat(usdInvest), parseFloat(btcSell), startDate);
+        setSimulationResult(results);
+    };
+    
     // Function to reset the chart view
     const resetChartView = () => {
         if (chartRef.current) {
@@ -84,6 +140,7 @@ const BitcoinRisk = ({ isDashboard = false }) => {
                     value: parseFloat(item.close)
                 }));             
                 const withRiskMetric = calculateRiskMetric(formattedData);
+                console.log(withRiskMetric);
 
                 localStorage.setItem(cacheKey, JSON.stringify(withRiskMetric));
                 setChartData(withRiskMetric);
@@ -148,7 +205,6 @@ const BitcoinRisk = ({ isDashboard = false }) => {
         });
         priceSeries.setData(chartData.map(data => ({ time: data.time, value: data.value })));
 
-        
         // Disable all interactions if the chart is displayed on the dashboard
         chart.applyOptions({
             handleScroll: !isDashboard,
@@ -188,8 +244,55 @@ const BitcoinRisk = ({ isDashboard = false }) => {
         };
     }, [chartData, theme.palette.mode]);
 
-    return (
+    // return (
 
+    //     <div style={{ height: '100%' }}> {/* Set a specific height for the entire container */}
+    //         <div className='chart-top-div'>
+    //             <div>
+    //                 <span style={{ marginRight: '20px', display: 'inline-block' }}>
+    //                     <span style={{ backgroundColor: 'gray', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
+    //                     Bitcoin Price
+    //                 </span>
+    //                 <span style={{ display: 'inline-block' }}>
+    //                     <span style={{ backgroundColor: 'red', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
+    //                     Risk Metric
+    //                 </span>
+    //             </div>
+                
+    //             {
+    //                 !isDashboard && (
+    //                     <button onClick={resetChartView} className="button-reset">
+    //                         Reset Chart
+    //                     </button>
+    //                 )   
+    //             }
+    //         </div>
+    //         <div className="chart-container" style={{ 
+    //                 position: 'relative', 
+    //                 height: 'calc(100% - 40px)', 
+    //                 width: '100%', 
+    //                 border: '2px solid #a9a9a9' // Adds dark border with your specified color
+    //                 }}> 
+    //             {/* Adjust the height calculation based on the height of your button and margin */}
+    //             <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
+    //         </div>
+    //         <div>
+    //             {
+    //                 !isDashboard && (
+    //                     <p className='chart-info'>
+    //                         The risk metric assesses Bitcoin's investment risk over time by comparing its daily prices to a 374-day moving average.
+    //                         It does so by calculating the normalized logarithmic difference between the price and the moving average,
+    //                         producing a score between 0 and 1. A higher score indicates higher risk, and a lower score indicates lower risk.
+    //                         This method provides a simplified view of when it might be riskier or safer to invest in Bitcoin based on historical price movements.
+    //                     </p>
+    //                 )   
+    //             }
+    //         </div>
+    //     </div>
+
+    //   );
+
+    return (
         <div style={{ height: '100%' }}> {/* Set a specific height for the entire container */}
             <div className='chart-top-div'>
                 <div>
@@ -202,7 +305,6 @@ const BitcoinRisk = ({ isDashboard = false }) => {
                         Risk Metric
                     </span>
                 </div>
-                
                 {
                     !isDashboard && (
                         <button onClick={resetChartView} className="button-reset">
@@ -217,10 +319,30 @@ const BitcoinRisk = ({ isDashboard = false }) => {
                     width: '100%', 
                     border: '2px solid #a9a9a9' // Adds dark border with your specified color
                     }}> 
-                {/* Adjust the height calculation based on the height of your button and margin */}
                 <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
             </div>
+            
             <div>
+                {
+                    !isDashboard && (
+                        <div>
+                            <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
+                            <input type="number" placeholder="Low Risk Threshold" value={lowRisk} onChange={e => setLowRisk(e.target.value)} />
+                            <input type="number" placeholder="High Risk Threshold" value={highRisk} onChange={e => setHighRisk(e.target.value)} />
+                            <input type="number" placeholder="USD to Invest" value={usdInvest} onChange={e => setUsdInvest(e.target.value)} />
+                            <input type="number" placeholder="BTC to Sell" value={btcSell} onChange={e => setBtcSell(e.target.value)} />
+                            <button onClick={handleSimulation}>Run Simulation</button>
+                        </div>
+                )}
+                { !isDashboard && (
+                    <div>
+                        Final USD: {simulationResult.finalUsdHeld.toFixed(2)}
+                        Final BTC: {simulationResult.finalBtcHeld.toFixed(4)}
+                        Total Value: {simulationResult.totalValue.toFixed(2)}
+                    </div>
+                    )   
+                }
+                
                 {
                     !isDashboard && (
                         <p className='chart-info'>
@@ -233,9 +355,7 @@ const BitcoinRisk = ({ isDashboard = false }) => {
                 }
             </div>
         </div>
-
-      );
-      
+    );
       
       
 };

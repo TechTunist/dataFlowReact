@@ -39,8 +39,8 @@ const About = () => {
                 knowledge of the cryptosphere it was easy to be misled by moonboys and shills with their speculative price predictions.
                 After a few years of personal growth and research, I now consume content from one or two YouTubers that tend to keep their content as factual as possible
                 based on the data we have available to us. <br /><br />
-                Now we do have a few boom and bust cycles under our belt which have increased the number of datapoints on which we can perform analysis,
-                certain indicators have been created that appear to be able to help us make better investment decisions and come up with our own strategies, 
+                Now we have a few boom and bust cycles under our belt with the corresponding datapoints on which we can perform analysis,
+                certain traditional and bespoke indicators can be to help us make better investment decisions and come up with our own strategies, 
                 taking the emotion out of the decision-making process and taking a data-centric approach.
                 Many of these indicators have been fit to or created in response to historical data, and have stood up to at least one market cycle. 
             
