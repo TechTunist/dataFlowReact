@@ -336,12 +336,6 @@ const EthereumPrice = ({ isDashboard = false }) => {
         if (maSeries.ma100Week) updateSeries(maSeries.ma100Week, movingAverage100Week, show100Week);
         if (maSeries.ma200Week) updateSeries(maSeries.ma200Week, movingAverage200Week, show200Week);
 
-        return () => {
-            chartRef.remove();
-            window.removeEventListener('resize', resizeChart);
-            window.removeEventListener('resize', resetChartView);
-        };
-
     }, [chartData, show8Week, show20Week, show100Week, show200Week, maSeries, color8Week, color20Week, color100Week, color200Week]);
 
     return (
