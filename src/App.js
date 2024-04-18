@@ -19,11 +19,16 @@ import BitcoinRiskColor from "./components/BitcoinRiskColor";
 import AltcoinPrice from "./components/AltcoinPrice";
 import About from "./scenes/About";
 import LoginSignup from "./scenes/LoginSignup";
+import { useLocation } from 'react-router-dom';
 
 
 function App() {
   const [theme, colorMode] = useMode();
   const [isSidebar, setIsSidebar] = useState(true);
+  const location = useLocation(); // Get current location
+  const isDashboardTopbar = location.pathname === '/'; // Determine if on Dashboard
+
+  
 
   return (
     <ColorModeContext.Provider value={colorMode}>
@@ -31,7 +36,7 @@ function App() {
         <CssBaseline />
         <div className="app" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
           {/* Topbar outside the main flexbox container to allow full width */}
-          <Topbar setIsSidebar={setIsSidebar} isSidebar={isSidebar} />
+          <Topbar setIsSidebar={setIsSidebar} isSidebar={isSidebar}  isDashboardTopbar={isDashboardTopbar}/>
 
           <div style={{ display: 'flex', flex: 1 }}> {/* Flex container for sidebar and content */}
             {isSidebar && <div className="sidebar">

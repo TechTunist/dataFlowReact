@@ -11,7 +11,7 @@ import useIsMobile from '../../hooks/useIsMobile';
 import { BorderColor } from "@mui/icons-material";
 import '../../styling/bitcoinChart.css'
 
-const Topbar = ({ setIsSidebar, isSidebar }) => {
+const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const colorMode = useContext(ColorModeContext);
@@ -90,10 +90,15 @@ const Topbar = ({ setIsSidebar, isSidebar }) => {
           <div className="topbar-link" style={{color: colors.primary[100]}}>About</div>
         </Link>
       </div>
+
+      {
+            isDashboardTopbar && (
+              <IconButton onClick={colorMode.toggleColorMode} color="inherit">
+                {theme.palette.mode === "dark" ? <LightModeOutlinedIcon /> : <DarkModeOutlinedIcon />}
+              </IconButton>
+            )   
+        }
       
-      <IconButton onClick={colorMode.toggleColorMode} color="inherit">
-        {theme.palette.mode === "dark" ? <LightModeOutlinedIcon /> : <DarkModeOutlinedIcon />}
-      </IconButton>
     </Box>
   );
 };
