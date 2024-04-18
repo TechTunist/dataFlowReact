@@ -42,25 +42,25 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
   const getTitle = (pathname) => {
     switch (pathname) {
       case "/":
-        return <Header title="Dashboard" subtitle="All available charts" />;
+        return <Header title="Dashboard" subtitle="All charts" />;
       case "/bitcoin":
-        return <Header title="Bitcoin" subtitle="Simple Bitcoin Chart" />;
+        return <Header title="Bitcoin" subtitle="Historical Chart" />;
       case "/risk":
-        return <Header title="Bitcoin" subtitle="Risk Chart" />;
+        return <Header title="Bitcoin" subtitle="Risk Metric" />;
       case "/ethereum":
-        return <Header title="Ethereum" subtitle="Simple Ethereum Chart" />;
+        return <Header title="Ethereum" subtitle="Historical Chart" />;
       case "/risk-eth":
-        return <Header title="Ethereum" subtitle="Ethereum Risk Chart" />;
+        return <Header title="Ethereum" subtitle="Risk Metric" />;
         case "/pi-cycle":
           return <Header title="PiCycle Top" subtitle="Top Calling Indicator" />;
         case "/fear-and-greed":
-          return <Header title="Fear and Greed" subtitle="Market Sentiment Analyzer" />;
+          return <Header title="Fear & Greed" subtitle="Market Sentiment" />;
         case "/logarithmic-regression":
           return <Header title="Bitcoin" subtitle="Logarithmic Regression" />;
         case "/risk-color":
-          return <Header title="Bitcoin Risk (Colour)" subtitle="Colour-Coded Risk Levels" />;
+          return <Header title="Bitcoin Risk (Colour)" subtitle="Risk Levels" />;
         case "/altcoin-price":
-          return <Header title="Altcoin Charts" subtitle="Simple Altcoin Price Chart" />;
+          return <Header title="Altcoins" subtitle="Altcoin Analysis" />;
         case "/about":
           return <Header title="About" subtitle="Why did I create Data Flow?" />;
         case "/login-signup":
