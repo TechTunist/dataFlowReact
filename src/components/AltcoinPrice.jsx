@@ -276,13 +276,7 @@ const AltcoinPrice = ({ isDashboard = false }) => {
 
     return (
         <div style={{ height: '100%' }}>
-            <div style={{ 
-                display: 'flex', // Use flex display for the container
-                justifyContent: 'space-between', // This spreads out the child elements
-                alignItems: 'center', // This vertically centers the children
-                marginBottom: '0px', 
-                height: '30px'
-            }}>
+            <div className='chart-top-div'>
                 <div>
                     {/* The switch and label go here */}
                     <label className="switch">

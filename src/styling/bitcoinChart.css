@@ -74,7 +74,8 @@ input:checked + .slider:before {
   }
 
 .button-reset {
-    margin-bottom: 20px;
+    /* margin-bottom: 20px; */
+    /* margin-top: 10px; */
     color: #70d8bd; /* Set text color to white */
     border: 2px solid #70d8bd; /* Set border to white */
     background-color: transparent; /* Make background transparent */
@@ -100,7 +101,7 @@ input:checked + .slider:before {
 
 
 .select-reset {
-    margin-bottom: 20px;
+    margin-bottom: 0px;
     color: #70d8bd; /* Set text color to match button */
     border: 2px solid #70d8bd; /* Set border to match button */
     background-color: transparent; /* Make background transparent */
@@ -164,6 +165,7 @@ input:checked + .slider:before {
 
 .chart-info {
     font-size: 1.2rem;
+    margin-top: 20px;
 }
 
 .dashboard-info {
@@ -185,13 +187,12 @@ input:checked + .slider:before {
 /* CSS for styled links */
 .topbar-link {
     font-size: 1rem; /* Set the font size */
-    color: white; /* Set the text color */
     text-decoration: none; /* Remove the underline */
     padding: 20px;
 }
 
 .topbar-link:hover {
-    color: #86eed4; /* Change color on hover */
+    color: #86eed4 !important; /* Change color on hover */
 }
 
 .about-page {
@@ -222,6 +223,14 @@ input:checked + .slider:before {
     margin-bottom: 20px; /* Space below the introductory text */
 }
 
+.chart-top-div {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    height: 30px;
+}
+
 
   /* Media query for devices with a max-width of 600px (common breakpoint for mobile devices) */
   @media (max-width: 600px) {
@@ -243,3 +252,14 @@ input:checked + .slider:before {
         content: '';
     }
   }
+
+/* Media query for devices between 651px and 850px */
+@media (min-width: 651px) and (max-width: 850px) {
+    .select-reset,
+    .select-pair,
+    .select-reset-wrapper:after {
+        font-size: 1rem; /* Adjust font size for larger mobile devices */
+        padding: 5px;
+        content: ''; /* This is generally used with :before and :after pseudo-elements */
+    }
+}

@@ -15,6 +15,17 @@ const BitcoinLogRegression = ({ isDashboard = false }) => {
     const colors = tokens(theme.palette.mode);
     const [tooltipData, setTooltipData] = useState(null);
 
+    // Function to format numbers to 'k', 'M', etc.
+    function compactNumberFormatter(value) {
+        if (value >= 1000000) {
+            return (value / 1000000).toFixed(0) + 'M'; // Millions
+        } else if (value >= 1000) {
+            return (value / 1000).toFixed(0) + 'k'; // Thousands
+        } else {
+            return value.toFixed(0); // For values less than 1000, show the full number
+        }
+    }
+
     // Function to toggle scale mode
     const toggleScaleMode = () => {
         setScaleMode(prevMode => (prevMode === 1 ? 2 : 1));
@@ -129,6 +140,10 @@ const BitcoinLogRegression = ({ isDashboard = false }) => {
         chart.priceScale('right').applyOptions({
             mode: scaleMode,
             borderVisible: false,
+            priceFormat: {
+                type: 'custom',
+                formatter: compactNumberFormatter,
+            },
         });
     
         const resizeChart = () => {
@@ -168,6 +183,10 @@ const BitcoinLogRegression = ({ isDashboard = false }) => {
             lineWidth: 2,
             lastValueVisible: false,
             priceLineVisible: false,
+            priceFormat: {
+                type: 'custom',
+                formatter: compactNumberFormatter, // Use the custom formatter
+            },
         });
         priceSeries.setData(chartData);
 
@@ -319,13 +338,7 @@ const BitcoinLogRegression = ({ isDashboard = false }) => {
 
     return (
         <div style={{ height: '100%' }}>
-            <div style={{ 
-                display: 'flex', // Use flex display for the container
-                justifyContent: 'space-between', // This spreads out the child elements
-                alignItems: 'center', // This vertically centers the children
-                marginBottom: '0px', 
-                height: '30px'
-            }}>
+            <div className='chart-top-div'>
                 <div>
                     {/* Placeholder for styling */}
                 </div>

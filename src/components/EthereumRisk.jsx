@@ -10,6 +10,17 @@ const EthereumRisk = ({ isDashboard = false }) => {
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
 
+    // Function to format numbers to 'k', 'M', etc.
+    function compactNumberFormatter(value) {
+        if (value >= 1000000) {
+            return (value / 1000000).toFixed(0) + 'M'; // Millions
+        } else if (value >= 1000) {
+            return (value / 1000).toFixed(0) + 'k'; // Thousands
+        } else {
+            return value.toFixed(0); // For values less than 1000, show the full number
+        }
+    }
+
     // Function to reset the chart view
     const resetChartView = () => {
         if (chartRef.current) {
@@ -133,6 +144,10 @@ const EthereumRisk = ({ isDashboard = false }) => {
             color: 'gray',
             priceScaleId: 'left',
             lineWidth: 0.7,
+            priceFormat: {
+                type: 'custom',
+                formatter: compactNumberFormatter, // Use the custom formatter
+            },
         });
         priceSeries.setData(chartData.map(data => ({ time: data.time, value: data.value })));
 
@@ -146,6 +161,10 @@ const EthereumRisk = ({ isDashboard = false }) => {
         chart.priceScale('left').applyOptions({
             mode: 1, // Logarithmic scale
             borderVisible: false,
+            priceFormat: {
+                type: 'custom',
+                formatter: compactNumberFormatter,
+            },
         });
         
         // Function to update chart size
@@ -175,7 +194,7 @@ const EthereumRisk = ({ isDashboard = false }) => {
     return (
 
         <div style={{ height: '100%' }}> {/* Set a specific height for the entire container */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', textAlign: 'left', marginBottom: '0px', height: '30px' }}>
+            <div className='chart-top-div'>
                 <div>
                 <span style={{ marginRight: '20px', display: 'inline-block' }}>
                     <span style={{ backgroundColor: 'gray', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>

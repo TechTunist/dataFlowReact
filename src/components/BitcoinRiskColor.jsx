@@ -79,10 +79,8 @@ const BitcoinRiskColor = ({ isDashboard = false }) => {
     const chartMargin = isDashboard ? { l: 50, r: 10, t: 45, b: 50 } : { l: 60, r: 10, t: 45, b: 60 };
 
     return (
-
-
         <div style={{ height: '100%' }}> {/* Set a specific height for the entire container */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', textAlign: 'left', marginBottom: '0px', height: '30px' }}>
+        <div className='chart-top-div' >
             <div>
                 {/* placeholder for styling */}
             </div>

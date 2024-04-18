@@ -19,13 +19,24 @@ const calculateSMA = (data, windowSize) => {
 
 
 const PiCycleTopChart = ({ isDashboard = false }) => {
-  const chartContainerRef = useRef();
-  const [chartData, setChartData] = useState([]);
-  const [scaleMode, setScaleMode] = useState(1);
-  const theme = useTheme();
-  const colors = tokens(theme.palette.mode);
-  const chartRef = useRef(null);
-  const [showMarkers, setShowMarkers] = useState(true);
+    const chartContainerRef = useRef();
+    const [chartData, setChartData] = useState([]);
+    const [scaleMode, setScaleMode] = useState(1);
+    const theme = useTheme();
+    const colors = tokens(theme.palette.mode);
+    const chartRef = useRef(null);
+    const [showMarkers, setShowMarkers] = useState(true);
+
+    // Function to format numbers to 'k', 'M', etc.
+    function compactNumberFormatter(value) {
+        if (value >= 1000000) {
+            return (value / 1000000).toFixed(0) + 'M'; // Millions
+        } else if (value >= 1000) {
+            return (value / 1000).toFixed(0) + 'k'; // Thousands
+        } else {
+            return value.toFixed(0); // For values less than 1000, show the full number
+        }
+    }
 
     // Function to toggle the visibility of markers
     const toggleMarkers = () => {
@@ -116,6 +127,10 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
                 color: '#4ba1c8',
                 lineWidth: 2,
                 priceLineVisible: false,
+                priceFormat: {
+                    type: 'custom',
+                    formatter: compactNumberFormatter, // Use the custom formatter
+                },
             });
 
             const sma111Series = chart.addLineSeries({
@@ -193,6 +208,10 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
                     top: 0.1, // 10% empty space at the top
                     bottom: 0.1 // 10% empty space at the bottom
                 },
+                priceFormat: {
+                    type: 'custom',
+                    formatter: compactNumberFormatter,
+                },
             });
         
             const resizeChart = () => {
@@ -261,13 +280,7 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
 
     return (
         <div style={{ height: '100%' }}>
-            <div style={{ 
-                display: 'flex', // Use flex display for the container
-                justifyContent: 'space-between', // This spreads out the child elements
-                alignItems: 'center', // This vertically centers the children
-                marginBottom: '0px', 
-                height: '30px'
-                }}>
+            <div className='chart-top-div'>
                 <div>
                     {/* Button to toggle markers */}
                     {

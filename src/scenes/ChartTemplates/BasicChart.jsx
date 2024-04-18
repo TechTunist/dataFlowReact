@@ -3,7 +3,7 @@ import { Box } from "@mui/material";
 const BasicChart = ({ ChartComponent }) => {
 
   return (
-    <Box m="20px" >
+    <Box m="20px" mt="10px">
       <Box
         height="75vh"
         sx={{

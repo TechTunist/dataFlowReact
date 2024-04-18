@@ -5,7 +5,6 @@ import '../styling/bitcoinChart.css'
 import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
 
-
 const BitcoinPrice = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
     const [chartData, setChartData] = useState([]);
@@ -23,8 +22,16 @@ const BitcoinPrice = ({ isDashboard = false }) => {
     const color100Week = 'white';
     const color200Week = 'yellow';
 
-
-
+    // Function to format numbers to 'k', 'M', etc.
+    function compactNumberFormatter(value) {
+        if (value >= 1000000) {
+            return (value / 1000000).toFixed(0) + 'M'; // Millions
+        } else if (value >= 1000) {
+            return (value / 1000).toFixed(0) + 'k'; // Thousands
+        } else {
+            return value.toFixed(0); // For values less than 1000, show the full number
+        }
+    }
 
     // Function to toggle the visibility of markers
     const toggle8Week = () => {
@@ -89,7 +96,17 @@ const BitcoinPrice = ({ isDashboard = false }) => {
 
     // Function to toggle scale mode
     const toggleScaleMode = () => {
-        setScaleMode(prevMode => (prevMode === 1 ? 0 : 1));
+        // Toggle the scaleMode state
+        const newScaleMode = scaleMode === 1 ? 0 : 1;
+        setScaleMode(newScaleMode);
+
+        // Directly apply the new scale mode to the price scale of the chart
+        if (chartRef.current) {
+            chartRef.current.priceScale('right').applyOptions({
+                mode: newScaleMode,
+                borderVisible: false,
+            });
+        }
     };
 
     // Function to reset the chart view
@@ -119,7 +136,6 @@ const BitcoinPrice = ({ isDashboard = false }) => {
             fetchData();
         }
 
-    
         function fetchData() {
             // if no cached data is found, fetch new data
             fetch('https://tunist.pythonanywhere.com/api/btc/price/')
@@ -192,6 +208,10 @@ const BitcoinPrice = ({ isDashboard = false }) => {
         chart.priceScale('right').applyOptions({
             mode: scaleMode,
             borderVisible: false,
+            priceFormat: {
+                type: 'custom',
+                formatter: compactNumberFormatter,
+            },
         });
     
         const resizeChart = () => {
@@ -228,7 +248,11 @@ const BitcoinPrice = ({ isDashboard = false }) => {
             topColor: topColor, 
             bottomColor: bottomColor, 
             lineColor: lineColor, 
-            lineWidth: 2, 
+            lineWidth: 2,
+            priceFormat: {
+                type: 'custom',
+                formatter: compactNumberFormatter, // Use the custom formatter
+            },
         });
         areaSeries.setData(chartData);
         
@@ -247,7 +271,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
             window.removeEventListener('resize', resizeChart);
             window.removeEventListener('resize', resetChartView);
         };
-    }, [chartData, scaleMode, isDashboard, theme.palette.mode]);
+    }, [chartData, isDashboard, theme.palette.mode]);
 
     // Initialize state for series references
     const [maSeries, setMaSeries] = useState({
@@ -314,18 +338,18 @@ const BitcoinPrice = ({ isDashboard = false }) => {
         if (maSeries.ma100Week) updateSeries(maSeries.ma100Week, movingAverage100Week, show100Week);
         if (maSeries.ma200Week) updateSeries(maSeries.ma200Week, movingAverage200Week, show200Week);
 
+        return () => {
+            chartRef.remove();
+            window.removeEventListener('resize', resizeChart);
+            window.removeEventListener('resize', resetChartView);
+        };
+
     }, [chartData, show8Week, show20Week, show100Week, show200Week, maSeries, color8Week, color20Week, color100Week, color200Week]);
 
 
     return (
         <div style={{ height: '100%' }}>
-            <div style={{ 
-                display: 'flex', // Use flex display for the container
-                justifyContent: 'space-between', // This spreads out the child elements
-                alignItems: 'center', // This vertically centers the children
-                marginBottom: '0px', 
-                height: '30px'
-            }}>
+            <div className='chart-top-div'>
                 <div>
                     {/* The switch and label go here */}
                     <label className="switch">
