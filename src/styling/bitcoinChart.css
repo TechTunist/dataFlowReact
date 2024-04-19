@@ -79,7 +79,7 @@ input:checked + .slider:before {
 .button-reset {
     /* margin-bottom: 20px; */
     /* margin-top: 10px; */
-    color: #00b685; /* Set text color to white */
+    color: #31d6aa; /* Set text color to white */
     border: 2px solid #31d6aa; /* Set border to white */
     background-color: transparent; /* Make background transparent */
     padding: 5px 15px; /* Adjust padding as needed */
@@ -88,6 +88,7 @@ input:checked + .slider:before {
     cursor: pointer;
     box-shadow: none; /* No shadow by default */
     transition: background-color 0.3s ease, box-shadow 0.3s ease, color 0.3s ease;
+    margin-left: 10px;
 }
 
 .button-reset:hover {
@@ -254,6 +255,14 @@ input:checked + .slider:before {
         padding: 5px;
         content: '';
     }
+
+    .span-container {
+        width: 150px;
+    }
+
+    .button-reset {
+        font-size: 0.7rem;
+    }
   }
 
 /* Media query for devices between 651px and 850px */
@@ -264,5 +273,12 @@ input:checked + .slider:before {
         font-size: 1rem; /* Adjust font size for larger mobile devices */
         padding: 5px;
         content: ''; /* This is generally used with :before and :after pseudo-elements */
+    }
+    .span-container {
+        width: 150px;
+    }
+
+    .button-reset {
+        font-size: 0.7rem;
     }
 }

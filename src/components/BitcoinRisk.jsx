@@ -17,6 +17,12 @@ const BitcoinRisk = ({ isDashboard = false }) => {
     const [btcSell, setBtcSell] = useState(0.1);
     const [startDate, setStartDate] = useState("2021-01-01");  // Example start date
 
+    // State to store current risk level
+    const [currentRiskLevel, setCurrentRiskLevel] = useState(null);
+
+    // state to allow interactivity
+    const [isInteractive, setIsInteractive] = useState(false);
+
     // State to store simulation results
     const [simulationResult, setSimulationResult] = useState({
         finalUsdHeld: 0,
@@ -78,8 +84,6 @@ const BitcoinRisk = ({ isDashboard = false }) => {
             initialRiskLevel: initialRiskLevel  // Including the initial risk level in the results
         };
     };
-    
-    
 
     const handleSimulation = () => {
         const results = simulateInvestment(chartData, parseFloat(usdInvest), startDate);
@@ -91,6 +95,11 @@ const BitcoinRisk = ({ isDashboard = false }) => {
         if (chartRef.current) {
             chartRef.current.timeScale().fitContent();
         }
+    };
+
+    // Function to set chart interactivity
+    const setInteractivity = () => {
+            setIsInteractive(!isInteractive);
     };
 
     // function to calculate the risk metric
@@ -215,8 +224,8 @@ const BitcoinRisk = ({ isDashboard = false }) => {
 
         // Disable all interactions if the chart is displayed on the dashboard
         chart.applyOptions({
-            handleScroll: !isDashboard,
-            handleScale: !isDashboard,
+            handleScroll: isInteractive,
+            handleScale: isInteractive,
         });
         
         chart.priceScale('left').applyOptions({
@@ -238,6 +247,9 @@ const BitcoinRisk = ({ isDashboard = false }) => {
             }
         };
 
+        const latestData = chartData[chartData.length - 1]; // Get the last item in the array
+        setCurrentRiskLevel(latestData.Risk.toFixed(2)); // Update the state with the latest risk level
+
         window.addEventListener('resize', resizeChart);
         window.addEventListener('resize', resetChartView);
         resizeChart();
@@ -250,60 +262,12 @@ const BitcoinRisk = ({ isDashboard = false }) => {
             window.removeEventListener('resize', resizeChart);
             window.removeEventListener('resize', resetChartView);
         };
-    }, [chartData, theme.palette.mode]);
-
-    // return (
-
-    //     <div style={{ height: '100%' }}> {/* Set a specific height for the entire container */}
-    //         <div className='chart-top-div'>
-    //             <div>
-    //                 <span style={{ marginRight: '20px', display: 'inline-block' }}>
-    //                     <span style={{ backgroundColor: 'gray', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
-    //                     Bitcoin Price
-    //                 </span>
-    //                 <span style={{ display: 'inline-block' }}>
-    //                     <span style={{ backgroundColor: 'red', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
-    //                     Risk Metric
-    //                 </span>
-    //             </div>
-                
-    //             {
-    //                 !isDashboard && (
-    //                     <button onClick={resetChartView} className="button-reset">
-    //                         Reset Chart
-    //                     </button>
-    //                 )   
-    //             }
-    //         </div>
-    //         <div className="chart-container" style={{ 
-    //                 position: 'relative', 
-    //                 height: 'calc(100% - 40px)', 
-    //                 width: '100%', 
-    //                 border: '2px solid #a9a9a9' // Adds dark border with your specified color
-    //                 }}> 
-    //             {/* Adjust the height calculation based on the height of your button and margin */}
-    //             <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
-    //         </div>
-    //         <div>
-    //             {
-    //                 !isDashboard && (
-    //                     <p className='chart-info'>
-    //                         The risk metric assesses Bitcoin's investment risk over time by comparing its daily prices to a 374-day moving average.
-    //                         It does so by calculating the normalized logarithmic difference between the price and the moving average,
-    //                         producing a score between 0 and 1. A higher score indicates higher risk, and a lower score indicates lower risk.
-    //                         This method provides a simplified view of when it might be riskier or safer to invest in Bitcoin based on historical price movements.
-    //                     </p>
-    //                 )   
-    //             }
-    //         </div>
-    //     </div>
-
-    //   );
+    }, [chartData, theme.palette.mode, isInteractive]);
 
     return (
         <div style={{ height: '100%' }}> {/* Set a specific height for the entire container */}
             <div className='chart-top-div'>
-                <div>
+                <div className='span-container'>
                     <span style={{ marginRight: '20px', display: 'inline-block' }}>
                         <span style={{ backgroundColor: 'gray', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
                         Bitcoin Price
@@ -313,13 +277,30 @@ const BitcoinRisk = ({ isDashboard = false }) => {
                         Risk Metric
                     </span>
                 </div>
-                {
-                    !isDashboard && (
-                        <button onClick={resetChartView} className="button-reset">
-                            Reset Chart
-                        </button>
-                    )   
-                }
+                <div style={{ display: 'flex', justifyContent: 'flex-end'}}>
+                    {
+                        !isDashboard && (
+                            <button
+                                onClick={setInteractivity}
+                                className="button-reset"
+                                style={{
+                                    backgroundColor: isInteractive ? '#4cceac' : 'transparent',
+                                    color: isInteractive ? 'black' : '#31d6aa',
+                                    borderColor: isInteractive ? 'violet' : '#70d8bd'
+                                }}>
+                                {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
+                            </button>
+                        )   
+                    }
+                    {
+                        !isDashboard && (
+                            <button onClick={resetChartView} className="button-reset">
+                                Reset Chart
+                            </button>
+                        )   
+                    }
+                </div>
+                
             </div>
             <div className="chart-container" style={{ 
                     position: 'relative', 
@@ -329,39 +310,50 @@ const BitcoinRisk = ({ isDashboard = false }) => {
                     }}> 
                 <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
             </div>
-            
             <div>
-            {
-                !isDashboard && (
-                    <div className='risk-simulator'>
-                        <h1>Backtest the Risk Metric Investment Strategy</h1>
-                        <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} /> Date <br />
-                        <input type="number" placeholder="USD to Invest" value={usdInvest} onChange={e => setUsdInvest(e.target.value)} /> Investment in USD<br />
-                        <button onClick={handleSimulation}>Run Simulation</button>
+                {
+                    !isDashboard && (
+                        <div style={{ display: 'inline-block', marginTop: '10px', fontSize: '1.2rem'}}>
+                            Current Risk level: {currentRiskLevel}
+                        </div>
+                    )
+                }
+                {
+                    !isDashboard && (
+                        <div className='risk-simulator' style={{marginTop: '10px'}}>
+                            <h1>Backtest the Risk Metric Investment Strategy</h1>
+                            <h2>Lump Sum</h2>
+                        <p>Choose a date and a lump sum to invest when the risk reaches an acceptably low level for your tolerance,
+                            and see what the investment would be worth today.
+
+                        </p>
+                            <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} /> Date <br />
+                            <input type="number" placeholder="USD to Invest" value={usdInvest} onChange={e => setUsdInvest(e.target.value)} /> Investment in USD<br />
+                            <button onClick={handleSimulation}>Run Simulation</button>
+                        </div>
+                    )
+                }
+                { !isDashboard && simulationResult.investmentDate && (
+                    <div className='results-display'>
+                        Investment Date: {simulationResult.investmentDate} <br />
+                        Invested Amount: ${simulationResult.investedAmount.toFixed(2)} <br />
+                        Initial Bitcoin Price: ${simulationResult.initialBitcoinPrice.toFixed(2)} <br />
+                        Amount of Bitcoin Purchased: {simulationResult.btcHeld.toFixed(4)} BTC <br />
+                        Current Value of Investment: ${simulationResult.currentValue.toFixed(2)} <br />
+                        Current Bitcoin Price: ${simulationResult.currentBitcoinPrice.toFixed(2)} <br />
+                        Risk Level at Investment Date: {simulationResult.initialRiskLevel.toFixed(2)} <br />
                     </div>
-                )
-            }
-            { !isDashboard && simulationResult.investmentDate && (
-                <div className='results-display'>
-                    Investment Date: {simulationResult.investmentDate} <br />
-                    Invested Amount: ${simulationResult.investedAmount.toFixed(2)} <br />
-                    Initial Bitcoin Price: ${simulationResult.initialBitcoinPrice.toFixed(2)} <br />
-                    Amount of Bitcoin Purchased: {simulationResult.btcHeld.toFixed(4)} BTC <br />
-                    Current Value of Investment: ${simulationResult.currentValue.toFixed(2)} <br />
-                    Current Bitcoin Price: ${simulationResult.currentBitcoinPrice.toFixed(2)} <br />
-                    Risk Level at Investment Date: {simulationResult.initialRiskLevel.toFixed(2)} <br />
-                </div>
-            )}
-            {
-                !isDashboard && (
-                    <p className='chart-info'>
-                        The risk metric assesses Bitcoin's investment risk over time by comparing its daily prices to a 374-day moving average.
-                        It does so by calculating the normalized logarithmic difference between the price and the moving average,
-                        producing a score between 0 and 1. A higher score indicates higher risk, and a lower score indicates lower risk.
-                        This method provides a simplified view of when it might be riskier or safer to invest in Bitcoin based on historical price movements.
-                    </p>
-                )   
-            }
+                )}
+                {
+                    !isDashboard && (
+                        <p className='chart-info'>
+                            The risk metric assesses Bitcoin's investment risk over time by comparing its daily prices to a 374-day moving average.
+                            It does so by calculating the normalized logarithmic difference between the price and the moving average,
+                            producing a score between 0 and 1. A higher score indicates higher risk, and a lower score indicates lower risk.
+                            This method provides a simplified view of when it might be riskier or safer to invest in Bitcoin based on historical price movements.
+                        </p>
+                    )   
+                }
             </div>
         </div>
     );

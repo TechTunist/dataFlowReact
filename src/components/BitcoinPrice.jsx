@@ -21,6 +21,13 @@ const BitcoinPrice = ({ isDashboard = false }) => {
     const color20Week = 'limegreen';
     const color100Week = 'white';
     const color200Week = 'yellow';
+    // state to allow interactivity
+    const [isInteractive, setIsInteractive] = useState(false);
+
+    // Function to set chart interactivity
+    const setInteractivity = () => {
+        setIsInteractive(!isInteractive);
+    };
 
     // Function to format numbers to 'k', 'M', etc.
     function compactNumberFormatter(value) {
@@ -94,19 +101,9 @@ const BitcoinPrice = ({ isDashboard = false }) => {
         return emaArray;
     };
 
-    // Function to toggle scale mode
     const toggleScaleMode = () => {
-        // Toggle the scaleMode state
         const newScaleMode = scaleMode === 1 ? 0 : 1;
         setScaleMode(newScaleMode);
-
-        // Directly apply the new scale mode to the price scale of the chart
-        if (chartRef.current) {
-            chartRef.current.priceScale('right').applyOptions({
-                mode: newScaleMode,
-                borderVisible: false,
-            });
-        }
     };
 
     // Function to reset the chart view
@@ -117,48 +114,51 @@ const BitcoinPrice = ({ isDashboard = false }) => {
     };
 
     useEffect(() => {
+        if (chartRef.current) {
+            chartRef.current.priceScale('right').applyOptions({
+                mode: scaleMode,
+                borderVisible: false,
+            });
+        }
+    }, [scaleMode]);
+
+    // This useEffect handles fetching data and updating the local storage cache. It’s self-contained and correctly handles data fetching independently.
+    useEffect(() => {
         const cacheKey = 'btcData';
         const cachedData = localStorage.getItem(cacheKey);
         const today = new Date();
-
+    
+        const fetchData = async () => {
+            try {
+                const response = await fetch('https://tunist.pythonanywhere.com/api/btc/price/');
+                const data = await response.json();
+                const formattedData = data.map(item => ({
+                    time: item.date,
+                    value: parseFloat(item.close)
+                }));
+                localStorage.setItem(cacheKey, JSON.stringify(formattedData));
+                setChartData(formattedData);
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
+        };
+    
         if (cachedData) {
             const parsedData = JSON.parse(cachedData);
             const lastCachedDate = new Date(parsedData[parsedData.length - 1].time);
-
             if (lastCachedDate.setHours(0, 0, 0, 0) === today.setHours(0, 0, 0, 0)) {
-                // if cached data is found, parse it and set it to the state
                 setChartData(JSON.parse(cachedData));
             } else {
                 fetchData();
             }
-            
         } else {
             fetchData();
         }
-
-        function fetchData() {
-            // if no cached data is found, fetch new data
-            fetch('https://tunist.pythonanywhere.com/api/btc/price/')
-            .then(response => response.json())
-            .then(data => {
-                const formattedData = data.map(item => ({
-                    time: item.date,
-                    value: parseFloat(item.close)
-                }));             
-                
-                setChartData(formattedData);
-
-                // save the data to local storage
-                localStorage.setItem(cacheKey, JSON.stringify(formattedData));
-
-            })
-            .catch(error => {
-                console.error('Error fetching data: ', error);
-            });
-        }
     }, []);
     
-
+    
+    // This useEffect initializes the chart and updates it based on changes to the chartData,
+    // theme.palette.mode, and isDashboard. It manages subscriptions and resizing.
     useEffect(() => {
         if (chartData.length === 0) return;
     
@@ -169,109 +169,69 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                 background: { type: 'solid', color: colors.primary[700] },
                 textColor: colors.primary[100],
             },
-            grid: {
-                vertLines: {
-                    color: colors.greenAccent[700],
-                },
-                horzLines: {
-                    color: colors.greenAccent[700],
-                },
-            },
-            timeScale: {
-                minBarSpacing: 0.001,
-            },
-        });
-
-        // update tooltip data on crosshairMove event
-        chart.subscribeCrosshairMove(param => {
-            if (
-                param.point === undefined ||
-                !param.time ||
-                param.point.x < 0 ||
-                param.point.x > chartContainerRef.current.clientWidth ||
-                param.point.y < 0 ||
-                param.point.y > chartContainerRef.current.clientHeight
-            ) {
-                setTooltipData(null);
-            } else {
-                const dateStr = param.time;
-                const data = param.seriesData.get(areaSeries);
-                setTooltipData({
-                    date: dateStr,
-                    price: data.value,
-                    x: param.point.x,
-                    y: param.point.y,
-                });
-            }
+            grid: { vertLines: { color: colors.greenAccent[700] }, horzLines: { color: colors.greenAccent[700] } },
+            timeScale: { minBarSpacing: 0.001 },
         });
     
-        chart.priceScale('right').applyOptions({
-            mode: scaleMode,
-            borderVisible: false,
-            priceFormat: {
-                type: 'custom',
-                formatter: compactNumberFormatter,
-            },
-        });
-    
-        const resizeChart = () => {
-            if (chart && chartContainerRef.current) {
-                chart.applyOptions({
-                    width: chartContainerRef.current.clientWidth,
-                    height: chartContainerRef.current.clientHeight,
-                });
-                chart.timeScale().fitContent();
-            }
-        };
-    
-        window.addEventListener('resize', resizeChart);
-        window.addEventListener('resize', resetChartView);
-
-         // Define your light and dark theme colors for the area series
-         const lightThemeColors = {
-            topColor: 'rgba(255, 165, 0, 0.56)', // Soft orange for the top gradient
-            bottomColor: 'rgba(255, 165, 0, 0.2)', // Very subtle orange for the bottom gradient
-            lineColor: 'rgba(255, 140, 0, 0.8)', // A vibrant, slightly deeper orange for the line
-        };
-        
-        const darkThemeColors = {
-            topColor: 'rgba(38, 198, 218, 0.56)', 
-            bottomColor: 'rgba(38, 198, 218, 0.04)', 
-            lineColor: 'rgba(38, 198, 218, 1)', 
-        };
-
-        // Select colors based on the theme mode
-        const { topColor, bottomColor, lineColor } = theme.palette.mode === 'dark' ? darkThemeColors : lightThemeColors;
-
         const areaSeries = chart.addAreaSeries({
             priceScaleId: 'right',
-            topColor: topColor, 
-            bottomColor: bottomColor, 
-            lineColor: lineColor, 
+            topColor: theme.palette.mode === 'dark' ? 'rgba(38, 198, 218, 0.56)' : 'rgba(255, 165, 0, 0.56)',
+            bottomColor: theme.palette.mode === 'dark' ? 'rgba(38, 198, 218, 0.04)' : 'rgba(255, 165, 0, 0.2)',
+            lineColor: theme.palette.mode === 'dark' ? 'rgba(38, 198, 218, 1)' : 'rgba(255, 140, 0, 0.8)',
             lineWidth: 2,
-            priceFormat: {
-                type: 'custom',
-                formatter: compactNumberFormatter, // Use the custom formatter
-            },
+            priceFormat: { type: 'custom', formatter: compactNumberFormatter },
         });
-        areaSeries.setData(chartData);
-        
 
+        chart.priceScale('right').applyOptions({
+            mode: scaleMode,
+            // borderVisible: false,
+        });
+    
+        areaSeries.setData(chartData);
+    
         chart.applyOptions({
             handleScroll: !isDashboard,
             handleScale: !isDashboard,
-        });
+            handleScroll: isInteractive,
+            handleScale: isInteractive, });
     
-        resizeChart(); // Ensure initial resize and fitContent call
-        chart.timeScale().fitContent(); // Additional call to fitContent to ensure coverage
-        chartRef.current = chart; // Store the chart instance
+        const resizeChart = () => {
+            chart.applyOptions({ width: chartContainerRef.current.clientWidth, height: chartContainerRef.current.clientHeight });
+            chart.timeScale().fitContent();
+        };
+
+        resizeChart();
+    
+        window.addEventListener('resize', resizeChart);
+
+        chartRef.current = chart;
     
         return () => {
             chart.remove();
             window.removeEventListener('resize', resizeChart);
-            window.removeEventListener('resize', resetChartView);
         };
     }, [chartData, isDashboard, theme.palette.mode]);
+
+    useEffect(() => {
+        if (chartRef.current) {
+            // Disable all interactions if the chart is displayed on the dashboard
+        chartRef.current.applyOptions({
+            handleScroll: isInteractive,
+            handleScale: isInteractive,
+        });
+        }
+    }, [isInteractive]);
+
+    // useEffect for applying scaleMode changes
+    useEffect(() => {
+        if (chartRef.current) {
+            chartRef.current.priceScale('right').applyOptions({
+                mode: scaleMode,
+                borderVisible: false,
+            });
+        }
+    }, [scaleMode]);
+    
 
     // Initialize state for series references
     const [maSeries, setMaSeries] = useState({
@@ -281,64 +241,44 @@ const BitcoinPrice = ({ isDashboard = false }) => {
         ma200Week: null,
     });
 
+    // This useEffect updates the SMA series based on toggles and chart data updates. It manages creating and updating line series for moving averages.
     useEffect(() => {
         if (chartData.length === 0 || !chartRef.current) return;
-
-        // Only create series once and store their references
-        if (!maSeries.ma8Week) {
-            const series = {
-                ma8Week: chartRef.current.addLineSeries({
+    
+        const createOrUpdateSeries = (series, color, isVisible) => {
+            if (!series) {
+                series = chartRef.current.addLineSeries({
                     priceScaleId: 'right',
-                    color: color8Week,
+                    color: color,
                     lineWidth: 2,
                     priceLineVisible: false,
-                }),
-                ma20Week: chartRef.current.addLineSeries({
-                    priceScaleId: 'right',
-                    color: color20Week,
-                    lineWidth: 2,
-                    priceLineVisible: false,
-                }),
-                ma100Week: chartRef.current.addLineSeries({
-                    priceScaleId: 'right',
-                    color: color100Week,
-                    lineWidth: 2,
-                    priceLineVisible: false,
-                }),
-                ma200Week: chartRef.current.addLineSeries({
-                    priceScaleId: 'right',
-                    color: color200Week,
-                    lineWidth: 2,
-                    priceLineVisible: false,
-                }),
-            };
-            setMaSeries(series);
-        }
-
-        // Update data and visibility based on toggles
-        const updateSeries = (series, data, show) => {
-            if (show) {
-                series.setData(data);
-                series.applyOptions({ visible: true });
-            } else {
-                series.setData([]);
-                series.applyOptions({ visible: false });
+                });
             }
+            return series;
         };
-
-        // Calculate SMAs
+    
+        const updateSeriesData = (series, data, show) => {
+            series.setData(show ? data : []);
+            series.applyOptions({ visible: show });
+        };
+    
         const movingAverage8Week = calculateMovingAverage(chartData, 8 * 7);
         const movingAverage20Week = calculateMovingAverage(chartData, 20 * 7);
         const movingAverage100Week = calculateMovingAverage(chartData, 100 * 7);
         const movingAverage200Week = calculateMovingAverage(chartData, 200 * 7);
-
-        // Apply data and visibility
-        if (maSeries.ma8Week) updateSeries(maSeries.ma8Week, movingAverage8Week, show8Week);
-        if (maSeries.ma20Week) updateSeries(maSeries.ma20Week, movingAverage20Week, show20Week);
-        if (maSeries.ma100Week) updateSeries(maSeries.ma100Week, movingAverage100Week, show100Week);
-        if (maSeries.ma200Week) updateSeries(maSeries.ma200Week, movingAverage200Week, show200Week);
-
-    }, [chartData, show8Week, show20Week, show100Week, show200Week, maSeries, color8Week, color20Week, color100Week, color200Week]);
+    
+        maSeries.ma8Week = createOrUpdateSeries(maSeries.ma8Week, color8Week, show8Week);
+        maSeries.ma20Week = createOrUpdateSeries(maSeries.ma20Week, color20Week, show20Week);
+        maSeries.ma100Week = createOrUpdateSeries(maSeries.ma100Week, color100Week, show100Week);
+        maSeries.ma200Week = createOrUpdateSeries(maSeries.ma200Week, color200Week, show200Week);
+    
+        updateSeriesData(maSeries.ma8Week, movingAverage8Week, show8Week);
+        updateSeriesData(maSeries.ma20Week, movingAverage20Week, show20Week);
+        updateSeriesData(maSeries.ma100Week, movingAverage100Week, show100Week);
+        updateSeriesData(maSeries.ma200Week, movingAverage200Week, show200Week);
+    
+    }, [chartData, show8Week, show20Week, show100Week, show200Week, color8Week, color20Week, color100Week, color200Week]);
+    
 
 
     return (
@@ -355,14 +295,29 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                 <div>
                     {/* placeholder for styling */}
                 </div>
-                
-                {
-                    !isDashboard && (
-                        <button onClick={resetChartView} className="button-reset">
-                            Reset Chart
-                        </button>
-                    )   
-                }
+                <div style={{ display: 'flex', justifyContent: 'flex-end'}}>
+                    {
+                        !isDashboard && (
+                            <button
+                                onClick={setInteractivity}
+                                className="button-reset"
+                                style={{
+                                    backgroundColor: isInteractive ? '#4cceac' : 'transparent',
+                                    color: isInteractive ? 'black' : '#31d6aa',
+                                    borderColor: isInteractive ? 'violet' : '#70d8bd'
+                                }}>
+                                {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
+                            </button>
+                        )   
+                    }
+                    {
+                        !isDashboard && (
+                            <button onClick={resetChartView} className="button-reset">
+                                Reset Chart
+                            </button>
+                        )   
+                    }
+                </div>
             </div>
             <div className="chart-container" style={{ 
                     position: 'relative', 
