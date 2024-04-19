@@ -91,11 +91,18 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
         </Link>
       </div>
 
-      {
+        {
             isDashboardTopbar && (
               <IconButton onClick={colorMode.toggleColorMode} color="inherit">
                 {theme.palette.mode === "dark" ? <LightModeOutlinedIcon /> : <DarkModeOutlinedIcon />}
               </IconButton>
+            )   
+        }
+        {
+            !isDashboardTopbar && (
+              <div>
+                {/* placeholder for styling */}
+              </div>
             )   
         }
       

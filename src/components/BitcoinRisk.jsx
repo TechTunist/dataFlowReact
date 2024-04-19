@@ -37,43 +37,52 @@ const BitcoinRisk = ({ isDashboard = false }) => {
         }
     }
 
-    const simulateInvestment = (data, lowRisk, highRisk, usdInvest, btcSell, startDate) => {
+    const simulateInvestment = (data, usdInvest, startDate) => {
         // Filter data to start from the specified start date
         const filteredData = data.filter(item => new Date(item.time) >= new Date(startDate));
     
-        let usdHeld = 0;
         let btcHeld = 0;
-        let totalValue = 0;
-        let transactionHistory = [];
+        let initialInvestmentDate = '';
+        let initialBitcoinPrice = 0;
+        let bought = false;
+        let initialRiskLevel = 0;
     
+        // Find the exact day's data that matches the start date and retrieve the risk level
+        const startDayData = data.find(item => item.time === startDate);
+        if (startDayData) {
+            initialRiskLevel = startDayData.Risk;
+        }
+    
+        // Process each day's data starting from the start date
         filteredData.forEach(day => {
-            if (day.Risk <= lowRisk) {
-                // Buy Bitcoin with the specified USD amount
-                let btcPurchased = usdInvest / day.value;
-                btcHeld += btcPurchased;
-                transactionHistory.push({ time: day.time, action: 'Buy', amount: btcPurchased, price: day.value });
-            } else if (day.Risk >= highRisk) {
-                // Sell the specified amount of Bitcoin
-                let usdReceived = btcSell * day.value;
-                btcHeld -= btcSell;
-                usdHeld += usdReceived;
-                transactionHistory.push({ time: day.time, action: 'Sell', amount: btcSell, price: day.value });
+            // Buy Bitcoin once when the risk level is below or equals the initialRiskLevel threshold
+            if (!bought && day.Risk <= initialRiskLevel) {
+                btcHeld = usdInvest / day.value;
+                initialInvestmentDate = day.time;
+                initialBitcoinPrice = day.value;
+                bought = true;  // Ensure no further purchases
             }
-    
-            // Update total value for each day
-            totalValue = (btcHeld * day.value) + usdHeld;
         });
     
+        // Calculate the current value of the investment at the last available data point
+        const finalDay = filteredData[filteredData.length - 1];
+        const currentValue = btcHeld * finalDay.value;
+    
         return {
-            finalUsdHeld: usdHeld,
-            finalBtcHeld: btcHeld,
-            totalValue: totalValue,
-            transactionHistory: transactionHistory
+            investmentDate: initialInvestmentDate,
+            investedAmount: usdInvest,
+            initialBitcoinPrice: initialBitcoinPrice,
+            currentValue: currentValue,
+            currentBitcoinPrice: finalDay.value,
+            btcHeld: btcHeld,
+            initialRiskLevel: initialRiskLevel  // Including the initial risk level in the results
         };
     };
+    
+    
 
     const handleSimulation = () => {
-        const results = simulateInvestment(chartData, parseFloat(lowRisk), parseFloat(highRisk), parseFloat(usdInvest), parseFloat(btcSell), startDate);
+        const results = simulateInvestment(chartData, parseFloat(usdInvest), startDate);
         setSimulationResult(results);
     };
     
@@ -323,36 +332,37 @@ const BitcoinRisk = ({ isDashboard = false }) => {
             </div>
             
             <div>
-                {
-                    !isDashboard && (
-                        <div>
-                            <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
-                            <input type="number" placeholder="Low Risk Threshold" value={lowRisk} onChange={e => setLowRisk(e.target.value)} />
-                            <input type="number" placeholder="High Risk Threshold" value={highRisk} onChange={e => setHighRisk(e.target.value)} />
-                            <input type="number" placeholder="USD to Invest" value={usdInvest} onChange={e => setUsdInvest(e.target.value)} />
-                            <input type="number" placeholder="BTC to Sell" value={btcSell} onChange={e => setBtcSell(e.target.value)} />
-                            <button onClick={handleSimulation}>Run Simulation</button>
-                        </div>
-                )}
-                { !isDashboard && (
-                    <div>
-                        Final USD: {simulationResult.finalUsdHeld.toFixed(2)}
-                        Final BTC: {simulationResult.finalBtcHeld.toFixed(4)}
-                        Total Value: {simulationResult.totalValue.toFixed(2)}
+            {
+                !isDashboard && (
+                    <div className='risk-simulator'>
+                        <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} /> Date <br />
+                        {/* <input type="number" placeholder="Low Risk Threshold" value={lowRisk} onChange={e => setLowRisk(e.target.value)} /> Low risk threshold<br /> */}
+                        <input type="number" placeholder="USD to Invest" value={usdInvest} onChange={e => setUsdInvest(e.target.value)} /> Investment in USD<br />
+                        <button onClick={handleSimulation}>Run Simulation</button>
                     </div>
-                    )   
-                }
-                
-                {
-                    !isDashboard && (
-                        <p className='chart-info'>
-                            The risk metric assesses Bitcoin's investment risk over time by comparing its daily prices to a 374-day moving average.
-                            It does so by calculating the normalized logarithmic difference between the price and the moving average,
-                            producing a score between 0 and 1. A higher score indicates higher risk, and a lower score indicates lower risk.
-                            This method provides a simplified view of when it might be riskier or safer to invest in Bitcoin based on historical price movements.
-                        </p>
-                    )   
-                }
+                )
+            }
+            { !isDashboard && simulationResult.investmentDate && (
+                <div>
+                    Investment Date: {simulationResult.investmentDate} <br />
+                    Invested Amount: ${simulationResult.investedAmount.toFixed(2)} <br />
+                    Initial Bitcoin Price: ${simulationResult.initialBitcoinPrice.toFixed(2)} <br />
+                    Amount of Bitcoin Purchased: {simulationResult.btcHeld.toFixed(4)} BTC <br />
+                    Current Value of Investment: ${simulationResult.currentValue.toFixed(2)} <br />
+                    Current Bitcoin Price: ${simulationResult.currentBitcoinPrice.toFixed(2)}
+                    Risk Level at Investment Date: ${simulationResult.initialRiskLevel.toFixed(2)}
+                </div>
+            )}
+            {
+                !isDashboard && (
+                    <p className='chart-info'>
+                        The risk metric assesses Bitcoin's investment risk over time by comparing its daily prices to a 374-day moving average.
+                        It does so by calculating the normalized logarithmic difference between the price and the moving average,
+                        producing a score between 0 and 1. A higher score indicates higher risk, and a lower score indicates lower risk.
+                        This method provides a simplified view of when it might be riskier or safer to invest in Bitcoin based on historical price movements.
+                    </p>
+                )   
+            }
             </div>
         </div>
     );
