@@ -149,7 +149,6 @@ const BitcoinRisk = ({ isDashboard = false }) => {
                     value: parseFloat(item.close)
                 }));             
                 const withRiskMetric = calculateRiskMetric(formattedData);
-                console.log(withRiskMetric);
 
                 localStorage.setItem(cacheKey, JSON.stringify(withRiskMetric));
                 setChartData(withRiskMetric);
@@ -335,22 +334,22 @@ const BitcoinRisk = ({ isDashboard = false }) => {
             {
                 !isDashboard && (
                     <div className='risk-simulator'>
+                        <h1>Backtest the Risk Metric Investment Strategy</h1>
                         <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} /> Date <br />
-                        {/* <input type="number" placeholder="Low Risk Threshold" value={lowRisk} onChange={e => setLowRisk(e.target.value)} /> Low risk threshold<br /> */}
                         <input type="number" placeholder="USD to Invest" value={usdInvest} onChange={e => setUsdInvest(e.target.value)} /> Investment in USD<br />
                         <button onClick={handleSimulation}>Run Simulation</button>
                     </div>
                 )
             }
             { !isDashboard && simulationResult.investmentDate && (
-                <div>
+                <div className='results-display'>
                     Investment Date: {simulationResult.investmentDate} <br />
                     Invested Amount: ${simulationResult.investedAmount.toFixed(2)} <br />
                     Initial Bitcoin Price: ${simulationResult.initialBitcoinPrice.toFixed(2)} <br />
                     Amount of Bitcoin Purchased: {simulationResult.btcHeld.toFixed(4)} BTC <br />
                     Current Value of Investment: ${simulationResult.currentValue.toFixed(2)} <br />
-                    Current Bitcoin Price: ${simulationResult.currentBitcoinPrice.toFixed(2)}
-                    Risk Level at Investment Date: ${simulationResult.initialRiskLevel.toFixed(2)}
+                    Current Bitcoin Price: ${simulationResult.currentBitcoinPrice.toFixed(2)} <br />
+                    Risk Level at Investment Date: {simulationResult.initialRiskLevel.toFixed(2)} <br />
                 </div>
             )}
             {
