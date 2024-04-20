@@ -27,7 +27,7 @@ const EthereumPrice = ({ isDashboard = false }) => {
         if (value >= 1000000) {
             return (value / 1000000).toFixed(0) + 'M'; // Millions
         } else if (value >= 1000) {
-            return (value / 1000).toFixed(0) + 'k'; // Thousands
+            return (value / 1000).toFixed(2) + 'k'; // Thousands
         } else {
             return value.toFixed(0); // For values less than 1000, show the full number
         }

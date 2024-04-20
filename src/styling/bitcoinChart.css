@@ -235,6 +235,67 @@ input:checked + .slider:before {
     height: 30px;
 }
 
+.risk-simulator {
+    background-color: #111729;  /* Light grey background */
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 15px;
+    width: 100%;  /* Adjust width to fit your layout */
+    max-width: 600px;  /* Maximum width */
+    border: 2px solid #4cceac;  /* Green border */
+}
+
+.risk-simulator h1, .risk-simulator h2 {
+    text-align: center;  /* Centering headers */
+}
+
+.input-field {
+    padding: 8px;
+    border: 2px solid #ccc;
+    border-radius: 4px;
+    width: calc(50% - 12px);  /* Adjust width to account for gap */
+    margin-top: 10px;  /* Spacing between input fields */
+}
+
+.simulate-button {
+    background-color: #4CAF50;  /* Green background */
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    /* margin: 10px; */
+    cursor: pointer;
+    border-radius: 5px;
+    width: 50%;  /* Adjust button width as needed */
+}
+
+.results-display {
+    background-color: #111729;  /* Light grey background */
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    width: 100%; 
+    max-width: 600px;  /* Maximum width */
+    border: 2px solid #4cceac;  /* Green border */
+    margin-top: 20px;  /* Spacing from the button */
+    font-size: 1.1rem;
+}
+
+.simulator-instructions {
+    background-color: #111729;  /* Light grey background */
+    /* border-radius: 8px; */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    width: 100%; 
+    max-width: 600px;  /* Maximum width */
+    margin-top: 20px;  /* Spacing from the button */
+    font-size: 1.1rem;
+}
+
+
 
   /* Media query for devices with a max-width of 600px (common breakpoint for mobile devices) */
   @media (max-width: 600px) {

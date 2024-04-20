@@ -320,30 +320,33 @@ const BitcoinRisk = ({ isDashboard = false }) => {
                 }
                 {
                     !isDashboard && (
-                        <div className='risk-simulator' style={{marginTop: '10px'}}>
-                            <h1>Backtest the Risk Metric Investment Strategy</h1>
-                            <h2>Lump Sum</h2>
-                        <p>Choose a date and a lump sum to invest when the risk reaches an acceptably low level for your tolerance,
-                            and see what the investment would be worth today.
-
-                        </p>
-                            <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} /> Date <br />
-                            <input type="number" placeholder="USD to Invest" value={usdInvest} onChange={e => setUsdInvest(e.target.value)} /> Investment in USD<br />
-                            <button onClick={handleSimulation}>Run Simulation</button>
+                        <div className='risk-simulator results-display' style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '10px' }}>
+                            <h2>Lump Sum Risk Based Investment Simulation</h2>
+                            <p>Choose a date and a lump sum to invest when the risk reaches an acceptably low level for your tolerance,
+                                and see what the investment would be worth today.
+                            </p>
+                            <div style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '10px', marginBottom: '10px' }}>
+                                <input className='input-field button-reset' type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
+                                <input className='input-field button-reset' type="number" placeholder="USD to Invest" value={usdInvest} onChange={e => setUsdInvest(e.target.value)} />
+                                <button className='button-reset' onClick={handleSimulation}>Run Simulation</button>
+                            </div>
+                            { !isDashboard && simulationResult.investmentDate && (
+                                <div className='results-display'>
+                                    Investing ${simulationResult.investedAmount.toFixed(0)} on {simulationResult.investmentDate} at 
+                                    a risk level of {simulationResult.initialRiskLevel.toFixed(2)} would have resulted in
+                                    an investment return of ${simulationResult.currentValue.toFixed(2)} based on today's prices.
+                                    {/* Investment Date: {simulationResult.investmentDate} <br />
+                                    Invested Amount: ${simulationResult.investedAmount.toFixed(2)} <br />
+                                    Initial Bitcoin Price: ${simulationResult.initialBitcoinPrice.toFixed(2)} <br />
+                                    Amount of Bitcoin Purchased: {simulationResult.btcHeld.toFixed(4)} BTC <br />
+                                    Current Value of Investment: ${simulationResult.currentValue.toFixed(2)} <br />
+                                    Current Bitcoin Price: ${simulationResult.currentBitcoinPrice.toFixed(2)} <br />
+                                    Risk Level at Investment Date: {simulationResult.initialRiskLevel.toFixed(2)} <br /> */}
+                                </div>
+                            )}
                         </div>
                     )
                 }
-                { !isDashboard && simulationResult.investmentDate && (
-                    <div className='results-display'>
-                        Investment Date: {simulationResult.investmentDate} <br />
-                        Invested Amount: ${simulationResult.investedAmount.toFixed(2)} <br />
-                        Initial Bitcoin Price: ${simulationResult.initialBitcoinPrice.toFixed(2)} <br />
-                        Amount of Bitcoin Purchased: {simulationResult.btcHeld.toFixed(4)} BTC <br />
-                        Current Value of Investment: ${simulationResult.currentValue.toFixed(2)} <br />
-                        Current Bitcoin Price: ${simulationResult.currentBitcoinPrice.toFixed(2)} <br />
-                        Risk Level at Investment Date: {simulationResult.initialRiskLevel.toFixed(2)} <br />
-                    </div>
-                )}
                 {
                     !isDashboard && (
                         <p className='chart-info'>
