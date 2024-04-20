@@ -77,16 +77,14 @@ input:checked + .slider:before {
   }
 
 .button-reset {
-    /* margin-bottom: 20px; */
-    /* margin-top: 10px; */
-    color: #31d6aa; /* Set text color to white */
-    border: 2px solid #31d6aa; /* Set border to white */
-    background-color: transparent; /* Make background transparent */
-    padding: 5px 15px; /* Adjust padding as needed */
-    font-size: 0.8rem;
+    color: #31d6aa; 
+    border: 2px solid #31d6aa; 
+    background-color: transparent; 
+    padding: 5px 15px; 
+    font-size: 0.9rem;
     border-radius: 5px;
     cursor: pointer;
-    box-shadow: none; /* No shadow by default */
+    box-shadow: none; 
     transition: background-color 0.3s ease, box-shadow 0.3s ease, color 0.3s ease;
     margin-left: 10px;
 }
@@ -236,13 +234,13 @@ input:checked + .slider:before {
 }
 
 .risk-simulator {
-    background-color: #111729;  /* Light grey background */
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    padding: 15px;
-    width: 100%;  /* Adjust width to fit your layout */
-    max-width: 600px;  /* Maximum width */
-    border: 2px solid #4cceac;  /* Green border */
+    flex: 1;
+    display: flex;
+    flex-direction: 'column';
+    align-items: 'center';
+    margin: 10px;
+    padding: 20px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
 .risk-simulator h1, .risk-simulator h2 {
@@ -257,8 +255,12 @@ input:checked + .slider:before {
     margin-top: 10px;  /* Spacing between input fields */
 }
 
+.input-field {
+    margin-bottom: 10px;
+}
+
 .simulate-button {
-    background-color: #4CAF50;  /* Green background */
+    background-color: #4CAF50;  
     color: white;
     border: none;
     padding: 10px 20px;
@@ -266,19 +268,29 @@ input:checked + .slider:before {
     text-decoration: none;
     display: inline-block;
     font-size: 16px;
-    /* margin: 10px; */
+    margin: 10px;
     cursor: pointer;
     border-radius: 5px;
-    width: 50%;  /* Adjust button width as needed */
+    width: 50%;  
 }
+
+/* .simulate-button {
+    cursor: pointer;
+    padding: '10px 15px';
+    background-color: transparent;
+    border: 2px solid #31d6aa; 
+    color: #31d6aa;
+    border-radius: 5px;
+    font-size: 1rem;
+} */
 
 .results-display {
     background-color: #111729;  /* Light grey background */
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     padding: 20px;
-    width: 100%; 
-    max-width: 600px;  /* Maximum width */
+    /* width: 100%;  */
+    max-width: 600px;  
     border: 2px solid #4cceac;  /* Green border */
     margin-top: 20px;  /* Spacing from the button */
     font-size: 1.1rem;
@@ -295,7 +307,20 @@ input:checked + .slider:before {
     font-size: 1.1rem;
 }
 
+.simulator-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    width: 100%;
+}
 
+/* Media Query for screens less than 1200px */
+@media (max-width: 1200px) {
+    .simulator-container {
+        flex-direction: column;
+        align-items: center;
+    }
+}
 
   /* Media query for devices with a max-width of 600px (common breakpoint for mobile devices) */
   @media (max-width: 600px) {
@@ -340,6 +365,6 @@ input:checked + .slider:before {
     }
 
     .button-reset {
-        font-size: 0.7rem;
+        font-size: 0.8rem;
     }
 }
