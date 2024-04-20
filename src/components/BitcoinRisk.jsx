@@ -327,10 +327,10 @@ const BitcoinRisk = ({ isDashboard = false }) => {
                                     <p>Choose a date and a lump sum to invest when the risk reaches an acceptably low level for your tolerance,
                                         and see what the investment would be worth today.
                                     </p>
-                                    <div style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '10px' }}>
+                                    <div style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '10px', color: colors.greenAccent[500]}}>
                                         <input className='input-field .simulate-button' type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
                                         <input className='input-field .simulate-button' type="number" placeholder="USD to Invest" value={usdInvest} onChange={e => setUsdInvest(e.target.value)} />
-                                        <button className='.simulate-button' onClick={handleSimulation}>Run Simulation</button>
+                                        <button style={{ background: 'transparrent', color: colors.greenAccent[500], borderRadius: '5px'}}  onClick={handleSimulation}>Run Simulation</button>
                                     </div>
                                     { !isDashboard && simulationResult.investmentDate && (
                                         <div className='results-display'>
@@ -351,10 +351,10 @@ const BitcoinRisk = ({ isDashboard = false }) => {
                                     <p>Choose a start date, a risk level that you will buy at, an amount and frequency to invest,
                                         and see what the investment would be worth today.
                                     </p>
-                                    <div style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '10px', marginBottom: '10px' }}>
+                                    <div style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '10px', marginBottom: '10px', backgroundColor: 'transparent'}}>
                                         <input className='input-field .simulate-button' type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
                                         <input className='input-field .simulate-button' type="number" placeholder="USD to Invest" value={usdInvest} onChange={e => setUsdInvest(e.target.value)} />
-                                        <button className='.simulate-button' onClick={handleSimulation}>Run Simulation</button>
+                                        <button style={{ background: 'transparrent', color: colors.greenAccent[500], borderRadius: '5px'}}  onClick={handleSimulation}>Run Simulation</button>
                                     </div>
                                     { !isDashboard && simulationResult.investmentDate && (
                                         <div className='results-display'>
