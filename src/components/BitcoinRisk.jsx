@@ -137,22 +137,27 @@ const BitcoinRisk = ({ isDashboard = false }) => {
         const cachedData = localStorage.getItem(cacheKey);
         const today = new Date();
     
-        const fetchData = async () => {
-            try {
-                const response = await fetch('https://tunist.pythonanywhere.com/api/btc/price/');
-                const data = await response.json();
+        function fetchBtcData() {
+            // if no cached data is found, fetch new data
+            // Adjust the URL dynamically based on the selected altcoin
+            fetch('https://tunist.pythonanywhere.com/api/btc/price/')
+            .then(response => response.json())
+            .then(data => {
                 const formattedData = data.map(item => ({
                     time: item.date,
                     value: parseFloat(item.close)
-                }));
+                }));             
+                
                 const withRiskMetric = calculateRiskMetric(formattedData);
 
                 localStorage.setItem(cacheKey, JSON.stringify(withRiskMetric));
                 setChartData(withRiskMetric);
-            } catch (error) {
-                console.error('Error fetching data:', error);
-            }
-        };
+
+            })
+            .catch(error => {
+                console.error('Error fetching data: ', error);
+            });
+        }
     
         if (cachedData) {
             const parsedData = JSON.parse(cachedData);
@@ -160,10 +165,10 @@ const BitcoinRisk = ({ isDashboard = false }) => {
             if (lastCachedDate.setHours(0, 0, 0, 0) === today.setHours(0, 0, 0, 0)) {
                 setChartData(JSON.parse(cachedData));
             } else {
-                fetchData();
+                fetchBtcData();
             }
         } else {
-            fetchData();
+            fetchBtcData();
         }
     }, []);
 
@@ -206,14 +211,15 @@ const BitcoinRisk = ({ isDashboard = false }) => {
         
         // Series for Risk Metric
         const riskSeries = chart.addLineSeries({
-            color: 'red',
+            color: '#ff0062',
+            // color: '#ff5100',
             lastValueVisible: true,
             priceScaleId: 'right',
-            lineWidth: 1,
+            lineWidth: 2,
         });
         riskSeries.setData(chartData.map(data => ({ time: data.time, value: data.Risk })));
         
-        // Series for Ethereum Price on Logarithmic Scale
+        // Series for Bitcoin Price on Logarithmic Scale
         const priceSeries = chart.addLineSeries({
             color: 'gray',
             priceScaleId: 'left',
@@ -249,9 +255,16 @@ const BitcoinRisk = ({ isDashboard = false }) => {
                 });
             }
         };
-
+        
         const latestData = chartData[chartData.length - 1]; // Get the last item in the array
-        setCurrentRiskLevel(latestData.Risk.toFixed(2)); // Update the state with the latest risk level
+        try {
+            const riskLevel = latestData.Risk.toFixed(2);
+            console.log(riskLevel);
+            setCurrentRiskLevel(riskLevel);
+        } catch (error) {
+            console.error('Failed to set risk level:', error);
+        }
+
 
         window.addEventListener('resize', resizeChart);
         window.addEventListener('resize', resetChartView);
@@ -286,7 +299,7 @@ const BitcoinRisk = ({ isDashboard = false }) => {
                         Bitcoin Price
                     </span>
                     <span style={{ display: 'inline-block' }}>
-                        <span style={{ backgroundColor: 'red', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
+                        <span style={{ backgroundColor: '#ff0062', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
                         Risk Metric
                     </span>
                 </div>
