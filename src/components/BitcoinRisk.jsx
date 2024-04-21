@@ -23,6 +23,11 @@ const BitcoinRisk = ({ isDashboard = false }) => {
     // state to allow interactivity
     const [isInteractive, setIsInteractive] = useState(false);
 
+    // Function to set chart interactivity
+    const setInteractivity = () => {
+        setIsInteractive(!isInteractive);
+    };
+
     // State to store simulation results
     const [simulationResult, setSimulationResult] = useState({
         finalUsdHeld: 0,
@@ -97,11 +102,6 @@ const BitcoinRisk = ({ isDashboard = false }) => {
         }
     };
 
-    // Function to set chart interactivity
-    const setInteractivity = () => {
-            setIsInteractive(!isInteractive);
-    };
-
     // function to calculate the risk metric
     const calculateRiskMetric = (data) => {
         // Calculate 374-day moving average
@@ -130,16 +130,33 @@ const BitcoinRisk = ({ isDashboard = false }) => {
         return normalizedRisk;
     };
 
-    // Fetch and process data
+
+    // This useEffect handles fetching data and updating the local storage cache. It’s self-contained and correctly handles data fetching independently.
     useEffect(() => {
-        const cacheKey = 'btcRiskData';
+        const cacheKey = 'btcData';
         const cachedData = localStorage.getItem(cacheKey);
         const today = new Date();
+    
+        const fetchData = async () => {
+            try {
+                const response = await fetch('https://tunist.pythonanywhere.com/api/btc/price/');
+                const data = await response.json();
+                const formattedData = data.map(item => ({
+                    time: item.date,
+                    value: parseFloat(item.close)
+                }));
+                const withRiskMetric = calculateRiskMetric(formattedData);
 
+                localStorage.setItem(cacheKey, JSON.stringify(withRiskMetric));
+                setChartData(withRiskMetric);
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
+        };
+    
         if (cachedData) {
             const parsedData = JSON.parse(cachedData);
             const lastCachedDate = new Date(parsedData[parsedData.length - 1].time);
-
             if (lastCachedDate.setHours(0, 0, 0, 0) === today.setHours(0, 0, 0, 0)) {
                 setChartData(JSON.parse(cachedData));
             } else {
@@ -148,24 +165,10 @@ const BitcoinRisk = ({ isDashboard = false }) => {
         } else {
             fetchData();
         }
-
-        function fetchData() {
-            fetch('https://tunist.pythonanywhere.com/api/btc/price/')
-            .then(response => response.json())
-            .then(data => {
-                const formattedData = data.map(item => ({
-                    time: item.date,
-                    value: parseFloat(item.close)
-                }));             
-                const withRiskMetric = calculateRiskMetric(formattedData);
-
-                localStorage.setItem(cacheKey, JSON.stringify(withRiskMetric));
-                setChartData(withRiskMetric);
-            })
-            .catch(error => console.error('Error fetching data: ', error));
-        }
     }, []);
 
+    // This useEffect initializes the chart and updates it based on changes to the chartData,
+    // theme.palette.mode, and isDashboard. It manages subscriptions and resizing.
     // Render chart
     useEffect(() => {
         if (chartData.length === 0) return;
@@ -210,7 +213,7 @@ const BitcoinRisk = ({ isDashboard = false }) => {
         });
         riskSeries.setData(chartData.map(data => ({ time: data.time, value: data.Risk })));
         
-        // Series for Bitcoin Price on Logarithmic Scale
+        // Series for Ethereum Price on Logarithmic Scale
         const priceSeries = chart.addLineSeries({
             color: 'gray',
             priceScaleId: 'left',
@@ -262,7 +265,17 @@ const BitcoinRisk = ({ isDashboard = false }) => {
             window.removeEventListener('resize', resizeChart);
             window.removeEventListener('resize', resetChartView);
         };
-    }, [chartData, theme.palette.mode, isInteractive]);
+    }, [chartData, theme.palette.mode, isDashboard]);
+
+    useEffect(() => {
+        if (chartRef.current) {
+            // Disable all interactions if the chart is displayed on the dashboard
+        chartRef.current.applyOptions({
+            handleScroll: isInteractive,
+            handleScale: isInteractive,
+        });
+        }
+    }, [isInteractive]);
 
     return (
         <div style={{ height: '100%' }}> {/* Set a specific height for the entire container */}

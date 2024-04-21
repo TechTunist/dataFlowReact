@@ -10,6 +10,33 @@ const EthereumRisk = ({ isDashboard = false }) => {
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
 
+    // State for user inputs
+    const [lowRisk, setLowRisk] = useState(0.2);
+    const [highRisk, setHighRisk] = useState(0.8);
+    const [usdInvest, setUsdInvest] = useState(1000);
+    const [ethSell, setEthSell] = useState(0.1);
+    const [startDate, setStartDate] = useState("2021-01-01");  // Example start date
+
+    // State to store current risk level
+    const [currentRiskLevel, setCurrentRiskLevel] = useState(null);
+
+    // state to allow interactivity
+    const [isInteractive, setIsInteractive] = useState(false);
+
+    // Function to set chart interactivity
+    const setInteractivity = () => {
+        setIsInteractive(!isInteractive);
+    };
+
+    // State to store simulation results
+    const [simulationResult, setSimulationResult] = useState({
+        finalUsdHeld: 0,
+        finalEthHeld: 0,
+        totalValue: 0,
+        transactionHistory: []
+    });
+
+
     // Function to format numbers to 'k', 'M', etc.
     function compactNumberFormatter(value) {
         if (value >= 1000000) {
@@ -21,6 +48,53 @@ const EthereumRisk = ({ isDashboard = false }) => {
         }
     }
 
+    const simulateInvestment = (data, usdInvest, startDate) => {
+        // Filter data to start from the specified start date
+        const filteredData = data.filter(item => new Date(item.time) >= new Date(startDate));
+    
+        let ethHeld = 0;
+        let initialInvestmentDate = '';
+        let initialEthereumPrice = 0;
+        let bought = false;
+        let initialRiskLevel = 0;
+    
+        // Find the exact day's data that matches the start date and retrieve the risk level
+        const startDayData = data.find(item => item.time === startDate);
+        if (startDayData) {
+            initialRiskLevel = startDayData.Risk;
+        }
+    
+        // Process each day's data starting from the start date
+        filteredData.forEach(day => {
+            // Buy Ethereum once when the risk level is below or equals the initialRiskLevel threshold
+            if (!bought && day.Risk <= initialRiskLevel) {
+                ethHeld = usdInvest / day.value;
+                initialInvestmentDate = day.time;
+                initialEthereumPrice = day.value;
+                bought = true;  // Ensure no further purchases
+            }
+        });
+    
+        // Calculate the current value of the investment at the last available data point
+        const finalDay = filteredData[filteredData.length - 1];
+        const currentValue = ethHeld * finalDay.value;
+    
+        return {
+            investmentDate: initialInvestmentDate,
+            investedAmount: usdInvest,
+            initialEthereumPrice: initialEthereumPrice,
+            currentValue: currentValue,
+            currentEthereumPrice: finalDay.value,
+            ethHeld: ethHeld,
+            initialRiskLevel: initialRiskLevel  // Including the initial risk level in the results
+        };
+    };
+
+    const handleSimulation = () => {
+        const results = simulateInvestment(chartData, parseFloat(usdInvest), startDate);
+        setSimulationResult(results);
+    };
+    
     // Function to reset the chart view
     const resetChartView = () => {
         if (chartRef.current) {
@@ -56,45 +130,45 @@ const EthereumRisk = ({ isDashboard = false }) => {
         return normalizedRisk;
     };
 
-    // Fetch and process data
+
+    // This useEffect handles fetching data and updating the local storage cache. It’s self-contained and correctly handles data fetching independently.
     useEffect(() => {
-        const cacheKey = 'ethRiskData';
+        const cacheKey = 'ethData';
         const cachedData = localStorage.getItem(cacheKey);
         const today = new Date();
-
-        if (cachedData) {
-            const parsedData = JSON.parse(cachedData);
-            const lastCachedDate = new Date(parsedData[parsedData.length - 1].time);
-
-            if (lastCachedDate.setHours(0, 0, 0, 0) === today.setHours(0, 0, 0, 0)) {
-                setChartData(parsedData);
-            } else {
-                fetchData();
-            }
-            
-        } else {
-            fetchData();
-        }
-
-        function fetchData() {
-            fetch('https://tunist.pythonanywhere.com/api/eth/price/')
-            .then(response => response.json())
-            .then(data => {
+    
+        const fetchData = async () => {
+            try {
+                const response = await fetch('https://tunist.pythonanywhere.com/api/eth/price/');
+                const data = await response.json();
                 const formattedData = data.map(item => ({
                     time: item.date,
                     value: parseFloat(item.close)
-                }));             
+                }));
                 const withRiskMetric = calculateRiskMetric(formattedData);
-                // save the data to local storage
-                localStorage.setItem(cacheKey, JSON.stringify(withRiskMetric));
 
+                localStorage.setItem(cacheKey, JSON.stringify(withRiskMetric));
                 setChartData(withRiskMetric);
-            })
-            .catch(error => console.error('Error fetching data: ', error));
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
+        };
+    
+        if (cachedData) {
+            const parsedData = JSON.parse(cachedData);
+            const lastCachedDate = new Date(parsedData[parsedData.length - 1].time);
+            if (lastCachedDate.setHours(0, 0, 0, 0) === today.setHours(0, 0, 0, 0)) {
+                setChartData(JSON.parse(cachedData));
+            } else {
+                fetchData();
+            }
+        } else {
+            fetchData();
         }
-        
     }, []);
 
+    // This useEffect initializes the chart and updates it based on changes to the chartData,
+    // theme.palette.mode, and isDashboard. It manages subscriptions and resizing.
     // Render chart
     useEffect(() => {
         if (chartData.length === 0) return;
@@ -135,7 +209,7 @@ const EthereumRisk = ({ isDashboard = false }) => {
             color: 'red',
             lastValueVisible: true,
             priceScaleId: 'right',
-            lineWidth: 1
+            lineWidth: 1,
         });
         riskSeries.setData(chartData.map(data => ({ time: data.time, value: data.Risk })));
         
@@ -151,11 +225,10 @@ const EthereumRisk = ({ isDashboard = false }) => {
         });
         priceSeries.setData(chartData.map(data => ({ time: data.time, value: data.value })));
 
-        
         // Disable all interactions if the chart is displayed on the dashboard
         chart.applyOptions({
-            handleScroll: !isDashboard,
-            handleScale: !isDashboard,
+            handleScroll: isInteractive,
+            handleScale: isInteractive,
         });
         
         chart.priceScale('left').applyOptions({
@@ -177,6 +250,9 @@ const EthereumRisk = ({ isDashboard = false }) => {
             }
         };
 
+        const latestData = chartData[chartData.length - 1]; // Get the last item in the array
+        setCurrentRiskLevel(latestData.Risk.toFixed(2)); // Update the state with the latest risk level
+
         window.addEventListener('resize', resizeChart);
         window.addEventListener('resize', resetChartView);
         resizeChart();
@@ -189,30 +265,55 @@ const EthereumRisk = ({ isDashboard = false }) => {
             window.removeEventListener('resize', resizeChart);
             window.removeEventListener('resize', resetChartView);
         };
-    }, [chartData, theme.palette.mode]);
+    }, [chartData, theme.palette.mode, isDashboard]);
+
+    useEffect(() => {
+        if (chartRef.current) {
+            // Disable all interactions if the chart is displayed on the dashboard
+        chartRef.current.applyOptions({
+            handleScroll: isInteractive,
+            handleScale: isInteractive,
+        });
+        }
+    }, [isInteractive]);
 
     return (
-
         <div style={{ height: '100%' }}> {/* Set a specific height for the entire container */}
             <div className='chart-top-div'>
-                <div>
-                <span style={{ marginRight: '20px', display: 'inline-block' }}>
-                    <span style={{ backgroundColor: 'gray', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
-                    Ethereum Price
-                </span>
-                <span style={{ display: 'inline-block' }}>
-                    <span style={{ backgroundColor: 'red', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
-                    Ethereum Risk Metric
-                </span>
+                <div className='span-container'>
+                    <span style={{ marginRight: '20px', display: 'inline-block' }}>
+                        <span style={{ backgroundColor: 'gray', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
+                        Ethereum Price
+                    </span>
+                    <span style={{ display: 'inline-block' }}>
+                        <span style={{ backgroundColor: 'red', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
+                        Risk Metric
+                    </span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end'}}>
+                    {
+                        !isDashboard && (
+                            <button
+                                onClick={setInteractivity}
+                                className="button-reset"
+                                style={{
+                                    backgroundColor: isInteractive ? '#4cceac' : 'transparent',
+                                    color: isInteractive ? 'black' : '#31d6aa',
+                                    borderColor: isInteractive ? 'violet' : '#70d8bd'
+                                }}>
+                                {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
+                            </button>
+                        )   
+                    }
+                    {
+                        !isDashboard && (
+                            <button onClick={resetChartView} className="button-reset">
+                                Reset Chart
+                            </button>
+                        )   
+                    }
                 </div>
                 
-                {
-                    !isDashboard && (
-                        <button onClick={resetChartView} className="button-reset">
-                            Reset Chart
-                        </button>
-                    )   
-                }
             </div>
             <div className="chart-container" style={{ 
                     position: 'relative', 
@@ -220,24 +321,81 @@ const EthereumRisk = ({ isDashboard = false }) => {
                     width: '100%', 
                     border: '2px solid #a9a9a9' // Adds dark border with your specified color
                     }}> 
-                {/* Adjust the height calculation based on the height of your button and margin */}
                 <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
             </div>
             <div>
                 {
                     !isDashboard && (
+                        <div style={{ display: 'inline-block', marginTop: '10px', fontSize: '1.2rem'}}>
+                            Current Risk level: {currentRiskLevel}
+                        </div>
+                    )
+                }
+                <div className='simulator-container'>
+                    <div>
+                        {
+                            !isDashboard && (
+                                <div className='risk-simulator results-display' style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '10px', padding: '20px', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
+                                    <h2>Lump Sum Risk Based Investment Simulation</h2>
+                                    <p>Choose a date and a lump sum to invest when the risk reaches an acceptably low level for your tolerance,
+                                        and see what the investment would be worth today.
+                                    </p>
+                                    <div style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '10px', color: colors.greenAccent[500]}}>
+                                        <input className='input-field .simulate-button' type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
+                                        <input className='input-field .simulate-button' type="number" placeholder="USD to Invest" value={usdInvest} onChange={e => setUsdInvest(e.target.value)} />
+                                        <button style={{ background: 'transparrent', color: colors.greenAccent[500], borderRadius: '5px'}}  onClick={handleSimulation}>Run Simulation</button>
+                                    </div>
+                                    { !isDashboard && simulationResult.investmentDate && (
+                                        <div className='results-display'>
+                                            Investing ${simulationResult.investedAmount.toFixed(0)} on {simulationResult.investmentDate} at 
+                                            a risk level of {simulationResult.initialRiskLevel.toFixed(2)} would have resulted in
+                                            an investment return of ${simulationResult.currentValue.toFixed(2)} based on today's prices.
+                                        </div>
+                                    )}
+                                </div>
+                            )
+                        }
+                    </div>
+                    <div>
+                        {
+                            !isDashboard && (
+                                <div className='risk-simulator results-display' style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '10px', padding: '20px', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
+                                    <h2>DCA Risk Based Accumulation Simulation</h2>
+                                    <p>Choose a start date, a risk level that you will buy at, an amount and frequency to invest,
+                                        and see what the investment would be worth today.
+                                    </p>
+                                    <div style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '10px', marginBottom: '10px', backgroundColor: 'transparent'}}>
+                                        <input className='input-field .simulate-button' type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
+                                        <input className='input-field .simulate-button' type="number" placeholder="USD to Invest" value={usdInvest} onChange={e => setUsdInvest(e.target.value)} />
+                                        <button style={{ background: 'transparrent', color: colors.greenAccent[500], borderRadius: '5px'}}  onClick={handleSimulation}>Run Simulation</button>
+                                    </div>
+                                    { !isDashboard && simulationResult.investmentDate && (
+                                        <div className='results-display'>
+                                            Investing ${simulationResult.investedAmount.toFixed(0)} on {simulationResult.investmentDate} at 
+                                            a risk level of {simulationResult.initialRiskLevel.toFixed(2)} would have resulted in
+                                            an investment return of ${simulationResult.currentValue.toFixed(2)} based on today's prices.
+                                        </div>
+                                    )}
+                                </div>
+                            )
+                        }
+                    </div>
+                </div>
+
+                {
+                    !isDashboard && (
                         <p className='chart-info'>
-                            The risk metric assesses the investment risk over time by comparing daily prices to a 374-day moving average.
+                            The risk metric assesses Ethereum's investment risk over time by comparing its daily prices to a 374-day moving average.
                             It does so by calculating the normalized logarithmic difference between the price and the moving average,
                             producing a score between 0 and 1. A higher score indicates higher risk, and a lower score indicates lower risk.
-                            This method provides a simplified view of when it might be riskier or safer to invest in Bitcoin based on historical price movements.
+                            This method provides a simplified view of when it might be riskier or safer to invest in Ethereum based on historical price movements.
                         </p>
                     )   
                 }
             </div>
         </div>
-
-      );
+        );
+      
       
 };
 
