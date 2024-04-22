@@ -14,6 +14,12 @@ const BitcoinLogRegression = ({ isDashboard = false }) => {
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
     const [tooltipData, setTooltipData] = useState(null);
+    const [isInteractive, setIsInteractive] = useState(false);
+
+    // Function to set chart interactivity
+    const setInteractivity = () => {
+        setIsInteractive(!isInteractive);
+    };
 
     // Function to format numbers to 'k', 'M', etc.
     function compactNumberFormatter(value) {
@@ -312,6 +318,8 @@ const BitcoinLogRegression = ({ isDashboard = false }) => {
         chart.applyOptions({
             handleScroll: !isDashboard,
             handleScale: !isDashboard,
+            handleScroll: isInteractive,
+            handleScale: isInteractive
         });
 
         const priceScaleOptions = {
@@ -336,19 +344,45 @@ const BitcoinLogRegression = ({ isDashboard = false }) => {
         };
     }, [chartData, scaleMode, isDashboard, theme.palette.mode ]);
 
+    useEffect(() => {
+        if (chartRef.current) {
+            // Disable all interactions if the chart is displayed on the dashboard
+        chartRef.current.applyOptions({
+            handleScroll: isInteractive,
+            handleScale: isInteractive,
+        });
+        }
+    }, [isInteractive]);
+
     return (
         <div style={{ height: '100%' }}>
             <div className='chart-top-div'>
                 <div>
                     {/* Placeholder for styling */}
                 </div>
-                {
-                    !isDashboard && (
-                        <button onClick={resetChartView} className="button-reset">
-                            Reset Chart
-                        </button>
-                    )   
-                }
+                <div style={{ display: 'flex', justifyContent: 'flex-end'}}>
+                    {
+                        !isDashboard && (
+                            <button
+                                onClick={setInteractivity}
+                                className="button-reset"
+                                style={{
+                                    backgroundColor: isInteractive ? '#4cceac' : 'transparent',
+                                    color: isInteractive ? 'black' : '#31d6aa',
+                                    borderColor: isInteractive ? 'violet' : '#70d8bd'
+                                }}>
+                                {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
+                            </button>
+                        )   
+                    }
+                    {
+                        !isDashboard && (
+                            <button onClick={resetChartView} className="button-reset extra-margin">
+                                Reset Chart
+                            </button>
+                        )   
+                    }
+                </div>
             </div>
             <div className="chart-container" style={{ 
                     position: 'relative', 
