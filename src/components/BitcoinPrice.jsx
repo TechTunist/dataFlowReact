@@ -21,7 +21,6 @@ const BitcoinPrice = ({ isDashboard = false }) => {
     const color20Week = 'limegreen';
     const color100Week = 'white';
     const color200Week = 'yellow';
-    // state to allow interactivity
     const [isInteractive, setIsInteractive] = useState(false);
 
     // Function to set chart interactivity

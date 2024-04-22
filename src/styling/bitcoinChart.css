@@ -253,6 +253,18 @@ input:checked + .slider:before {
     height: 30px;
 }
 
+.chart-bottom-div {
+    display: flex;
+    justify-content: center; 
+    align-items: center;     
+    margin-bottom: 10px;
+    margin-top: 20px;
+    height: 30px;
+    margin: 20px;
+    gap: 10px;
+}
+
+
 .risk-simulator {
     flex: 1;
     display: flex;
@@ -281,7 +293,6 @@ input:checked + .slider:before {
 }
 
 .results-display {
-    background-color: #111729;  /* Light grey background */
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     padding: 20px;

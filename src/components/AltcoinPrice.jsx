@@ -18,6 +18,12 @@ const AltcoinPrice = ({ isDashboard = false }) => {
     const [denominator, setDenominator] = useState('USD');
     const [btcData, setBtcData] = useState([]);
     const [altData, setAltData] = useState([]);   
+    const [isInteractive, setIsInteractive] = useState(false);
+
+    // Function to set chart interactivity
+    const setInteractivity = () => {
+        setIsInteractive(!isInteractive);
+    };
 
     // Hardcoded list of altcoin options
     const altcoins = [
@@ -240,6 +246,8 @@ const AltcoinPrice = ({ isDashboard = false }) => {
         chart.applyOptions({
             handleScroll: !isDashboard,
             handleScale: !isDashboard,
+            handleScroll: isInteractive,
+            handleScale: isInteractive
         });
     
         resizeChart(); // Ensure initial resize and fitContent call
@@ -252,6 +260,16 @@ const AltcoinPrice = ({ isDashboard = false }) => {
             window.removeEventListener('resize', resetChartView);
         };
     }, [chartData, scaleMode, isDashboard, theme.palette.mode ]);
+
+    useEffect(() => {
+        if (chartRef.current) {
+            // Disable all interactions if the chart is displayed on the dashboard
+        chartRef.current.applyOptions({
+            handleScroll: isInteractive,
+            handleScale: isInteractive,
+        });
+        }
+    }, [isInteractive]);
 
 
     const computeNewDataset = () => {
@@ -285,38 +303,29 @@ const AltcoinPrice = ({ isDashboard = false }) => {
                     </label>
                     <span className="scale-mode-label" style={{color: colors.primary[100]}}>{scaleMode === 1 ? 'Logarithmic' : 'Linear'}</span>
                 </div>
-                <div>
-                {
-                    !isDashboard && (
-                        <button className="select-reset" onClick={() => setDenominator(denominator === 'USD' ? 'BTC' : 'USD')}>
-                            {selectedCoin} / {denominator}
-                        </button>
-
-                    )   
-                }
-                </div>
-                <div>
-                {
-                    !isDashboard && (
-                        <div className="select-reset-wrapper">
-                            <select className="select-reset" value={selectedCoin} onChange={handleSelectChange}>
-                                {altcoins.map((coin) => (
-                                    <option key={coin.value} value={coin.value}>{coin.label}</option>
-                                ))}
-                            </select>
-                        </div>
-                    )   
-                }
-                </div>
-                <div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end'}}>
                     {
                         !isDashboard && (
-                            <button onClick={resetChartView} className="button-reset">
+                            <button
+                                onClick={setInteractivity}
+                                className="button-reset"
+                                style={{
+                                    backgroundColor: isInteractive ? '#4cceac' : 'transparent',
+                                    color: isInteractive ? 'black' : '#31d6aa',
+                                    borderColor: isInteractive ? 'violet' : '#70d8bd'
+                                }}>
+                                {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
+                            </button>
+                        )   
+                    }
+                    {
+                        !isDashboard && (
+                            <button onClick={resetChartView} className="button-reset extra-margin">
                                 Reset Chart
                             </button>
                         )   
                     }
-                </div>               
+                </div>              
             </div>
             <div className="chart-container" style={{ 
                     position: 'relative', 
@@ -326,6 +335,34 @@ const AltcoinPrice = ({ isDashboard = false }) => {
                     }}>                
                 <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
             </div>
+            <div className="chart-bottom-div">
+                <div>
+                    {
+                        !isDashboard && (
+                            <button className="select-reset" onClick={() => setDenominator(denominator === 'USD' ? 'BTC' : 'USD')}>
+                                {selectedCoin} / {denominator}
+                            </button>
+
+                        )   
+                    }
+                </div>
+                <div>
+                    {
+                        !isDashboard && (
+                            <div className="select-reset-wrapper">
+                                <select className="select-reset" value={selectedCoin} onChange={handleSelectChange}>
+                                    {altcoins.map((coin) => (
+                                        <option key={coin.value} value={coin.value}>{coin.label}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        )   
+                    }
+                </div>
+            </div>
+
+
+
             {/* Conditional Rendering for the Tooltip */}
             {!isDashboard && tooltipData && (
                 <div

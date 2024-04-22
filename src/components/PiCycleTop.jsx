@@ -7,13 +7,66 @@ import { tokens } from '../theme';
 
 const PiCycleTopChart = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
+    const bitcoinSeriesRef = useRef();
     const [chartData, setChartData] = useState([]);
     const [scaleMode, setScaleMode] = useState(1);
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
     const chartRef = useRef(null);
-    const [showMarkers, setShowMarkers] = useState(true);
+    const [showMarkers, setShowMarkers] = useState(false);
     const [isInteractive, setIsInteractive] = useState(false);
+
+    const markers = [
+        {
+            time: '2013-04-09',
+            position: 'aboveBar',
+            color: colors.greenAccent[400],
+            shape: 'arrowDown',
+            text: 'Indicated Top', 
+        },
+        {
+            time: '2013-12-05',
+            position: 'aboveBar',
+            color: colors.greenAccent[400],
+            shape: 'arrowDown',
+            text: 'Indicated Top', 
+        },
+        // {
+        //     time: '2015-04-30',
+        //     position: 'belowBar',
+        //     color: colors.greenAccent[400],
+        //     shape: 'arrowUp',
+        //     text: 'Indicated Bottom', 
+        // },
+        {
+            time: '2017-12-17',
+            position: 'aboveBar',
+            color: colors.greenAccent[400],
+            shape: 'arrowDown',
+            text: 'Indicated Top', 
+        },
+        // {
+        //     time: '2019-03-19',
+        //     position: 'belowBar',
+        //     color: colors.greenAccent[400],
+        //     shape: 'arrowUp',
+        //     text: 'Indicated Bottom', 
+        // },
+        {
+            time: '2021-04-12',
+            position: 'aboveBar',
+            color: colors.greenAccent[400],
+            shape: 'arrowDown',
+            text: 'Indicated Top', 
+        },
+        // {
+        //     time: '2022-10-13',
+        //     position: 'belowBar',
+        //     color: colors.greenAccent[400],
+        //     shape: 'arrowUp',
+        //     text: 'Indicated Bottom', 
+        // },
+    ];
 
     // Function to set chart interactivity
     const setInteractivity = () => {
@@ -124,6 +177,8 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
                 },
             });
 
+            bitcoinSeriesRef.current = bitcoinSeries;
+
             const sma111Series = chart.addLineSeries({
                 color: '#66ff00',
                 lineWidth: 2,
@@ -131,58 +186,6 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
                 lastValueVisible: false,
                 
             });
-
-            const markers = [
-                {
-                    time: '2013-04-09',
-                    position: 'aboveBar',
-                    color: colors.greenAccent[400],
-                    shape: 'arrowDown',
-                    text: 'Indicated Top', 
-                },
-                {
-                    time: '2013-12-05',
-                    position: 'aboveBar',
-                    color: colors.greenAccent[400],
-                    shape: 'arrowDown',
-                    text: 'Indicated Top', 
-                },
-                // {
-                //     time: '2015-04-30',
-                //     position: 'belowBar',
-                //     color: colors.greenAccent[400],
-                //     shape: 'arrowUp',
-                //     text: 'Indicated Bottom', 
-                // },
-                {
-                    time: '2017-12-17',
-                    position: 'aboveBar',
-                    color: colors.greenAccent[400],
-                    shape: 'arrowDown',
-                    text: 'Indicated Top', 
-                },
-                // {
-                //     time: '2019-03-19',
-                //     position: 'belowBar',
-                //     color: colors.greenAccent[400],
-                //     shape: 'arrowUp',
-                //     text: 'Indicated Bottom', 
-                // },
-                {
-                    time: '2021-04-12',
-                    position: 'aboveBar',
-                    color: colors.greenAccent[400],
-                    shape: 'arrowDown',
-                    text: 'Indicated Top', 
-                },
-                // {
-                //     time: '2022-10-13',
-                //     position: 'belowBar',
-                //     color: colors.greenAccent[400],
-                //     shape: 'arrowUp',
-                //     text: 'Indicated Bottom', 
-                // },
-            ];
 
             const sma350Series = chart.addLineSeries({
                 color: '#fe2bc9',
@@ -216,7 +219,7 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
             };
 
             window.addEventListener('resize', resizeChart);
-            window.addEventListener('resize', resetChartView);
+            // window.addEventListener('resize', resetChartView);
 
             bitcoinSeries.setData(chartData);
             sma111Series.setData(calculateSMA(chartData, 111));
@@ -237,11 +240,11 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
             chartRef.current = chart; // Store the chart instance
 
             // Add or remove markers based on `showMarkers` state
-            if (showMarkers) {
-                bitcoinSeries.setMarkers(markers);
-            } else {
-                bitcoinSeries.setMarkers([]);
-            }
+            // if (showMarkers) {
+            //     bitcoinSeries.setMarkers(markers);
+            // } else {
+            //     bitcoinSeries.setMarkers([]);
+            // }
         
 
         // Cleanup function
@@ -249,7 +252,17 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
             chart.remove();
             window.removeEventListener('resize', resizeChart);
         };
-    }, [chartData, isDashboard, theme.palette.mode, showMarkers]);
+    }, [chartData, isDashboard, theme.palette.mode]);
+
+    useEffect(() => {
+        if (bitcoinSeriesRef.current) {
+            if (showMarkers) {
+                bitcoinSeriesRef.current.setMarkers(markers);
+            } else {
+                bitcoinSeriesRef.current.setMarkers([]);
+            }
+        }
+    }, [showMarkers]);
 
     useEffect(() => {
         if (chartRef.current) {
