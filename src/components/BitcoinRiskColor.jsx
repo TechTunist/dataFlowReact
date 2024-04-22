@@ -160,12 +160,12 @@ const BitcoinRiskColor = ({ isDashboard = false }) => {
                         <br />
                         <br />
                         Initial Bottom: 2011-11-22 (0.22) - Major Top: 2013-04-10 (0.89) <br /> <br />
-                        Mid Cycle Bottom: 2013-07-07 (0.46) - Second Major Top: 2013-11-30 (0.91) <br /> <br />
-                        2015-01-15 (0.22) - 2017-12-17 (1.0) <br />
-                        2018-12-16 (0.00) - 2019-06-26 (0.69) <br />
-                        2020-03-12 (0.15) - 2021-02-21 (0.93) <br />
-                        2021-07-20 (0.36) - 2021-10-20 (0.59) <br />
-                        2022-11-09 (0.02) - 2024-03-13 (0.73) <br />
+                        Mid Cycle Bottom: 2013-07-07 (0.46) - Major Top: 2013-11-30 (0.91) <br /> <br />
+                        Bear Market Low: 2015-01-15 (0.22) - Bull Market Peak: 2017-12-17 (1.0) <br /> <br />
+                        Bear Market Low: 2018-12-16 (0.00) - Mid-Cycle High: 2019-06-26 (0.69) <br /> <br />
+                        Black Swan Crash: 2020-03-12 (0.15) - Bull Market Peak: 2021-02-21 (0.93) <br /> <br />
+                        MidCycle Low: 2021-07-20 (0.36) - Second Bull Market Peak: 2021-10-20 (0.59) <br /> <br />
+                        Bear Market Low: 2022-11-09 (0.02) - Local Top So Far: 2024-03-13 (0.73) <br /> <br />
                     </p>
                         
                 )   
