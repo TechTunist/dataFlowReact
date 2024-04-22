@@ -134,7 +134,7 @@ const BitcoinRisk = ({ isDashboard = false }) => {
 
     // This useEffect handles fetching data and updating the local storage cache. It’s self-contained and correctly handles data fetching independently.
     useEffect(() => {
-        const cacheKey = 'btcData';
+        const cacheKey = 'btcRiskData';
         const cachedData = localStorage.getItem(cacheKey);
         const today = new Date();
     

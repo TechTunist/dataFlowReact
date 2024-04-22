@@ -134,7 +134,7 @@ const EthereumRisk = ({ isDashboard = false }) => {
 
     // This useEffect handles fetching data and updating the local storage cache. It’s self-contained and correctly handles data fetching independently.
     useEffect(() => {
-        const cacheKey = 'ethData';
+        const cacheKey = 'ethRiskData';
         const cachedData = localStorage.getItem(cacheKey);
         const today = new Date();
     
