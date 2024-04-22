@@ -76,9 +76,27 @@ input:checked + .slider:before {
     height: 75vh; /* Default height */
   }
 
+.simulate-button {
+    color: #70d8bd; /* Keep text white on hover */
+    background-color: transparent; /* Maintain a transparent background */
+    border: 2px solid #70d8bd; /* Maintain white border */
+}
+
+.simulate-button:hover {
+    color: #70d8bd; /* Keep text white on hover */
+    background-color: transparent; /* Maintain a transparent background */
+    border: 2px solid rgb(255, 255, 255); /* Maintain white border */
+}
+
+.simulate-button:active {
+    background-color: white; /* Neon green background when clicked */
+    box-shadow: 0 0 5px white; /* Slightly smaller glow effect */
+}
+
 .button-reset {
     color: #31d6aa; 
     border: 2px solid #31d6aa; 
+    border: 2px solid #ff5100; 
     background-color: transparent; 
     padding: 5px 15px; 
     font-size: 0.9rem;
@@ -86,14 +104,13 @@ input:checked + .slider:before {
     cursor: pointer;
     box-shadow: none; 
     transition: background-color 0.3s ease, box-shadow 0.3s ease, color 0.3s ease;
-    margin-left: 10px;
+    /* margin-left: 10px; */
 }
 
 .button-reset:hover {
     color: #70d8bd; /* Keep text white on hover */
     background-color: transparent; /* Maintain a transparent background */
     border: 2px solid white; /* Maintain white border */
-    
 }
 
 .button-reset:active {

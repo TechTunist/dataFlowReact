@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { createChart } from 'lightweight-charts';
 import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
+import '../styling/bitcoinChart.css';
 
 const EthereumRisk = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
@@ -258,7 +259,6 @@ const EthereumRisk = ({ isDashboard = false }) => {
         const latestData = chartData[chartData.length - 1]; // Get the last item in the array
         try {
             const riskLevel = latestData.Risk.toFixed(2);
-            console.log(riskLevel);
             setCurrentRiskLevel(riskLevel);
         } catch (error) {
             console.error('Failed to set risk level:', error);
@@ -354,7 +354,7 @@ const EthereumRisk = ({ isDashboard = false }) => {
                                     <div style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '10px', color: colors.greenAccent[500]}}>
                                         <input className='input-field .simulate-button' type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
                                         <input className='input-field .simulate-button' type="number" placeholder="USD to Invest" value={usdInvest} onChange={e => setUsdInvest(e.target.value)} />
-                                        <button style={{ background: 'transparrent', color: colors.greenAccent[500], borderRadius: '5px'}}  onClick={handleSimulation}>Run Simulation</button>
+                                        <button className='simulate-button' style={{ background: 'transparent', color: colors.greenAccent[500], borderRadius: '10px'}}  onClick={handleSimulation}>Simulate</button>
                                     </div>
                                     { !isDashboard && simulationResult.investmentDate && (
                                         <div className='results-display'>
@@ -375,10 +375,10 @@ const EthereumRisk = ({ isDashboard = false }) => {
                                     <p>Choose a start date, a risk level that you will buy at, an amount and frequency to invest,
                                         and see what the investment would be worth today.
                                     </p>
-                                    <div style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '10px', marginBottom: '10px', backgroundColor: 'transparent'}}>
+                                    <div style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '10px', marginBottom: '10px', }}>
                                         <input className='input-field .simulate-button' type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
                                         <input className='input-field .simulate-button' type="number" placeholder="USD to Invest" value={usdInvest} onChange={e => setUsdInvest(e.target.value)} />
-                                        <button style={{ background: 'transparrent', color: colors.greenAccent[500], borderRadius: '5px'}}  onClick={handleSimulation}>Run Simulation</button>
+                                        <button className='simulate-button' style={{ background: 'transparent', color: colors.greenAccent[500], borderRadius: '10px'}}  onClick={handleSimulation}>Simulate</button>
                                     </div>
                                     { !isDashboard && simulationResult.investmentDate && (
                                         <div className='results-display'>
