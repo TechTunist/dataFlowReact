@@ -118,6 +118,9 @@ input:checked + .slider:before {
     box-shadow: 0 0 5px white; /* Slightly smaller glow effect */
 }
 
+.extra-margin {
+    margin-left: 10px;
+}
 
 .select-reset {
     margin-bottom: 0px;

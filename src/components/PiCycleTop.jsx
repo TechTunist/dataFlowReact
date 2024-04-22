@@ -4,19 +4,6 @@ import '../styling/bitcoinChart.css'
 import { useTheme } from '@mui/material';
 import { tokens } from '../theme';
 
-// SMA calculation helper function
-const calculateSMA = (data, windowSize) => {
-  let sma = [];
-  for (let i = windowSize - 1; i < data.length; i++) {
-    let sum = 0;
-    for (let j = 0; j < windowSize; j++) {
-      sum += parseFloat(data[i - j].value);
-    }
-    sma.push({ time: data[i].time, value: sum / windowSize });
-  }
-  return sma;
-};
-
 
 const PiCycleTopChart = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
@@ -26,6 +13,12 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
     const colors = tokens(theme.palette.mode);
     const chartRef = useRef(null);
     const [showMarkers, setShowMarkers] = useState(true);
+    const [isInteractive, setIsInteractive] = useState(false);
+
+    // Function to set chart interactivity
+    const setInteractivity = () => {
+        setIsInteractive(!isInteractive);
+    };
 
     // Function to format numbers to 'k', 'M', etc.
     function compactNumberFormatter(value) {
@@ -43,64 +36,62 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
         setShowMarkers(!showMarkers);
     };
 
-    // Function to toggle scale mode
-    const toggleScaleMode = () => {
-        setScaleMode(prevMode => (prevMode === 1 ? 2 : 1));
-    };
-
     // Function to reset the chart view
     const resetChartView = () => {
         if (chartRef.current) {
             chartRef.current.timeScale().fitContent();
         }
-    };    
+    };
 
+    // SMA calculation helper function
+    const calculateSMA = (data, windowSize) => {
+        let sma = [];
+        for (let i = windowSize - 1; i < data.length; i++) {
+        let sum = 0;
+        for (let j = 0; j < windowSize; j++) {
+            sum += parseFloat(data[i - j].value);
+        }
+        sma.push({ time: data[i].time, value: sum / windowSize });
+        }
+        return sma;
+    };
+
+    // This useEffect handles fetching data and updating the local storage cache. It’s self-contained and correctly handles data fetching independently.
     useEffect(() => {
         const cacheKey = 'btcData';
         const cachedData = localStorage.getItem(cacheKey);
         const today = new Date();
-
+    
+        const fetchData = async () => {
+            try {
+                const response = await fetch('https://tunist.pythonanywhere.com/api/btc/price/');
+                const data = await response.json();
+                const formattedData = data.map(item => ({
+                    time: item.date,
+                    value: parseFloat(item.close)
+                }));
+                localStorage.setItem(cacheKey, JSON.stringify(formattedData));
+                setChartData(formattedData);
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
+        };
+    
         if (cachedData) {
             const parsedData = JSON.parse(cachedData);
             const lastCachedDate = new Date(parsedData[parsedData.length - 1].time);
-
             if (lastCachedDate.setHours(0, 0, 0, 0) === today.setHours(0, 0, 0, 0)) {
-                // if cached data is found, parse it and set it to the state
                 setChartData(JSON.parse(cachedData));
             } else {
                 fetchData();
             }
-            
         } else {
             fetchData();
-        }
-
-    
-        function fetchData() {
-            // if no cached data is found, fetch new data
-            fetch('https://tunist.pythonanywhere.com/api/btc/price/')
-            .then(response => response.json())
-            .then(data => {
-                const formattedData = data.map(item => ({
-                    time: item.date,
-                    value: parseFloat(item.close)
-                }));             
-                
-                setChartData(formattedData);
-
-                // save the data to local storage
-                localStorage.setItem(cacheKey, JSON.stringify(formattedData));
-
-            })
-            .catch(error => {
-                console.error('Error fetching data: ', error);
-            });
         }
     }, []);
 
     useEffect(() => {
-        if (chartData.length > 0 && chartContainerRef.current && !chartRef.current) {
-            // Create the chart instance and store it in the ref
+        if (chartData.length === 0) return;      // Create the chart instance and store it in the ref
             const chart = createChart(chartContainerRef.current, {
                 width: chartContainerRef.current.clientWidth,
                 height: 350,
@@ -226,21 +217,6 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
 
             window.addEventListener('resize', resizeChart);
             window.addEventListener('resize', resetChartView);
-    
-             // Define your light and dark theme colors for the area series
-            //  const lightThemeColors = {
-            //     topColor: 'rgba(255, 165, 0, 0.56)', // Soft orange for the top gradient
-            //     bottomColor: 'rgba(255, 165, 0, 0.2)', // Very subtle orange for the bottom gradient
-            //     lineColor: 'rgba(255, 140, 0, 0.8)', // A vibrant, slightly deeper orange for the line
-            // };
-            
-            // const darkThemeColors = {
-            //     topColor: 'rgba(38, 198, 218, 0.56)', 
-            //     bottomColor: 'rgba(38, 198, 218, 0.04)', 
-            //     lineColor: 'rgba(38, 198, 218, 1)', 
-            // };
-    
-            // const { topColor, bottomColor, lineColor } = theme.palette.mode === 'dark' ? darkThemeColors : lightThemeColors;
 
             bitcoinSeries.setData(chartData);
             sma111Series.setData(calculateSMA(chartData, 111));
@@ -252,6 +228,8 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
             chart.applyOptions({
                 handleScroll: !isDashboard,
                 handleScale: !isDashboard,
+                handleScroll: isInteractive,
+                handleScale: isInteractive
             });
         
             resizeChart(); // Ensure initial resize and fitContent call
@@ -264,18 +242,23 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
             } else {
                 bitcoinSeries.setMarkers([]);
             }
-        }
-
-
+        
 
         // Cleanup function
         return () => {
-            if (chartRef.current) {
-                chartRef.current.remove();
-                chartRef.current = null;
-            }
+            chart.remove();
+            window.removeEventListener('resize', resizeChart);
         };
-    }, [chartData, colors, theme.palette.mode, showMarkers]);
+    }, [chartData, isDashboard, theme.palette.mode, showMarkers]);
+
+    useEffect(() => {
+        if (chartRef.current) {
+        chartRef.current.applyOptions({
+            handleScroll: isInteractive,
+            handleScale: isInteractive,
+        });
+        }
+    }, [isInteractive]);
 
 
     return (
@@ -291,13 +274,29 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
                         
                     }
                 </div>
-                {
-                    !isDashboard && (
-                        <button onClick={resetChartView} className="button-reset" >
-                            Reset Chart
-                        </button>
-                    )   
-                }
+                <div style={{ display: 'flex', justifyContent: 'flex-end'}}>
+                    {
+                        !isDashboard && (
+                            <button
+                                onClick={setInteractivity}
+                                className="button-reset"
+                                style={{
+                                    backgroundColor: isInteractive ? '#4cceac' : 'transparent',
+                                    color: isInteractive ? 'black' : '#31d6aa',
+                                    borderColor: isInteractive ? 'violet' : '#70d8bd'
+                                }}>
+                                {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
+                            </button>
+                        )   
+                    }
+                    {
+                        !isDashboard && (
+                            <button onClick={resetChartView} className="button-reset extra-margin">
+                                Reset Chart
+                            </button>
+                        )   
+                    }
+                </div>
             </div>
             <div className="chart-container" style={{ 
                     position: 'relative', 

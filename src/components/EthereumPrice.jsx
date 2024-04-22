@@ -312,7 +312,7 @@ const EthereumPrice = ({ isDashboard = false }) => {
                     }
                     {
                         !isDashboard && (
-                            <button onClick={resetChartView} className="button-reset">
+                            <button onClick={resetChartView} className="button-reset extra-margin">
                                 Reset Chart
                             </button>
                         )   

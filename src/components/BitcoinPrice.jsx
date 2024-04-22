@@ -169,8 +169,17 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                 background: { type: 'solid', color: colors.primary[700] },
                 textColor: colors.primary[100],
             },
-            grid: { vertLines: { color: colors.greenAccent[700] }, horzLines: { color: colors.greenAccent[700] } },
-            timeScale: { minBarSpacing: 0.001 },
+            grid: {
+                vertLines: {
+                    color: colors.greenAccent[700]
+                },
+                horzLines: {
+                    color: colors.greenAccent[700],
+                },
+            },
+            timeScale: {
+                minBarSpacing: 0.001
+            },
         });
     
         const areaSeries = chart.addAreaSeries({
@@ -312,7 +321,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                     }
                     {
                         !isDashboard && (
-                            <button onClick={resetChartView} className="button-reset">
+                            <button onClick={resetChartView} className="button-reset extra-margin">
                                 Reset Chart
                             </button>
                         )   
