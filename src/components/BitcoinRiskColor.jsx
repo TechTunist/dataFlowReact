@@ -117,6 +117,8 @@ const BitcoinRiskColor = ({ isDashboard = false }) => {
                         cmax: 1,
                         size: 10,
                     },
+                    text: chartData.map(d => `Date: ${d.date}<br>Price: ${d.value.toLocaleString()} USD<br>Risk: ${d.Risk.toFixed(2)}`),
+                    hoverinfo: 'text', // Tells Plotly to show the text content on hover
                 },
             ]}
             layout={{
@@ -155,7 +157,17 @@ const BitcoinRiskColor = ({ isDashboard = false }) => {
                         It does so by calculating the normalized logarithmic difference between the price and the moving average,
                         producing a score between 0 and 1. A higher score indicates higher risk, and a lower score indicates lower risk.
                         This method provides a simplified view of when it might be riskier or safer to invest in Bitcoin based on historical price movements.
+                        <br />
+                        <br />
+                        Initial Bottom: 2011-11-22 (0.22) - Major Top: 2013-04-10 (0.89) <br /> <br />
+                        Mid Cycle Bottom: 2013-07-07 (0.46) - Second Major Top: 2013-11-30 (0.91) <br /> <br />
+                        2015-01-15 (0.22) - 2017-12-17 (1.0) <br />
+                        2018-12-16 (0.00) - 2019-06-26 (0.69) <br />
+                        2020-03-12 (0.15) - 2021-02-21 (0.93) <br />
+                        2021-07-20 (0.36) - 2021-10-20 (0.59) <br />
+                        2022-11-09 (0.02) - 2024-03-13 (0.73) <br />
                     </p>
+                        
                 )   
             }
         </div>
