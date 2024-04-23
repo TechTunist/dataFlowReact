@@ -4,6 +4,7 @@ import { createChart } from 'lightweight-charts';
 import '../styling/bitcoinChart.css'
 import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
+import useIsMobile from '../hooks/useIsMobile';
 
 const EthereumPrice = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
@@ -22,6 +23,7 @@ const EthereumPrice = ({ isDashboard = false }) => {
     const color100Week = 'white';
     const color200Week = 'yellow';
     const [isInteractive, setIsInteractive] = useState(false);
+    const isMobile = useIsMobile();
 
     // Function to set chart interactivity
     const setInteractivity = () => {
@@ -170,6 +172,32 @@ const EthereumPrice = ({ isDashboard = false }) => {
             },
             grid: { vertLines: { color: colors.greenAccent[700] }, horzLines: { color: colors.greenAccent[700] } },
             timeScale: { minBarSpacing: 0.001 },
+        });
+
+        // update tooltip data on crosshairMove event
+        chart.subscribeCrosshairMove(param => {
+            if (
+                !param.time ||
+                param.point.x < 0 ||
+                param.point.x > chartContainerRef.current.clientWidth ||
+                param.point.y < 0 ||
+                param.point.y > chartContainerRef.current.clientHeight
+            ) {
+                setTooltipData(null);
+            } else {
+                const dateStr = param.time;
+                // Safely attempt to access price data
+                const priceData = param.seriesData.get(areaSeries);
+                const price = priceData?.value; // Use optional chaining to avoid errors when priceData is undefined
+        
+                // Even if price data is undefined, we can still set tooltip data for the regression lines
+                setTooltipData({
+                    date: dateStr,
+                    price, // May be undefined, which is handled in rendering
+                    x: param.point.x,
+                    y: param.point.y,
+                });
+            }
         });
     
         const areaSeries = chart.addAreaSeries({
@@ -404,15 +432,40 @@ const EthereumPrice = ({ isDashboard = false }) => {
                 <div
                     className="tooltip"
                     style={{
-                        left: `${tooltipData.x > (chartContainerRef.current.clientWidth / 2) ? tooltipData.x + (chartContainerRef.current.clientWidth / 10) : tooltipData.x + (chartContainerRef.current.clientWidth / 5)}px`,
-                        top: `${tooltipData.y + 100}px`,                        
+                        left: (() => {
+                            const sidebarWidth = isMobile ? -80 : -320; // Adjust sidebarWidth based on isMobile
+                            const cursorX = tooltipData.x - sidebarWidth; // Adjust cursorX for sidebar
+                            const chartWidth = chartContainerRef.current.clientWidth - sidebarWidth; // Adjust chartWidth for sidebar
+                            const tooltipWidth = 200; // Your tooltip's actual width
+                            const K = 10000; // Adjust this constant based on desired sensitivity
+                            const C = 300; // Base addition to stabilize the calculation
+
+                            // Calculate the inverse proportional offset
+                            const offset = K / (chartWidth + C);
+
+                            // Calculate potential left and right positions with dynamic offset
+                            const rightPosition = cursorX + offset;
+                            const leftPosition = cursorX - tooltipWidth - offset;
+
+                            if (rightPosition + tooltipWidth <= chartWidth) {
+                                return `${rightPosition}px`; // Fits on the right
+                            } else if (leftPosition >= 0) {
+                                return `${leftPosition}px`; // Fits on the left
+                            } else {
+                                return `${Math.max(0, Math.min(rightPosition, chartWidth - tooltipWidth))}px`; // Adjust near edge
+                            }
+                        })(),
+                        top: `${tooltipData.y + 100}px`, // Adjust as needed
                     }}
                 >
-                    <div style={{fontSize: '15px' }}>Ethereum</div>
-                    <div style={{fontSize: '20px' }}>${tooltipData.price.toFixed(2)}</div>
+                    <div style={{fontSize: '15px'}}>Bitcoin</div>
+                    <div style={{fontSize: '20px'}}>${tooltipData.price.toFixed(2)}</div>
                     <div>{tooltipData.date.toString()}</div>
                 </div>
             )}
+
+
+
             {
                 !isDashboard && (
                     <p className='chart-info'>

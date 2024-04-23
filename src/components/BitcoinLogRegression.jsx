@@ -4,7 +4,7 @@ import { createChart } from 'lightweight-charts';
 import '../styling/bitcoinChart.css'
 import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
-
+import useIsMobile from '../hooks/useIsMobile';
 
 const BitcoinLogRegression = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
@@ -15,6 +15,7 @@ const BitcoinLogRegression = ({ isDashboard = false }) => {
     const colors = tokens(theme.palette.mode);
     const [tooltipData, setTooltipData] = useState(null);
     const [isInteractive, setIsInteractive] = useState(false);
+    const isMobile = useIsMobile();
 
     // Function to set chart interactivity
     const setInteractivity = () => {
@@ -397,8 +398,30 @@ const BitcoinLogRegression = ({ isDashboard = false }) => {
                 <div
                     className="tooltip"
                     style={{
-                        left: `${tooltipData.x > (chartContainerRef.current.clientWidth / 2) ? tooltipData.x + (chartContainerRef.current.clientWidth / 10) : tooltipData.x + (chartContainerRef.current.clientWidth / 5)}px`,
-                        top: `${tooltipData.y + 200}px`,                        
+                        left: (() => {
+                            const sidebarWidth = isMobile ? -80 : -300; // Adjust sidebarWidth based on isMobile
+                            const cursorX = tooltipData.x - sidebarWidth; // Adjust cursorX for sidebar
+                            const chartWidth = chartContainerRef.current.clientWidth - sidebarWidth; // Adjust chartWidth for sidebar
+                            const tooltipWidth = 200; // Your tooltip's actual width
+                            const K = 10000; // Adjust this constant based on desired sensitivity
+                            const C = 300; // Base addition to stabilize the calculation
+
+                            // Calculate the inverse proportional offset
+                            const offset = K / (chartWidth + C);
+
+                            // Calculate potential left and right positions with dynamic offset
+                            const rightPosition = cursorX + offset;
+                            const leftPosition = cursorX - tooltipWidth - offset;
+
+                            if (rightPosition + tooltipWidth <= chartWidth) {
+                                return `${rightPosition}px`; // Fits on the right
+                            } else if (leftPosition >= 0) {
+                                return `${leftPosition}px`; // Fits on the left
+                            } else {
+                                return `${Math.max(0, Math.min(rightPosition, chartWidth - tooltipWidth))}px`; // Adjust near edge
+                            }
+                        })(),
+                        top: `${tooltipData.y + 100}px`, // Adjust as needed
                     }}
                 >
                     {tooltipData.price && <div>Actual Price: ${tooltipData.price.toFixed(2)}</div>}
