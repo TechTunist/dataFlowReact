@@ -42,7 +42,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
         }
     }
 
-    // Function to toggle the visibility of markers
+    // Function to toggle the visibility of markersz
     const toggle8Week = () => {
         setShow8Week(!show8Week);
     };
