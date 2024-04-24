@@ -19,6 +19,9 @@ const BitcoinRiskColor = ({ isDashboard = false }) => {
         yaxis: { title: 'Price (USD)', type: 'log' }
     });
 
+    const [selectedRiskRanges, setSelectedRiskRanges] = useState(Array(5).fill(true)); // All ranges selected initially
+
+
     const resetChartView = () => {
         setLayout({
             ...layout,
@@ -65,14 +68,22 @@ const BitcoinRiskColor = ({ isDashboard = false }) => {
                     value: parseFloat(item.close)
                 }));
                 const withRiskMetric = calculateRiskMetric(formattedData);
-                setChartData(withRiskMetric);
+
+                const filteredData = withRiskMetric.filter(item => {
+                    const risk = item.Risk;
+
+                    // check of corresponding risk range is selected
+                    return selectedRiskRanges[Math.floor(risk / 0.2)];
+                });
+                setChartData(filteredData);
+
             } catch (error) {
                 console.error('Error fetching data: ', error);
             }
         };
 
         fetchData();
-    }, []);
+    }, [selectedRiskRanges]);
 
     // Adjust the size of the chart based on the context
     const chartSize = isDashboard ? { width: 720, height: 310 } : { width: 1200, height: 600 };
@@ -104,51 +115,124 @@ const BitcoinRiskColor = ({ isDashboard = false }) => {
                     }}> 
             {/* <div style={{ height: '100%', width: '100%', zIndex: 1 }} /> */}
             <Plot
-            data={[
-                {
-                    type: 'scatter',
-                    mode: 'markers',
-                    x: chartData.map(d => d.date),
-                    y: chartData.map(d => d.value),
-                    marker: {
-                        color: chartData.map(d => d.Risk),
-                        colorscale: theme.palette.mode === 'dark' ? 'RdBu' : 'Viridis',
-                        cmin: 0,
-                        cmax: 1,
-                        size: 10,
+                data={[
+                    {
+                        type: 'scatter',
+                        mode: 'markers',
+                        x: chartData.map(d => d.date),
+                        y: chartData.map(d => d.value),
+                        marker: {
+                            color: chartData.map(d => d.Risk),
+                            colorscale: theme.palette.mode === 'dark' ? 'RdBu' : 'Viridis',
+                            cmin: 0,
+                            cmax: 1,
+                            size: 10,
+                        },
+                        text: chartData.map(d => `Date: ${d.date}<br>Price: ${d.value.toLocaleString()} USD<br>Risk: ${d.Risk.toFixed(2)}`),
+                        hoverinfo: 'text', // Tells Plotly to show the text content on hover
                     },
-                    text: chartData.map(d => `Date: ${d.date}<br>Price: ${d.value.toLocaleString()} USD<br>Risk: ${d.Risk.toFixed(2)}`),
-                    hoverinfo: 'text', // Tells Plotly to show the text content on hover
-                },
-            ]}
-            layout={{
-                title: isDashboard ? '' : 'Bitcoin Price vs. Risk Level',
-                xaxis: { title: isDashboard ? '' : '' },
-                yaxis: { title: isDashboard ? '' : 'Price (USD)', type: 'log' },
-                autosize: true, // Make the plot responsive
-                margin: {
-                    l: 50,
-                    r: 50,
-                    b: 30,
-                    t: 30,
-                    pad: 4
-                },
-                plot_bgcolor: colors.primary[700],
-                paper_bgcolor: colors.primary[700],
-                font: {
-                    color: colors.primary[100]
-                },
-            }}
-            config={{
-                staticPlot: isDashboard, // Disable interaction when on the dashboard
-                displayModeBar: !isDashboard, // Optionally hide the mode bar when on the dashboard
-                displayModeBar: false,
-                responsive: true
-            }}
-            useResizeHandler={true} // Enable resize handler
-            style={{ width: "100%", height: "100%" }} // Dynamically adjust size
-        />
+                ]}
+                layout={{
+                    title: isDashboard ? '' : 'Bitcoin Price vs. Risk Level',
+                    xaxis: { title: isDashboard ? '' : '' },
+                    yaxis: { title: isDashboard ? '' : 'Price (USD)', type: 'log' },
+                    autosize: true, // Make the plot responsive
+                    margin: {
+                        l: 50,
+                        r: 50,
+                        b: 30,
+                        t: 30,
+                        pad: 4
+                    },
+                    plot_bgcolor: colors.primary[700],
+                    paper_bgcolor: colors.primary[700],
+                    font: {
+                        color: colors.primary[100]
+                    },
+                }}
+                config={{
+                    staticPlot: isDashboard, // Disable interaction when on the dashboard
+                    displayModeBar: !isDashboard, // Optionally hide the mode bar when on the dashboard
+                    displayModeBar: false,
+                    responsive: true
+                }}
+                useResizeHandler={true} // Enable resize handler
+                style={{ width: "100%", height: "100%" }} // Dynamically adjust size
+            />
         </div>
+        {!isDashboard && (
+            <div className="risk-filter">
+                <h2 >Filter by Risk Level</h2>
+                <div className="risk-filter-inner">
+                    <span
+                        className="risk-range"
+                        style={{
+                        color: selectedRiskRanges[0] ? colors.greenAccent[500] : 'grey',
+                        }}
+                        onClick={() => {
+                        const updatedRanges = [...selectedRiskRanges];
+                        updatedRanges[0] = !selectedRiskRanges[0];
+                        setSelectedRiskRanges(updatedRanges);
+                        }}
+                    >
+                        0.0 - 1.9
+                    </span>
+                    <span
+                        className="risk-range"
+                        style={{
+                        color: selectedRiskRanges[1] ? colors.greenAccent[500] : 'grey',
+                        }}
+                        onClick={() => {
+                        const updatedRanges = [...selectedRiskRanges];
+                        updatedRanges[1] = !selectedRiskRanges[1];
+                        setSelectedRiskRanges(updatedRanges);
+                        }}
+                    >
+                        2.0 - 3.9
+                    </span>
+                    <span
+                        className="risk-range"
+                        style={{
+                        color: selectedRiskRanges[2] ? colors.greenAccent[500] : 'grey',
+                        }}
+                        onClick={() => {
+                        const updatedRanges = [...selectedRiskRanges];
+                        updatedRanges[2] = !selectedRiskRanges[2];
+                        setSelectedRiskRanges(updatedRanges);
+                        }}
+                    >
+                        4.0 - 5.9
+                    </span>
+                    <span
+                        className="risk-range"
+                        style={{
+                        color: selectedRiskRanges[3] ? colors.greenAccent[500] : 'grey',
+                        }}
+                        onClick={() => {
+                        const updatedRanges = [...selectedRiskRanges];
+                        updatedRanges[3] = !selectedRiskRanges[3];
+                        setSelectedRiskRanges(updatedRanges);
+                        }}
+                    >
+                        6.0 - 7.9
+                    </span>
+                    <span
+                        className="risk-range"
+                        style={{
+                        color: selectedRiskRanges[4] ? colors.greenAccent[500] : 'grey',
+                        }}
+                        onClick={() => {
+                        const updatedRanges = [...selectedRiskRanges];
+                        updatedRanges[4] = !selectedRiskRanges[4];
+                        setSelectedRiskRanges(updatedRanges);
+                        }}
+                    >
+                        8.0 - 1.0
+                    </span>
+                </div>
+            </div>
+        )}
+
         <div>
             {
                 !isDashboard && (

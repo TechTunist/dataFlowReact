@@ -328,12 +328,41 @@ input:checked + .slider:before {
 }
 
 
+.risk-range {
+    display: inline-block; /* Allow spacing between elements */
+    font-size: 18px;
+    margin-right: 15px;
+    cursor: pointer; /* Indicate clickable element */
+  }
+  
+.risk-filter {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.risk-filter-inner {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: 30px;
+    font-size: 2rem;
+}
+
+.risk-filter-inner span{
+    font-size: 1.5rem;
+}
 
 /* Media Query for screens less than 1200px */
 @media (max-width: 1200px) {
     .simulator-container {
         flex-direction: column;
         align-items: center;
+    }
+    .risk-filter-inner span{
+        font-size: 1rem;
     }
 }
 
@@ -363,6 +392,10 @@ input:checked + .slider:before {
 
     .button-reset {
         font-size: 0.7rem;
+    }
+    .risk-filter-inner {
+        gap: 15px;
+        
     }
   }
 
