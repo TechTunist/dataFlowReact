@@ -9,28 +9,28 @@
 //     const theme = useTheme();
 //     const colors = tokens(theme.palette.mode);
 //     const [riskData, setRiskData] = useState([]);
-//     const [layout, setLayout] = useState({
-//         title: 'Bitcoin Price vs. Risk Level',
-//         autosize: true,
-//         margin: { l: 50, r: 50, b: 30, t: 30, pad: 4 },
-//         plot_bgcolor: 'colors.primary[700]',
-//         paper_bgcolor: 'colors.primary[700]',
-//         font: { color: 'colors.primary[100]' },
-//         xaxis: { title: '' },
-//         yaxis: { title: 'Price (USD)', type: 'log' }
-//     });
+    // const [layout, setLayout] = useState({
+    //     title: 'Bitcoin Price vs. Risk Level',
+    //     autosize: true,
+    //     margin: { l: 50, r: 50, b: 30, t: 30, pad: 4 },
+    //     plot_bgcolor: 'colors.primary[700]',
+    //     paper_bgcolor: 'colors.primary[700]',
+    //     font: { color: 'colors.primary[100]' },
+    //     xaxis: { title: '' },
+    //     yaxis: { title: 'Price (USD)', type: 'log' }
+    // });
 
 //     const [selectedRiskRanges, setSelectedRiskRanges] = useState(Array(5).fill(true)); // All ranges selected initially
 
 
-//     const resetChartView = () => {
-//         setLayout({
-//             ...layout,
-//             // Resetting zoom and pan by setting the 'autorange' to true
-//             xaxis: { ...layout.xaxis, autorange: true },
-//             yaxis: { ...layout.yaxis, autorange: true }
-//         });
-//     };
+    // const resetChartView = () => {
+    //     setLayout({
+    //         ...layout,
+    //         // Resetting zoom and pan by setting the 'autorange' to true
+    //         xaxis: { ...layout.xaxis, autorange: true },
+    //         yaxis: { ...layout.yaxis, autorange: true }
+    //     });
+    // };
 
 //     // Function to calculate the risk metric
 //     const calculateRiskMetric = (data) => {
@@ -137,13 +137,13 @@
 //                 {/* placeholder for styling */}
 //             </div>
             
-//             {
-//                 !isDashboard && (
-//                     <button onClick={resetChartView} className="button-reset">
-//                         Reset Chart
-//                     </button>
-//                 )   
-//             }
+            // {
+            //     !isDashboard && (
+            //         <button onClick={resetChartView} className="button-reset">
+            //             Reset Chart
+            //         </button>
+            //     )   
+            // }
 //         </div>
 //         <div className="chart-container" style={{ 
 //                     position: 'relative', 
@@ -188,12 +188,12 @@
 //                         color: colors.primary[100]
 //                     },
 //                 }}
-//                 config={{
-//                     staticPlot: isDashboard, // Disable interaction when on the dashboard
-//                     displayModeBar: !isDashboard, // Optionally hide the mode bar when on the dashboard
-//                     displayModeBar: false,
-//                     responsive: true
-//                 }}
+                // config={{
+                //     staticPlot: isDashboard, // Disable interaction when on the dashboard
+                //     displayModeBar: !isDashboard, // Optionally hide the mode bar when on the dashboard
+                //     displayModeBar: false,
+                //     responsive: true
+                // }}
 //                 useResizeHandler={true} // Enable resize handler
 //                 style={{ width: "100%", height: "100%" }} // Dynamically adjust size
 //             />
@@ -271,28 +271,28 @@
 //             </div>
 //         )}
 
-//         <div>
-//             {
-//                 !isDashboard && (
-//                     <p className='chart-info'>
-//                         The risk metric assesses Bitcoin's investment risk over time by comparing its daily prices to a 374-day moving average.
-//                         It does so by calculating the normalized logarithmic difference between the price and the moving average,
-//                         producing a score between 0 and 1. A higher score indicates higher risk, and a lower score indicates lower risk.
-//                         This method provides a simplified view of when it might be riskier or safer to invest in Bitcoin based on historical price movements.
-//                         <br />
-//                         <br />
-//                         Initial Bottom: 2011-11-22 (0.22) - Major Top: 2013-04-10 (0.89) <br /> <br />
-//                         Mid Cycle Bottom: 2013-07-07 (0.46) - Major Top: 2013-11-30 (0.91) <br /> <br />
-//                         Bear Market Low: 2015-01-15 (0.22) - Bull Market Peak: 2017-12-17 (1.0) <br /> <br />
-//                         Bear Market Low: 2018-12-16 (0.00) - Mid-Cycle High: 2019-06-26 (0.69) <br /> <br />
-//                         Black Swan Crash: 2020-03-12 (0.15) - Bull Market Peak: 2021-02-21 (0.93) <br /> <br />
-//                         MidCycle Low: 2021-07-20 (0.36) - Second Bull Market Peak: 2021-10-20 (0.59) <br /> <br />
-//                         Bear Market Low: 2022-11-09 (0.02) - Local Top So Far: 2024-03-13 (0.73) <br /> <br />
-//                     </p>
+        // <div>
+        //     {
+        //         !isDashboard && (
+        //             <p className='chart-info'>
+        //                 The risk metric assesses Bitcoin's investment risk over time by comparing its daily prices to a 374-day moving average.
+        //                 It does so by calculating the normalized logarithmic difference between the price and the moving average,
+        //                 producing a score between 0 and 1. A higher score indicates higher risk, and a lower score indicates lower risk.
+        //                 This method provides a simplified view of when it might be riskier or safer to invest in Bitcoin based on historical price movements.
+        //                 <br />
+        //                 <br />
+        //                 Initial Bottom: 2011-11-22 (0.22) - Major Top: 2013-04-10 (0.89) <br /> <br />
+        //                 Mid Cycle Bottom: 2013-07-07 (0.46) - Major Top: 2013-11-30 (0.91) <br /> <br />
+        //                 Bear Market Low: 2015-01-15 (0.22) - Bull Market Peak: 2017-12-17 (1.0) <br /> <br />
+        //                 Bear Market Low: 2018-12-16 (0.00) - Mid-Cycle High: 2019-06-26 (0.69) <br /> <br />
+        //                 Black Swan Crash: 2020-03-12 (0.15) - Bull Market Peak: 2021-02-21 (0.93) <br /> <br />
+        //                 MidCycle Low: 2021-07-20 (0.36) - Second Bull Market Peak: 2021-10-20 (0.59) <br /> <br />
+        //                 Bear Market Low: 2022-11-09 (0.02) - Local Top So Far: 2024-03-13 (0.73) <br /> <br />
+        //             </p>
                         
-//                 )   
-//             }
-//         </div>
+        //         )   
+        //     }
+        // </div>
 //     </div>
         
 //     );
@@ -759,6 +759,25 @@ import '../styling/bitcoinChart.css';
 const BitcoinRiskColor = ({ isDashboard = false }) => {
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
+    const [layout, setLayout] = useState({
+        title: 'Bitcoin Price vs. Risk Level',
+        autosize: true,
+        margin: { l: 50, r: 50, b: 30, t: 30, pad: 4 },
+        plot_bgcolor: 'colors.primary[700]',
+        paper_bgcolor: 'colors.primary[700]',
+        font: { color: 'colors.primary[100]' },
+        xaxis: { title: '' },
+        yaxis: { title: 'Price (USD)', type: 'log' }
+    });
+
+    const resetChartView = () => {
+        setLayout({
+            ...layout,
+            // Resetting zoom and pan by setting the 'autorange' to true
+            xaxis: { ...layout.xaxis, autorange: true },
+            yaxis: { ...layout.yaxis, autorange: true }
+        });
+    };
 
     const [datasets, setDatasets] = useState([
         { data: [], visible: true, label: "0.0 - 0.19" },
@@ -875,8 +894,7 @@ const BitcoinRiskColor = ({ isDashboard = false }) => {
             <div className='chart-top-div'>
                 {/* Interactivity toggles for each dataset */}
                 <div className="risk-filter">
-                    <h2>Filter by Risk Level</h2>
-                    <div className="risk-filter-inner">
+                    {/* <div className="risk-filter-inner">
                         {datasets.map((dataset, index) => (
                             <button
                                 key={index}
@@ -890,7 +908,26 @@ const BitcoinRiskColor = ({ isDashboard = false }) => {
                                 {dataset.label}
                             </button>
                         ))}
-                    </div>
+                    </div> */}
+                </div>
+                <div>
+                    {/* placeholder for styling */}
+                    { !isDashboard && (
+                        <p>
+                            if i add the plot for bitcoin styling then the chart y axis shouldnt reset after the risk data is hidden
+                        which currently confuses the use as the datapoints change as the y axis resets
+                        </p>
+                    )}
+                    
+                </div>
+                <div>
+                    {
+                        !isDashboard && (
+                            <button onClick={resetChartView} className="button-reset">
+                                Reset Chart
+                            </button>
+                        )   
+                    }
                 </div>
             </div>
             <div className="chart-container" style={{ position: 'relative', height: 'calc(100% - 40px)', width: '100%', border: '2px solid #a9a9a9' }}>
@@ -911,23 +948,48 @@ const BitcoinRiskColor = ({ isDashboard = false }) => {
                         hoverinfo: 'text'
                     }))}
                     layout={{
-                        title: 'Bitcoin Price vs. Risk Level',
+                        title: isDashboard ? '' : 'Bitcoin Price vs. Risk Level',
+                        xaxis: { title: isDashboard ? '' : '' },
+                        yaxis: { title: isDashboard ? '' : 'Price (USD)', type: 'log' },
                         autosize: true,
                         margin: { l: 50, r: 50, b: 30, t: 30, pad: 4 },
                         plot_bgcolor: colors.primary[700],
                         paper_bgcolor: colors.primary[700],
                         font: { color: colors.primary[100] },
-                        xaxis: { title: 'Date' },
-                        yaxis: { title: 'Price (USD)', type: 'log' }
+    
                     }}
                     config={{
-                        responsive: true,
-                        displayModeBar: true
+                        staticPlot: isDashboard, // Disable interaction when on the dashboard
+                        displayModeBar: !isDashboard, // Optionally hide the mode bar when on the dashboard
+                        displayModeBar: false,
+                        responsive: true
                     }}
                     useResizeHandler={true}
                     style={{ width: "100%", height: "100%" }}
                 />
             </div>
+            <div>
+            {
+                !isDashboard && (
+                    <p className='chart-info'>
+                        The risk metric assesses Bitcoin's investment risk over time by comparing its daily prices to a 374-day moving average.
+                        It does so by calculating the normalized logarithmic difference between the price and the moving average,
+                        producing a score between 0 and 1. A higher score indicates higher risk, and a lower score indicates lower risk.
+                        This method provides a simplified view of when it might be riskier or safer to invest in Bitcoin based on historical price movements.
+                        <br />
+                        <br />
+                        Initial Bottom: 2011-11-22 (0.22) - Major Top: 2013-04-10 (0.89) <br /> <br />
+                        Mid Cycle Bottom: 2013-07-07 (0.46) - Major Top: 2013-11-30 (0.91) <br /> <br />
+                        Bear Market Low: 2015-01-15 (0.22) - Bull Market Peak: 2017-12-17 (1.0) <br /> <br />
+                        Bear Market Low: 2018-12-16 (0.00) - Mid-Cycle High: 2019-06-26 (0.69) <br /> <br />
+                        Black Swan Crash: 2020-03-12 (0.15) - Bull Market Peak: 2021-02-21 (0.93) <br /> <br />
+                        MidCycle Low: 2021-07-20 (0.36) - Second Bull Market Peak: 2021-10-20 (0.59) <br /> <br />
+                        Bear Market Low: 2022-11-09 (0.02) - Local Top So Far: 2024-03-13 (0.73) <br /> <br />
+                    </p>
+                        
+                )   
+            }
+        </div>
         </div>
     );
 };

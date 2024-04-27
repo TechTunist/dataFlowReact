@@ -1,5 +1,9 @@
 # Project Phases
 
+### NOTES
+- add logging information for command scripts for time taken, success or not
+    and any other useful info for making the automation as hardened as possible when the scripts are run through cronjobs
+
 ## PHASE ONE
 
 ### FUNCTIONALITY
