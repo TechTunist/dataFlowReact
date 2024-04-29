@@ -128,7 +128,7 @@ const Sidebar = () => {
               <img alt="main-logo" width="100px" height="100px" src={`../../assets/cryptology-logo-square.png`}  />
             </Box>
             <Box textAlign="center">
-              <Typography variant="h2" color={colors.grey[100]} fontWeight="bold" sx={{ m: "10px 0 0 0" }}>Cryptology</Typography>
+              <Typography variant="h2" color={colors.grey[100]} fontWeight="bold" sx={{ m: "10px 0 0 0" }}>Cryptological</Typography>
               <Typography variant="h5" color={colors.greenAccent[500]}>Quantitative Analysis</Typography>
             </Box>
           </Box>

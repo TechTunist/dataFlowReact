@@ -21,6 +21,8 @@ const BitcoinRisk = ({ isDashboard = false }) => {
     const [totalUsdRealized, setTotalUsdRealized] = useState(0);
     const [transactionHistory, setTransactionHistory] = useState([]);
     const [totalUsdInvested, setTotalUsdInvested] = useState(0);
+    const [percentageGains, setPercentageGains] = useState(0);
+    const [unrealizedGains, setUnrealizedGains] = useState(0);
 
     const [sellThresholds, setSellThresholds] = useState([
         { riskLevel: 0.6, percentage: 10 },
@@ -342,43 +344,34 @@ const BitcoinRisk = ({ isDashboard = false }) => {
     const handleDcaSimulation = () => {
         let localBtcHeld = 0;
         let localTotalUsdRealized = 0;
-        let localTotalUsdInvested = 0; // Variable to keep track of the total USD invested
+        let localTotalUsdInvested = 0;
         let localTransactionHistory = [];
-        let nextPurchaseDate = new Date(dcaStartDate); // Ensure this is a valid date
+        let nextPurchaseDate = new Date(dcaStartDate);
+        let lastSellDate = new Date(dcaStartDate);
+        lastSellDate.setDate(lastSellDate.getDate() - 7);  // Set this to 7 days before the start to allow initial selling if conditions are met
     
+        let currentBtcPrice = 0;  // Variable to store the most recent Bitcoin price
     
         chartData.forEach(day => {
-            // Extract the year, month, and day from day.date
             const dayDate = new Date(day.time);
-            const dayYear = dayDate.getUTCFullYear();
-            const dayMonth = dayDate.getUTCMonth();
-            const dayDay = dayDate.getUTCDate();
-        
-            // Extract the year, month, and day from nextPurchaseDate
-            const purchaseYear = nextPurchaseDate.getUTCFullYear();
-            const purchaseMonth = nextPurchaseDate.getUTCMonth();
-            const purchaseDay = nextPurchaseDate.getUTCDate();
-        
-            // Compare the extracted year, month, and day
-            if ((dayYear > purchaseYear) ||
-                (dayYear === purchaseYear && dayMonth > purchaseMonth) ||
-                (dayYear === purchaseYear && dayMonth === purchaseMonth && dayDay >= purchaseDay)) {
-                if (day.Risk <= dcaRiskThreshold) {
-                    const btcPurchased = dcaAmount / day.value; // day.price might need to be day.value based on your data structure
-                    localBtcHeld += btcPurchased;
-                    localTotalUsdInvested += dcaAmount; // Accumulate the total USD invested
-                    localTransactionHistory.push({ type: 'buy', date: day.time, amount: btcPurchased, price: day.value }); // day.price might need to be day.value based on your data structure
-        
-                    // Calculate the date for the next purchase, 28 days later, using UTC date to avoid timezone issues
-                    nextPurchaseDate.setUTCDate(nextPurchaseDate.getUTCDate() + 28);
-                }
+            currentBtcPrice = day.value;  // Update current price to the latest in the loop
+    
+            // Buying logic
+            if (dayDate >= nextPurchaseDate && day.Risk <= dcaRiskThreshold) {
+                const btcPurchased = dcaAmount / day.value;
+                localBtcHeld += btcPurchased;
+                localTotalUsdInvested += dcaAmount;
+                localTransactionHistory.push({ type: 'buy', date: day.time, amount: btcPurchased, price: day.value });
+                nextPurchaseDate.setUTCDate(nextPurchaseDate.getUTCDate() + 28);
             }
     
-            // Determine if we need to execute a sell
-            if (localBtcHeld > 0) {
+            // Check if 7 days have passed since the last sale
+            const daysSinceLastSale = (dayDate - lastSellDate) / (1000 * 60 * 60 * 24);
+    
+            // Selling logic
+            if (localBtcHeld > 0 && daysSinceLastSale >= 7) {
                 let maxApplicableThreshold = null;
-
-                // Determine the highest applicable threshold that has been crossed
+    
                 sellThresholds.forEach(threshold => {
                     if (day.Risk > threshold.riskLevel) {
                         if (!maxApplicableThreshold || threshold.riskLevel > maxApplicableThreshold.riskLevel) {
@@ -386,42 +379,42 @@ const BitcoinRisk = ({ isDashboard = false }) => {
                         }
                     }
                 });
-
-                    // Execute the sale based on the maximum applicable threshold
-                    if (maxApplicableThreshold) {
-                        const btcSold = localBtcHeld * (maxApplicableThreshold.percentage / 100);
-                        localBtcHeld -= btcSold; // Reduce the Bitcoin held by the amount sold
-                        const usdRealized = btcSold * day.value; // Calculate the USD realized from this sale
-                        localTotalUsdRealized += usdRealized; // Accumulate the total USD realized
-
-                        // Record the sale transaction
-                        localTransactionHistory.push({
-                            type: 'sell',
-                            date: day.time, // Make sure 'time' is in the correct date-time format
-                            amount: btcSold,
-                            price: day.value // 'value' is used here, assuming it's the price of Bitcoin
-                        });
-                    }
+    
+                if (maxApplicableThreshold) {
+                    const btcSold = localBtcHeld * (maxApplicableThreshold.percentage / 100);
+                    localBtcHeld -= btcSold;
+                    const usdRealized = btcSold * day.value;
+                    localTotalUsdRealized += usdRealized;
+                    localTransactionHistory.push({ type: 'sell', date: day.time, amount: btcSold, price: day.value });
+    
+                    lastSellDate = dayDate;  // Update the last sell date
                 }
-            });
-            const percentageGains = localTotalUsdInvested > 0 ? 
+            }
+        });
+    
+        const calculatePercentageGains = localTotalUsdInvested > 0 ? 
             ((localTotalUsdRealized - localTotalUsdInvested) / localTotalUsdInvested) * 100 : 
             0;
-
-            // Update state with the results of the simulation
-            setBtcHeld(localBtcHeld);
-            setTotalUsdRealized(localTotalUsdRealized);
-            setTotalUsdInvested(localTotalUsdInvested); // You will need to create this state variable similarly to others
-            setTransactionHistory(localTransactionHistory);
-
-            console.log("Percentage Gains: ", percentageGains);
-            console.log("Total invested: ", localTotalUsdInvested);
-            console.log("Transaction History: ", localTransactionHistory);
-        };
+    
+        // Calculate unrealized gains
+        const unrealizedGains = localBtcHeld * currentBtcPrice;
+    
+        // Update state with the results of the simulation
+        setBtcHeld(localBtcHeld);
+        setTotalUsdRealized(localTotalUsdRealized);
+        setTotalUsdInvested(localTotalUsdInvested);
+        setPercentageGains(calculatePercentageGains);
+        setTransactionHistory(localTransactionHistory);
+        setUnrealizedGains(unrealizedGains); // Assuming you have a state to store this
+    
+        console.log("Unrealized Gains: ", unrealizedGains);
+        console.log("Percentage Gains: ", calculatePercentageGains);
+        console.log("Total invested: ", localTotalUsdInvested);
+        console.log("Transaction History: ", localTransactionHistory);
+    };
     
     
-
-
+    
     return (
         <div style={{ height: '100%' }}> {/* Set a specific height for the entire container */}
             <div className='chart-top-div'>
@@ -552,8 +545,11 @@ const BitcoinRisk = ({ isDashboard = false }) => {
                                             <li key={index}>{tx.type} {tx.amount.toFixed(6)} BTC on {tx.date} at ${tx.price.toFixed(2)}</li>
                                         ))}
                                     </ul>
-                                    <h3>Total Bitcoin Held: {btcHeld.toFixed(6)} BTC</h3>
-                                    <h3>Total USD Realized: ${totalUsdRealized.toFixed(2)}</h3>
+                                    <h3>Total USD Invested: ${totalUsdInvested}</h3>
+                                    <h3>Total Bitcoin Held:  ₿ {btcHeld.toFixed(6)} BTC</h3>
+                                    <h3>Total Realized Gains: ${totalUsdRealized.toFixed(2)}</h3>
+                                    <h3>Total Unrealized Gains: ${unrealizedGains.toFixed(2)}</h3>
+                                    <h3>Percentage Realised Gains:  % {percentageGains.toFixed(2)}</h3>
                                 </div>
                             </div>
                         )
