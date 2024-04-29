@@ -150,7 +150,6 @@ const BitcoinRisk = ({ isDashboard = false }) => {
                 }));             
                 
                 const withRiskMetric = calculateRiskMetric(formattedData);
-                console.log(withRiskMetric);
 
                 localStorage.setItem(cacheKey, JSON.stringify(withRiskMetric));
                 setChartData(withRiskMetric);

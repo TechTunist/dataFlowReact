@@ -295,8 +295,10 @@ const BitcoinPrice = ({ isDashboard = false }) => {
         };
     
         const updateSeriesData = (series, data, show) => {
-            series.setData(show ? data : []);
-            series.applyOptions({ visible: show });
+            if (series && chartRef.current) {
+                series.setData(show ? data : []);
+                series.applyOptions({ visible: show });
+            }
         };
     
         const movingAverage8Week = calculateMovingAverage(chartData, 8 * 7);
