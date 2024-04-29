@@ -17,6 +17,11 @@ const BitcoinRisk = ({ isDashboard = false }) => {
     const [dcaStartDate, setDcaStartDate] = useState('2021-01-01'); // Default start date for DCA investments
     const [dcaRiskThreshold, setDcaRiskThreshold] = useState(0.4); // Default risk threshold for making purchases
     const [totalUsdFromSales, setTotalUsdFromSales] = useState(0);
+    const [btcHeld, setBtcHeld] = useState(0);
+    const [totalUsdRealized, setTotalUsdRealized] = useState(0);
+    const [transactionHistory, setTransactionHistory] = useState([]);
+    const [totalUsdInvested, setTotalUsdInvested] = useState(0);
+
     const [sellThresholds, setSellThresholds] = useState([
         { riskLevel: 0.6, percentage: 10 },
         { riskLevel: 0.7, percentage: 20 },
@@ -332,6 +337,88 @@ const BitcoinRisk = ({ isDashboard = false }) => {
         });
         setSellThresholds(updatedThresholds);
     };
+
+
+    const handleDcaSimulation = () => {
+        let localBtcHeld = 0;
+        let localTotalUsdRealized = 0;
+        let localTotalUsdInvested = 0; // Variable to keep track of the total USD invested
+        let localTransactionHistory = [];
+        let nextPurchaseDate = new Date(dcaStartDate); // Ensure this is a valid date
+    
+    
+        chartData.forEach(day => {
+            // Extract the year, month, and day from day.date
+            const dayDate = new Date(day.time);
+            const dayYear = dayDate.getUTCFullYear();
+            const dayMonth = dayDate.getUTCMonth();
+            const dayDay = dayDate.getUTCDate();
+        
+            // Extract the year, month, and day from nextPurchaseDate
+            const purchaseYear = nextPurchaseDate.getUTCFullYear();
+            const purchaseMonth = nextPurchaseDate.getUTCMonth();
+            const purchaseDay = nextPurchaseDate.getUTCDate();
+        
+            // Compare the extracted year, month, and day
+            if ((dayYear > purchaseYear) ||
+                (dayYear === purchaseYear && dayMonth > purchaseMonth) ||
+                (dayYear === purchaseYear && dayMonth === purchaseMonth && dayDay >= purchaseDay)) {
+                if (day.Risk <= dcaRiskThreshold) {
+                    const btcPurchased = dcaAmount / day.value; // day.price might need to be day.value based on your data structure
+                    localBtcHeld += btcPurchased;
+                    localTotalUsdInvested += dcaAmount; // Accumulate the total USD invested
+                    localTransactionHistory.push({ type: 'buy', date: day.time, amount: btcPurchased, price: day.value }); // day.price might need to be day.value based on your data structure
+        
+                    // Calculate the date for the next purchase, 28 days later, using UTC date to avoid timezone issues
+                    nextPurchaseDate.setUTCDate(nextPurchaseDate.getUTCDate() + 28);
+                }
+            }
+    
+            // Determine if we need to execute a sell
+            if (localBtcHeld > 0) {
+                let maxApplicableThreshold = null;
+
+                // Determine the highest applicable threshold that has been crossed
+                sellThresholds.forEach(threshold => {
+                    if (day.Risk > threshold.riskLevel) {
+                        if (!maxApplicableThreshold || threshold.riskLevel > maxApplicableThreshold.riskLevel) {
+                            maxApplicableThreshold = threshold;
+                        }
+                    }
+                });
+
+                    // Execute the sale based on the maximum applicable threshold
+                    if (maxApplicableThreshold) {
+                        const btcSold = localBtcHeld * (maxApplicableThreshold.percentage / 100);
+                        localBtcHeld -= btcSold; // Reduce the Bitcoin held by the amount sold
+                        const usdRealized = btcSold * day.value; // Calculate the USD realized from this sale
+                        localTotalUsdRealized += usdRealized; // Accumulate the total USD realized
+
+                        // Record the sale transaction
+                        localTransactionHistory.push({
+                            type: 'sell',
+                            date: day.time, // Make sure 'time' is in the correct date-time format
+                            amount: btcSold,
+                            price: day.value // 'value' is used here, assuming it's the price of Bitcoin
+                        });
+                    }
+                }
+            });
+            const percentageGains = localTotalUsdInvested > 0 ? 
+            ((localTotalUsdRealized - localTotalUsdInvested) / localTotalUsdInvested) * 100 : 
+            0;
+
+            // Update state with the results of the simulation
+            setBtcHeld(localBtcHeld);
+            setTotalUsdRealized(localTotalUsdRealized);
+            setTotalUsdInvested(localTotalUsdInvested); // You will need to create this state variable similarly to others
+            setTransactionHistory(localTransactionHistory);
+
+            console.log("Percentage Gains: ", percentageGains);
+            console.log("Total invested: ", localTotalUsdInvested);
+            console.log("Transaction History: ", localTransactionHistory);
+        };
+    
     
 
 
@@ -437,7 +524,8 @@ const BitcoinRisk = ({ isDashboard = false }) => {
                                 <label htmlFor="buy-risk-threshold">Buy Risk Threshold (0-1):</label>
                                 <input className='input-field .simulate-button' id="buy-risk-threshold" type="number" placeholder="Buy Risk Threshold (0-1)" min="0" max="1" step="0.1" value={dcaRiskThreshold} onChange={e => setDcaRiskThreshold(parseFloat(e.target.value))} />
 
-                                <button className='simulate-button' style={{ background: 'transparent', color: colors.greenAccent[500], borderRadius: '10px'}} onClick={executeSellStrategy}>Simulate</button>
+                                <button className='simulate-button' style={{ background: 'transparent', color: colors.greenAccent[500], borderRadius: '10px'}} onClick={handleDcaSimulation}>Simulate</button>
+
 
                                 <h3>Selling Strategy</h3>
                                 <p>Define the percentage of Bitcoin to sell at different risk levels.</p>
@@ -449,10 +537,23 @@ const BitcoinRisk = ({ isDashboard = false }) => {
                                         </div>
                                     ))
                                 }
-                                {/* Optionally, add UI elements to add/remove thresholds */}
-                                <div style={{ marginTop: '20px', fontSize: '1.2rem' }}>
-                                    <h3>Total Realized USD from Bitcoin Sales:</h3>
-                                    <p>${totalUsdFromSales.toFixed(2)}</p>
+
+                                { !isDashboard && totalUsdFromSales && (
+                                // Optionally, add UI elements to add/remove thresholds
+                                    <div style={{ marginTop: '20px', fontSize: '1.2rem' }}>
+                                        <h3>Total Realized USD from Bitcoin Sales:</h3>
+                                        <p>${totalUsdFromSales.toFixed(2)}</p>
+                                    </div>
+                                )}
+                                <div>
+                                    <h3>Transaction History:</h3>
+                                    <ul>
+                                        {transactionHistory.map((tx, index) => (
+                                            <li key={index}>{tx.type} {tx.amount.toFixed(6)} BTC on {tx.date} at ${tx.price.toFixed(2)}</li>
+                                        ))}
+                                    </ul>
+                                    <h3>Total Bitcoin Held: {btcHeld.toFixed(6)} BTC</h3>
+                                    <h3>Total USD Realized: ${totalUsdRealized.toFixed(2)}</h3>
                                 </div>
                             </div>
                         )
