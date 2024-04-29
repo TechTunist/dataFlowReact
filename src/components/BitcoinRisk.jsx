@@ -290,6 +290,11 @@ const BitcoinRisk = ({ isDashboard = false }) => {
         }
     }, [isInteractive]);
 
+    const handleSimulationForDevelopment = () => {
+        alert("This feature is currently in development."); // Using an alert to notify the user
+        // Or you could use console.log("This feature is currently in development."); for a less intrusive notification.
+    };
+
     return (
         <div style={{ height: '100%' }}> {/* Set a specific height for the entire container */}
             <div className='chart-top-div'>
@@ -380,15 +385,15 @@ const BitcoinRisk = ({ isDashboard = false }) => {
                                     <div style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '10px', marginBottom: '10px', }}>
                                         <input className='input-field .simulate-button' type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
                                         <input className='input-field .simulate-button' type="number" placeholder="USD to Invest" value={usdInvest} onChange={e => setUsdInvest(e.target.value)} />
-                                        <button className='simulate-button' style={{ background: 'transparent', color: colors.greenAccent[500], borderRadius: '10px'}}  onClick={handleSimulation}>Simulate</button>
+                                        <button className='simulate-button' style={{ background: 'transparent', color: colors.greenAccent[500], borderRadius: '10px'}}  onClick={handleSimulationForDevelopment}>Simulate</button>
                                     </div>
-                                    { !isDashboard && simulationResult.investmentDate && (
+                                    {/* { !isDashboard && simulationResult.investmentDate && (
                                         <div className='results-display'>
                                             Investing ${simulationResult.investedAmount.toFixed(0)} on {simulationResult.investmentDate} at 
                                             a risk level of {simulationResult.initialRiskLevel.toFixed(2)} would have resulted in
                                             an investment return of ${simulationResult.currentValue.toFixed(2)} based on today's prices.
                                         </div>
-                                    )}
+                                    )} */}
                                 </div>
                             )
                         }

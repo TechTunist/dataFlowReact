@@ -125,10 +125,10 @@ const Sidebar = () => {
           <Box mb="25px">
             {/* Main Logo and Title */}
             <Box display="flex" justifyContent="center" alignItems="center">
-              <img alt="main-logo" width="100px" height="100px" src={`../../assets/main-logo.png`} style={{ cursor: "pointer", borderRadius: "50%" }} />
+              <img alt="main-logo" width="100px" height="100px" src={`../../assets/cryptology-logo-square.png`}  />
             </Box>
             <Box textAlign="center">
-              <Typography variant="h2" color={colors.grey[100]} fontWeight="bold" sx={{ m: "10px 0 0 0" }}>Data Flow</Typography>
+              <Typography variant="h2" color={colors.grey[100]} fontWeight="bold" sx={{ m: "10px 0 0 0" }}>Cryptology</Typography>
               <Typography variant="h5" color={colors.greenAccent[500]}>Quantitative Analysis</Typography>
             </Box>
           </Box>
