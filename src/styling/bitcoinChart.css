@@ -80,6 +80,9 @@ input:checked + .slider:before {
     color: #70d8bd; /* Keep text white on hover */
     background-color: transparent; /* Maintain a transparent background */
     border: 2px solid #70d8bd; /* Maintain white border */
+    min-width: 100px;
+    max-height: 50px;
+    font-size: 1rem;
 }
 
 .simulate-button:hover {
@@ -89,6 +92,28 @@ input:checked + .slider:before {
 }
 
 .simulate-button:active {
+    background-color: white; /* Neon green background when clicked */
+    box-shadow: 0 0 5px white; /* Slightly smaller glow effect */
+}
+
+
+.simulate-button-dca {
+    color: #70d8bd; /* Keep text white on hover */
+    background-color: transparent; /* Maintain a transparent background */
+    border: 2px solid #70d8bd; /* Maintain white border */
+    min-width: 200px;
+    min-height: 50px;
+    /* max-height: 50px; */
+    font-size: 1rem;
+}
+
+.simulate-button-dca:hover {
+    color: #70d8bd; /* Keep text white on hover */
+    background-color: transparent; /* Maintain a transparent background */
+    border: 2px solid rgb(255, 255, 255); /* Maintain white border */
+}
+
+.simulate-button-dca:active {
     background-color: white; /* Neon green background when clicked */
     box-shadow: 0 0 5px white; /* Slightly smaller glow effect */
 }
@@ -289,7 +314,7 @@ input:checked + .slider:before {
 }
 
 .input-field {
-    margin-bottom: 10px;
+    margin-bottom: 50px;
 }
 
 .results-display {
@@ -353,6 +378,36 @@ input:checked + .slider:before {
 
 .risk-filter-inner span{
     font-size: 1.5rem;
+}
+
+
+.dceFreq {
+    color: #31d6aa; 
+    border: 2px solid #31d6aa; 
+    background-color: transparent; 
+    padding: 5px 15px; 
+    font-size: 0.9rem;
+    border-radius: 5px;
+    cursor: pointer;
+    box-shadow: none; 
+    transition: background-color 0.3s ease, box-shadow 0.3s ease, color 0.3s ease;
+    /* margin-left: 10px; */
+}
+
+.dceFreq:hover {
+    color: #70d8bd; /* Keep text white on hover */
+    background-color: transparent; /* Maintain a transparent background */
+    border: 2px solid white; /* Maintain white border */
+}
+
+.dceFreqHighlighted {
+    background-color: violet;
+    color: white;
+}
+
+.dceFreqHighlighted:hover {
+    background-color: violet;
+    color: white;
 }
 
 /* Media Query for screens less than 1200px */

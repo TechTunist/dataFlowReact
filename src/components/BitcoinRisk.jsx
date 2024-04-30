@@ -13,7 +13,7 @@ const BitcoinRisk = ({ isDashboard = false }) => {
 
     // DCA risk based accumulation simulation state variables
     const [dcaAmount, setDcaAmount] = useState(100); // Default DCA amount in USD
-    const [dcaFrequency, setDcaFrequency] = useState('monthly'); // Default frequency of purchases ('weekly', 'biweekly', 'monthly')
+    const [dcaFrequency, setDcaFrequency] = useState(7); 
     const [dcaStartDate, setDcaStartDate] = useState('2021-01-01'); // Default start date for DCA investments
     const [dcaRiskThreshold, setDcaRiskThreshold] = useState(0.4); // Default risk threshold for making purchases
     const [totalUsdFromSales, setTotalUsdFromSales] = useState(0);
@@ -23,6 +23,9 @@ const BitcoinRisk = ({ isDashboard = false }) => {
     const [totalUsdInvested, setTotalUsdInvested] = useState(0);
     const [percentageGains, setPercentageGains] = useState(0);
     const [unrealizedGains, setUnrealizedGains] = useState(0);
+    const [showTransactions, setShowTransactions] = useState(false);
+    const [totalPortfolioValue, setTotalPortfolioValue] = useState(0);
+    const [simulationRun, setSimulationRun] = useState(false);
 
     const [sellThresholds, setSellThresholds] = useState([
         { riskLevel: 0.6, percentage: 10 },
@@ -362,7 +365,8 @@ const BitcoinRisk = ({ isDashboard = false }) => {
                 localBtcHeld += btcPurchased;
                 localTotalUsdInvested += dcaAmount;
                 localTransactionHistory.push({ type: 'buy', date: day.time, amount: btcPurchased, price: day.value });
-                nextPurchaseDate.setUTCDate(nextPurchaseDate.getUTCDate() + 28);
+                // nextPurchaseDate.setUTCDate(nextPurchaseDate.getUTCDate() + 28);
+                nextPurchaseDate.setUTCDate(nextPurchaseDate.getUTCDate() + dcaFrequency);
             }
     
             // Check if 7 days have passed since the last sale
@@ -406,13 +410,15 @@ const BitcoinRisk = ({ isDashboard = false }) => {
         setPercentageGains(calculatePercentageGains);
         setTransactionHistory(localTransactionHistory);
         setUnrealizedGains(unrealizedGains); // Assuming you have a state to store this
+        setTotalPortfolioValue(localTotalUsdRealized + unrealizedGains);
+
+        setSimulationRun(true);
     
-        console.log("Unrealized Gains: ", unrealizedGains);
-        console.log("Percentage Gains: ", calculatePercentageGains);
-        console.log("Total invested: ", localTotalUsdInvested);
-        console.log("Transaction History: ", localTransactionHistory);
+        // console.log("Unrealized Gains: ", unrealizedGains);
+        // console.log("Percentage Gains: ", calculatePercentageGains);
+        // console.log("Total invested: ", localTotalUsdInvested);
+        // console.log("Transaction History: ", localTransactionHistory);
     };
-    
     
     
     return (
@@ -499,58 +505,96 @@ const BitcoinRisk = ({ isDashboard = false }) => {
                         !isDashboard && (
                             <div className='risk-simulator results-display' style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '10px', padding: '20px', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
                                 <h2>DCA Risk Based Accumulation and Exit Strategy Simulation</h2>
-                                <p>Set up your buying and selling strategy by defining the start date, buy risk level, investment amount, frequency, and sell thresholds.</p>
-                                
+                                <p>Backtest simple buying and selling DCA strategies based on the risk level.</p>
+                                <ol>
+                                    <li>Choose a start date to begin the test from.</li>
+                                    <li>Choose an amount you would like to DCA.</li>
+                                    <li>Choose a frequency (weekly, bi-weekly, or monthly) to make purchases and sales of your Bitcoin.</li>
+                                    <li>Choose a risk level under which you are happy to accumulate Bitcoin.</li>
+                                </ol>
+
+                                <h2>BTC Accumulation Strategy</h2>
                                 <label htmlFor="start-date">Start Date:</label>
                                 <input className='input-field .simulate-button' id="start-date" type="date" value={dcaStartDate} onChange={e => setDcaStartDate(e.target.value)} />
 
                                 <label htmlFor="investment-amount">USD to Invest:</label>
                                 <input className='input-field .simulate-button' id="investment-amount" type="number" placeholder="USD to Invest" value={dcaAmount} onChange={e => setDcaAmount(parseFloat(e.target.value))} />
 
-                                <label htmlFor="investment-frequency">Investment Frequency:</label>
-                                <select className='input-field .simulate-button' id="investment-frequency" value={dcaFrequency} onChange={e => setDcaFrequency(e.target.value)}>
-                                    <option value="weekly">Weekly</option>
-                                    <option value="biweekly">Biweekly</option>
-                                    <option value="monthly">Monthly</option>
-                                </select>
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                    <label htmlFor="investment-frequency" style={{ marginBottom: '10px' }}>DCA (dollar cost average) Frequency in days:</label>
+                                    <div style={{ display: 'flex', justifyContent: 'space-evenly', width: '100%', marginBottom: '50px' }}>
+                                        <button
+                                            className={`dceFreq ${dcaFrequency === 7 ? 'dceFreqHighlighted' : ''}`}
+                                            onClick={() => setDcaFrequency(7)}
+                                        >
+                                            7
+                                        </button>
+                                        <button
+                                            className={`dceFreq ${dcaFrequency === 14 ? 'dceFreqHighlighted' : ''}`}
+                                            onClick={() => setDcaFrequency(14)}
+                                        >
+                                            14
+                                        </button>
+                                        <button
+                                            className={`dceFreq ${dcaFrequency === 28 ? 'dceFreqHighlighted' : ''}`}
+                                            onClick={() => setDcaFrequency(28)}
+                                        >
+                                            28
+                                        </button>
+                                    </div>
+                                </div>
 
-                                <label htmlFor="buy-risk-threshold">Buy Risk Threshold (0-1):</label>
-                                <input className='input-field .simulate-button' id="buy-risk-threshold" type="number" placeholder="Buy Risk Threshold (0-1)" min="0" max="1" step="0.1" value={dcaRiskThreshold} onChange={e => setDcaRiskThreshold(parseFloat(e.target.value))} />
+                                <label htmlFor="buy-risk-threshold">Buy when Risk is below:</label>
+                                <input className='input-field .simulate-button-dca' id="buy-risk-threshold" type="number" placeholder="Buy Risk Threshold (0-1)" min="0" max="1" step="0.1" value={dcaRiskThreshold} onChange={e => setDcaRiskThreshold(parseFloat(e.target.value))} />
 
-                                <button className='simulate-button' style={{ background: 'transparent', color: colors.greenAccent[500], borderRadius: '10px'}} onClick={handleDcaSimulation}>Simulate</button>
+                                <button className='simulate-button-dca' style={{ background: 'transparent', color: colors.greenAccent[500], borderRadius: '10px'}} onClick={handleDcaSimulation}>Simulate</button>
 
 
-                                <h3>Selling Strategy</h3>
-                                <p>Define the percentage of Bitcoin to sell at different risk levels.</p>
+                                <h2>Taking Profit Strategy</h2>
+                                <p>
+                                    At each of the risk levels below, you can decide the percentage of your current
+                                    stack of Bitcoin that you would like to sell. (The frequency at which you sell
+                                    is the set by default to the same purchasing frequency set above)
+                                </p>
+                                <p style={{color: colors.greenAccent[500]}}>
+                                    It stands to reason that the higher the risk level, the more you would want to sell,
+                                    but feel free to explore based on your own risk tolerance.
+                                </p>
+                                    
                                 {
                                     sellThresholds.map((threshold, index) => (
                                         <div key={index}>
                                             <label>Risk Level {' > '} {threshold.riskLevel}: </label>
-                                            <input type="number" min="0" max="100" step="10" value={threshold.percentage} onChange={e => handleThresholdChange(index, parseFloat(e.target.value))} />%
+                                            <input type="number" min="0" max="100" step="10" value={threshold.percentage} onChange={e => handleThresholdChange(index, parseFloat(e.target.value))} /> %
                                         </div>
                                     ))
                                 }
-
-                                { !isDashboard && totalUsdFromSales && (
-                                // Optionally, add UI elements to add/remove thresholds
-                                    <div style={{ marginTop: '20px', fontSize: '1.2rem' }}>
-                                        <h3>Total Realized USD from Bitcoin Sales:</h3>
-                                        <p>${totalUsdFromSales.toFixed(2)}</p>
+                                {simulationRun && (
+                                    <div>
+                                        <h2 style={{textAlign: 'left'}}>Total USD Invested: ${totalUsdInvested}</h2>
+                                        <h2>Total Portfolio Value: ${totalPortfolioValue.toFixed(2)}</h2>
+                                        <h3>Total Bitcoin Held:  ₿ {btcHeld.toFixed(6)} BTC</h3>
+                                        <h3>Total Realized Gains: ${totalUsdRealized.toFixed(2)}</h3>
+                                        <h3>Total Unrealized Gains: ${unrealizedGains.toFixed(2)}</h3>
+                                        <h3>Percentage Realised Gains:  {percentageGains.toFixed(2)}  %</h3>
                                     </div>
                                 )}
-                                <div>
-                                    <h3>Transaction History:</h3>
-                                    <ul>
-                                        {transactionHistory.map((tx, index) => (
-                                            <li key={index}>{tx.type} {tx.amount.toFixed(6)} BTC on {tx.date} at ${tx.price.toFixed(2)}</li>
-                                        ))}
-                                    </ul>
-                                    <h3>Total USD Invested: ${totalUsdInvested}</h3>
-                                    <h3>Total Bitcoin Held:  ₿ {btcHeld.toFixed(6)} BTC</h3>
-                                    <h3>Total Realized Gains: ${totalUsdRealized.toFixed(2)}</h3>
-                                    <h3>Total Unrealized Gains: ${unrealizedGains.toFixed(2)}</h3>
-                                    <h3>Percentage Realised Gains:  % {percentageGains.toFixed(2)}</h3>
-                                </div>
+                                {simulationRun && (
+                                    <div>
+                                        <h3 onClick={() => setShowTransactions(!showTransactions)} style={{ cursor: 'pointer' }}>
+                                            (Show Transaction History)
+                                        </h3>
+                                        {showTransactions && (
+                                            <ul>
+                                                {transactionHistory.map((tx, index) => (
+                                                    <li key={index}>
+                                                        {tx.type} {tx.amount.toFixed(6)} BTC on {tx.date} at ${tx.price.toFixed(2)}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         )
                         }

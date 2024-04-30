@@ -458,7 +458,7 @@ const EthereumPrice = ({ isDashboard = false }) => {
                         top: `${tooltipData.y + 100}px`, // Adjust as needed
                     }}
                 >
-                    <div style={{fontSize: '15px'}}>Bitcoin</div>
+                    <div style={{fontSize: '15px'}}>Ethereum</div>
                     <div style={{fontSize: '20px'}}>${tooltipData.price.toFixed(2)}</div>
                     <div>{tooltipData.date.toString()}</div>
                 </div>
