@@ -65,6 +65,8 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
           return <Header title="About" subtitle="Why did I create Data Flow?" />;
         case "/login-signup":
           return <Header title="Login / Signup" subtitle="Under Construnction" />;
+        case "/market-cycles":
+          return <Header title="Bitcoin Market Cycles" subtitle="From bear-market low to bull-market high" />;
       default:
         return "Welcome"; // Default title or could be a 404 page title
     }
