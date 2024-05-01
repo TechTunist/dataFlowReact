@@ -17,6 +17,7 @@ import FearAndGreed from "./components/FearAndGreed";
 import BitcoinLogRegression from "./components/BitcoinLogRegression";
 import BitcoinRiskColor from "./components/BitcoinRiskColor";
 import AltcoinPrice from "./components/AltcoinPrice";
+import MarketCycles from "./components/MarketCycles";
 import About from "./scenes/About";
 import LoginSignup from "./scenes/LoginSignup";
 import { useLocation } from 'react-router-dom';
@@ -57,6 +58,7 @@ function App() {
                 <Route path="/logarithmic-regression" element={<BasicChart ChartComponent={BitcoinLogRegression} />} />
                 <Route path="/risk-color" element={<BasicChart ChartComponent={BitcoinRiskColor} />} />
                 <Route path="/altcoin-price" element={<BasicChart ChartComponent={AltcoinPrice} />} />
+                <Route path="/market-cycles" element={<BasicChart ChartComponent={MarketCycles} />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/login-signup" element={<LoginSignup />} />
               </Routes>

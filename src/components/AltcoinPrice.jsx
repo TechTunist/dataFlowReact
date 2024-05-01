@@ -1,4 +1,3 @@
-// SolanaChart.jsx
 import React, { useRef, useEffect, useState } from 'react';
 import { createChart } from 'lightweight-charts';
 import '../styling/bitcoinChart.css'
