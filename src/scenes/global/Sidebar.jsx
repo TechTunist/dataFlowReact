@@ -46,6 +46,7 @@ const Sidebar = () => {
     { title: "Bitcoin Logarithmic Regression", to: "/logarithmic-regression", category: 'Indicators', icon: <WarningOutlinedIcon /> },
     { title: "Bitcoin Risk Colour Chart", to: "/risk-color", category: 'Bitcoin', icon: <WarningOutlinedIcon /> },
     { title: "Altcoin Chart", to: "/altcoin-price", category: 'Altcoins', icon: <BarChartOutlinedIcon /> },
+    { title: "Market Cycles", to: "/market-cycles", category: 'Bitcoin', icon: <BarChartOutlinedIcon /> },
   ];
 
   const filteredItems = itemsData.filter(item =>

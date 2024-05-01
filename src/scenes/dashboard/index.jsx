@@ -4,6 +4,7 @@ import BitcoinPrice from "../../components/BitcoinPrice";
 import AltcoinPrice from "../../components/AltcoinPrice";
 import EthereumRisk from "../../components/EthereumRisk"; 
 import EthereumPrice from "../../components/EthereumPrice";
+import MarketCycles from "../../components/MarketCycles";
 import PiCycleTop from "../../components/PiCycleTop";
 import FearandGreed from "../../components/FearAndGreed";
 import BitcoinLogRegression from "../../components/BitcoinLogRegression";
@@ -178,6 +179,24 @@ const Dashboard = () => {
               <Typography variant="body3" color="textSecondary" className='dashboard-info'>
                 Simple price chart for a selection of altcoins and their USD / BTC pairs.
               </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Market Cycles Card */}
+        <Grid item xs={12} md={6}>
+          <Card style={{backgroundColor: colors.primary[500]}}>
+            <CardContent>
+              <Typography variant="h4" gutterBottom component={Link} to="/market-cycles" style={{ textDecoration: 'none', color: 'inherit' }}>
+                Bitcoin Market Cycles
+              </Typography>
+              <Box height="350px" m="20px 0 0 0" style={{ margin: "0 0 20px 0" }}>
+                <MarketCycles isDashboard={true} />
+              </Box>
+              <Typography variant="body3" color="textSecondary" className='dashboard-info'>
+                Market cycles from bear-market low to bull-market high of the previous 3 or so cycles
+              </Typography>
+
             </CardContent>
           </Card>
         </Grid>
