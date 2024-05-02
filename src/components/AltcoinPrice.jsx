@@ -92,8 +92,10 @@ const AltcoinPrice = ({ isDashboard = false }) => {
 
     // Handle change event for the dropdown
     const handleSelectChange = (event) => {
-        setSelectedCoin(event.target.value);
+        localStorage.setItem('selectedCoin', event.target.value);
+        window.location.reload();
     };
+    
 
     // Function to toggle scale mode
     const toggleScaleMode = () => {
@@ -385,8 +387,24 @@ const AltcoinPrice = ({ isDashboard = false }) => {
         updateSeriesData(maSeries.ma100Week, movingAverage100Week, show100Week);
         updateSeriesData(maSeries.ma200Week, movingAverage200Week, show200Week);
     
-    }, [chartData, show8Week, show20Week, show100Week, show200Week, color8Week, color20Week, color100Week, color200Week]);
-    
+    }, [show8Week, show20Week, show100Week, show200Week, color8Week, color20Week, color100Week, color200Week]);
+
+    ///////////////////////////// reload page for new denominator /////////////////////////////
+    useEffect(() => {
+        const savedDenominator = localStorage.getItem('denominator');
+        if (savedDenominator) {
+            setDenominator(savedDenominator);
+            localStorage.removeItem('denominator'); // Clean up after setting the state
+        }
+    }, []);
+    useEffect(() => {
+        const savedCoin = localStorage.getItem('selectedCoin');
+        if (savedCoin) {
+            setSelectedCoin(savedCoin);
+            localStorage.removeItem('selectedCoin'); // Clean up after setting the state
+        }
+    }, []);
+    ///////////////////////////// reload page for new denominator /////////////////////////////
 
     return (
         <div style={{ height: '100%' }}>
@@ -435,7 +453,11 @@ const AltcoinPrice = ({ isDashboard = false }) => {
                 <div>
                     {
                         !isDashboard && (
-                            <button className="select-reset" onClick={() => setDenominator(denominator === 'USD' ? 'BTC' : 'USD')}>
+                            <button className="select-reset" onClick={() => {
+                                const newDenominator = denominator === 'USD' ? 'BTC' : 'USD';
+                                localStorage.setItem('denominator', newDenominator); // Store the new state in localStorage
+                                window.location.reload();
+                            }}>
                                 {selectedCoin} / {denominator}
                             </button>
 
