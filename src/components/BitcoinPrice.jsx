@@ -238,6 +238,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
         };
 
         resizeChart();
+        
     
         window.addEventListener('resize', resizeChart);
 

@@ -81,7 +81,7 @@ input:checked + .slider:before {
     background-color: transparent; /* Maintain a transparent background */
     border: 2px solid #70d8bd; /* Maintain white border */
     min-width: 100px;
-    max-height: 50px;
+    max-height: 30px;
     font-size: 1rem;
 }
 
@@ -314,7 +314,7 @@ input:checked + .slider:before {
 }
 
 .input-field {
-    margin-bottom: 50px;
+    margin-bottom: 20px;
 }
 
 .results-display {
@@ -322,7 +322,7 @@ input:checked + .slider:before {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     padding: 20px;
     /* width: 100%;  */
-    max-width: 600px;  
+    /* max-width: 600px;   */
     border: 2px solid #4cceac;  /* Green border */
     margin-top: 20px;  /* Spacing from the button */
     font-size: 1.1rem;
@@ -339,12 +339,25 @@ input:checked + .slider:before {
     font-size: 1.1rem;
 }
 
-.simulator-container {
+
+/* .simulator-container {
     display: flex;
     flex-direction: row;
     justify-content: space-around;
     width: 100%;
+}  */
+
+.simulator-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 100%;
+    
 }
+
+/* .simulator-container > div:first-child {
+    margin-right: 100px; 
+} */
 
 .input-field, .button-reset {
     background-color: transparent; /* Sets background to transparent */

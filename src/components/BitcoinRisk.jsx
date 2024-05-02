@@ -487,8 +487,8 @@ const BitcoinRisk = ({ isDashboard = false }) => {
                                     <div style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '10px', color: colors.greenAccent[500]}}>
                                         <input className='input-field .simulate-button' type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
                                         <input className='input-field .simulate-button' type="number" placeholder="USD to Invest" value={lumpSumInvest} onChange={e => setlumpSumInvest(e.target.value)} />
-                                        <button className='simulate-button' style={{ background: 'transparent', color: colors.greenAccent[500], borderRadius: '10px'}}  onClick={handleSimulation}>Simulate</button>
                                     </div>
+                                    <button className='simulate-button-dca' style={{ background: 'transparent', color: colors.greenAccent[500], borderRadius: '10px', margin: '20px'}}  onClick={handleSimulation}>Simulate</button>
                                     { !isDashboard && simulationResult.investmentDate && (
                                         <div className='results-display'>
                                             Investing ${simulationResult.investedAmount.toFixed(0)} on {simulationResult.investmentDate} at 
@@ -521,7 +521,7 @@ const BitcoinRisk = ({ isDashboard = false }) => {
                                 <input className='input-field .simulate-button' id="investment-amount" type="number" placeholder="USD to Invest" value={dcaAmount} onChange={e => setDcaAmount(parseFloat(e.target.value))} />
 
                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                    <label htmlFor="investment-frequency" style={{ marginBottom: '10px' }}>DCA (dollar cost average) Frequency in days:</label>
+                                    <label htmlFor="investment-frequency" style={{ marginBottom: '10px' }}>DCA (dollar cost average) purchase frequency in days:</label>
                                     <div style={{ display: 'flex', justifyContent: 'space-evenly', width: '100%', marginBottom: '50px' }}>
                                         <button
                                             className={`dceFreq ${dcaFrequency === 7 ? 'dceFreqHighlighted' : ''}`}
@@ -546,9 +546,6 @@ const BitcoinRisk = ({ isDashboard = false }) => {
 
                                 <label htmlFor="buy-risk-threshold">Buy when Risk is below:</label>
                                 <input className='input-field .simulate-button-dca' id="buy-risk-threshold" type="number" placeholder="Buy Risk Threshold (0-1)" min="0" max="1" step="0.1" value={dcaRiskThreshold} onChange={e => setDcaRiskThreshold(parseFloat(e.target.value))} />
-
-                                <button className='simulate-button-dca' style={{ background: 'transparent', color: colors.greenAccent[500], borderRadius: '10px'}} onClick={handleDcaSimulation}>Simulate</button>
-
 
                                 <h2>Taking Profit Strategy</h2>
                                 <p>
@@ -578,7 +575,11 @@ const BitcoinRisk = ({ isDashboard = false }) => {
                                         <h3>Total Unrealized Gains: ${unrealizedGains.toFixed(2)}</h3>
                                         <h3>Percentage Realised Gains:  {percentageGains.toFixed(2)}  %</h3>
                                     </div>
+                                    
                                 )}
+
+                            <button className='simulate-button-dca' style={{ background: 'transparent', color: colors.greenAccent[500], borderRadius: '10px', margin: '20px'}} onClick={handleDcaSimulation}>Simulate</button>
+
                                 {simulationRun && (
                                     <div>
                                         <h3 onClick={() => setShowTransactions(!showTransactions)} style={{ cursor: 'pointer' }}>

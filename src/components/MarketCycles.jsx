@@ -3,12 +3,14 @@ import Plot from 'react-plotly.js';
 import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
 import '../styling/bitcoinChart.css';
+import useIsMobile from '../hooks/useIsMobile';
 
 const MarketCycles = ({ isDashboard = false }) => {
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
     const [btcData, setBtcData] = useState([]);
     const [cycleDataSets, setCycleDataSets] = useState([]);
+    const isMobile = useIsMobile();
 
     useEffect(() => {
         const cacheKey = 'btcData';
@@ -61,10 +63,10 @@ const MarketCycles = ({ isDashboard = false }) => {
 
         if (btcData.length) {
             setCycleDataSets([
-                { name: 'Cycle 1', data: processCycle("2011-11-22", "2013-11-30") },
-                { name: 'Cycle 2', data: processCycle("2015-08-25", "2017-12-17") },
-                { name: 'Cycle 3', data: processCycle("2018-12-16", "2021-11-08") },
-                { name: 'Cycle 4', data: processCycle("2022-11-21", "2024-03-13") }
+                { name: '2011- 2013', data: processCycle("2011-11-22", "2013-11-30") },
+                { name: '2015 - 2017', data: processCycle("2015-08-25", "2017-12-17") },
+                { name: '2018 - 2021', data: processCycle("2018-12-16", "2021-11-08") },
+                { name: '2022 - present', data: processCycle("2022-11-21", "2024-03-13") }
             ]);
         }
     }, [btcData]);
@@ -78,7 +80,9 @@ const MarketCycles = ({ isDashboard = false }) => {
                         y: cycle.data.map(d => d.roi),
                         type: 'scatter',
                         mode: 'lines',
-                        name: cycle.name
+                        name: cycle.name,
+                        text: cycle.data.map(d => `Day: ${d.day}<br>ROI: ${d.roi.toFixed(2)}`), // Custom tooltip content
+                        hoverinfo: 'text'
                     }))}
                     layout={{
                         title: isDashboard ? '' : 'Market Cycles RoI',
@@ -87,9 +91,16 @@ const MarketCycles = ({ isDashboard = false }) => {
                         plot_bgcolor: colors.primary[700],
                         paper_bgcolor: colors.primary[700],
                         font: { color: colors.primary[100] },
-                        xaxis: { title: 'Days since cycle start' },
-                        yaxis: { title: 'Log10 ROI', type: 'linear' },
-                        showlegend: !isDashboard
+                        xaxis: { title: isMobile || isDashboard ? '' : 'Days from bear market bottom' }, // remove title in mobile mode
+                        yaxis: { title: 'ROI', type: 'linear' },
+                        showlegend: !isDashboard,
+                        legend: {
+                            orientation: 'h',
+                            x: 0.5,
+                            xanchor: 'center',
+                            y: -0.2,
+                            yanchor: 'top'
+                        }
                     }}
                     config={{
                         staticPlot: isDashboard,
