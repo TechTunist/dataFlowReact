@@ -56,7 +56,6 @@ const Sidebar = () => {
   );
   
   
-
   const handleSearchChange = (event) => {
     setSearchQuery(event.target.value);
   };
