@@ -385,7 +385,7 @@ const AltcoinPrice = ({ isDashboard = false }) => {
         updateSeriesData(maSeries.ma100Week, movingAverage100Week, show100Week);
         updateSeriesData(maSeries.ma200Week, movingAverage200Week, show200Week);
     
-    }, [show8Week, show20Week, show100Week, show200Week, color8Week, color20Week, color100Week, color200Week]);
+    }, [chartData, show8Week, show20Week, show100Week, show200Week, color8Week, color20Week, color100Week, color200Week]);
     
 
     return (
