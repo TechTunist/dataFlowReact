@@ -15,6 +15,7 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
     const chartRef = useRef(null);
     const [showMarkers, setShowMarkers] = useState(false);
     const [isInteractive, setIsInteractive] = useState(false);
+    const [setIsDashboard] = useState(isDashboard);
 
     const markers = [
         {
@@ -317,7 +318,15 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
                     width: '100%', 
                     border: '2px solid #a9a9a9' // Adds dark border with your specified color
                     }}> 
-                <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
+                <div
+                    ref={chartContainerRef}
+                    style={{ height: '100%', width: '100%', zIndex: 1 }}
+                    onClick={() => {
+                        if (!isInteractive && !isDashboard) {  // Check if interactivity is off and not on dashboard
+                            setInteractivity();
+                        }
+                    }}
+                    />
             </div>
             <div>
                 {

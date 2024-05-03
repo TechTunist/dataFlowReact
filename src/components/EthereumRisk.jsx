@@ -10,6 +10,7 @@ const EthereumRisk = ({ isDashboard = false }) => {
     const chartRef = useRef(null); // ref to store chart for use in return statement
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
+    const [setIsDashboard] = useState(isDashboard);
 
     // State for user inputs
     const [lowRisk, setLowRisk] = useState(0.2);
@@ -332,7 +333,15 @@ const EthereumRisk = ({ isDashboard = false }) => {
                     width: '100%', 
                     border: '2px solid #a9a9a9' // Adds dark border with your specified color
                     }}> 
-                <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
+                <div
+                    ref={chartContainerRef}
+                    style={{ height: '100%', width: '100%', zIndex: 1 }}
+                    onClick={() => {
+                        if (!isInteractive && !isDashboard) {  // Only set interactivity if it's currently disabled
+                            setInteractivity();
+                        }
+                    }}
+                    />
             </div>
             <div>
                 {

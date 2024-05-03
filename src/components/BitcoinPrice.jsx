@@ -23,7 +23,8 @@ const BitcoinPrice = ({ isDashboard = false }) => {
     const color100Week = 'white';
     const color200Week = 'yellow';
     const [isInteractive, setIsInteractive] = useState(false);
-    const isMobile = useIsMobile(); // Custom hook to detect mobile devices    
+    const isMobile = useIsMobile(); // Custom hook to detect mobile devices  
+    const [setIsDashboard] = useState(isDashboard);  
 
 
     // Function to set chart interactivity
@@ -365,7 +366,15 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                     width: '100%', 
                     border: '2px solid #a9a9a9' // Adds dark border with your specified color
                     }}> 
-                <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
+                <div
+                    ref={chartContainerRef}
+                    style={{ height: '100%', width: '100%', zIndex: 1 }}
+                    onClick={() => {
+                        if (!isInteractive && !isDashboard) {  // Only set interactivity if it's currently disabled
+                            setInteractivity();
+                        }
+                    }}
+                    />
             </div>
             
             <div style={{
