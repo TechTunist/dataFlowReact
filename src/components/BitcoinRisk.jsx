@@ -352,7 +352,7 @@ const BitcoinRisk = ({ isDashboard = false }) => {
         let localTransactionHistory = [];
         let nextPurchaseDate = new Date(dcaStartDate);
         let lastSellDate = new Date(dcaStartDate);
-        lastSellDate.setDate(lastSellDate.getDate() - 7);  // Set this to 7 days before the start to allow initial selling if conditions are met
+        lastSellDate.setDate(lastSellDate.getDate() - dcaFrequency);  // Set this to 7 days before the start to allow initial selling if conditions are met
     
         let currentBtcPrice = 0;  // Variable to store the most recent Bitcoin price
     
@@ -366,15 +366,15 @@ const BitcoinRisk = ({ isDashboard = false }) => {
                 localBtcHeld += btcPurchased;
                 localTotalUsdInvested += dcaAmount;
                 localTransactionHistory.push({ type: 'buy', date: day.time, amount: btcPurchased, price: day.value });
-                // nextPurchaseDate.setUTCDate(nextPurchaseDate.getUTCDate() + 28);
-                nextPurchaseDate.setUTCDate(nextPurchaseDate.getUTCDate() + dcaFrequency);
+                nextPurchaseDate = new Date(dayDate);
+                nextPurchaseDate.setDate(dayDate.getDate() + dcaFrequency);  // Properly increment the next purchase date
             }
     
             // Check if 7 days have passed since the last sale
             const daysSinceLastSale = (dayDate - lastSellDate) / (1000 * 60 * 60 * 24);
     
             // Selling logic
-            if (localBtcHeld > 0 && daysSinceLastSale >= 7) {
+            if (localBtcHeld > 0 && daysSinceLastSale >= dcaFrequency) {
                 let maxApplicableThreshold = null;
     
                 sellThresholds.forEach(threshold => {
@@ -392,7 +392,7 @@ const BitcoinRisk = ({ isDashboard = false }) => {
                     localTotalUsdRealized += usdRealized;
                     localTransactionHistory.push({ type: 'sell', date: day.time, amount: btcSold, price: day.value });
     
-                    lastSellDate = dayDate;  // Update the last sell date
+                    lastSellDate = new Date(dayDate);  // Update the last sell date
                 }
             }
         });
