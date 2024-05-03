@@ -3,6 +3,7 @@ import { createChart } from 'lightweight-charts';
 import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
 import '../styling/bitcoinChart.css';
+import useIsMobile from '../hooks/useIsMobile';
 
 const BitcoinRisk = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
@@ -27,6 +28,7 @@ const BitcoinRisk = ({ isDashboard = false }) => {
     const [showTransactions, setShowTransactions] = useState(false);
     const [totalPortfolioValue, setTotalPortfolioValue] = useState(0);
     const [simulationRun, setSimulationRun] = useState(false);
+    const isMobile = useIsMobile();
 
     const [sellThresholds, setSellThresholds] = useState([
         { riskLevel: 0.6, percentage: 10 },
@@ -590,20 +592,65 @@ const BitcoinRisk = ({ isDashboard = false }) => {
                             <button className='simulate-button-dca' style={{ background: 'transparent', color: colors.greenAccent[500], borderRadius: '10px', margin: '20px'}} onClick={handleDcaSimulation}>Simulate</button>
 
                                 {simulationRun && (
-                                    <div>
-                                        <h3 onClick={() => setShowTransactions(!showTransactions)} style={{ cursor: 'pointer' }}>
-                                            (Show Transaction History)
-                                        </h3>
-                                        {showTransactions && (
-                                            <ul>
+                                    <div style={{ fontSize: '0.7rem'}}>
+                                    <h3 onClick={() => setShowTransactions(!showTransactions)} style={{ cursor: 'pointer', textAlign: 'center'}}>
+                                        (Show Transaction History)
+                                    </h3>
+                                    {showTransactions && (
+                                        isMobile ? (
+                                            <ul style={{padding: '0px'}}>
                                                 {transactionHistory.map((tx, index) => (
                                                     <li key={index}>
                                                         {tx.type} {tx.amount.toFixed(6)} BTC on {tx.date} at ${tx.price.toFixed(2)}
                                                     </li>
                                                 ))}
                                             </ul>
-                                        )}
-                                    </div>
+                                        ) : (
+                                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', border: '1px solid cyan' }}>
+                                                <thead>
+                                                    <tr>
+                                                        <th style={{ padding: '8px', border: '1px solid cyan' }}>#</th>
+                                                        <th style={{ padding: '8px', border: '1px solid cyan' }}>Type</th>
+                                                        <th style={{ padding: '8px', border: '1px solid cyan' }}>Date</th>
+                                                        <th style={{ padding: '8px', border: '1px solid cyan' }}>Spent</th>
+                                                        <th style={{ padding: '8px', border: '1px solid cyan' }}>Bitcoin</th>
+                                                        <th style={{ padding: '8px', border: '1px solid cyan' }}>At Price</th>
+                                                        <th style={{ padding: '8px', border: '1px solid cyan' }}>Transaction</th>
+                                                        <th style={{ padding: '8px', border: '1px solid cyan' }}>Profit</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {transactionHistory.reduce((acc, tx, index) => {
+                                                        const usdSpent = tx.type === 'buy' ? tx.amount * tx.price : 0;
+                                                        const accumulatedInvestment = acc.accumulatedInvestment + usdSpent;
+                                                        const profit = tx.type === 'sell' ? (tx.amount * tx.price) - usdSpent : 0;
+                                                        const totalProfit = acc.totalProfit + profit;
+                                
+                                                        return {
+                                                            accumulatedInvestment,
+                                                            totalProfit,
+                                                            rows: [
+                                                                ...acc.rows,
+                                                                (
+                                                                    <tr key={index}>
+                                                                        <td style={{ padding: '8px', border: '1px solid black' }}>{index + 1}</td>
+                                                                        <td style={{ padding: '8px', border: '1px solid black' }}>{tx.type}</td>
+                                                                        <td style={{ padding: '8px', border: '1px solid black' }}>{tx.date}</td>
+                                                                        <td style={{ padding: '8px', border: '1px solid black' }}>${usdSpent.toFixed(2)}</td>
+                                                                        <td style={{ padding: '8px', border: '1px solid black' }}>{tx.amount.toFixed(6)} BTC</td>
+                                                                        <td style={{ padding: '8px', border: '1px solid black' }}>${tx.price.toFixed(2)}</td>
+                                                                        <td style={{ padding: '8px', border: '1px solid black' }}>${accumulatedInvestment.toFixed(2)}</td>
+                                                                        <td style={{ padding: '8px', border: '1px solid black' }}>${totalProfit.toFixed(2)}</td>
+                                                                    </tr>
+                                                                )
+                                                            ]
+                                                        };
+                                                    }, { accumulatedInvestment: 0, totalProfit: 0, rows: [] }).rows}
+                                                </tbody>
+                                            </table>
+                                        )
+                                    )}
+                                </div>
                                 )}
                             </div>
                         )
