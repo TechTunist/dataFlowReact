@@ -198,6 +198,7 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
 
             chart.priceScale('right').applyOptions({
                 mode: scaleMode,
+                autoScale: false,
                 borderVisible: false,
                 scaleMargins: {
                     top: 0.1, // 10% empty space at the top

@@ -125,12 +125,15 @@ const Sidebar = () => {
           <Box mb="25px">
             {/* Main Logo and Title */}
             <Box display="flex" justifyContent="center" alignItems="center">
-              <img alt="main-logo" width="100px" height="100px" src={`../../assets/cryptology-logo-square.png`}  />
+              <img alt="main-logo" width="100px" height="100px" src={`../../assets/cryptological-logo.png`}  />
             </Box>
-            <Box textAlign="center">
+            <Box display="flex" justifyContent="center" alignItems="center">
+              <img alt="main-logo" width="200px" height="50px" src={`../../assets/cryptological-title-resized.png`}  />
+            </Box>
+            {/* <Box textAlign="center">
               <Typography variant="h2" color={colors.grey[100]} fontWeight="bold" sx={{ m: "10px 0 0 0" }}>Cryptological</Typography>
               <Typography variant="h5" color={colors.greenAccent[500]}>Quantitative Analysis</Typography>
-            </Box>
+            </Box> */}
           </Box>
 
           {/* SEARCH BAR */}

@@ -74,42 +74,57 @@ const MarketCycles = ({ isDashboard = false }) => {
     return (
         <div style={{ height: '100%' }}>
             <div className="chart-container" style={{ position: 'relative', height: 'calc(100% - 40px)', width: '100%', border: '2px solid #a9a9a9' }}>
-                <Plot
-                    data={cycleDataSets.map(cycle => ({
-                        x: cycle.data.map(d => d.day),
-                        y: cycle.data.map(d => d.roi),
-                        type: 'scatter',
-                        mode: 'lines',
-                        name: cycle.name,
-                        text: cycle.data.map(d => `Day: ${d.day}<br>ROI: ${d.roi.toFixed(2)}`), // Custom tooltip content
-                        hoverinfo: 'text'
-                    }))}
-                    layout={{
-                        title: isDashboard ? '' : 'Market Cycles RoI',
-                        autosize: true,
-                        margin: { l: 50, r: 50, b: 30, t: 50, pad: 4 },
-                        plot_bgcolor: colors.primary[700],
-                        paper_bgcolor: colors.primary[700],
-                        font: { color: colors.primary[100] },
-                        xaxis: { title: isMobile || isDashboard ? '' : 'Days from bear market bottom' }, // remove title in mobile mode
-                        yaxis: { title: 'ROI', type: 'linear' },
-                        showlegend: !isDashboard,
-                        legend: {
-                            orientation: 'h',
-                            x: 0.5,
-                            xanchor: 'center',
-                            y: -0.2,
-                            yanchor: 'top'
-                        }
-                    }}
-                    config={{
-                        staticPlot: isDashboard,
-                        displayModeBar: false,
-                        responsive: true
-                    }}
-                    useResizeHandler={true}
-                    style={{ width: "100%", height: "100%" }}
-                />
+            <Plot
+                data={cycleDataSets.map(cycle => ({
+                    x: cycle.data.map(d => d.day),
+                    y: cycle.data.map(d => d.roi),
+                    type: 'scatter',
+                    mode: 'lines',
+                    name: cycle.name,
+                    text: cycle.data.map(d => `Day: ${d.day}<br>Log ROI: ${d.roi.toFixed(2)} (10^${d.roi.toFixed(2)} times base price)`), // Custom tooltip content
+                    hoverinfo: 'text'
+                }))}
+                layout={{
+                    title: isDashboard ? '' : 'Market Cycles RoI',
+                    autosize: true,
+                    margin: { l: 50, r: 50, b: 30, t: 50, pad: 4 },
+                    plot_bgcolor: colors.primary[700],
+                    paper_bgcolor: colors.primary[700],
+                    font: { color: colors.primary[100] },
+                    xaxis: { title: isMobile || isDashboard ? '' : 'Days from bear market bottom' },
+                    yaxis: { title: 'Logarithmic ROI (Base-10)', type: 'linear' },
+                    showlegend: !isDashboard,
+                    legend: {
+                        orientation: 'h',
+                        x: 0.5,
+                        xanchor: 'center',
+                        y: -0.2,
+                        yanchor: 'top'
+                    }
+                }}
+                config={{
+                    staticPlot: isDashboard,
+                    displayModeBar: false,
+                    responsive: true
+                }}
+                useResizeHandler={true}
+                style={{ width: "100%", height: "100%" }}
+            />
+            </div>
+            <div>
+                {
+                    !isDashboard && (
+                        <p className='chart-info'>
+                            The return on investment between market cycles has been normalised by taking the natural log of the price ratio,
+                            otherwise the data becomes impossible to discern due to the nature of diminishing returns as the asset matures and the 
+                            total market increases drastically up to over a trillion dollars. The natural logarithm normalizes the scale of the returns
+                            which is useful when the starting prices of different cycles can differ by orders of magnitude.
+
+                            For example, a logarithmmic RoI value of 1 means that the price has increased by a factor of 10,
+                            a value of 2 means that the price has increased by a factor of 100, and so on.
+                        </p>
+                    )   
+                }
             </div>
         </div>
     );
