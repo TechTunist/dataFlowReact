@@ -10,7 +10,7 @@
 
 - ~~Tooltips~~
 - Improve styling [ongoing]
-- Increase interactivity of charts (buttons)
+- Increase interactivity of charts (buttons) [ongoing]
     - Create a "bleed factor" for altcoins when comparing their performance against bitcoin over time
 - Increase the number of altcoins available
 - Add other financial information than crypto (inflation, interests, liquidity, monetary policy etc)
