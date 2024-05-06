@@ -86,7 +86,7 @@ const MarketCycles = ({ isDashboard = false }) => {
                 }))}
                 layout={{
                     title: isDashboard ? '' : 'Market Cycles RoI',
-                    autosize: true,
+                    // autosize: true,
                     margin: { l: 50, r: 50, b: 30, t: 50, pad: 4 },
                     plot_bgcolor: colors.primary[700],
                     paper_bgcolor: colors.primary[700],

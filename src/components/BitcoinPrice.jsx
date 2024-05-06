@@ -387,66 +387,66 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                 gap: '10px 20px', // Sets vertical and horizontal gaps between items
                 padding: '10px' // Adds padding inside the flex container
             }}>
-            {!isDashboard && (
-                <>
-                    <button
-                        onClick={toggle8Week}
-                        className="button-reset"
-                        style={{
-                            marginTop: '10px',
-                            width: '150px',
-                            minWidth: '150px',
-                            backgroundColor: show8Week ? '#4cceac' : 'transparent', // Highlight background when active
-                            color: show8Week ? color8Week : '#00b685', // Change text color when active
-                            borderColor: show8Week ? color8Week : '#70d8bd' // Change border color when active
-                        }}
-                    >
-                        8 Week SMA
-                    </button>
-                    <button
-                        onClick={toggle20Week}
-                        className="button-reset"
-                        style={{
-                            marginTop: '10px',
-                            width: '150px',
-                            minWidth: '150px',
-                            backgroundColor: show20Week ? '#4cceac' : 'transparent',
-                            color: show20Week ? 'green' : '#00b685',
-                            borderColor: show20Week ? color20Week : '#70d8bd'
-                        }}
-                    >
-                        20 Week SMA
-                    </button>
-                    <button
-                        onClick={toggle100Week}
-                        className="button-reset"
-                        style={{
-                            marginTop: '10px',
-                            width: '150px',
-                            minWidth: '150px',
-                            backgroundColor: show100Week ? '#4cceac' : 'transparent',
-                            color: show100Week ? color100Week : '#00b685',
-                            borderColor: show100Week ? color100Week : '#70d8bd'
-                        }}
-                    >
-                        100 Week SMA
-                    </button>
-                    <button
-                        onClick={toggle200Week}
-                        className="button-reset"
-                        style={{
-                            marginTop: '10px',
-                            width: '150px',
-                            minWidth: '150px',
-                            backgroundColor: show200Week ? '#4cceac' : 'transparent',
-                            color: show200Week ? color200Week : '#00b685',
-                            borderColor: show200Week ? color200Week : '#70d8bd'
-                        }}
-                    >
-                        200 Week SMA
-                    </button>
-                </>
-            )}
+                {!isDashboard && (
+                    <>
+                        <button
+                            onClick={toggle8Week}
+                            className="button-reset"
+                            style={{
+                                marginTop: '10px',
+                                width: '150px',
+                                minWidth: '150px',
+                                backgroundColor: show8Week ? '#4cceac' : 'transparent', // Highlight background when active
+                                color: show8Week ? color8Week : '#00b685', // Change text color when active
+                                borderColor: show8Week ? color8Week : '#70d8bd' // Change border color when active
+                            }}
+                        >
+                            8 Week SMA
+                        </button>
+                        <button
+                            onClick={toggle20Week}
+                            className="button-reset"
+                            style={{
+                                marginTop: '10px',
+                                width: '150px',
+                                minWidth: '150px',
+                                backgroundColor: show20Week ? '#4cceac' : 'transparent',
+                                color: show20Week ? 'green' : '#00b685',
+                                borderColor: show20Week ? color20Week : '#70d8bd'
+                            }}
+                        >
+                            20 Week SMA
+                        </button>
+                        <button
+                            onClick={toggle100Week}
+                            className="button-reset"
+                            style={{
+                                marginTop: '10px',
+                                width: '150px',
+                                minWidth: '150px',
+                                backgroundColor: show100Week ? '#4cceac' : 'transparent',
+                                color: show100Week ? color100Week : '#00b685',
+                                borderColor: show100Week ? color100Week : '#70d8bd'
+                            }}
+                        >
+                            100 Week SMA
+                        </button>
+                        <button
+                            onClick={toggle200Week}
+                            className="button-reset"
+                            style={{
+                                marginTop: '10px',
+                                width: '150px',
+                                minWidth: '150px',
+                                backgroundColor: show200Week ? '#4cceac' : 'transparent',
+                                color: show200Week ? color200Week : '#00b685',
+                                borderColor: show200Week ? color200Week : '#70d8bd'
+                            }}
+                        >
+                            200 Week SMA
+                        </button>
+                    </>
+                )}
             </div>
 
             {/* Conditional Rendering for the Tooltip */}

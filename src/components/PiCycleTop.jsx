@@ -23,14 +23,16 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
             position: 'aboveBar',
             color: colors.greenAccent[400],
             shape: 'arrowDown',
-            text: 'Indicated Top', 
+            text: 'Indicated Top',
+            size: 2,
         },
         {
             time: '2013-12-05',
             position: 'aboveBar',
             color: colors.greenAccent[400],
             shape: 'arrowDown',
-            text: 'Indicated Top', 
+            text: 'Indicated Top',
+            size: 2,
         },
         // {
         //     time: '2015-04-30',
@@ -45,6 +47,7 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
             color: colors.greenAccent[400],
             shape: 'arrowDown',
             text: 'Indicated Top', 
+            size: 2,
         },
         // {
         //     time: '2019-03-19',
@@ -58,7 +61,8 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
             position: 'aboveBar',
             color: colors.greenAccent[400],
             shape: 'arrowDown',
-            text: 'Indicated Top', 
+            text: 'Indicated Top',
+            size: 2,
         },
         // {
         //     time: '2022-10-13',
@@ -198,7 +202,7 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
 
             chart.priceScale('right').applyOptions({
                 mode: scaleMode,
-                autoScale: false,
+                autoScale: true,
                 borderVisible: false,
                 scaleMargins: {
                     top: 0.1, // 10% empty space at the top
@@ -240,13 +244,6 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
             resizeChart(); // Ensure initial resize and fitContent call
             chart.timeScale().fitContent(); // Additional call to fitContent to ensure coverage
             chartRef.current = chart; // Store the chart instance
-
-            // Add or remove markers based on `showMarkers` state
-            // if (showMarkers) {
-            //     bitcoinSeries.setMarkers(markers);
-            // } else {
-            //     bitcoinSeries.setMarkers([]);
-            // }
         
 
         // Cleanup function

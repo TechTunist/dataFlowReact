@@ -423,6 +423,17 @@ input:checked + .slider:before {
     color: white;
 }
 
+.sma-toggles {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 20px;
+    height: auto;
+    flex-wrap: wrap;
+    gap: 10px 20px;
+    padding: 10px;
+}
+
 /* Media Query for screens less than 1200px */
 @media (max-width: 1200px) {
     .simulator-container {
