@@ -390,6 +390,26 @@ const AltcoinPrice = ({ isDashboard = false }) => {
     
         Object.keys(periods).forEach(periodKey => updateSMA(periodKey));
     }, [show8Week, show20Week, show100Week, show200Week, chartData, selectedCoin, denominator]);
+
+    useEffect(() => {
+        // This effect ensures that any change in selectedCoin or denominator resets and cleans up SMA series.
+        const resetSMASeries = () => {
+            Object.keys(smaSeriesRefs).forEach(key => {
+                if (smaSeriesRefs[key]) {
+                    smaSeriesRefs[key].setData([]); // Clear the series data
+                    smaSeriesRefs[key] = null;      // Remove the reference
+                }
+            });
+    
+            // Optionally reset the toggle states
+            setShow8Week(false);
+            setShow20Week(false);
+            setShow100Week(false);
+            setShow200Week(false);
+        };
+    
+        resetSMASeries();
+    }, [selectedCoin, denominator]);
     
     
 
