@@ -385,7 +385,8 @@ const AltcoinPrice = ({ isDashboard = false }) => {
                 if (!smaSeries) {
                     smaSeries = chartRef.current.addLineSeries({
                         color: colors[periodKey],
-                        lineWidth: 2
+                        lineWidth: 2,
+                        priceLineVisible: false  // This ensures no horizontal line is shown
                     });
                     smaSeriesRefs[periodKey] = smaSeries;
                 }
@@ -393,7 +394,7 @@ const AltcoinPrice = ({ isDashboard = false }) => {
             } else if (smaSeries) {
                 smaSeries.setData([]);
             }
-        };
+        };        
     
         Object.keys(periods).forEach(periodKey => updateSMA(periodKey));
     }, [show8Week, show20Week, show100Week, show200Week, chartData, selectedCoin, denominator]);

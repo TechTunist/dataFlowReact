@@ -114,7 +114,7 @@ return (
         </div>
         {
             !isDashboard && (
-                <p className='chart-info' style={{ marginTop: '20px', textAlign: 'center', width: '100%' }}> {/* Adjust width as necessary */}
+                <p className='chart-info' style={{ marginTop: '20px', textAlign: 'left', width: '100%' }}> {/* Adjust width as necessary */}
                     The Fear and Greed index is a metric that measures the sentiment of the market by analyzing various sources of data, including surveys, social media, volatility, market momentum, and volume among others.
                     <br/> The information has been provided here: <a href="https://alternative.me/crypto/fear-and-greed-index/">https://alternative.me/crypto/fear-and-greed-index/</a>
                 </p>

@@ -12,6 +12,7 @@ import BitcoinRiskColor from "../../components/BitcoinRiskColor";
 import '../../styling/bitcoinChart.css';
 import { tokens } from "../../theme";
 import { Link } from "react-router-dom";
+import FearAndGreedChart from "../../components/FearAndGreedChart";
 
 
 const Dashboard = () => {
@@ -196,7 +197,23 @@ const Dashboard = () => {
               <Typography variant="body3" color="textSecondary" className='dashboard-info'>
                 Market cycles from bear-market low to bull-market high of the previous 3 or so cycles
               </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
 
+        {/* Fear And Greed Chart Card */}
+        <Grid item xs={12} md={6}>
+          <Card style={{backgroundColor: colors.primary[500]}}>
+            <CardContent>
+              <Typography variant="h4" gutterBottom component={Link} to="/fear-and-greed-chart" style={{ textDecoration: 'none', color: 'inherit' }}>
+                Fear And Greed Colour Chart
+              </Typography>
+              <Box height="350px" m="20px 0 0 0" style={{ margin: "0 0 20px 0" }}>
+                <FearAndGreedChart isDashboard={true} />
+              </Box>
+              <Typography variant="body3" color="textSecondary" className='dashboard-info'>
+                Colour coded fear and greed levels.
+              </Typography>
             </CardContent>
           </Card>
         </Grid>

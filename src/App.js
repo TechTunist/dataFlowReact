@@ -4,7 +4,7 @@ import Topbar from "./scenes/global/Topbar";
 import Sidebar from "./scenes/global/Sidebar";
 import BasicChart from "./scenes/ChartTemplates/BasicChart";
 import Dashboard from "./scenes/dashboard";
-import Footer from "./components/Footer";
+// import Footer from "./components/Footer";
 import { CssBaseline, ThemeProvider } from "@mui/material";
 import { ColorModeContext, useMode } from "./theme";
 
@@ -18,6 +18,7 @@ import BitcoinLogRegression from "./components/BitcoinLogRegression";
 import BitcoinRiskColor from "./components/BitcoinRiskColor";
 import AltcoinPrice from "./components/AltcoinPrice";
 import MarketCycles from "./components/MarketCycles";
+import FearAndGreedChart from "./components/FearAndGreedChart";
 import About from "./scenes/About";
 import LoginSignup from "./scenes/LoginSignup";
 import { useLocation } from 'react-router-dom';
@@ -59,6 +60,7 @@ function App() {
                 <Route path="/risk-color" element={<BasicChart ChartComponent={BitcoinRiskColor} />} />
                 <Route path="/altcoin-price" element={<BasicChart ChartComponent={AltcoinPrice} />} />
                 <Route path="/market-cycles" element={<BasicChart ChartComponent={MarketCycles} />} />
+                <Route path="/fear-and-greed-chart" element={<BasicChart ChartComponent={FearAndGreedChart} />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/login-signup" element={<LoginSignup />} />
               </Routes>
