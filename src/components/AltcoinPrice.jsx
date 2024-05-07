@@ -62,6 +62,7 @@ const AltcoinPrice = ({ isDashboard = false }) => {
         { label: 'Ethereum', value: 'ETH' },
         { label: 'Cardano', value: 'ADA' },
         { label: 'Dogecoin', value: 'DOGE' },
+        { label: 'Chainlink', value: 'LINK' },
         // Add more altcoins as needed
     ];
 
@@ -111,16 +112,21 @@ const AltcoinPrice = ({ isDashboard = false }) => {
 
         if (cachedData) {
             const parsedData = JSON.parse(cachedData);
-            const lastCachedDate = new Date(parsedData[parsedData.length - 1].time);
+            // Check if parsedData is not empty before trying to access its last element
+            if (parsedData.length > 0) {
+                const lastCachedDate = new Date(parsedData[parsedData.length - 1].time);
 
-            if (lastCachedDate.setHours(0, 0, 0, 0) === today.setHours(0, 0, 0, 0)) {
-                // if cached data is found, parse it and set it to the state
-                setChartData(JSON.parse(cachedData)); // data to be plotted on chart
-                setAltData(JSON.parse(cachedData)); // selected altcoin data stored in state
+                if (lastCachedDate.setHours(0, 0, 0, 0) === today.setHours(0, 0, 0, 0)) {
+                    // if cached data is found, parse it and set it to the state
+                    setChartData(JSON.parse(cachedData)); // data to be plotted on chart
+                    setAltData(JSON.parse(cachedData)); // selected altcoin data stored in state
+                } else {
+                    fetchAltData();
+                }
+                
             } else {
                 fetchAltData();
             }
-            
         } else {
             fetchAltData();
         }
