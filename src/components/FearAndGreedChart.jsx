@@ -29,6 +29,8 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
         });
     };
 
+
+
     useEffect(() => {
         const fetchBitcoinData = async () => {
             const btcResponse = await fetch('https://tunist.pythonanywhere.com/api/btc/price/');
@@ -134,7 +136,16 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
             <div className="chart-container" style={{ position: 'relative', height: 'calc(100% - 40px)', width: '100%', border: '2px solid #a9a9a9' }}>
                 <Plot
                     data={datasets}
-                    layout={layout}
+                    layout={{
+                        title: isDashboard ? '' : 'Bitcoin Price vs. Fear and Greed Index',
+                        autosize: true,
+                        margin: { l: 50, r: 50, b: 30, t: 30, pad: 4 },
+                        plot_bgcolor: colors.primary[700],
+                        paper_bgcolor: colors.primary[700],
+                        font: { color: colors.primary[100] },
+                        xaxis: { title: '' },
+                        yaxis: { title: 'Price (USD)', type: 'log' },
+                    }}
                     config={{
                         staticPlot: isDashboard,
                         displayModeBar: false,
@@ -142,6 +153,7 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
                     }}
                     useResizeHandler={true}
                     style={{ width: "100%", height: "100%" }}
+                    
                 />
                     
             </div>
