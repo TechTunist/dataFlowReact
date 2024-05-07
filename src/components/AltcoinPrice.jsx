@@ -63,6 +63,7 @@ const AltcoinPrice = ({ isDashboard = false }) => {
         { label: 'Cardano', value: 'ADA' },
         { label: 'Dogecoin', value: 'DOGE' },
         { label: 'Chainlink', value: 'LINK' },
+        { label: 'XRP', value: 'XRP' },
         // Add more altcoins as needed
     ];
 
