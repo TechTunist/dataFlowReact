@@ -39,6 +39,7 @@ function CryptoFearAndGreedIndex({ isDashboard }) {
                 const formattedData = data.map(item => ({
                     value: parseInt(item.value),
                     value_classification: item.value_classification,
+                    date: item.timestamp
                 }));             
                 // save the data to local storage
                 localStorage.setItem(cacheKey, JSON.stringify(formattedData));
