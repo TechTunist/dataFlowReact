@@ -33,63 +33,76 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
 
     useEffect(() => {
         const fetchBitcoinData = async () => {
-            const btcResponse = await fetch('https://tunist.pythonanywhere.com/api/btc/price/');
-            const btcData = await btcResponse.json();
-    
-            const startDate = new Date('2018-02-01');
-            const btcFormattedData = btcData.filter(item => new Date(item.date) >= startDate)
+            try {
+              const btcResponse = await fetch('https://tunist.pythonanywhere.com/api/btc/price/');
+              if (!btcResponse.ok) {
+                throw new Error(`Error fetching Bitcoin data: ${btcResponse.statusText}`);
+              }
+              const btcData = await btcResponse.json();
+          
+              const startDate = new Date('2018-02-01');
+              const btcFormattedData = btcData.filter(item => new Date(item.date) >= startDate)
                                             .map(item => ({
                                                 time: item.date,
                                                 value: parseFloat(item.close)
                                             }));
-    
-            const fearGreedResponse = await fetch('https://tunist.pythonanywhere.com/api/fear-and-greed/');
-            const fearGreedData = await fearGreedResponse.json();
-    
-            let fearGreedGroups = {};
-            fearGreedData.forEach(item => {
+          
+              // Fetch fear and greed data with error handling
+              const fearGreedResponse = await fetch('https://tunist.pythonanywhere.com/api/fear-and-greed/');
+              if (!fearGreedResponse.ok) {
+                throw new Error(`Error fetching Fear and Greed data: ${fearGreedResponse.statusText}`);
+              }
+              const fearGreedData = await fearGreedResponse.json();
+          
+              let fearGreedGroups = {};
+              fearGreedData.forEach(item => {
                 const date = new Date(item.timestamp * 1000).toISOString().slice(0, 10);
                 const classification = item.value_classification;
                 if (!fearGreedGroups[classification]) {
-                    fearGreedGroups[classification] = [];
+                  fearGreedGroups[classification] = [];
                 }
                 fearGreedGroups[classification].push({
-                    time: date,
-                    value: item.value,
-                    btcPrice: btcFormattedData.find(btc => btc.time === date)?.value || null
+                  time: date,
+                  value: item.value,
+                  btcPrice: btcFormattedData.find(btc => btc.time === date)?.value || null
                 });
-            });
-    
-            let fearGreedDataset = Object.keys(fearGreedGroups).map(classification => ({
+              });
+          
+              let fearGreedDataset = Object.keys(fearGreedGroups).map(classification => ({
                 x: fearGreedGroups[classification].map(d => d.time),
                 y: fearGreedGroups[classification].map(d => d.btcPrice),
                 customdata: fearGreedGroups[classification].map(d => [d.value]),  // array of arrays, each sub-array corresponds to one point
                 type: 'scatter',
                 mode: 'markers',
                 marker: {
-                    size: 6,
-                    color: getColor(classification),
+                  size: 6,
+                  color: getColor(classification),
                 },
                 name: classification,
                 hovertemplate:
-                    `<b>Classification:</b> ${classification}<br>` +
-                    `<b>Value:</b> %{customdata[0]}<br>` +  // Access the first element in the customdata array for each point
-                    `<b>Price:</b> $%{y:,.0f}<br>` +
-                    `<b>Date:</b> %{x|%B %d, %Y}<extra></extra>`
-            }));
-            
-            setDatasets([
+                  `<b>Classification:</b> ${classification}<br>` +
+                  `<b>Value:</b> %{customdata[0]}<br>` +  // Access the first element in the customdata array for each point
+                  `<b>Price:</b> $%{y:,.0f}<br>` +
+                  `<b>Date:</b> %{x|%B %d, %Y}<extra></extra>`
+              }));
+          
+              setDatasets([
                 {
-                    x: btcFormattedData.map(d => d.time),
-                    y: btcFormattedData.map(d => d.value),
-                    type: 'scatter',
-                    mode: 'lines',
-                    line: { color: 'grey', width: 1.5 },
-                    name: 'Bitcoin Price'
+                  x: btcFormattedData.map(d => d.time),
+                  y: btcFormattedData.map(d => d.value),
+                  type: 'scatter',
+                  mode: 'lines',
+                  line: { color: 'grey', width: 1.5 },
+                  name: 'Bitcoin Price'
                 },
                 ...fearGreedDataset
-            ]);
-        };
+              ]);
+            } catch (error) {
+              console.error("Error fetching data:", error);
+              // You can also display an error message to the user here
+            }
+          };
+          
     
         fetchBitcoinData();
     }, []);
