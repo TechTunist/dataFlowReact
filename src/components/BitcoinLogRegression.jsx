@@ -432,11 +432,11 @@ const BitcoinLogRegression = ({ isDashboard = false }) => {
                         top: `${tooltipData.y + 100}px`, // Adjust as needed
                     }}
                 >
-                    {tooltipData.price && <div>Actual Price: ${tooltipData.price.toFixed(2)}</div>}
+                    <b>{tooltipData.price && <div>Actual Price: ${tooltipData.price.toFixed(2)}</div>}
                     {tooltipData.logBase && <div style={{color: 'lime'}}>Upper Band: ${tooltipData.logTop.toFixed(2)}</div>}
                     {tooltipData.logMid && <div style={{color: 'violet'}}>Mid Band: ${tooltipData.logMid.toFixed(2)}</div>}
                     {tooltipData.logTop && <div style={{color: 'red'}}>Lower Band: ${tooltipData.logBase.toFixed(2)}</div>}
-                    {tooltipData.date && <div style={{fontSize: '13px'}}>{tooltipData.date}</div>}
+                    {tooltipData.date && <div style={{fontSize: '13px'}}>{tooltipData.date}</div>}</b>
                 </div>
             )}
             <div>

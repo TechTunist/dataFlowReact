@@ -9,7 +9,7 @@ import useIsMobile from '../hooks/useIsMobile';
 const AltcoinPrice = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
     const [chartData, setChartData] = useState([]);
-    const [scaleMode, setScaleMode] = useState(1);
+    const [scaleMode, setScaleMode] = useState(0);
     const chartRef = useRef(null); // ref to store chart for use in return statement
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);

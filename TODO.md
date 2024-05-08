@@ -1,3 +1,5 @@
+# Emergency create logo with purple word "CRYPTO" in CRYPTOLOGICAL for light mode
+
 # Project Phases
 
 ### NOTES

@@ -608,9 +608,9 @@ const BitcoinRisk = ({ isDashboard = false }) => {
 
             {simulationRun && (
                 <div style={{ fontSize: '0.7rem'}}>
-                    <h3 onClick={() => setShowTransactions(!showTransactions)} style={{ cursor: 'pointer', textAlign: 'center'}}>
-                        (Show Transaction History)
-                    </h3>
+                    <h1 onClick={() => setShowTransactions(!showTransactions)} style={{ cursor: 'pointer', textAlign: 'center', border: '1px teal solid', padding: '5px'}}>
+                        Transaction History
+                    </h1>
                     {showTransactions && (
                         isMobile ? (
                             <ul style={{padding: '0px'}}>
@@ -624,51 +624,53 @@ const BitcoinRisk = ({ isDashboard = false }) => {
                             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', border: '1px solid cyan' }}>
                                 <thead>
                                 <tr>
-                                    <th style={{ padding: '8px', border: '1px solid cyan', minWidth: '40px' }}>#</th>
-                                    <th style={{ padding: '8px', border: '1px solid cyan', minWidth: '60px' }}>Type</th>
-                                    <th style={{ padding: '8px', border: '1px solid cyan', minWidth: '120px' }}>Date</th>
-                                    <th style={{ padding: '8px', border: '1px solid cyan', minWidth: '100px' }}>Spent</th>
-                                    <th style={{ padding: '8px', border: '1px solid cyan', minWidth: '100px' }}>Bitcoin</th>
-                                    <th style={{ padding: '8px', border: '1px solid cyan', minWidth: '100px' }}>At Price</th>
-                                    <th style={{ padding: '8px', border: '1px solid cyan', minWidth: '100px' }}>Risk</th>
-                                    <th style={{ padding: '8px', border: '1px solid cyan', minWidth: '120px' }}>Total BTC Held</th>
-                                    <th style={{ padding: '8px', border: '1px solid cyan', minWidth: '120px' }}>Percentage Sold</th>
-                                    <th style={{ padding: '8px', border: '1px solid cyan', minWidth: '120px' }}>Transaction</th>
-                                    <th style={{ padding: '8px', border: '1px solid cyan', minWidth: '120px' }}>Profit</th>
+                                    <th style={{ padding: '8px', border: '1px solid teal', minWidth: '40px' }}>#</th>
+                                    <th style={{ padding: '8px', border: '1px solid teal', minWidth: '60px' }}>Type</th>
+                                    <th style={{ padding: '8px', border: '1px solid teal', minWidth: '120px' }}>Date</th>
+                                    <th style={{ padding: '8px', border: '1px solid teal', minWidth: '100px' }}>Spent</th>
+                                    <th style={{ padding: '8px', border: '1px solid teal', minWidth: '100px' }}>Bitcoin</th>
+                                    <th style={{ padding: '8px', border: '1px solid teal', minWidth: '100px' }}>At Price</th>
+                                    <th style={{ padding: '8px', border: '1px solid teal', minWidth: '100px' }}>Risk</th>
+                                    <th style={{ padding: '8px', border: '1px solid teal', minWidth: '120px' }}>Total BTC Held</th>
+                                    <th style={{ padding: '8px', border: '1px solid teal', minWidth: '120px' }}>Percentage Sold</th>
+                                    <th style={{ padding: '8px', border: '1px solid teal', minWidth: '120px' }}>Total Invested $</th>
+                                    <th style={{ padding: '8px', border: '1px solid teal', minWidth: '120px' }}>Profit</th>
                                 </tr>
                                 </thead>
                                 <tbody>
                                     {transactionHistory.reduce((acc, tx, index) => {
                                         const usdSpent = tx.type === 'buy' ? tx.amount * tx.price : 0;
-                                        const accumulatedInvestment = acc.accumulatedInvestment + usdSpent;
                                         const profit = tx.type === 'sell' ? (tx.amount * tx.price) - usdSpent : 0;
-                                        const totalProfit = acc.totalProfit + profit;
 
-                                        return {
-                                            accumulatedInvestment,
-                                            totalProfit,
-                                            rows: [
-                                                ...acc.rows,
-                                                (
-                                                    <tr key={index}>
-                                                        <td style={{ padding: '8px', border: '1px solid black' }}>{index + 1}</td>
-                                                        <td style={{ padding: '8px', border: '1px solid black' }}>{tx.type}</td>
-                                                        <td style={{ padding: '8px', border: '1px solid black' }}>{tx.date}</td>
-                                                        <td style={{ padding: '8px', border: '1px solid black' }}>${usdSpent.toFixed(2)}</td>
-                                                        <td style={{ padding: '8px', border: '1px solid black' }}>{tx.amount.toFixed(6)} BTC</td>
-                                                        <td style={{ padding: '8px', border: '1px solid black' }}>${tx.price.toFixed(2)}</td>
-                                                        <td style={{ padding: '8px', border: '1px solid black' }}>{tx.risk}</td>
-                                                        <td style={{ padding: '8px', border: '1px solid black' }}>{tx.localBtcHeld.toFixed(6)} BTC</td>
-                                                        <td style={{ padding: '8px', border: '1px solid black' }}>
-                                                            {tx.maxApplicableThreshold ? `${tx.maxApplicableThreshold.toFixed(2)}%` : '-'}
-                                                        </td>
-                                                        <td style={{ padding: '8px', border: '1px solid black' }}>${accumulatedInvestment.toFixed(2)}</td>
-                                                        <td style={{ padding: '8px', border: '1px solid black' }}>${totalProfit.toFixed(2)}</td>
-                                                    </tr>
-                                                )
-                                            ]
-                                        };
-                                    }, { accumulatedInvestment: 0, totalProfit: 0, rows: [] }).rows}
+                                        // Update the accumulated values
+                                        acc.accumulatedInvestment += usdSpent;
+                                        acc.totalProfit += profit;
+
+                                        // Update btcHeld based on the transaction type
+                                        if (tx.type === 'buy') {
+                                            acc.btcHeld += tx.amount;
+                                        } else if (tx.type === 'sell') {
+                                            acc.btcHeld -= tx.amount;
+                                        }
+
+                                        acc.rows.push(
+                                            <tr key={index}>
+                                                <td style={{ padding: '8px', border: '1px solid black' }}>{index + 1}</td>
+                                                <td style={{ padding: '8px', border: '1px solid black' }}>{tx.type}</td>
+                                                <td style={{ padding: '8px', border: '1px solid black' }}>{tx.date}</td>
+                                                <td style={{ padding: '8px', border: '1px solid black' }}>${usdSpent.toFixed(2)}</td>
+                                                <td style={{ padding: '8px', border: '1px solid black' }}>{tx.amount.toFixed(6)} BTC</td>
+                                                <td style={{ padding: '8px', border: '1px solid black' }}>${tx.price.toFixed(2)}</td>
+                                                <td style={{ padding: '8px', border: '1px solid black' }}>{tx.risk.toFixed(2)}</td>
+                                                <td style={{ padding: '8px', border: '1px solid black' }}>{acc.btcHeld.toFixed(6)} BTC</td>
+                                                <td style={{ padding: '8px', border: '1px solid black' }}>{tx.maxApplicableThreshold ? `${tx.maxApplicableThreshold.toFixed(2)}%` : '-'}</td>
+                                                <td style={{ padding: '8px', border: '1px solid black' }}>${acc.accumulatedInvestment.toFixed(2)}</td>
+                                                <td style={{ padding: '8px', border: '1px solid black' }}>${acc.totalProfit.toFixed(2)}</td>
+                                            </tr>
+                                        );
+
+                                        return acc;
+                                    }, { accumulatedInvestment: 0, totalProfit: 0, btcHeld: 0, rows: [] }).rows}
                                 </tbody>
                             </table>
                         )

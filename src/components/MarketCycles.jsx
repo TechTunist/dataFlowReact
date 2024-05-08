@@ -11,6 +11,16 @@ const MarketCycles = ({ isDashboard = false }) => {
     const [btcData, setBtcData] = useState([]);
     const [cycleDataSets, setCycleDataSets] = useState([]);
     const isMobile = useIsMobile();
+    const [layout, setLayout] = useState({});
+
+    const resetChartView = () => {
+        setLayout({
+            ...layout,
+            // Resetting zoom and pan by setting the 'autorange' to true
+            xaxis: { ...layout.xaxis, autorange: true },
+            yaxis: { ...layout.yaxis, autorange: true }
+        });
+    };
 
     useEffect(() => {
         const cacheKey = 'btcData';
@@ -50,29 +60,52 @@ const MarketCycles = ({ isDashboard = false }) => {
     }, []);
 
     useEffect(() => {
-        const processCycle = (start, end) => {
-            const filteredData = btcData.filter(d => new Date(d.time) >= new Date(start) && new Date(d.time) <= new Date(end));
+        const processCycle = (start, end, cycleName) => {
+            // If the end date is not specified, use the date of the last entry in the dataset
+            const endDate = end || (btcData[btcData.length - 1] && btcData[btcData.length - 1].time);
+            const filteredData = btcData.filter(d => new Date(d.time) >= new Date(start) && new Date(d.time) <= new Date(endDate));
             if (filteredData.length === 0) return [];
-            
+    
             const basePrice = filteredData[0].value;
             return filteredData.map((item, index) => ({
                 day: index,
-                roi: Math.log(item.value / basePrice) / Math.LN10 // convert to base-10 logarithm
+                roi: Math.log(item.value / basePrice) / Math.LN10, // convert to base-10 logarithm
+                date: item.time,
+                cycle: cycleName
             }));
         };
-
+    
         if (btcData.length) {
             setCycleDataSets([
-                { name: '2011- 2013', data: processCycle("2011-11-22", "2013-11-30") },
-                { name: '2015 - 2017', data: processCycle("2015-08-25", "2017-12-17") },
-                { name: '2018 - 2021', data: processCycle("2018-12-16", "2021-11-08") },
-                { name: '2022 - present', data: processCycle("2022-11-21", "2024-03-13") }
+                { name: '2011- 2013', data: processCycle("2011-11-22", "2013-11-30", 'Cycle 1 (2011-2013)') },
+                { name: '2015 - 2017', data: processCycle("2015-08-25", "2017-12-17", 'Cycle 2 (2015-2017)') },
+                { name: '2018 - 2021', data: processCycle("2018-12-16", "2021-11-08", 'Cycle 3 (2018-2021)') },
+                // For the current cycle, do not specify an end date; it will take the last available date from btcData
+                { name: '2022 - present', data: processCycle("2022-11-21", null, 'Cycle 4 (2022-present)') }
             ]);
         }
     }, [btcData]);
+    
 
     return (
         <div style={{ height: '100%' }}>
+            <div className='chart-top-div'>
+                {/* Interactivity toggles for each dataset */}
+                <div className="risk-filter">
+                </div>
+                <div>
+                    {/* placeholder for styling */}
+                </div>
+                <div>
+                    {
+                        !isDashboard && (
+                            <button onClick={resetChartView} className="button-reset">
+                                Reset Chart
+                            </button>
+                        )   
+                    }
+                </div>
+            </div>
             <div className="chart-container" style={{ position: 'relative', height: 'calc(100% - 40px)', width: '100%', border: '2px solid #a9a9a9' }}>
             <Plot
                 data={cycleDataSets.map(cycle => ({
@@ -81,12 +114,11 @@ const MarketCycles = ({ isDashboard = false }) => {
                     type: 'scatter',
                     mode: 'lines',
                     name: cycle.name,
-                    text: cycle.data.map(d => `Day: ${d.day}<br>Log ROI: ${d.roi.toFixed(2)} (10^${d.roi.toFixed(2)} times base price)`), // Custom tooltip content
+                    text: cycle.data.map(d => `<b>Cycle: ${d.cycle}<br>Days from Bottom: ${d.day}<br>Log ROI: ${d.roi.toFixed(2)}<br>Date: ${new Date(d.date).toLocaleDateString()}</b>`), // Custom tooltip content
                     hoverinfo: 'text'
                 }))}
                 layout={{
                     title: isDashboard ? '' : 'Market Cycles RoI',
-                    // autosize: true,
                     margin: { l: 50, r: 50, b: 30, t: 50, pad: 4 },
                     plot_bgcolor: colors.primary[700],
                     paper_bgcolor: colors.primary[700],
@@ -115,13 +147,8 @@ const MarketCycles = ({ isDashboard = false }) => {
                 {
                     !isDashboard && (
                         <p className='chart-info'>
-                            The return on investment between market cycles has been normalised by taking the natural log of the price ratio,
-                            otherwise the data becomes impossible to discern due to the nature of diminishing returns as the asset matures and the 
-                            total market increases drastically up to over a trillion dollars. The natural logarithm normalizes the scale of the returns
+                            The return on investment between market cycles has been normalized by taking the natural log of the price ratio,
                             which is useful when the starting prices of different cycles can differ by orders of magnitude.
-
-                            For example, a logarithmmic RoI value of 1 means that the price has increased by a factor of 10,
-                            a value of 2 means that the price has increased by a factor of 100, and so on.
                         </p>
                     )   
                 }

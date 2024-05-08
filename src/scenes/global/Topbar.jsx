@@ -68,7 +68,7 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
         case "/market-cycles":
           return <Header title="Bitcoin Cycles" subtitle="From bear-market low to bull-market high" />;
         case "/fear-and-greed-chart":
-          return <Header title="Bitcoin Cycles" subtitle="From bear-market low to bull-market high" />;
+          return <Header title="Bitcoin Fear and Greed" subtitle="Fear and Greed plootted ovet the Bitcoini Price" />;
       default:
         return "Welcome"; // Default title or could be a 404 page title
     }
