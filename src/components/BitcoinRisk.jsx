@@ -12,6 +12,7 @@ const BitcoinRisk = ({ isDashboard = false }) => {
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
     const [setIsDashboard] = useState(isDashboard);
+    const [currentBtcPrice, setCurrentBtcPrice] = useState(0);
 
     // DCA risk based accumulation simulation state variables
     const [dcaAmount, setDcaAmount] = useState(100); // Default DCA amount in USD
@@ -277,6 +278,9 @@ const BitcoinRisk = ({ isDashboard = false }) => {
                 });
             }
         };
+
+        const price = Math.floor(chartData[chartData.length - 1].value / 1000);
+        setCurrentBtcPrice(price); // Set the current price to the last item in the array
         
         const latestData = chartData[chartData.length - 1]; // Get the last item in the array
         try {
@@ -497,7 +501,7 @@ const BitcoinRisk = ({ isDashboard = false }) => {
                 {
                     !isDashboard && (
                         <div style={{ display: 'inline-block', marginTop: '10px', fontSize: '1.2rem'}}>
-                            Current Risk level: {currentRiskLevel}
+                            Current Risk level: <b>{currentRiskLevel}</b>   (${currentBtcPrice.toFixed(0)}k)
                         </div>
                     )
                 }

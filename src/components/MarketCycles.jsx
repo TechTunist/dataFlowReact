@@ -77,11 +77,10 @@ const MarketCycles = ({ isDashboard = false }) => {
     
         if (btcData.length) {
             setCycleDataSets([
-                { name: '2011- 2013', data: processCycle("2011-11-22", "2013-11-30", 'Cycle 1 (2011-2013)') },
-                { name: '2015 - 2017', data: processCycle("2015-08-25", "2017-12-17", 'Cycle 2 (2015-2017)') },
-                { name: '2018 - 2021', data: processCycle("2018-12-16", "2021-11-08", 'Cycle 3 (2018-2021)') },
-                // For the current cycle, do not specify an end date; it will take the last available date from btcData
-                { name: '2022 - present', data: processCycle("2022-11-21", null, 'Cycle 4 (2022-present)') }
+                { name: 'Cycle 1 (2011-2013)', shortName: 'Cycle 1', data: processCycle("2011-11-22", "2013-11-30") },
+                { name: 'Cycle 2 (2015-2017)', shortName: 'Cycle 2', data: processCycle("2015-08-25", "2017-12-17")},
+                { name: 'Cycle 3 (2018-2021)', shortName: 'Cycle 3', data: processCycle("2018-12-16", "2021-11-08")},
+                { name: 'Cycle 4 (2022-present)', shortName: 'Cycle 4', data: processCycle("2022-11-21", null)}
             ]);
         }
     }, [btcData]);
@@ -115,7 +114,9 @@ const MarketCycles = ({ isDashboard = false }) => {
                     mode: 'lines',
                     name: cycle.name,
                     text: cycle.data.map(d => `<b>Cycle: ${d.cycle}<br>Days from Bottom: ${d.day}<br>Log ROI: ${d.roi.toFixed(2)}<br>Date: ${new Date(d.date).toLocaleDateString()}</b>`), // Custom tooltip content
-                    hoverinfo: 'text'
+                    hoverinfo: 'text',
+                    hovertemplate:
+                            `<b>${cycle.shortName}   ROI: %{y:.2f}</b><extra></extra>`
                 }))}
                 layout={{
                     title: isDashboard ? '' : 'Market Cycles RoI',
@@ -126,6 +127,7 @@ const MarketCycles = ({ isDashboard = false }) => {
                     xaxis: { title: isMobile || isDashboard ? '' : 'Days from bear market bottom' },
                     yaxis: { title: 'Logarithmic ROI (Base-10)', type: 'linear' },
                     showlegend: !isDashboard,
+                    hovermode: 'x unified',
                     legend: {
                         orientation: 'h',
                         x: 0.5,
