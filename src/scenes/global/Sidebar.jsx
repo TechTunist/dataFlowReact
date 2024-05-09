@@ -12,6 +12,23 @@ import BarChartOutlinedIcon from "@mui/icons-material/BarChartOutlined";
 import WarningOutlinedIcon from "@mui/icons-material/WarningOutlined";
 import CurrencyBitcoinIcon from "@mui/icons-material/CurrencyBitcoin";
 
+import DashboardIcon from "@mui/icons-material/Dashboard";
+import ShowChartIcon from "@mui/icons-material/ShowChart";
+import AssessmentIcon from "@mui/icons-material/Assessment";
+import TimelineIcon from "@mui/icons-material/Timeline";
+import SentimentVeryDissatisfiedIcon from "@mui/icons-material/SentimentVeryDissatisfied";
+import SentimentVerySatisfiedIcon from "@mui/icons-material/SentimentVerySatisfied";
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
+import PaletteIcon from "@mui/icons-material/Palette";
+import MultilineChartIcon from "@mui/icons-material/MultilineChart";
+import RepeatIcon from "@mui/icons-material/Repeat";
+import PsychologyIcon from "@mui/icons-material/Psychology";
+import BubbleChartIcon from '@mui/icons-material/BubbleChart';
+
+import DiamondOutlinedIcon from "@mui/icons-material/DiamondOutlined"; // Check if this exists or find the closest match.
+import CategoryIcon from "@mui/icons-material/Category";  // Generic icon for other categories.
+
+
 
 const Item = ({ title, to, icon, selected, setSelected, isNested }) => {
   const theme = useTheme();
@@ -37,19 +54,20 @@ const Sidebar = () => {
   const [searchQuery, setSearchQuery] = useState("");
 
   const itemsData = [
-    { title: "Dashboard", to: "/", icon: <HomeIcon />, category: null },
-    { title: "Bitcoin Chart", to: "/bitcoin", category: 'Bitcoin', icon: <CurrencyBitcoinIcon/> },
-    { title: "Bitcoin Risk Metric", to: "/risk", category: 'Bitcoin', icon: <WarningOutlinedIcon /> },
-    { title: "Ethereum Chart", to: "/ethereum", category: 'Ethereum', icon: <BarChartOutlinedIcon /> },
-    { title: "Ethereum Risk Metric", to: "/risk-eth", category: 'Ethereum', icon: <WarningOutlinedIcon /> },
-    { title: "PiCycleTop Indicator", to: "/pi-cycle", category: 'Indicators', icon: <WarningOutlinedIcon /> },
-    { title: "Fear And Greed Indicator", to: "/fear-and-greed", category: 'Indicators', icon: <WarningOutlinedIcon /> },
-    { title: "Bitcoin Logarithmic Regression", to: "/logarithmic-regression", category: 'Indicators', icon: <WarningOutlinedIcon /> },
-    { title: "Bitcoin Risk Colour Chart", to: "/risk-color", category: 'Bitcoin', icon: <WarningOutlinedIcon /> },
-    { title: "Altcoin Chart", to: "/altcoin-price", category: 'Altcoins', icon: <BarChartOutlinedIcon /> },
-    { title: "Market Cycles", to: "/market-cycles", category: 'Bitcoin', icon: <BarChartOutlinedIcon /> },
-    { title: "Fear and Greed Chart", to: "/fear-and-greed-chart", category: 'Indicators', icon: <BarChartOutlinedIcon /> },
+    { title: "Dashboard", to: "/", icon: <DashboardIcon />, category: null },
+    { title: "Bitcoin Chart", to: "/bitcoin", category: 'Bitcoin', icon: <ShowChartIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
+    { title: "Bitcoin Risk Metric", to: "/risk", category: 'Bitcoin', icon: <AssessmentIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
+    { title: "Ethereum Chart", to: "/ethereum", category: 'Ethereum', icon: <ShowChartIcon />, categoryIcon: <DiamondOutlinedIcon /> },
+    { title: "Ethereum Risk Metric", to: "/risk-eth", category: 'Ethereum', icon: <AssessmentIcon />, categoryIcon: <DiamondOutlinedIcon /> },
+    { title: "PiCycleTop Indicator", to: "/pi-cycle", category: 'Indicators', icon: <TimelineIcon />, categoryIcon: <CategoryIcon /> },
+    { title: "Fear And Greed Indicator", to: "/fear-and-greed", category: 'Indicators', icon: <SentimentVeryDissatisfiedIcon />, categoryIcon: <CategoryIcon /> },
+    { title: "Bitcoin Logarithmic Regression", to: "/logarithmic-regression", category: 'Indicators', icon: <TrendingUpIcon />, categoryIcon: <CategoryIcon /> },
+    { title: "Bitcoin Risk Colour Chart", to: "/risk-color", category: 'Bitcoin', icon: <PaletteIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
+    { title: "Altcoin Chart", to: "/altcoin-price", category: 'Altcoins', icon: <BubbleChartIcon />, categoryIcon: <WarningOutlinedIcon /> },
+    { title: "Market Cycles", to: "/market-cycles", category: 'Bitcoin', icon: <RepeatIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
+    { title: "Fear and Greed Chart", to: "/fear-and-greed-chart", category: 'Indicators', icon: <PsychologyIcon />, categoryIcon: <CategoryIcon /> },
   ];
+  
 
   const filteredItems = itemsData.filter(item =>
     (item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -91,8 +109,13 @@ const Sidebar = () => {
   // Render SubMenu for each category
   const renderSubMenus = () => (
     Object.entries(itemsByCategory).map(([category, items]) => (
-      <SubMenu key={category} title={category} icon={<BarChartOutlinedIcon />} style={{ color: colors.grey[100] }}>
-        {items.map(renderMenuItem)}
+      <SubMenu
+        key={category}
+        title={category}
+        icon={items[0].categoryIcon || <BarChartOutlinedIcon />}  // Use the first item's categoryIcon or a default one
+        style={{ color: colors.grey[100] }}
+      >
+        {items.map((item, index) => renderMenuItem(item, index, true))}
       </SubMenu>
     ))
   );
