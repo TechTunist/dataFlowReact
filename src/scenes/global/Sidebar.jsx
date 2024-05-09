@@ -4,12 +4,13 @@ import { Box, IconButton, Typography, useTheme } from "@mui/material";
 import { Link } from "react-router-dom";
 import "react-pro-sidebar/dist/css/styles.css";
 import { tokens } from "../../theme";
-import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
+import HomeIcon from "@mui/icons-material/Home";
 import InputBase from "@mui/material/InputBase";
 import SearchIcon from "@mui/icons-material/Search";
 import CloseIcon from "@mui/icons-material/Close";
 import BarChartOutlinedIcon from "@mui/icons-material/BarChartOutlined";
 import WarningOutlinedIcon from "@mui/icons-material/WarningOutlined";
+import CurrencyBitcoinIcon from "@mui/icons-material/CurrencyBitcoin";
 
 
 const Item = ({ title, to, icon, selected, setSelected, isNested }) => {
@@ -36,8 +37,8 @@ const Sidebar = () => {
   const [searchQuery, setSearchQuery] = useState("");
 
   const itemsData = [
-    { title: "Dashboard", to: "/", icon: <HomeOutlinedIcon />, category: null },
-    { title: "Bitcoin Chart", to: "/bitcoin", category: 'Bitcoin', icon: <BarChartOutlinedIcon /> },
+    { title: "Dashboard", to: "/", icon: <HomeIcon />, category: null },
+    { title: "Bitcoin Chart", to: "/bitcoin", category: 'Bitcoin', icon: <CurrencyBitcoinIcon/> },
     { title: "Bitcoin Risk Metric", to: "/risk", category: 'Bitcoin', icon: <WarningOutlinedIcon /> },
     { title: "Ethereum Chart", to: "/ethereum", category: 'Ethereum', icon: <BarChartOutlinedIcon /> },
     { title: "Ethereum Risk Metric", to: "/risk-eth", category: 'Ethereum', icon: <WarningOutlinedIcon /> },
