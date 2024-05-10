@@ -87,9 +87,9 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
                 </Link>
       )}
       <div className='topbar-links'>
-        <Link to="/login-signup" className="topbar-link">
+        {/* <Link to="/login-signup" className="topbar-link">
           <div className="topbar-link" style={{color: colors.primary[100]}}>Login</div>
-        </Link>
+        </Link> */}
         <Link to="/about" className="topbar-link">
           <div className="topbar-link" style={{color: colors.primary[100]}}>About</div>
         </Link>
