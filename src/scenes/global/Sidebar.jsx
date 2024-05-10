@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ProSidebar, Menu, MenuItem, SubMenu } from "react-pro-sidebar";
 import { Box, IconButton, Typography, useTheme } from "@mui/material";
 import { Link } from "react-router-dom";
@@ -52,6 +52,20 @@ const Sidebar = () => {
   const colors = tokens(theme.palette.mode);
   const [selected, setSelected] = useState("Dashboard");
   const [searchQuery, setSearchQuery] = useState("");
+  const [lastUpdated, setLastUpdated] = useState('');
+
+  useEffect(() => {
+    // Attempt to retrieve the btcData from localStorage
+    const btcDataJson = localStorage.getItem('btcData');
+    if (btcDataJson) {
+      const btcData = JSON.parse(btcDataJson);
+      // Assume btcData is an array of objects and each object has a 'time' property
+      if (btcData.length) {
+        const lastDataPoint = btcData[btcData.length - 1];
+        setLastUpdated(new Date(lastDataPoint.time).toLocaleDateString());
+      }
+    }
+  }, []);
 
   const itemsData = [
     { title: "Dashboard", to: "/", icon: <DashboardIcon />, category: null },
@@ -147,7 +161,7 @@ const Sidebar = () => {
     }}>
       <ProSidebar>
         <Menu iconShape="square">
-          <Box mb="25px">
+          <Box mb="5px">
             {/* Main Logo and Title */}
             <Box display="flex" justifyContent="center" alignItems="center">
               <img alt="main-logo" width="100px" height="100px" src={`../../assets/cryptological-logo.png`}  />
@@ -178,6 +192,15 @@ const Sidebar = () => {
             renderSubMenus()
           )}
         </Menu>
+        {
+            lastUpdated && (
+                <Box textAlign="center" mb={1}>
+                  <Typography variant="subtitle1" color={colors.grey[200]}>
+                    Data Updated: {lastUpdated}
+                  </Typography>
+                </Box>
+            )
+          }
         <Box sx={{ padding: theme.spacing(2), // Use theme spacing for consistent padding
         }}>
       {/* Bitcoin Donations Address */}
