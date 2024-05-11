@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import GaugeChart from 'react-gauge-chart'
 import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
+import LastUpdated from '../hooks/LastUpdated';
 
 
 function CryptoFearAndGreedIndex({ isDashboard }) {
@@ -112,6 +113,9 @@ return (
             </div>
             <h1 style={{ marginTop: '5px', color: textColor }}>{value_classification}</h1>
         </div>
+        {!isDashboard && (
+                <LastUpdated storageKey="btcData" />
+            )}
         {
             !isDashboard && (
                 <p className='chart-info' style={{ marginTop: '20px', textAlign: 'left', width: '100%' }}> {/* Adjust width as necessary */}

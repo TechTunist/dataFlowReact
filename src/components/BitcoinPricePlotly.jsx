@@ -77,6 +77,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                 useResizeHandler={true}
                 style={chartSize}
             />
+            <LastUpdated storageKey="btcData" />
         </div>
     );
 };

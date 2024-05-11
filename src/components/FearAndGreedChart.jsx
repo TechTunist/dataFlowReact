@@ -3,6 +3,7 @@ import Plot from 'react-plotly.js';
 import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
 import '../styling/bitcoinChart.css';
+import LastUpdated from '../hooks/LastUpdated';
 
 const FearAndGreedChart = ({ isDashboard = false }) => {
     const theme = useTheme();
@@ -170,6 +171,9 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
                 />
                     
             </div>
+            {!isDashboard && (
+                <LastUpdated storageKey="btcData" />
+            )}
             <div>
             {
             !isDashboard && (

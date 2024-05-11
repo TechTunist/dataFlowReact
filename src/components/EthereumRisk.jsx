@@ -3,6 +3,7 @@ import { createChart } from 'lightweight-charts';
 import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
 import '../styling/bitcoinChart.css';
+import LastUpdated from '../hooks/LastUpdated';
 
 const EthereumRisk = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
@@ -343,6 +344,9 @@ const EthereumRisk = ({ isDashboard = false }) => {
                     }}
                     />
             </div>
+            {!isDashboard && (
+                <LastUpdated storageKey="btcData" />
+            )}
             <div>
                 {
                     !isDashboard && (

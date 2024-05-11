@@ -4,6 +4,7 @@ import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
 import '../styling/bitcoinChart.css';
 import useIsMobile from '../hooks/useIsMobile';
+import LastUpdated from '../hooks/LastUpdated';
 
 const MarketCycles = ({ isDashboard = false }) => {
     const theme = useTheme();
@@ -106,45 +107,48 @@ const MarketCycles = ({ isDashboard = false }) => {
                 </div>
             </div>
             <div className="chart-container" style={{ position: 'relative', height: 'calc(100% - 40px)', width: '100%', border: '2px solid #a9a9a9' }}>
-            <Plot
-                data={cycleDataSets.map(cycle => ({
-                    x: cycle.data.map(d => d.day),
-                    y: cycle.data.map(d => d.roi),
-                    type: 'scatter',
-                    mode: 'lines',
-                    name: cycle.name,
-                    text: cycle.data.map(d => `<b>Cycle: ${d.cycle}<br>Days from Bottom: ${d.day}<br>Log ROI: ${d.roi.toFixed(2)}<br>Date: ${new Date(d.date).toLocaleDateString()}</b>`), // Custom tooltip content
-                    hoverinfo: 'text',
-                    hovertemplate:
-                            `<b>${cycle.shortName}   ROI: %{y:.2f}</b><extra></extra>`
-                }))}
-                layout={{
-                    title: isDashboard ? '' : 'Market Cycles RoI',
-                    margin: { l: 50, r: 50, b: 30, t: 50, pad: 4 },
-                    plot_bgcolor: colors.primary[700],
-                    paper_bgcolor: colors.primary[700],
-                    font: { color: colors.primary[100] },
-                    xaxis: { title: isMobile || isDashboard ? '' : 'Days from bear market bottom' },
-                    yaxis: { title: 'Logarithmic ROI (Base-10)', type: 'linear' },
-                    showlegend: !isDashboard,
-                    hovermode: 'x unified',
-                    legend: {
-                        orientation: 'h',
-                        x: 0.5,
-                        xanchor: 'center',
-                        y: -0.2,
-                        yanchor: 'top'
-                    }
-                }}
-                config={{
-                    staticPlot: isDashboard,
-                    displayModeBar: false,
-                    responsive: true
-                }}
-                useResizeHandler={true}
-                style={{ width: "100%", height: "100%" }}
-            />
+                <Plot
+                    data={cycleDataSets.map(cycle => ({
+                        x: cycle.data.map(d => d.day),
+                        y: cycle.data.map(d => d.roi),
+                        type: 'scatter',
+                        mode: 'lines',
+                        name: cycle.name,
+                        text: cycle.data.map(d => `<b>Cycle: ${d.cycle}<br>Days from Bottom: ${d.day}<br>Log ROI: ${d.roi.toFixed(2)}<br>Date: ${new Date(d.date).toLocaleDateString()}</b>`), // Custom tooltip content
+                        hoverinfo: 'text',
+                        hovertemplate:
+                                `<b>${cycle.shortName}   ROI: %{y:.2f}</b><extra></extra>`
+                    }))}
+                    layout={{
+                        title: isDashboard ? '' : 'Market Cycles RoI',
+                        margin: { l: 50, r: 50, b: 30, t: 50, pad: 4 },
+                        plot_bgcolor: colors.primary[700],
+                        paper_bgcolor: colors.primary[700],
+                        font: { color: colors.primary[100] },
+                        xaxis: { title: isMobile || isDashboard ? '' : 'Days from bear market bottom' },
+                        yaxis: { title: 'Logarithmic ROI (Base-10)', type: 'linear' },
+                        showlegend: !isDashboard,
+                        hovermode: 'x unified',
+                        legend: {
+                            orientation: 'h',
+                            x: 0.5,
+                            xanchor: 'center',
+                            y: -0.2,
+                            yanchor: 'top'
+                        }
+                    }}
+                    config={{
+                        staticPlot: isDashboard,
+                        displayModeBar: false,
+                        responsive: true
+                    }}
+                    useResizeHandler={true}
+                    style={{ width: "100%", height: "100%" }}
+                />
             </div>
+            {!isDashboard && (
+                <LastUpdated storageKey="btcData" />
+            )}
             <div>
                 {
                     !isDashboard && (

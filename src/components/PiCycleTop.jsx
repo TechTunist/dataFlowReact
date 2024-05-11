@@ -3,6 +3,7 @@ import { createChart, ISeriesApi } from 'lightweight-charts';
 import '../styling/bitcoinChart.css'
 import { useTheme } from '@mui/material';
 import { tokens } from '../theme';
+import LastUpdated from '../hooks/LastUpdated';
 
 
 const PiCycleTopChart = ({ isDashboard = false }) => {
@@ -326,6 +327,9 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
                     }}
                     />
             </div>
+            {!isDashboard && (
+                <LastUpdated storageKey="btcData" />
+            )}
             <div>
                 {
                     !isDashboard && (

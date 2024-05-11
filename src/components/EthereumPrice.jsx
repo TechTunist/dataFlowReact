@@ -5,6 +5,7 @@ import '../styling/bitcoinChart.css'
 import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
 import useIsMobile from '../hooks/useIsMobile';
+import LastUpdated from '../hooks/LastUpdated';
 
 const EthereumPrice = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
@@ -360,6 +361,9 @@ const EthereumPrice = ({ isDashboard = false }) => {
                         }
                     }}/>
             </div>
+            {!isDashboard && (
+                <LastUpdated storageKey="btcData" />
+            )}
             
             <div style={{
                 display: 'flex', // Use flex display for the container

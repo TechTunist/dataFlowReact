@@ -62,7 +62,7 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
         case "/altcoin-price":
           return <Header title="Altcoins" subtitle="Altcoin Analysis" />;
         case "/about":
-          return <Header title="About" subtitle="Why did I create Data Flow?" />;
+          return <Header title="About" subtitle="Why did I create Cryptological?" />;
         case "/login-signup":
           return <Header title="Login / Signup" subtitle="Under Construnction" />;
         case "/market-cycles":

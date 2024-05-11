@@ -5,6 +5,7 @@ import '../styling/bitcoinChart.css'
 import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
 import useIsMobile from '../hooks/useIsMobile';
+import LastUpdated from '../hooks/LastUpdated';
 
 const BitcoinLogRegression = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
@@ -401,6 +402,9 @@ const BitcoinLogRegression = ({ isDashboard = false }) => {
                         }
                     }}/>
             </div>
+            {!isDashboard && (
+                <LastUpdated storageKey="btcData" />
+            )}
             {/* Conditional Rendering for the Tooltip */}
             {!isDashboard && tooltipData && (
                 <div

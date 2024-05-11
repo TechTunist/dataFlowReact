@@ -4,6 +4,7 @@ import '../styling/bitcoinChart.css'
 import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
 import useIsMobile from '../hooks/useIsMobile';
+import LastUpdated from '../hooks/LastUpdated';
 
 
 const AltcoinPrice = ({ isDashboard = false }) => {
@@ -469,6 +470,9 @@ const AltcoinPrice = ({ isDashboard = false }) => {
                     }}>                
                 <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
             </div>
+            {!isDashboard && (
+                <LastUpdated storageKey="btcData" />
+            )}
             <div className="chart-bottom-div">
                 <div>
                     {!isDashboard && (
