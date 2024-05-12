@@ -437,7 +437,8 @@ const AltcoinPrice = ({ isDashboard = false }) => {
                     {
                         !isDashboard && (
                             <button
-                                onClick={setInteractivity}
+                                onTouchStart={setInteractivity}  // Handle touch events
+                                onClick={setInteractivity}  // Handle click events
                                 className="button-reset"
                                 style={{
                                     backgroundColor: isInteractive ? '#4cceac' : 'transparent',
@@ -446,6 +447,7 @@ const AltcoinPrice = ({ isDashboard = false }) => {
                                 }}>
                                 {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
                             </button>
+
                         )   
                     }
                     {
