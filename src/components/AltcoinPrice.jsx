@@ -457,19 +457,28 @@ const AltcoinPrice = ({ isDashboard = false }) => {
                     }
                 </div>              
             </div>
-            <div className="chart-container" style={{ 
+            <div className="chart-container"
+                style={{ 
                     position: 'relative', 
                     height: 'calc(100% - 40px)', 
                     width: '100%', 
                     border: '2px solid #a9a9a9' // Adds dark border with your specified color
-                    }}
-                    onClick={() => {
-                        if (!isInteractive && !isDashboard) {  // Only set interactivity if it's currently disabled
-                            setInteractivity();
-                        }
-                    }}>                
+                }}
+                onClick={() => {
+                    if (!isInteractive && !isDashboard) {  // Only set interactivity if it's currently disabled
+                        setInteractivity();
+                    }
+                }}
+                onTouchEnd={(e) => {
+                    // Prevent firing the event twice on devices that recognize both touch and click events
+                    e.preventDefault();
+                    if (!isInteractive && !isDashboard) {
+                        setInteractivity();
+                    }
+                }}>
                 <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
             </div>
+
             {!isDashboard && (
                 <LastUpdated storageKey="btcData" />
             )}
