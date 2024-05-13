@@ -3,6 +3,7 @@ import { createChart } from 'lightweight-charts';
 import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
 import '../styling/bitcoinChart.css';
+import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
 
 const EthereumRisk = ({ isDashboard = false }) => {
@@ -12,13 +13,42 @@ const EthereumRisk = ({ isDashboard = false }) => {
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
     const [setIsDashboard] = useState(isDashboard);
+    const [currentEthPrice, setCurrentEthPrice] = useState(0);
 
-    // State for user inputs
-    const [lowRisk, setLowRisk] = useState(0.2);
-    const [highRisk, setHighRisk] = useState(0.8);
-    const [usdInvest, setUsdInvest] = useState(1000);
-    const [ethSell, setEthSell] = useState(0.1);
+    // DCA risk based accumulation simulation state variables
+    const [dcaAmount, setDcaAmount] = useState(100); // Default DCA amount in USD
+    const [dcaFrequency, setDcaFrequency] = useState(7); 
+    const [dcaStartDate, setDcaStartDate] = useState('2021-01-01'); // Default start date for DCA investments
+    const [dcaRiskThreshold, setDcaRiskThreshold] = useState(0.4); // Default risk threshold for making purchases
+    const [totalUsdFromSales, setTotalUsdFromSales] = useState(0);
+    const [ethHeld, setEthHeld] = useState(0);
+    const [totalUsdRealized, setTotalUsdRealized] = useState(0);
+    const [transactionHistory, setTransactionHistory] = useState([]);
+    const [totalUsdInvested, setTotalUsdInvested] = useState(0);
+    const [percentageGains, setPercentageGains] = useState(0);
+    const [unrealizedGains, setUnrealizedGains] = useState(0);
+    const [showTransactions, setShowTransactions] = useState(false);
+    const [totalPortfolioValue, setTotalPortfolioValue] = useState(0);
+    const [simulationRun, setSimulationRun] = useState(false);
+    const isMobile = useIsMobile();
+
+    const [sellThresholds, setSellThresholds] = useState([
+        { riskLevel: 0.6, percentage: 10 },
+        { riskLevel: 0.7, percentage: 20 },
+        { riskLevel: 0.8, percentage: 40 },
+        { riskLevel: 0.9, percentage: 70 }
+    ]);
+
+    // Lump sum investment simulation state variables
+    const [lumpSumInvest, setlumpSumInvest] = useState(1000); // Default USD investment amount
     const [startDate, setStartDate] = useState("2021-01-01");  // Example start date
+    // State to store simulation results
+    const [simulationResult, setSimulationResult] = useState({
+        finalUsdHeld: 0,
+        finalEthHeld: 0,
+        totalValue: 0,
+        transactionHistory: []
+    });
 
     // State to store current risk level
     const [currentRiskLevel, setCurrentRiskLevel] = useState(null);
@@ -31,16 +61,7 @@ const EthereumRisk = ({ isDashboard = false }) => {
         setIsInteractive(!isInteractive);
     };
 
-    // State to store simulation results
-    const [simulationResult, setSimulationResult] = useState({
-        finalUsdHeld: 0,
-        finalEthHeld: 0,
-        totalValue: 0,
-        transactionHistory: []
-    });
-
-
-    // Function to format numbers to 'k', 'M', etc.
+    // Function to format numbers to 'k', 'M', etc. for price scale labels
     function compactNumberFormatter(value) {
         if (value >= 1000000) {
             return (value / 1000000).toFixed(0) + 'M'; // Millions
@@ -51,7 +72,7 @@ const EthereumRisk = ({ isDashboard = false }) => {
         }
     }
 
-    const simulateInvestment = (data, usdInvest, startDate) => {
+    const simulateInvestment = (data, lumpSumInvest, startDate) => {
         // Filter data to start from the specified start date
         const filteredData = data.filter(item => new Date(item.time) >= new Date(startDate));
     
@@ -71,7 +92,7 @@ const EthereumRisk = ({ isDashboard = false }) => {
         filteredData.forEach(day => {
             // Buy Ethereum once when the risk level is below or equals the initialRiskLevel threshold
             if (!bought && day.Risk <= initialRiskLevel) {
-                ethHeld = usdInvest / day.value;
+                ethHeld = lumpSumInvest / day.value;
                 initialInvestmentDate = day.time;
                 initialEthereumPrice = day.value;
                 bought = true;  // Ensure no further purchases
@@ -84,7 +105,7 @@ const EthereumRisk = ({ isDashboard = false }) => {
     
         return {
             investmentDate: initialInvestmentDate,
-            investedAmount: usdInvest,
+            investedAmount: lumpSumInvest,
             initialEthereumPrice: initialEthereumPrice,
             currentValue: currentValue,
             currentEthereumPrice: finalDay.value,
@@ -94,7 +115,7 @@ const EthereumRisk = ({ isDashboard = false }) => {
     };
 
     const handleSimulation = () => {
-        const results = simulateInvestment(chartData, parseFloat(usdInvest), startDate);
+        const results = simulateInvestment(chartData, parseFloat(lumpSumInvest), startDate);
         setSimulationResult(results);
     };
     
@@ -215,6 +236,7 @@ const EthereumRisk = ({ isDashboard = false }) => {
         // Series for Risk Metric
         const riskSeries = chart.addLineSeries({
             color: '#ff0062',
+            // color: '#ff5100',
             lastValueVisible: true,
             priceScaleId: 'right',
             lineWidth: 2,
@@ -258,6 +280,9 @@ const EthereumRisk = ({ isDashboard = false }) => {
             }
         };
 
+        const price = (chartData[chartData.length - 1].value);
+        setCurrentEthPrice(price); // Set the current price to the last item in the array
+        
         const latestData = chartData[chartData.length - 1]; // Get the last item in the array
         try {
             const riskLevel = latestData.Risk.toFixed(2);
@@ -265,6 +290,7 @@ const EthereumRisk = ({ isDashboard = false }) => {
         } catch (error) {
             console.error('Failed to set risk level:', error);
         }
+
 
         window.addEventListener('resize', resizeChart);
         window.addEventListener('resize', resetChartView);
@@ -280,6 +306,7 @@ const EthereumRisk = ({ isDashboard = false }) => {
         };
     }, [chartData, theme.palette.mode, isDashboard]);
 
+
     useEffect(() => {
         if (chartRef.current) {
             // Disable all interactions if the chart is displayed on the dashboard
@@ -290,6 +317,135 @@ const EthereumRisk = ({ isDashboard = false }) => {
         }
     }, [isInteractive]);
 
+
+    const handleThresholdChange = (index, newPercentage) => {
+        const updatedThresholds = sellThresholds.map((threshold, idx) => {
+            if (idx === index) {
+                return { ...threshold, percentage: newPercentage };
+            }
+            return threshold;
+        });
+        setSellThresholds(updatedThresholds);
+    };
+
+
+    const handleDcaSimulation = () => {
+        let localEthHeld = 0;
+        let localTotalUsdRealized = 0;
+        let localTotalUsdInvested = 0;
+        let localTransactionHistory = [];
+        let nextPurchaseDate = new Date(dcaStartDate);
+        let lastSellDate = new Date(dcaStartDate);
+        lastSellDate.setDate(lastSellDate.getDate() - dcaFrequency);  // Set this to 7 days before the start to allow initial selling if conditions are met
+    
+        let currentEthPrice = 0;  // Variable to store the most recent Ethereum price
+        let currentEthRisk = 0;  // Variable to store the most recent Ethereum risk level
+
+        // console.log("dcaRiskThreshold", dcaRiskThreshold); // this is the purchase threshold
+    
+        chartData.forEach(day => {
+            const dayDate = new Date(day.time);
+            currentEthPrice = day.value;  // Update current price to the latest in the loop
+            currentEthRisk = day.Risk;
+        
+            // Buying logic
+            if (dayDate >= nextPurchaseDate && day.Risk <= dcaRiskThreshold) {
+                const ethPurchased = dcaAmount / day.value;
+                localEthHeld += ethPurchased;
+                localTotalUsdInvested += dcaAmount;
+                localTransactionHistory.push({
+                    type: 'buy',
+                    date: day.time,
+                    amount: ethPurchased,
+                    price: day.value,
+                    risk: day.Risk,
+                    localEthHeld: localEthHeld,
+                    localTotalUsdInvested: localTotalUsdInvested,
+                    localTotalUsdRealized: localTotalUsdRealized,
+                    localTransactionHistory: localTransactionHistory,
+                    localPercentageGains: percentageGains,
+                    localEthHeld: ethHeld,
+                    localTotalUsdRealized: totalUsdRealized,
+                    localTotalUsdInvested: totalUsdInvested,
+                    localTotalPortfolioValue: totalPortfolioValue,
+                    localPercentageGains: percentageGains
+                });
+                nextPurchaseDate = new Date(dayDate);
+                nextPurchaseDate.setDate(dayDate.getDate() + dcaFrequency);  // Properly increment the next purchase date
+            }
+        
+            // Check if dcaFrequency days have passed since the last sale
+            const daysSinceLastSale = (dayDate - lastSellDate) / (1000 * 60 * 60 * 24);
+        
+            // Selling logic
+            if (localEthHeld > 0 && daysSinceLastSale >= dcaFrequency) {
+                let maxApplicableThreshold = null;
+
+                // Identify the highest risk level threshold that has been surpassed
+                sellThresholds.forEach(threshold => {
+                    if (day.Risk >= threshold.riskLevel && threshold.percentage > 0) { // Check if the threshold percentage is greater than 0
+                        if (!maxApplicableThreshold || threshold.riskLevel > maxApplicableThreshold.riskLevel) {
+                            maxApplicableThreshold = threshold;
+                        }
+                    }
+                });
+
+                // Process the sale if there is a threshold to apply and the percentage is greater than 0
+                if (maxApplicableThreshold && maxApplicableThreshold.percentage > 0) {
+                    console.log(maxApplicableThreshold.percentage);
+                    const ethSold = localEthHeld * (maxApplicableThreshold.percentage / 100);
+                    localEthHeld -= ethSold;
+                    const usdRealized = ethSold * day.value;
+                    localTotalUsdRealized += usdRealized;
+                    localTransactionHistory.push({
+                        type: 'sell',
+                        date: day.time,
+                        amount: ethSold,
+                        price: day.value,
+                        risk: day.Risk,
+                        maxApplicableThreshold: maxApplicableThreshold.percentage, // Include maxApplicableThreshold here
+                        localEthHeld: localEthHeld,
+                        localTotalUsdInvested: localTotalUsdInvested,
+                        localTotalUsdRealized: localTotalUsdRealized,
+                        localTransactionHistory: localTransactionHistory,
+                        localPercentageGains: percentageGains,
+                        localEthHeld: ethHeld,
+                        localTotalUsdRealized: totalUsdRealized,
+                        localTotalUsdInvested: totalUsdInvested,
+                        localTotalPortfolioValue: totalPortfolioValue,
+                        localPercentageGains: percentageGains
+                    });
+
+                    lastSellDate = new Date(dayDate);  // Update the last sell date
+                }
+            }
+        });
+    
+        const calculatePercentageGains = localTotalUsdInvested > 0 ? 
+            ((localTotalUsdRealized - localTotalUsdInvested) / localTotalUsdInvested) * 100 : 
+            0;
+    
+        // Calculate unrealized gains
+        const unrealizedGains = localEthHeld * currentEthPrice;
+    
+        // Update state with the results of the simulation
+        setEthHeld(localEthHeld);
+        setTotalUsdRealized(localTotalUsdRealized);
+        setTotalUsdInvested(localTotalUsdInvested);
+        setPercentageGains(calculatePercentageGains);
+        setTransactionHistory(localTransactionHistory);
+        setUnrealizedGains(unrealizedGains); // Assuming you have a state to store this
+        setTotalPortfolioValue(localTotalUsdRealized + unrealizedGains);
+
+        setSimulationRun(true);
+    
+        // console.log("Unrealized Gains: ", unrealizedGains);
+        // console.log("Percentage Gains: ", calculatePercentageGains);
+        // console.log("Total invested: ", localTotalUsdInvested);
+        // console.log("Transaction History: ", localTransactionHistory);
+    };
+    
+    
     return (
         <div style={{ height: '100%' }}> {/* Set a specific height for the entire container */}
             <div className='chart-top-div'>
@@ -345,13 +501,13 @@ const EthereumRisk = ({ isDashboard = false }) => {
                     />
             </div>
             {!isDashboard && (
-                <LastUpdated storageKey="btcData" />
+                <LastUpdated storageKey="ethData" />
             )}
             <div>
                 {
                     !isDashboard && (
                         <div style={{ display: 'inline-block', marginTop: '10px', fontSize: '1.2rem'}}>
-                            Current Risk level: {currentRiskLevel}
+                            Current Risk level: <b>{currentRiskLevel}</b>   (${currentEthPrice.toFixed(2)})
                         </div>
                     )
                 }
@@ -366,9 +522,9 @@ const EthereumRisk = ({ isDashboard = false }) => {
                                     </p>
                                     <div style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '10px', color: colors.greenAccent[500]}}>
                                         <input className='input-field .simulate-button' type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
-                                        <input className='input-field .simulate-button' type="number" placeholder="USD to Invest" value={usdInvest} onChange={e => setUsdInvest(e.target.value)} />
-                                        <button className='simulate-button' style={{ background: 'transparent', color: colors.greenAccent[500], borderRadius: '10px'}}  onClick={handleSimulation}>Simulate</button>
+                                        <input className='input-field .simulate-button' type="number" placeholder="USD to Invest" value={lumpSumInvest} onChange={e => setlumpSumInvest(e.target.value)} />
                                     </div>
+                                    <button className='simulate-button-dca' style={{ background: 'transparent', color: colors.greenAccent[500], borderRadius: '10px', margin: '20px'}}  onClick={handleSimulation}>Simulate</button>
                                     { !isDashboard && simulationResult.investmentDate && (
                                         <div className='results-display'>
                                             Investing ${simulationResult.investedAmount.toFixed(0)} on {simulationResult.investmentDate} at 
@@ -381,29 +537,161 @@ const EthereumRisk = ({ isDashboard = false }) => {
                         }
                     </div>
                     <div>
-                        {
-                            !isDashboard && (
-                                <div className='risk-simulator results-display' style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '10px', padding: '20px', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
-                                    <h2>DCA Risk Based Accumulation Simulation</h2>
-                                    <p>Choose a start date, a risk level that you will buy at, an amount and frequency to invest,
-                                        and see what the investment would be worth today.
-                                    </p>
-                                    <div style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '10px', marginBottom: '10px', }}>
-                                        <input className='input-field .simulate-button' type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
-                                        <input className='input-field .simulate-button' type="number" placeholder="USD to Invest" value={usdInvest} onChange={e => setUsdInvest(e.target.value)} />
-                                        <button className='simulate-button' style={{ background: 'transparent', color: colors.greenAccent[500], borderRadius: '10px'}}  onClick={handleSimulation}>Simulate</button>
-                                    </div>
-                                    { !isDashboard && simulationResult.investmentDate && (
-                                        <div className='results-display'>
-                                            Investing ${simulationResult.investedAmount.toFixed(0)} on {simulationResult.investmentDate} at 
-                                            a risk level of {simulationResult.initialRiskLevel.toFixed(2)} would have resulted in
-                                            an investment return of ${simulationResult.currentValue.toFixed(2)} based on today's prices.
-                                        </div>
-                                    )}
-                                </div>
-                            )
-                        }
+    {
+    !isDashboard && (
+        <div className='risk-simulator results-display' style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '10px', padding: '20px', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
+            <h2>DCA Risk Based Accumulation and Exit Strategy Simulation</h2>
+            <p>Backtest simple buying and selling DCA strategies based on the risk level.</p>
+            <ol>
+                <li>Choose a start date to begin the test from.</li>
+                <li>Choose an amount you would like to DCA.</li>
+                <li>Choose a frequency (weekly, bi-weekly, or monthly) to make purchases and sales of your Ethereum.</li>
+                <li>Choose a risk level under which you are happy to accumulate Ethereum.</li>
+            </ol>
+
+            <h2>Eth Accumulation Strategy</h2>
+            <label htmlFor="start-date">Start Date:</label>
+            <input className='input-field .simulate-button' id="start-date" type="date" value={dcaStartDate} onChange={e => setDcaStartDate(e.target.value)} />
+
+            <label htmlFor="investment-amount">USD to Invest:</label>
+            <input className='input-field .simulate-button' id="investment-amount" type="number" placeholder="USD to Invest" value={dcaAmount} onChange={e => setDcaAmount(parseFloat(e.target.value))} />
+
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <label htmlFor="investment-frequency" style={{ marginBottom: '10px' }}>DCA (dollar cost average) purchase frequency in days:</label>
+                <div style={{ display: 'flex', justifyContent: 'space-evenly', width: '100%', marginBottom: '50px' }}>
+                    <button
+                        className={`dceFreq ${dcaFrequency === 7 ? 'dceFreqHighlighted' : ''}`}
+                        onClick={() => setDcaFrequency(7)}
+                    >
+                        7
+                    </button>
+                    <button
+                        className={`dceFreq ${dcaFrequency === 14 ? 'dceFreqHighlighted' : ''}`}
+                        onClick={() => setDcaFrequency(14)}
+                    >
+                        14
+                    </button>
+                    <button
+                        className={`dceFreq ${dcaFrequency === 28 ? 'dceFreqHighlighted' : ''}`}
+                        onClick={() => setDcaFrequency(28)}
+                    >
+                        28
+                    </button>
+                </div>
+            </div>
+
+            <label htmlFor="buy-risk-threshold">Buy when Risk is below:</label>
+            <input className='input-field .simulate-button-dca' id="buy-risk-threshold" type="number" placeholder="Buy Risk Threshold (0-1)" min="0" max="1" step="0.1" value={dcaRiskThreshold} onChange={e => setDcaRiskThreshold(parseFloat(e.target.value))} />
+
+            <h2>Taking Profit Strategy</h2>
+            <p>
+                At each of the risk levels below, you can decide the percentage of your current
+                stack of Ethereum that you would like to sell. (The frequency at which you sell
+                is the set by default to the same purchasing frequency set above)
+            </p>
+            <p style={{color: colors.greenAccent[500]}}>
+                It stands to reason that the higher the risk level, the more you would want to sell,
+                but feel free to explore based on your own risk tolerance.
+            </p>
+                
+            {
+                sellThresholds.map((threshold, index) => (
+                    <div key={index}>
+                        <label>Risk Level {' > '} {threshold.riskLevel}: </label>
+                        <input type="number" min="0" max="100" step="10" value={threshold.percentage} onChange={e => handleThresholdChange(index, parseFloat(e.target.value))} /> %
                     </div>
+                ))
+            }
+            {simulationRun && (
+                <div>
+                    <h2 style={{textAlign: 'left'}}>Total USD Invested: ${totalUsdInvested}</h2>
+                    <h2>Total Portfolio Value: ${totalPortfolioValue.toFixed(2)}</h2>
+                    <h3>Total Ethereum Held:  {ethHeld.toFixed(6)} ETH</h3>
+                    <h3>Total Realized Gains: ${totalUsdRealized.toFixed(2)}</h3>
+                    <h3>Total Unrealized Gains: ${unrealizedGains.toFixed(2)}</h3>
+                    <h3>Percentage Realised Gains:  {percentageGains.toFixed(2)}  %</h3>
+                </div>
+                
+            )}
+
+            <button className='simulate-button-dca' style={{ background: 'transparent', color: colors.greenAccent[500], borderRadius: '10px', margin: '20px'}} onClick={handleDcaSimulation}>Simulate</button>
+
+            {simulationRun && (
+                <div style={{ fontSize: '0.7rem'}}>
+                    <h1 onClick={() => setShowTransactions(!showTransactions)} style={{ cursor: 'pointer', textAlign: 'center', border: '1px teal solid', padding: '5px'}}>
+                        Transaction History
+                    </h1>
+                    {showTransactions && (
+                        isMobile ? (
+                            <ul style={{padding: '0px'}}>
+                                {transactionHistory.map((tx, index) => (
+                                    <li key={index}>
+                                        {tx.type} {tx.amount.toFixed(6)} ETH on {tx.date} at ${tx.price.toFixed(2)}
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', border: '1px solid cyan' }}>
+                                <thead>
+                                <tr>
+                                    <th style={{ padding: '8px', border: '1px solid teal', minWidth: '40px' }}>#</th>
+                                    <th style={{ padding: '8px', border: '1px solid teal', minWidth: '60px' }}>Type</th>
+                                    <th style={{ padding: '8px', border: '1px solid teal', minWidth: '120px' }}>Date</th>
+                                    <th style={{ padding: '8px', border: '1px solid teal', minWidth: '100px' }}>Spent</th>
+                                    <th style={{ padding: '8px', border: '1px solid teal', minWidth: '100px' }}>Ethereum</th>
+                                    <th style={{ padding: '8px', border: '1px solid teal', minWidth: '100px' }}>At Price</th>
+                                    <th style={{ padding: '8px', border: '1px solid teal', minWidth: '100px' }}>Risk</th>
+                                    <th style={{ padding: '8px', border: '1px solid teal', minWidth: '120px' }}>Total ETH Held</th>
+                                    <th style={{ padding: '8px', border: '1px solid teal', minWidth: '120px' }}>Percentage Sold</th>
+                                    <th style={{ padding: '8px', border: '1px solid teal', minWidth: '120px' }}>Total Invested $</th>
+                                    <th style={{ padding: '8px', border: '1px solid teal', minWidth: '120px' }}>Profit</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                    {transactionHistory.reduce((acc, tx, index) => {
+                                        const usdSpent = tx.type === 'buy' ? tx.amount * tx.price : 0;
+                                        const profit = tx.type === 'sell' ? (tx.amount * tx.price) - usdSpent : 0;
+
+                                        // Update the accumulated values
+                                        acc.accumulatedInvestment += usdSpent;
+                                        acc.totalProfit += profit;
+
+                                        // Update ethHeld based on the transaction type
+                                        if (tx.type === 'buy') {
+                                            acc.ethHeld += tx.amount;
+                                        } else if (tx.type === 'sell') {
+                                            acc.ethHeld -= tx.amount;
+                                        }
+
+                                        acc.rows.push(
+                                            <tr key={index}>
+                                                <td style={{ padding: '8px', border: '1px solid black' }}>{index + 1}</td>
+                                                <td style={{ padding: '8px', border: '1px solid black' }}>{tx.type}</td>
+                                                <td style={{ padding: '8px', border: '1px solid black' }}>{tx.date}</td>
+                                                <td style={{ padding: '8px', border: '1px solid black' }}>${usdSpent.toFixed(2)}</td>
+                                                <td style={{ padding: '8px', border: '1px solid black' }}>{tx.amount.toFixed(6)} ETH</td>
+                                                <td style={{ padding: '8px', border: '1px solid black' }}>${tx.price.toFixed(2)}</td>
+                                                <td style={{ padding: '8px', border: '1px solid black' }}>{tx.risk.toFixed(2)}</td>
+                                                <td style={{ padding: '8px', border: '1px solid black' }}>{acc.ethHeld.toFixed(6)} ETH</td>
+                                                <td style={{ padding: '8px', border: '1px solid black' }}>{tx.maxApplicableThreshold ? `${tx.maxApplicableThreshold.toFixed(2)}%` : '-'}</td>
+                                                <td style={{ padding: '8px', border: '1px solid black' }}>${acc.accumulatedInvestment.toFixed(2)}</td>
+                                                <td style={{ padding: '8px', border: '1px solid black' }}>${acc.totalProfit.toFixed(2)}</td>
+                                            </tr>
+                                        );
+
+                                        return acc;
+                                    }, { accumulatedInvestment: 0, totalProfit: 0, ethHeld: 0, rows: [] }).rows}
+                                </tbody>
+                            </table>
+                        )
+                    )}
+                </div>
+            )}
+        </div>
+    )}
+</div>
+
+
                 </div>
 
                 {

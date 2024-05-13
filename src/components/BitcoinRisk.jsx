@@ -380,16 +380,18 @@ const BitcoinRisk = ({ isDashboard = false }) => {
             // Selling logic
             if (localBtcHeld > 0 && daysSinceLastSale >= dcaFrequency) {
                 let maxApplicableThreshold = null;
-        
+
+                // Identify the highest risk level threshold that has been surpassed
                 sellThresholds.forEach(threshold => {
-                    if (day.Risk >= threshold.riskLevel) {
+                    if (day.Risk >= threshold.riskLevel && threshold.percentage > 0) { // Check if the threshold percentage is greater than 0
                         if (!maxApplicableThreshold || threshold.riskLevel > maxApplicableThreshold.riskLevel) {
                             maxApplicableThreshold = threshold;
                         }
                     }
                 });
-        
-                if (maxApplicableThreshold) {
+
+                // Process the sale if there is a threshold to apply and the percentage is greater than 0
+                if (maxApplicableThreshold && maxApplicableThreshold.percentage > 0) {
                     console.log(maxApplicableThreshold.percentage);
                     const btcSold = localBtcHeld * (maxApplicableThreshold.percentage / 100);
                     localBtcHeld -= btcSold;
@@ -413,7 +415,7 @@ const BitcoinRisk = ({ isDashboard = false }) => {
                         localTotalPortfolioValue: totalPortfolioValue,
                         localPercentageGains: percentageGains
                     });
-        
+
                     lastSellDate = new Date(dayDate);  // Update the last sell date
                 }
             }
