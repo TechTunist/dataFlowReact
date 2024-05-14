@@ -26,9 +26,11 @@ const Dashboard = () => {
         
         {/* Bitcoin Price Card */}
         <Grid item xs={12} lg={6}>
-          <Card style={{backgroundColor: colors.primary[500]}}>
+          <Card style={{backgroundColor: colors.primary[500]}} >
             <CardContent>
-              <Typography variant="h4" gutterBottom component={Link} to="/bitcoin" style={{ textDecoration: 'none', color: 'inherit' }}>
+              <Typography variant="h4" gutterBottom component={Link} to="/bitcoin" style={{ textDecoration: 'none', color: colors.grey[100] }}
+                onMouseOver={({ target }) => target.style.color = colors.greenAccent[500]}
+                onMouseOut={({ target }) => target.style.color = colors.grey[100]}>
                 Bitcoin Historical Price
               </Typography>
               <Box height="350px" m="20px 0 0 0" style={{ margin: "0 0 20px 0" }}>
@@ -46,10 +48,12 @@ const Dashboard = () => {
         <Grid item xs={12} lg={6}>
           <Card style={{backgroundColor: colors.primary[500]}}>
             <CardContent>
-              <Typography variant="h4" gutterBottom component={Link} to="/risk" style={{ textDecoration: 'none', color: 'inherit' }}>
+              <Typography variant="h4" gutterBottom component={Link} to="/risk" style={{ textDecoration: 'none', color: colors.grey[100] }}
+                onMouseOver={({ target }) => target.style.color = colors.greenAccent[500]}
+                onMouseOut={({ target }) => target.style.color = colors.grey[100]}>
                 Bitcoin Risk Metric
               </Typography>
-              <Box height="350px" m="20px 0 0 0" style={{ margin: "0 0 20px 0" }}>
+              <Box height="350px" m="20px 0 20px 0" style={{ margin: "20px 0 10px 0" }}>
                 <BitcoinRisk isDashboard={true} />
               </Box>
               <Typography
@@ -67,7 +71,9 @@ const Dashboard = () => {
         <Grid item xs={12} lg={6}>
           <Card style={{backgroundColor: colors.primary[500]}}>
             <CardContent>
-              <Typography variant="h4" gutterBottom component={Link} to="/ethereum" style={{ textDecoration: 'none', color: 'inherit' }}>
+              <Typography variant="h4" gutterBottom component={Link} to="/ethereum" style={{ textDecoration: 'none', color: colors.grey[100] }}
+                onMouseOver={({ target }) => target.style.color = colors.greenAccent[500]}
+                onMouseOut={({ target }) => target.style.color = colors.grey[100]}>
                 Ethereum Historical Price
               </Typography>
               <Box height="350px" m="20px 0 20px 0">
@@ -84,7 +90,9 @@ const Dashboard = () => {
         <Grid item xs={12} lg={6}>
           <Card style={{backgroundColor: colors.primary[500]}}>
             <CardContent>
-              <Typography variant="h4" gutterBottom component={Link} to="/risk-eth" style={{ textDecoration: 'none', color: 'inherit' }}>
+              <Typography variant="h4" gutterBottom component={Link} to="/risk-eth" style={{ textDecoration: 'none', color: colors.grey[100] }}
+                onMouseOver={({ target }) => target.style.color = colors.greenAccent[500]}
+                onMouseOut={({ target }) => target.style.color = colors.grey[100]}>
                 Ethereum Risk Metric
               </Typography>
               <Box height="350px" m="20px 0 20px 0">
@@ -102,7 +110,9 @@ const Dashboard = () => {
         <Grid item xs={12} lg={6}>
           <Card style={{backgroundColor: colors.primary[500]}}>
             <CardContent>
-              <Typography variant="h4" gutterBottom component={Link} to="/pi-cycle" style={{ textDecoration: 'none', color: 'inherit' }}>
+              <Typography variant="h4" gutterBottom component={Link} to="/pi-cycle" style={{ textDecoration: 'none', color: colors.grey[100] }}
+                onMouseOver={({ target }) => target.style.color = colors.greenAccent[500]}
+                onMouseOut={({ target }) => target.style.color = colors.grey[100]}>
                 PiCycle Top Indicator
               </Typography>
               <Box height="350px" m="20px 0 0 0" style={{ margin: "0 0 20px 0" }}>
@@ -119,7 +129,9 @@ const Dashboard = () => {
         <Grid item xs={12} lg={6}>
           <Card style={{backgroundColor: colors.primary[500]}}>
             <CardContent>
-              <Typography variant="h4" gutterBottom component={Link} to="/fear-and-greed" style={{ textDecoration: 'none', color: 'inherit' }}>
+              <Typography variant="h4" gutterBottom component={Link} to="/fear-and-greed" style={{ textDecoration: 'none', color: colors.grey[100] }}
+                onMouseOver={({ target }) => target.style.color = colors.greenAccent[500]}
+                onMouseOut={({ target }) => target.style.color = colors.grey[100]}>
                 Fear and Greed Indicator
               </Typography>
               <Box height="350px" m="20px 0 0 0" style={{ margin: "0 0 20px 0" }}>
@@ -136,7 +148,9 @@ const Dashboard = () => {
         <Grid item xs={12} lg={6}>
           <Card style={{backgroundColor: colors.primary[500]}}>
             <CardContent>
-              <Typography variant="h4" gutterBottom component={Link} to="/logarithmic-regression" style={{ textDecoration: 'none', color: 'inherit' }}>
+              <Typography variant="h4" gutterBottom component={Link} to="/logarithmic-regression" style={{ textDecoration: 'none', color: colors.grey[100] }}
+                onMouseOver={({ target }) => target.style.color = colors.greenAccent[500]}
+                onMouseOut={({ target }) => target.style.color = colors.grey[100]}>
                 Bitcoin Logarithmic Regression
               </Typography>
               <Box height="350px" m="20px 0 0 0" style={{ margin: "0 0 20px 0" }}>
@@ -154,7 +168,9 @@ const Dashboard = () => {
         <Grid item xs={12} lg={6}>
           <Card style={{backgroundColor: colors.primary[500]}}>
             <CardContent>
-              <Typography variant="h4" gutterBottom component={Link} to="/risk-color" style={{ textDecoration: 'none', color: 'inherit' }}>
+              <Typography variant="h4" gutterBottom component={Link} to="/risk-color" style={{ textDecoration: 'none', color: colors.grey[100] }}
+                onMouseOver={({ target }) => target.style.color = colors.greenAccent[500]}
+                onMouseOut={({ target }) => target.style.color = colors.grey[100]}>
                 Bitcoin Risk Colour Chart
               </Typography>
               <Box height="350px" m="20px 0 0 0" style={{ margin: "0 0 20px 0" }}>
@@ -171,10 +187,12 @@ const Dashboard = () => {
         <Grid item xs={12} lg={6}>
           <Card style={{backgroundColor: colors.primary[500]}}>
             <CardContent>
-              <Typography variant="h4" gutterBottom component={Link} to="/altcoin-price" style={{ textDecoration: 'none', color: 'inherit' }}>
+              <Typography variant="h4" gutterBottom component={Link} to="/altcoin-price" style={{ textDecoration: 'none', color: colors.grey[100] }}
+                onMouseOver={({ target }) => target.style.color = colors.greenAccent[500]}
+                onMouseOut={({ target }) => target.style.color = colors.grey[100]}>
                 Altcoin Chart
               </Typography>
-              <Box height="350px" m="20px 0 0 0" style={{ margin: "0 0 20px 0" }}>
+              <Box height="350px" m="20px 0 0 0" style={{ margin: "10px 0 20px 0" }}>
                 <AltcoinPrice isDashboard={true} />
               </Box>
               <Typography variant="body3" color="textSecondary" className='dashboard-info'>
@@ -188,7 +206,9 @@ const Dashboard = () => {
         <Grid item xs={12} lg={6}>
           <Card style={{backgroundColor: colors.primary[500]}}>
             <CardContent>
-              <Typography variant="h4" gutterBottom component={Link} to="/market-cycles" style={{ textDecoration: 'none', color: 'inherit' }}>
+              <Typography variant="h4" gutterBottom component={Link} to="/market-cycles" style={{ textDecoration: 'none', color: colors.grey[100] }}
+                onMouseOver={({ target }) => target.style.color = colors.greenAccent[500]}
+                onMouseOut={({ target }) => target.style.color = colors.grey[100]}>
                 Bitcoin Market Cycles
               </Typography>
               <Box height="350px" m="20px 0 0 0" style={{ margin: "0 0 20px 0" }}>
@@ -205,7 +225,9 @@ const Dashboard = () => {
         <Grid item xs={12} lg={6}>
           <Card style={{backgroundColor: colors.primary[500]}}>
             <CardContent>
-              <Typography variant="h4" gutterBottom component={Link} to="/fear-and-greed-chart" style={{ textDecoration: 'none', color: 'inherit' }}>
+              <Typography variant="h4" gutterBottom component={Link} to="/fear-and-greed-chart" style={{ textDecoration: 'none', color: colors.grey[100] }}
+                onMouseOver={({ target }) => target.style.color = colors.greenAccent[500]}
+                onMouseOut={({ target }) => target.style.color = colors.grey[100]}>
                 Fear And Greed Colour Chart
               </Typography>
               <Box height="350px" m="20px 0 0 0" style={{ margin: "0 0 20px 0" }}>
