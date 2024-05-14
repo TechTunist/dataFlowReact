@@ -9,6 +9,7 @@ import { CssBaseline, ThemeProvider } from "@mui/material";
 import { ColorModeContext, useMode } from "./theme";
 
 import BitcoinPrice from "./components/BitcoinPrice";
+import BitcoinTransactionFees from "./components/BitcoinTransactionFees";
 import Risk from "./components/BitcoinRisk";
 import EthereumPrice from "./components/EthereumPrice";
 import EthereumRisk from "./components/EthereumRisk";
@@ -51,6 +52,7 @@ function App() {
               <Routes>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/bitcoin" element={<BasicChart ChartComponent={BitcoinPrice} />} />
+                <Route path="/bitcoin-fees" element={<BasicChart ChartComponent={BitcoinTransactionFees} />} />
                 <Route path="/ethereum" element={<BasicChart ChartComponent={EthereumPrice} />} />
                 <Route path="/risk" element={<BasicChart ChartComponent={Risk} />} />
                 <Route path="/risk-eth" element={<BasicChart ChartComponent={EthereumRisk} />} />

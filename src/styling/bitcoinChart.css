@@ -229,18 +229,18 @@ input:checked + .slider:before {
     display: flex;
     justify-content: space-between; /* This will space the links evenly across the container */
     align-items: center; /* This will vertically center the links in the container */
-}
-
-/* CSS for styled links */
-.topbar-link {
+  }
+  
+  /* CSS for styled links */
+  .topbar-link {
     font-size: 1rem; /* Set the font size */
     text-decoration: none; /* Remove the underline */
     padding: 20px;
-}
-
-.topbar-link:hover {
-    color: #1ece61 !important; /* Change color on hover */
-}
+  }
+  
+  .topbar-link:hover {
+    color: violet !important; /* Change color on hover */
+  }
 
 .about-page {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Modern, readable font */
@@ -287,6 +287,12 @@ input:checked + .slider:before {
     height: 30px;
     margin: 20px;
     gap: 10px;
+}
+
+.under-chart {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
 }
 
 

@@ -5,6 +5,7 @@ import { useTheme } from "@mui/material";
 import '../styling/bitcoinChart.css';
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
+import BitcoinFees from './BitcoinTransactionFees';
 
 const MarketCycles = ({ isDashboard = false }) => {
     const theme = useTheme();
@@ -146,9 +147,14 @@ const MarketCycles = ({ isDashboard = false }) => {
                     style={{ width: "100%", height: "100%" }}
                 />
             </div>
-            {!isDashboard && (
-                <LastUpdated storageKey="btcData" />
-            )}
+            <div className='under-chart'>
+                {!isDashboard && (
+                    <LastUpdated storageKey="btcData" />
+                )}
+                {!isDashboard && (
+                    <BitcoinFees />
+                )}
+            </div>
             <div>
                 {
                     !isDashboard && (

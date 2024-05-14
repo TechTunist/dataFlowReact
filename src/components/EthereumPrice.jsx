@@ -362,7 +362,7 @@ const EthereumPrice = ({ isDashboard = false }) => {
                     }}/>
             </div>
             {!isDashboard && (
-                <LastUpdated storageKey="btcData" />
+                <LastUpdated storageKey="ethData" />
             )}
             
             <div style={{

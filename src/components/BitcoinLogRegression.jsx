@@ -6,6 +6,7 @@ import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
+import BitcoinFees from './BitcoinTransactionFees';
 
 const BitcoinLogRegression = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
@@ -396,15 +397,22 @@ const BitcoinLogRegression = ({ isDashboard = false }) => {
                 <div
                     ref={chartContainerRef}
                     style={{ height: '100%', width: '100%', zIndex: 1 }}
-                    onClick={() => {
+                    onDoubleClick={() => {
                         if (!isInteractive && !isDashboard) {  // Only set interactivity if it's currently disabled
+                            setInteractivity();
+                        } else {
                             setInteractivity();
                         }
                     }}/>
             </div>
-            {!isDashboard && (
-                <LastUpdated storageKey="btcData" />
-            )}
+            <div className='under-chart'>
+                {!isDashboard && (
+                    <LastUpdated storageKey="btcData" />
+                )}
+                {!isDashboard && (
+                    <BitcoinFees />
+                )}
+            </div>
             {/* Conditional Rendering for the Tooltip */}
             {!isDashboard && tooltipData && (
                 <div

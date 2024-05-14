@@ -4,12 +4,13 @@ import { ColorModeContext, tokens } from "../../theme";
 import LightModeOutlinedIcon from "@mui/icons-material/LightModeOutlined";
 import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
 import { useLocation } from "react-router-dom";
-import Header from "../../components/Header";
 import { Link } from 'react-router-dom';
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import useIsMobile from '../../hooks/useIsMobile';
-import { BorderColor } from "@mui/icons-material";
-import '../../styling/bitcoinChart.css'
+import '../../styling/bitcoinChart.css';
+import Header from "../../components/Header";
+
 
 const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
   const theme = useTheme();
@@ -18,7 +19,6 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
   const location = useLocation();
   const isMobile = useIsMobile(); // Custom hook to detect mobile devices
   const sidebarWidth = isSidebar ? 270 : 0; // Assuming 250px is your sidebar's width
-  const mobileTopbar = window.innerWidth <= 600; // Check if the viewport width is 600px or less
 
   const topBarStyle = {
     position: 'fixed',
@@ -32,84 +32,71 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
     padding: '0 10px',
     backgroundColor: colors.primary[400],
     zIndex: 1000,
-    width: isMobile ? '100%' : `calc(100% - ${mobileTopbar ? 0 : sidebarWidth}px)`, // Adjust width based on the sidebar and mobile view
-    // borderBottom: '1px',
-    // borderBottomStyle: 'solid',
-    // borderBottomColor: colors.greenAccent[500]
+    width: isMobile ? '100%' : `calc(100% - ${sidebarWidth}px)`, // Adjust width based on the sidebar and mobile view
   };
 
-  // Function to determine the title based on the current location
-  const getTitle = (pathname) => {
+  // Function to determine the title and subtitle based on the current location
+  const getTitleAndSubtitle = (pathname) => {
     switch (pathname) {
       case "/":
-        return <Header title="Dashboard" subtitle="All charts" />;
+        return { title: "Dashboard", subtitle: "All charts" };
       case "/bitcoin":
-        return <Header title="Bitcoin" subtitle="Historical Chart" />;
+        return { title: "Bitcoin", subtitle: "Historical Chart" };
       case "/risk":
-        return <Header title="Bitcoin" subtitle="Risk Metric" />;
+        return { title: "Bitcoin", subtitle: "Risk Metric" };
       case "/ethereum":
-        return <Header title="Ethereum" subtitle="Historical Chart" />;
+        return { title: "Ethereum", subtitle: "Historical Chart" };
       case "/risk-eth":
-        return <Header title="Ethereum" subtitle="Risk Metric" />;
-        case "/pi-cycle":
-          return <Header title="PiCycle Top" subtitle="Top Calling Indicator" />;
-        case "/fear-and-greed":
-          return <Header title="Fear & Greed" subtitle="Market Sentiment" />;
-        case "/logarithmic-regression":
-          return <Header title="Bitcoin" subtitle="Logarithmic Regression" />;
-        case "/risk-color":
-          return <Header title="Bitcoin" subtitle="Price v Risk" />;
-        case "/altcoin-price":
-          return <Header title="Altcoins" subtitle="Altcoin Analysis" />;
-        case "/about":
-          return <Header title="About" subtitle="Why did I create Cryptological?" />;
-        case "/login-signup":
-          return <Header title="Login / Signup" subtitle="Under Construnction" />;
-        case "/market-cycles":
-          return <Header title="Bitcoin Cycles" subtitle="From bear-market low to bull-market high" />;
-        case "/fear-and-greed-chart":
-          return <Header title="Bitcoin Fear and Greed" subtitle="Fear and Greed plootted ovet the Bitcoini Price" />;
+        return { title: "Ethereum", subtitle: "Risk Metric" };
+      case "/pi-cycle":
+        return { title: "PiCycle Top", subtitle: "Top Calling Indicator" };
+      case "/fear-and-greed":
+        return { title: "Fear & Greed", subtitle: "Market Sentiment" };
+      case "/logarithmic-regression":
+        return { title: "Bitcoin", subtitle: "Logarithmic Regression" };
+      case "/risk-color":
+        return { title: "Bitcoin", subtitle: "Price v Risk" };
+      case "/altcoin-price":
+        return { title: "Altcoins", subtitle: "Altcoin Analysis" };
+      case "/about":
+        return { title: "About", subtitle: "Why did I create Cryptological?" };
+      case "/login-signup":
+        return { title: "Login / Signup", subtitle: "Under Construction" };
+      case "/market-cycles":
+        return { title: "Bitcoin Cycles", subtitle: "From bear-market low to bull-market high" };
+      case "/fear-and-greed-chart":
+        return { title: "Bitcoin Fear and Greed", subtitle: "Fear and Greed plotted over the Bitcoin Price" };
       default:
-        return "Welcome"; // Default title or could be a 404 page title
+        return { title: "Welcome", subtitle: "" }; // Default title or could be a 404 page title
     }
   };
 
+  const { title, subtitle } = getTitleAndSubtitle(location.pathname);
+
   return (
     <Box style={topBarStyle}>
-      <Typography variant="h6" color="inherit">
-        {getTitle(location.pathname)} {/* Set the dynamic title based on the route */}
-      </Typography>
-      {isMobile && (
-                <Link to="/">
-                <IconButton aria-label="home" className="home-button">
-                    <HomeOutlinedIcon />
-                </IconButton>
-                </Link>
-      )}
-      <div className='topbar-links'>
-        {/* <Link to="/login-signup" className="topbar-link">
-          <div className="topbar-link" style={{color: colors.primary[100]}}>Login</div>
-        </Link> */}
-        <Link to="/about" className="topbar-link">
-          <div className="topbar-link" style={{color: colors.primary[100]}}>About</div>
+      <Box display="flex" alignItems="center">
+        <Link to="/about">
+          <IconButton aria-label="about" className="about-button">
+            <InfoOutlinedIcon style={{ color: colors.primary[100] }} />
+          </IconButton>
         </Link>
+      </Box>
+      <div style={{ flexGrow: 1, textAlign: 'center' }}>
+        <Header title={title} subtitle={subtitle} /> {/* Use Header component for title and subtitle */}
       </div>
-
-        {
-            isDashboardTopbar && (
-              <IconButton onClick={colorMode.toggleColorMode} color="inherit">
-                {theme.palette.mode === "dark" ? <LightModeOutlinedIcon /> : <DarkModeOutlinedIcon />}
-              </IconButton>
-            )   
-        }
-        {
-            !isDashboardTopbar && (
-              <div>
-                {/* placeholder for styling */}
-              </div>
-            )   
-        }
-      
+      <Box display="flex" alignItems="center">
+        {isMobile && (
+          <Link to="/">
+            <IconButton aria-label="home" className="home-button">
+              <HomeOutlinedIcon style={{ color: colors.primary[100] }} />
+            </IconButton>
+          </Link>
+        )}
+        <IconButton onClick={colorMode.toggleColorMode} color="inherit">
+          {theme.palette.mode === "dark" ? <LightModeOutlinedIcon /> : <DarkModeOutlinedIcon />}
+        </IconButton>
+      </Box>
     </Box>
   );
 };

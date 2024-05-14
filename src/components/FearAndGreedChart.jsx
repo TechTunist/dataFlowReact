@@ -4,6 +4,7 @@ import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
 import '../styling/bitcoinChart.css';
 import LastUpdated from '../hooks/LastUpdated';
+import BitcoinFees from './BitcoinTransactionFees';
 
 const FearAndGreedChart = ({ isDashboard = false }) => {
     const theme = useTheme();
@@ -171,9 +172,14 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
                 />
                     
             </div>
-            {!isDashboard && (
-                <LastUpdated storageKey="btcData" />
-            )}
+            <div className='under-chart'>
+                {!isDashboard && (
+                    <LastUpdated storageKey="btcData" />
+                )}
+                {!isDashboard && (
+                    <BitcoinFees />
+                )}
+            </div>
             <div>
             {
             !isDashboard && (

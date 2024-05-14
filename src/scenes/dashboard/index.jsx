@@ -25,7 +25,7 @@ const Dashboard = () => {
       <Grid container spacing={4}>
         
         {/* Bitcoin Price Card */}
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} lg={6}>
           <Card style={{backgroundColor: colors.primary[500]}}>
             <CardContent>
               <Typography variant="h4" gutterBottom component={Link} to="/bitcoin" style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -43,7 +43,7 @@ const Dashboard = () => {
         </Grid>
 
         {/* Bitcoin Risk Metric Card */}
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} lg={6}>
           <Card style={{backgroundColor: colors.primary[500]}}>
             <CardContent>
               <Typography variant="h4" gutterBottom component={Link} to="/risk" style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -64,7 +64,7 @@ const Dashboard = () => {
 
 
         {/* Ethereum Price Card */}
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} lg={6}>
           <Card style={{backgroundColor: colors.primary[500]}}>
             <CardContent>
               <Typography variant="h4" gutterBottom component={Link} to="/ethereum" style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -81,7 +81,7 @@ const Dashboard = () => {
         </Grid>
 
         {/* Ethereum Risk Metric Card */}
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} lg={6}>
           <Card style={{backgroundColor: colors.primary[500]}}>
             <CardContent>
               <Typography variant="h4" gutterBottom component={Link} to="/risk-eth" style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -99,7 +99,7 @@ const Dashboard = () => {
         </Grid>
 
         {/* PiCycle Card */}
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} lg={6}>
           <Card style={{backgroundColor: colors.primary[500]}}>
             <CardContent>
               <Typography variant="h4" gutterBottom component={Link} to="/pi-cycle" style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -116,7 +116,7 @@ const Dashboard = () => {
         </Grid>
 
         {/* Fear and Greed Card */}
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} lg={6}>
           <Card style={{backgroundColor: colors.primary[500]}}>
             <CardContent>
               <Typography variant="h4" gutterBottom component={Link} to="/fear-and-greed" style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -133,7 +133,7 @@ const Dashboard = () => {
         </Grid>
 
         {/* Bitcoin Log Regression Card */}
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} lg={6}>
           <Card style={{backgroundColor: colors.primary[500]}}>
             <CardContent>
               <Typography variant="h4" gutterBottom component={Link} to="/logarithmic-regression" style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -151,7 +151,7 @@ const Dashboard = () => {
         </Grid>
 
         {/* Bitcoin Risk Colour Card */}
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} lg={6}>
           <Card style={{backgroundColor: colors.primary[500]}}>
             <CardContent>
               <Typography variant="h4" gutterBottom component={Link} to="/risk-color" style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -168,7 +168,7 @@ const Dashboard = () => {
         </Grid>
 
         {/* Altcoin Colour Card */}
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} lg={6}>
           <Card style={{backgroundColor: colors.primary[500]}}>
             <CardContent>
               <Typography variant="h4" gutterBottom component={Link} to="/altcoin-price" style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -185,7 +185,7 @@ const Dashboard = () => {
         </Grid>
 
         {/* Market Cycles Card */}
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} lg={6}>
           <Card style={{backgroundColor: colors.primary[500]}}>
             <CardContent>
               <Typography variant="h4" gutterBottom component={Link} to="/market-cycles" style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -202,7 +202,7 @@ const Dashboard = () => {
         </Grid>
 
         {/* Fear And Greed Chart Card */}
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} lg={6}>
           <Card style={{backgroundColor: colors.primary[500]}}>
             <CardContent>
               <Typography variant="h4" gutterBottom component={Link} to="/fear-and-greed-chart" style={{ textDecoration: 'none', color: 'inherit' }}>

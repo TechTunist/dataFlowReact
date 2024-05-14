@@ -4,6 +4,7 @@ import '../styling/bitcoinChart.css'
 import { useTheme } from '@mui/material';
 import { tokens } from '../theme';
 import LastUpdated from '../hooks/LastUpdated';
+import BitcoinFees from './BitcoinTransactionFees';
 
 
 const PiCycleTopChart = ({ isDashboard = false }) => {
@@ -327,9 +328,14 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
                     }}
                     />
             </div>
-            {!isDashboard && (
-                <LastUpdated storageKey="btcData" />
-            )}
+            <div className='under-chart'>
+                {!isDashboard && (
+                    <LastUpdated storageKey="btcData" />
+                )}
+                {!isDashboard && (
+                    <BitcoinFees />
+                )}
+            </div>
             <div>
                 {
                     !isDashboard && (
