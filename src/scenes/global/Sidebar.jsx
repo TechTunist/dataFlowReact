@@ -64,7 +64,7 @@ const Sidebar = () => {
     { title: "Fear And Greed Indicator", to: "/fear-and-greed", category: 'Indicators', icon: <NetworkCheckIcon />, categoryIcon: <CategoryIcon /> },
     { title: "Bitcoin Logarithmic Regression", to: "/logarithmic-regression", category: 'Indicators', icon: <TrendingUpIcon />, categoryIcon: <CategoryIcon /> },
     { title: "Bitcoin Risk Colour Chart", to: "/risk-color", category: 'Bitcoin', icon: <PaletteIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
-    { title: "Altcoin Chart", to: "/altcoin-price", category: 'Altcoins', icon: <CurrencyExchangeIcon />, categoryIcon: <WarningOutlinedIcon /> },
+    { title: "Altcoin Chart", to: "/altcoin-price", category: 'Altcoins', icon: <ShowChartIcon />, categoryIcon: <WarningOutlinedIcon /> },
     { title: "Market Cycles", to: "/market-cycles", category: 'Bitcoin', icon: <RepeatIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
     { title: "Fear and Greed Chart", to: "/fear-and-greed-chart", category: 'Indicators', icon: <BalanceIcon />, categoryIcon: <CategoryIcon /> },
   ];
