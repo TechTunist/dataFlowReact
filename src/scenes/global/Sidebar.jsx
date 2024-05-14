@@ -16,16 +16,16 @@ import DashboardIcon from "@mui/icons-material/Dashboard";
 import ShowChartIcon from "@mui/icons-material/ShowChart";
 import AssessmentIcon from "@mui/icons-material/Assessment";
 import TimelineIcon from "@mui/icons-material/Timeline";
-import SentimentVeryDissatisfiedIcon from "@mui/icons-material/SentimentVeryDissatisfied";
+import NetworkCheckIcon from "@mui/icons-material/NetworkCheck";
 import SentimentVerySatisfiedIcon from "@mui/icons-material/SentimentVerySatisfied";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import PaletteIcon from "@mui/icons-material/Palette";
 import MultilineChartIcon from "@mui/icons-material/MultilineChart";
 import RepeatIcon from "@mui/icons-material/Repeat";
-import PsychologyIcon from "@mui/icons-material/Psychology";
-import BubbleChartIcon from '@mui/icons-material/BubbleChart';
+import BalanceIcon from "@mui/icons-material/Balance";
+import CurrencyExchangeIcon from '@mui/icons-material/CurrencyExchange';
 
-import DiamondOutlinedIcon from "@mui/icons-material/DiamondOutlined"; // Check if this exists or find the closest match.
+import FitbitIcon from "@mui/icons-material/Fitbit"; // Check if this exists or find the closest match.
 import CategoryIcon from "@mui/icons-material/Category";  // Generic icon for other categories.
 
 
@@ -58,15 +58,15 @@ const Sidebar = () => {
     { title: "Dashboard", to: "/", icon: <DashboardIcon />, category: null },
     { title: "Bitcoin Chart", to: "/bitcoin", category: 'Bitcoin', icon: <ShowChartIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
     { title: "Bitcoin Risk Metric", to: "/risk", category: 'Bitcoin', icon: <AssessmentIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
-    { title: "Ethereum Chart", to: "/ethereum", category: 'Ethereum', icon: <ShowChartIcon />, categoryIcon: <DiamondOutlinedIcon /> },
-    { title: "Ethereum Risk Metric", to: "/risk-eth", category: 'Ethereum', icon: <AssessmentIcon />, categoryIcon: <DiamondOutlinedIcon /> },
+    { title: "Ethereum Chart", to: "/ethereum", category: 'Ethereum', icon: <ShowChartIcon />, categoryIcon: <FitbitIcon /> },
+    { title: "Ethereum Risk Metric", to: "/risk-eth", category: 'Ethereum', icon: <AssessmentIcon />, categoryIcon: <FitbitIcon /> },
     { title: "PiCycleTop Indicator", to: "/pi-cycle", category: 'Indicators', icon: <TimelineIcon />, categoryIcon: <CategoryIcon /> },
-    { title: "Fear And Greed Indicator", to: "/fear-and-greed", category: 'Indicators', icon: <SentimentVeryDissatisfiedIcon />, categoryIcon: <CategoryIcon /> },
+    { title: "Fear And Greed Indicator", to: "/fear-and-greed", category: 'Indicators', icon: <NetworkCheckIcon />, categoryIcon: <CategoryIcon /> },
     { title: "Bitcoin Logarithmic Regression", to: "/logarithmic-regression", category: 'Indicators', icon: <TrendingUpIcon />, categoryIcon: <CategoryIcon /> },
     { title: "Bitcoin Risk Colour Chart", to: "/risk-color", category: 'Bitcoin', icon: <PaletteIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
-    { title: "Altcoin Chart", to: "/altcoin-price", category: 'Altcoins', icon: <BubbleChartIcon />, categoryIcon: <WarningOutlinedIcon /> },
+    { title: "Altcoin Chart", to: "/altcoin-price", category: 'Altcoins', icon: <CurrencyExchangeIcon />, categoryIcon: <WarningOutlinedIcon /> },
     { title: "Market Cycles", to: "/market-cycles", category: 'Bitcoin', icon: <RepeatIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
-    { title: "Fear and Greed Chart", to: "/fear-and-greed-chart", category: 'Indicators', icon: <PsychologyIcon />, categoryIcon: <CategoryIcon /> },
+    { title: "Fear and Greed Chart", to: "/fear-and-greed-chart", category: 'Indicators', icon: <BalanceIcon />, categoryIcon: <CategoryIcon /> },
   ];
   
 

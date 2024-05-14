@@ -463,8 +463,10 @@ const AltcoinPrice = ({ isDashboard = false }) => {
                     width: '100%', 
                     border: '2px solid #a9a9a9' // Adds dark border with your specified color
                     }}
-                    onClick={() => {
-                        if (!isInteractive && !isDashboard) {  // Only set interactivity if it's currently disabled
+                    onDoubleClick={() => {
+                        if (!isInteractive && !isDashboard) {  
+                            setInteractivity();
+                        } else {
                             setInteractivity();
                         }
                     }}>                

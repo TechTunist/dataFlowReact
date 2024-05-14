@@ -25,7 +25,7 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
     top: 0,
     left: isMobile ? 0 : sidebarWidth, // Adjust left position based on mobile view
     right: 0,
-    height: '85px',
+    height: isMobile ? '65px' : '85px',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',

@@ -355,8 +355,10 @@ const EthereumPrice = ({ isDashboard = false }) => {
                     }}> 
                 <div ref={chartContainerRef}
                     style={{ height: '100%', width: '100%', zIndex: 1 }}
-                    onClick={() => {
-                        if (!isInteractive && !isDashboard) {  // Only set interactivity if it's currently disabled
+                    onDoubleClick={() => {
+                        if (!isInteractive && !isDashboard) {  
+                            setInteractivity();
+                        } else {
                             setInteractivity();
                         }
                     }}/>

@@ -321,8 +321,10 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
                 <div
                     ref={chartContainerRef}
                     style={{ height: '100%', width: '100%', zIndex: 1 }}
-                    onClick={() => {
-                        if (!isInteractive && !isDashboard) {  // Check if interactivity is off and not on dashboard
+                    onDoubleClick={() => {
+                        if (!isInteractive && !isDashboard) {  
+                            setInteractivity();
+                        } else {
                             setInteractivity();
                         }
                     }}

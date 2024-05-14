@@ -78,7 +78,7 @@ const BitcoinFees = () => {
 
     return (
         <div>
-            <p style={{ color: colors.greenAccent[500]}}>BTC Transaction Fee: ~${averageFee.toFixed(2)}</p>
+            <p style={{ marginBottom: '0', color: colors.greenAccent[500]}}>BTC Transaction Fee: ~${averageFee.toFixed(2)}</p>
         </div>
     );
 };
