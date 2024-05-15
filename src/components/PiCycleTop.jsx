@@ -277,41 +277,44 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
 
     return (
         <div style={{ height: '100%' }}>
-            <div className='chart-top-div'>
-                <div>
-                    {/* Button to toggle markers */}
-                    {
-                        !isDashboard && (
-                        <button onClick={toggleMarkers} className="button-reset">
-                                    {showMarkers ? 'Hide Markers' : 'Show Markers'}
-                        </button>)
-                        
-                    }
+            {!isDashboard && (
+                <div className='chart-top-div'>
+                    <div>
+                        {/* Button to toggle markers */}
+                        {
+                            !isDashboard && (
+                            <button onClick={toggleMarkers} className="button-reset">
+                                        {showMarkers ? 'Hide Markers' : 'Show Markers'}
+                            </button>)
+                            
+                        }
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end'}}>
+                        {
+                            !isDashboard && (
+                                <button
+                                    onClick={setInteractivity}
+                                    className="button-reset"
+                                    style={{
+                                        backgroundColor: isInteractive ? '#4cceac' : 'transparent',
+                                        color: isInteractive ? 'black' : '#31d6aa',
+                                        borderColor: isInteractive ? 'violet' : '#70d8bd'
+                                    }}>
+                                    {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
+                                </button>
+                            )   
+                        }
+                        {
+                            !isDashboard && (
+                                <button onClick={resetChartView} className="button-reset extra-margin">
+                                    Reset Chart
+                                </button>
+                            )   
+                        }
+                    </div>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'flex-end'}}>
-                    {
-                        !isDashboard && (
-                            <button
-                                onClick={setInteractivity}
-                                className="button-reset"
-                                style={{
-                                    backgroundColor: isInteractive ? '#4cceac' : 'transparent',
-                                    color: isInteractive ? 'black' : '#31d6aa',
-                                    borderColor: isInteractive ? 'violet' : '#70d8bd'
-                                }}>
-                                {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
-                            </button>
-                        )   
-                    }
-                    {
-                        !isDashboard && (
-                            <button onClick={resetChartView} className="button-reset extra-margin">
-                                Reset Chart
-                            </button>
-                        )   
-                    }
-                </div>
-            </div>
+            )}
+            
             <div className="chart-container" style={{ 
                     position: 'relative', 
                     height: 'calc(100% - 40px)', 

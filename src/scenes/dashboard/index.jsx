@@ -26,20 +26,19 @@ const Dashboard = () => {
         
         {/* Bitcoin Price Card */}
         <Grid item xs={12} lg={6}>
-          <Card style={{backgroundColor: colors.primary[500]}} >
+          <Card style={{ backgroundColor: colors.primary[500] }}>
             <CardContent>
               <Typography variant="h4" gutterBottom component={Link} to="/bitcoin" style={{ textDecoration: 'none', color: colors.grey[100] }}
                 onMouseOver={({ target }) => target.style.color = colors.greenAccent[500]}
                 onMouseOut={({ target }) => target.style.color = colors.grey[100]}>
                 Bitcoin Historical Price
               </Typography>
-              <Box height="350px" m="20px 0 0 0" style={{ margin: "0 0 20px 0" }}>
+              <Box height="400px" m="10px 0 0 0">
                 <BitcoinPrice isDashboard={true} />
               </Box>
               <Typography variant="body3" color="textSecondary" className='dashboard-info'>
                 A simple chart of the entire bitcoin daily close price history.
               </Typography>
-
             </CardContent>
           </Card>
         </Grid>
@@ -53,7 +52,7 @@ const Dashboard = () => {
                 onMouseOut={({ target }) => target.style.color = colors.grey[100]}>
                 Bitcoin Risk Metric
               </Typography>
-              <Box height="350px" m="20px 0 20px 0" style={{ margin: "20px 0 10px 0" }}>
+              <Box height="400px" m="10px 0 0 0">
                 <BitcoinRisk isDashboard={true} />
               </Box>
               <Typography
@@ -76,7 +75,7 @@ const Dashboard = () => {
                 onMouseOut={({ target }) => target.style.color = colors.grey[100]}>
                 Ethereum Historical Price
               </Typography>
-              <Box height="350px" m="20px 0 20px 0">
+              <Box height="400px" m="10px 0 0 0">
                 <EthereumPrice isDashboard={true} />
               </Box>
               <Typography variant="body3" color="textSecondary" className='dashboard-info'>
@@ -95,11 +94,11 @@ const Dashboard = () => {
                 onMouseOut={({ target }) => target.style.color = colors.grey[100]}>
                 Ethereum Risk Metric
               </Typography>
-              <Box height="350px" m="20px 0 20px 0">
+              <Box height="400px" m="10px 0 0 0">
                 <EthereumRisk isDashboard={true} />
               </Box>
               <Typography variant="body3" color="textSecondary" className='dashboard-info'>
-                The risk metric demonstrates the risk of holding Ethereum at any given time.
+                The risk metric demonstrates the risk of holding Eth at any given time.
                 The closer to 1, the higher the risk.
               </Typography>
             </CardContent>
@@ -115,7 +114,7 @@ const Dashboard = () => {
                 onMouseOut={({ target }) => target.style.color = colors.grey[100]}>
                 PiCycle Top Indicator
               </Typography>
-              <Box height="350px" m="20px 0 0 0" style={{ margin: "0 0 20px 0" }}>
+              <Box height="400px" m="10px 0 0 0">
                 <PiCycleTop isDashboard={true} />
               </Box>
               <Typography variant="body3" color="textSecondary" className='dashboard-info'>
@@ -134,7 +133,7 @@ const Dashboard = () => {
                 onMouseOut={({ target }) => target.style.color = colors.grey[100]}>
                 Fear and Greed Indicator
               </Typography>
-              <Box height="350px" m="20px 0 0 0" style={{ margin: "0 0 20px 0" }}>
+              <Box height="400px" m="10px 0 0 0">
                 <FearandGreed isDashboard={true} />
               </Box>
               <Typography variant="body3" color="textSecondary" className='dashboard-info'>
@@ -153,7 +152,7 @@ const Dashboard = () => {
                 onMouseOut={({ target }) => target.style.color = colors.grey[100]}>
                 Bitcoin Logarithmic Regression
               </Typography>
-              <Box height="350px" m="20px 0 0 0" style={{ margin: "0 0 20px 0" }}>
+              <Box height="400px" m="10px 0 0 0">
                 <BitcoinLogRegression isDashboard={true} />
               </Box>
               <Typography variant="body3" color="textSecondary" className='dashboard-info'>
@@ -173,7 +172,7 @@ const Dashboard = () => {
                 onMouseOut={({ target }) => target.style.color = colors.grey[100]}>
                 Bitcoin Risk Colour Chart
               </Typography>
-              <Box height="350px" m="20px 0 0 0" style={{ margin: "0 0 20px 0" }}>
+              <Box height="400px" m="10px 0 0 0">
                 <BitcoinRiskColor isDashboard={true} />
               </Box>
               <Typography variant="body3" color="textSecondary" className='dashboard-info'>
@@ -190,9 +189,9 @@ const Dashboard = () => {
               <Typography variant="h4" gutterBottom component={Link} to="/altcoin-price" style={{ textDecoration: 'none', color: colors.grey[100] }}
                 onMouseOver={({ target }) => target.style.color = colors.greenAccent[500]}
                 onMouseOut={({ target }) => target.style.color = colors.grey[100]}>
-                Altcoin Chart
+                Altcoin Charts
               </Typography>
-              <Box height="350px" m="20px 0 0 0" style={{ margin: "10px 0 20px 0" }}>
+              <Box height="400px" m="10px 0 0 0">
                 <AltcoinPrice isDashboard={true} />
               </Box>
               <Typography variant="body3" color="textSecondary" className='dashboard-info'>
@@ -211,7 +210,7 @@ const Dashboard = () => {
                 onMouseOut={({ target }) => target.style.color = colors.grey[100]}>
                 Bitcoin Market Cycles
               </Typography>
-              <Box height="350px" m="20px 0 0 0" style={{ margin: "0 0 20px 0" }}>
+              <Box height="400px" m="10px 0 0 0">
                 <MarketCycles isDashboard={true} />
               </Box>
               <Typography variant="body3" color="textSecondary" className='dashboard-info'>
@@ -230,7 +229,7 @@ const Dashboard = () => {
                 onMouseOut={({ target }) => target.style.color = colors.grey[100]}>
                 Fear And Greed Colour Chart
               </Typography>
-              <Box height="350px" m="20px 0 0 0" style={{ margin: "0 0 20px 0" }}>
+              <Box height="400px" m="10px 0 0 0">
                 <FearAndGreedChart isDashboard={true} />
               </Box>
               <Typography variant="body3" color="textSecondary" className='dashboard-info'>

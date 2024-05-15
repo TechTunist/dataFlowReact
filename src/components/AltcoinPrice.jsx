@@ -424,8 +424,10 @@ const AltcoinPrice = ({ isDashboard = false }) => {
 
     return (
         <div style={{ height: '100%' }}>
-            <div className='chart-top-div'>
-                <div>
+            {!isDashboard && (
+                <div className='chart-top-div'>
+                {!isDashboard && (
+                    <div>
                     {/* The switch and label go here */}
                     <label className="switch">
                         <input type="checkbox" checked={scaleMode === 1} onChange={toggleScaleMode} />
@@ -433,6 +435,8 @@ const AltcoinPrice = ({ isDashboard = false }) => {
                     </label>
                     <span className="scale-mode-label" style={{color: colors.primary[100]}}>{scaleMode === 1 ? 'Logarithmic' : 'Linear'}</span>
                 </div>
+                )}
+                
                 <div style={{ display: 'flex', justifyContent: 'flex-end'}}>
                     {
                         !isDashboard && (
@@ -457,6 +461,8 @@ const AltcoinPrice = ({ isDashboard = false }) => {
                     }
                 </div>              
             </div>
+            )}
+            
             <div className="chart-container" style={{ 
                     position: 'relative', 
                     height: 'calc(100% - 40px)', 
@@ -600,10 +606,17 @@ const AltcoinPrice = ({ isDashboard = false }) => {
                 !isDashboard && (
                     <p className='chart-info'>
                         The altcoin market is the wild-west of the crypto world. This asset class faces regulatory uncertainty, scams perpetuated by bad actors,
-                        extreme volatility and the tendancy to lose anywhere between 70-99% of a token's value in a bear market. There is however a potential upside
-                        far greater than that of traditional markets and Bitcoin, under certain economic conditions. Since Bitcoin is the lowest risk crypto asset,
-                        it makes sense to value these altcoins against not only their USD pair, but also their BTC pair. If the altcoin is underperforming against BTC, 
-                        it makes no sense to hold the far riskier asset. This chart allows you to compare the performance of various altcoins against Bitcoin.
+                        extreme volatility and the tendancy to lose anywhere between 70-99% of a token's value in a bear market, with no guarantee that the price will ever recover.
+                        There is however a core of projects that are being driven by some talented and respected developers and technologists that are implementing
+                        smart-contract functionality (permissionless and immutable executable code that is deployed on the blockchain) and are genuinely attempting
+                        to build the next generation of the internet through distributed ledger blockchain technology. These crypto assets are used to drive the
+                        functionality and security of their respective blockchain.
+                        
+                        These projects are far riskier, but during certain phases of the business cycle (severe drops in biticoin dominance paired with looser monitary polcy)
+                        they have historically offered far greater returns than that of traditional markets and the 2 crypto blue-chips; Bitcoin & Ethereum.
+                        Since Bitcoin is the lowest risk crypto asset, it makes sense to value these altcoins against not only their USD pair, but also their BTC pair.
+                        If the altcoin is underperforming against BTC, it makes no sense to hold the far riskier asset.
+                        This chart allows you to compare the performance of various altcoins against Bitcoin.
                     </p>
                 )   
             }

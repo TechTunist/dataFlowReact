@@ -315,15 +315,18 @@ const BitcoinPrice = ({ isDashboard = false }) => {
 
     return (
         <div style={{ height: '100%' }}>
-            <div className='chart-top-div'>
-                <div>
-                    {/* The switch and label go here */}
-                    <label className="switch">
-                        <input type="checkbox" checked={scaleMode === 1} onChange={toggleScaleMode} />
-                        <span className="slider round"></span>
-                    </label>
-                    <span className="scale-mode-label" style={{color: colors.primary[100]}}>{scaleMode === 1 ? 'Logarithmic' : 'Linear'}</span>
-                </div>
+            {!isDashboard && (
+                <div className='chart-top-div'>
+                {!isDashboard && (
+                        <div>
+                        {/* The switch and label go here */}
+                        <label className="switch">
+                            <input type="checkbox" checked={scaleMode === 1} onChange={toggleScaleMode} />
+                            <span className="slider round"></span>
+                        </label>
+                        <span className="scale-mode-label" style={{color: colors.primary[100]}}>{scaleMode === 1 ? 'Logarithmic' : 'Linear'}</span>
+                    </div>
+                    )}
                 <div style={{ display: 'flex', justifyContent: 'flex-end'}}>
                     {
                         !isDashboard && (
@@ -348,6 +351,8 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                     }
                 </div>              
             </div>
+            )}
+            
             <div className="chart-container" style={{ 
                     position: 'relative', 
                     height: 'calc(100% - 40px)', 
@@ -363,6 +368,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                     }}>                
                 <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
             </div>
+        
             <div className='under-chart'>
                 {!isDashboard && (
                     <LastUpdated storageKey="btcData" />
@@ -372,65 +378,68 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                 )}
             </div>
             
-            <div style={{
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                marginBottom: '20px',
-                height: 'auto',
-                flexWrap: 'wrap',
-                gap: '10px 20px',
-                padding: '10px'
-            }}>
-                {!isDashboard && (
-                        <div className="sma-toggles">
-                            <button style={{
-                                marginTop: '10px',
-                                width: '150px',
-                                minWidth: '150px',
-                                backgroundColor: show8Week ? '#4cceac' : 'transparent',
-                                color: show8Week ? color8Week : '#00b685',
-                                borderColor: show8Week ? color8Week : '#70d8bd'
-                            }}
-                         onClick={toggle8Week} className="button-reset">
-                                8 Week SMA
-                            </button>
-                            <button style={{
-                                marginTop: '10px',
-                                width: '150px',
-                                minWidth: '150px',
-                                backgroundColor: show20Week ? '#4cceac' : 'transparent',
-                                color: show20Week ? 'green' : '#00b685',
-                                borderColor: show20Week ? color20Week : '#70d8bd'
-                            }}
-                             onClick={toggle20Week} className="button-reset">
-                                20 Week SMA
-                            </button>
-                            <button style={{
-                                marginTop: '10px',
-                                width: '150px',
-                                minWidth: '150px',
-                                backgroundColor: show100Week ? '#4cceac' : 'transparent',
-                                color: show100Week ? color100Week : '#00b685',
-                                borderColor: show100Week ? color100Week : '#70d8bd'
-                            }}
-                             onClick={toggle100Week} className="button-reset">
-                                100 Week SMA
-                            </button>
-                            <button style={{
-                                marginTop: '10px',
-                                width: '150px',
-                                minWidth: '150px',
-                                backgroundColor: show200Week ? '#4cceac' : 'transparent',
-                                color: show200Week ? color200Week : '#00b685',
-                                borderColor: show200Week ? color200Week : '#70d8bd'
-                            }}
-                             onClick={toggle200Week} className="button-reset">
-                                200 Week SMA
-                            </button>
-                        </div>
-                    )}
-            </div>
+            {!isDashboard && (
+                <div style={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    marginBottom: '20px',
+                    height: 'auto',
+                    flexWrap: 'wrap',
+                    gap: '10px 20px',
+                    padding: '10px'
+                }}>
+                    {!isDashboard && (
+                            <div className="sma-toggles">
+                                <button style={{
+                                    marginTop: '10px',
+                                    width: '150px',
+                                    minWidth: '150px',
+                                    backgroundColor: show8Week ? '#4cceac' : 'transparent',
+                                    color: show8Week ? color8Week : '#00b685',
+                                    borderColor: show8Week ? color8Week : '#70d8bd'
+                                }}
+                             onClick={toggle8Week} className="button-reset">
+                                    8 Week SMA
+                                </button>
+                                <button style={{
+                                    marginTop: '10px',
+                                    width: '150px',
+                                    minWidth: '150px',
+                                    backgroundColor: show20Week ? '#4cceac' : 'transparent',
+                                    color: show20Week ? 'green' : '#00b685',
+                                    borderColor: show20Week ? color20Week : '#70d8bd'
+                                }}
+                                 onClick={toggle20Week} className="button-reset">
+                                    20 Week SMA
+                                </button>
+                                <button style={{
+                                    marginTop: '10px',
+                                    width: '150px',
+                                    minWidth: '150px',
+                                    backgroundColor: show100Week ? '#4cceac' : 'transparent',
+                                    color: show100Week ? color100Week : '#00b685',
+                                    borderColor: show100Week ? color100Week : '#70d8bd'
+                                }}
+                                 onClick={toggle100Week} className="button-reset">
+                                    100 Week SMA
+                                </button>
+                                <button style={{
+                                    marginTop: '10px',
+                                    width: '150px',
+                                    minWidth: '150px',
+                                    backgroundColor: show200Week ? '#4cceac' : 'transparent',
+                                    color: show200Week ? color200Week : '#00b685',
+                                    borderColor: show200Week ? color200Week : '#70d8bd'
+                                }}
+                                 onClick={toggle200Week} className="button-reset">
+                                    200 Week SMA
+                                </button>
+                            </div>
+                        )}
+                </div>
+            )}
+            
                     
             {!isDashboard && tooltipData && (
                 <div

@@ -449,42 +449,48 @@ const BitcoinRisk = ({ isDashboard = false }) => {
     
     return (
         <div style={{ height: '100%' }}> {/* Set a specific height for the entire container */}
+        {!isDashboard && (
             <div className='chart-top-div'>
+            {!isDashboard && (
                 <div className='span-container'>
-                    <span style={{ marginRight: '20px', display: 'inline-block' }}>
-                        <span style={{ backgroundColor: 'gray', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
-                        Bitcoin Price
-                    </span>
-                    <span style={{ display: 'inline-block' }}>
-                        <span style={{ backgroundColor: '#ff0062', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
-                        Risk Metric
-                    </span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'flex-end'}}>
-                    {
-                        !isDashboard && (
-                            <button
-                                onClick={setInteractivity}
-                                className="button-reset"
-                                style={{
-                                    backgroundColor: isInteractive ? '#4cceac' : 'transparent',
-                                    color: isInteractive ? 'black' : '#31d6aa',
-                                    borderColor: isInteractive ? 'violet' : '#70d8bd'
-                                }}>
-                                {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
-                            </button>
-                        )   
-                    }
-                    {
-                        !isDashboard && (
-                            <button onClick={resetChartView} className="button-reset extra-margin">
-                                Reset Chart
-                            </button>
-                        )   
-                    }
-                </div>
-                
+                <span style={{ marginRight: '20px', display: 'inline-block' }}>
+                    <span style={{ backgroundColor: 'gray', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
+                    Bitcoin Price
+                </span>
+                <span style={{ display: 'inline-block' }}>
+                    <span style={{ backgroundColor: '#ff0062', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
+                    Risk Metric
+                </span>
             </div>
+            )}
+            
+            <div style={{ display: 'flex', justifyContent: 'flex-end'}}>
+                {
+                    !isDashboard && (
+                        <button
+                            onClick={setInteractivity}
+                            className="button-reset"
+                            style={{
+                                backgroundColor: isInteractive ? '#4cceac' : 'transparent',
+                                color: isInteractive ? 'black' : '#31d6aa',
+                                borderColor: isInteractive ? 'violet' : '#70d8bd'
+                            }}>
+                            {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
+                        </button>
+                    )   
+                }
+                {
+                    !isDashboard && (
+                        <button onClick={resetChartView} className="button-reset extra-margin">
+                            Reset Chart
+                        </button>
+                    )   
+                }
+            </div>
+            
+        </div>
+        )}
+            
             <div className="chart-container" style={{ 
                     position: 'relative', 
                     height: 'calc(100% - 40px)', 
@@ -511,7 +517,8 @@ const BitcoinRisk = ({ isDashboard = false }) => {
                     <BitcoinFees />
                 )}
             </div>
-            <div>
+            {!isDashboard && (
+                <div>
                 {
                     !isDashboard && (
                         <div style={{ display: 'inline-block', marginTop: '10px', fontSize: '1.2rem'}}>
@@ -545,159 +552,158 @@ const BitcoinRisk = ({ isDashboard = false }) => {
                         }
                     </div>
                     <div>
-    {
-    !isDashboard && (
-        <div className='risk-simulator results-display' style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '10px', padding: '20px', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
-            <h2>DCA Risk Based Accumulation and Exit Strategy Simulation</h2>
-            <p>Backtest simple buying and selling DCA strategies based on the risk level.</p>
-            <ol>
-                <li>Choose a start date to begin the test from.</li>
-                <li>Choose an amount you would like to DCA.</li>
-                <li>Choose a frequency (weekly, bi-weekly, or monthly) to make purchases and sales of your Bitcoin.</li>
-                <li>Choose a risk level under which you are happy to accumulate Bitcoin.</li>
-            </ol>
+                        {!isDashboard && (
+                            <div className='risk-simulator results-display' style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '10px', padding: '20px', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
+                                <h2>DCA Risk Based Accumulation and Exit Strategy Simulation</h2>
+                                <p>Backtest simple buying and selling DCA strategies based on the risk level.</p>
+                                <ol>
+                                    <li>Choose a start date to begin the test from.</li>
+                                    <li>Choose an amount you would like to DCA.</li>
+                                    <li>Choose a frequency (weekly, bi-weekly, or monthly) to make purchases and sales of your Bitcoin.</li>
+                                    <li>Choose a risk level under which you are happy to accumulate Bitcoin.</li>
+                                </ol>
 
-            <h2>BTC Accumulation Strategy</h2>
-            <label htmlFor="start-date">Start Date:</label>
-            <input className='input-field .simulate-button' id="start-date" type="date" value={dcaStartDate} onChange={e => setDcaStartDate(e.target.value)} />
+                                <h2>BTC Accumulation Strategy</h2>
+                                <label htmlFor="start-date">Start Date:</label>
+                                <input className='input-field .simulate-button' id="start-date" type="date" value={dcaStartDate} onChange={e => setDcaStartDate(e.target.value)} />
 
-            <label htmlFor="investment-amount">USD to Invest:</label>
-            <input className='input-field .simulate-button' id="investment-amount" type="number" placeholder="USD to Invest" value={dcaAmount} onChange={e => setDcaAmount(parseFloat(e.target.value))} />
+                                <label htmlFor="investment-amount">USD to Invest:</label>
+                                <input className='input-field .simulate-button' id="investment-amount" type="number" placeholder="USD to Invest" value={dcaAmount} onChange={e => setDcaAmount(parseFloat(e.target.value))} />
 
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <label htmlFor="investment-frequency" style={{ marginBottom: '10px' }}>DCA (dollar cost average) purchase frequency in days:</label>
-                <div style={{ display: 'flex', justifyContent: 'space-evenly', width: '100%', marginBottom: '50px' }}>
-                    <button
-                        className={`dceFreq ${dcaFrequency === 7 ? 'dceFreqHighlighted' : ''}`}
-                        onClick={() => setDcaFrequency(7)}
-                    >
-                        7
-                    </button>
-                    <button
-                        className={`dceFreq ${dcaFrequency === 14 ? 'dceFreqHighlighted' : ''}`}
-                        onClick={() => setDcaFrequency(14)}
-                    >
-                        14
-                    </button>
-                    <button
-                        className={`dceFreq ${dcaFrequency === 28 ? 'dceFreqHighlighted' : ''}`}
-                        onClick={() => setDcaFrequency(28)}
-                    >
-                        28
-                    </button>
-                </div>
-            </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                    <label htmlFor="investment-frequency" style={{ marginBottom: '10px' }}>DCA (dollar cost average) purchase frequency in days:</label>
+                                    <div style={{ display: 'flex', justifyContent: 'space-evenly', width: '100%', marginBottom: '50px' }}>
+                                        <button
+                                            className={`dceFreq ${dcaFrequency === 7 ? 'dceFreqHighlighted' : ''}`}
+                                            onClick={() => setDcaFrequency(7)}
+                                        >
+                                            7
+                                        </button>
+                                        <button
+                                            className={`dceFreq ${dcaFrequency === 14 ? 'dceFreqHighlighted' : ''}`}
+                                            onClick={() => setDcaFrequency(14)}
+                                        >
+                                            14
+                                        </button>
+                                        <button
+                                            className={`dceFreq ${dcaFrequency === 28 ? 'dceFreqHighlighted' : ''}`}
+                                            onClick={() => setDcaFrequency(28)}
+                                        >
+                                            28
+                                        </button>
+                                    </div>
+                                </div>
 
-            <label htmlFor="buy-risk-threshold">Buy when Risk is below:</label>
-            <input className='input-field .simulate-button-dca' id="buy-risk-threshold" type="number" placeholder="Buy Risk Threshold (0-1)" min="0" max="1" step="0.1" value={dcaRiskThreshold} onChange={e => setDcaRiskThreshold(parseFloat(e.target.value))} />
+                                <label htmlFor="buy-risk-threshold">Buy when Risk is below:</label>
+                                <input className='input-field .simulate-button-dca' id="buy-risk-threshold" type="number" placeholder="Buy Risk Threshold (0-1)" min="0" max="1" step="0.1" value={dcaRiskThreshold} onChange={e => setDcaRiskThreshold(parseFloat(e.target.value))} />
 
-            <h2>Taking Profit Strategy</h2>
-            <p>
-                At each of the risk levels below, you can decide the percentage of your current
-                stack of Bitcoin that you would like to sell. (The frequency at which you sell
-                is the set by default to the same purchasing frequency set above)
-            </p>
-            <p style={{color: colors.greenAccent[500]}}>
-                It stands to reason that the higher the risk level, the more you would want to sell,
-                but feel free to explore based on your own risk tolerance.
-            </p>
-                
-            {
-                sellThresholds.map((threshold, index) => (
-                    <div key={index}>
-                        <label>Risk Level {' > '} {threshold.riskLevel}: </label>
-                        <input type="number" min="0" max="100" step="10" value={threshold.percentage} onChange={e => handleThresholdChange(index, parseFloat(e.target.value))} /> %
+                                <h2>Taking Profit Strategy</h2>
+                                <p>
+                                    At each of the risk levels below, you can decide the percentage of your current
+                                    stack of Bitcoin that you would like to sell. (The frequency at which you sell
+                                    is the set by default to the same purchasing frequency set above)
+                                </p>
+                                <p style={{color: colors.greenAccent[500]}}>
+                                    It stands to reason that the higher the risk level, the more you would want to sell,
+                                    but feel free to explore based on your own risk tolerance.
+                                </p>
+                                    
+                                {
+                                    sellThresholds.map((threshold, index) => (
+                                        <div key={index}>
+                                            <label>Risk Level {' > '} {threshold.riskLevel}: </label>
+                                            <input type="number" min="0" max="100" step="10" value={threshold.percentage} onChange={e => handleThresholdChange(index, parseFloat(e.target.value))} /> %
+                                        </div>
+                                    ))
+                                }
+                                {simulationRun && (
+                                    <div>
+                                        <h2 style={{textAlign: 'left'}}>Total USD Invested: ${totalUsdInvested}</h2>
+                                        <h2>Total Portfolio Value: ${totalPortfolioValue.toFixed(2)}</h2>
+                                        <h3>Total Bitcoin Held:  ₿ {btcHeld.toFixed(6)} BTC</h3>
+                                        <h3>Total Realized Gains: ${totalUsdRealized.toFixed(2)}</h3>
+                                        <h3>Total Unrealized Gains: ${unrealizedGains.toFixed(2)}</h3>
+                                        <h3>Percentage Realised Gains:  {percentageGains.toFixed(2)}  %</h3>
+                                    </div>
+                                    
+                                )}
+
+                                <button className='simulate-button-dca' style={{ background: 'transparent', color: colors.greenAccent[500], borderRadius: '10px', margin: '20px'}} onClick={handleDcaSimulation}>Simulate</button>
+
+                                {simulationRun && (
+                                    <div style={{ fontSize: '0.7rem'}}>
+                                        <h1 onClick={() => setShowTransactions(!showTransactions)} style={{ cursor: 'pointer', textAlign: 'center', border: '1px teal solid', padding: '5px'}}>
+                                            Transaction History
+                                        </h1>
+                                        {showTransactions && (
+                                            isMobile ? (
+                                                <ul style={{padding: '0px'}}>
+                                                    {transactionHistory.map((tx, index) => (
+                                                        <li key={index}>
+                                                            {tx.type} {tx.amount.toFixed(6)} BTC on {tx.date} at ${tx.price.toFixed(2)}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            ) : (
+                                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', border: '1px solid cyan' }}>
+                                                    <thead>
+                                                    <tr>
+                                                        <th style={{ padding: '8px', border: '1px solid teal', minWidth: '40px' }}>#</th>
+                                                        <th style={{ padding: '8px', border: '1px solid teal', minWidth: '60px' }}>Type</th>
+                                                        <th style={{ padding: '8px', border: '1px solid teal', minWidth: '120px' }}>Date</th>
+                                                        <th style={{ padding: '8px', border: '1px solid teal', minWidth: '100px' }}>Spent</th>
+                                                        <th style={{ padding: '8px', border: '1px solid teal', minWidth: '100px' }}>Bitcoin</th>
+                                                        <th style={{ padding: '8px', border: '1px solid teal', minWidth: '100px' }}>At Price</th>
+                                                        <th style={{ padding: '8px', border: '1px solid teal', minWidth: '100px' }}>Risk</th>
+                                                        <th style={{ padding: '8px', border: '1px solid teal', minWidth: '120px' }}>Total BTC Held</th>
+                                                        <th style={{ padding: '8px', border: '1px solid teal', minWidth: '120px' }}>Percentage Sold</th>
+                                                        <th style={{ padding: '8px', border: '1px solid teal', minWidth: '120px' }}>Total Invested $</th>
+                                                        <th style={{ padding: '8px', border: '1px solid teal', minWidth: '120px' }}>Profit</th>
+                                                    </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {transactionHistory.reduce((acc, tx, index) => {
+                                                            const usdSpent = tx.type === 'buy' ? tx.amount * tx.price : 0;
+                                                            const profit = tx.type === 'sell' ? (tx.amount * tx.price) - usdSpent : 0;
+
+                                                            // Update the accumulated values
+                                                            acc.accumulatedInvestment += usdSpent;
+                                                            acc.totalProfit += profit;
+
+                                                            // Update btcHeld based on the transaction type
+                                                            if (tx.type === 'buy') {
+                                                                acc.btcHeld += tx.amount;
+                                                            } else if (tx.type === 'sell') {
+                                                                acc.btcHeld -= tx.amount;
+                                                            }
+
+                                                            acc.rows.push(
+                                                                <tr key={index}>
+                                                                    <td style={{ padding: '8px', border: '1px solid black' }}>{index + 1}</td>
+                                                                    <td style={{ padding: '8px', border: '1px solid black' }}>{tx.type}</td>
+                                                                    <td style={{ padding: '8px', border: '1px solid black' }}>{tx.date}</td>
+                                                                    <td style={{ padding: '8px', border: '1px solid black' }}>${usdSpent.toFixed(2)}</td>
+                                                                    <td style={{ padding: '8px', border: '1px solid black' }}>{tx.amount.toFixed(6)} BTC</td>
+                                                                    <td style={{ padding: '8px', border: '1px solid black' }}>${tx.price.toFixed(2)}</td>
+                                                                    <td style={{ padding: '8px', border: '1px solid black' }}>{tx.risk.toFixed(2)}</td>
+                                                                    <td style={{ padding: '8px', border: '1px solid black' }}>{acc.btcHeld.toFixed(6)} BTC</td>
+                                                                    <td style={{ padding: '8px', border: '1px solid black' }}>{tx.maxApplicableThreshold ? `${tx.maxApplicableThreshold.toFixed(2)}%` : '-'}</td>
+                                                                    <td style={{ padding: '8px', border: '1px solid black' }}>${acc.accumulatedInvestment.toFixed(2)}</td>
+                                                                    <td style={{ padding: '8px', border: '1px solid black' }}>${acc.totalProfit.toFixed(2)}</td>
+                                                                </tr>
+                                                            );
+
+                                                            return acc;
+                                                        }, { accumulatedInvestment: 0, totalProfit: 0, btcHeld: 0, rows: [] }).rows}
+                                                    </tbody>
+                                                </table>
+                                            )
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
-                ))
-            }
-            {simulationRun && (
-                <div>
-                    <h2 style={{textAlign: 'left'}}>Total USD Invested: ${totalUsdInvested}</h2>
-                    <h2>Total Portfolio Value: ${totalPortfolioValue.toFixed(2)}</h2>
-                    <h3>Total Bitcoin Held:  ₿ {btcHeld.toFixed(6)} BTC</h3>
-                    <h3>Total Realized Gains: ${totalUsdRealized.toFixed(2)}</h3>
-                    <h3>Total Unrealized Gains: ${unrealizedGains.toFixed(2)}</h3>
-                    <h3>Percentage Realised Gains:  {percentageGains.toFixed(2)}  %</h3>
-                </div>
-                
-            )}
-
-            <button className='simulate-button-dca' style={{ background: 'transparent', color: colors.greenAccent[500], borderRadius: '10px', margin: '20px'}} onClick={handleDcaSimulation}>Simulate</button>
-
-            {simulationRun && (
-                <div style={{ fontSize: '0.7rem'}}>
-                    <h1 onClick={() => setShowTransactions(!showTransactions)} style={{ cursor: 'pointer', textAlign: 'center', border: '1px teal solid', padding: '5px'}}>
-                        Transaction History
-                    </h1>
-                    {showTransactions && (
-                        isMobile ? (
-                            <ul style={{padding: '0px'}}>
-                                {transactionHistory.map((tx, index) => (
-                                    <li key={index}>
-                                        {tx.type} {tx.amount.toFixed(6)} BTC on {tx.date} at ${tx.price.toFixed(2)}
-                                    </li>
-                                ))}
-                            </ul>
-                        ) : (
-                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', border: '1px solid cyan' }}>
-                                <thead>
-                                <tr>
-                                    <th style={{ padding: '8px', border: '1px solid teal', minWidth: '40px' }}>#</th>
-                                    <th style={{ padding: '8px', border: '1px solid teal', minWidth: '60px' }}>Type</th>
-                                    <th style={{ padding: '8px', border: '1px solid teal', minWidth: '120px' }}>Date</th>
-                                    <th style={{ padding: '8px', border: '1px solid teal', minWidth: '100px' }}>Spent</th>
-                                    <th style={{ padding: '8px', border: '1px solid teal', minWidth: '100px' }}>Bitcoin</th>
-                                    <th style={{ padding: '8px', border: '1px solid teal', minWidth: '100px' }}>At Price</th>
-                                    <th style={{ padding: '8px', border: '1px solid teal', minWidth: '100px' }}>Risk</th>
-                                    <th style={{ padding: '8px', border: '1px solid teal', minWidth: '120px' }}>Total BTC Held</th>
-                                    <th style={{ padding: '8px', border: '1px solid teal', minWidth: '120px' }}>Percentage Sold</th>
-                                    <th style={{ padding: '8px', border: '1px solid teal', minWidth: '120px' }}>Total Invested $</th>
-                                    <th style={{ padding: '8px', border: '1px solid teal', minWidth: '120px' }}>Profit</th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                    {transactionHistory.reduce((acc, tx, index) => {
-                                        const usdSpent = tx.type === 'buy' ? tx.amount * tx.price : 0;
-                                        const profit = tx.type === 'sell' ? (tx.amount * tx.price) - usdSpent : 0;
-
-                                        // Update the accumulated values
-                                        acc.accumulatedInvestment += usdSpent;
-                                        acc.totalProfit += profit;
-
-                                        // Update btcHeld based on the transaction type
-                                        if (tx.type === 'buy') {
-                                            acc.btcHeld += tx.amount;
-                                        } else if (tx.type === 'sell') {
-                                            acc.btcHeld -= tx.amount;
-                                        }
-
-                                        acc.rows.push(
-                                            <tr key={index}>
-                                                <td style={{ padding: '8px', border: '1px solid black' }}>{index + 1}</td>
-                                                <td style={{ padding: '8px', border: '1px solid black' }}>{tx.type}</td>
-                                                <td style={{ padding: '8px', border: '1px solid black' }}>{tx.date}</td>
-                                                <td style={{ padding: '8px', border: '1px solid black' }}>${usdSpent.toFixed(2)}</td>
-                                                <td style={{ padding: '8px', border: '1px solid black' }}>{tx.amount.toFixed(6)} BTC</td>
-                                                <td style={{ padding: '8px', border: '1px solid black' }}>${tx.price.toFixed(2)}</td>
-                                                <td style={{ padding: '8px', border: '1px solid black' }}>{tx.risk.toFixed(2)}</td>
-                                                <td style={{ padding: '8px', border: '1px solid black' }}>{acc.btcHeld.toFixed(6)} BTC</td>
-                                                <td style={{ padding: '8px', border: '1px solid black' }}>{tx.maxApplicableThreshold ? `${tx.maxApplicableThreshold.toFixed(2)}%` : '-'}</td>
-                                                <td style={{ padding: '8px', border: '1px solid black' }}>${acc.accumulatedInvestment.toFixed(2)}</td>
-                                                <td style={{ padding: '8px', border: '1px solid black' }}>${acc.totalProfit.toFixed(2)}</td>
-                                            </tr>
-                                        );
-
-                                        return acc;
-                                    }, { accumulatedInvestment: 0, totalProfit: 0, btcHeld: 0, rows: [] }).rows}
-                                </tbody>
-                            </table>
-                        )
-                    )}
-                </div>
-            )}
-        </div>
-    )}
-</div>
 
 
                 </div>
@@ -713,6 +719,8 @@ const BitcoinRisk = ({ isDashboard = false }) => {
                     )   
                 }
             </div>
+            )}
+            
         </div>
         );
       

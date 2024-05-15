@@ -152,23 +152,26 @@ const BitcoinRiskColor = ({ isDashboard = false }) => {
 
     return (
         <div style={{ height: '100%' }}>
-            <div className='chart-top-div'>
-                {/* Interactivity toggles for each dataset */}
-                <div className="risk-filter">
+            {!isDashboard && (
+                <div className='chart-top-div'>
+                    {/* Interactivity toggles for each dataset */}
+                    <div className="risk-filter">
+                    </div>
+                    <div>
+                        {/* placeholder for styling */}
+                    </div>
+                    <div>
+                        {
+                            !isDashboard && (
+                                <button onClick={resetChartView} className="button-reset">
+                                    Reset Chart
+                                </button>
+                            )   
+                        }
+                    </div>
                 </div>
-                <div>
-                    {/* placeholder for styling */}
-                </div>
-                <div>
-                    {
-                        !isDashboard && (
-                            <button onClick={resetChartView} className="button-reset">
-                                Reset Chart
-                            </button>
-                        )   
-                    }
-                </div>
-            </div>
+            )}
+            
             <div className="chart-container" style={{ position: 'relative', height: 'calc(100% - 40px)', width: '100%', border: '2px solid #a9a9a9' }}>
                 <Plot
                     data={datasets.filter(dataset => dataset.visible).map(dataset => ({

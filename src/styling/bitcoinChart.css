@@ -184,7 +184,7 @@ input:checked + .slider:before {
 }
 
 .select-reset-wrapper:after {
-    content: '▼';
+    /* content: '▼'; */
     font-size: 0.8rem;
     color: #70d8bd;
     position: absolute;

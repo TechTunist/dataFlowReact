@@ -63,7 +63,7 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
       case "/login-signup":
         return { title: "Login / Signup", subtitle: "Under Construction" };
       case "/market-cycles":
-        return { title: "Bitcoin Cycles", subtitle: "From bear-market low to bull-market high" };
+        return { title: "Bitcoin Cycles", subtitle: "Start from either the cycle bottom or from the halving" };
       case "/fear-and-greed-chart":
         return { title: "Bitcoin Fear and Greed", subtitle: "Fear and Greed plotted over the Bitcoin Price" };
       default:

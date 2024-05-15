@@ -360,7 +360,8 @@ const BitcoinLogRegression = ({ isDashboard = false }) => {
 
     return (
         <div style={{ height: '100%' }}>
-            <div className='chart-top-div'>
+            {!isDashboard && (
+                <div className='chart-top-div'>
                 <div>
                     {/* Placeholder for styling */}
                 </div>
@@ -388,6 +389,8 @@ const BitcoinLogRegression = ({ isDashboard = false }) => {
                     }
                 </div>
             </div>
+            )}
+            
             <div className="chart-container" style={{ 
                     position: 'relative', 
                     height: 'calc(100% - 40px)', 

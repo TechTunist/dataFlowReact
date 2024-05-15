@@ -70,18 +70,22 @@ function CryptoFearAndGreedIndex({ isDashboard }) {
 
 return (
     <div style={{ height: '100%' }}>
-        <div style={{ 
-            display: 'flex', // Use flex display for the container
-            justifyContent: 'space-between', // This spreads out the child elements
-            alignItems: 'center', // This vertically centers the children
-            marginBottom: '0px', 
-            height: '30px'
-        }}>
-            <div>
-                
+        {!isDashboard && (
+            <div style={{ 
+                display: 'flex', // Use flex display for the container
+                justifyContent: 'space-between', // This spreads out the child elements
+                alignItems: 'center', // This vertically centers the children
+                marginBottom: '0px', 
+                height: '30px'
+            }}>
+                <div>
+                    
+                </div>
+               
             </div>
-           
-        </div>
+        )
+        }
+        
         
         <div className="chart-container" style={{ 
             position: 'relative',

@@ -131,23 +131,26 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
 
     return (
         <div style={{ height: '100%' }}>
-            <div className='chart-top-div'>
-                {/* Interactivity toggles for each dataset */}
-                <div className="risk-filter">
+            {!isDashboard && (
+                <div className='chart-top-div'>
+                    {/* Interactivity toggles for each dataset */}
+                    <div className="risk-filter">
+                    </div>
+                    <div>
+                        {/* placeholder for styling */}
+                    </div>
+                    <div>
+                        {
+                            !isDashboard && (
+                                <button onClick={resetChartView} className="button-reset">
+                                    Reset Chart
+                                </button>
+                            )   
+                        }
+                    </div>
                 </div>
-                <div>
-                    {/* placeholder for styling */}
-                </div>
-                <div>
-                    {
-                        !isDashboard && (
-                            <button onClick={resetChartView} className="button-reset">
-                                Reset Chart
-                            </button>
-                        )   
-                    }
-                </div>
-            </div>
+            )}
+            
             <div className="chart-container" style={{ position: 'relative', height: 'calc(100% - 40px)', width: '100%', border: '2px solid #a9a9a9' }}>
                 <Plot
                     data={datasets}
@@ -183,7 +186,7 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
             <div>
             {
             !isDashboard && (
-                <p className='chart-info' style={{ marginTop: '20px', textAlign: 'left', width: '100%' }}> {/* Adjust width as necessary */}
+                <p className='chart-info' style={{ marginTop: '10px', textAlign: 'left', width: '100%' }}> {/* Adjust width as necessary */}
                     <b>Data only available starting from February 2018.</b><br /><br />
                     The Fear and Greed index is a metric that measures the sentiment of the market by analyzing various sources of data,
                     including surveys, social media, volatility, market momentum, and volume among others.

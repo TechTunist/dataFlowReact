@@ -448,42 +448,46 @@ const EthereumRisk = ({ isDashboard = false }) => {
     
     return (
         <div style={{ height: '100%' }}> {/* Set a specific height for the entire container */}
+        {!isDashboard && (
             <div className='chart-top-div'>
-                <div className='span-container'>
+            {!isDashboard && (
+                    <div className='span-container'>
                     <span style={{ marginRight: '20px', display: 'inline-block' }}>
                         <span style={{ backgroundColor: 'gray', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
-                        Ethereum Price
+                        Bitcoin Price
                     </span>
                     <span style={{ display: 'inline-block' }}>
                         <span style={{ backgroundColor: '#ff0062', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
                         Risk Metric
                     </span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'flex-end'}}>
-                    {
-                        !isDashboard && (
-                            <button
-                                onClick={setInteractivity}
-                                className="button-reset"
-                                style={{
-                                    backgroundColor: isInteractive ? '#4cceac' : 'transparent',
-                                    color: isInteractive ? 'black' : '#31d6aa',
-                                    borderColor: isInteractive ? 'violet' : '#70d8bd'
-                                }}>
-                                {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
-                            </button>
-                        )   
-                    }
-                    {
-                        !isDashboard && (
-                            <button onClick={resetChartView} className="button-reset extra-margin">
-                                Reset Chart
-                            </button>
-                        )   
-                    }
-                </div>
-                
+                )}
+            <div style={{ display: 'flex', justifyContent: 'flex-end'}}>
+                {
+                    !isDashboard && (
+                        <button
+                            onClick={setInteractivity}
+                            className="button-reset"
+                            style={{
+                                backgroundColor: isInteractive ? '#4cceac' : 'transparent',
+                                color: isInteractive ? 'black' : '#31d6aa',
+                                borderColor: isInteractive ? 'violet' : '#70d8bd'
+                            }}>
+                            {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
+                        </button>
+                    )   
+                }
+                {
+                    !isDashboard && (
+                        <button onClick={resetChartView} className="button-reset extra-margin">
+                            Reset Chart
+                        </button>
+                    )   
+                }
             </div>
+        </div>
+        )}
+            
             <div className="chart-container" style={{ 
                     position: 'relative', 
                     height: 'calc(100% - 40px)', 

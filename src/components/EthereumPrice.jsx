@@ -1,114 +1,87 @@
-// EthereumChart.jsx
 import React, { useRef, useEffect, useState } from 'react';
 import { createChart } from 'lightweight-charts';
-import '../styling/bitcoinChart.css'
+import '../styling/bitcoinChart.css';
 import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
+// import BitcoinFees from './BitcoinTransactionFees';
 
 const EthereumPrice = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
     const [chartData, setChartData] = useState([]);
     const [scaleMode, setScaleMode] = useState(1);
-    const [tooltipData, setTooltipData] = useState(null);
-    const chartRef = useRef(null); // ref to store chart for use in return statement
+    const chartRef = useRef(null);
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
+    const [tooltipData, setTooltipData] = useState(null);
+    const [isInteractive, setIsInteractive] = useState(false);
+    const isMobile = useIsMobile();
+
     const [show8Week, setShow8Week] = useState(false);
     const [show20Week, setShow20Week] = useState(false);
     const [show100Week, setShow100Week] = useState(false);
     const [show200Week, setShow200Week] = useState(false);
+
+    const toggle8Week = () => setShow8Week(!show8Week);
+    const toggle20Week = () => setShow20Week(!show20Week);
+    const toggle100Week = () => setShow100Week(!show100Week);
+    const toggle200Week = () => setShow200Week(!show200Week);
+
+    const smaSeriesRefs = useRef({
+        '8w': null,
+        '20w': null,
+        '100w': null,
+        '200w': null
+    }).current;
+
+    const smaVisibility = {
+        '8w': show8Week,
+        '20w': show20Week,
+        '100w': show100Week,
+        '200w': show200Week
+    };
+
     const color8Week = 'blue';
     const color20Week = 'limegreen';
     const color100Week = 'white';
     const color200Week = 'yellow';
-    const [isInteractive, setIsInteractive] = useState(false);
-    const isMobile = useIsMobile();
 
-    // Function to set chart interactivity
     const setInteractivity = () => {
         setIsInteractive(!isInteractive);
     };
 
-    // Function to format numbers to 'k', 'M', etc.
     function compactNumberFormatter(value) {
         if (value >= 1000000) {
-            return (value / 1000000).toFixed(0) + 'M'; // Millions
+            return (value / 1000000).toFixed(0) + 'M';
         } else if (value >= 1000) {
-            return (value / 1000).toFixed(0) + 'k'; // Thousands
+            return (value / 1000).toFixed(0) + 'k';
         } else {
-            return value.toFixed(0); // For values less than 1000, show the full number
+            return value.toFixed(0);
         }
     }
-
-    // Function to toggle the visibility of markers
-    const toggle8Week = () => {
-        setShow8Week(!show8Week);
-    };
-    
-    // Function to toggle the visibility of markers
-    const toggle20Week = () => {
-        setShow20Week(!show20Week);
-    };
-
-    // Function to toggle the visibility of markers
-    const toggle100Week = () => {
-        setShow100Week(!show100Week);
-    };
-
-    // Function to toggle the visibility of markers
-    const toggle200Week = () => {
-        setShow200Week(!show200Week);
-    };
 
     const calculateMovingAverage = (data, period) => {
         let movingAverages = [];
         
         for (let i = period - 1; i < data.length; i++) {
-          let sum = 0;
-          for (let j = 0; j < period; j++) {
-            sum += data[i - j].value;
-          }
-          movingAverages.push({
-            time: data[i].time,
-            value: sum / period
-          });
+            let sum = 0;
+            for (let j = 0; j < period; j++) {
+                sum += data[i - j].value;
+            }
+            movingAverages.push({
+                time: data[i].time,
+                value: sum / period
+            });
         }
         
         return movingAverages;
-      };
-
-    // Test function to calculate the EMA for the bull market support band
-      const calculateEMA = (data, period) => {
-        let emaArray = [];
-        let multiplier = 2 / (period + 1);
-        
-        // Start by calculating the initial EMA value which can be the first data point or an SMA of the first few points
-        let initialSMA = 0;
-        for (let i = 0; i < period; i++) {
-            initialSMA += data[i].value;
-        }
-        initialSMA /= period;
-        emaArray.push({ time: data[period-1].time, value: initialSMA });
-    
-        // Calculate the rest of the EMA values
-        for (let i = period; i < data.length; i++) {
-            let todayPrice = data[i].value;
-            let yesterdayEMA = emaArray[emaArray.length - 1].value;
-            let todayEMA = (todayPrice - yesterdayEMA) * multiplier + yesterdayEMA;
-            emaArray.push({ time: data[i].time, value: todayEMA });
-        }
-    
-        return emaArray;
     };
 
     const toggleScaleMode = () => {
-        const newScaleMode = scaleMode === 1 ? 0 : 1;
-        setScaleMode(newScaleMode);
+        setScaleMode(prevMode => (prevMode === 1 ? 0 : 1));
     };
 
-    // Function to reset the chart view
     const resetChartView = () => {
         if (chartRef.current) {
             chartRef.current.timeScale().fitContent();
@@ -116,54 +89,58 @@ const EthereumPrice = ({ isDashboard = false }) => {
     };
 
     useEffect(() => {
-        if (chartRef.current) {
-            chartRef.current.priceScale('right').applyOptions({
-                mode: scaleMode,
-                borderVisible: false,
-            });
-        }
-    }, [scaleMode]);
-
-    // This useEffect handles fetching data and updating the local storage cache. It’s self-contained and correctly handles data fetching independently.
-    useEffect(() => {
-        const cacheKey = 'ethData';
-        const cachedData = localStorage.getItem(cacheKey);
+        const cacheKeyEth = 'ethData';
+        const cachedDataEth = localStorage.getItem(cacheKeyEth);
         const today = new Date();
-    
-        const fetchData = async () => {
-            try {
-                const response = await fetch('https://tunist.pythonanywhere.com/api/eth/price/');
-                const data = await response.json();
+
+        if (cachedDataEth) {
+            const parsedDataEth = JSON.parse(cachedDataEth);
+            const lastCachedDateEth = new Date(parsedDataEth[parsedDataEth.length - 1].time);
+
+            if (lastCachedDateEth.setHours(0, 0, 0, 0) === today.setHours(0, 0, 0, 0)) {
+                setChartData(parsedDataEth);
+            } else {
+                fetchEthData();
+            }
+        } else {
+            fetchEthData();
+        }
+
+        function fetchEthData() {
+            fetch('https://tunist.pythonanywhere.com/api/eth/price/')
+            .then(response => response.json())
+            .then(data => {
                 const formattedData = data.map(item => ({
                     time: item.date,
                     value: parseFloat(item.close)
-                }));
-                localStorage.setItem(cacheKey, JSON.stringify(formattedData));
+                }));             
+                
                 setChartData(formattedData);
-            } catch (error) {
-                console.error('Error fetching data:', error);
-            }
-        };
-    
-        if (cachedData) {
-            const parsedData = JSON.parse(cachedData);
-            const lastCachedDate = new Date(parsedData[parsedData.length - 1].time);
-            if (lastCachedDate.setHours(0, 0, 0, 0) === today.setHours(0, 0, 0, 0)) {
-                setChartData(JSON.parse(cachedData));
-            } else {
-                fetchData();
-            }
-        } else {
-            fetchData();
+
+                localStorage.setItem(cacheKeyEth, JSON.stringify(formattedData));
+            })
+            .catch(error => {
+                console.error('Error fetching data: ', error);
+            });
         }
+
+        Object.keys(smaSeriesRefs).forEach(key => {
+            if (smaSeriesRefs[key]) {
+                smaSeriesRefs[key].setData([]);
+                smaSeriesRefs[key] = null;
+            }
+        });
+
+        setShow8Week(false);
+        setShow20Week(false);
+        setShow100Week(false);
+        setShow200Week(false);
+        
     }, []);
-    
-    
-    // This useEffect initializes the chart and updates it based on changes to the chartData,
-    // theme.palette.mode, and isDashboard. It manages subscriptions and resizing.
+
     useEffect(() => {
         if (chartData.length === 0) return;
-    
+
         const chart = createChart(chartContainerRef.current, {
             width: chartContainerRef.current.clientWidth,
             height: chartContainerRef.current.clientHeight,
@@ -171,13 +148,22 @@ const EthereumPrice = ({ isDashboard = false }) => {
                 background: { type: 'solid', color: colors.primary[700] },
                 textColor: colors.primary[100],
             },
-            grid: { vertLines: { color: colors.greenAccent[700] }, horzLines: { color: colors.greenAccent[700] } },
-            timeScale: { minBarSpacing: 0.001 },
+            grid: {
+                vertLines: {
+                    color: colors.greenAccent[700],
+                },
+                horzLines: {
+                    color: colors.greenAccent[700],
+                },
+            },
+            timeScale: {
+                minBarSpacing: 0.001,
+            },
         });
 
-        // update tooltip data on crosshairMove event
         chart.subscribeCrosshairMove(param => {
             if (
+                param.point === undefined ||
                 !param.time ||
                 param.point.x < 0 ||
                 param.point.x > chartContainerRef.current.clientWidth ||
@@ -187,142 +173,160 @@ const EthereumPrice = ({ isDashboard = false }) => {
                 setTooltipData(null);
             } else {
                 const dateStr = param.time;
-                // Safely attempt to access price data
-                const priceData = param.seriesData.get(areaSeries);
-                const price = priceData?.value; // Use optional chaining to avoid errors when priceData is undefined
-        
-                // Even if price data is undefined, we can still set tooltip data for the regression lines
+                const data = param.seriesData.get(areaSeries);
                 setTooltipData({
                     date: dateStr,
-                    price, // May be undefined, which is handled in rendering
+                    price: data.value,
                     x: param.point.x,
                     y: param.point.y,
                 });
             }
         });
-    
-        const areaSeries = chart.addAreaSeries({
-            priceScaleId: 'right',
-            topColor: theme.palette.mode === 'dark' ? 'rgba(38, 198, 218, 0.56)' : 'rgba(255, 165, 0, 0.56)',
-            bottomColor: theme.palette.mode === 'dark' ? 'rgba(38, 198, 218, 0.04)' : 'rgba(255, 165, 0, 0.2)',
-            lineColor: theme.palette.mode === 'dark' ? 'rgba(38, 198, 218, 1)' : 'rgba(255, 140, 0, 0.8)',
-            lineWidth: 2,
-            priceFormat: { type: 'custom', formatter: compactNumberFormatter },
-        });
 
         chart.priceScale('right').applyOptions({
             mode: scaleMode,
-            // borderVisible: false,
+            borderVisible: false,
         });
-    
+
+        const resizeChart = () => {
+            if (chart && chartContainerRef.current) {
+                chart.applyOptions({
+                    width: chartContainerRef.current.clientWidth,
+                    height: chartContainerRef.current.clientHeight,
+                });
+                chart.timeScale().fitContent();
+            }
+        };
+
+        window.addEventListener('resize', resizeChart);
+        window.addEventListener('resize', resetChartView);
+
+        const lightThemeColors = {
+            topColor: 'rgba(255, 165, 0, 0.56)',
+            bottomColor: 'rgba(255, 165, 0, 0.2)',
+            lineColor: 'rgba(255, 140, 0, 0.8)',
+        };
+
+        const darkThemeColors = {
+            topColor: 'rgba(38, 198, 218, 0.56)', 
+            bottomColor: 'rgba(38, 198, 218, 0.04)', 
+            lineColor: 'rgba(38, 198, 218, 1)', 
+        };
+
+        const { topColor, bottomColor, lineColor } = theme.palette.mode === 'dark' ? darkThemeColors : lightThemeColors;
+
+        const areaSeries = chart.addAreaSeries({
+            priceScaleId: 'right',
+            topColor: topColor, 
+            bottomColor: bottomColor, 
+            lineColor: lineColor, 
+            lineWidth: 2,
+            priceFormat: {
+                type: 'price',
+                precision: 2,
+                minMove: 0.01,
+            }
+        });
         areaSeries.setData(chartData);
-    
+
         chart.applyOptions({
             handleScroll: !isDashboard,
             handleScale: !isDashboard,
             handleScroll: isInteractive,
-            handleScale: isInteractive, });
-    
-        const resizeChart = () => {
-            chart.applyOptions({ width: chartContainerRef.current.clientWidth, height: chartContainerRef.current.clientHeight });
-            chart.timeScale().fitContent();
-        };
+            handleScale: isInteractive
+        });
 
         resizeChart();
-    
-        window.addEventListener('resize', resizeChart);
-
+        chart.timeScale().fitContent();
         chartRef.current = chart;
-    
+
         return () => {
             chart.remove();
             window.removeEventListener('resize', resizeChart);
+            window.removeEventListener('resize', resetChartView);
         };
-    }, [chartData, isDashboard, theme.palette.mode]);
+    }, [chartData, scaleMode, isDashboard, theme.palette.mode ]);
 
     useEffect(() => {
         if (chartRef.current) {
-            // Disable all interactions if the chart is displayed on the dashboard
-        chartRef.current.applyOptions({
-            handleScroll: isInteractive,
-            handleScale: isInteractive,
-        });
+            chartRef.current.applyOptions({
+                handleScroll: isInteractive,
+                handleScale: isInteractive,
+            });
         }
     }, [isInteractive]);
 
-    // useEffect for applying scaleMode changes
     useEffect(() => {
-        if (chartRef.current) {
-            chartRef.current.priceScale('right').applyOptions({
-                mode: scaleMode,
-                borderVisible: false,
-            });
-        }
-    }, [scaleMode]);
-    
+        if (!chartRef.current) return;
 
-    // Initialize state for series references
-    const [maSeries, setMaSeries] = useState({
-        ma8Week: null,
-        ma20Week: null,
-        ma100Week: null,
-        ma200Week: null,
-    });
+        const periods = {
+            '8w': 8 * 7,
+            '20w': 20 * 7,
+            '100w': 100 * 7,
+            '200w': 200 * 7
+        };
+        const colors = {
+            '8w': 'blue',
+            '20w': 'green',
+            '100w': 'white',
+            '200w': 'yellow'
+        };
 
-    // This useEffect updates the SMA series based on toggles and chart data updates. It manages creating and updating line series for moving averages.
-    useEffect(() => {
-        if (chartData.length === 0 || !chartRef.current) return;
-    
-        const createOrUpdateSeries = (series, color, isVisible) => {
-            if (!series) {
-                series = chartRef.current.addLineSeries({
-                    priceScaleId: 'right',
-                    color: color,
-                    lineWidth: 2,
-                    priceLineVisible: false,
-                });
+        const updateSMA = (periodKey) => {
+            const period = periods[periodKey];
+            const data = calculateMovingAverage(chartData, period);
+            let smaSeries = smaSeriesRefs[periodKey];
+
+            if (smaVisibility[periodKey]) {
+                if (!smaSeries) {
+                    smaSeries = chartRef.current.addLineSeries({
+                        color: colors[periodKey],
+                        lineWidth: 2,
+                        priceLineVisible: false
+                    });
+                    smaSeriesRefs[periodKey] = smaSeries;
+                }
+                smaSeries.setData(data);
+            } else if (smaSeries) {
+                smaSeries.setData([]);
             }
-            return series;
         };
-    
-        const updateSeriesData = (series, data, show) => {
-            series.setData(show ? data : []);
-            series.applyOptions({ visible: show });
-        };
-    
-        const movingAverage8Week = calculateMovingAverage(chartData, 8 * 7);
-        const movingAverage20Week = calculateMovingAverage(chartData, 20 * 7);
-        const movingAverage100Week = calculateMovingAverage(chartData, 100 * 7);
-        const movingAverage200Week = calculateMovingAverage(chartData, 200 * 7);
-    
-        maSeries.ma8Week = createOrUpdateSeries(maSeries.ma8Week, color8Week, show8Week);
-        maSeries.ma20Week = createOrUpdateSeries(maSeries.ma20Week, color20Week, show20Week);
-        maSeries.ma100Week = createOrUpdateSeries(maSeries.ma100Week, color100Week, show100Week);
-        maSeries.ma200Week = createOrUpdateSeries(maSeries.ma200Week, color200Week, show200Week);
-    
-        updateSeriesData(maSeries.ma8Week, movingAverage8Week, show8Week);
-        updateSeriesData(maSeries.ma20Week, movingAverage20Week, show20Week);
-        updateSeriesData(maSeries.ma100Week, movingAverage100Week, show100Week);
-        updateSeriesData(maSeries.ma200Week, movingAverage200Week, show200Week);
-    
-    }, [chartData, show8Week, show20Week, show100Week, show200Week, color8Week, color20Week, color100Week, color200Week]);
-    
 
+        Object.keys(periods).forEach(periodKey => updateSMA(periodKey));
+    }, [show8Week, show20Week, show100Week, show200Week, chartData]);
+
+    useEffect(() => {
+        const resetSMASeries = () => {
+            Object.keys(smaSeriesRefs).forEach(key => {
+                if (smaSeriesRefs[key]) {
+                    smaSeriesRefs[key].setData([]);
+                    smaSeriesRefs[key] = null;
+                }
+            });
+
+            setShow8Week(false);
+            setShow20Week(false);
+            setShow100Week(false);
+            setShow200Week(false);
+        };
+
+        resetSMASeries();
+    }, []);
 
     return (
         <div style={{ height: '100%' }}>
-            <div className='chart-top-div'>
-                <div>
-                    {/* The switch and label go here */}
-                    <label className="switch">
-                        <input type="checkbox" checked={scaleMode === 1} onChange={toggleScaleMode} />
-                        <span className="slider round"></span>
-                    </label>
-                    <span className="scale-mode-label" style={{color: colors.primary[100]}}>{scaleMode === 1 ? 'Logarithmic' : 'Linear'}</span>
-                </div>
-                <div>
-                    {/* placeholder for styling */}
-                </div>
+            {!isDashboard && (
+                <div className='chart-top-div'>
+                {!isDashboard && (
+                        <div>
+                        {/* The switch and label go here */}
+                        <label className="switch">
+                            <input type="checkbox" checked={scaleMode === 1} onChange={toggleScaleMode} />
+                            <span className="slider round"></span>
+                        </label>
+                        <span className="scale-mode-label" style={{color: colors.primary[100]}}>{scaleMode === 1 ? 'Logarithmic' : 'Linear'}</span>
+                    </div>
+                    )}
                 <div style={{ display: 'flex', justifyContent: 'flex-end'}}>
                     {
                         !isDashboard && (
@@ -345,129 +349,120 @@ const EthereumPrice = ({ isDashboard = false }) => {
                             </button>
                         )   
                     }
-                </div>
+                </div>              
             </div>
+            )}
+            
             <div className="chart-container" style={{ 
                     position: 'relative', 
                     height: 'calc(100% - 40px)', 
                     width: '100%', 
-                    border: '2px solid #a9a9a9' // Adds dark border with your specified color
-                    }}> 
-                <div ref={chartContainerRef}
-                    style={{ height: '100%', width: '100%', zIndex: 1 }}
+                    border: '2px solid #a9a9a9'
+                    }}
                     onDoubleClick={() => {
                         if (!isInteractive && !isDashboard) {  
                             setInteractivity();
                         } else {
                             setInteractivity();
                         }
-                    }}/>
+                    }}>                
+                <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
             </div>
-            {!isDashboard && (
-                <LastUpdated storageKey="ethData" />
-            )}
+            <div className='under-chart'>
+                {!isDashboard && (
+                    <LastUpdated storageKey="ethData" />
+                )}
+                {/* {!isDashboard && (
+                    <BitcoinFees />
+                )} */}
+            </div>
             
             <div style={{
-                display: 'flex', // Use flex display for the container
-                justifyContent: 'center', // Center the child elements horizontally
-                alignItems: 'center', // This vertically centers the children
-                marginBottom: '20px', // Space after the container to avoid overlap with the paragraph
-                height: 'auto', // Adjust height automatically based on content
-                flexWrap: 'wrap', // Allows items to wrap onto the next line
-                gap: '10px 20px', // Sets vertical and horizontal gaps between items
-                padding: '10px' // Adds padding inside the flex container
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginBottom: '20px',
+                height: 'auto',
+                flexWrap: 'wrap',
+                gap: '10px 20px',
+                padding: '10px'
             }}>
-            {!isDashboard && (
-                <>
-                    <button
-                        onClick={toggle8Week}
-                        className="button-reset"
-                        style={{
-                            marginTop: '10px',
-                            width: '150px',
-                            minWidth: '150px',
-                            backgroundColor: show8Week ? '#4cceac' : 'transparent', // Highlight background when active
-                            color: show8Week ? color8Week : '#00b685', // Change text color when active
-                            borderColor: show8Week ? color8Week : '#70d8bd' // Change border color when active
-                        }}
-                    >
-                        8 Week SMA
-                    </button>
-                    <button
-                        onClick={toggle20Week}
-                        className="button-reset"
-                        style={{
-                            marginTop: '10px',
-                            width: '150px',
-                            minWidth: '150px',
-                            backgroundColor: show20Week ? '#4cceac' : 'transparent',
-                            color: show20Week ? 'green' : '#00b685',
-                            borderColor: show20Week ? color20Week : '#70d8bd'
-                        }}
-                    >
-                        20 Week SMA
-                    </button>
-                    <button
-                        onClick={toggle100Week}
-                        className="button-reset"
-                        style={{
-                            marginTop: '10px',
-                            width: '150px',
-                            minWidth: '150px',
-                            backgroundColor: show100Week ? '#4cceac' : 'transparent',
-                            color: show100Week ? color100Week : '#00b685',
-                            borderColor: show100Week ? color100Week : '#70d8bd'
-                        }}
-                    >
-                        100 Week SMA
-                    </button>
-                    <button
-                        onClick={toggle200Week}
-                        className="button-reset"
-                        style={{
-                            marginTop: '10px',
-                            width: '150px',
-                            minWidth: '150px',
-                            backgroundColor: show200Week ? '#4cceac' : 'transparent',
-                            color: show200Week ? color200Week : '#00b685',
-                            borderColor: show200Week ? color200Week : '#70d8bd'
-                        }}
-                    >
-                        200 Week SMA
-                    </button>
-                </>
-            )}
+                {!isDashboard && (
+                        <div className="sma-toggles">
+                            <button style={{
+                                marginTop: '10px',
+                                width: '150px',
+                                minWidth: '150px',
+                                backgroundColor: show8Week ? '#4cceac' : 'transparent',
+                                color: show8Week ? color8Week : '#00b685',
+                                borderColor: show8Week ? color8Week : '#70d8bd'
+                            }}
+                         onClick={toggle8Week} className="button-reset">
+                                8 Week SMA
+                            </button>
+                            <button style={{
+                                marginTop: '10px',
+                                width: '150px',
+                                minWidth: '150px',
+                                backgroundColor: show20Week ? '#4cceac' : 'transparent',
+                                color: show20Week ? 'green' : '#00b685',
+                                borderColor: show20Week ? color20Week : '#70d8bd'
+                            }}
+                             onClick={toggle20Week} className="button-reset">
+                                20 Week SMA
+                            </button>
+                            <button style={{
+                                marginTop: '10px',
+                                width: '150px',
+                                minWidth: '150px',
+                                backgroundColor: show100Week ? '#4cceac' : 'transparent',
+                                color: show100Week ? color100Week : '#00b685',
+                                borderColor: show100Week ? color100Week : '#70d8bd'
+                            }}
+                             onClick={toggle100Week} className="button-reset">
+                                100 Week SMA
+                            </button>
+                            <button style={{
+                                marginTop: '10px',
+                                width: '150px',
+                                minWidth: '150px',
+                                backgroundColor: show200Week ? '#4cceac' : 'transparent',
+                                color: show200Week ? color200Week : '#00b685',
+                                borderColor: show200Week ? color200Week : '#70d8bd'
+                            }}
+                             onClick={toggle200Week} className="button-reset">
+                                200 Week SMA
+                            </button>
+                        </div>
+                    )}
             </div>
-
-            {/* Conditional Rendering for the Tooltip */}
+                    
             {!isDashboard && tooltipData && (
                 <div
                     className="tooltip"
                     style={{
                         left: (() => {
-                            const sidebarWidth = isMobile ? -80 : -320; // Adjust sidebarWidth based on isMobile
-                            const cursorX = tooltipData.x - sidebarWidth; // Adjust cursorX for sidebar
-                            const chartWidth = chartContainerRef.current.clientWidth - sidebarWidth; // Adjust chartWidth for sidebar
-                            const tooltipWidth = 200; // Your tooltip's actual width
-                            const K = 10000; // Adjust this constant based on desired sensitivity
-                            const C = 300; // Base addition to stabilize the calculation
+                            const sidebarWidth = isMobile ? -80 : -320;
+                            const cursorX = tooltipData.x - sidebarWidth;
+                            const chartWidth = chartContainerRef.current.clientWidth - sidebarWidth;
+                            const tooltipWidth = 200;
+                            const K = 10000;
+                            const C = 300;
 
-                            // Calculate the inverse proportional offset
                             const offset = K / (chartWidth + C);
 
-                            // Calculate potential left and right positions with dynamic offset
                             const rightPosition = cursorX + offset;
                             const leftPosition = cursorX - tooltipWidth - offset;
 
                             if (rightPosition + tooltipWidth <= chartWidth) {
-                                return `${rightPosition}px`; // Fits on the right
+                                return `${rightPosition}px`;
                             } else if (leftPosition >= 0) {
-                                return `${leftPosition}px`; // Fits on the left
+                                return `${leftPosition}px`;
                             } else {
-                                return `${Math.max(0, Math.min(rightPosition, chartWidth - tooltipWidth))}px`; // Adjust near edge
+                                return `${Math.max(0, Math.min(rightPosition, chartWidth - tooltipWidth))}px`;
                             }
                         })(),
-                        top: `${tooltipData.y + 100}px`, // Adjust as needed
+                        top: `${tooltipData.y + 100}px`,
                     }}
                 >
                     <div style={{fontSize: '15px'}}>Ethereum</div>
@@ -475,14 +470,16 @@ const EthereumPrice = ({ isDashboard = false }) => {
                     <div>{tooltipData.date.toString()}</div>
                 </div>
             )}
-
-
-
             {
                 !isDashboard && (
                     <p className='chart-info'>
-                        Ethereum takes the second spot in the cryptocurrency market. It is a decentralized platform that enables smart contracts and decentralized applications to be built and operated without any downtime, fraud, control, or interference from a third party. Ethereum is not just a platform but also a programming language running on a blockchain, helping developers to build and publish distributed applications. Ethereum was proposed by Vitalik Buterin in late 2013 and development began in early 2014, with the network going live on July 30, 2015. Ethereum is the most actively used blockchain.
+                        Ethereum takes the second spot in the cryptocurrency market. It is a decentralized platform that enables smart contracts and decentralized
+                        applications to be built and operated without any downtime, fraud, control, or interference from a third party. Ethereum is not just a platform
+                        but also a programming language running on a blockchain, helping developers to build and publish distributed applications. Ethereum was proposed
+                        by Vitalik Buterin in late 2013 and development began in early 2014, with the network going live on July 30, 2015.
+                        Ethereum is the most actively used blockchain.
                     </p>
+
                 )   
             }
         </div>
