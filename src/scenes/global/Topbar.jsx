@@ -32,7 +32,8 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
     padding: '0 10px',
     backgroundColor: colors.primary[400],
     zIndex: 1000,
-    width: isMobile ? '100%' : `calc(100% - ${sidebarWidth}px)`, // Adjust width based on the sidebar and mobile view
+    width: isMobile ? '100%' : `calc(100% - ${sidebarWidth}px)`,
+    borderBottom: `1px solid ${colors.greenAccent[500]}` // Adjust width based on the sidebar and mobile view
   };
 
   // Function to determine the title and subtitle based on the current location
@@ -66,6 +67,8 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
         return { title: "Bitcoin Cycles", subtitle: "Start from either the cycle bottom or from the halving" };
       case "/fear-and-greed-chart":
         return { title: "Bitcoin Fear and Greed", subtitle: "Fear and Greed plotted over the Bitcoin Price" };
+      case "/altcoin-risk":
+        return { title: "Altcoin Risk Chart", subtitle: "Display the risk metric for a selection of altcoins" };
       default:
         return { title: "Welcome", subtitle: "" }; // Default title or could be a 404 page title
     }

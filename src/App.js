@@ -18,6 +18,7 @@ import FearAndGreed from "./components/FearAndGreed";
 import BitcoinLogRegression from "./components/BitcoinLogRegression";
 import BitcoinRiskColor from "./components/BitcoinRiskColor";
 import AltcoinPrice from "./components/AltcoinPrice";
+import AltcoinRisk from "./components/AltcoinRisk";
 import MarketCycles from "./components/MarketCycles";
 import FearAndGreedChart from "./components/FearAndGreedChart";
 import About from "./scenes/About";
@@ -61,6 +62,7 @@ function App() {
                 <Route path="/logarithmic-regression" element={<BasicChart ChartComponent={BitcoinLogRegression} />} />
                 <Route path="/risk-color" element={<BasicChart ChartComponent={BitcoinRiskColor} />} />
                 <Route path="/altcoin-price" element={<BasicChart ChartComponent={AltcoinPrice} />} />
+                <Route path="/altcoin-risk" element={<BasicChart ChartComponent={AltcoinRisk} />} />
                 <Route path="/market-cycles" element={<BasicChart ChartComponent={MarketCycles} />} />
                 <Route path="/fear-and-greed-chart" element={<BasicChart ChartComponent={FearAndGreedChart} />} />
                 <Route path="/about" element={<About />} />

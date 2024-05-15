@@ -7,7 +7,7 @@ const Header = ({ title, subtitle }) => {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm')); // This checks if the current viewport is small.
 
   return (
-    <Box mb="17px">
+    <Box mb="17px" >
       <Typography
         variant={isMobile ? 'h3' : 'h2'} // Smaller size for mobile
         color={colors.grey[100]}

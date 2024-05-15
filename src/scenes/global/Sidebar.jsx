@@ -65,6 +65,7 @@ const Sidebar = () => {
     { title: "Bitcoin Logarithmic Regression", to: "/logarithmic-regression", category: 'Indicators', icon: <TrendingUpIcon />, categoryIcon: <CategoryIcon /> },
     { title: "Bitcoin Risk Colour Chart", to: "/risk-color", category: 'Bitcoin', icon: <PaletteIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
     { title: "Altcoin Chart", to: "/altcoin-price", category: 'Altcoins', icon: <ShowChartIcon />, categoryIcon: <WarningOutlinedIcon /> },
+    { title: "Altcoin Risk Metric", to: "/altcoin-risk", category: 'Altcoins', icon: <AssessmentIcon />, categoryIcon: <WarningOutlinedIcon /> },
     { title: "Market Cycles", to: "/market-cycles", category: 'Bitcoin', icon: <RepeatIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
     { title: "Fear and Greed Chart", to: "/fear-and-greed-chart", category: 'Indicators', icon: <BalanceIcon />, categoryIcon: <CategoryIcon /> },
   ];
@@ -125,7 +126,7 @@ const Sidebar = () => {
     <Box sx={{
       "& .pro-sidebar-inner": {
         background: `${colors.primary[400]} !important`,
-        // borderRight: `1px solid ${colors.greenAccent[500]}`
+        borderRight: `1px solid ${colors.greenAccent[500]}`
       },
       "& .pro-icon-wrapper": {
         backgroundColor: "transparent !important",

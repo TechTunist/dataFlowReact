@@ -2,6 +2,7 @@ import { Box, Card, CardContent, Typography, Grid, useTheme } from "@mui/materia
 import BitcoinRisk from "../../components/BitcoinRisk"; 
 import BitcoinPrice from "../../components/BitcoinPrice";
 import AltcoinPrice from "../../components/AltcoinPrice";
+import AltcoinRisk from "../../components/AltcoinRisk";
 import EthereumRisk from "../../components/EthereumRisk"; 
 import EthereumPrice from "../../components/EthereumPrice";
 import MarketCycles from "../../components/MarketCycles";
@@ -214,7 +215,7 @@ const Dashboard = () => {
                 <MarketCycles isDashboard={true} />
               </Box>
               <Typography variant="body3" color="textSecondary" className='dashboard-info'>
-                Market cycles from bear-market low to bull-market high of the previous 3 or so cycles
+                Compare the previous crypto market cycles, either from the bear-market bottom or from the halving event.
               </Typography>
             </CardContent>
           </Card>
@@ -234,6 +235,25 @@ const Dashboard = () => {
               </Box>
               <Typography variant="body3" color="textSecondary" className='dashboard-info'>
                 Colour coded fear and greed levels.
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Altcoin Risk Chart */}
+        <Grid item xs={12} lg={6}>
+          <Card style={{backgroundColor: colors.primary[500]}}>
+            <CardContent>
+              <Typography variant="h4" gutterBottom component={Link} to="/altcoin-risk" style={{ textDecoration: 'none', color: colors.grey[100] }}
+                onMouseOver={({ target }) => target.style.color = colors.greenAccent[500]}
+                onMouseOut={({ target }) => target.style.color = colors.grey[100]}>
+                Altcoin Risk Metric
+              </Typography>
+              <Box height="400px" m="10px 0 0 0">
+                <AltcoinRisk isDashboard={true} />
+              </Box>
+              <Typography variant="body3" color="textSecondary" className='dashboard-info'>
+                Risk Metric applied to a selection of altcoins.
               </Typography>
             </CardContent>
           </Card>

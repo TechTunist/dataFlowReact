@@ -120,38 +120,31 @@ const MarketCycles = ({ isDashboard = false }) => {
                 ...prevLayout,
                 xaxis: { 
                     ...prevLayout.xaxis, 
-                    title: startPoint === 'bottom' ? 'Days from Bear Market Bottom' : 'Days from Halving' 
+                    title: !isDashboard ? (startPoint === 'bottom' ? 'Days from Bear Market Bottom' : 'Days from Halving') : ''
                 }
             }));
         }
-    }, [btcData, startPoint]);
+    }, [btcData, startPoint, isDashboard]);  // Added isDashboard as a dependency
 
     return (
         <div style={{ height: '100%' }}>
             {!isDashboard && (
                 <div className='chart-top-div'>
-                {!isDashboard && (
                     <div className="select-reset-wrapper">
-                    <select className="button-reset" value={startPoint} onChange={(e) => setStartPoint(e.target.value)}>
-                        <option value="bottom">From Market Bottom</option>
-                        <option value="halving">From the Halving</option>
-                    </select>
+                        <select className="button-reset" value={startPoint} onChange={(e) => setStartPoint(e.target.value)}>
+                            <option value="bottom">From Market Bottom</option>
+                            <option value="halving">From the Halving</option>
+                        </select>
+                    </div>
+                    <div>
+                        {/* placeholder for styling */}
+                    </div>
+                    <div>
+                        <button onClick={resetChartView} className="button-reset">
+                            Reset Chart
+                        </button>
+                    </div>
                 </div>
-                )}
-                
-                <div>
-                    {/* placeholder for styling */}
-                </div>
-                <div>
-                    {
-                        !isDashboard && (
-                            <button onClick={resetChartView} className="button-reset">
-                                Reset Chart
-                            </button>
-                        )
-                    }
-                </div>
-            </div>
             )}
             
             <div className="chart-container" style={{ position: 'relative', height: 'calc(100% - 40px)', width: '100%', border: '2px solid #a9a9a9' }}>

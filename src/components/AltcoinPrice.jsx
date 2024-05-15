@@ -426,41 +426,41 @@ const AltcoinPrice = ({ isDashboard = false }) => {
         <div style={{ height: '100%' }}>
             {!isDashboard && (
                 <div className='chart-top-div'>
-                {!isDashboard && (
-                    <div>
-                    {/* The switch and label go here */}
-                    <label className="switch">
-                        <input type="checkbox" checked={scaleMode === 1} onChange={toggleScaleMode} />
-                        <span className="slider round"></span>
-                    </label>
-                    <span className="scale-mode-label" style={{color: colors.primary[100]}}>{scaleMode === 1 ? 'Logarithmic' : 'Linear'}</span>
+                    {!isDashboard && (
+                        <div>
+                        {/* The switch and label go here */}
+                        <label className="switch">
+                            <input type="checkbox" checked={scaleMode === 1} onChange={toggleScaleMode} />
+                            <span className="slider round"></span>
+                        </label>
+                        <span className="scale-mode-label" style={{color: colors.primary[100]}}>{scaleMode === 1 ? 'Logarithmic' : 'Linear'}</span>
+                    </div>
+                    )}
+                    
+                    <div style={{ display: 'flex', justifyContent: 'flex-end'}}>
+                        {
+                            !isDashboard && (
+                                <button
+                                    onClick={setInteractivity}
+                                    className="button-reset"
+                                    style={{
+                                        backgroundColor: isInteractive ? '#4cceac' : 'transparent',
+                                        color: isInteractive ? 'black' : '#31d6aa',
+                                        borderColor: isInteractive ? 'violet' : '#70d8bd'
+                                    }}>
+                                    {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
+                                </button>
+                            )   
+                        }
+                        {
+                            !isDashboard && (
+                                <button onClick={resetChartView} className="button-reset extra-margin">
+                                    Reset Chart
+                                </button>
+                            )   
+                        }
+                    </div>              
                 </div>
-                )}
-                
-                <div style={{ display: 'flex', justifyContent: 'flex-end'}}>
-                    {
-                        !isDashboard && (
-                            <button
-                                onClick={setInteractivity}
-                                className="button-reset"
-                                style={{
-                                    backgroundColor: isInteractive ? '#4cceac' : 'transparent',
-                                    color: isInteractive ? 'black' : '#31d6aa',
-                                    borderColor: isInteractive ? 'violet' : '#70d8bd'
-                                }}>
-                                {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
-                            </button>
-                        )   
-                    }
-                    {
-                        !isDashboard && (
-                            <button onClick={resetChartView} className="button-reset extra-margin">
-                                Reset Chart
-                            </button>
-                        )   
-                    }
-                </div>              
-            </div>
             )}
             
             <div className="chart-container" style={{ 
