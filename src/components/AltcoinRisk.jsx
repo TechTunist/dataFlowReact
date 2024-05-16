@@ -52,12 +52,37 @@ const AltcoinPrice = ({ isDashboard = false }) => {
             const avg = subset.reduce((sum, curr) => sum + curr.value, 0) / subset.length;
             return { ...item, MA: avg };
         });
-
+    
+        let consecutiveDeclineDays = 0;
+    
         movingAverage.forEach((item, index) => {
-            const preavg = (Math.log(item.value) - Math.log(item.MA)) * index ** 0.395;
+            const changeFactor = index ** 0.395;
+            let preavg = (Math.log(item.value) - Math.log(item.MA)) * changeFactor;
+    
+            if (index > 0) {
+                const previousItem = movingAverage[index - 1];
+                const priceChange = item.value / previousItem.value;
+    
+                // Detect and handle parabolic increases
+                if (priceChange > 1.5) {
+                    const dampingFactor = 1 / priceChange;
+                    preavg *= dampingFactor;
+                    consecutiveDeclineDays = 0; // Reset decline counter on price increase
+                }
+    
+                // Detect and handle prolonged declines
+                if (priceChange < 1) {
+                    consecutiveDeclineDays++;
+                    const declineFactor = Math.min(consecutiveDeclineDays / 30, 1); // Scale factor over 30 days
+                    preavg *= (1 + declineFactor); // Increase sensitivity during prolonged declines
+                } else {
+                    consecutiveDeclineDays = 0; // Reset decline counter on price increase
+                }
+            }
+    
             item.Preavg = preavg;
         });
-
+    
         const preavgValues = movingAverage.map(item => item.Preavg);
         const preavgMin = Math.min(...preavgValues);
         const preavgMax = Math.max(...preavgValues);
@@ -65,9 +90,11 @@ const AltcoinPrice = ({ isDashboard = false }) => {
             ...item,
             Risk: (item.Preavg - preavgMin) / (preavgMax - preavgMin)
         }));
-
+    
         return normalizedRisk;
     };
+    
+    
 
     useEffect(() => {
         const cacheKey = `${selectedCoin.toLowerCase()}Data`;
@@ -220,7 +247,7 @@ const AltcoinPrice = ({ isDashboard = false }) => {
                     <div>
                         {!isDashboard && (
                             <div>
-                                <select className="button-reset" value={selectedCoin} onChange={handleSelectChange}>
+                                <select className="button-risk" value={selectedCoin} onChange={handleSelectChange}>
                                     {altcoins.map((coin) => (
                                         <option key={coin.value} value={coin.value}>{coin.label}</option>
                                     ))}

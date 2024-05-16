@@ -121,21 +121,39 @@ input:checked + .slider:before {
 .button-reset {
     color: #31d6aa; 
     border: 2px solid #31d6aa; 
-    border: 2px solid #ff5100; 
     background-color: transparent; 
     padding: 5px 15px; 
     font-size: 0.9rem;
     border-radius: 5px;
     cursor: pointer;
     box-shadow: none; 
-    transition: background-color 0.3s ease, box-shadow 0.3s ease, color 0.3s ease;
+    transition: background-color 0.6s ease, border-color 0.3s ease, color 0.6s ease;
+    /* margin-left: 10px; */
+}
+
+.button-risk {
+    color: #31d6aa; 
+    border: 2px solid #31d6aa; 
+    background-color: transparent; 
+    padding: 5px 15px; 
+    font-size: 1.1rem;
+    border-radius: 5px;
+    cursor: pointer;
+    box-shadow: none; 
+    transition: background-color 0.6s ease, border-color 0.3s ease, color 0.6s ease;
     /* margin-left: 10px; */
 }
 
 .button-reset:hover {
     color: #70d8bd; /* Keep text white on hover */
     background-color: transparent; /* Maintain a transparent background */
-    border: 2px solid white; /* Maintain white border */
+    border-color:rgb(149, 129, 204); /* Maintain white border */
+}
+
+.button-risk:hover {
+    color: #70d8bd; /* Keep text white on hover */
+    background-color: transparent; /* Maintain a transparent background */
+    border-color: rgb(149, 129, 204); /* Maintain white border */
 }
 
 .button-reset:active {

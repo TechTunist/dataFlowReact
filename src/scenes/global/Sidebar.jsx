@@ -152,7 +152,7 @@ const Sidebar = () => {
           <Box mb="5px">
             {/* Main Logo and Title */}
             <Box display="flex" justifyContent="center" alignItems="center">
-              <img alt="main-logo" width="100px" height="100px" src={`../../assets/cryptological-logo.png`}  />
+              <img alt="main-logo" width="100px" height="100px" src={`../../assets/cryptological-original-logo.png`}  />
             </Box>
             <Box display="flex" justifyContent="center" alignItems="center">
               <img alt="main-logo" width="200px" height="50px" src={`../../assets/cryptological-title-resized.png`}  />

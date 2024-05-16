@@ -32,7 +32,7 @@
 ### DESIGN
 
 - Add a splash page
-- Add an about page
+- Add an about page (done)
 
 ### INFRASTRUCTURE
 
