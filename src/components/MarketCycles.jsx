@@ -120,11 +120,11 @@ const MarketCycles = ({ isDashboard = false }) => {
                 ...prevLayout,
                 xaxis: { 
                     ...prevLayout.xaxis, 
-                    title: !isDashboard ? (startPoint === 'bottom' ? 'Days from Bear Market Bottom' : 'Days from Halving') : ''
+                    title: !isDashboard && !isMobile ? (startPoint === 'bottom' ? 'Days from Bear Market Bottom' : 'Days from Halving') : ''
                 }
             }));
         }
-    }, [btcData, startPoint, isDashboard]);  // Added isDashboard as a dependency
+    }, [btcData, startPoint, isDashboard, isMobile]);  // Added isDashboard as a dependency
 
     return (
         <div style={{ height: '100%' }}>

@@ -24,6 +24,10 @@ const AltcoinPrice = ({ isDashboard = false }) => {
         { label: 'Dogecoin', value: 'DOGE' },
         { label: 'Chainlink', value: 'LINK' },
         { label: 'XRP', value: 'XRP' },
+        { label: 'Avalanche', value: 'AVAX' },
+        { label: 'Toncoin', value: 'TON' },
+        { label: 'Binance-Coin', value: 'BNB' },
+        { label: 'Polkadot', value: 'DOT' },
         // Add more altcoins as needed
     ];
 
