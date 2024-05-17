@@ -454,7 +454,7 @@ const EthereumRisk = ({ isDashboard = false }) => {
                     <div className='span-container'>
                     <span style={{ marginRight: '20px', display: 'inline-block' }}>
                         <span style={{ backgroundColor: 'gray', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
-                        Bitcoin Price
+                        Ethereum Price
                     </span>
                     <span style={{ display: 'inline-block' }}>
                         <span style={{ backgroundColor: '#ff0062', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
