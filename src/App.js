@@ -21,6 +21,9 @@ import AltcoinPrice from "./components/AltcoinPrice";
 import AltcoinRisk from "./components/AltcoinRisk";
 import MarketCycles from "./components/MarketCycles";
 import FearAndGreedChart from "./components/FearAndGreedChart";
+import UsInflationChart from "./components/UsInflation";
+import UsUnemploymentChart from "./components/UsUnemployment";
+import UsInterestChart from "./components/UsInterest";
 import About from "./scenes/About";
 import LoginSignup from "./scenes/LoginSignup";
 import { useLocation } from 'react-router-dom';
@@ -65,6 +68,9 @@ function App() {
                 <Route path="/altcoin-risk" element={<BasicChart ChartComponent={AltcoinRisk} />} />
                 <Route path="/market-cycles" element={<BasicChart ChartComponent={MarketCycles} />} />
                 <Route path="/fear-and-greed-chart" element={<BasicChart ChartComponent={FearAndGreedChart} />} />
+                <Route path="/us-inflation" element={<BasicChart ChartComponent={UsInflationChart} />} />
+                <Route path="/us-unemployment" element={<BasicChart ChartComponent={UsUnemploymentChart} />} />
+                <Route path="/us-interest" element={<BasicChart ChartComponent={UsInterestChart} />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/login-signup" element={<LoginSignup />} />
               </Routes>

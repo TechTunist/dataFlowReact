@@ -69,8 +69,14 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
         return { title: "Bitcoin Fear and Greed", subtitle: "Fear and Greed plotted over the Bitcoin Price" };
       case "/altcoin-risk":
         return { title: "Altcoin Risk Chart", subtitle: "Display the risk metric for a selection of altcoins" };
+      case "/us-inflation":
+        return { title: "US Inflation", subtitle: "Annualised inflation rate" };
+      case "/us-unemployment":
+        return { title: "US Unemployment", subtitle: "Historical US Unemployment Rate" };
+      case "/us-interest":
+        return { title: "US Interest Rate", subtitle: "Fed Funds Rate" };
       default:
-        return { title: "Welcome", subtitle: "" }; // Default title or could be a 404 page title
+        return { title: "CryptoLogical", subtitle: "" }; // Default title or could be a 404 page title
     }
   };
 

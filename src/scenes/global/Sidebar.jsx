@@ -68,6 +68,9 @@ const Sidebar = () => {
     { title: "Altcoin Risk Metric", to: "/altcoin-risk", category: 'Altcoins', icon: <AssessmentIcon />, categoryIcon: <WarningOutlinedIcon /> },
     { title: "Market Cycles", to: "/market-cycles", category: 'Bitcoin', icon: <RepeatIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
     { title: "Fear and Greed Chart", to: "/fear-and-greed-chart", category: 'Indicators', icon: <BalanceIcon />, categoryIcon: <CategoryIcon /> },
+    { title: "US Inflation Chart", to: "/us-inflation", category: 'MacroEconomics', icon: <BalanceIcon />, categoryIcon: <CategoryIcon /> },
+    { title: "US Unemployment Chart", to: "/us-unemployment", category: 'MacroEconomics', icon: <BalanceIcon />, categoryIcon: <CategoryIcon /> },
+    { title: "US Interest Rate Chart", to: "/us-interest", category: 'MacroEconomics', icon: <BalanceIcon />, categoryIcon: <CategoryIcon /> },
   ];
   
 

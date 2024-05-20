@@ -109,7 +109,6 @@ const AltcoinPrice = ({ isDashboard = false }) => {
             fetch(`https://tunist.pythonanywhere.com/api/${selectedCoin.toLowerCase()}/price/`)
                 .then(response => response.json())
                 .then(data => {
-                    console.log('Fetched data:', data); // Debugging output
                     const formattedData = data.map(item => ({
                         time: item.date,
                         value: parseFloat(item.close)
@@ -128,7 +127,6 @@ const AltcoinPrice = ({ isDashboard = false }) => {
             if (parsedData.length > 0) {
                 const lastCachedDate = new Date(parsedData[parsedData.length - 1].time);
                 if (lastCachedDate.setHours(0, 0, 0, 0) === today.setHours(0, 0, 0, 0)) {
-                    console.log('Using cached data:', parsedData); // Debugging output
                     setChartData(parsedData);
                 } else {
                     fetchAltData();

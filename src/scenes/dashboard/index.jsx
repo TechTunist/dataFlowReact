@@ -14,6 +14,9 @@ import '../../styling/bitcoinChart.css';
 import { tokens } from "../../theme";
 import { Link } from "react-router-dom";
 import FearAndGreedChart from "../../components/FearAndGreedChart";
+import UsInflationChart from "../../components/UsInflation";
+import UsUnemploymentChart from "../../components/UsUnemployment";
+import UsInterestChart from "../../components/UsInterest";
 
 
 const Dashboard = () => {
@@ -254,6 +257,63 @@ const Dashboard = () => {
               </Box>
               <Typography variant="body3" color="textSecondary" className='dashboard-info'>
                 Risk Metric applied to a selection of altcoins.
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Inflation Chart */}
+        <Grid item xs={12} lg={6}>
+          <Card style={{backgroundColor: colors.primary[500]}}>
+            <CardContent>
+              <Typography variant="h4" gutterBottom component={Link} to="/us-inflation" style={{ textDecoration: 'none', color: colors.grey[100] }}
+                onMouseOver={({ target }) => target.style.color = colors.greenAccent[500]}
+                onMouseOut={({ target }) => target.style.color = colors.grey[100]}>
+                US Historical Inflation
+              </Typography>
+              <Box height="400px" m="10px 0 0 0">
+                <UsInflationChart isDashboard={true} />
+              </Box>
+              <Typography variant="body3" color="textSecondary" className='dashboard-info'>
+                Entire history of inflation rates in the United States.
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Unemployment Chart */}
+        <Grid item xs={12} lg={6}>
+          <Card style={{backgroundColor: colors.primary[500]}}>
+            <CardContent>
+              <Typography variant="h4" gutterBottom component={Link} to="/us-unemployment" style={{ textDecoration: 'none', color: colors.grey[100] }}
+                onMouseOver={({ target }) => target.style.color = colors.greenAccent[500]}
+                onMouseOut={({ target }) => target.style.color = colors.grey[100]}>
+                US Historical Inflation
+              </Typography>
+              <Box height="400px" m="10px 0 0 0">
+                <UsUnemploymentChart isDashboard={true} />
+              </Box>
+              <Typography variant="body3" color="textSecondary" className='dashboard-info'>
+                Historical unemployment rates in the United States.
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Interest Chart */}
+        <Grid item xs={12} lg={6}>
+          <Card style={{backgroundColor: colors.primary[500]}}>
+            <CardContent>
+              <Typography variant="h4" gutterBottom component={Link} to="/us-interest" style={{ textDecoration: 'none', color: colors.grey[100] }}
+                onMouseOver={({ target }) => target.style.color = colors.greenAccent[500]}
+                onMouseOut={({ target }) => target.style.color = colors.grey[100]}>
+                US Historical Interest Rates
+              </Typography>
+              <Box height="400px" m="10px 0 0 0">
+                <UsInterestChart isDashboard={true} />
+              </Box>
+              <Typography variant="body3" color="textSecondary" className='dashboard-info'>
+                Historical interest rates in the United States.
               </Typography>
             </CardContent>
           </Card>
