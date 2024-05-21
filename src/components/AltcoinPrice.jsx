@@ -213,7 +213,7 @@ const AltcoinPrice = ({ isDashboard = false }) => {
         setShow100Week(false);
         setShow200Week(false);
         
-    }, [selectedCoin, denominator]
+    }, [selectedCoin, denominator, scaleMode]
 );
 
     
@@ -422,7 +422,7 @@ const AltcoinPrice = ({ isDashboard = false }) => {
         };
     
         resetSMASeries();
-    }, [selectedCoin, denominator]);
+    }, [selectedCoin, denominator, scaleMode]);
     
     
 

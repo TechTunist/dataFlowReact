@@ -311,7 +311,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
         };
 
         resetSMASeries();
-    }, []);
+    }, [scaleMode]);
 
     return (
         <div style={{ height: '100%' }}>
