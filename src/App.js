@@ -24,6 +24,7 @@ import FearAndGreedChart from "./components/FearAndGreedChart";
 import UsInflationChart from "./components/UsInflation";
 import UsUnemploymentChart from "./components/UsUnemployment";
 import UsInterestChart from "./components/UsInterest";
+import UsCombinedMacroChart from "./components/UsCombinedMacro";
 import About from "./scenes/About";
 import LoginSignup from "./scenes/LoginSignup";
 import { useLocation } from 'react-router-dom';
@@ -71,6 +72,7 @@ function App() {
                 <Route path="/us-inflation" element={<BasicChart ChartComponent={UsInflationChart} />} />
                 <Route path="/us-unemployment" element={<BasicChart ChartComponent={UsUnemploymentChart} />} />
                 <Route path="/us-interest" element={<BasicChart ChartComponent={UsInterestChart} />} />
+                <Route path="/us-combined-macro" element={<BasicChart ChartComponent={UsCombinedMacroChart} />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/login-signup" element={<LoginSignup />} />
               </Routes>

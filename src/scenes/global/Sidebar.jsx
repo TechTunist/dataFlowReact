@@ -17,13 +17,14 @@ import ShowChartIcon from "@mui/icons-material/ShowChart";
 import AssessmentIcon from "@mui/icons-material/Assessment";
 import TimelineIcon from "@mui/icons-material/Timeline";
 import NetworkCheckIcon from "@mui/icons-material/NetworkCheck";
-import SentimentVerySatisfiedIcon from "@mui/icons-material/SentimentVerySatisfied";
+import SentimentVeryDissatisfiedIcon from "@mui/icons-material/SentimentVeryDissatisfied";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import PaletteIcon from "@mui/icons-material/Palette";
 import MultilineChartIcon from "@mui/icons-material/MultilineChart";
 import RepeatIcon from "@mui/icons-material/Repeat";
 import BalanceIcon from "@mui/icons-material/Balance";
 import CurrencyExchangeIcon from '@mui/icons-material/CurrencyExchange';
+import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
 
 import FitbitIcon from "@mui/icons-material/Fitbit"; // Check if this exists or find the closest match.
 import CategoryIcon from "@mui/icons-material/Category";  // Generic icon for other categories.
@@ -68,9 +69,10 @@ const Sidebar = () => {
     { title: "Altcoin Risk Metric", to: "/altcoin-risk", category: 'Altcoins', icon: <AssessmentIcon />, categoryIcon: <WarningOutlinedIcon /> },
     { title: "Market Cycles", to: "/market-cycles", category: 'Bitcoin', icon: <RepeatIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
     { title: "Fear and Greed Chart", to: "/fear-and-greed-chart", category: 'Indicators', icon: <BalanceIcon />, categoryIcon: <CategoryIcon /> },
-    { title: "US Inflation Chart", to: "/us-inflation", category: 'MacroEconomics', icon: <BalanceIcon />, categoryIcon: <CategoryIcon /> },
-    { title: "US Unemployment Chart", to: "/us-unemployment", category: 'MacroEconomics', icon: <BalanceIcon />, categoryIcon: <CategoryIcon /> },
+    { title: "US Inflation Chart", to: "/us-inflation", category: 'MacroEconomics', icon: <AddShoppingCartIcon />, categoryIcon: <CategoryIcon /> },
+    { title: "US Unemployment Chart", to: "/us-unemployment", category: 'MacroEconomics', icon: <SentimentVeryDissatisfiedIcon />, categoryIcon: <CategoryIcon /> },
     { title: "US Interest Rate Chart", to: "/us-interest", category: 'MacroEconomics', icon: <BalanceIcon />, categoryIcon: <CategoryIcon /> },
+    { title: "US Macro Information Chart", to: "/us-combined-macro", category: 'MacroEconomics', icon: <BalanceIcon />, categoryIcon: <CategoryIcon /> }, 
   ];
   
 

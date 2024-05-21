@@ -75,6 +75,8 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
         return { title: "US Unemployment", subtitle: "Historical US Unemployment Rate" };
       case "/us-interest":
         return { title: "US Interest Rate", subtitle: "Fed Funds Rate" };
+      case "/us-combined-macro":
+        return { title: "US Macro Information", subtitle: "Compare US Macro Data" };
       default:
         return { title: "CryptoLogical", subtitle: "" }; // Default title or could be a 404 page title
     }

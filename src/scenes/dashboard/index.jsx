@@ -17,6 +17,7 @@ import FearAndGreedChart from "../../components/FearAndGreedChart";
 import UsInflationChart from "../../components/UsInflation";
 import UsUnemploymentChart from "../../components/UsUnemployment";
 import UsInterestChart from "../../components/UsInterest";
+import UsCombinedMacroChart from "../../components/UsCombinedMacro";
 
 
 const Dashboard = () => {
@@ -269,7 +270,7 @@ const Dashboard = () => {
               <Typography variant="h4" gutterBottom component={Link} to="/us-inflation" style={{ textDecoration: 'none', color: colors.grey[100] }}
                 onMouseOver={({ target }) => target.style.color = colors.greenAccent[500]}
                 onMouseOut={({ target }) => target.style.color = colors.grey[100]}>
-                US Historical Inflation
+                US Historical Annualised Inflation
               </Typography>
               <Box height="400px" m="10px 0 0 0">
                 <UsInflationChart isDashboard={true} />
@@ -288,7 +289,7 @@ const Dashboard = () => {
               <Typography variant="h4" gutterBottom component={Link} to="/us-unemployment" style={{ textDecoration: 'none', color: colors.grey[100] }}
                 onMouseOver={({ target }) => target.style.color = colors.greenAccent[500]}
                 onMouseOut={({ target }) => target.style.color = colors.grey[100]}>
-                US Historical Inflation
+                US Historical Unemployment
               </Typography>
               <Box height="400px" m="10px 0 0 0">
                 <UsUnemploymentChart isDashboard={true} />
@@ -314,6 +315,25 @@ const Dashboard = () => {
               </Box>
               <Typography variant="body3" color="textSecondary" className='dashboard-info'>
                 Historical interest rates in the United States.
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Combined US Macro Chart */}
+        <Grid item xs={12} lg={6}>
+          <Card style={{backgroundColor: colors.primary[500]}}>
+            <CardContent>
+              <Typography variant="h4" gutterBottom component={Link} to="/us-combined-macro" style={{ textDecoration: 'none', color: colors.grey[100] }}
+                onMouseOver={({ target }) => target.style.color = colors.greenAccent[500]}
+                onMouseOut={({ target }) => target.style.color = colors.grey[100]}>
+                US Macro Information
+              </Typography>
+              <Box height="400px" m="10px 0 0 0">
+                <UsCombinedMacroChart isDashboard={true} />
+              </Box>
+              <Typography variant="body3" color="textSecondary" className='dashboard-info'>
+                Compare historical US macro information.
               </Typography>
             </CardContent>
           </Card>
