@@ -72,7 +72,7 @@ const Sidebar = () => {
     { title: "US Inflation Chart", to: "/us-inflation", category: 'MacroEconomics', icon: <AddShoppingCartIcon />, categoryIcon: <CategoryIcon /> },
     { title: "US Unemployment Chart", to: "/us-unemployment", category: 'MacroEconomics', icon: <SentimentVeryDissatisfiedIcon />, categoryIcon: <CategoryIcon /> },
     { title: "US Interest Rate Chart", to: "/us-interest", category: 'MacroEconomics', icon: <BalanceIcon />, categoryIcon: <CategoryIcon /> },
-    { title: "US Macro Information Chart", to: "/us-combined-macro", category: 'MacroEconomics', icon: <BalanceIcon />, categoryIcon: <CategoryIcon /> }, 
+    { title: "US Macro Information Chart", to: "/us-combined-macro", category: 'MacroEconomics', icon: <MultilineChartIcon />, categoryIcon: <CategoryIcon /> }, 
   ];
   
 

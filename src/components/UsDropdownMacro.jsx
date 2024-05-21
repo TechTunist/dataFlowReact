@@ -10,6 +10,7 @@ const UsCombinedMacroChart = ({ isDashboard = false }) => {
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
     const [chartData, setChartData] = useState([]);
+    const [selectedData, setSelectedData] = useState('inflation');
     const isMobile = useIsMobile();
     const [layout, setLayout] = useState({});
 
@@ -37,9 +38,9 @@ const UsCombinedMacroChart = ({ isDashboard = false }) => {
                     }
                     return {
                         time: item.date,
-                        inflation_value: lastKnownInflation !== null ? lastKnownInflation / 100 : 0,
-                        unemployment_value: item.unemployment_rate ? parseFloat(item.unemployment_rate) / 100 : 0,
-                        interest_value: item.interest_rate ? parseFloat(item.interest_rate) / 100 : 0,
+                        inflation_value: lastKnownInflation,
+                        unemployment_value: item.unemployment_rate ? parseFloat(item.unemployment_rate) : null,
+                        interest_value: item.interest_rate ? parseFloat(item.interest_rate) : null,
                     };
                 });
 
@@ -67,6 +68,13 @@ const UsCombinedMacroChart = ({ isDashboard = false }) => {
         <div style={{ height: '100%' }}>
             {!isDashboard && (
                 <div className='chart-top-div'>
+                    <div className="select-reset-wrapper">
+                        <select className="button-reset" value={selectedData} onChange={(e) => setSelectedData(e.target.value)}>
+                            <option value="inflation">Inflation Rate</option>
+                            <option value="unemployment">Unemployment Rate</option>
+                            <option value="interest">Interest Rate</option>
+                        </select>
+                    </div>
                     <div>
                         {/* placeholder for styling */}
                     </div>
@@ -83,36 +91,21 @@ const UsCombinedMacroChart = ({ isDashboard = false }) => {
                     data={[
                         {
                             x: chartData.map(d => d.time),
-                            y: chartData.map(d => d.inflation_value),
+                            y: chartData.map(d => d[`${selectedData}_value`]),
                             type: 'scatter',
                             mode: 'lines',
-                            name: 'Inflation Rate',
+                            name: selectedData.charAt(0).toUpperCase() + selectedData.slice(1) + ' Rate',
                             line: { color: colors.primary[100] }
-                        },
-                        {
-                            x: chartData.map(d => d.time),
-                            y: chartData.map(d => d.unemployment_value),
-                            type: 'scatter',
-                            mode: 'lines',
-                            name: 'Unemployment Rate',
-                            line: { color: 'blue' }
-                        },
-                        {
-                            x: chartData.map(d => d.time),
-                            y: chartData.map(d => d.interest_value),
-                            type: 'scatter',
-                            mode: 'lines',
-                            name: 'Interest Rate',
-                            line: { color: 'green' }
                         }
                     ]}
                     layout={{
+                        title: isDashboard ? '' : 'US Combined Macro Data',
                         margin: { l: 50, r: 50, b: 30, t: 50, pad: 4 },
                         plot_bgcolor: colors.primary[700],
                         paper_bgcolor: colors.primary[700],
                         font: { color: colors.primary[100] },
-                        xaxis: { showgrid: false },
-                        yaxis: { tickformat: ',.0%', title: '' },
+                        xaxis: { title: 'Date' },
+                        yaxis: { title: selectedData.charAt(0).toUpperCase() + selectedData.slice(1) + ' Rate' },
                         showlegend: !isDashboard,
                         hovermode: 'x unified',
                         legend: {
