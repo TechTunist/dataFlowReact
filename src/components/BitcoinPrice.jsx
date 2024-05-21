@@ -107,7 +107,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
         }
 
         function fetchBtcData() {
-            fetch('n')
+            fetch('https://tunist.pythonanywhere.com/api/btc/price/')
             .then(response => response.json())
             .then(data => {
                 const formattedData = data.map(item => ({
