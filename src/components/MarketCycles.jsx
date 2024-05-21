@@ -154,7 +154,7 @@ const MarketCycles = ({ isDashboard = false }) => {
                         y: cycle.data.map(d => d.roi),
                         type: 'scatter',
                         mode: 'lines',
-                        name: cycle.name,
+                        name: isMobile ? cycle.shortName : cycle.name,
                         text: cycle.data.map(d => `<b>Cycle: ${d.cycle}<br>Days from Bottom: ${d.day}<br>Log ROI: ${d.roi.toFixed(2)}<br>Date: ${new Date(d.date).toLocaleDateString()}</b>`),
                         hoverinfo: 'text',
                         hovertemplate: `<b>${cycle.shortName}   ROI: %{y:.2f}</b><extra></extra>`

@@ -5,9 +5,11 @@ import { useTheme } from "@mui/material";
 import '../styling/bitcoinChart.css';
 import LastUpdated from '../hooks/LastUpdated';
 import BitcoinFees from './BitcoinTransactionFees';
+import useIsMobile from '../hooks/useIsMobile';
 
 const FearAndGreedChart = ({ isDashboard = false }) => {
     const theme = useTheme();
+    const isMobile = useIsMobile();
     const colors = tokens(theme.palette.mode);
     const [layout, setLayout] = useState({
         title: isDashboard ? '' : 'Bitcoin Price vs. Fear and Greed Index',
@@ -173,7 +175,7 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
                         yaxis: { title: 'Price (USD)', type: 'log' },
                         showlegend: !isDashboard, // Control legend visibility
                         legend: !isDashboard ? {
-                            title: { text: 'Select Risk Bands' }, // Add a title to the legend
+                            title: { text: isMobile ? '' : 'Select Risk Bands' }, // Add a title to the legend
                             orientation: 'h', // 'h' for horizontal layout
                             x: 0.5, // Center the legend in the x-axis
                             xanchor: 'center', // Use 'center' to center-align the legend based on x position
