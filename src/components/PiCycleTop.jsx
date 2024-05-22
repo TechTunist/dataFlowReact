@@ -5,6 +5,7 @@ import { useTheme } from '@mui/material';
 import { tokens } from '../theme';
 import LastUpdated from '../hooks/LastUpdated';
 import BitcoinFees from './BitcoinTransactionFees';
+import useIsMobile from '../hooks/useIsMobile';
 
 
 const PiCycleTopChart = ({ isDashboard = false }) => {
@@ -18,6 +19,8 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
     const [showMarkers, setShowMarkers] = useState(false);
     const [isInteractive, setIsInteractive] = useState(false);
     const [setIsDashboard] = useState(isDashboard);
+    const [tooltipData, setTooltipData] = useState(null);
+    const isMobile = useIsMobile();
 
     const markers = [
         {
@@ -171,6 +174,34 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
                     minBarSpacing: 0.001,
                 },
                 priceLineVisible: false,
+            });
+
+            // update tooltip data on crosshairMove event
+            chart.subscribeCrosshairMove(param => {
+                if (
+                    param.point === undefined ||
+                    !param.time ||
+                    param.point.x < 0 ||
+                    param.point.x > chartContainerRef.current.clientWidth ||
+                    param.point.y < 0 ||
+                    param.point.y > chartContainerRef.current.clientHeight
+                ) {
+                    setTooltipData(null);
+                } else {
+                    const dateStr = param.time;
+                    const bitcoinData = param.seriesData.get(bitcoinSeries);
+                    const sma111Data = param.seriesData.get(sma111Series);
+                    const sma350Data = param.seriesData.get(sma350Series);
+    
+                    setTooltipData({
+                        date: dateStr,
+                        bitcoinValue: bitcoinData ? bitcoinData.value : null,
+                        sma111Value: sma111Data ? sma111Data.value : null,
+                        sma350Value: sma350Data ? sma350Data.value : null,
+                        x: param.point.x,
+                        y: param.point.y,
+                    });
+                }
             });
 
             // Add the series to the chart
@@ -341,6 +372,43 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
                     <BitcoinFees />
                 )}
             </div>
+            {/* Conditional Rendering for the Tooltip */}
+            {!isDashboard && tooltipData && (
+                <div
+                    className="tooltip"
+                    style={{
+                        left: (() => {
+                            const sidebarWidth = isMobile ? -80 : -300; // Adjust sidebarWidth based on isMobile
+                            const cursorX = tooltipData.x - sidebarWidth; // Adjust cursorX for sidebar
+                            const chartWidth = chartContainerRef.current.clientWidth - sidebarWidth; // Adjust chartWidth for sidebar
+                            const tooltipWidth = 200; // Your tooltip's actual width
+                            const K = 10000; // Adjust this constant based on desired sensitivity
+                            const C = 300; // Base addition to stabilize the calculation
+
+                            // Calculate the inverse proportional offset
+                            const offset = K / (chartWidth + C);
+
+                            // Calculate potential left and right positions with dynamic offset
+                            const rightPosition = cursorX + offset;
+                            const leftPosition = cursorX - tooltipWidth - offset;
+
+                            if (rightPosition + tooltipWidth <= chartWidth) {
+                                return `${rightPosition}px`; // Fits on the right
+                            } else if (leftPosition >= 0) {
+                                return `${leftPosition}px`; // Fits on the left
+                            } else {
+                                return `${Math.max(0, Math.min(rightPosition, chartWidth - tooltipWidth))}px`; // Adjust near edge
+                            }
+                        })(),
+                        top: `${tooltipData.y + 100}px`, // Adjust as needed
+                    }}
+                >
+                    <b>{tooltipData.bitcoinValue && <div>Bitcoin Price: ${tooltipData.bitcoinValue.toFixed(2)}</div>}
+                    {tooltipData.sma111Value && <div style={{color: 'lime'}}>111SMA: ${tooltipData.sma111Value.toFixed(2)}</div>}
+                    {tooltipData.sma350Value && <div style={{color: 'violet'}}>350SMA: ${tooltipData.sma350Value.toFixed(2)}</div>}
+                    {tooltipData.date && <div style={{fontSize: '13px'}}>{tooltipData.date}</div>}</b>
+                </div>
+            )}
             <div>
                 {
                     !isDashboard && (

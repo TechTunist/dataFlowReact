@@ -134,7 +134,7 @@ const UsCombinedMacroChart = ({ isDashboard = false }) => {
             </div>
             <div className='under-chart'>
                 {!isDashboard && (
-                    <LastUpdated storageKey="combinedMacroData" />
+                    <LastUpdated storageKey="interestData" />
                 )}
             </div>
             <div>

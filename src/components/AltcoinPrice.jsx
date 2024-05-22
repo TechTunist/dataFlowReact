@@ -69,6 +69,7 @@ const AltcoinPrice = ({ isDashboard = false }) => {
         { label: 'Toncoin', value: 'TON' },
         { label: 'Binance-Coin', value: 'BNB' },
         { label: 'Polkadot', value: 'DOT' },
+        { label: 'Cronos', value: 'CRO' },
         // Add more altcoins as needed
     ];
 
@@ -483,7 +484,7 @@ const AltcoinPrice = ({ isDashboard = false }) => {
                 <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
             </div>
             {!isDashboard && (
-                <LastUpdated storageKey="btcData" />
+                <LastUpdated storageKey={selectedCoin} />
             )}
             <div className="chart-bottom-div">
                 <div>

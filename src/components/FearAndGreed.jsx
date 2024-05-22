@@ -11,6 +11,12 @@ function CryptoFearAndGreedIndex({ isDashboard }) {
     const colors = tokens(theme.palette.mode);
     const isMobile = useIsMobile();
 
+    // Function to convert Unix timestamp to date format
+    const convertTimestampToDate = (timestamp) => {
+        const date = new Date(timestamp * 1000);
+        return date.toISOString().split('T')[0];
+    };
+
     // Fetch and process data
     useEffect(() => {
         const cacheKey = 'fearAndGreedData';
@@ -19,7 +25,7 @@ function CryptoFearAndGreedIndex({ isDashboard }) {
 
         if (cachedData) {
             const parsedData = JSON.parse(cachedData);
-            const lastCachedDate = new Date(parsedData[parsedData.length - 1].time);
+            const lastCachedDate = new Date(parsedData[parsedData.length - 1].date);
 
             if (lastCachedDate.setHours(0, 0, 0, 0) === today.setHours(0, 0, 0, 0)) {
                 setFearAndGreedValue(parsedData);
@@ -38,9 +44,9 @@ function CryptoFearAndGreedIndex({ isDashboard }) {
                     const formattedData = data.map(item => ({
                         value: parseInt(item.value),
                         value_classification: item.value_classification,
-                        date: item.timestamp
+                        time: convertTimestampToDate(item.timestamp)
                     }));
-                    // save the data to local storage
+                    // Save the data to local storage
                     localStorage.setItem(cacheKey, JSON.stringify(formattedData));
                     setFearAndGreedValue(formattedData);
                 })
@@ -61,7 +67,7 @@ function CryptoFearAndGreedIndex({ isDashboard }) {
     const textColor = getColorByPercent(value - 0.05);
 
     const gaugeChartStyle = {
-        width: isDashboard ? '100%' : '90%',
+        width: isDashboard ? '80%' : '90%',
         maxWidth: isMobile ? '600px' : '800px',
     };
 

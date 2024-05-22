@@ -101,7 +101,7 @@ const AltcoinPrice = ({ isDashboard = false }) => {
     
 
     useEffect(() => {
-        const cacheKey = `${selectedCoin.toLowerCase()}Data`;
+        const cacheKey = `${selectedCoin.toLowerCase()}RiskData`;
         const cachedData = localStorage.getItem(cacheKey);
         const today = new Date();
 
