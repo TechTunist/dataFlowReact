@@ -19,17 +19,35 @@ const TotalMarketCap = ({ isDashboard = false }) => {
     const isMobile = useIsMobile();
     const [setIsDashboard] = useState(isDashboard);
 
+    // function to calculate the log regression lines
+    const calculateLogarithmicRegression = (data) => {
+        const n = data.length;
+        const sumLogX = data.reduce((sum, point, index) => sum + Math.log(index + 1), 0);
+        const sumY = data.reduce((sum, point) => sum + Math.log(point.value), 0);
+        const sumLogXSquared = data.reduce((sum, point, index) => sum + Math.log(index + 1) ** 2, 0);
+        const sumLogXLogY = data.reduce((sum, point, index) => sum + Math.log(index + 1) * Math.log(point.value), 0);
+    
+        const slope = (n * sumLogXLogY - sumLogX * sumY) / (n * sumLogXSquared - sumLogX ** 2);
+        const intercept = (sumY - slope * sumLogX) / n;
+    
+        return { slope, intercept };
+    }; 
+
     // Function to set chart interactivity
     const setInteractivity = () => {
         setIsInteractive(!isInteractive);
     };
 
-    // Function to format numbers to 'k', 'M', etc.
+    // Function to format numbers to 'k', 'M', 'B', 'T', etc.
     function compactNumberFormatter(value) {
-        if (value >= 1000000) {
-            return (value / 1000000).toFixed(0) + 'M'; // Millions
-        } else if (value >= 1000) {
-            return (value / 1000).toFixed(0) + 'k'; // Thousands
+        if (value >= 1e12) {
+            return (value / 1e12).toFixed(2) + 'T'; // Trillions with 2 decimal places
+        } else if (value >= 1e9) {
+            return (value / 1e9).toFixed(0) + 'B'; // Billions without decimal places
+        } else if (value >= 1e6) {
+            return (value / 1e6).toFixed(0) + 'M'; // Millions without decimal places
+        } else if (value >= 1e3) {
+            return (value / 1e3).toFixed(0) + 'k'; // Thousands without decimal places
         } else {
             return value.toFixed(0); // For values less than 1000, show the full number
         }
@@ -93,6 +111,34 @@ const TotalMarketCap = ({ isDashboard = false }) => {
     
     useEffect(() => {
         if (chartData.length === 0) return;
+
+        const { slope, intercept } = calculateLogarithmicRegression(chartData);
+
+        const calculateRegressionPoints = (scale, color, shiftDays = 0, curveAdjustment = 1) => {
+            const points = chartData.map(({ time }, index) => {
+                const x = Math.log(index + 1 - shiftDays + 1); // subtract shiftDays to shift left
+        
+                // Adjust curvature by applying a non-linear transformation to x
+                const adjustedX = Math.pow(x, curveAdjustment);
+        
+                // Create delta to adjust y-intercept
+                const delta = intercept - 11.5;
+        
+                // Create delta to adjust slope
+                const adjustedSlope = slope + 2;
+        
+                const y = Math.exp(adjustedSlope * adjustedX + delta) * scale;
+                return { time, value: y };
+            });
+            const regressionSeries = chart.addLineSeries({
+                color: color,
+                lineWidth: 2,
+                lastValueVisible: false,
+                priceLineVisible: false,
+            });
+            regressionSeries.setData(points);
+            return regressionSeries;
+        };
     
         const chart = createChart(chartContainerRef.current, {
             width: chartContainerRef.current.clientWidth,
@@ -126,21 +172,19 @@ const TotalMarketCap = ({ isDashboard = false }) => {
                 setTooltipData(null);
             } else {
                 const dateStr = param.time;
-                // Safely attempt to access price data
                 const priceData = param.seriesData.get(priceSeries);
-                const price = priceData?.value; // Use optional chaining to avoid errors when priceData is undefined
-        
-                // const logBaseData = param.seriesData.get(logRegressionBaseSeries);
-                // const logMidData = param.seriesData.get(logRegressionMidSeries);
-                // const logTopData = param.seriesData.get(logRegressionTopSeries);
-        
-                // Even if price data is undefined, we can still set tooltip data for the regression lines
+                const price = priceData?.value;
+
+                const logBaseData = param.seriesData.get(logRegressionBaseSeries);
+                const logMidData = param.seriesData.get(logRegressionMidSeries);
+                const logTopData = param.seriesData.get(logRegressionTopSeries);
+
                 setTooltipData({
                     date: dateStr,
-                    price, // May be undefined, which is handled in rendering
-                    // logBase: logBaseData?.value,
-                    // logMid: logMidData?.value,
-                    // logTop: logTopData?.value,
+                    price: price ? compactNumberFormatter(price) : undefined,
+                    logBase: logBaseData?.value ? compactNumberFormatter(logBaseData.value) : undefined,
+                    logMid: logMidData?.value ? compactNumberFormatter(logMidData.value) : undefined,
+                    logTop: logTopData?.value ? compactNumberFormatter(logTopData.value) : undefined,
                     x: param.point.x,
                     y: param.point.y,
                 });
@@ -187,18 +231,22 @@ const TotalMarketCap = ({ isDashboard = false }) => {
  
         const priceSeries = chart.addLineSeries({
             priceScaleId: 'right',
-            topColor: topColor, 
-            bottomColor: bottomColor, 
-            lineColor: lineColor, 
+            topColor: theme.palette.mode === 'dark' ? 'rgba(38, 198, 218, 0.56)' : 'rgba(255, 165, 0, 0.56)', 
+            bottomColor: theme.palette.mode === 'dark' ? 'rgba(38, 198, 218, 0.04)' : 'rgba(255, 165, 0, 0.2)', 
+            lineColor: theme.palette.mode === 'dark' ? 'rgba(38, 198, 218, 1)' : 'rgba(255, 140, 0, 0.8)', 
             lineWidth: 2,
             lastValueVisible: false,
             priceLineVisible: false,
             priceFormat: {
                 type: 'custom',
-                formatter: compactNumberFormatter, // Use the custom formatter
+                formatter: compactNumberFormatter,
             },
         });
         priceSeries.setData(chartData);
+
+        const logRegressionBaseSeries = calculateRegressionPoints(2, 'red', -100, 0.95);
+        const logRegressionMidSeries = calculateRegressionPoints(1, 'violet', -150, 1);
+        const logRegressionTopSeries = calculateRegressionPoints(2, 'lime', -100, 0.99);
 
         chart.applyOptions({
             handleScroll: !isDashboard,
@@ -207,35 +255,26 @@ const TotalMarketCap = ({ isDashboard = false }) => {
             handleScale: isInteractive
         });
 
-        const priceScaleOptions = {
-            // Example option, adjust as per actual API and needs
-            scaleMargins: {
-                top: 0.1, // Reduces space at the top; adjust the value as needed
-                bottom: 0.1, // Adjusts space at the bottom
-            },
-        };
+        window.addEventListener('resize', resizeChart);
+        window.addEventListener('resize', resetChartView);
 
-        // Apply the options to the price scale
-        chart.priceScale('right').applyOptions(priceScaleOptions);
-    
-        resizeChart(); // Ensure initial resize and fitContent call
-        chart.timeScale().fitContent(); // Additional call to fitContent to ensure coverage
-        chartRef.current = chart; // Store the chart instance
-    
+        resizeChart(); 
+        chart.timeScale().fitContent();
+        chartRef.current = chart;
+
         return () => {
             chart.remove();
             window.removeEventListener('resize', resizeChart);
             window.removeEventListener('resize', resetChartView);
         };
-    }, [chartData, scaleMode, isDashboard, theme.palette.mode ]);
+    }, [chartData, scaleMode, isDashboard, theme.palette.mode]);
 
     useEffect(() => {
         if (chartRef.current) {
-            // Disable all interactions if the chart is displayed on the dashboard
-        chartRef.current.applyOptions({
-            handleScroll: isInteractive,
-            handleScale: isInteractive,
-        });
+            chartRef.current.applyOptions({
+                handleScroll: isInteractive,
+                handleScale: isInteractive,
+            });
         }
     }, [isInteractive]);
 
@@ -300,40 +339,43 @@ const TotalMarketCap = ({ isDashboard = false }) => {
             {/* Conditional Rendering for the Tooltip */}
             {!isDashboard && tooltipData && (
                 <div
-                    className="tooltip"
-                    style={{
-                        left: (() => {
-                            const sidebarWidth = isMobile ? -80 : -300; // Adjust sidebarWidth based on isMobile
-                            const cursorX = tooltipData.x - sidebarWidth; // Adjust cursorX for sidebar
-                            const chartWidth = chartContainerRef.current.clientWidth - sidebarWidth; // Adjust chartWidth for sidebar
-                            const tooltipWidth = 200; // Your tooltip's actual width
-                            const K = 10000; // Adjust this constant based on desired sensitivity
-                            const C = 300; // Base addition to stabilize the calculation
-
-                            // Calculate the inverse proportional offset
-                            const offset = K / (chartWidth + C);
-
-                            // Calculate potential left and right positions with dynamic offset
-                            const rightPosition = cursorX + offset;
-                            const leftPosition = cursorX - tooltipWidth - offset;
-
-                            if (rightPosition + tooltipWidth <= chartWidth) {
-                                return `${rightPosition}px`; // Fits on the right
-                            } else if (leftPosition >= 0) {
-                                return `${leftPosition}px`; // Fits on the left
-                            } else {
-                                return `${Math.max(0, Math.min(rightPosition, chartWidth - tooltipWidth))}px`; // Adjust near edge
-                            }
-                        })(),
-                        top: `${tooltipData.y + 100}px`, // Adjust as needed
-                    }}
-                >
-                    <b>{tooltipData.price && <div>Actual Price: ${tooltipData.price.toFixed(2)}</div>}
-                    {tooltipData.logBase && <div style={{color: 'lime'}}>Upper Band: ${tooltipData.logTop.toFixed(2)}</div>}
-                    {tooltipData.logMid && <div style={{color: 'violet'}}>Mid Band: ${tooltipData.logMid.toFixed(2)}</div>}
-                    {tooltipData.logTop && <div style={{color: 'red'}}>Lower Band: ${tooltipData.logBase.toFixed(2)}</div>}
-                    {tooltipData.date && <div style={{fontSize: '13px'}}>{tooltipData.date}</div>}</b>
-                </div>
+                className="tooltip"
+                style={{
+                    left: (() => {
+                        const sidebarWidth = isMobile ? -80 : -300; // Adjust sidebarWidth based on isMobile
+                        const cursorX = tooltipData.x - sidebarWidth; // Adjust cursorX for sidebar
+                        const chartWidth = chartContainerRef.current.clientWidth - sidebarWidth; // Adjust chartWidth for sidebar
+                        const tooltipWidth = 200; // Your tooltip's actual width
+                        const K = 10000; // Adjust this constant based on desired sensitivity
+                        const C = 300; // Base addition to stabilize the calculation
+            
+                        // Calculate the inverse proportional offset
+                        const offset = K / (chartWidth + C);
+            
+                        // Calculate potential left and right positions with dynamic offset
+                        const rightPosition = cursorX + offset;
+                        const leftPosition = cursorX - tooltipWidth - offset;
+            
+                        if (rightPosition + tooltipWidth <= chartWidth) {
+                            return `${rightPosition}px`; // Fits on the right
+                        } else if (leftPosition >= 0) {
+                            return `${leftPosition}px`; // Fits on the left
+                        } else {
+                            return `${Math.max(0, Math.min(rightPosition, chartWidth - tooltipWidth))}px`; // Adjust near edge
+                        }
+                    })(),
+                    top: `${tooltipData.y + 100}px`, // Adjust as needed
+                }}
+            >
+                <b>
+                    {tooltipData.price && <div>Actual Price: ${tooltipData.price}</div>}
+                    {tooltipData.logBase && <div style={{color: 'lime'}}>Upper Band: ${tooltipData.logTop}</div>}
+                    {tooltipData.logMid && <div style={{color: 'violet'}}>Mid Band: ${tooltipData.logMid}</div>}
+                    {tooltipData.logTop && <div style={{color: 'red'}}>Lower Band: ${tooltipData.logBase}</div>}
+                    {tooltipData.date && <div style={{fontSize: '13px'}}>{tooltipData.date}</div>}
+                </b>
+            </div>
+            
             )}
             <div>
             {
