@@ -43,6 +43,8 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
         return { title: "Dashboard", subtitle: "All charts" };
       case "/bitcoin":
         return { title: "Bitcoin", subtitle: "Historical Chart" };
+      case "/total":
+        return { title: "Total Crypto Market Cap", subtitle: "All crypto assets" };
       case "/risk":
         return { title: "Bitcoin", subtitle: "Risk Metric" };
       case "/ethereum":

@@ -1,6 +1,7 @@
 import { Box, Card, CardContent, Typography, Grid, useTheme } from "@mui/material";
 import BitcoinRisk from "../../components/BitcoinRisk"; 
 import BitcoinPrice from "../../components/BitcoinPrice";
+import TotalMarketCap from "../../components/TotalMarketCap";
 import AltcoinPrice from "../../components/AltcoinPrice";
 import AltcoinRisk from "../../components/AltcoinRisk";
 import EthereumRisk from "../../components/EthereumRisk"; 
@@ -64,6 +65,27 @@ const Dashboard = () => {
                 variant="body3" color="textSecondary" className='dashboard-info'>
                 The risk metric demonstrates the risk of holding bitcoin at any given time.
                 The closer to 1, the higher the risk.
+              </Typography>
+
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Total market cap Card */}
+        <Grid item xs={12} lg={6}>
+          <Card style={{backgroundColor: colors.primary[500]}}>
+            <CardContent>
+              <Typography variant="h4" gutterBottom component={Link} to="/total" style={{ textDecoration: 'none', color: colors.grey[100] }}
+                onMouseOver={({ target }) => target.style.color = colors.greenAccent[500]}
+                onMouseOut={({ target }) => target.style.color = colors.grey[100]}>
+                Total Crypto Market Cap
+              </Typography>
+              <Box height="400px" m="10px 0 0 0">
+                <TotalMarketCap isDashboard={true} />
+              </Box>
+              <Typography
+                variant="body3" color="textSecondary" className='dashboard-info'>
+                The market cap of the entire crypto market.
               </Typography>
 
             </CardContent>
