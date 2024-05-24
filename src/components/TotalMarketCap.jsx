@@ -176,6 +176,7 @@ const TotalMarketCap = ({ isDashboard = false }) => {
                 const price = priceData?.value;
 
                 const logBaseData = param.seriesData.get(logRegressionBaseSeries);
+                const logBase2Data = param.seriesData.get(logRegressionBase2Series);
                 const logMidData = param.seriesData.get(logRegressionMidSeries);
                 const logTopData = param.seriesData.get(logRegressionTopSeries);
 
@@ -183,6 +184,7 @@ const TotalMarketCap = ({ isDashboard = false }) => {
                     date: dateStr,
                     price: price ? compactNumberFormatter(price) : undefined,
                     logBase: logBaseData?.value ? compactNumberFormatter(logBaseData.value) : undefined,
+                    logBase2: logBase2Data?.value ? compactNumberFormatter(logBase2Data.value) : undefined,
                     logMid: logMidData?.value ? compactNumberFormatter(logMidData.value) : undefined,
                     logTop: logTopData?.value ? compactNumberFormatter(logTopData.value) : undefined,
                     x: param.point.x,
@@ -194,6 +196,10 @@ const TotalMarketCap = ({ isDashboard = false }) => {
         chart.priceScale('right').applyOptions({
             mode: scaleMode,
             borderVisible: false,
+            scaleMargins: {
+                top: 0.1, // 10% empty space at the top
+                bottom: 0.1 // 10% empty space at the bottom
+            },
             priceFormat: {
                 type: 'custom',
                 formatter: compactNumberFormatter,
@@ -244,9 +250,11 @@ const TotalMarketCap = ({ isDashboard = false }) => {
         });
         priceSeries.setData(chartData);
 
-        const logRegressionBaseSeries = calculateRegressionPoints(2, 'red', -100, 0.95);
-        const logRegressionMidSeries = calculateRegressionPoints(1, 'violet', -150, 1);
-        const logRegressionTopSeries = calculateRegressionPoints(2, 'lime', -100, 0.99);
+        const logRegressionTopSeries = calculateRegressionPoints(9, 'lime', -100, 0.96);
+        const logRegressionMidSeries = calculateRegressionPoints(0.2, 'violet', -90, 1.02);
+        // const logRegressionBaseSeries = calculateRegressionPoints(0.9, 'red', -10, 0.98);
+        const logRegressionBaseSeries = calculateRegressionPoints(0.1, 'red', -80, 1.02);
+        const logRegressionBase2Series = calculateRegressionPoints(0.05, 'maroon', -70, 1.025);
 
         chart.applyOptions({
             handleScroll: !isDashboard,
@@ -330,7 +338,7 @@ const TotalMarketCap = ({ isDashboard = false }) => {
             </div>
             <div className='under-chart'>
                 {!isDashboard && (
-                    <LastUpdated storageKey="btcDominanceData" />
+                    <LastUpdated storageKey="totalMarketCap" />
                 )}
                 {!isDashboard && (
                     <BitcoinFees />
@@ -368,10 +376,11 @@ const TotalMarketCap = ({ isDashboard = false }) => {
                 }}
             >
                 <b>
-                    {tooltipData.price && <div>Actual Price: ${tooltipData.price}</div>}
+                    {tooltipData.price && <div>Market Cap: ${tooltipData.price}</div>}
                     {tooltipData.logBase && <div style={{color: 'lime'}}>Upper Band: ${tooltipData.logTop}</div>}
                     {tooltipData.logMid && <div style={{color: 'violet'}}>Mid Band: ${tooltipData.logMid}</div>}
                     {tooltipData.logTop && <div style={{color: 'red'}}>Lower Band: ${tooltipData.logBase}</div>}
+                    {tooltipData.logBase2 && <div style={{color: 'maroon'}}>Lower Band 2: ${tooltipData.logBase2}</div>}
                     {tooltipData.date && <div style={{fontSize: '13px'}}>{tooltipData.date}</div>}
                 </b>
             </div>
