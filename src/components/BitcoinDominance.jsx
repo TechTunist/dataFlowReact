@@ -18,35 +18,6 @@ const BitcoinDominanceChart = ({ isDashboard = false }) => {
     const [isInteractive, setIsInteractive] = useState(false);
     const isMobile = useIsMobile();
 
-    const [show8Week, setShow8Week] = useState(false);
-    const [show20Week, setShow20Week] = useState(false);
-    const [show100Week, setShow100Week] = useState(false);
-    const [show200Week, setShow200Week] = useState(false);
-
-    const toggle8Week = () => setShow8Week(!show8Week);
-    const toggle20Week = () => setShow20Week(!show20Week);
-    const toggle100Week = () => setShow100Week(!show100Week);
-    const toggle200Week = () => setShow200Week(!show200Week);
-
-    const smaSeriesRefs = useRef({
-        '8w': null,
-        '20w': null,
-        '100w': null,
-        '200w': null
-    }).current;
-
-    const smaVisibility = {
-        '8w': show8Week,
-        '20w': show20Week,
-        '100w': show100Week,
-        '200w': show200Week
-    };
-
-    const color8Week = 'blue';
-    const color20Week = 'limegreen';
-    const color100Week = 'white';
-    const color200Week = 'yellow';
-
     const setInteractivity = () => {
         setIsInteractive(!isInteractive);
     };
@@ -123,18 +94,6 @@ const BitcoinDominanceChart = ({ isDashboard = false }) => {
                 console.error('Error fetching data: ', error);
             });
         }
-
-        Object.keys(smaSeriesRefs).forEach(key => {
-            if (smaSeriesRefs[key]) {
-                smaSeriesRefs[key].setData([]);
-                smaSeriesRefs[key] = null;
-            }
-        });
-
-        setShow8Week(false);
-        setShow20Week(false);
-        setShow100Week(false);
-        setShow200Week(false);
         
     }, []);
 
@@ -256,63 +215,6 @@ const BitcoinDominanceChart = ({ isDashboard = false }) => {
         }
     }, [isInteractive]);
 
-    useEffect(() => {
-        if (!chartRef.current) return;
-
-        const periods = {
-            '8w': 8 * 7,
-            '20w': 20 * 7,
-            '100w': 100 * 7,
-            '200w': 200 * 7
-        };
-        const colors = {
-            '8w': 'blue',
-            '20w': 'green',
-            '100w': 'white',
-            '200w': 'yellow'
-        };
-
-        const updateSMA = (periodKey) => {
-            const period = periods[periodKey];
-            const data = calculateMovingAverage(chartData, period);
-            let smaSeries = smaSeriesRefs[periodKey];
-
-            if (smaVisibility[periodKey]) {
-                if (!smaSeries) {
-                    smaSeries = chartRef.current.addLineSeries({
-                        color: colors[periodKey],
-                        lineWidth: 2,
-                        priceLineVisible: false
-                    });
-                    smaSeriesRefs[periodKey] = smaSeries;
-                }
-                smaSeries.setData(data);
-            } else if (smaSeries) {
-                smaSeries.setData([]);
-            }
-        };
-
-        Object.keys(periods).forEach(periodKey => updateSMA(periodKey));
-    }, [show8Week, show20Week, show100Week, show200Week, chartData]);
-
-    useEffect(() => {
-        const resetSMASeries = () => {
-            Object.keys(smaSeriesRefs).forEach(key => {
-                if (smaSeriesRefs[key]) {
-                    smaSeriesRefs[key].setData([]);
-                    smaSeriesRefs[key] = null;
-                }
-            });
-
-            setShow8Week(false);
-            setShow20Week(false);
-            setShow100Week(false);
-            setShow200Week(false);
-        };
-
-        resetSMASeries();
-    }, []);
-
     return (
         <div style={{ height: '100%' }}>
             {!isDashboard && (
@@ -389,54 +291,6 @@ const BitcoinDominanceChart = ({ isDashboard = false }) => {
                     gap: '10px 20px',
                     padding: '10px'
                 }}>
-                    {!isDashboard && (
-                            <div className="sma-toggles">
-                                <button style={{
-                                    marginTop: '10px',
-                                    width: '150px',
-                                    minWidth: '150px',
-                                    backgroundColor: show8Week ? '#4cceac' : 'transparent',
-                                    color: show8Week ? color8Week : '#00b685',
-                                    borderColor: show8Week ? color8Week : '#70d8bd'
-                                }}
-                             onClick={toggle8Week} className="button-reset">
-                                    8 Week SMA
-                                </button>
-                                <button style={{
-                                    marginTop: '10px',
-                                    width: '150px',
-                                    minWidth: '150px',
-                                    backgroundColor: show20Week ? '#4cceac' : 'transparent',
-                                    color: show20Week ? 'green' : '#00b685',
-                                    borderColor: show20Week ? color20Week : '#70d8bd'
-                                }}
-                                 onClick={toggle20Week} className="button-reset">
-                                    20 Week SMA
-                                </button>
-                                <button style={{
-                                    marginTop: '10px',
-                                    width: '150px',
-                                    minWidth: '150px',
-                                    backgroundColor: show100Week ? '#4cceac' : 'transparent',
-                                    color: show100Week ? color100Week : '#00b685',
-                                    borderColor: show100Week ? color100Week : '#70d8bd'
-                                }}
-                                 onClick={toggle100Week} className="button-reset">
-                                    100 Week SMA
-                                </button>
-                                <button style={{
-                                    marginTop: '10px',
-                                    width: '150px',
-                                    minWidth: '150px',
-                                    backgroundColor: show200Week ? '#4cceac' : 'transparent',
-                                    color: show200Week ? color200Week : '#00b685',
-                                    borderColor: show200Week ? color200Week : '#70d8bd'
-                                }}
-                                 onClick={toggle200Week} className="button-reset">
-                                    200 Week SMA
-                                </button>
-                            </div>
-                        )}
                 </div>
             )}
             
