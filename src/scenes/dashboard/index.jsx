@@ -1,6 +1,7 @@
 import { Box, Card, CardContent, Typography, Grid, useTheme } from "@mui/material";
 import BitcoinRisk from "../../components/BitcoinRisk"; 
 import BitcoinPrice from "../../components/BitcoinPrice";
+import BitcoinDominance from "../../components/BitcoinDominance";
 import TotalMarketCap from "../../components/TotalMarketCap";
 import AltcoinPrice from "../../components/AltcoinPrice";
 import AltcoinRisk from "../../components/AltcoinRisk";
@@ -127,6 +128,25 @@ const Dashboard = () => {
               <Typography variant="body3" color="textSecondary" className='dashboard-info'>
                 The risk metric demonstrates the risk of holding Eth at any given time.
                 The closer to 1, the higher the risk.
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Bitcoin Dominance */}
+        <Grid item xs={12} lg={6}>
+          <Card style={{backgroundColor: colors.primary[500]}}>
+            <CardContent>
+              <Typography variant="h4" gutterBottom component={Link} to="/bitcoin-dominance" style={{ textDecoration: 'none', color: colors.grey[100] }}
+                onMouseOver={({ target }) => target.style.color = colors.greenAccent[500]}
+                onMouseOut={({ target }) => target.style.color = colors.grey[100]}>
+                Bitcoin Dominance
+              </Typography>
+              <Box height="400px" m="10px 0 0 0">
+                <BitcoinDominance isDashboard={true} />
+              </Box>
+              <Typography variant="body3" color="textSecondary" className='dashboard-info'>
+                Bitcoin Dominance chart over all crypto assets.
               </Typography>
             </CardContent>
           </Card>

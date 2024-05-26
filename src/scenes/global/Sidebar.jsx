@@ -59,6 +59,7 @@ const Sidebar = () => {
     { title: "Dashboard", to: "/", icon: <DashboardIcon />, category: null },
     { title: "Bitcoin Chart", to: "/bitcoin", category: 'Bitcoin', icon: <ShowChartIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
     { title: "Total Market Cap", to: "/total", category: 'Indicators', icon: <ShowChartIcon />, categoryIcon: <ShowChartIcon /> },
+    { title: "Bitcoin Dominance", to: "/bitcoin-dominance", category: 'Indicators', icon: <ShowChartIcon />, categoryIcon: <ShowChartIcon /> },
     { title: "Bitcoin Risk Metric", to: "/risk", category: 'Bitcoin', icon: <AssessmentIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
     { title: "Ethereum Chart", to: "/ethereum", category: 'Ethereum', icon: <ShowChartIcon />, categoryIcon: <FitbitIcon /> },
     { title: "Ethereum Risk Metric", to: "/risk-eth", category: 'Ethereum', icon: <AssessmentIcon />, categoryIcon: <FitbitIcon /> },

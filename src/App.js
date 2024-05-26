@@ -11,6 +11,7 @@ import { ColorModeContext, useMode } from "./theme";
 import BitcoinPrice from "./components/BitcoinPrice";
 import TotalMarketCap from "./components/TotalMarketCap";
 import BitcoinTransactionFees from "./components/BitcoinTransactionFees";
+import BitcoinDominance from "./components/BitcoinDominance";
 import Risk from "./components/BitcoinRisk";
 import EthereumPrice from "./components/EthereumPrice";
 import EthereumRisk from "./components/EthereumRisk";
@@ -60,6 +61,7 @@ function App() {
                 <Route path="/bitcoin" element={<BasicChart ChartComponent={BitcoinPrice} />} />
                 <Route path="/total" element={<BasicChart ChartComponent={TotalMarketCap} />} />
                 <Route path="/bitcoin-fees" element={<BasicChart ChartComponent={BitcoinTransactionFees} />} />
+                <Route path="/bitcoin-dominance" element={<BasicChart ChartComponent={BitcoinDominance} />} />
                 <Route path="/ethereum" element={<BasicChart ChartComponent={EthereumPrice} />} />
                 <Route path="/risk" element={<BasicChart ChartComponent={Risk} />} />
                 <Route path="/risk-eth" element={<BasicChart ChartComponent={EthereumRisk} />} />
