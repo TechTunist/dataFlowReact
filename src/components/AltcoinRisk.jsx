@@ -290,7 +290,7 @@ const AltcoinPrice = ({ isDashboard = false }) => {
                 <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
             </div>
             {!isDashboard && (
-                <LastUpdated storageKey={`${selectedCoin.toLowerCase()}Data`} />
+                <LastUpdated storageKey={`${selectedCoin.toLowerCase()}RiskData`} />
             )}
             
             {!isDashboard && tooltipData && (
