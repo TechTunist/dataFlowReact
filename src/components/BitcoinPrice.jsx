@@ -18,6 +18,8 @@ const BitcoinPrice = ({ isDashboard = false }) => {
     const [isInteractive, setIsInteractive] = useState(false);
     const isMobile = useIsMobile();
 
+    let storageKey=""
+
     const [show8Week, setShow8Week] = useState(false);
     const [show20Week, setShow20Week] = useState(false);
     const [show100Week, setShow100Week] = useState(false);
@@ -355,12 +357,12 @@ const BitcoinPrice = ({ isDashboard = false }) => {
             
             <div className="chart-container" style={{ 
                     position: 'relative', 
-                    height: 'calc(100% - 40px)', 
+                    height: 'calc(100% - 40px)',
                     width: '100%', 
                     border: '2px solid #a9a9a9'
                     }}
                     onDoubleClick={() => {
-                        if (!isInteractive && !isDashboard) {  
+                        if (!isInteractive && !isDashboard) {
                             setInteractivity();
                         } else {
                             setInteractivity();

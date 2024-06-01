@@ -286,7 +286,7 @@ const BitcoinLogRegression = ({ isDashboard = false }) => {
 
         /////// Calculate Top Logarithmic Regression Points ///////////
         // Given parameters for top logarithmic regression
-        const [aaa, bbb] = [5.71733286, 2.44640918];
+        const [aaa, bbb] = [6.91733286, 0.74640918];
         const startDateTop = new Date("2006-05-19").getTime();
 
         // Calculate current top logarithmic regression points
@@ -311,12 +311,47 @@ const BitcoinLogRegression = ({ isDashboard = false }) => {
 
         // Plot Extended Top Logarithmic Regression Line
         const logRegressionTopSeries = chart.addLineSeries({
-            color: 'rgba(0, 255, 0, 1)', // Green for the top series
+            color: 'rgba(0, 255, 255, 1)', // Green for the top series
             lineWidth: 2,
             lastValueVisible: false,
             priceLineVisible: false,
         });
         logRegressionTopSeries.setData(logRegressionTopPoints);
+        ///////////////////////////////////////////////////////////////
+
+        /////// Calculate XTop Logarithmic Regression Points ///////////
+        // Given parameters for top logarithmic regression
+        const [aaaa, bbbb] = [6.71733286, 2.34640918];
+        const startDateXTop = new Date("2006-05-19").getTime();
+
+        // Calculate current top logarithmic regression points
+        let logRegressionXTopPoints = chartData.map(({ time, value }) => {
+            const currentTime = new Date(time).getTime();
+            // Calculate x as the number of days since the start date
+            const x = (currentTime - startDateTop) / (24 * 3900000 * 1300);
+            // Calculate y using the logarithmic regression formula
+            const y = Math.exp(aaaa * Math.log(x) + bbbb);
+            // Format the date to "yyyy-mm-dd"
+            const formattedTime = new Date(time).toISOString().split('T')[0];
+            return { time: formattedTime, value: y };
+        });
+
+        for (let i = 1; i <= 730; i++) { // Assuming 365 days in a year
+            const futureTime = new Date(lastDataPointDate.getTime() + i * (24 * 3600 * 1000));
+            const x = (futureTime.getTime() - startDateXTop) / (24 * 3900000 * 1300);
+            const y = Math.exp(aaaa * Math.log(x) + bbbb);
+            const formattedTime = futureTime.toISOString().split('T')[0];
+            logRegressionXTopPoints.push({ time: formattedTime, value: y });
+        }
+
+        // Plot Extended Top Logarithmic Regression Line
+        const logRegressionXTopSeries = chart.addLineSeries({
+            color: 'rgba(0, 255, 0, 1)', // Green for the top series
+            lineWidth: 2,
+            lastValueVisible: false,
+            priceLineVisible: false,
+        });
+        logRegressionXTopSeries.setData(logRegressionXTopPoints);
         ///////////////////////////////////////////////////////////////
 
         chart.applyOptions({

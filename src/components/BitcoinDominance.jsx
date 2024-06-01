@@ -273,7 +273,7 @@ const BitcoinDominanceChart = ({ isDashboard = false }) => {
         
             <div className='under-chart'>
                 {!isDashboard && (
-                    <LastUpdated storageKey="btcData" />
+                    <LastUpdated storageKey="btcDominance" />
                 )}
                 {!isDashboard && (
                     <BitcoinFees />
