@@ -483,6 +483,9 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                         secured by a network of miners. This system is designed to be transparent, secure, and resilient. Bitcoin enables the transfer of
                         value without intermediaries, offering a unique digital asset that can be sent anywhere in the world almost instantly.
                         As a finite digital currency, it provides a novel way to store and transfer wealth, with potential implications for global finance and value exchange.
+                        <br />
+                        <br />
+                        <br />
                     </p>
 
                 )   
