@@ -483,9 +483,11 @@ const AltcoinPrice = ({ isDashboard = false }) => {
                     }}>                
                 <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
             </div>
-            {!isDashboard && (
-                <LastUpdated storageKey={selectedCoin} />
-            )}
+            <div className='under-chart'>
+                {!isDashboard && (
+                    <LastUpdated storageKey={`${selectedCoin.toLowerCase()}Data`} />
+                )}
+            </div>
             <div className="chart-bottom-div">
                 <div>
                     {!isDashboard && (
