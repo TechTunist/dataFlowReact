@@ -148,16 +148,16 @@ const MarketCycles = ({ isDashboard = false }) => {
             )}
             
             <div className="chart-container" style={{ position: 'relative', height: 'calc(100% - 40px)', width: '100%', border: '2px solid #a9a9a9' }}>
-                <Plot
+            <Plot
                     data={cycleDataSets.map(cycle => ({
                         x: cycle.data.map(d => d.day),
                         y: cycle.data.map(d => d.roi),
                         type: 'scatter',
                         mode: 'lines',
                         name: isMobile ? cycle.shortName : cycle.name,
-                        text: cycle.data.map(d => `<b>Cycle: ${d.cycle}<br>Days from Bottom: ${d.day}<br>Log ROI: ${d.roi.toFixed(2)}<br>Date: ${new Date(d.date).toLocaleDateString()}</b>`),
+                        text: cycle.data.map(d => `${cycle.shortName} ROI: ${d.roi.toFixed(2)} (${new Date(d.date).toLocaleDateString()})`),
                         hoverinfo: 'text',
-                        hovertemplate: `<b>${cycle.shortName}   ROI: %{y:.2f}</b><extra></extra>`
+                        hovertemplate: `<b>%{text}</b><extra></extra>`
                     }))}
                     layout={{
                         title: isDashboard ? '' : 'Market Cycles RoI',
