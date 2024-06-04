@@ -72,8 +72,8 @@ const MarketCycles = ({ isDashboard = false }) => {
         const cycleStarts = {
             bottom: {
                 'Cycle 1': '2011-11-22',
-                'Cycle 2': '2015-08-25',
-                'Cycle 3': '2018-12-16',
+                'Cycle 2': '2015-01-14',
+                'Cycle 3': '2018-12-15',
                 'Cycle 4': '2022-11-21'
             },
             halving: halvingDates
