@@ -155,9 +155,9 @@ const MarketCycles = ({ isDashboard = false }) => {
                         type: 'scatter',
                         mode: 'lines',
                         name: isMobile ? cycle.shortName : cycle.name,
-                        text: cycle.data.map(d => `${cycle.shortName} ROI: ${d.roi.toFixed(2)} (${new Date(d.date).toLocaleDateString()})`),
+                        text: cycle.data.map(d => `<b>${cycle.shortName}   ROI: ${d.roi.toFixed(2)}</b>  (${new Date(d.date).toLocaleDateString()})`),
                         hoverinfo: 'text',
-                        hovertemplate: `<b>%{text}</b><extra></extra>`
+                        hovertemplate: `%{text}<extra></extra>`
                     }))}
                     layout={{
                         title: isDashboard ? '' : 'Market Cycles RoI',
