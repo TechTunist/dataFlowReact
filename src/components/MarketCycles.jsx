@@ -148,7 +148,7 @@ const MarketCycles = ({ isDashboard = false }) => {
             )}
             
             <div className="chart-container" style={{ position: 'relative', height: 'calc(100% - 40px)', width: '100%', border: '2px solid #a9a9a9' }}>
-            <Plot
+                <Plot
                     data={cycleDataSets.map(cycle => ({
                         x: cycle.data.map(d => d.day),
                         y: cycle.data.map(d => d.roi),
@@ -161,6 +161,7 @@ const MarketCycles = ({ isDashboard = false }) => {
                     }))}
                     layout={{
                         title: isDashboard ? '' : 'Market Cycles RoI',
+                        hoverlabel: {font: {size: 12}},
                         margin: { l: 50, r: 50, b: 30, t: 50, pad: 4 },
                         plot_bgcolor: colors.primary[700],
                         paper_bgcolor: colors.primary[700],

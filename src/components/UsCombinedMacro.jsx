@@ -37,9 +37,9 @@ const UsCombinedMacroChart = ({ isDashboard = false }) => {
                     }
                     return {
                         time: item.date,
-                        inflation_value: lastKnownInflation !== null ? lastKnownInflation / 100 : 0,
-                        unemployment_value: item.unemployment_rate ? parseFloat(item.unemployment_rate) / 100 : 0,
-                        interest_value: item.interest_rate ? parseFloat(item.interest_rate) / 100 : 0,
+                        inflation_value: lastKnownInflation !== null ? lastKnownInflation / 100 : null,
+                        unemployment_value: item.unemployment_rate ? parseFloat(item.unemployment_rate) / 100 : null,
+                        interest_value: item.interest_rate ? parseFloat(item.interest_rate) / 100 : null,
                     };
                 });
 
@@ -63,6 +63,8 @@ const UsCombinedMacroChart = ({ isDashboard = false }) => {
         }
     }, []);
 
+    const filterData = (data, key) => data.filter(d => d[key] !== null && !isNaN(d[key]));
+
     return (
         <div style={{ height: '100%' }}>
             {!isDashboard && (
@@ -82,28 +84,28 @@ const UsCombinedMacroChart = ({ isDashboard = false }) => {
                 <Plot
                     data={[
                         {
-                            x: chartData.map(d => d.time),
-                            y: chartData.map(d => d.inflation_value),
+                            x: filterData(chartData, 'inflation_value').map(d => d.time),
+                            y: filterData(chartData, 'inflation_value').map(d => d.inflation_value),
                             type: 'scatter',
                             mode: 'lines',
                             name: 'Inflation Rate',
-                            line: { color: colors.primary[100] }
+                            line: { color: colors.primary[100], width: 2 }
                         },
                         {
-                            x: chartData.map(d => d.time),
-                            y: chartData.map(d => d.unemployment_value),
+                            x: filterData(chartData, 'unemployment_value').map(d => d.time),
+                            y: filterData(chartData, 'unemployment_value').map(d => d.unemployment_value),
                             type: 'scatter',
                             mode: 'lines',
                             name: 'Unemployment Rate',
-                            line: { color: 'blue' }
+                            line: { color: 'blue', width: 2 }
                         },
                         {
-                            x: chartData.map(d => d.time),
-                            y: chartData.map(d => d.interest_value),
+                            x: filterData(chartData, 'interest_value').map(d => d.time),
+                            y: filterData(chartData, 'interest_value').map(d => d.interest_value),
                             type: 'scatter',
                             mode: 'lines',
                             name: 'Interest Rate',
-                            line: { color: 'green' }
+                            line: { color: 'green', width: 2 }
                         }
                     ]}
                     layout={{
@@ -111,7 +113,7 @@ const UsCombinedMacroChart = ({ isDashboard = false }) => {
                         plot_bgcolor: colors.primary[700],
                         paper_bgcolor: colors.primary[700],
                         font: { color: colors.primary[100] },
-                        xaxis: { showgrid: false },
+                        xaxis: { showgrid: true, title: '' },
                         yaxis: { tickformat: ',.0%', title: '' },
                         showlegend: !isDashboard,
                         hovermode: 'x unified',
@@ -121,6 +123,11 @@ const UsCombinedMacroChart = ({ isDashboard = false }) => {
                             xanchor: 'center',
                             y: -0.2,
                             yanchor: 'top'
+                        },
+                        hoverlabel: {
+                            font: {
+                                size: 12 // Adjust the font size as needed
+                            }
                         }
                     }}
                     config={{
