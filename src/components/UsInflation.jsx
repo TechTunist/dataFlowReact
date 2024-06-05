@@ -294,13 +294,14 @@ const UsInflationChart = ({ isDashboard = false }) => {
                 >
                     <div style={{fontSize: '15px'}}>Inflation</div>
                     <div style={{fontSize: '20px'}}>{tooltipData.price.toFixed(2)}%</div>
-                    <div>{tooltipData.date.toString()}</div>
+                    <div>{tooltipData.date.toString().substring(0, 4)}</div>
                 </div>
             )}
             {
                 !isDashboard && (
                     <p className='chart-info'>
-                        This chart shows the annual inflation rates (consumer prices) of the United States.    
+                        This chart shows the historical annualised inflation rate of the United States,
+                        with the latest datapoint being the most recent month's inflation rate.    
                     </p>
 
                 )   
