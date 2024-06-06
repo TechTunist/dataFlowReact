@@ -17,6 +17,7 @@ const UsInflationChart = ({ isDashboard = false }) => {
     const [tooltipData, setTooltipData] = useState(null);
     const [isInteractive, setIsInteractive] = useState(false);
     const isMobile = useIsMobile();
+    const currentYear = new Date().getFullYear().toString();
 
     const setInteractivity = () => {
         setIsInteractive(!isInteractive);
@@ -294,7 +295,7 @@ const UsInflationChart = ({ isDashboard = false }) => {
                 >
                     <div style={{fontSize: '15px'}}>Inflation</div>
                     <div style={{fontSize: '20px'}}>{tooltipData.price.toFixed(2)}%</div>
-                    <div>{tooltipData.date.toString().substring(0, 4)}</div>
+                    {tooltipData.date.toString().substring(0, 4) === currentYear ? `${tooltipData.date.toString().substring(0, 4)} - latest` : tooltipData.date.toString().substring(0, 4)}
                 </div>
             )}
             {

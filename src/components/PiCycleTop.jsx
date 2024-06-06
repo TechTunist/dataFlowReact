@@ -314,8 +314,20 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
                         {/* Button to toggle markers */}
                         {
                             !isDashboard && (
-                            <button onClick={toggleMarkers} className="button-reset">
-                                        {showMarkers ? 'Hide Markers' : 'Show Markers'}
+                                <button
+                                onClick={toggleMarkers}
+                                className="button-reset"
+                                style={
+                                    showMarkers 
+                                        ? {
+                                            backgroundColor: '#4cceac',
+                                            color: 'black',
+                                            borderColor: 'violet'
+                                          }
+                                        : {}
+                                }
+                            >
+                                {showMarkers ? 'Hide Top Markers' : 'Show Top Markers'}
                             </button>)
                             
                         }
