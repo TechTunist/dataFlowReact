@@ -84,42 +84,41 @@ const TotalMarketCap = ({ isDashboard = false }) => {
     
         if (cachedMarketCap) {
             const parsedMarketCap = JSON.parse(cachedMarketCap);
-            const lastCachedDate = new Date(parsedMarketCap.time);
+            const lastCachedDate = new Date(parsedMarketCap[parsedMarketCap.length - 1].time);
     
             if (lastCachedDate.setHours(0, 0, 0, 0) === today.setHours(0, 0, 0, 0)) {
                 // if cached data is found, parse it and set it to the state
-                setChartData([{ time: parsedMarketCap.time, value: parsedMarketCap.value }]);
+                setChartData(parsedMarketCap);
             } else {
                 fetchData();
             }
-            
+    
         } else {
             fetchData();
         }
     
         function fetchData() {
-            // if no cached data is found, fetch new data
-            fetch('https://tunist.pythonanywhere.com/api/btc/dominance/')
-            .then(response => response.json())
-            .then(data => {
-                // Calculate total market cap
-                const formattedData = data.map(item => ({
-                    time: item.date,
-                    value: item.btc + item.eth + item.usdt + item.bnb + item.sol + item.others
-                }));
-                
-                setChartData(formattedData);
+            // Fetch new data from the API
+            fetch('https://tunist.pythonanywhere.com/api/total/marketcap/')
+                .then(response => response.json())
+                .then(data => {
+                    // Format the data for the chart
+                    const formattedData = data.map(item => ({
+                        time: item.date,
+                        value: parseFloat(item.market_cap)
+                    }));
+                    
+                    setChartData(formattedData);
     
-                // save the total market cap to local storage
-                const latestData = formattedData[formattedData.length - 1];
-                localStorage.setItem(marketCapCacheKey, JSON.stringify({ time: latestData.time, value: latestData.value }));
-    
-            })
-            .catch(error => {
-                console.error('Error fetching data: ', error);
-            });
+                    // Save the entire dataset to local storage
+                    localStorage.setItem(marketCapCacheKey, JSON.stringify(formattedData));
+                })
+                .catch(error => {
+                    console.error('Error fetching data: ', error);
+                });
         }
     }, []);
+    
     
     useEffect(() => {
         if (chartData.length === 0) return;
@@ -258,11 +257,11 @@ const TotalMarketCap = ({ isDashboard = false }) => {
         });
         priceSeries.setData(chartData);
 
-        const logRegression2TopSeries = calculateRegressionPoints(10, 'lime', -100, 0.96);
-        const logRegressionTopSeries = calculateRegressionPoints(20, 'green', -85, 0.94);
-        const logRegressionMidSeries = calculateRegressionPoints(0.2, 'violet', -90, 1.02);
-        const logRegressionBaseSeries = calculateRegressionPoints(0.1, 'red', -80, 1.02);
-        const logRegressionBase2Series = calculateRegressionPoints(0.05, 'maroon', -70, 1.025);
+        const logRegression2TopSeries = calculateRegressionPoints(14, 'lime', -360, 0.908);
+        const logRegressionTopSeries = calculateRegressionPoints(7, 'green', -330, 0.909);
+        const logRegressionMidSeries = calculateRegressionPoints(8, 'violet', -230, 0.898);
+        const logRegressionBaseSeries = calculateRegressionPoints(0.25, 'red', -250, 0.947);
+        const logRegressionBase2Series = calculateRegressionPoints(0.005, 'maroon', -200, 0.999);
 
         chart.applyOptions({
             handleScroll: !isDashboard,
