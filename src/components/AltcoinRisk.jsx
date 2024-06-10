@@ -28,7 +28,7 @@ const AltcoinPrice = ({ isDashboard = false }) => {
         { label: 'Toncoin', value: 'TON' },
         { label: 'Binance-Coin', value: 'BNB' },
         { label: 'Polkadot', value: 'DOT' },
-        // { label: 'GameStop', value: 'GME' },
+        { label: 'GameStop', value: 'GME' },
         // Add more altcoins as needed
     ];
 
