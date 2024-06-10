@@ -70,6 +70,7 @@ const AltcoinPrice = ({ isDashboard = false }) => {
         { label: 'Binance-Coin', value: 'BNB' },
         { label: 'Polkadot', value: 'DOT' },
         { label: 'Cronos', value: 'CRO' },
+        { label: 'GameStop', value: 'GME' },
         // Add more altcoins as needed
     ];
 
