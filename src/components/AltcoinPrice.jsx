@@ -71,6 +71,7 @@ const AltcoinPrice = ({ isDashboard = false }) => {
         { label: 'Polkadot', value: 'DOT' },
         { label: 'Cronos', value: 'CRO' },
         { label: 'GameStop', value: 'GME' },
+        { label: 'Tesla', value: 'TSLA' },
         // Add more altcoins as needed
     ];
 
