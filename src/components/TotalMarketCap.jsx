@@ -257,11 +257,11 @@ const TotalMarketCap = ({ isDashboard = false }) => {
         });
         priceSeries.setData(chartData);
 
-        const logRegression2TopSeries = calculateRegressionPoints(14, 'lime', -360, 0.908);
-        const logRegressionTopSeries = calculateRegressionPoints(7, 'green', -330, 0.909);
-        const logRegressionMidSeries = calculateRegressionPoints(8, 'violet', -230, 0.898);
-        const logRegressionBaseSeries = calculateRegressionPoints(0.25, 'red', -250, 0.947);
-        const logRegressionBase2Series = calculateRegressionPoints(0.005, 'maroon', -200, 0.999);
+        const logRegression2TopSeries = calculateRegressionPoints(50, 'lime', -220, 0.89);
+        const logRegressionTopSeries = calculateRegressionPoints(15, 'green', -200, 0.903);
+        const logRegressionMidSeries = calculateRegressionPoints(0.05, 'violet', -280, 0.994);
+        const logRegressionBaseSeries = calculateRegressionPoints(0.04, 'red', -160, 0.994);
+        const logRegressionBase2Series = calculateRegressionPoints(0.029, 'maroon', -70, 0.995);
 
         chart.applyOptions({
             handleScroll: !isDashboard,
@@ -344,7 +344,7 @@ const TotalMarketCap = ({ isDashboard = false }) => {
             </div>
             <div className='under-chart'>
                 {!isDashboard && (
-                    <LastUpdated storageKey="btcDominance" />
+                    <LastUpdated storageKey="totalMarketCap" />
                 )}
                 {!isDashboard && (
                     <BitcoinFees />
