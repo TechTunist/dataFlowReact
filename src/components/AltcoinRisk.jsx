@@ -30,7 +30,6 @@ const AltcoinPrice = ({ isDashboard = false }) => {
         { label: 'Polkadot', value: 'DOT' },
         { label: 'GameStop', value: 'GME' },
         { label: 'Tesla', value: 'TSLA' },
-        // Add more altcoins as needed
     ];
 
     // Handle change event for the dropdown

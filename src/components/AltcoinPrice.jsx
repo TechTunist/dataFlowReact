@@ -72,7 +72,6 @@ const AltcoinPrice = ({ isDashboard = false }) => {
         { label: 'Cronos', value: 'CRO' },
         { label: 'GameStop', value: 'GME' },
         { label: 'Tesla', value: 'TSLA' },
-        // Add more altcoins as needed
     ];
 
     const calculateMovingAverage = (data, period) => {
