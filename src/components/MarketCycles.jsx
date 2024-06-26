@@ -76,7 +76,12 @@ const MarketCycles = ({ isDashboard = false }) => {
                 'Cycle 3': '2018-12-15',
                 'Cycle 4': '2022-11-21'
             },
-            halving: halvingDates
+            halving: halvingDates,
+            peak: {
+                'Cycle 1': '2013-11-30',
+                'Cycle 2': '2017-12-17',
+                'Cycle 3': '2021-11-10'
+            }
         };
 
         const legendYears = {
@@ -91,6 +96,19 @@ const MarketCycles = ({ isDashboard = false }) => {
                 'Cycle 2': '(2016-2017)',
                 'Cycle 3': '(2020-2021)',
                 'Cycle 4': '(2024-present)'
+            },
+            peak: {
+                'Cycle 1': '(2013-2017)',
+                'Cycle 2': '(2017-2021)',
+                'Cycle 3': '(2021-present)'
+            }
+        };
+
+        const cycleEnds = {
+            peak: {
+                'Cycle 1': '2017-12-17',
+                'Cycle 2': '2021-11-10',
+                'Cycle 3': null // ongoing cycle
             }
         };
 
@@ -109,18 +127,23 @@ const MarketCycles = ({ isDashboard = false }) => {
         };
 
         if (btcData.length) {
-            setCycleDataSets([
-                { name: `Cycle 1 ${legendYears[startPoint]['Cycle 1']}`, shortName: 'Cycle 1', data: processCycle(cycleStarts[startPoint]['Cycle 1'], '2013-11-30') },
-                { name: `Cycle 2 ${legendYears[startPoint]['Cycle 2']}`, shortName: 'Cycle 2', data: processCycle(cycleStarts[startPoint]['Cycle 2'], '2017-12-17') },
-                { name: `Cycle 3 ${legendYears[startPoint]['Cycle 3']}`, shortName: 'Cycle 3', data: processCycle(cycleStarts[startPoint]['Cycle 3'], '2021-11-08') },
-                { name: `Cycle 4 ${legendYears[startPoint]['Cycle 4']}`, shortName: 'Cycle 4', data: processCycle(cycleStarts[startPoint]['Cycle 4'], null) }
-            ]);
+            const cycles = [
+                { name: `Cycle 1 ${legendYears[startPoint]['Cycle 1']}`, shortName: 'Cycle 1', data: processCycle(cycleStarts[startPoint]['Cycle 1'], startPoint === 'peak' ? cycleEnds[startPoint]['Cycle 1'] : '2013-11-30') },
+                { name: `Cycle 2 ${legendYears[startPoint]['Cycle 2']}`, shortName: 'Cycle 2', data: processCycle(cycleStarts[startPoint]['Cycle 2'], startPoint === 'peak' ? cycleEnds[startPoint]['Cycle 2'] : '2017-12-17') },
+                { name: `Cycle 3 ${legendYears[startPoint]['Cycle 3']}`, shortName: 'Cycle 3', data: processCycle(cycleStarts[startPoint]['Cycle 3'], startPoint === 'peak' ? cycleEnds[startPoint]['Cycle 3'] : '2021-11-08') }
+            ];
+
+            if (startPoint !== 'peak') {
+                cycles.push({ name: `Cycle 4 ${legendYears[startPoint]['Cycle 4']}`, shortName: 'Cycle 4', data: processCycle(cycleStarts[startPoint]['Cycle 4'], null) });
+            }
+
+            setCycleDataSets(cycles);
 
             setLayout((prevLayout) => ({
                 ...prevLayout,
                 xaxis: { 
                     ...prevLayout.xaxis, 
-                    title: !isDashboard && !isMobile ? (startPoint === 'bottom' ? 'Days from Bear Market Bottom' : 'Days from Halving') : ''
+                    title: !isDashboard && !isMobile ? (startPoint === 'bottom' ? 'Days from Bear Market Bottom' : (startPoint === 'halving' ? 'Days from Halving' : 'Days from Cycle Peak')) : ''
                 }
             }));
         }
@@ -134,6 +157,7 @@ const MarketCycles = ({ isDashboard = false }) => {
                         <select className="button-reset" value={startPoint} onChange={(e) => setStartPoint(e.target.value)}>
                             <option value="bottom">From Market Bottom</option>
                             <option value="halving">From the Halving</option>
+                            <option value="peak">From Cycle Peak</option>
                         </select>
                     </div>
                     <div>

@@ -393,7 +393,7 @@ const BitcoinRisk = ({ isDashboard = false }) => {
 
                 // Process the sale if there is a threshold to apply and the percentage is greater than 0
                 if (maxApplicableThreshold && maxApplicableThreshold.percentage > 0) {
-                    console.log(maxApplicableThreshold.percentage);
+                    // console.log(maxApplicableThreshold.percentage);
                     const btcSold = localBtcHeld * (maxApplicableThreshold.percentage / 100);
                     localBtcHeld -= btcSold;
                     const usdRealized = btcSold * day.value;
@@ -623,7 +623,7 @@ const BitcoinRisk = ({ isDashboard = false }) => {
                                         <h3>Total Bitcoin Held:  ₿ {btcHeld.toFixed(6)} BTC</h3>
                                         <h3>Total Realized Gains: ${totalUsdRealized.toFixed(2)}</h3>
                                         <h3>Total Unrealized Gains: ${unrealizedGains.toFixed(2)}</h3>
-                                        <h3>Percentage Realised Gains:  {percentageGains.toFixed(2)}  %</h3>
+                                        {/* <h3>Percentage Realised Gains:  {percentageGains.toFixed(2)}  %</h3> */}
                                     </div>
                                     
                                 )}
