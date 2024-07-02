@@ -196,7 +196,7 @@ const Sidebar = () => {
       <Box textAlign="center" padding={theme.spacing(1)}> {/* Adjusted for consistent spacing */}
         <Typography variant="h3" color={colors.grey[100]} fontWeight="bold" sx={{ m: "10px 0 20px 0" }}>BTC Donations</Typography>
         <Typography variant="h5" color={colors.greenAccent[500]}>
-          I'm a solo developer trying to create a free useful tool for crypto people. If you found any value from this site, please consider donating some BTC. Thanks 
+          I'm a solo developer trying to create a free useful tool. If you found any value from this site, please consider donating some BTC by using the QR code. Thanks 
         </Typography>
       </Box>
     </Box>
