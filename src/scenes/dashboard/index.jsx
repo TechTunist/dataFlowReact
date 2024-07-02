@@ -38,7 +38,7 @@ const Dashboard = () => {
               <Typography variant="h4" gutterBottom component={Link} to="/bitcoin" style={{ textDecoration: 'none', color: colors.grey[100] }}
                 onMouseOver={({ target }) => target.style.color = colors.greenAccent[500]}
                 onMouseOut={({ target }) => target.style.color = colors.grey[100]}>
-                Bitcoin Historical Price
+                Bitcoin Price
               </Typography>
               <Box height="400px" m="10px 0 0 0">
                 <BitcoinPrice isDashboard={true} />
@@ -101,7 +101,7 @@ const Dashboard = () => {
               <Typography variant="h4" gutterBottom component={Link} to="/ethereum" style={{ textDecoration: 'none', color: colors.grey[100] }}
                 onMouseOver={({ target }) => target.style.color = colors.greenAccent[500]}
                 onMouseOut={({ target }) => target.style.color = colors.grey[100]}>
-                Ethereum Historical Price
+                Ethereum Price
               </Typography>
               <Box height="400px" m="10px 0 0 0">
                 <EthereumPrice isDashboard={true} />
