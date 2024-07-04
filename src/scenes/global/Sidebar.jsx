@@ -11,7 +11,6 @@ import CloseIcon from "@mui/icons-material/Close";
 import BarChartOutlinedIcon from "@mui/icons-material/BarChartOutlined";
 import WarningOutlinedIcon from "@mui/icons-material/WarningOutlined";
 import CurrencyBitcoinIcon from "@mui/icons-material/CurrencyBitcoin";
-
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import ShowChartIcon from "@mui/icons-material/ShowChart";
 import AssessmentIcon from "@mui/icons-material/Assessment";
@@ -25,11 +24,10 @@ import RepeatIcon from "@mui/icons-material/Repeat";
 import BalanceIcon from "@mui/icons-material/Balance";
 import CurrencyExchangeIcon from '@mui/icons-material/CurrencyExchange';
 import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
-
-import FitbitIcon from "@mui/icons-material/Fitbit"; // Check if this exists or find the closest match.
-import CategoryIcon from "@mui/icons-material/Category";  // Generic icon for other categories.
-
-
+import FitbitIcon from "@mui/icons-material/Fitbit";
+import CategoryIcon from "@mui/icons-material/Category";
+import TwitterIcon from '@mui/icons-material/Twitter';
+import EmailIcon from '@mui/icons-material/Email';
 
 const Item = ({ title, to, icon, selected, setSelected, isNested }) => {
   const theme = useTheme();
@@ -54,7 +52,6 @@ const Sidebar = () => {
   const [selected, setSelected] = useState("Dashboard");
   const [searchQuery, setSearchQuery] = useState("");
 
-
   const itemsData = [
     { title: "Dashboard", to: "/", icon: <DashboardIcon />, category: null },
     { title: "Bitcoin Chart", to: "/bitcoin", category: 'Bitcoin', icon: <ShowChartIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
@@ -76,14 +73,12 @@ const Sidebar = () => {
     { title: "US Interest Rate Chart", to: "/us-interest", category: 'MacroEconomics', icon: <BalanceIcon />, categoryIcon: <CategoryIcon /> },
     { title: "US Macro Information Chart", to: "/us-combined-macro", category: 'MacroEconomics', icon: <MultilineChartIcon />, categoryIcon: <CategoryIcon /> }, 
   ];
-  
 
   const filteredItems = itemsData.filter(item =>
     (item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (item.category && item.category.toLowerCase().includes(searchQuery.toLowerCase()))) &&
-    item.title !== "Dashboard" // Exclude the Dashboard from the filtered results
+    item.title !== "Dashboard"
   );
-  
   
   const handleSearchChange = (event) => {
     setSearchQuery(event.target.value);
@@ -105,7 +100,6 @@ const Sidebar = () => {
     />
   );
 
-  // Group items by category
   const itemsByCategory = itemsData.reduce((acc, item) => {
     const { category } = item;
     if (category) {
@@ -115,13 +109,12 @@ const Sidebar = () => {
     return acc;
   }, {});
 
-  // Render SubMenu for each category
   const renderSubMenus = () => (
     Object.entries(itemsByCategory).map(([category, items]) => (
       <SubMenu
         key={category}
         title={category}
-        icon={items[0].categoryIcon || <BarChartOutlinedIcon />}  // Use the first item's categoryIcon or a default one
+        icon={items[0].categoryIcon || <BarChartOutlinedIcon />}
         style={{ color: colors.grey[100] }}
       >
         {items.map((item, index) => renderMenuItem(item, index, true))}
@@ -157,49 +150,47 @@ const Sidebar = () => {
       <ProSidebar>
         <Menu iconShape="square">
           <Box mb="5px">
-            {/* Main Logo and Title */}
             <Box display="flex" justifyContent="center" alignItems="center">
               <img alt="main-logo" width="100px" height="100px" src={`../../assets/cryptological-original-logo.png`}  />
             </Box>
             <Box display="flex" justifyContent="center" alignItems="center">
               <img alt="main-logo" width="200px" height="50px" src={`../../assets/cryptological-title-resized.png`}  />
             </Box>
-            {/* <Box textAlign="center">
-              <Typography variant="h2" color={colors.grey[100]} fontWeight="bold" sx={{ m: "10px 0 0 0" }}>Cryptological</Typography>
-              <Typography variant="h5" color={colors.greenAccent[500]}>Quantitative Analysis</Typography>
-            </Box> */}
           </Box>
 
-          {/* SEARCH BAR */}
           <Box display="flex" backgroundColor={colors.primary[400]} borderRadius="3px">
             <InputBase sx={{ ml: 2, flex: 1 }} placeholder="Search" value={searchQuery} onChange={handleSearchChange} />
             {searchQuery && <IconButton onClick={handleClearSearch} sx={{ p:1 }}><CloseIcon /></IconButton>}
             <IconButton type="button" sx={{ p: 1 }}><SearchIcon /></IconButton>
           </Box>
 
-          {/* Render Dashboard item */}
           {renderMenuItem(itemsData.find(item => item.title === "Dashboard"), 0)}
 
-          {/* Render categories */}
           {searchQuery ? (
             filteredItems.map(renderMenuItem)
           ) : (
             renderSubMenus()
           )}
         </Menu>
-        <Box sx={{ padding: theme.spacing(2), // Use theme spacing for consistent padding
-        }}>
-      {/* Bitcoin Donations Address */}
-      <Box display="flex" justifyContent="center" alignItems="center">
-        <img alt="main-logo" width="100px" height="100px" src={`../../assets/bc1qnekceuntjc2ga3vm8r85l842umzh35xs6yxyvx.JPG`} style={{ cursor: "pointer", borderRadius: "10%", marginTop: '50px', }} />
-      </Box>
-      <Box textAlign="center" padding={theme.spacing(1)}> {/* Adjusted for consistent spacing */}
-        <Typography variant="h3" color={colors.grey[100]} fontWeight="bold" sx={{ m: "10px 0 20px 0" }}>BTC Donations</Typography>
-        <Typography variant="h5" color={colors.greenAccent[500]}>
-          I'm a solo developer trying to create a free useful tool. If you found any value from this site, please consider donating some BTC by using the QR code. Thanks 
-        </Typography>
-      </Box>
-    </Box>
+        <Box sx={{ padding: theme.spacing(2) }}>
+          <Box display="flex" justifyContent="center" alignItems="center">
+            <img alt="main-logo" width="100px" height="100px" src={`../../assets/bc1qnekceuntjc2ga3vm8r85l842umzh35xs6yxyvx.JPG`} style={{ cursor: "pointer", borderRadius: "10%", marginTop: '50px' }} />
+          </Box>
+          <Box textAlign="center" padding={theme.spacing(1)}>
+            <Typography variant="h3" color={colors.grey[100]} fontWeight="bold" sx={{ m: "10px 0 20px 0" }}>BTC Donations</Typography>
+            <Typography variant="h5" color={colors.greenAccent[500]}>
+              I'm a solo developer trying to create a free useful tool. If you found any value from this site, please consider donating some BTC by using the QR code. Thanks
+            </Typography>
+          </Box>
+          <Box display="flex" justifyContent="center" alignItems="center" mt={2}>
+            <IconButton href="https://twitter.com/CryptoLogical__" target="_blank" sx={{ color: colors.grey[100], mr: 1 }}>
+              <TwitterIcon />
+            </IconButton>
+            <IconButton href="mailto:thecryptological@gmail.com" sx={{ color: colors.grey[100] }}>
+              <EmailIcon />
+            </IconButton>
+          </Box>
+        </Box>
       </ProSidebar>
     </Box>
   );

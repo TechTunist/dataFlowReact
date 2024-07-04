@@ -115,7 +115,11 @@ const BitcoinRiskColor = ({ isDashboard = false }) => {
                         cmax: 1,
                         size: 10,
                     },
-                    name: `${index === 0 ? '0.0' : (riskBands[index - 1] + 0.01).toFixed(2)} - ${upperLimit.toFixed(2)}`
+                    name: `${index === 0 ? '0.0' : (riskBands[index - 1] + 0.01).toFixed(2)} - ${upperLimit.toFixed(2)}`,
+                    hovertemplate: `<b>Risk Band:</b> ${index === 0 ? '0.0' : (riskBands[index - 1] + 0.01).toFixed(2)} - ${upperLimit.toFixed(2)}<br>` +
+                                   `<b>Risk:</b> %{marker.color}<br>` +
+                                   `<b>Price:</b> $%{y:,.0f}<br>` +
+                                   `<b>Date:</b> %{x|%B %d, %Y}<extra></extra>`
                 };
             });
         
@@ -182,7 +186,9 @@ const BitcoinRiskColor = ({ isDashboard = false }) => {
                         marker: dataset.marker || {},
                         line: dataset.line || {},
                         name: dataset.name,
-                        hoverinfo: 'text'
+                        hoverinfo: 'text',
+                        hovertemplate: dataset.hovertemplate
+
                     }))}
                     layout={{
                         title: isDashboard ? '' : 'Bitcoin Price vs. Risk Level',
