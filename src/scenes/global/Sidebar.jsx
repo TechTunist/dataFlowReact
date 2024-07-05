@@ -1,10 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { ProSidebar, Menu, MenuItem, SubMenu } from "react-pro-sidebar";
 import { Box, IconButton, Typography, useTheme } from "@mui/material";
 import { Link } from "react-router-dom";
 import "react-pro-sidebar/dist/css/styles.css";
 import { tokens } from "../../theme";
-import HomeIcon from "@mui/icons-material/Home";
 import InputBase from "@mui/material/InputBase";
 import SearchIcon from "@mui/icons-material/Search";
 import CloseIcon from "@mui/icons-material/Close";
@@ -22,11 +21,10 @@ import PaletteIcon from "@mui/icons-material/Palette";
 import MultilineChartIcon from "@mui/icons-material/MultilineChart";
 import RepeatIcon from "@mui/icons-material/Repeat";
 import BalanceIcon from "@mui/icons-material/Balance";
-import CurrencyExchangeIcon from '@mui/icons-material/CurrencyExchange';
 import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
 import FitbitIcon from "@mui/icons-material/Fitbit";
 import CategoryIcon from "@mui/icons-material/Category";
-import TwitterIcon from '@mui/icons-material/Twitter';
+import XIcon from '@mui/icons-material/X';
 import EmailIcon from '@mui/icons-material/Email';
 
 const Item = ({ title, to, icon, selected, setSelected, isNested }) => {
@@ -142,7 +140,6 @@ const Sidebar = () => {
         backgroundColor: "transparent !important",
       },
       "& .pro-menu > ul > .pro-sub-menu > .pro-inner-list-item:hover": {
-        backgroundColor: "#868dfb !important",
         color: "#fff !important",
         backgroundColor: "transparent !important",
       },
@@ -182,9 +179,14 @@ const Sidebar = () => {
               I'm a solo developer trying to create a free useful tool. If you found any value from this site, please consider donating some BTC by using the QR code. Thanks
             </Typography>
           </Box>
+          <Box display="flex" justifyContent="center" alignItems="center">
+          <Typography variant="h5" color={colors.greenAccent[500]}>
+                Contact me here:
+            </Typography>
+          </Box>
           <Box display="flex" justifyContent="center" alignItems="center" mt={2}>
             <IconButton href="https://twitter.com/CryptoLogical__" target="_blank" sx={{ color: colors.grey[100], mr: 1 }}>
-              <TwitterIcon />
+              <XIcon />
             </IconButton>
             <IconButton href="mailto:thecryptological@gmail.com" sx={{ color: colors.grey[100] }}>
               <EmailIcon />
