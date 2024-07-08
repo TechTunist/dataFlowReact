@@ -89,7 +89,8 @@ const UsCombinedMacroChart = ({ isDashboard = false }) => {
                             type: 'scatter',
                             mode: 'lines',
                             name: 'Inflation Rate',
-                            line: { color: colors.primary[100], width: 2 }
+                            line: { color: colors.primary[100], width: 2 },
+                            hovertemplate: 'Inflation Rate: %{y:.1%}<extra></extra>'
                         },
                         {
                             x: filterData(chartData, 'unemployment_value').map(d => d.time),
@@ -97,7 +98,8 @@ const UsCombinedMacroChart = ({ isDashboard = false }) => {
                             type: 'scatter',
                             mode: 'lines',
                             name: 'Unemployment Rate',
-                            line: { color: 'blue', width: 2 }
+                            line: { color: 'blue', width: 2 },
+                            hovertemplate: 'Unemployment Rate: %{y:.1%}<extra></extra>'
                         },
                         {
                             x: filterData(chartData, 'interest_value').map(d => d.time),
@@ -105,7 +107,8 @@ const UsCombinedMacroChart = ({ isDashboard = false }) => {
                             type: 'scatter',
                             mode: 'lines',
                             name: 'Interest Rate',
-                            line: { color: 'green', width: 2 }
+                            line: { color: 'green', width: 2 },
+                            hovertemplate: 'Interest Rate: %{y:.1%}<extra></extra>'
                         }
                     ]}
                     layout={{
