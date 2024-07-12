@@ -117,7 +117,8 @@ const BitcoinRiskColor = ({ isDashboard = false }) => {
                     },
                     name: `${index === 0 ? '0.0' : (riskBands[index - 1] + 0.01).toFixed(2)} - ${upperLimit.toFixed(2)}`,
                     hovertemplate: `<b>Risk Band:</b> ${index === 0 ? '0.0' : (riskBands[index - 1] + 0.01).toFixed(2)} - ${upperLimit.toFixed(2)}<br>` +
-                                   `<b>Risk:</b> %{marker.color}<br>` +
+                                //    `<b>Risk:</b> %{marker.color}<br>` +
+                                   `<b>Risk:</b> %{marker.color:.2f}<br>` + // Format risk to 2 decimal places in hover
                                    `<b>Price:</b> $%{y:,.0f}<br>` +
                                    `<b>Date:</b> %{x|%B %d, %Y}<extra></extra>`
                 };
