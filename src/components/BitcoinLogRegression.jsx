@@ -112,7 +112,17 @@ const BitcoinLogRegression = ({ isDashboard = false }) => {
             nextDate.setDate(lastDate.getDate() + i);
             extendedData.push({ time: nextDate.toISOString().split('T')[0], value: null });
         }
-        return extendedData;
+    
+        // Ensure the data is sorted and unique
+        return removeDuplicates(
+            extendedData.sort((a, b) => new Date(a.time) - new Date(b.time))
+        );
+    };
+
+    const removeDuplicates = (data) => {
+        return data.filter((item, index, self) =>
+            index === self.findIndex((t) => t.time === item.time)
+        );
     };
 
     useEffect(() => {
