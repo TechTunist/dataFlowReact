@@ -128,32 +128,39 @@ const BitcoinRisk = ({ isDashboard = false }) => {
     };
 
     // function to calculate the risk metric
-    const calculateRiskMetric = (data) => {
-        // Calculate 374-day moving average
-        const movingAverage = data.map((item, index) => {
-            const start = Math.max(index - 373, 0);
-            const subset = data.slice(start, index + 1);
-            const avg = subset.reduce((sum, curr) => sum + curr.value, 0) / subset.length;
-            return { ...item, MA: avg };
-        });
+const calculateRiskMetric = (data) => {
+    const diminishingFactor = 0.375; // Slightly increase sensitivity to later data points
+    const movingAverageDays = 380; // Shorter moving average for more sensitivity
+    const logScaleFactor = 1.05; // Amplify log differences slightly
 
-        // Calculate risk metric
-        movingAverage.forEach((item, index) => {
-            const preavg = (Math.log(item.value) - Math.log(item.MA)) * index**0.395;
-            item.Preavg = preavg;
-        });
+    const movingAverage = data.map((item, index) => {
+        const start = Math.max(0, index - (movingAverageDays - 1));
+        const subset = data.slice(start, index + 1);
+        const avg = subset.reduce((sum, entry) => sum + entry.value, 0) / subset.length;
+        return { ...item, MA: avg };
+    });
 
-        // Normalize the Preavg to 0-1 range
-        const preavgValues = movingAverage.map(item => item.Preavg);
-        const preavgMin = Math.min(...preavgValues);
-        const preavgMax = Math.max(...preavgValues);
-        const normalizedRisk = movingAverage.map(item => ({
-            ...item,
-            Risk: (item.Preavg - preavgMin) / (preavgMax - preavgMin)
-        }));
+    movingAverage.forEach((item, index) => {
+        const valueLog = Math.log(item.value + 1e-3); // Small offset to prevent issues with small values
+        const maLog = Math.log(item.MA + 1e-3);
+        const preavg = (valueLog - maLog) * logScaleFactor * Math.pow(index + 1, diminishingFactor);
+        item.Preavg = preavg;
+    });
 
-        return normalizedRisk;
-    };
+    const preavgValues = movingAverage.map(item => item.Preavg);
+    const preavgMin = Math.min(...preavgValues);
+    const preavgMax = Math.max(...preavgValues);
+
+    const riskScaleFactor = 1.05; // Scale risk values by 10%
+
+    const normalizedRisk = movingAverage.map(item => ({
+        ...item,
+        Risk: Math.min(1, Math.max(0, ((item.Preavg - preavgMin) / (preavgMax - preavgMin)) * riskScaleFactor)),
+    }));
+
+
+    return normalizedRisk;
+};
 
 
     // This useEffect handles fetching data and updating the local storage cache. It’s self-contained and correctly handles data fetching independently.
