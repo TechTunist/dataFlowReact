@@ -24,6 +24,17 @@ const LastUpdated = ({ storageKey }) => {
         }
     }, [storageKey, refresh]); // Depend on storageKey and refresh to update when they change
 
+    // listen for storage events to update the component
+    useEffect(() => {
+        const handleStorageChange = (e) => {
+            if (e.key === storageKey) {
+                setRefresh(prev => prev + 1); // Trigger re-fetch
+            }
+        };
+        window.addEventListener('storage', handleStorageChange);
+        return () => window.removeEventListener('storage', handleStorageChange);
+    }, [storageKey]);
+
     const refreshComponent = () => {
         setRefresh(prev => prev + 1); // Change state to trigger re-render
         setIsClicked(true);
