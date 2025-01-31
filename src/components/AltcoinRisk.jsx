@@ -18,20 +18,38 @@ const AltcoinPrice = ({ isDashboard = false }) => {
     const [tooltipData, setTooltipData] = useState(null);
 
     // Hardcoded list of altcoin options
+    // Hardcoded list of altcoin options
     const altcoins = [
+        // { label: 'Bitcoin', value: 'BTC' },
         { label: 'Solana', value: 'SOL' },
+        { label: 'Ethereum', value: 'ETH' },
         { label: 'Cardano', value: 'ADA' },
         { label: 'Dogecoin', value: 'DOGE' },
         { label: 'Chainlink', value: 'LINK' },
         { label: 'XRP', value: 'XRP' },
-        // the following are not available on the free messari api anymore
-        // { label: 'Avalanche', value: 'AVAX' },
-        // { label: 'Toncoin', value: 'TON' },
-        // { label: 'Binance-Coin', value: 'BNB' },
-        // { label: 'Polkadot', value: 'DOT' },
+        { label: 'Avalanche', value: 'AVAX' },
+        { label: 'Toncoin', value: 'TON' },
+        { label: 'Binance-Coin', value: 'BNB' },
+        { label: 'Polkadot', value: 'DOT' },
+        { label: 'Aave', value: 'AAVE' },
+        { label: 'Cronos', value: 'CRO' },
+        { label: 'Sui', value: 'SUI' },
+        { label: 'Hedera', value: 'HBAR' },
+        { label: 'Stellar', value: 'XLM' },
+
         { label: 'GameStop', value: 'GME' },
         { label: 'Tesla', value: 'TSLA' },
-        { label: 'Sui', value: 'SUI' },
+        { label: 'Google', value: 'GOOG' },
+        { label: 'Amazon', value: 'AMZN' },
+        { label: 'Apple', value: 'AAPL' },
+        { label: 'Microstrategy', value: 'MSTR' },
+        { label: 'Microsoft', value: 'MSFT' },
+        { label: 'Rumble', value: 'RUM' },
+        { label: 'Nvidia', value: 'NVDA' },
+
+        { label: 'Pepe Memecoin', value: 'PEPE' },
+        { label: 'Trump Official', value: 'TRUMP' },
+        
     ];
 
     // Handle change event for the dropdown

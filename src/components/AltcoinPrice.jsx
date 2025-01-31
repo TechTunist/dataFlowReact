@@ -65,15 +65,29 @@ const AltcoinPrice = ({ isDashboard = false }) => {
         { label: 'Dogecoin', value: 'DOGE' },
         { label: 'Chainlink', value: 'LINK' },
         { label: 'XRP', value: 'XRP' },
-        // the following coins are not available anymore from messari free api
-        // { label: 'Avalanche', value: 'AVAX' },
-        // { label: 'Toncoin', value: 'TON' },
-        // { label: 'Binance-Coin', value: 'BNB' },
-        // { label: 'Polkadot', value: 'DOT' },
+        { label: 'Avalanche', value: 'AVAX' },
+        { label: 'Toncoin', value: 'TON' },
+        { label: 'Binance-Coin', value: 'BNB' },
+        { label: 'Polkadot', value: 'DOT' },
+        { label: 'Aave', value: 'AAVE' },
         { label: 'Cronos', value: 'CRO' },
+        { label: 'Sui', value: 'SUI' },
+        { label: 'Hedera', value: 'HBAR' },
+        { label: 'Stellar', value: 'XLM' },
+
         { label: 'GameStop', value: 'GME' },
         { label: 'Tesla', value: 'TSLA' },
-        { label: 'Sui', value: 'SUI' },
+        { label: 'Google', value: 'GOOG' },
+        { label: 'Amazon', value: 'AMZN' },
+        { label: 'Apple', value: 'AAPL' },
+        { label: 'Microstrategy', value: 'MSTR' },
+        { label: 'Microsoft', value: 'MSFT' },
+        { label: 'Rumble', value: 'RUM' },
+        { label: 'Nvidia', value: 'NVDA' },
+
+        { label: 'Pepe Memecoin', value: 'PEPE' },
+        { label: 'Trump Official', value: 'TRUMP' },
+        
     ];
 
     const calculateMovingAverage = (data, period) => {
