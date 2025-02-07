@@ -78,12 +78,13 @@ const BitcoinDominanceChart = ({ isDashboard = false }) => {
         }
 
         function fetchBtcData() {
-            fetch('https://tunist.pythonanywhere.com/api/btc/dominance/')
+            // fetch('https://tunist.pythonanywhere.com/api/btc/dominance/')
+            fetch('http://127.0.0.1:8000/api/dominance/')
             .then(response => response.json())
             .then(data => {
                 const formattedData = data.map(item => ({
                     time: item.date,
-                    value: parseFloat(item.btc_dominance_percentage)
+                    value: parseFloat(item.btc)
                 }));             
                 
                 setChartData(formattedData);
