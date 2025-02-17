@@ -82,7 +82,7 @@ const BitcoinLogRegression = ({ isDashboard = false }) => {
                 
                 setChartData(formattedData);
 
-                localStorage.setItem(cacheKey, JSON.stringify(formattedData));
+                // localStorage.setItem(cacheKey, JSON.stringify(formattedData));
 
             })
             .catch(error => {
@@ -260,7 +260,7 @@ const BitcoinLogRegression = ({ isDashboard = false }) => {
         priceSeries.setData(chartData);
 
         const logRegression2TopSeries = calculateRegressionPoints(0.9, 'lime', -500, 0.96);
-        const logRegressionTopSeries = calculateRegressionPoints(0.055, 'green', -400, 0.99);
+        const logRegressionTopSeries = calculateRegressionPoints(0.041, 'green', -410, 0.99);
         const logRegressionMidSeries = calculateRegressionPoints(0.033, 'violet', -350, 0.986);
         const logRegressionBaseSeries = calculateRegressionPoints(0.015, 'red', -320, 0.985);
         const logRegressionBase2Series = calculateRegressionPoints(0.01, 'maroon', -300, 0.985);
