@@ -12,6 +12,7 @@ import PiCycleTop from "../../components/PiCycleTop";
 import FearandGreed from "../../components/FearAndGreed";
 import BitcoinLogRegression from "../../components/BitcoinLogRegression";
 import BitcoinRiskColor from "../../components/BitcoinRiskColor";
+import BitcoinRiskTimeInBands from "../../components/BitcoinRiskTimeInBands";
 import '../../styling/bitcoinChart.css';
 import { tokens } from "../../theme";
 import { Link } from "react-router-dom";
@@ -224,6 +225,25 @@ const Dashboard = () => {
               </Box>
               <Typography variant="body3" color="textSecondary" className='dashboard-info'>
                 Colour coded bitcoin risk levels.
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Bitcoin Risk Time In Bands */}
+        <Grid item xs={12} lg={6}>
+          <Card style={{backgroundColor: colors.primary[500]}}>
+            <CardContent>
+              <Typography variant="h4" gutterBottom component={Link} to="/risk-bands" style={{ textDecoration: 'none', color: colors.grey[100] }}
+                onMouseOver={({ target }) => target.style.color = colors.greenAccent[500]}
+                onMouseOut={({ target }) => target.style.color = colors.grey[100]}>
+                Time Spent in Bitcoin Risk Bands
+              </Typography>
+              <Box height="400px" m="10px 0 0 0">
+                <BitcoinRiskTimeInBands isDashboard={true} />
+              </Box>
+              <Typography variant="body3" color="textSecondary" className='dashboard-info'>
+                Time Spent as a precentage in each defined Bitcoin risk band.
               </Typography>
             </CardContent>
           </Card>

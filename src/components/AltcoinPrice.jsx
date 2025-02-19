@@ -217,13 +217,6 @@ const AltcoinPrice = ({ isDashboard = false }) => {
                 console.error('Error fetching data: ', error);
             });
         }
-
-        Object.keys(smaSeriesRefs).forEach(key => {
-            if (smaSeriesRefs[key]) {
-                smaSeriesRefs[key].setData([]);
-                smaSeriesRefs[key] = null;
-            }
-        });
     
         // Optionally reset visibility states
         setShow8Week(false);
@@ -272,7 +265,7 @@ const AltcoinPrice = ({ isDashboard = false }) => {
             } else {
                 const dateStr = param.time;
                 const data = param.seriesData.get(areaSeries);
-                const formattedPrice = data.value.toFixed(priceScaleDecimals); // Use dynamic decimal places based on the denominator
+        
                 setTooltipData({
                     date: dateStr,
                     price: data.value,
@@ -334,13 +327,6 @@ const AltcoinPrice = ({ isDashboard = false }) => {
         });
         areaSeries.setData(chartData);
     
-        chart.applyOptions({
-            handleScroll: !isDashboard,
-            handleScale: !isDashboard,
-            handleScroll: isInteractive,
-            handleScale: isInteractive
-        });
-    
         resizeChart(); // Ensure initial resize and fitContent call
         chart.timeScale().fitContent(); // Additional call to fitContent to ensure coverage
         chartRef.current = chart; // Store the chart instance
@@ -363,24 +349,25 @@ const AltcoinPrice = ({ isDashboard = false }) => {
     }, [isInteractive]);
 
 
-    const computeNewDataset = () => {
-        if (denominator === 'USD') {
-            setChartData(altData); // Directly use altData if USD is the denominator
-            return;
-        }
-    
-        // For BTC as the denominator
-        const newDataset = altData.map(altEntry => {
-            const btcEntry = btcData.find(btc => btc.time === altEntry.time);
-            return btcEntry ? { ...altEntry, value: altEntry.value / btcEntry.value } : null;
-        }).filter(Boolean); // Remove any null entries where BTC data was not found
-    
-        setChartData(newDataset);
-    };
+
     
     useEffect(() => {
+        const computeNewDataset = () => {
+            if (denominator === 'USD') {
+                setChartData(altData); // Directly use altData if USD is the denominator
+                return;
+            }
+        
+            // For BTC as the denominator
+            const newDataset = altData.map(altEntry => {
+                const btcEntry = btcData.find(btc => btc.time === altEntry.time);
+                return btcEntry ? { ...altEntry, value: altEntry.value / btcEntry.value } : null;
+            }).filter(Boolean); // Remove any null entries where BTC data was not found
+        
+            setChartData(newDataset);
+        };
         computeNewDataset();
-    }, [selectedCoin, denominator, btcData, altData]); // Re-compute dataset when any of these dependencies change
+    }, [selectedCoin, denominator, btcData, altData ]); // Re-compute dataset when any of these dependencies change
 
     useEffect(() => {
         if (!chartRef.current) return;

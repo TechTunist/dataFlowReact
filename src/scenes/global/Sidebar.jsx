@@ -18,6 +18,7 @@ import NetworkCheckIcon from "@mui/icons-material/NetworkCheck";
 import SentimentVeryDissatisfiedIcon from "@mui/icons-material/SentimentVeryDissatisfied";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import PaletteIcon from "@mui/icons-material/Palette";
+import TimerIcon from "@mui/icons-material/Timer";
 import MultilineChartIcon from "@mui/icons-material/MultilineChart";
 import RepeatIcon from "@mui/icons-material/Repeat";
 import BalanceIcon from "@mui/icons-material/Balance";
@@ -62,6 +63,7 @@ const Sidebar = () => {
     { title: "Fear And Greed Indicator", to: "/fear-and-greed", category: 'Indicators', icon: <NetworkCheckIcon />, categoryIcon: <CategoryIcon /> },
     { title: "Bitcoin Logarithmic Regression", to: "/logarithmic-regression", category: 'Indicators', icon: <TrendingUpIcon />, categoryIcon: <CategoryIcon /> },
     { title: "Bitcoin Risk Colour Chart", to: "/risk-color", category: 'Bitcoin', icon: <PaletteIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
+    { title: "Bitcoin Time in Risk Bands", to: "/risk-bands", category: 'Bitcoin', icon: <TimerIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
     { title: "Altcoin Chart", to: "/altcoin-price", category: 'Altcoins', icon: <ShowChartIcon />, categoryIcon: <WarningOutlinedIcon /> },
     { title: "Altcoin Risk Metric", to: "/altcoin-risk", category: 'Altcoins', icon: <AssessmentIcon />, categoryIcon: <WarningOutlinedIcon /> },
     { title: "Market Cycles", to: "/market-cycles", category: 'Bitcoin', icon: <RepeatIcon />, categoryIcon: <CurrencyBitcoinIcon /> },

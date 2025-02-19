@@ -61,6 +61,8 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
         return { title: "Bitcoin", subtitle: "Logarithmic Regression" };
       case "/risk-color":
         return { title: "Bitcoin", subtitle: "Price v Risk" };
+        case "/risk-bands":
+          return { title: "Bitcoin", subtitle: "Time in Risk Bands" };
       case "/altcoin-price":
         return { title: "Altcoins", subtitle: "Altcoin Analysis" };
       case "/about":
