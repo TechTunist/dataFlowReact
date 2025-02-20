@@ -21,6 +21,28 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
     const [setIsDashboard] = useState(isDashboard);
     const [tooltipData, setTooltipData] = useState(null);
     const isMobile = useIsMobile();
+    const [showRatioSeries, setShowRatioSeries] = useState(false); // New state for toggle
+    const ratioSeriesRef = useRef(); // Add ref for ratio series
+
+
+    // Calculate ratio of 111 SMA / (350 SMA * 2)
+    const calculateRatioSeries = (data) => {
+        const sma111 = calculateSMA(data, 111);
+        const sma350 = calculateSMA(data, 350);
+        let ratioData = [];
+        
+        // Start from the longer SMA's starting point
+        for (let i = 349; i < data.length; i++) {
+            if (i - 110 >= 0) { // Ensure we have both SMA values
+                const ratio = sma111[i - 110].value / (sma350[i - 349].value * 2);
+                ratioData.push({
+                    time: data[i].time,
+                    value: ratio
+                });
+            }
+        }
+        return ratioData;
+    };
 
     const markers = [
         {
@@ -176,28 +198,20 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
                 priceLineVisible: false,
             });
 
-            // update tooltip data on crosshairMove event
+            // Update tooltip with new series
             chart.subscribeCrosshairMove(param => {
-                if (
-                    param.point === undefined ||
-                    !param.time ||
-                    param.point.x < 0 ||
-                    param.point.x > chartContainerRef.current.clientWidth ||
-                    param.point.y < 0 ||
-                    param.point.y > chartContainerRef.current.clientHeight
-                ) {
+                if (!param.point || !param.time || 
+                    param.point.x < 0 || param.point.x > chartContainerRef.current.clientWidth ||
+                    param.point.y < 0 || param.point.y > chartContainerRef.current.clientHeight) {
                     setTooltipData(null);
                 } else {
                     const dateStr = param.time;
-                    const bitcoinData = param.seriesData.get(bitcoinSeries);
-                    const sma111Data = param.seriesData.get(sma111Series);
-                    const sma350Data = param.seriesData.get(sma350Series);
-    
                     setTooltipData({
                         date: dateStr,
-                        bitcoinValue: bitcoinData ? bitcoinData.value : null,
-                        sma111Value: sma111Data ? sma111Data.value : null,
-                        sma350Value: sma350Data ? sma350Data.value : null,
+                        bitcoinValue: param.seriesData.get(bitcoinSeriesRef.current)?.value,
+                        sma111Value: param.seriesData.get(sma111Series)?.value,
+                        sma350Value: param.seriesData.get(sma350Series)?.value,
+                        ratioValue: param.seriesData.get(ratioSeriesRef.current)?.value,
                         x: param.point.x,
                         y: param.point.y,
                     });
@@ -231,6 +245,17 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
                 priceLineVisible: false,
                 lastValueVisible: false,
             });
+
+            // Add new ratio series
+            const ratioSeries = chart.addLineSeries({
+                color: '#ff9900', // Orange color, you can change this
+                lineWidth: 2,
+                priceLineVisible: false,
+                lastValueVisible: false,
+                visible: showRatioSeries, // Controlled by toggle
+                priceScaleId: 'left', // Use separate price scale for ratio
+            });
+            ratioSeriesRef.current = ratioSeries;
             
 
             chart.priceScale('right').applyOptions({
@@ -245,6 +270,15 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
                     type: 'custom',
                     formatter: compactNumberFormatter,
                 },
+            });
+
+            // Add left price scale for ratio
+            chart.priceScale('left').applyOptions({
+                autoScale: true,
+                borderVisible: false,
+                scaleMargins: { top: 0.1, bottom: 0.1 },
+                priceFormat: { type: 'custom', formatter: (value) => value.toFixed(2) },
+                visible: showRatioSeries, // Show left scale only when ratio is visible
             });
         
             const resizeChart = () => {
@@ -266,6 +300,7 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
                 time: point.time,
                 value: point.value * 2,
             })));
+            ratioSeries.setData(calculateRatioSeries(chartData)); // Add ratio data
 
             chart.applyOptions({
                 handleScroll: !isDashboard,
@@ -284,7 +319,23 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
             chart.remove();
             window.removeEventListener('resize', resizeChart);
         };
-    }, [chartData, isDashboard, theme.palette.mode]);
+    }, [chartData, isDashboard, theme.palette.mode ]);
+
+    // Toggle ratio series visibility
+    const toggleRatioSeries = () => {
+        setShowRatioSeries(!showRatioSeries);
+    };
+
+    // Separate useEffect for ratio visibility toggle
+    useEffect(() => {
+        if (ratioSeriesRef.current) {
+            ratioSeriesRef.current.applyOptions({ visible: showRatioSeries });
+        }
+        if (chartRef.current) {
+            chartRef.current.priceScale('left').applyOptions({ visible: showRatioSeries });
+        }
+    }, [showRatioSeries]);
+
 
     useEffect(() => {
         if (bitcoinSeriesRef.current) {
@@ -305,18 +356,26 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
         }
     }, [isInteractive]);
 
+    // Legend data
+    const legendItems = [
+        { label: 'BTC', color: '#4ba1c8' },
+        { label: '111D SMA', color: '#66ff00' },
+        { label: '350D SMA x 2', color: '#fe2bc9' },
+        { label: '111/350x2 Ratio', color: '#ff9900', visible: showRatioSeries },
+    ];
+
 
     return (
         <div style={{ height: '100%' }}>
             {!isDashboard && (
                 <div className='chart-top-div'>
-                    <div>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                         {/* Button to toggle markers */}
                         {
                             !isDashboard && (
                                 <button
                                 onClick={toggleMarkers}
-                                className="button-reset"
+                                className="button-reset extra-margin-right"
                                 style={
                                     showMarkers 
                                         ? {
@@ -329,8 +388,21 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
                             >
                                 {showMarkers ? 'Hide Top Markers' : 'Show Top Markers'}
                             </button>)
-                            
                         }
+                        {/* New toggle button for ratio series */}
+                        {!isDashboard && (
+                            <button
+                                onClick={toggleRatioSeries}
+                                className="button-reset"
+                                style={showRatioSeries ? {
+                                    backgroundColor: '#4cceac',
+                                    color: 'black',
+                                    borderColor: 'violet'
+                                } : {}}
+                            >
+                                {showRatioSeries ? 'Hide Ratio' : 'Show Ratio'}
+                            </button>
+                        )}
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'flex-end'}}>
                         {
@@ -376,6 +448,33 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
                     }}
                     />
             </div>
+            {/* Legend */}
+            {!isDashboard && (
+                <div style={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    flexWrap: 'wrap',
+                    gap: '15px',
+                    padding: '10px',
+                    backgroundColor: colors.primary[700],
+                    color: colors.primary[100],
+                    fontSize: isMobile ? '12px' : '14px',
+                }}>
+                    {legendItems.map((item) => (
+                        item.visible !== false && (
+                            <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                <div style={{
+                                    width: '12px',
+                                    height: '12px',
+                                    backgroundColor: item.color,
+                                    borderRadius: '2px',
+                                }} />
+                                <span>{item.label}</span>
+                            </div>
+                        )
+                    ))}
+                </div>
+            )}
             <div className='under-chart'>
                 {!isDashboard && (
                     <LastUpdated storageKey="btcData" />
@@ -418,6 +517,7 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
                     <b>{tooltipData.bitcoinValue && <div>Bitcoin Price: ${tooltipData.bitcoinValue.toFixed(2)}</div>}
                     {tooltipData.sma111Value && <div style={{color: 'lime'}}>111SMA: ${tooltipData.sma111Value.toFixed(2)}</div>}
                     {tooltipData.sma350Value && <div style={{color: 'violet'}}>350SMA: ${tooltipData.sma350Value.toFixed(2)}</div>}
+                    {tooltipData.ratioValue && showRatioSeries && <div style={{color: '#ff9900'}}>111/350*2 Ratio: {tooltipData.ratioValue.toFixed(4)}</div>}
                     {tooltipData.date && <div style={{fontSize: '13px'}}>{tooltipData.date}</div>}</b>
                 </div>
             )}
@@ -429,7 +529,8 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
                             The indicator is calculated by dividing the 111-day moving average of the Bitcoin price by the 350-day moving average of the Bitcoin price.
                             When the 111 day SMA crosses above the 350 day SMA, it is considered a bearish signal, and has historically been able to predict the
                             2 market peaks in 2013, the bull market peak in 2017 and the first market peak in 2021.
-                            <br/>The market bottom can also be indicated by the maximum difference between the 111 day SMA and the 350 day SMA.
+                            <br/>The yellow "ratio" line shows how the relationship between the 111 SMA and the 350 SMA has reduced in volatility over time
+                            and indicates that it may not reach 1.0 in the next bull market peak, meaning that the 111 SMA & 350 SMA may not cross.
                         </p>
                     )   
                 }

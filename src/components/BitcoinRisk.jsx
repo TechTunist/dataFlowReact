@@ -182,7 +182,7 @@ const calculateRiskMetric = (data) => {
                 
                 const withRiskMetric = calculateRiskMetric(formattedData);
 
-                localStorage.setItem(cacheKey, JSON.stringify(withRiskMetric));
+                // localStorage.setItem(cacheKey, JSON.stringify(withRiskMetric));
                 setChartData(withRiskMetric);
 
             })

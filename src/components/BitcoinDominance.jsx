@@ -89,7 +89,7 @@ const BitcoinDominanceChart = ({ isDashboard = false }) => {
                 
                 setChartData(formattedData);
 
-                localStorage.setItem(cacheKeyBtc, JSON.stringify(formattedData));
+                // localStorage.setItem(cacheKeyBtc, JSON.stringify(formattedData));
             })
             .catch(error => {
                 console.error('Error fetching data: ', error);

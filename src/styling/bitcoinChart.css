@@ -165,6 +165,10 @@ input:checked + .slider:before {
     margin-left: 10px;
 }
 
+.extra-margin-right {
+    margin-right: 10px;
+}
+
 .select-reset {
     margin-bottom: 0px;
     color: #70d8bd; /* Set text color to match button */
