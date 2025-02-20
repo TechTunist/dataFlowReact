@@ -260,8 +260,8 @@ const TotalMarketCap = ({ isDashboard = false }) => {
         const logRegression2TopSeries = calculateRegressionPoints(50, 'lime', -220, 0.89);
         const logRegressionTopSeries = calculateRegressionPoints(18, 'green', -200, 0.903);
         const logRegressionMidSeries = calculateRegressionPoints(0.05, 'violet', -280, 0.994);
-        const logRegressionBaseSeries = calculateRegressionPoints(0.04, 'red', -160, 0.994);
-        const logRegressionBase2Series = calculateRegressionPoints(0.029, 'maroon', -70, 0.995);
+        const logRegressionBaseSeries = calculateRegressionPoints(0.02, 'red', -250, 0.999);
+        const logRegressionBase2Series = calculateRegressionPoints(0.014, 'maroon', -215, 0.996);
 
         chart.applyOptions({
             handleScroll: !isDashboard,

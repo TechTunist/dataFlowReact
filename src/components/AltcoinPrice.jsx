@@ -68,12 +68,11 @@ const AltcoinPrice = ({ isDashboard = false }) => {
         { label: 'Avalanche', value: 'AVAX' },
         { label: 'Toncoin', value: 'TON' },
         { label: 'Binance-Coin', value: 'BNB' },
-        // { label: 'Polkadot', value: 'DOT' },
         { label: 'Aave', value: 'AAVE' },
         { label: 'Cronos', value: 'CRO' },
-        // { label: 'Sui', value: 'SUI' },
+        { label: 'Sui', value: 'SUI' },
         { label: 'Hedera', value: 'HBAR' },
-        // { label: 'Stellar', value: 'XLM' },
+        { label: 'Stellar', value: 'XLM' },
 
         // { label: 'GameStop', value: 'GME' },
         // { label: 'Tesla', value: 'TSLA' },
@@ -84,10 +83,6 @@ const AltcoinPrice = ({ isDashboard = false }) => {
         // { label: 'Microsoft', value: 'MSFT' },
         // { label: 'Rumble', value: 'RUM' },
         // { label: 'Nvidia', value: 'NVDA' },
-
-        // { label: 'Pepe Memecoin', value: 'PEPE' },
-        // { label: 'Trump Official', value: 'TRUMP' },
-        
     ];
 
     const calculateMovingAverage = (data, period) => {

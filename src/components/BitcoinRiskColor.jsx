@@ -38,13 +38,14 @@ const BitcoinRiskColor = ({ isDashboard = false }) => {
         });
     };
 
-    const [datasets, setDatasets] = useState([
-        { data: [], visible: true, label: "0.0 - 0.19" },
-        { data: [], visible: true, label: "0.2 - 0.39" },
-        { data: [], visible: true, label: "0.4 - 0.59" },
-        { data: [], visible: true, label: "0.6 - 0.79" },
-        { data: [], visible: true, label: "0.8 - 1.0" }
-    ]);
+    // Adjusted initial datasets for 10 bins
+    const [datasets, setDatasets] = useState(
+        Array.from({ length: 10 }, (_, index) => ({
+            data: [],
+            visible: true,
+            label: `${(index * 0.1).toFixed(1)} - ${((index + 1) * 0.1).toFixed(1)}`
+        }))
+    );
 
         const calculateRiskMetric = (data) => {
             const movingAverage = data.map((item, index) => {
@@ -99,10 +100,11 @@ const BitcoinRiskColor = ({ isDashboard = false }) => {
         }
     
         function updateDatasets(data) {
-            const riskBands = [0.19, 0.39, 0.59, 0.79, 1.0]; // Upper limits of each risk band
+            const riskBands = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]; // Upper limits for 10 bins
             let newDatasets = riskBands.map((upperLimit, index) => {
-                const filteredData = data.filter(d => d.Risk <= upperLimit && (index === 0 || d.Risk > riskBands[index - 1]));
-        
+                const lowerLimit = index === 0 ? 0.0 : riskBands[index - 1];
+                const filteredData = data.filter(d => d.Risk > lowerLimit && d.Risk <= upperLimit);
+
                 return {
                     data: filteredData,
                     visible: true,
@@ -115,10 +117,9 @@ const BitcoinRiskColor = ({ isDashboard = false }) => {
                         cmax: 1,
                         size: 10,
                     },
-                    name: `${index === 0 ? '0.0' : (riskBands[index - 1] + 0.01).toFixed(2)} - ${upperLimit.toFixed(2)}`,
-                    hovertemplate: `<b>Risk Band:</b> ${index === 0 ? '0.0' : (riskBands[index - 1] + 0.01).toFixed(2)} - ${upperLimit.toFixed(2)}<br>` +
-                                //    `<b>Risk:</b> %{marker.color}<br>` +
-                                   `<b>Risk:</b> %{marker.color:.2f}<br>` + // Format risk to 2 decimal places in hover
+                    name: `${lowerLimit.toFixed(1)} - ${upperLimit.toFixed(1)}`,
+                    hovertemplate: `<b>Risk Band:</b> ${lowerLimit.toFixed(1)} - ${upperLimit.toFixed(1)}<br>` +
+                                   `<b>Risk:</b> %{marker.color:.2f}<br>` +
                                    `<b>Price:</b> $%{y:,.0f}<br>` +
                                    `<b>Date:</b> %{x|%B %d, %Y}<extra></extra>`
                 };
