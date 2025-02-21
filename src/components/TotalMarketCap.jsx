@@ -137,7 +137,8 @@ const TotalMarketCap = ({ isDashboard = false }) => {
             });
             const regressionSeries = chart.addLineSeries({
                 color: color,
-                lineWidth: 2,
+                lineWidth: 1,
+                lineStyle: 3,
                 lastValueVisible: false,
                 priceLineVisible: false,
             });
