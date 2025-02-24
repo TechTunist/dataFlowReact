@@ -4,7 +4,6 @@ import Topbar from "./scenes/global/Topbar";
 import Sidebar from "./scenes/global/Sidebar";
 import BasicChart from "./scenes/ChartTemplates/BasicChart";
 import Dashboard from "./scenes/dashboard";
-// import Footer from "./components/Footer";
 import { CssBaseline, ThemeProvider } from "@mui/material";
 import { ColorModeContext, useMode } from "./theme";
 
@@ -28,35 +27,45 @@ import UsInflationChart from "./components/UsInflation";
 import UsUnemploymentChart from "./components/UsUnemployment";
 import UsInterestChart from "./components/UsInterest";
 import UsCombinedMacroChart from "./components/UsCombinedMacro";
+import SplashPage from "./scenes/splash";
 import About from "./scenes/About";
 import LoginSignup from "./scenes/LoginSignup";
 import { useLocation } from 'react-router-dom';
 
-
 function App() {
   const [theme, colorMode] = useMode();
   const [isSidebar, setIsSidebar] = useState(true);
-  const location = useLocation(); // Get current location
-  const isDashboardTopbar = location.pathname === '/'; // Determine if on Dashboard
-
+  const location = useLocation();
+  const isDashboardTopbar = location.pathname === '/';
   
+  // Check if we're on the splash page
+  const isSplashPage = location.pathname === '/splash';
 
   return (
     <ColorModeContext.Provider value={colorMode}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <div className="app" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-          {/* Topbar outside the main flexbox container to allow full width */}
-          <Topbar setIsSidebar={setIsSidebar} isSidebar={isSidebar}  isDashboardTopbar={isDashboardTopbar}/>
+          {/* Only show Topbar when not on splash page */}
+          {!isSplashPage && (
+            <Topbar 
+              setIsSidebar={setIsSidebar} 
+              isSidebar={isSidebar}  
+              isDashboardTopbar={isDashboardTopbar}
+            />
+          )}
 
-          <div style={{ display: 'flex', flex: 1 }}> {/* Flex container for sidebar and content */}
-            {isSidebar && <div className="sidebar">
-              <Sidebar />
-            </div>}
+          <div style={{ display: 'flex', flex: 1 }}>
+            {/* Only show sidebar if not on splash page and isSidebar is true */}
+            {!isSplashPage && isSidebar && (
+              <div className="sidebar">
+                <Sidebar />
+              </div>
+            )}
             
             <main className="content" style={{ flex: 1 }}>
-              {/* Spacer to ensure content starts below the fixed Topbar */}
-              <div style={{ height: '85px' }}></div>
+              {/* Only show spacer when not on splash page */}
+              {!isSplashPage && <div style={{ height: '85px' }}></div>}
               <Routes>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/bitcoin" element={<BasicChart ChartComponent={BitcoinPrice} />} />
@@ -81,10 +90,10 @@ function App() {
                 <Route path="/us-combined-macro" element={<BasicChart ChartComponent={UsCombinedMacroChart} />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/login-signup" element={<LoginSignup />} />
+                <Route path="/splash" element={<SplashPage />} />
               </Routes>
             </main>
           </div>
-          {/* <Footer /> */}
         </div>
       </ThemeProvider>
     </ColorModeContext.Provider>
