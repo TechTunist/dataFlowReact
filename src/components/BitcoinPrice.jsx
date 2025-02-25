@@ -10,16 +10,17 @@ import { Select, MenuItem, FormControl, InputLabel, Box } from '@mui/material';
 
 const BitcoinPrice = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
-    const [chartData, setChartData] = useState([]);
-    const [scaleMode, setScaleMode] = useState(1);
     const chartRef = useRef(null);
-    const theme = useTheme();
-    const colors = tokens(theme.palette.mode);
+    const priceSeriesRef = useRef(null);
+    const smaSeriesRefs = useRef({}).current;
+    const [chartData, setChartData] = useState([]);
+    const [scaleMode, setScaleMode] = useState(1); // 1 for logarithmic, 0 for linear
     const [tooltipData, setTooltipData] = useState(null);
     const [isInteractive, setIsInteractive] = useState(false);
-    const isMobile = useIsMobile();
-
     const [activeIndicators, setActiveIndicators] = useState([]);
+    const theme = useTheme();
+    const colors = tokens(theme.palette.mode);
+    const isMobile = useIsMobile();
 
     const indicators = {
         '8w-sma': { period: 8 * 7, color: 'blue', label: '8 Week SMA' },
@@ -28,8 +29,6 @@ const BitcoinPrice = ({ isDashboard = false }) => {
         '100w-sma': { period: 100 * 7, color: 'white', label: '100 Week SMA' },
         '200w-sma': { period: 200 * 7, color: 'yellow', label: '200 Week SMA' },
     };
-
-    const smaSeriesRefs = useRef({}).current;
 
     const setInteractivity = () => setIsInteractive(!isInteractive);
     const toggleScaleMode = () => setScaleMode(prevMode => (prevMode === 1 ? 0 : 1));
@@ -54,6 +53,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
         setActiveIndicators(event.target.value);
     };
 
+    // Fetch chart data
     useEffect(() => {
         const cacheKeyBtc = 'btcData';
         const cachedDataBtc = localStorage.getItem(cacheKeyBtc);
@@ -79,7 +79,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                     const formattedData = data.map(item => ({
                         time: item.date,
                         value: parseFloat(item.close)
-                    }));             
+                    }));
                     setChartData(formattedData);
                     localStorage.setItem(cacheKeyBtc, JSON.stringify(formattedData));
                 })
@@ -87,9 +87,8 @@ const BitcoinPrice = ({ isDashboard = false }) => {
         }
     }, []);
 
+    // Create chart once on mount
     useEffect(() => {
-        if (chartData.length === 0) return;
-
         const chart = createChart(chartContainerRef.current, {
             width: chartContainerRef.current.clientWidth,
             height: chartContainerRef.current.clientHeight,
@@ -98,19 +97,24 @@ const BitcoinPrice = ({ isDashboard = false }) => {
             timeScale: { minBarSpacing: 0.001 },
         });
 
+        const priceSeries = chart.addAreaSeries({
+            priceScaleId: 'right',
+            lineWidth: 2,
+            priceFormat: { type: 'price', precision: 2, minMove: 0.01 },
+        });
+        priceSeriesRef.current = priceSeries;
+
         chart.subscribeCrosshairMove(param => {
-            if (!param.point || !param.time || param.point.x < 0 || 
-                param.point.x > chartContainerRef.current.clientWidth || 
+            if (!param.point || !param.time || param.point.x < 0 ||
+                param.point.x > chartContainerRef.current.clientWidth ||
                 param.point.y < 0 || param.point.y > chartContainerRef.current.clientHeight) {
                 setTooltipData(null);
             } else {
                 const dateStr = param.time;
-                const data = param.seriesData.get(areaSeries);
-                setTooltipData({ date: dateStr, price: data.value, x: param.point.x, y: param.point.y });
+                const data = param.seriesData.get(priceSeriesRef.current);
+                setTooltipData({ date: dateStr, price: data?.value, x: param.point.x, y: param.point.y });
             }
         });
-
-        chart.priceScale('right').applyOptions({ mode: scaleMode, borderVisible: false });
 
         const resizeChart = () => {
             if (chart && chartContainerRef.current) {
@@ -121,61 +125,58 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                 chart.timeScale().fitContent();
             }
         };
-
         window.addEventListener('resize', resizeChart);
 
-        const { topColor, bottomColor, lineColor } = theme.palette.mode === 'dark' 
-            ? { topColor: 'rgba(38, 198, 218, 0.56)', bottomColor: 'rgba(38, 198, 218, 0.04)', lineColor: 'rgba(38, 198, 218, 1)' }
-            : { topColor: 'rgba(255, 165, 0, 0.56)', bottomColor: 'rgba(255, 165, 0, 0.2)', lineColor: 'rgba(255, 140, 0, 0.8)' };
-
-        const areaSeries = chart.addAreaSeries({
-            priceScaleId: 'right',
-            topColor, 
-            bottomColor, 
-            lineColor,
-            lineWidth: 2,
-            priceFormat: { type: 'price', precision: 2, minMove: 0.01 },
-        });
-        areaSeries.setData(chartData);
-
-        chart.applyOptions({ handleScroll: isInteractive || !isDashboard, handleScale: isInteractive || !isDashboard });
-
-        resizeChart();
-        chart.timeScale().fitContent();
         chartRef.current = chart;
 
         return () => {
             chart.remove();
             window.removeEventListener('resize', resizeChart);
         };
-    }, [chartData, scaleMode, isDashboard, theme.palette.mode]);
+    }, []); // Empty dependency array: runs once on mount
 
+    // Update scale mode
+    useEffect(() => {
+        if (chartRef.current) {
+            chartRef.current.priceScale('right').applyOptions({ mode: scaleMode, borderVisible: false });
+        }
+    }, [scaleMode]);
+
+    // Update series data
+    useEffect(() => {
+        if (priceSeriesRef.current && chartData.length > 0) {
+            priceSeriesRef.current.setData(chartData);
+            chartRef.current.timeScale().fitContent();
+        }
+    }, [chartData]);
+
+    // Update indicators
     useEffect(() => {
         if (!chartRef.current || chartData.length === 0) return;
 
-        Object.keys(indicators).forEach(key => {
-            const indicator = indicators[key];
-            let series = smaSeriesRefs[key];
-
-            if (activeIndicators.includes(key)) {
-                if (!series) {
-                    series = chartRef.current.addLineSeries({
-                        color: indicator.color,
-                        lineWidth: 2,
-                        priceLineVisible: false,
-                    });
-                    smaSeriesRefs[key] = series;
-                }
-                const data = calculateMovingAverage(chartData, indicator.period);
-                series.setData(data);
-            } else if (series) {
-                series.setData([]);
-                chartRef.current.removeSeries(series);
+        // Remove all existing indicator series
+        Object.keys(smaSeriesRefs).forEach(key => {
+            if (smaSeriesRefs[key]) {
+                chartRef.current.removeSeries(smaSeriesRefs[key]);
                 delete smaSeriesRefs[key];
             }
         });
+
+        // Add active indicators
+        activeIndicators.forEach(key => {
+            const indicator = indicators[key];
+            const series = chartRef.current.addLineSeries({
+                color: indicator.color,
+                lineWidth: 2,
+                priceLineVisible: false,
+            });
+            smaSeriesRefs[key] = series;
+            const data = calculateMovingAverage(chartData, indicator.period);
+            series.setData(data);
+        });
     }, [activeIndicators, chartData]);
 
+    // Update interactivity
     useEffect(() => {
         if (chartRef.current) {
             chartRef.current.applyOptions({
@@ -184,6 +185,32 @@ const BitcoinPrice = ({ isDashboard = false }) => {
             });
         }
     }, [isInteractive]);
+
+    // Update colors based on theme
+    useEffect(() => {
+        if (priceSeriesRef.current) {
+            const { topColor, bottomColor, lineColor } = theme.palette.mode === 'dark'
+                ? { topColor: 'rgba(38, 198, 218, 0.56)', bottomColor: 'rgba(38, 198, 218, 0.04)', lineColor: 'rgba(38, 198, 218, 1)' }
+                : { topColor: 'rgba(255, 165, 0, 0.56)', bottomColor: 'rgba(255, 165, 0, 0.2)', lineColor: 'rgba(255, 140, 0, 0.8)' };
+            priceSeriesRef.current.applyOptions({
+                topColor,
+                bottomColor,
+                lineColor,
+            });
+        }
+        if (chartRef.current) {
+            chartRef.current.applyOptions({
+                layout: {
+                    background: { type: 'solid', color: colors.primary[700] },
+                    textColor: colors.primary[100],
+                },
+                grid: {
+                    vertLines: { color: colors.greenAccent[700] },
+                    horzLines: { color: colors.greenAccent[700] },
+                },
+            });
+        }
+    }, [theme.palette.mode]);
 
     return (
         <div style={{ height: '100%' }}>
@@ -194,9 +221,8 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                             <input type="checkbox" checked={scaleMode === 1} onChange={toggleScaleMode} />
                             <span className="slider round"></span>
                         </label>
-                        <span style={{color: colors.primary[100]}}>{scaleMode === 1 ? 'Logarithmic' : 'Linear'}</span>
+                        <span style={{ color: colors.primary[100] }}>{scaleMode === 1 ? 'Logarithmic' : 'Linear'}</span>
                     </div>
-
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
                         <button
                             onClick={setInteractivity}
@@ -215,20 +241,18 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                     </div>
                 </div>
             )}
-            
-            <div 
-                className="chart-container" 
-                style={{ 
-                    position: 'relative', 
+            <div
+                className="chart-container"
+                style={{
+                    position: 'relative',
                     height: isDashboard ? '100%' : 'calc(100% - 40px)',
-                    width: '100%', 
+                    width: '100%',
                     border: '2px solid #a9a9a9'
                 }}
                 onDoubleClick={() => setInteractivity(!isInteractive)}
             >
                 <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
-                {/* Custom Legend */}
-                <div 
+                <div
                     style={{
                         position: 'absolute',
                         top: '10px',
@@ -241,19 +265,28 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                         fontSize: '12px',
                     }}
                 >
-                    {!isDashboard && (
-                <div>Active Indicators</div>
-            )}
-                    
+                    {!isDashboard && <div>Active Indicators</div>}
+                    <div style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>
+                        <span
+                            style={{
+                                display: 'inline-block',
+                                width: '10px',
+                                height: '10px',
+                                backgroundColor: theme.palette.mode === 'dark' ? 'rgba(38, 198, 218, 1)' : 'rgba(255, 140, 0, 0.8)',
+                                marginRight: '5px'
+                            }}
+                        />
+                        Bitcoin Price
+                    </div>
                     {activeIndicators.map(key => (
                         <div key={key} style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>
-                            <span 
-                                style={{ 
-                                    display: 'inline-block', 
-                                    width: '10px', 
-                                    height: '10px', 
-                                    backgroundColor: indicators[key].color, 
-                                    marginRight: '5px' 
+                            <span
+                                style={{
+                                    display: 'inline-block',
+                                    width: '10px',
+                                    height: '10px',
+                                    backgroundColor: indicators[key].color,
+                                    marginRight: '5px'
                                 }}
                             />
                             {indicators[key].label}
@@ -261,13 +294,12 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                     ))}
                 </div>
             </div>
-
             {!isDashboard && (
                 <div className='under-chart' style={{ padding: '10px 0' }}>
-                    <Box sx={{ 
-                        display: 'flex', 
-                        justifyContent: 'space-between', 
-                        width: '100%', 
+                    <Box sx={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        width: '100%',
                         maxWidth: '800px',
                         margin: '0 auto',
                         flexWrap: 'wrap',
@@ -276,18 +308,18 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                         <LastUpdated storageKey="btcData" />
                         <BitcoinFees />
                     </Box>
-                    <Box sx={{ 
-                        display: 'flex', 
-                        justifyContent: 'center', 
-                        width: '100%', 
-                        marginTop: '20px' // Increased margin for label space
+                    <Box sx={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        width: '100%',
+                        marginTop: '20px'
                     }}>
-                        <FormControl 
-                            sx={{ 
+                        <FormControl
+                            sx={{
                                 width: { xs: '100%', sm: '300px' },
                                 maxWidth: '800px',
                             }}
-                            key={activeIndicators.join('-')} // Force re-render on value change
+                            key={activeIndicators.join('-')}
                         >
                             <InputLabel sx={{ color: colors.grey[100] }}>
                                 Indicators
@@ -313,7 +345,6 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                     </Box>
                 </div>
             )}
-            
             {!isDashboard && tooltipData && (
                 <div
                     className="tooltip"
@@ -335,12 +366,11 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                         top: `${tooltipData.y + 100}px`,
                     }}
                 >
-                    <div style={{fontSize: '15px'}}>Bitcoin</div>
-                    <div style={{fontSize: '20px'}}>${tooltipData.price.toFixed(2)}</div>
-                    <div>{tooltipData.date.toString()}</div>
+                    <div style={{ fontSize: '15px' }}>Bitcoin</div>
+                    <div style={{ fontSize: '20px' }}>${tooltipData.price?.toFixed(2)}</div>
+                    <div>{tooltipData.date?.toString()}</div>
                 </div>
             )}
-
             {!isDashboard && (
                 <p className='chart-info'>
                     Bitcoin represents a significant advancement in digital finance. It operates on a globally distributed and permissionless ledger,
