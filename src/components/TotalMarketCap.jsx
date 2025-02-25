@@ -137,7 +137,8 @@ const TotalMarketCap = ({ isDashboard = false }) => {
             });
             const regressionSeries = chart.addLineSeries({
                 color: color,
-                lineWidth: 2,
+                lineWidth: 1,
+                lineStyle: 3,
                 lastValueVisible: false,
                 priceLineVisible: false,
             });
@@ -257,11 +258,11 @@ const TotalMarketCap = ({ isDashboard = false }) => {
         });
         priceSeries.setData(chartData);
 
-        const logRegression2TopSeries = calculateRegressionPoints(50, 'lime', -220, 0.89);
-        const logRegressionTopSeries = calculateRegressionPoints(18, 'green', -200, 0.903);
-        const logRegressionMidSeries = calculateRegressionPoints(0.05, 'violet', -280, 0.994);
-        const logRegressionBaseSeries = calculateRegressionPoints(0.02, 'red', -250, 0.999);
-        const logRegressionBase2Series = calculateRegressionPoints(0.014, 'maroon', -215, 0.996);
+        const logRegression2TopSeries = calculateRegressionPoints(20, 'lime', -320, 0.91);
+        const logRegressionTopSeries = calculateRegressionPoints(15, 'green', -300, 0.907);
+        const logRegressionMidSeries = calculateRegressionPoints(0.05, 'violet', -310, 0.9845);
+        const logRegressionBaseSeries = calculateRegressionPoints(0.01, 'red', -310, 0.995);
+        const logRegressionBase2Series = calculateRegressionPoints(0.005, 'maroon', -255, 0.996);
 
         chart.applyOptions({
             handleScroll: !isDashboard,
