@@ -6,7 +6,7 @@ import { useTheme } from "@mui/material";
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
 import BitcoinFees from './BitcoinTransactionFees';
-import { Select, MenuItem, FormControl, InputLabel, Box } from '@mui/material';
+import { Stack, Select, MenuItem, FormControl, FormControlLabel, InputLabel, Box, Checkbox, Button } from '@mui/material';
 
 const BitcoinPrice = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
@@ -214,7 +214,99 @@ const BitcoinPrice = ({ isDashboard = false }) => {
 
     return (
         <div style={{ height: '100%' }}>
-            {!isDashboard && (
+                                {!isDashboard && (
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                flexDirection: { xs: 'column', sm: 'row' },
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '20px',
+                                marginBottom: '10px',
+                                marginTop: '20px',
+                            }}
+                        >
+                            {/* Log/Linear Scale Mode Select */}
+                            <FormControl sx={{ width: { xs: '100%', sm: '150px' } }}>
+                                <InputLabel sx={{ color: colors.grey[100] }}>Scale Mode</InputLabel>
+                                <Select
+                                    value={scaleMode}
+                                    onChange={(e) => setScaleMode(e.target.value)}
+                                    label="Scale Mode"
+                                    sx={{
+                                        color: colors.grey[100],
+                                        '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
+                                        '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                                    }}
+                                >
+                                    <MenuItem value={0}>Linear</MenuItem>
+                                    <MenuItem value={1}>Logarithmic</MenuItem>
+                                </Select>
+                            </FormControl>
+                            <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '300px' } }}>
+                                <InputLabel sx={{ color: colors.grey[100] }}>Indicators</InputLabel>
+                                <Select
+                                    multiple
+                                    value={activeIndicators}
+                                    onChange={handleIndicatorChange}
+                                    label="Indicators"
+                                    renderValue={(selected) => (selected.length > 0 ? selected.map((key) => indicators[key].label).join(', ') : null)}
+                                    sx={{
+                                        color: colors.grey[100],
+                                        '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
+                                        '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                                    }}
+                                >
+                                    {Object.entries(indicators).map(([key, { label }]) => (
+                                        <MenuItem key={key} value={key}>
+                                            <Checkbox
+                                                checked={activeIndicators.includes(key)}
+                                                sx={{ color: colors.grey[100], '&.Mui-checked': { color: colors.greenAccent[500] } }}
+                                            />
+                                            <span>{label}</span>
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={0} alignItems="right">
+                                <FormControl sx={{ minWidth: '20px', width: { xs: '100%', sm: '100px' } }}>
+                                    <FormControlLabel
+                                        control={
+                                            <Checkbox
+                                                checked={isInteractive}
+                                                onChange={(e) => setInteractivity(e.target.checked)}
+                                                sx={{
+                                                    color: colors.grey[300], // Unchecked color
+                                                    '&.Mui-checked': { color: colors.greenAccent[500] }, // Checked color
+                                                }}
+                                            />
+                                        }
+                                        label="Zoom"
+                                        sx={{
+                                            color: colors.grey[100], // Label color
+                                            '& .MuiFormControlLabel-label': { color: colors.grey[100] },
+                                        }}
+                                    />
+                                </FormControl>
+                                <FormControl>
+                                    <Button
+                                        onClick={resetChartView}
+                                        variant="contained"
+                                        sx={{
+                                            backgroundColor: colors.greenAccent[500],
+                                            color: colors.grey[900],
+                                            '&:hover': { backgroundColor: colors.greenAccent[100] },
+                                        }}
+                                    >
+                                        Reset Chart
+                                    </Button>
+                                </FormControl>
+                            </Stack>
+                        </Box>
+                    )}
+            {/* {!isDashboard && (
                 <div className='chart-top-div'>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
                         <label className="switch">
@@ -240,7 +332,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                         </button>
                     </div>
                 </div>
-            )}
+            )} */}
             <div
                 className="chart-container"
                 style={{
@@ -300,48 +392,13 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                         display: 'flex',
                         justifyContent: 'space-between',
                         width: '100%',
-                        maxWidth: '800px',
-                        margin: '0 auto',
+                        // maxWidth: '800px',
                         flexWrap: 'wrap',
-                        gap: '10px'
+                        gap: '10px',
+                        alignItems: 'center', // Optional: ensures vertical alignment if components have different heights
                     }}>
                         <LastUpdated storageKey="btcData" />
                         <BitcoinFees />
-                    </Box>
-                    <Box sx={{
-                        display: 'flex',
-                        justifyContent: 'center',
-                        width: '100%',
-                        marginTop: '20px'
-                    }}>
-                        <FormControl
-                            sx={{
-                                width: { xs: '100%', sm: '300px' },
-                                maxWidth: '800px',
-                            }}
-                            key={activeIndicators.join('-')}
-                        >
-                            <InputLabel sx={{ color: colors.grey[100] }}>
-                                Indicators
-                            </InputLabel>
-                            <Select
-                                multiple
-                                value={activeIndicators}
-                                onChange={handleIndicatorChange}
-                                label="Indicators"
-                                sx={{
-                                    color: colors.grey[100],
-                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
-                                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                                }}
-                            >
-                                {Object.entries(indicators).map(([key, { label }]) => (
-                                    <MenuItem key={key} value={key}>
-                                        {label}
-                                    </MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
                     </Box>
                 </div>
             )}

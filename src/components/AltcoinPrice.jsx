@@ -275,9 +275,10 @@ return (
                     justifyContent: 'center',
                     gap: '20px',
                     marginBottom: '10px',
+                    marginTop: '50px',
                 }}
             >
-                <FormControl sx={{ minWidth: '200px', width: { xs: '100%', sm: '200px' } }}>
+                <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '200px' } }}>
                     <InputLabel sx={{ color: colors.grey[100] }}>Altcoin</InputLabel>
                     <Select
                         value={selectedCoin}
@@ -287,6 +288,7 @@ return (
                             color: colors.grey[100],
                             '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
                             '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
                         }}
                     >
                         {altcoins.map((coin) => (
@@ -296,7 +298,7 @@ return (
                         ))}
                     </Select>
                 </FormControl>
-                <FormControl sx={{ minWidth: '150px', width: { xs: '100%', sm: '150px' } }}>
+                <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '150px' } }}>
                     <InputLabel sx={{ color: colors.grey[100] }}>Denominator</InputLabel>
                     <Select
                         value={denominator}
@@ -306,13 +308,14 @@ return (
                             color: colors.grey[100],
                             '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
                             '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
                         }}
                     >
                         <MenuItem value="USD">USD</MenuItem>
                         <MenuItem value="BTC">BTC</MenuItem>
                     </Select>
                 </FormControl>
-                <FormControl sx={{ minWidth: '300px', width: { xs: '100%', sm: '300px' } }}>
+                <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '300px' } }}>
                     <InputLabel sx={{ color: colors.grey[100] }}>Indicators</InputLabel>
                     <Select
                         multiple
@@ -324,6 +327,7 @@ return (
                             color: colors.grey[100],
                             '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
                             '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
                         }}
                     >
                         {Object.entries(indicators).map(([key, { label }]) => (
@@ -425,14 +429,14 @@ return (
             </div>
         </div>
         {!isDashboard && (
-            <div className="under-chart" style={{ padding: '10px 0' }}>
+            <div className="under-chart">
                 <Box
                     sx={{
                         display: 'flex',
-                        justifyContent: 'space-between',
+                        justifyContent: 'left',
                         width: '100%',
                         maxWidth: '800px',
-                        margin: '0 auto',
+                        // margin: '0 auto',
                         flexWrap: 'wrap',
                         gap: '10px',
                     }}

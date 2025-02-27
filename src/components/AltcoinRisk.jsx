@@ -5,6 +5,7 @@ import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
+import { Select, MenuItem, FormControl, InputLabel, Box, Checkbox } from '@mui/material';
 
 const AltcoinPrice = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
@@ -211,8 +212,8 @@ const AltcoinPrice = ({ isDashboard = false }) => {
 
         // Disable all interactions if the chart is displayed on the dashboard
         chart.applyOptions({
-            handleScroll: isInteractive,
-            handleScale: isInteractive,
+            handleScroll: false,
+            handleScale: false,
         });
 
         chart.priceScale('left').applyOptions({
@@ -248,47 +249,52 @@ const AltcoinPrice = ({ isDashboard = false }) => {
         };
     }, [chartData, theme.palette.mode, isDashboard]);
 
-    useEffect(() => {
-        if (chartRef.current) {
-            chartRef.current.applyOptions({
-                handleScroll: isInteractive,
-                handleScale: isInteractive,
-            });
-        }
-    }, [isInteractive]);
+    // useEffect(() => {
+    //     if (chartRef.current) {
+    //         chartRef.current.applyOptions({
+    //             handleScroll: isInteractive,
+    //             handleScale: isInteractive,
+    //         });
+    //     }
+    // }, [isInteractive]);
 
     return (
         <div style={{ height: '100%' }}>
             {!isDashboard && (
-                <div className='chart-top-div'>
-                    <div>
-                        {!isDashboard && (
-                            <div>
-                                <select className="button-risk" value={selectedCoin} onChange={handleSelectChange}>
-                                    {altcoins.map((coin) => (
-                                        <option key={coin.value} value={coin.value}>{coin.label}</option>
-                                    ))}
-                                </select>
-                            </div>
-                        )}
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                        <button
-                            onClick={setInteractivity}
-                            className="button-reset"
-                            style={{
-                                backgroundColor: isInteractive ? '#4cceac' : 'transparent',
-                                color: isInteractive ? 'black' : '#31d6aa',
-                                borderColor: isInteractive ? 'violet' : '#70d8bd',
-                            }}>
-                            {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
-                        </button>
-                        <button onClick={resetChartView} className="button-reset extra-margin">
-                            Reset Chart
-                        </button>
-                    </div>
-                </div>
-            )}
+            <Box
+                sx={{
+                    display: 'flex',
+                    flexDirection: { xs: 'column', sm: 'row' },
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '20px',
+                    marginBottom: '30px',
+                    marginTop: '30px',
+                }}
+            >
+                <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '200px' } }}>
+                    <InputLabel sx={{ color: colors.grey[100] }}>Altcoin</InputLabel>
+                    <Select
+                        value={selectedCoin}
+                        onChange={(e) => setSelectedCoin(e.target.value)}
+                        label="Altcoin"
+                        sx={{
+                            color: colors.grey[100],
+                            '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
+                            '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                            '& .MuiSelect-select:focus': { outline: 'none !important', boxShadow: 'none !important' },
+                        }}
+                    >
+                        {altcoins.map((coin) => (
+                            <MenuItem key={coin.value} value={coin.value}>
+                                {coin.label}
+                            </MenuItem>
+                        ))}
+                    </Select>
+                </FormControl>
+            </Box>
+        )}
             <div className="chart-container" style={{
                 position: 'relative',
                 height: 'calc(100% - 40px)',

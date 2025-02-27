@@ -142,8 +142,8 @@ const BitcoinLogRegression = ({ isDashboard = false }) => {
             });
             const regressionSeries = chart.addLineSeries({
                 color: color,
-                lineWidth: 0,
-                lineStyle: 3,
+                lineWidth: 2,
+                lineStyle: 1,
                 lastValueVisible: false,
                 priceLineVisible: false,
             });
