@@ -333,7 +333,6 @@ const BitcoinDominanceChart = ({ isDashboard = false }) => {
                 !isDashboard && (
                     <p className='chart-info'>
                         The Bitcoin Dominance chart shows the percentage of the total cryptocurrency market capitalization that Bitcoin holds.
-                        The chart is updated weekly.
                     </p>
                 )   
             }
