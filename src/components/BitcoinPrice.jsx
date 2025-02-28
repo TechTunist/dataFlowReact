@@ -183,14 +183,20 @@ const BitcoinPrice = ({ isDashboard = false }) => {
             } else {
                 const dateStr = param.time;
                 const priceData = param.seriesData.get(priceSeriesRef.current);
-                const fedData = param.seriesData.get(fedBalanceSeriesRef.current); // Use the ref here
-                setTooltipData({
-                    date: dateStr,
-                    price: priceData?.value,
-                    fedBalance: fedData?.value,
-                    x: param.point.x,
-                    y: param.point.y,
-                });
+                const fedData = param.seriesData.get(fedBalanceSeriesRef.current);
+        
+                // Only set tooltipData if at least one value is present
+                if (priceData?.value !== undefined || fedData?.value !== undefined) {
+                    setTooltipData({
+                        date: dateStr,
+                        price: priceData?.value, // Can be undefined, handled in JSX
+                        fedBalance: fedData?.value, // Can be undefined, handled in JSX
+                        x: param.point.x,
+                        y: param.point.y,
+                    });
+                } else {
+                    setTooltipData(null); // No valid data, hide tooltip
+                }
             }
         });
 
@@ -501,8 +507,12 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                     }}
                 >
                     <div style={{ fontSize: '15px' }}>Bitcoin</div>
-                    {tooltipData.price && <div style={{ fontSize: '20px' }}>${tooltipData.price.toFixed(2)}</div>}
-                    {activeIndicators.includes('fed-balance') && tooltipData.fedBalance && <div style={{ color: 'purple' }}>Fed Balance: ${tooltipData.fedBalance.toFixed(2)}T</div>}
+                    {tooltipData.price !== undefined && (
+                        <div style={{ fontSize: '20px' }}>${tooltipData.price.toFixed(2)}</div>
+                    )}
+                    {activeIndicators.includes('fed-balance') && tooltipData.fedBalance !== undefined && (
+                        <div style={{ color: 'purple' }}>Fed Balance: ${tooltipData.fedBalance.toFixed(2)}T</div>
+                    )}
                     {tooltipData.date && <div>{tooltipData.date.toString()}</div>}
                 </div>
             )}
