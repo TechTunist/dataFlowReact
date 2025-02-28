@@ -559,12 +559,18 @@ const AltcoinPrice = ({ isDashboard = false }) => {
                     }}
                 >
                     <div style={{ fontSize: '15px' }}>{selectedCoin}</div>
-                    <div style={{ fontSize: '20px' }}>
-                        {denominator === 'BTC' ? '₿' : '$'}
-                        {denominator === 'BTC' ? tooltipData.price.toFixed(8) : tooltipData.price.toFixed(3)}
-                    </div>
-                    {activeIndicators.includes('fed-balance') && tooltipData.fedBalance && <div style={{ color: 'purple' }}>Fed Balance: ${tooltipData.fedBalance.toFixed(2)}T</div>}
-                    <div>{tooltipData.date.toString()}</div>
+                    {tooltipData.price !== undefined && (
+                        <div style={{ fontSize: '20px' }}>
+                            {denominator === 'BTC' ? '₿' : '$'}
+                            {denominator === 'BTC' ? tooltipData.price.toFixed(8) : tooltipData.price.toFixed(3)}
+                        </div>
+                    )}
+                    {activeIndicators.includes('fed-balance') && tooltipData.fedBalance !== undefined && (
+                        <div style={{ color: 'purple' }}>
+                            Fed Balance: ${tooltipData.fedBalance.toFixed(2)}T
+                        </div>
+                    )}
+                    {tooltipData.date && <div>{tooltipData.date.toString()}</div>}
                 </div>
             )}
             {!isDashboard && (
