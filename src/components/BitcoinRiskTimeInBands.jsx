@@ -22,7 +22,8 @@ const BitcoinRiskBandDuration = ({ isDashboard = false }) => {
 
         function fetchAndProcessBtcData() {
             // If no cached data is found, fetch new data
-            fetch('https://tunist.pythonanywhere.com/api/btc/price/')
+            // fetch('https://tunist.pythonanywhere.com/api/btc/price/')
+            fetch('https://vercel-dataflow.vercel.app/api/btc/price/')
                 .then(response => response.json())
                 .then(data => {
                     const formattedData = data.map(item => ({

@@ -149,7 +149,8 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
     
         const fetchData = async () => {
             try {
-                const response = await fetch('https://tunist.pythonanywhere.com/api/btc/price/');
+                // const response = await fetch('https://tunist.pythonanywhere.com/api/btc/price/');
+                const response = await fetch('https://vercel-dataflow.vercel.app/api/btc/price/')
                 const data = await response.json();
                 const formattedData = data.map(item => ({
                     time: item.date,
