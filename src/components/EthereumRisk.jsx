@@ -164,7 +164,8 @@ const EthereumRisk = ({ isDashboard = false }) => {
         function fetchEthData() {
             // if no cached data is found, fetch new data
             // Adjust the URL dynamically based on the selected altcoin
-            fetch('https://tunist.pythonanywhere.com/api/eth/price/')
+            // fetch('https://tunist.pythonanywhere.com/api/eth/price/')
+            fetch('https://vercel-dataflow.vercel.app/api/eth/price/')
             .then(response => response.json())
             .then(data => {
                 const formattedData = data.map(item => ({
