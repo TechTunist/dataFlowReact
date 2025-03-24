@@ -44,7 +44,8 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
     useEffect(() => {
         const fetchBitcoinData = async () => {
             try {
-                const btcResponse = await fetch('https://tunist.pythonanywhere.com/api/btc/price/');
+                // const btcResponse = await fetch('https://tunist.pythonanywhere.com/api/btc/price/');
+                const btcResponse = await fetch('https://vercel-dataflow.vercel.app/api/fear-and-greed/');
                 if (!btcResponse.ok) {
                     throw new Error(`Error fetching Bitcoin data: ${btcResponse.statusText}`);
                 }

@@ -88,7 +88,8 @@ const AltcoinPrice = ({ isDashboard = false }) => {
         const today = new Date();
 
         const fetchAltData = () => {
-            fetch(`https://tunist.pythonanywhere.com/api/${selectedCoin.toLowerCase()}/price/`)
+            // fetch(`https://tunist.pythonanywhere.com/api/${selectedCoin.toLowerCase()}/price/`)
+            fetch(`https://vercel-dataflow.vercel.app/api/${selectedCoin.toLowerCase()}/price/`)
                 .then(response => response.json())
                 .then(data => {
                     const formattedData = data.map(item => ({
@@ -102,7 +103,8 @@ const AltcoinPrice = ({ isDashboard = false }) => {
         };
 
         const fetchBtcData = () => {
-            fetch('https://tunist.pythonanywhere.com/api/btc/price/')
+            // fetch('https://tunist.pythonanywhere.com/api/btc/price/')
+            fetch('https://vercel-dataflow.vercel.app/api/btc/price/')
                 .then(response => response.json())
                 .then(data => {
                     const formattedData = data.map(item => ({
@@ -157,7 +159,8 @@ const AltcoinPrice = ({ isDashboard = false }) => {
         }
 
         function fetchFedBalanceData() {
-            fetch('https://tunist.pythonanywhere.com/api/fed-balance/')
+            // fetch('https://tunist.pythonanywhere.com/api/fed-balance/')
+            fetch('https://vercel-dataflow.vercel.app/api/fed-balance/')
                 .then(response => response.json())
                 .then(data => {
                     const formattedData = data.map(item => ({

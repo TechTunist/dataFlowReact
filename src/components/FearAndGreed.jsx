@@ -38,7 +38,8 @@ function CryptoFearAndGreedIndex({ isDashboard }) {
         }
 
         function fetchData() {
-            fetch('https://tunist.pythonanywhere.com/api/fear-and-greed/')
+            // fetch('https://tunist.pythonanywhere.com/api/fear-and-greed/')
+            fetch('https://vercel-dataflow.vercel.app/api/fear-and-greed/')
                 .then(response => response.json())
                 .then(data => {
                     const formattedData = data.map(item => ({

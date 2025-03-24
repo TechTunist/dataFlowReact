@@ -122,7 +122,8 @@ const AltcoinPrice = ({ isDashboard = false }) => {
         const today = new Date();
 
         const fetchAltData = () => {
-            fetch(`https://tunist.pythonanywhere.com/api/${selectedCoin.toLowerCase()}/price/`)
+            // fetch(`https://tunist.pythonanywhere.com/api/${selectedCoin.toLowerCase()}/price/`)
+            fetch(`https://vercel-dataflow.vercel.app/api/${selectedCoin.toLowerCase()}/price/`)
                 .then(response => response.json())
                 .then(data => {
                     const formattedData = data.map(item => ({
