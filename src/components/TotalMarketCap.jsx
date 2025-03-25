@@ -99,7 +99,8 @@ const TotalMarketCap = ({ isDashboard = false }) => {
     
         function fetchData() {
             // Fetch new data from the API
-            fetch('https://tunist.pythonanywhere.com/api/total/marketcap/')
+            // fetch('https://tunist.pythonanywhere.com/api/total/marketcap/')
+            fetch('https://vercel-dataflow.vercel.app/api/total/marketcap/')
                 .then(response => response.json())
                 .then(data => {
                     // Format the data for the chart
