@@ -45,7 +45,7 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
         const fetchBitcoinData = async () => {
             try {
                 // const btcResponse = await fetch('https://tunist.pythonanywhere.com/api/btc/price/');
-                const btcResponse = await fetch('https://vercel-dataflow.vercel.app/api/fear-and-greed/');
+                const btcResponse = await fetch('https://vercel-dataflow.vercel.app/api/btc/price/');
                 if (!btcResponse.ok) {
                     throw new Error(`Error fetching Bitcoin data: ${btcResponse.statusText}`);
                 }
@@ -59,7 +59,8 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
                     }));
 
                 // Fetch fear and greed data with error handling
-                const fearGreedResponse = await fetch('https://tunist.pythonanywhere.com/api/fear-and-greed/');
+                // const fearGreedResponse = await fetch('https://tunist.pythonanywhere.com/api/fear-and-greed/');
+                const fearGreedResponse = await fetch('https://vercel-dataflow.vercel.app/api/fear-and-greed/');
                 if (!fearGreedResponse.ok) {
                     throw new Error(`Error fetching Fear and Greed data: ${fearGreedResponse.statusText}`);
                 }
