@@ -40,7 +40,8 @@ const UsInflationChart = ({ isDashboard = false }) => {
     
         const fetchData = async () => {
             try {
-                const response = await fetch('https://tunist.pythonanywhere.com/api/us-inflation/');
+                // const response = await fetch('https://tunist.pythonanywhere.com/api/us-inflation/');
+                const response = await fetch('https://vercel-dataflow.vercel.app/api/us-inflation/');
                 const data = await response.json();
                 const formattedData = data.map(item => ({
                     time: item.date,

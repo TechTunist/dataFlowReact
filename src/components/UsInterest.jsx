@@ -39,7 +39,8 @@ const UsInterestChart = ({ isDashboard = false }) => {
     
         const fetchData = async () => {
             try {
-                const response = await fetch('https://tunist.pythonanywhere.com/api/us-interest/');
+                // const response = await fetch('https://tunist.pythonanywhere.com/api/us-interest/');
+                const response = await fetch('https://vercel-dataflow.vercel.app/api/us-interest/');
                 const data = await response.json();
                 const formattedData = data.map(item => ({
                     time: item.date,

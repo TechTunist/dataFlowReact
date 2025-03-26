@@ -84,7 +84,8 @@ const EthereumPrice = ({ isDashboard = false }) => {
         }
 
         function fetchEthData() {
-            fetch('https://tunist.pythonanywhere.com/api/eth/price/')
+            // fetch('https://tunist.pythonanywhere.com/api/eth/price/')
+            fetch('https://vercel-dataflow.vercel.app/api/eth/price/')
                 .then(response => response.json())
                 .then(data => {
                     const formattedData = data.map(item => ({
@@ -112,7 +113,7 @@ const EthereumPrice = ({ isDashboard = false }) => {
 
         function fetchFedBalanceData() {
             // fetch('https://tunist.pythonanywhere.com/api/fed-balance/')
-            fetch('https://vercel-dataflow.vercel.app/api/eth/price/')
+            fetch('https://vercel-dataflow.vercel.app/api/fed-balance/')
                 .then(response => response.json())
                 .then(data => {
                     const formattedData = data.map(item => ({

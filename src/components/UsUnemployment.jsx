@@ -39,7 +39,8 @@ const UsUnemploymentChart = ({ isDashboard = false }) => {
     
         const fetchData = async () => {
             try {
-                const response = await fetch('https://tunist.pythonanywhere.com/api/us-unemployment/');
+                // const response = await fetch('https://tunist.pythonanywhere.com/api/us-unemployment/');
+                const response = await fetch('https://vercel-dataflow.vercel.app/api/us-unemployment/');
                 const data = await response.json();
                 const formattedData = data.map(item => ({
                     time: item.date,
