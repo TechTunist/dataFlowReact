@@ -138,9 +138,21 @@ const EthereumPrice = ({ isDashboard = false }) => {
         });
 
         const priceSeries = chart.addAreaSeries({
-            priceScaleId: 'right', // Ethereum price on the right
+            priceScaleId: 'right',
             lineWidth: 2,
-            priceFormat: { type: 'price', precision: 2, minMove: 0.01 },
+            priceFormat: {
+                type: 'custom',
+                minMove: 1, // Adjusts the smallest price movement; increase for larger steps
+                formatter: (price) => {
+                    if (price >= 1000) {
+                        return (price / 1000).toFixed(1) + 'K'; // e.g., 150000 -> 150.0K
+                    } else if (price >= 100) {
+                        return price.toFixed(0); // e.g., 345.67 -> 346
+                    } else {
+                        return price.toFixed(1); // e.g., 45.67 -> 45.7
+                    }
+                },
+            },
         });
         priceSeriesRef.current = priceSeries;
 

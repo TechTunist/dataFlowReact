@@ -62,6 +62,9 @@ const BitcoinPrice = ({ isDashboard = false }) => {
         if (cachedDataBtc) {
             const parsedDataBtc = JSON.parse(cachedDataBtc);
             const lastCachedDateBtc = new Date(parsedDataBtc[parsedDataBtc.length - 1].time);
+            
+            console.log(lastCachedDateBtc.setHours(0, 0, 0, 0), today.setHours(0, 0, 0, 0));
+            console.log(lastCachedDateBtc.setHours(0, 0, 0, 0) === today.setHours(0, 0, 0, 0));
 
             if (lastCachedDateBtc.setHours(0, 0, 0, 0) === today.setHours(0, 0, 0, 0)) {
                 setChartData(parsedDataBtc);
@@ -96,14 +99,33 @@ const BitcoinPrice = ({ isDashboard = false }) => {
             layout: { background: { type: 'solid', color: colors.primary[700] }, textColor: colors.primary[100] },
             grid: { vertLines: { color: colors.greenAccent[700] }, horzLines: { color: colors.greenAccent[700] } },
             timeScale: { minBarSpacing: 0.001 },
+            rightPriceScale: {
+                borderVisible: false,
+                scaleMargins: { top: 0.05, bottom: 0.05 }, // Tighten the margins
+                width: 50,
+            },
         });
 
         const priceSeries = chart.addAreaSeries({
             priceScaleId: 'right',
             lineWidth: 2,
-            priceFormat: { type: 'price', precision: 2, minMove: 0.01 },
+            priceFormat: {
+                type: 'custom',
+                minMove: 1, // Adjusts the smallest price movement; increase for larger steps
+                formatter: (price) => {
+                    if (price >= 1000) {
+                        return (price / 1000).toFixed(1) + 'K'; // e.g., 150000 -> 150.0K
+                    } else if (price >= 100) {
+                        return price.toFixed(0); // e.g., 345.67 -> 346
+                    } else {
+                        return price.toFixed(1); // e.g., 45.67 -> 45.7
+                    }
+                },
+            },
         });
         priceSeriesRef.current = priceSeries;
+
+        
 
         chart.subscribeCrosshairMove(param => {
             if (!param.point || !param.time || param.point.x < 0 ||
