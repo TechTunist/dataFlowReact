@@ -132,11 +132,11 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
           sx={{
             position: "fixed",
             top: 0,
-            left: 0,
-            width: "100%",
+            left: isSidebar ? "270px" : "0", // Move overlay right when sidebar is open
+            width: isSidebar ? "calc(100% - 270px)" : "100%", // Adjust width
             height: "100%",
             backgroundColor: "rgba(0, 0, 0, 0.5)",
-            zIndex: 1099, // Above Topbar (1000), below sidebar (1100)
+            zIndex: 1099,
           }}
           onClick={() => setIsSidebar(false)}
         />
