@@ -132,11 +132,11 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
           sx={{
             position: "fixed",
             top: 0,
-            left: isSidebar ? "270px" : "0", // Move overlay right when sidebar is open
-            width: isSidebar ? "calc(100% - 270px)" : "100%", // Adjust width
+            left: 0,
+            width: "100%",
             height: "100%",
             backgroundColor: "rgba(0, 0, 0, 0.5)",
-            zIndex: 1099,
+            zIndex: 1099, // Above Topbar (1000), below sidebar (1100)
           }}
           onClick={() => setIsSidebar(false)}
         />
@@ -170,12 +170,11 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
           width: isMobile ? (isSidebar ? "270px" : "0") : "270px",
           overflowX: isMobile && !isSidebar ? "hidden" : "auto",
           overflowY: "auto",
-          // transition: "width 0.3s ease",
-          transition: "none",
-          display: isMobile && !isSidebar ? "none" : "block",
+          transition: "width 0.3s ease",
+          visibility: isMobile && !isSidebar ? "hidden" : "visible",
         }}
       >
-        <ProSidebar key={isSidebar ? "open" : "closed"}>
+        <ProSidebar>
           <Menu iconShape="square">
             <Box display="flex" justifyContent="flex-end" alignItems="center" p={1}>
               {isMobile && (
