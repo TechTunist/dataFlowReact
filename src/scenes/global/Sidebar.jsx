@@ -170,7 +170,8 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
           width: isMobile ? (isSidebar ? "270px" : "0") : "270px",
           overflowX: isMobile && !isSidebar ? "hidden" : "auto",
           overflowY: "auto",
-          transition: "width 0.3s ease",
+          // transition: "width 0.3s ease",
+          transition: "none",
           display: isMobile && !isSidebar ? "none" : "block",
         }}
       >
