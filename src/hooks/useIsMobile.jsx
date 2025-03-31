@@ -1,18 +1,10 @@
 import { useState, useEffect } from 'react';
+import { isMobile as isMobileDevice } from 'react-device-detect';
 
 function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(false);
+  const [isMobile, setIsMobile] = useState(isMobileDevice);
 
   useEffect(() => {
-    // Function to check if the device is mobile based on user-agent
-    const checkIsMobileDevice = () => {
-      const userAgent = navigator.userAgent;
-      console.log("User-Agent:", userAgent);
-      const isMobileDevice = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile/i.test(userAgent.toLowerCase());
-      console.log("checkIsMobileDevice:", isMobileDevice);
-      return isMobileDevice;
-    };
-
     // Function to check if the viewport width indicates a mobile device
     const checkIsMobileWidth = () => {
       const width = window.innerWidth;
@@ -31,10 +23,10 @@ function useIsMobile() {
 
     // Combine all checks: device is mobile if any condition is true
     const handleResize = () => {
-      const isMobileDevice = checkIsMobileDevice();
       const isMobileWidth = checkIsMobileWidth();
       const isMobileMedia = checkIsMobileMediaQuery();
       const result = isMobileDevice || isMobileWidth || isMobileMedia;
+      console.log("isMobileDevice (react-device-detect):", isMobileDevice);
       console.log("isMobile (final):", result);
       setIsMobile(result);
     };
