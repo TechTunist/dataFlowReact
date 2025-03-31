@@ -21,39 +21,25 @@ body,
 }
 
 .sidebar {
-  height: 100vh;
-  overflow-y: auto;
+  /* width: 250px; */
+  height: 100vh; /* Full height */
+  overflow-y: auto; /* Enable vertical scrolling if necessary */
   display: flex;
   position: sticky;
   top: 0;
-  flex-shrink: 0; /* Prevent shrinking */
 }
 
-@media (max-width: 1024px) {
-  .sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    z-index: 1100;
-    display: flex;
-    visibility: visible;
-    flex-shrink: 0; /* Prevent shrinking */
-  }
+
+
+@media (max-width: 768px) {
+  /* .sidebar {
+    width: 0;
+    overflow: hidden;
+  } */
+
   .content {
     flex-grow: 1;
     width: 100%;
-  }
-}
-
-@media (orientation: landscape) and (max-width: 1024px) {
-  .sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    z-index: 1100;
-    display: flex;
-    visibility: visible;
-    flex-shrink: 0; /* Prevent shrinking */
   }
 }
 
