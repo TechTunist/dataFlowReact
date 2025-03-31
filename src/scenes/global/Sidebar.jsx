@@ -22,56 +22,61 @@ import TimerIcon from "@mui/icons-material/Timer";
 import MultilineChartIcon from "@mui/icons-material/MultilineChart";
 import RepeatIcon from "@mui/icons-material/Repeat";
 import BalanceIcon from "@mui/icons-material/Balance";
-import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
+import AddShoppingCartIcon from "@mui/icons-material/AddShoppingCart";
 import FitbitIcon from "@mui/icons-material/Fitbit";
 import CategoryIcon from "@mui/icons-material/Category";
-import XIcon from '@mui/icons-material/X';
-import EmailIcon from '@mui/icons-material/Email';
+import XIcon from "@mui/icons-material/X";
+import EmailIcon from "@mui/icons-material/Email";
+import useIsMobile from "../../hooks/useIsMobile";
 
-const Item = ({ title, to, icon, selected, setSelected, isNested }) => {
+const Item = ({ title, to, icon, selected, setSelected, isNested, onClick }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   return (
     <MenuItem
       active={selected === title}
       style={{ color: colors.grey[100] }}
-      onClick={() => setSelected(title)}
+      onClick={() => {
+        setSelected(title);
+        if (onClick) onClick(); // Hide sidebar after click
+      }}
       icon={icon}
     >
-      <Link to={to} style={{ textDecoration: 'none', color: 'inherit' }}>
-        <Typography variant={isNested ? 'body1' : 'h6'}>{title}</Typography>
+      <Link to={to} style={{ textDecoration: "none", color: "inherit" }}>
+        <Typography variant={isNested ? "body1" : "h6"}>{title}</Typography>
       </Link>
     </MenuItem>
   );
 };
 
-const Sidebar = () => {
+const Sidebar = ({ isSidebar, setIsSidebar }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const [selected, setSelected] = useState("Dashboard");
   const [searchQuery, setSearchQuery] = useState("");
+  const isMobile = useIsMobile();
 
   const itemsData = [
     { title: "Dashboard", to: "/", icon: <DashboardIcon />, category: null },
-    { title: "Bitcoin Chart", to: "/bitcoin", category: 'Bitcoin', icon: <ShowChartIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
-    { title: "Total Market Cap", to: "/total", category: 'Indicators', icon: <ShowChartIcon />, categoryIcon: <ShowChartIcon /> },
-    { title: "Bitcoin Dominance", to: "/bitcoin-dominance", category: 'Indicators', icon: <ShowChartIcon />, categoryIcon: <ShowChartIcon /> },
-    { title: "Bitcoin Risk Metric", to: "/risk", category: 'Bitcoin', icon: <AssessmentIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
-    { title: "Ethereum Chart", to: "/ethereum", category: 'Ethereum', icon: <ShowChartIcon />, categoryIcon: <FitbitIcon /> },
-    { title: "Ethereum Risk Metric", to: "/risk-eth", category: 'Ethereum', icon: <AssessmentIcon />, categoryIcon: <FitbitIcon /> },
-    { title: "PiCycleTop Indicator", to: "/pi-cycle", category: 'Indicators', icon: <TimelineIcon />, categoryIcon: <CategoryIcon /> },
-    { title: "Fear And Greed Indicator", to: "/fear-and-greed", category: 'Indicators', icon: <NetworkCheckIcon />, categoryIcon: <CategoryIcon /> },
-    { title: "Bitcoin Logarithmic Regression", to: "/logarithmic-regression", category: 'Indicators', icon: <TrendingUpIcon />, categoryIcon: <CategoryIcon /> },
-    { title: "Bitcoin Risk Colour Chart", to: "/risk-color", category: 'Bitcoin', icon: <PaletteIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
-    { title: "Bitcoin Time in Risk Bands", to: "/risk-bands", category: 'Bitcoin', icon: <TimerIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
-    { title: "Altcoin Chart", to: "/altcoin-price", category: 'Altcoins', icon: <ShowChartIcon />, categoryIcon: <WarningOutlinedIcon /> },
-    { title: "Altcoin Risk Metric", to: "/altcoin-risk", category: 'Altcoins', icon: <AssessmentIcon />, categoryIcon: <WarningOutlinedIcon /> },
-    { title: "Market Cycles", to: "/market-cycles", category: 'Bitcoin', icon: <RepeatIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
-    { title: "Fear and Greed Chart", to: "/fear-and-greed-chart", category: 'Indicators', icon: <BalanceIcon />, categoryIcon: <CategoryIcon /> },
-    { title: "US Inflation Chart", to: "/us-inflation", category: 'MacroEconomics', icon: <AddShoppingCartIcon />, categoryIcon: <CategoryIcon /> },
-    { title: "US Unemployment Chart", to: "/us-unemployment", category: 'MacroEconomics', icon: <SentimentVeryDissatisfiedIcon />, categoryIcon: <CategoryIcon /> },
-    { title: "US Interest Rate Chart", to: "/us-interest", category: 'MacroEconomics', icon: <BalanceIcon />, categoryIcon: <CategoryIcon /> },
-    { title: "US Macro Information Chart", to: "/us-combined-macro", category: 'MacroEconomics', icon: <MultilineChartIcon />, categoryIcon: <CategoryIcon /> }, 
+    { title: "Bitcoin Chart", to: "/bitcoin", category: "Bitcoin", icon: <ShowChartIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
+    { title: "Total Market Cap", to: "/total", category: "Indicators", icon: <ShowChartIcon />, categoryIcon: <ShowChartIcon /> },
+    { title: "Bitcoin Dominance", to: "/bitcoin-dominance", category: "Indicators", icon: <ShowChartIcon />, categoryIcon: <ShowChartIcon /> },
+    { title: "Bitcoin Risk Metric", to: "/risk", category: "Bitcoin", icon: <AssessmentIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
+    { title: "Ethereum Chart", to: "/ethereum", category: "Ethereum", icon: <ShowChartIcon />, categoryIcon: <FitbitIcon /> },
+    { title: "Ethereum Risk Metric", to: "/risk-eth", category: "Ethereum", icon: <AssessmentIcon />, categoryIcon: <FitbitIcon /> },
+    { title: "PiCycleTop Indicator", to: "/pi-cycle", category: "Indicators", icon: <TimelineIcon />, categoryIcon: <CategoryIcon /> },
+    { title: "Fear And Greed Indicator", to: "/fear-and-greed", category: "Indicators", icon: <NetworkCheckIcon />, categoryIcon: <CategoryIcon /> },
+    { title: "Bitcoin Logarithmic Regression", to: "/logarithmic-regression", category: "Indicators", icon: <TrendingUpIcon />, categoryIcon: <CategoryIcon /> },
+    { title: "Bitcoin Risk Colour Chart", to: "/risk-color", category: "Bitcoin", icon: <PaletteIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
+    { title: "Bitcoin Time in Risk Bands", to: "/risk-bands", category: "Bitcoin", icon: <TimerIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
+    { title: "Altcoin Chart", to: "/altcoin-price", category: "Altcoins", icon: <ShowChartIcon />, categoryIcon: <WarningOutlinedIcon /> },
+    { title: "Altcoin Risk Metric", to: "/altcoin-risk", category: "Altcoins", icon: <AssessmentIcon />, categoryIcon: <WarningOutlinedIcon /> },
+    { title: "Market Cycles", to: "/market-cycles", category: "Bitcoin", icon: <RepeatIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
+    { title: "Fear and Greed Chart", to: "/fear-and-greed-chart", category: "Indicators", icon: <BalanceIcon />, categoryIcon: <CategoryIcon /> },
+    { title: "US Inflation Chart", to: "/us-inflation", category: "MacroEconomics", icon: <AddShoppingCartIcon />, categoryIcon: <CategoryIcon /> },
+    { title: "US Unemployment Chart", to: "/us-unemployment", category: "MacroEconomics", icon: <SentimentVeryDissatisfiedIcon />, categoryIcon: <CategoryIcon /> },
+    { title: "US Interest Rate Chart", to: "/us-interest", category: "MacroEconomics", icon: <BalanceIcon />, categoryIcon: <CategoryIcon /> },
+    { title: "US Macro Information Chart", to: "/us-combined-macro", category: "MacroEconomics", icon: <MultilineChartIcon />, categoryIcon: <CategoryIcon /> },
   ];
 
   const filteredItems = itemsData.filter(item =>
@@ -79,14 +84,10 @@ const Sidebar = () => {
     (item.category && item.category.toLowerCase().includes(searchQuery.toLowerCase()))) &&
     item.title !== "Dashboard"
   );
-  
-  const handleSearchChange = (event) => {
-    setSearchQuery(event.target.value);
-  };
 
-  const handleClearSearch = () => {
-    setSearchQuery("");
-  };
+  const handleSearchChange = (event) => setSearchQuery(event.target.value);
+  const handleClearSearch = () => setSearchQuery("");
+  const handleMenuClick = () => isMobile && setIsSidebar(false); // Hide on mobile after navigation
 
   const renderMenuItem = (item, index, isNested = false) => (
     <Item
@@ -97,6 +98,7 @@ const Sidebar = () => {
       selected={selected}
       setSelected={setSelected}
       isNested={isNested}
+      onClick={handleMenuClick}
     />
   );
 
@@ -123,57 +125,59 @@ const Sidebar = () => {
   );
 
   return (
-    <Box sx={{
-      "& .pro-sidebar-inner": {
-        background: `${colors.primary[400]} !important`,
-        borderRight: `1px solid ${colors.greenAccent[500]}`
-      },
-      "& .pro-icon-wrapper": {
-        backgroundColor: "transparent !important",
-      },
-      "& .pro-inner-item": {
-        padding: "5px 35px 5px 20px !important",
-        backgroundColor: "transparent !important",
-      },
-      "& .pro-inner-item:hover": {
-        color: "#868dfb !important",
-      },
-      "& .pro-menu > ul > .pro-sub-menu > .pro-inner-list-item": {
-        backgroundColor: "transparent !important",
-      },
-      "& .pro-menu > ul > .pro-sub-menu > .pro-inner-list-item:hover": {
-        color: "#fff !important",
-        backgroundColor: "transparent !important",
-      },
-    }}>
+    <Box
+      className="sidebar" // Keep the class for App.css styles
+      sx={{
+        "& .pro-sidebar-inner": {
+          background: `${colors.primary[400]} !important`,
+          borderRight: `1px solid ${colors.greenAccent[500]}`,
+        },
+        "& .pro-icon-wrapper": { backgroundColor: "transparent !important" },
+        "& .pro-inner-item": {
+          padding: "5px 35px 5px 20px !important",
+          backgroundColor: "transparent !important",
+        },
+        "& .pro-inner-item:hover": { color: "#868dfb !important" },
+        "& .pro-menu > ul > .pro-sub-menu > .pro-inner-list-item": {
+          backgroundColor: "transparent !important",
+        },
+        "& .pro-menu > ul > .pro-sub-menu > .pro-inner-list-item:hover": {
+          color: "#fff !important",
+          backgroundColor: "transparent !important",
+        },
+        position: isMobile ? "fixed" : "sticky", // Fixed on mobile for overlay
+        top: 0,
+        zIndex: 1100, // Above Topbar (zIndex: 1000)
+        height: "100vh",
+        width: isMobile ? (isSidebar ? "250px" : "0") : "270px", // Control width explicitly
+        overflowX: isMobile && !isSidebar ? "hidden" : "auto", // Prevent content bleed
+        transition: "width 0.3s ease", // Smooth slide animation
+      }}
+    >
       <ProSidebar>
         <Menu iconShape="square">
           <Box mb="5px">
             <Box display="flex" justifyContent="center" alignItems="center">
-              <img alt="main-logo" width="100px" height="100px" src={`../../assets/cryptological-original-logo.png`}  />
+              <img alt="main-logo" width="100px" height="100px" src={`../../assets/cryptological-original-logo.png`} />
             </Box>
             <Box display="flex" justifyContent="center" alignItems="center">
-              <img alt="main-logo" width="200px" height="50px" src={`../../assets/cryptological-title-resized.png`}  />
+              <img alt="main-logo" width="200px" height="50px" src={`../../assets/cryptological-title-resized.png`} />
             </Box>
           </Box>
 
           <Box display="flex" backgroundColor={colors.primary[400]} borderRadius="3px">
             <InputBase sx={{ ml: 2, flex: 1 }} placeholder="Search" value={searchQuery} onChange={handleSearchChange} />
-            {searchQuery && <IconButton onClick={handleClearSearch} sx={{ p:1 }}><CloseIcon /></IconButton>}
+            {searchQuery && <IconButton onClick={handleClearSearch} sx={{ p: 1 }}><CloseIcon /></IconButton>}
             <IconButton type="button" sx={{ p: 1 }}><SearchIcon /></IconButton>
           </Box>
 
           {renderMenuItem(itemsData.find(item => item.title === "Dashboard"), 0)}
 
-          {searchQuery ? (
-            filteredItems.map(renderMenuItem)
-          ) : (
-            renderSubMenus()
-          )}
+          {searchQuery ? filteredItems.map(renderMenuItem) : renderSubMenus()}
         </Menu>
         <Box sx={{ padding: theme.spacing(2) }}>
           <Box display="flex" justifyContent="center" alignItems="center">
-            <img alt="main-logo" width="100px" height="100px" src={`../../assets/bc1qnekceuntjc2ga3vm8r85l842umzh35xs6yxyvx.JPG`} style={{ cursor: "pointer", borderRadius: "10%", marginTop: '50px' }} />
+            <img alt="main-logo" width="100px" height="100px" src={`../../assets/bc1qnekceuntjc2ga3vm8r85l842umzh35xs6yxyvx.JPG`} style={{ cursor: "pointer", borderRadius: "10%", marginTop: "50px" }} />
           </Box>
           <Box textAlign="center" padding={theme.spacing(1)}>
             <Typography variant="h3" color={colors.grey[100]} fontWeight="bold" sx={{ m: "10px 0 20px 0" }}>BTC Donations</Typography>
@@ -182,8 +186,8 @@ const Sidebar = () => {
             </Typography>
           </Box>
           <Box display="flex" justifyContent="center" alignItems="center">
-          <Typography variant="h5" color={colors.greenAccent[500]}>
-                Contact me here:
+            <Typography variant="h5" color={colors.greenAccent[500]}>
+              Contact me here:
             </Typography>
           </Box>
           <Box display="flex" justifyContent="center" alignItems="center" mt={2}>
