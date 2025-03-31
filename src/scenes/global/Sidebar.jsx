@@ -171,7 +171,9 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
           overflowX: isMobile && !isSidebar ? "hidden" : "auto",
           overflowY: "auto",
           transition: "width 0.3s ease",
-          visibility: isMobile && !isSidebar ? "hidden" : "visible",
+          // visibility: isMobile && !isSidebar ? "hidden" : "visible",
+          backgroundColor: "blue", // Temporary background for visibility
+          visibility: "visible", // Force visibility
         }}
       >
         <ProSidebar>
