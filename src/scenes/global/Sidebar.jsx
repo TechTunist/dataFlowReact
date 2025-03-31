@@ -1,9 +1,6 @@
 import { useState } from "react";
-import { ProSidebar, Menu, MenuItem, SubMenu } from "react-pro-sidebar";
 import { Box, IconButton, Typography, useTheme } from "@mui/material";
 import { Link } from "react-router-dom";
-import "react-pro-sidebar/dist/css/styles.css";
-import { tokens } from "../../theme";
 import InputBase from "@mui/material/InputBase";
 import SearchIcon from "@mui/icons-material/Search";
 import CloseIcon from "@mui/icons-material/Close";
@@ -28,24 +25,33 @@ import CategoryIcon from "@mui/icons-material/Category";
 import XIcon from "@mui/icons-material/X";
 import EmailIcon from "@mui/icons-material/Email";
 import useIsMobile from "../../hooks/useIsMobile";
+import { tokens } from "../../theme";
 
 const Item = ({ title, to, icon, selected, setSelected, isNested, onClick }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   return (
-    <MenuItem
-      active={selected === title}
-      style={{ color: colors.grey[100] }}
+    <Box
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        padding: "5px 35px 5px 20px",
+        backgroundColor: selected === title ? colors.primary[500] : "transparent",
+        color: colors.grey[100],
+        "&:hover": {
+          color: "#868dfb",
+        },
+      }}
       onClick={() => {
         setSelected(title);
         if (onClick) onClick();
       }}
-      icon={icon}
     >
-      <Link to={to} style={{ textDecoration: "none", color: "inherit" }}>
+      {icon}
+      <Link to={to} style={{ textDecoration: "none", color: "inherit", marginLeft: "10px" }}>
         <Typography variant={isNested ? "body1" : "h6"}>{title}</Typography>
       </Link>
-    </MenuItem>
+    </Box>
   );
 };
 
@@ -55,6 +61,9 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
   const [selected, setSelected] = useState("Dashboard");
   const [searchQuery, setSearchQuery] = useState("");
   const isMobile = useIsMobile();
+
+  console.log("Sidebar.jsx - isMobile:", isMobile);
+  console.log("Sidebar.jsx - isSidebar:", isSidebar);
 
   const itemsData = [
     { title: "Dashboard", to: "/", icon: <DashboardIcon />, category: null },
@@ -113,14 +122,12 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
 
   const renderSubMenus = () => (
     Object.entries(itemsByCategory).map(([category, items]) => (
-      <SubMenu
-        key={category}
-        title={category}
-        icon={items[0].categoryIcon || <BarChartOutlinedIcon />}
-        style={{ color: colors.grey[100] }}
-      >
+      <Box key={category} sx={{ marginBottom: "10px" }}>
+        <Typography variant="h6" sx={{ color: colors.grey[100], padding: "5px 20px" }}>
+          {category}
+        </Typography>
         {items.map((item, index) => renderMenuItem(item, index, true))}
-      </SubMenu>
+      </Box>
     ))
   );
 
@@ -136,7 +143,7 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
             width: "100%",
             height: "100%",
             backgroundColor: "rgba(0, 0, 0, 0.5)",
-            zIndex: 1099, // Above Topbar (1000), below sidebar (1100)
+            zIndex: 1099,
           }}
           onClick={() => setIsSidebar(false)}
         />
@@ -145,88 +152,69 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
       <Box
         className="sidebar"
         sx={{
-          "& .pro-sidebar-inner": {
-            background: `${colors.primary[400]} !important`,
-            borderRight: `1px solid ${colors.greenAccent[500]}`,
-          },
-          "& .pro-icon-wrapper": { backgroundColor: "transparent !important" },
-          "& .pro-inner-item": {
-            padding: "5px 35px 5px 20px !important",
-            backgroundColor: "transparent !important",
-          },
-          "& .pro-inner-item:hover": { color: "#868dfb !important" },
-          "& .pro-menu > ul > .pro-sub-menu > .pro-inner-list-item": {
-            backgroundColor: "transparent !important",
-          },
-          "& .pro-menu > ul > .pro-sub-menu > .pro-inner-list-item:hover": {
-            color: "#fff !important",
-            backgroundColor: "transparent !important",
-          },
           position: isMobile ? "fixed" : "sticky",
           top: 0,
           left: 0,
-          zIndex: 1100, // Above charts (1) and Topbar (1000)
+          zIndex: 1100,
           height: "100vh",
           width: isMobile ? (isSidebar ? "270px" : "0") : "270px",
-          overflowX: isMobile && !isSidebar ? "hidden" : "auto",
+          backgroundColor: colors.primary[400],
+          borderRight: `1px solid ${colors.greenAccent[500]}`,
           overflowY: "auto",
           transition: "width 0.3s ease",
           visibility: isMobile && !isSidebar ? "hidden" : "visible",
         }}
       >
-        <ProSidebar>
-          <Menu iconShape="square">
-            <Box display="flex" justifyContent="flex-end" alignItems="center" p={1}>
-              {isMobile && (
-                <IconButton onClick={() => setIsSidebar(false)} sx={{ color: colors.grey[100] }}>
-                  <CloseIcon />
-                </IconButton>
-              )}
-            </Box>
-            <Box mb="5px">
-              <Box display="flex" justifyContent="center" alignItems="center">
-                <img alt="main-logo" width="100px" height="100px" src={`../../assets/cryptological-original-logo.png`} />
-              </Box>
-              <Box display="flex" justifyContent="center" alignItems="center">
-                <img alt="main-logo" width="200px" height="50px" src={`../../assets/cryptological-title-resized.png`} />
-              </Box>
-            </Box>
-
-            <Box display="flex" backgroundColor={colors.primary[400]} borderRadius="3px">
-              <InputBase sx={{ ml: 2, flex: 1 }} placeholder="Search" value={searchQuery} onChange={handleSearchChange} />
-              {searchQuery && <IconButton onClick={handleClearSearch} sx={{ p: 1 }}><CloseIcon /></IconButton>}
-              <IconButton type="button" sx={{ p: 1 }}><SearchIcon /></IconButton>
-            </Box>
-
-            {renderMenuItem(itemsData.find(item => item.title === "Dashboard"), 0)}
-
-            {searchQuery ? filteredItems.map(renderMenuItem) : renderSubMenus()}
-          </Menu>
-          <Box sx={{ padding: theme.spacing(2) }}>
-            <Box display="flex" justifyContent="center" alignItems="center">
-              <img alt="main-logo" width="100px" height="100px" src={`../../assets/bc1qnekceuntjc2ga3vm8r85l842umzh35xs6yxyvx.JPG`} style={{ cursor: "pointer", borderRadius: "10%", marginTop: "50px" }} />
-            </Box>
-            <Box textAlign="center" padding={theme.spacing(1)}>
-              <Typography variant="h3" color={colors.grey[100]} fontWeight="bold" sx={{ m: "10px 0 20px 0" }}>BTC Donations</Typography>
-              <Typography variant="h5" color={colors.greenAccent[500]}>
-                I'm a solo developer trying to create a free useful tool. If you found any value from this site, please consider donating some BTC by using the QR code. Thanks
-              </Typography>
-            </Box>
-            <Box display="flex" justifyContent="center" alignItems="center">
-              <Typography variant="h5" color={colors.greenAccent[500]}>
-                Contact me here:
-              </Typography>
-            </Box>
-            <Box display="flex" justifyContent="center" alignItems="center" mt={2}>
-              <IconButton href="https://twitter.com/CryptoLogical__" target="_blank" sx={{ color: colors.grey[100], mr: 1 }}>
-                <XIcon />
-              </IconButton>
-              <IconButton href="mailto:thecryptological@gmail.com" sx={{ color: colors.grey[100] }}>
-                <EmailIcon />
-              </IconButton>
-            </Box>
+        <Box display="flex" justifyContent="flex-end" alignItems="center" p={1}>
+          {isMobile && (
+            <IconButton onClick={() => setIsSidebar(false)} sx={{ color: colors.grey[100] }}>
+              <CloseIcon />
+            </IconButton>
+          )}
+        </Box>
+        <Box mb="5px">
+          <Box display="flex" justifyContent="center" alignItems="center">
+            <img alt="main-logo" width="100px" height="100px" src={`../../assets/cryptological-original-logo.png`} />
           </Box>
-        </ProSidebar>
+          <Box display="flex" justifyContent="center" alignItems="center">
+            <img alt="main-logo" width="200px" height="50px" src={`../../assets/cryptological-title-resized.png`} />
+          </Box>
+        </Box>
+
+        <Box display="flex" backgroundColor={colors.primary[400]} borderRadius="3px" mx={2} mb={2}>
+          <InputBase sx={{ ml: 2, flex: 1 }} placeholder="Search" value={searchQuery} onChange={handleSearchChange} />
+          {searchQuery && <IconButton onClick={handleClearSearch} sx={{ p: 1 }}><CloseIcon /></IconButton>}
+          <IconButton type="button" sx={{ p: 1 }}><SearchIcon /></IconButton>
+        </Box>
+
+        {renderMenuItem(itemsData.find(item => item.title === "Dashboard"), 0)}
+
+        {searchQuery ? filteredItems.map(renderMenuItem) : renderSubMenus()}
+
+        <Box sx={{ padding: theme.spacing(2) }}>
+          <Box display="flex" justifyContent="center" alignItems="center">
+            <img alt="main-logo" width="100px" height="100px" src={`../../assets/bc1qnekceuntjc2ga3vm8r85l842umzh35xs6yxyvx.JPG`} style={{ cursor: "pointer", borderRadius: "10%", marginTop: "50px" }} />
+          </Box>
+          <Box textAlign="center" padding={theme.spacing(1)}>
+            <Typography variant="h3" color={colors.grey[100]} fontWeight="bold" sx={{ m: "10px 0 20px 0" }}>BTC Donations</Typography>
+            <Typography variant="h5" color={colors.greenAccent[500]}>
+              I'm a solo developer trying to create a free useful tool. If you found any value from this site, please consider donating some BTC by using the QR code. Thanks
+            </Typography>
+          </Box>
+          <Box display="flex" justifyContent="center" alignItems="center">
+            <Typography variant="h5" color={colors.greenAccent[500]}>
+              Contact me here:
+            </Typography>
+          </Box>
+          <Box display="flex" justifyContent="center" alignItems="center" mt={2}>
+            <IconButton href="https://twitter.com/CryptoLogical__" target="_blank" sx={{ color: colors.grey[100], mr: 1 }}>
+              <XIcon />
+            </IconButton>
+            <IconButton href="mailto:thecryptological@gmail.com" sx={{ color: colors.grey[100] }}>
+              <EmailIcon />
+            </IconButton>
+          </Box>
+        </Box>
       </Box>
     </>
   );
