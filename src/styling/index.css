@@ -21,11 +21,9 @@ body,
 }
 
 .sidebar {
-  /* width: 250px; */
   height: 100vh; /* Full height */
   overflow-y: auto; /* Enable vertical scrolling if necessary */
   display: flex;
-  /* position: sticky; */
   top: 0;
 }
 
