@@ -142,41 +142,45 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
         />
       )}
 
-      <Box
-        className="sidebar"
-        sx={{
-          "& .pro-sidebar-inner": {
-            background: `${colors.primary[400]} !important`,
-            borderRight: `1px solid ${colors.greenAccent[500]}`,
-          },
-          "& .pro-icon-wrapper": { backgroundColor: "transparent !important" },
-          "& .pro-inner-item": {
-            padding: "5px 35px 5px 20px !important",
-            backgroundColor: "transparent !important",
-          },
-          "& .pro-inner-item:hover": { color: "#868dfb !important" },
-          "& .pro-menu > ul > .pro-sub-menu > .pro-inner-list-item": {
-            backgroundColor: "transparent !important",
-          },
-          "& .pro-menu > ul > .pro-sub-menu > .pro-inner-list-item:hover": {
-            color: "#fff !important",
-            backgroundColor: "transparent !important",
-          },
-          position: isMobile ? "fixed" : "sticky",
-          top: 0,
-          left: 0,
-          zIndex: 1100, // Above charts (1) and Topbar (1000)
-          height: "100vh",
-          width: isMobile ? (isSidebar ? "270px" : "0") : "270px",
-          overflowX: isMobile && !isSidebar ? "hidden" : "auto",
-          overflowY: "auto",
-          transition: "width 0.3s ease",
-          // visibility: isMobile && !isSidebar ? "hidden" : "visible",
-          backgroundColor: "blue", // Temporary background for visibility
-          visibility: "visible", // Force visibility
-        }}
-      >
-        <ProSidebar>
+    <Box
+          className="sidebar"
+          sx={{
+            "& .pro-sidebar-inner": {
+              background: `${colors.primary[400]} !important`,
+              borderRight: `1px solid ${colors.greenAccent[500]}`,
+            },
+            "& .pro-icon-wrapper": { backgroundColor: "transparent !important" },
+            "& .pro-inner-item": {
+              padding: "5px 35px 5px 20px !important",
+              backgroundColor: "transparent !important",
+            },
+            "& .pro-inner-item:hover": { color: "#868dfb !important" },
+            "& .pro-menu > ul > .pro-sub-menu > .pro-inner-list-item": {
+              backgroundColor: "transparent !important",
+            },
+            "& .pro-menu > ul > .pro-sub-menu > .pro-inner-list-item:hover": {
+              color: "#fff !important",
+              backgroundColor: "transparent !important",
+            },
+            "& .pro-sidebar": {
+              left: 0, // Override any default positioning
+            },
+            position: isMobile ? "fixed" : "sticky",
+            top: 0,
+            left: 0,
+            zIndex: 1100,
+            height: "100vh",
+            overflowY: "auto",
+            backgroundColor: "blue", // Temporary background for visibility
+            visibility: "visible", // Force visibility
+          }}
+        >
+        <ProSidebar
+          collapsed={isMobile && !isSidebar}
+          width="270px"
+          collapsedWidth="0px"
+          transitionDuration={300} // Add transition duration in milliseconds
+        >
           <Menu iconShape="square">
             <Box display="flex" justifyContent="flex-end" alignItems="center" p={1}>
               {isMobile && (
