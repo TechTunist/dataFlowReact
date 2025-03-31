@@ -482,10 +482,10 @@ const EthereumPrice = ({ isDashboard = false }) => {
                         display: 'flex',
                         justifyContent: 'space-between',
                         width: '100%',
-                        maxWidth: '800px',
-                        margin: '0 auto',
+                        // maxWidth: '800px',
                         flexWrap: 'wrap',
-                        gap: '10px'
+                        gap: '10px',
+                        alignItems: 'center', // Optional: ensures vertical alignment if components have different heights
                     }}>
                         <LastUpdated storageKey="ethData" />
                     </Box>
