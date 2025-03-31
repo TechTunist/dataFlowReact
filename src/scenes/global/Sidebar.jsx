@@ -171,10 +171,10 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
           overflowX: isMobile && !isSidebar ? "hidden" : "auto",
           overflowY: "auto",
           transition: "width 0.3s ease",
-          visibility: isMobile && !isSidebar ? "hidden" : "visible",
+          display: isMobile && !isSidebar ? "none" : "block",
         }}
       >
-        <ProSidebar>
+        <ProSidebar key={isSidebar ? "open" : "closed"}>
           <Menu iconShape="square">
             <Box display="flex" justifyContent="flex-end" alignItems="center" p={1}>
               {isMobile && (
