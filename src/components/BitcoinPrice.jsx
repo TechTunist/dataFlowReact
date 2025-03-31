@@ -63,9 +63,6 @@ const BitcoinPrice = ({ isDashboard = false }) => {
             const parsedDataBtc = JSON.parse(cachedDataBtc);
             const lastCachedDateBtc = new Date(parsedDataBtc[parsedDataBtc.length - 1].time);
             
-            console.log(lastCachedDateBtc.setHours(0, 0, 0, 0), today.setHours(0, 0, 0, 0));
-            console.log(lastCachedDateBtc.setHours(0, 0, 0, 0) === today.setHours(0, 0, 0, 0));
-
             if (lastCachedDateBtc.setHours(0, 0, 0, 0) === today.setHours(0, 0, 0, 0)) {
                 setChartData(parsedDataBtc);
             } else {
@@ -76,7 +73,6 @@ const BitcoinPrice = ({ isDashboard = false }) => {
         }
 
         function fetchBtcData() {
-            // fetch('https://tunist.pythonanywhere.com/api/btc/price/')
             fetch('https://vercel-dataflow.vercel.app/api/btc/price/')
                 .then(response => response.json())
                 .then(data => {
@@ -101,7 +97,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
             timeScale: { minBarSpacing: 0.001 },
             rightPriceScale: {
                 borderVisible: false,
-                scaleMargins: { top: 0.05, bottom: 0.05 }, // Tighten the margins
+                scaleMargins: { top: 0.05, bottom: 0.05 },
                 width: 50,
             },
         });
@@ -111,21 +107,19 @@ const BitcoinPrice = ({ isDashboard = false }) => {
             lineWidth: 2,
             priceFormat: {
                 type: 'custom',
-                minMove: 1, // Adjusts the smallest price movement; increase for larger steps
+                minMove: 1,
                 formatter: (price) => {
                     if (price >= 1000) {
-                        return (price / 1000).toFixed(1) + 'K'; // e.g., 150000 -> 150.0K
+                        return (price / 1000).toFixed(1) + 'K';
                     } else if (price >= 100) {
-                        return price.toFixed(0); // e.g., 345.67 -> 346
+                        return price.toFixed(0);
                     } else {
-                        return price.toFixed(1); // e.g., 45.67 -> 45.7
+                        return price.toFixed(1);
                     }
                 },
             },
         });
         priceSeriesRef.current = priceSeries;
-
-        
 
         chart.subscribeCrosshairMove(param => {
             if (!param.point || !param.time || param.point.x < 0 ||
@@ -156,7 +150,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
             chart.remove();
             window.removeEventListener('resize', resizeChart);
         };
-    }, []); // Empty dependency array: runs once on mount
+    }, []);
 
     // Update scale mode
     useEffect(() => {
@@ -177,7 +171,6 @@ const BitcoinPrice = ({ isDashboard = false }) => {
     useEffect(() => {
         if (!chartRef.current || chartData.length === 0) return;
 
-        // Remove all existing indicator series
         Object.keys(smaSeriesRefs).forEach(key => {
             if (smaSeriesRefs[key]) {
                 chartRef.current.removeSeries(smaSeriesRefs[key]);
@@ -185,7 +178,6 @@ const BitcoinPrice = ({ isDashboard = false }) => {
             }
         });
 
-        // Add active indicators
         activeIndicators.forEach(key => {
             const indicator = indicators[key];
             const series = chartRef.current.addLineSeries({
@@ -236,133 +228,106 @@ const BitcoinPrice = ({ isDashboard = false }) => {
     }, [theme.palette.mode]);
 
     return (
-        <div style={{ height: '100%' }}>
-                                {!isDashboard && (
-                        <Box
+        <div style={{ height: '100%', position: 'relative' }}>
+            {!isDashboard && (
+                <Box
+                    sx={{
+                        display: 'flex',
+                        flexDirection: { xs: 'column', sm: 'row' },
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '20px',
+                        marginBottom: '10px',
+                        marginTop: '20px',
+                    }}
+                >
+                    <FormControl sx={{ width: { xs: '100%', sm: '150px' } }}>
+                        <InputLabel sx={{ color: colors.grey[100] }}>Scale Mode</InputLabel>
+                        <Select
+                            value={scaleMode}
+                            onChange={(e) => setScaleMode(e.target.value)}
+                            label="Scale Mode"
                             sx={{
-                                display: 'flex',
-                                flexDirection: { xs: 'column', sm: 'row' },
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: '20px',
-                                marginBottom: '10px',
-                                marginTop: '20px',
+                                color: colors.grey[100],
+                                '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
+                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
                             }}
                         >
-                            {/* Log/Linear Scale Mode Select */}
-                            <FormControl sx={{ width: { xs: '100%', sm: '150px' } }}>
-                                <InputLabel sx={{ color: colors.grey[100] }}>Scale Mode</InputLabel>
-                                <Select
-                                    value={scaleMode}
-                                    onChange={(e) => setScaleMode(e.target.value)}
-                                    label="Scale Mode"
-                                    sx={{
-                                        color: colors.grey[100],
-                                        '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
-                                        '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                                    }}
-                                >
-                                    <MenuItem value={0}>Linear</MenuItem>
-                                    <MenuItem value={1}>Logarithmic</MenuItem>
-                                </Select>
-                            </FormControl>
-                            <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '300px' } }}>
-                                <InputLabel sx={{ color: colors.grey[100] }}>Indicators</InputLabel>
-                                <Select
-                                    multiple
-                                    value={activeIndicators}
-                                    onChange={handleIndicatorChange}
-                                    label="Indicators"
-                                    renderValue={(selected) => (selected.length > 0 ? selected.map((key) => indicators[key].label).join(', ') : null)}
-                                    sx={{
-                                        color: colors.grey[100],
-                                        '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
-                                        '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                                    }}
-                                >
-                                    {Object.entries(indicators).map(([key, { label }]) => (
-                                        <MenuItem key={key} value={key}>
-                                            <Checkbox
-                                                checked={activeIndicators.includes(key)}
-                                                sx={{ color: colors.grey[100], '&.Mui-checked': { color: colors.greenAccent[500] } }}
-                                            />
-                                            <span>{label}</span>
-                                        </MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-                            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={0} alignItems="right">
-                                <FormControl sx={{ minWidth: '20px', width: { xs: '100%', sm: '100px' } }}>
-                                    <FormControlLabel
-                                        control={
-                                            <Checkbox
-                                                checked={isInteractive}
-                                                onChange={(e) => setInteractivity(e.target.checked)}
-                                                sx={{
-                                                    color: colors.grey[300], // Unchecked color
-                                                    '&.Mui-checked': { color: colors.greenAccent[500] }, // Checked color
-                                                }}
-                                            />
-                                        }
-                                        label="Zoom"
+                            <MenuItem value={0}>Linear</MenuItem>
+                            <MenuItem value={1}>Logarithmic</MenuItem>
+                        </Select>
+                    </FormControl>
+                    <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '300px' } }}>
+                        <InputLabel sx={{ color: colors.grey[100] }}>Indicators</InputLabel>
+                        <Select
+                            multiple
+                            value={activeIndicators}
+                            onChange={handleIndicatorChange}
+                            label="Indicators"
+                            renderValue={(selected) => (selected.length > 0 ? selected.map((key) => indicators[key].label).join(', ') : null)}
+                            sx={{
+                                color: colors.grey[100],
+                                '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
+                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                            }}
+                        >
+                            {Object.entries(indicators).map(([key, { label }]) => (
+                                <MenuItem key={key} value={key}>
+                                    <Checkbox
+                                        checked={activeIndicators.includes(key)}
+                                        sx={{ color: colors.grey[100], '&.Mui-checked': { color: colors.greenAccent[500] } }}
+                                    />
+                                    <span>{label}</span>
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={0} alignItems="right">
+                        <FormControl sx={{ minWidth: '20px', width: { xs: '100%', sm: '100px' } }}>
+                            <FormControlLabel
+                                control={
+                                    <Checkbox
+                                        checked={isInteractive}
+                                        onChange={(e) => setInteractivity(e.target.checked)}
                                         sx={{
-                                            color: colors.grey[100], // Label color
-                                            '& .MuiFormControlLabel-label': { color: colors.grey[100] },
+                                            color: colors.grey[300],
+                                            '&.Mui-checked': { color: colors.greenAccent[500] },
                                         }}
                                     />
-                                </FormControl>
-                                <FormControl>
-                                    <Button
-                                        onClick={resetChartView}
-                                        variant="contained"
-                                        sx={{
-                                            backgroundColor: colors.greenAccent[500],
-                                            color: colors.grey[900],
-                                            '&:hover': { backgroundColor: colors.greenAccent[100] },
-                                        }}
-                                    >
-                                        Reset Chart
-                                    </Button>
-                                </FormControl>
-                            </Stack>
-                        </Box>
-                    )}
-            {/* {!isDashboard && (
-                <div className='chart-top-div'>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-                        <label className="switch">
-                            <input type="checkbox" checked={scaleMode === 1} onChange={toggleScaleMode} />
-                            <span className="slider round"></span>
-                        </label>
-                        <span style={{ color: colors.primary[100] }}>{scaleMode === 1 ? 'Logarithmic' : 'Linear'}</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                        <button
-                            onClick={setInteractivity}
-                            className="button-reset"
-                            style={{
-                                backgroundColor: isInteractive ? '#4cceac' : 'transparent',
-                                color: isInteractive ? 'black' : '#31d6aa',
-                                borderColor: isInteractive ? 'violet' : '#70d8bd'
-                            }}
-                        >
-                            {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
-                        </button>
-                        <button onClick={resetChartView} className="button-reset extra-margin">
-                            Reset Chart
-                        </button>
-                    </div>
-                </div>
-            )} */}
+                                }
+                                label="Zoom"
+                                sx={{
+                                    color: colors.grey[100],
+                                    '& .MuiFormControlLabel-label': { color: colors.grey[100] },
+                                }}
+                            />
+                        </FormControl>
+                        <FormControl>
+                            <Button
+                                onClick={resetChartView}
+                                variant="contained"
+                                sx={{
+                                    backgroundColor: colors.greenAccent[500],
+                                    color: colors.grey[900],
+                                    '&:hover': { backgroundColor: colors.greenAccent[100] },
+                                }}
+                            >
+                                Reset Chart
+                            </Button>
+                        </FormControl>
+                    </Stack>
+                </Box>
+            )}
             <div
                 className="chart-container"
                 style={{
-                    position: 'relative',
                     height: isDashboard ? '100%' : 'calc(100% - 40px)',
                     width: '100%',
-                    border: '2px solid #a9a9a9'
+                    border: '2px solid #a9a9a9',
+                    position: 'relative', // Ensure the container has position: relative for the legend
+                    zIndex: 1,
                 }}
                 onDoubleClick={() => setInteractivity(!isInteractive)}
             >
@@ -415,10 +380,9 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                         display: 'flex',
                         justifyContent: 'space-between',
                         width: '100%',
-                        // maxWidth: '800px',
                         flexWrap: 'wrap',
                         gap: '10px',
-                        alignItems: 'center', // Optional: ensures vertical alignment if components have different heights
+                        alignItems: 'center',
                     }}>
                         <LastUpdated storageKey="btcData" />
                         <BitcoinFees />
@@ -429,6 +393,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                 <div
                     className="tooltip"
                     style={{
+                        position: 'fixed',
                         left: (() => {
                             const sidebarWidth = isMobile ? -80 : -320;
                             const cursorX = tooltipData.x - sidebarWidth;
@@ -444,6 +409,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                             return `${Math.max(0, Math.min(rightPosition, chartWidth - tooltipWidth))}px`;
                         })(),
                         top: `${tooltipData.y + 100}px`,
+                        zIndex: 1000,
                     }}
                 >
                     <div style={{ fontSize: '15px' }}>Bitcoin</div>

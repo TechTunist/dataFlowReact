@@ -32,10 +32,10 @@ body,
 
 
 @media (max-width: 768px) {
-  .sidebar {
+  /* .sidebar {
     width: 0;
     overflow: hidden;
-  }
+  } */
 
   .content {
     flex-grow: 1;

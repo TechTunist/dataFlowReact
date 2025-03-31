@@ -3,40 +3,40 @@ import { Box, IconButton, useTheme } from "@mui/material";
 import { ColorModeContext, tokens } from "../../theme";
 import LightModeOutlinedIcon from "@mui/icons-material/LightModeOutlined";
 import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
+import MenuOutlinedIcon from "@mui/icons-material/MenuOutlined";
 import { useLocation } from "react-router-dom";
-import { Link } from 'react-router-dom';
-import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import useIsMobile from '../../hooks/useIsMobile';
-import '../../styling/bitcoinChart.css';
+import { Link } from "react-router-dom";
+import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import useIsMobile from "../../hooks/useIsMobile";
+import "../../styling/bitcoinChart.css";
 import Header from "../../components/Header";
-
 
 const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const colorMode = useContext(ColorModeContext);
   const location = useLocation();
-  const isMobile = useIsMobile(); // Custom hook to detect mobile devices
-  const sidebarWidth = isSidebar ? 270 : 0; // Assuming 250px is your sidebar's width
+  const isMobile = useIsMobile();
+  const sidebarWidth = isSidebar ? 270 : 0;
 
   const topBarStyle = {
-    position: 'fixed',
+    position: "fixed",
     top: 0,
-    left: isMobile ? 0 : sidebarWidth, // Adjust left position based on mobile view
+    left: isMobile ? 0 : sidebarWidth,
     right: 0,
-    height: isMobile ? '65px' : '85px',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '0 10px',
+    height: isMobile ? "65px" : "85px",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: "0 10px",
     backgroundColor: colors.primary[400],
     zIndex: 1000,
-    width: isMobile ? '100%' : `calc(100% - ${sidebarWidth}px)`,
-    borderBottom: `1px solid ${colors.greenAccent[500]}` // Adjust width based on the sidebar and mobile view
+    width: isMobile ? "100%" : `calc(100% - ${sidebarWidth}px)`,
+    borderBottom: `1px solid ${colors.greenAccent[500]}`,
+    transition: "left 0.3s ease, width 0.3s ease",
   };
 
-  // Function to determine the title and subtitle based on the current location
   const getTitleAndSubtitle = (pathname) => {
     switch (pathname) {
       case "/":
@@ -61,8 +61,8 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
         return { title: "Bitcoin", subtitle: "Logarithmic Regression" };
       case "/risk-color":
         return { title: "Bitcoin", subtitle: "Price v Risk" };
-        case "/risk-bands":
-          return { title: "Bitcoin", subtitle: "Time in Risk Bands" };
+      case "/risk-bands":
+        return { title: "Bitcoin", subtitle: "Time in Risk Bands" };
       case "/altcoin-price":
         return { title: "Altcoins", subtitle: "Altcoin Analysis" };
       case "/about":
@@ -84,7 +84,7 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
       case "/us-combined-macro":
         return { title: "US Macro Information", subtitle: "Compare US Macro Data" };
       default:
-        return { title: "CryptoLogical", subtitle: "" }; // Default title or could be a 404 page title
+        return { title: "CryptoLogical", subtitle: "" };
     }
   };
 
@@ -93,14 +93,19 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
   return (
     <Box style={topBarStyle}>
       <Box display="flex" alignItems="center">
+        {isMobile && (
+          <IconButton onClick={() => setIsSidebar(!isSidebar)} aria-label="menu">
+            <MenuOutlinedIcon style={{ color: colors.primary[100] }} />
+          </IconButton>
+        )}
         <Link to="/about">
           <IconButton aria-label="about" className="about-button">
             <InfoOutlinedIcon style={{ color: colors.primary[100] }} />
           </IconButton>
         </Link>
       </Box>
-      <div style={{ flexGrow: 1, textAlign: 'center' }}>
-        <Header title={title} subtitle={subtitle} /> {/* Use Header component for title and subtitle */}
+      <div style={{ flexGrow: 1, textAlign: "center" }}>
+        <Header title={title} subtitle={subtitle} />
       </div>
       <Box display="flex" alignItems="center">
         {isMobile && (

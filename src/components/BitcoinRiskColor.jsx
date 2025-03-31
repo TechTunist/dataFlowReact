@@ -179,7 +179,14 @@ const BitcoinRiskColor = ({ isDashboard = false }) => {
                 </div>
             )}
             
-            <div className="chart-container" style={{ position: 'relative', height: 'calc(100% - 40px)', width: '100%', border: '2px solid #a9a9a9' }}>
+            <div className="chart-container" style=
+            {{ 
+                // position: 'relative',
+                height: 'calc(100% - 40px)',
+                width: '100%',
+                border: '2px solid #a9a9a9'
+                }}
+                >
                 <Plot
                     data={datasets.filter(dataset => dataset.visible).map(dataset => ({
                         type: dataset.type,
