@@ -6,18 +6,37 @@ function useIsMobile() {
   useEffect(() => {
     // Function to check if the device is mobile based on user-agent
     const checkIsMobileDevice = () => {
-      const userAgent = navigator.userAgent || navigator.vendor || window.opera;
-      return /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase());
+      const userAgent = navigator.userAgent;
+      console.log("User-Agent:", userAgent);
+      const isMobileDevice = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile/i.test(userAgent.toLowerCase());
+      console.log("checkIsMobileDevice:", isMobileDevice);
+      return isMobileDevice;
     };
 
     // Function to check if the viewport width indicates a mobile device
-    const checkIsMobileWidth = () => window.innerWidth <= 768;
+    const checkIsMobileWidth = () => {
+      const width = window.innerWidth;
+      console.log("window.innerWidth:", width);
+      const isMobileWidth = width <= 1024;
+      console.log("checkIsMobileWidth:", isMobileWidth);
+      return isMobileWidth;
+    };
 
-    // Combine both checks: device is mobile if either the user-agent or width indicates it
+    // Fallback: Use window.matchMedia to check for mobile screen size
+    const checkIsMobileMediaQuery = () => {
+      const isMobileMedia = window.matchMedia("(max-width: 1024px)").matches;
+      console.log("checkIsMobileMediaQuery:", isMobileMedia);
+      return isMobileMedia;
+    };
+
+    // Combine all checks: device is mobile if any condition is true
     const handleResize = () => {
       const isMobileDevice = checkIsMobileDevice();
       const isMobileWidth = checkIsMobileWidth();
-      setIsMobile(isMobileDevice || isMobileWidth);
+      const isMobileMedia = checkIsMobileMediaQuery();
+      const result = isMobileDevice || isMobileWidth || isMobileMedia;
+      console.log("isMobile (final):", result);
+      setIsMobile(result);
     };
 
     // Initial check
