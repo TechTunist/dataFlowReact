@@ -393,7 +393,7 @@ const EthereumRisk = ({ isDashboard = false }) => {
 
                 // Process the sale if there is a threshold to apply and the percentage is greater than 0
                 if (maxApplicableThreshold && maxApplicableThreshold.percentage > 0) {
-                    console.log(maxApplicableThreshold.percentage);
+                    // console.log(maxApplicableThreshold.percentage);
                     const ethSold = localEthHeld * (maxApplicableThreshold.percentage / 100);
                     localEthHeld -= ethSold;
                     const usdRealized = ethSold * day.value;

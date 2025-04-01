@@ -8,16 +8,16 @@ function useIsMobile() {
     // Function to check if the viewport width indicates a mobile device
     const checkIsMobileWidth = () => {
       const width = window.innerWidth;
-      console.log("window.innerWidth:", width);
+      // console.log("window.innerWidth:", width);
       const isMobileWidth = width <= 1024;
-      console.log("checkIsMobileWidth:", isMobileWidth);
+      // console.log("checkIsMobileWidth:", isMobileWidth);
       return isMobileWidth;
     };
 
     // Fallback: Use window.matchMedia to check for mobile screen size
     const checkIsMobileMediaQuery = () => {
       const isMobileMedia = window.matchMedia("(max-width: 1024px)").matches;
-      console.log("checkIsMobileMediaQuery:", isMobileMedia);
+      // console.log("checkIsMobileMediaQuery:", isMobileMedia);
       return isMobileMedia;
     };
 
@@ -26,8 +26,8 @@ function useIsMobile() {
       const isMobileWidth = checkIsMobileWidth();
       const isMobileMedia = checkIsMobileMediaQuery();
       const result = isMobileDevice || isMobileWidth || isMobileMedia;
-      console.log("isMobileDevice (react-device-detect):", isMobileDevice);
-      console.log("isMobile (final):", result);
+      // console.log("isMobileDevice (react-device-detect):", isMobileDevice);
+      // console.log("isMobile (final):", result);
       setIsMobile(result);
     };
 
