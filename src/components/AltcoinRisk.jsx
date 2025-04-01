@@ -8,7 +8,7 @@ import LastUpdated from '../hooks/LastUpdated';
 import { Select, MenuItem, FormControl, InputLabel, Box, Checkbox } from '@mui/material';
 import pako from 'pako';
 
-const AltcoinPrice = ({ isDashboard = false }) => {
+const AltcoinRisk = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
     const [chartData, setChartData] = useState([]);
     const chartRef = useRef(null);
@@ -360,4 +360,4 @@ const AltcoinPrice = ({ isDashboard = false }) => {
     );
 };
 
-export default AltcoinPrice;
+export default AltcoinRisk;
