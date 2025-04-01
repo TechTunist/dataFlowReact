@@ -398,7 +398,7 @@ const AltcoinPrice = ({ isDashboard = false }) => {
                             labelId="altcoin-label"
                             sx={{
                                 color: colors.grey[100],
-                                backgroundColor: colors.primary[600],
+                                backgroundColor: colors.primary[500],
                                 borderRadius: "8px",
                                 '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
                                 '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
@@ -436,7 +436,7 @@ const AltcoinPrice = ({ isDashboard = false }) => {
                             labelId="indicators-label"
                             sx={{
                                 color: colors.grey[100],
-                                backgroundColor: colors.primary[600],
+                                backgroundColor: colors.primary[500],
                                 borderRadius: "8px",
                                 '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
                                 '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
@@ -478,7 +478,7 @@ const AltcoinPrice = ({ isDashboard = false }) => {
                         }
                         sx={{
                             color: colors.grey[100],
-                            backgroundColor: colors.primary[600],
+                            backgroundColor: colors.primary[500],
                             borderRadius: "8px",
                             '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
                             '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
@@ -546,7 +546,7 @@ const AltcoinPrice = ({ isDashboard = false }) => {
                         top: '10px',
                         left: '10px',
                         zIndex: 2,
-                        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                        backgroundColor: colors.primary[900],
                         padding: '5px 10px',
                         borderRadius: '4px',
                         color: colors.grey[100],
