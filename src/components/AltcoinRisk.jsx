@@ -6,11 +6,12 @@ import { useTheme } from "@mui/material";
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
 import { Select, MenuItem, FormControl, InputLabel, Box, Checkbox } from '@mui/material';
+import pako from 'pako';
 
 const AltcoinPrice = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
     const [chartData, setChartData] = useState([]);
-    const chartRef = useRef(null); // ref to store chart for use in return statement
+    const chartRef = useRef(null);
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
     const [selectedCoin, setSelectedCoin] = useState('SOL');
@@ -18,9 +19,7 @@ const AltcoinPrice = ({ isDashboard = false }) => {
     const isMobile = useIsMobile();
     const [tooltipData, setTooltipData] = useState(null);
 
-     // Hardcoded list of altcoin options
-     const altcoins = [
-        // { label: 'Bitcoin', value: 'BTC' },
+    const altcoins = [
         { label: 'Solana', value: 'SOL' },
         { label: 'Ethereum', value: 'ETH' },
         { label: 'Cardano', value: 'ADA' },
@@ -35,36 +34,73 @@ const AltcoinPrice = ({ isDashboard = false }) => {
         { label: 'Sui', value: 'SUI' },
         { label: 'Hedera', value: 'HBAR' },
         { label: 'Stellar', value: 'XLM' },
-
-        // { label: 'GameStop', value: 'GME' },
-        // { label: 'Tesla', value: 'TSLA' },
-        // { label: 'Google', value: 'GOOG' },
-        // { label: 'Amazon', value: 'AMZN' },
-        // { label: 'Apple', value: 'AAPL' },
-        // { label: 'Microstrategy', value: 'MSTR' },
-        // { label: 'Microsoft', value: 'MSFT' },
-        // { label: 'Rumble', value: 'RUM' },
-        // { label: 'Nvidia', value: 'NVDA' },
     ];
 
-    // Handle change event for the dropdown
+    const getLocalStorageSize = () => {
+        let total = 0;
+        for (let key in localStorage) {
+            if (localStorage.hasOwnProperty(key)) {
+                total += ((localStorage[key].length + key.length) * 2);
+            }
+        }
+        return total;
+    };
+
+    const MAX_STORAGE_SIZE = 4 * 1024 * 1024;
+
+    const pruneOldData = () => {
+        const keys = Object.keys(localStorage)
+            .filter(key => key.endsWith('RiskData'))
+            .map(key => {
+                try {
+                    const decompressed = decompressData(localStorage.getItem(key));
+                    const parsed = JSON.parse(decompressed || localStorage.getItem(key));
+                    return { key, timestamp: parsed.timestamp || 0 };
+                } catch {
+                    return { key, timestamp: 0 }; // Fallback for invalid data
+                }
+            })
+            .sort((a, b) => a.timestamp - b.timestamp);
+
+        let currentSize = getLocalStorageSize();
+        for (let { key } of keys) {
+            if (currentSize < MAX_STORAGE_SIZE * 0.8) break;
+            localStorage.removeItem(key);
+            currentSize = getLocalStorageSize();
+        }
+    };
+
+    const compressData = (data) => {
+        const jsonString = JSON.stringify({ ...data, version: 'compressed' }); // Add version flag
+        const compressed = pako.gzip(jsonString);
+        return btoa(String.fromCharCode(...compressed));
+    };
+
+    const decompressData = (compressedString) => {
+        if (!compressedString) return null;
+        try {
+            const compressed = Uint8Array.from(atob(compressedString), c => c.charCodeAt(0));
+            return pako.ungzip(compressed, { to: 'string' });
+        } catch (error) {
+            console.error('Decompression failed:', error);
+            return compressedString; // Return raw string if it’s not compressed
+        }
+    };
+
     const handleSelectChange = (event) => {
         setSelectedCoin(event.target.value);
     };
 
-    // Function to set chart interactivity
     const setInteractivity = () => {
         setIsInteractive(!isInteractive);
     };
 
-    // Function to reset the chart view
     const resetChartView = () => {
         if (chartRef.current) {
             chartRef.current.timeScale().fitContent();
         }
     };
 
-    // Function to calculate the risk metric
     const calculateRiskMetric = (data) => {
         const movingAverage = data.map((item, index) => {
             const start = Math.max(index - 373, 0);
@@ -72,37 +108,35 @@ const AltcoinPrice = ({ isDashboard = false }) => {
             const avg = subset.reduce((sum, curr) => sum + curr.value, 0) / subset.length;
             return { ...item, MA: avg };
         });
-    
+
         let consecutiveDeclineDays = 0;
-    
+
         movingAverage.forEach((item, index) => {
             const changeFactor = index ** 0.395;
             let preavg = (Math.log(item.value) - Math.log(item.MA)) * changeFactor;
-    
+
             if (index > 0) {
                 const previousItem = movingAverage[index - 1];
                 const priceChange = item.value / previousItem.value;
-    
-                // Detect and handle parabolic increases
+
                 if (priceChange > 1.5) {
                     const dampingFactor = 1 / priceChange;
                     preavg *= dampingFactor;
-                    consecutiveDeclineDays = 0; // Reset decline counter on price increase
+                    consecutiveDeclineDays = 0;
                 }
-    
-                // Detect and handle prolonged declines
+
                 if (priceChange < 1) {
                     consecutiveDeclineDays++;
-                    const declineFactor = Math.min(consecutiveDeclineDays / 30, 1); // Scale factor over 30 days
-                    preavg *= (1 + declineFactor); // Increase sensitivity during prolonged declines
+                    const declineFactor = Math.min(consecutiveDeclineDays / 30, 1);
+                    preavg *= (1 + declineFactor);
                 } else {
-                    consecutiveDeclineDays = 0; // Reset decline counter on price increase
+                    consecutiveDeclineDays = 0;
                 }
             }
-    
+
             item.Preavg = preavg;
         });
-    
+
         const preavgValues = movingAverage.map(item => item.Preavg);
         const preavgMin = Math.min(...preavgValues);
         const preavgMax = Math.max(...preavgValues);
@@ -110,46 +144,70 @@ const AltcoinPrice = ({ isDashboard = false }) => {
             ...item,
             Risk: (item.Preavg - preavgMin) / (preavgMax - preavgMin)
         }));
-    
+
         return normalizedRisk;
     };
-    
-    
 
     useEffect(() => {
         const cacheKey = `${selectedCoin.toLowerCase()}RiskData`;
         const cachedData = localStorage.getItem(cacheKey);
         const today = new Date();
 
-        const fetchAltData = () => {
-            // fetch(`https://tunist.pythonanywhere.com/api/${selectedCoin.toLowerCase()}/price/`)
-            fetch(`https://vercel-dataflow.vercel.app/api/${selectedCoin.toLowerCase()}/price/`)
-                .then(response => response.json())
-                .then(data => {
-                    const formattedData = data.map(item => ({
-                        time: item.date,
-                        value: parseFloat(item.close)
-                    }));
-                    const withRiskMetric = calculateRiskMetric(formattedData);
-                    localStorage.setItem(cacheKey, JSON.stringify(withRiskMetric));
-                    setChartData(withRiskMetric);
-                })
-                .catch(error => {
-                    console.error('Error fetching data:', error);
-                });
+        const fetchAltData = async () => {
+            try {
+                const response = await fetch(`https://vercel-dataflow.vercel.app/api/${selectedCoin.toLowerCase()}/price/`);
+                const data = await response.json();
+                const formattedData = data.map(item => ({
+                    time: item.date,
+                    value: parseFloat(item.close)
+                }));
+                const withRiskMetric = calculateRiskMetric(formattedData);
+                const payload = { data: withRiskMetric, timestamp: Date.now() };
+
+                const currentSize = getLocalStorageSize();
+                if (currentSize > MAX_STORAGE_SIZE * 0.9) {
+                    pruneOldData();
+                }
+
+                localStorage.setItem(cacheKey, compressData(payload));
+                setChartData(withRiskMetric);
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
         };
 
         if (cachedData) {
-            const parsedData = JSON.parse(cachedData);
-            if (parsedData.length > 0) {
-                const lastCachedDate = new Date(parsedData[parsedData.length - 1].time);
-                if (lastCachedDate.setHours(0, 0, 0, 0) === today.setHours(0, 0, 0, 0)) {
-                    setChartData(parsedData);
+            try {
+                const decompressed = decompressData(cachedData);
+                const parsedData = JSON.parse(decompressed);
+                if (parsedData.version === 'compressed') {
+                    // New compressed data
+                    if (parsedData.data.length > 0) {
+                        const lastCachedDate = new Date(parsedData.data[parsedData.data.length - 1].time);
+                        if (lastCachedDate.setHours(0, 0, 0, 0) === today.setHours(0, 0, 0, 0)) {
+                            setChartData(parsedData.data);
+                        } else {
+                            fetchAltData();
+                        }
+                    } else {
+                        fetchAltData();
+                    }
                 } else {
-                    fetchAltData();
+                    // Old uncompressed data (assumed to be an array)
+                    if (parsedData.length > 0) {
+                        const lastCachedDate = new Date(parsedData[parsedData.length - 1].time);
+                        if (lastCachedDate.setHours(0, 0, 0, 0) === today.setHours(0, 0, 0, 0)) {
+                            setChartData(parsedData);
+                        } else {
+                            fetchAltData();
+                        }
+                    } else {
+                        fetchAltData();
+                    }
                 }
-            } else {
-                fetchAltData();
+            } catch (error) {
+                console.error('Error processing cached data:', error);
+                fetchAltData(); // Fetch fresh data if anything goes wrong
             }
         } else {
             fetchAltData();
@@ -171,26 +229,17 @@ const AltcoinPrice = ({ isDashboard = false }) => {
                 horzLines: { color: 'rgba(70, 70, 70, 0.5)' },
             },
             rightPriceScale: {
-                scaleMargins: {
-                    top: 0.01,
-                    bottom: 0.01,
-                },
+                scaleMargins: { top: 0.01, bottom: 0.01 },
                 borderVisible: false,
             },
             leftPriceScale: {
-                visible: true, // Ensure the left price scale is visible
+                visible: true,
                 borderColor: 'rgba(197, 203, 206, 1)',
-                scaleMargins: {
-                    top: 0.1,
-                    bottom: 0.1,
-                },
+                scaleMargins: { top: 0.1, bottom: 0.1 },
             },
-            timeScale: {
-                minBarSpacing: 0.001,
-            },
+            timeScale: { minBarSpacing: 0.001 },
         });
 
-        // Series for Risk Metric
         const riskSeries = chart.addLineSeries({
             color: '#ff0062',
             lastValueVisible: true,
@@ -199,31 +248,20 @@ const AltcoinPrice = ({ isDashboard = false }) => {
         });
         riskSeries.setData(chartData.map(data => ({ time: data.time, value: data.Risk })));
 
-        // Series for Altcoin Price on Logarithmic Scale
         const priceSeries = chart.addLineSeries({
             color: 'gray',
             priceScaleId: 'left',
             lineWidth: 0.7,
-            priceFormat: {
-                type: 'custom',
-                formatter: value => value.toFixed(2), // Custom formatter for price
-            },
+            priceFormat: { type: 'custom', formatter: value => value.toFixed(2) },
         });
         priceSeries.setData(chartData.map(data => ({ time: data.time, value: data.value })));
 
-        // Disable all interactions if the chart is displayed on the dashboard
-        chart.applyOptions({
-            handleScroll: false,
-            handleScale: false,
-        });
+        chart.applyOptions({ handleScroll: false, handleScale: false });
 
         chart.priceScale('left').applyOptions({
-            mode: 1, // Logarithmic scale
+            mode: 1,
             borderVisible: false,
-            priceFormat: {
-                type: 'custom',
-                formatter: value => value.toFixed(2),
-            },
+            priceFormat: { type: 'custom', formatter: value => value.toFixed(2) },
         });
 
         const resizeChart = () => {
@@ -262,122 +300,41 @@ const AltcoinPrice = ({ isDashboard = false }) => {
     return (
         <div style={{ height: '100%' }}>
             {!isDashboard && (
-            <Box
-                sx={{
-                    display: 'flex',
-                    flexDirection: { xs: 'column', sm: 'row' },
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '20px',
-                    marginBottom: '30px',
-                    marginTop: '30px',
-                }}
-            >
-                <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '200px' } }}>
-                    <InputLabel
-                        id="altcoin-label"
-                        shrink
-                        sx={{
-                            color: colors.grey[100],
-                            '&.Mui-focused': { color: colors.greenAccent[500] },
-                            top: 0,
-                            '&.MuiInputLabel-shrink': {
-                            transform: 'translate(14px, -9px) scale(0.75)',
-                            },
-                        }}
-                        >
-                        Altcoin
-                    </InputLabel>
-                    <Select
-                        value={selectedCoin}
-                        onChange={(e) => setSelectedCoin(e.target.value)}
-                        label="Altcoin"
-                        labelId='altcoin-label'
-                        sx={{
-                            color: colors.grey[100],
-                            backgroundColor: colors.primary[600],
-                            borderRadius: "8px",
-                            '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
-                            '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                            '& .MuiSelect-select': { py: 1.5, pl: 2 },
-                            '& .MuiSelect-select:empty': { color: colors.grey[500] },
-                        }}
-                    >
-                        {altcoins.map((coin) => (
-                            <MenuItem key={coin.value} value={coin.value}>
-                                {coin.label}
-                            </MenuItem>
-                        ))}
-                    </Select>
-                </FormControl>
-            </Box>
+                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: 'center', justifyContent: 'center', gap: '20px', marginBottom: '30px', marginTop: '30px' }}>
+                    <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '200px' } }}>
+                        <InputLabel id="altcoin-label" shrink sx={{ color: colors.grey[100], '&.Mui-focused': { color: colors.greenAccent[500] }, top: 0, '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' } }}>Altcoin</InputLabel>
+                        <Select value={selectedCoin} onChange={handleSelectChange} label="Altcoin" labelId='altcoin-label' sx={{ color: colors.grey[100], backgroundColor: colors.primary[600], borderRadius: "8px", '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] }, '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] }, '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] }, '& .MuiSelect-select': { py: 1.5, pl: 2 } }}>
+                            {altcoins.map((coin) => (
+                                <MenuItem key={coin.value} value={coin.value}>{coin.label}</MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+                </Box>
             )}
             {!isDashboard && (
                 <div className='chart-top-div'>
-                    {!isDashboard && (
-                        <div className='span-container'>
-                            <span style={{ marginRight: '20px', display: 'inline-block' }}>
-                                <span style={{ backgroundColor: 'gray', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
-                                Altcoin Price
-                            </span>
-                            <span style={{ display: 'inline-block' }}>
-                                <span style={{ backgroundColor: '#ff0062', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
-                                Risk Metric
-                            </span>
-                        </div>
-                    )}
-                    
-                    <div style={{ display: 'flex', justifyContent: 'flex-end'}}>
-                        {
-                            !isDashboard && (
-                                <button
-                                    onClick={setInteractivity}
-                                    className="button-reset"
-                                    style={{
-                                        backgroundColor: isInteractive ? '#4cceac' : 'transparent',
-                                        color: isInteractive ? 'black' : '#31d6aa',
-                                        borderColor: isInteractive ? 'violet' : '#70d8bd'
-                                    }}>
-                                    {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
-                                </button>
-                            )   
-                        }
-                        {
-                            !isDashboard && (
-                                <button onClick={resetChartView} className="button-reset extra-margin">
-                                    Reset Chart
-                                </button>
-                            )   
-                        }
+                    <div className='span-container'>
+                        <span style={{ marginRight: '20px', display: 'inline-block' }}><span style={{ backgroundColor: 'gray', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>Altcoin Price</span>
+                        <span style={{ display: 'inline-block' }}><span style={{ backgroundColor: '#ff0062', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>Risk Metric</span>
                     </div>
-                
+                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                        {!isDashboard && (
+                            <button onClick={setInteractivity} className="button-reset" style={{ backgroundColor: isInteractive ? '#4cceac' : 'transparent', color: isInteractive ? 'black' : '#31d6aa', borderColor: isInteractive ? 'violet' : '#70d8bd' }}>
+                                {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
+                            </button>
+                        )}
+                        {!isDashboard && (
+                            <button onClick={resetChartView} className="button-reset extra-margin">Reset Chart</button>
+                        )}
+                    </div>
                 </div>
             )}
-            <div className="chart-container" style={{
-                position: 'relative',
-                height: 'calc(100% - 40px)',
-                width: '100%',
-                border: '2px solid #a9a9a9',
-                 }}
-                 onDoubleClick={() => {
-                    if (!isInteractive && !isDashboard) {  
-                        setInteractivity();
-                    } else {
-                        setInteractivity();
-                    }
-                }}>
+            <div className="chart-container" style={{ position: 'relative', height: 'calc(100% - 40px)', width: '100%', border: '2px solid #a9a9a9' }} onDoubleClick={() => { if (!isInteractive && !isDashboard) setInteractivity(); else setInteractivity(); }}>
                 <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
             </div>
-            {!isDashboard && (
-                <LastUpdated storageKey={`${selectedCoin.toLowerCase()}RiskData`} />
-            )}
-            
+            {!isDashboard && <LastUpdated storageKey={`${selectedCoin.toLowerCase()}RiskData`} />}
             {!isDashboard && tooltipData && (
-                <div className="tooltip" style={{
-                    left: `${tooltipData.x}px`,
-                    top: `${tooltipData.y}px`,
-                }}>
+                <div className="tooltip" style={{ left: `${tooltipData.x}px`, top: `${tooltipData.y}px` }}>
                     <div>{selectedCoin}</div>
                     <div>${tooltipData.price.toFixed(2)}</div>
                     <div>{tooltipData.date.toString()}</div>

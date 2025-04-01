@@ -101,6 +101,9 @@ function App() {
                     <Route path="/us-unemployment" element={<BasicChart ChartComponent={UsUnemploymentChart} />} />
                     <Route path="/us-interest" element={<BasicChart ChartComponent={UsInterestChart} />} />
                     <Route path="/us-combined-macro" element={<BasicChart ChartComponent={UsCombinedMacroChart} />} />
+
+                    {/* Optional: catch-all for unmatched routes */}
+                    <Route path="*" element={<div>404 - Page Not Found</div>} />
                   </>
                 )}
               </Routes>

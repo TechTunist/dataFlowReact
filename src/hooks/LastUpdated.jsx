@@ -3,6 +3,7 @@ import { useTheme } from '@mui/material';
 import { tokens } from "../theme";
 import RefreshIcon from '@mui/icons-material/Refresh';
 import '../styling/LastUpdated.css';
+import pako from 'pako';
 
 const LastUpdated = ({ storageKey }) => {
     const theme = useTheme();
@@ -11,24 +12,61 @@ const LastUpdated = ({ storageKey }) => {
     const [refresh, setRefresh] = useState(0);
     const [isClicked, setIsClicked] = useState(false);
 
-    useEffect(() => {
-        // Attempt to retrieve the specific data from localStorage
-        const dataJson = localStorage.getItem(storageKey);
-        if (dataJson) {
-            const data = JSON.parse(dataJson);
-            // Assume data is an array of objects and each object has a 'time' property
-            if (data.length) {
-                const lastDataPoint = data[data.length - 1];
+    // Decompression function
+    const decompressData = (compressedString) => {
+        try {
+            const compressed = Uint8Array.from(atob(compressedString), c => c.charCodeAt(0));
+            return pako.ungzip(compressed, { to: 'string' });
+        } catch (error) {
+            return null; // Return null if decompression fails
+        }
+    };
+
+    // Process data (compressed or uncompressed)
+    const processStorageData = (dataJson) => {
+        if (!dataJson) {
+            setLastUpdated('');
+            return;
+        }
+
+        let parsedData;
+        const decompressed = decompressData(dataJson);
+
+        if (decompressed !== null) {
+            // Data is compressed
+            parsedData = JSON.parse(decompressed);
+            if (parsedData.version === 'compressed' && parsedData.data?.length) {
+                const lastDataPoint = parsedData.data[parsedData.data.length - 1];
                 setLastUpdated(new Date(lastDataPoint.time).toLocaleDateString());
+            } else {
+                setLastUpdated('');
+            }
+        } else {
+            // Data is uncompressed (old format)
+            try {
+                parsedData = JSON.parse(dataJson);
+                if (Array.isArray(parsedData) && parsedData.length) {
+                    const lastDataPoint = parsedData[parsedData.length - 1];
+                    setLastUpdated(new Date(lastDataPoint.time).toLocaleDateString());
+                } else {
+                    setLastUpdated('');
+                }
+            } catch (error) {
+                console.error('Error parsing uncompressed data:', error);
+                setLastUpdated('');
             }
         }
-    }, [storageKey, refresh]); // Depend on storageKey and refresh to update when they change
+    };
 
-    // listen for storage events to update the component
+    useEffect(() => {
+        const dataJson = localStorage.getItem(storageKey);
+        processStorageData(dataJson);
+    }, [storageKey, refresh]);
+
     useEffect(() => {
         const handleStorageChange = (e) => {
             if (e.key === storageKey) {
-                setRefresh(prev => prev + 1); // Trigger re-fetch
+                setRefresh(prev => prev + 1);
             }
         };
         window.addEventListener('storage', handleStorageChange);
@@ -36,9 +74,9 @@ const LastUpdated = ({ storageKey }) => {
     }, [storageKey]);
 
     const refreshComponent = () => {
-        setRefresh(prev => prev + 1); // Change state to trigger re-render
+        setRefresh(prev => prev + 1);
         setIsClicked(true);
-        setTimeout(() => setIsClicked(false), 300); // Reset animation state after 300ms
+        setTimeout(() => setIsClicked(false), 300);
     };
 
     return (

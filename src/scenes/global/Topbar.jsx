@@ -74,7 +74,7 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
       case "/fear-and-greed-chart":
         return { title: "Bitcoin Fear and Greed", subtitle: "Fear and Greed plotted over the Bitcoin Price" };
       case "/altcoin-risk":
-        return { title: "Altcoin Risk Chart", subtitle: "Display the risk metric for a selection of altcoins" };
+        return { title: "Altcoin Risk Chart", subtitle: "Risk metric for a selection of altcoins" };
       case "/us-inflation":
         return { title: "US Inflation", subtitle: "Annualised inflation rate" };
       case "/us-unemployment":
