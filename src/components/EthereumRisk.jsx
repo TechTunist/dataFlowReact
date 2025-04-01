@@ -5,7 +5,6 @@ import { useTheme } from "@mui/material";
 import '../styling/bitcoinChart.css';
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
-import pako from 'pako'; // Import pako for compression/decompression
 
 const EthereumRisk = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
@@ -16,7 +15,7 @@ const EthereumRisk = ({ isDashboard = false }) => {
     const [isInteractive, setIsInteractive] = useState(false);
     const isMobile = useIsMobile();
 
-    // DCA and Lump Sum simulation state variables (unchanged)
+    // DCA and Lump Sum simulation state variables
     const [dcaAmount, setDcaAmount] = useState(100);
     const [dcaFrequency, setDcaFrequency] = useState(7);
     const [dcaStartDate, setDcaStartDate] = useState('2021-01-01');
@@ -48,7 +47,7 @@ const EthereumRisk = ({ isDashboard = false }) => {
     const [currentRiskLevel, setCurrentRiskLevel] = useState(null);
     const [currentEthPrice, setCurrentEthPrice] = useState(0);
 
-    // Storage management functions
+    // Storage management functions (adjusted for uncompressed data)
     const getLocalStorageSize = () => {
         let total = 0;
         for (let key in localStorage) {
@@ -66,8 +65,8 @@ const EthereumRisk = ({ isDashboard = false }) => {
             .filter(key => key.endsWith('RiskData'))
             .map(key => {
                 try {
-                    const decompressed = decompressData(localStorage.getItem(key));
-                    const parsed = JSON.parse(decompressed || localStorage.getItem(key));
+                    const parsed = JSON.parse(localStorage.getItem(key));
+                    // Check if the data has a timestamp (new format) or use 0 for old format
                     return { key, timestamp: parsed.timestamp || 0 };
                 } catch {
                     return { key, timestamp: 0 };
@@ -83,23 +82,7 @@ const EthereumRisk = ({ isDashboard = false }) => {
         }
     };
 
-    const compressData = (data) => {
-        const jsonString = JSON.stringify({ ...data, version: 'compressed' });
-        const compressed = pako.gzip(jsonString);
-        return btoa(String.fromCharCode(...compressed));
-    };
-
-    const decompressData = (compressedString) => {
-        if (!compressedString) return null;
-        try {
-            const compressed = Uint8Array.from(atob(compressedString), c => c.charCodeAt(0));
-            return pako.ungzip(compressed, { to: 'string' });
-        } catch (error) {
-            return compressedString; // Return raw string if not compressed
-        }
-    };
-
-    // Existing functions (unchanged except where noted)
+    // Existing functions (unchanged)
     const setInteractivity = () => {
         setIsInteractive(!isInteractive);
     };
@@ -174,7 +157,7 @@ const EthereumRisk = ({ isDashboard = false }) => {
         setSimulationResult(results);
     };
 
-    // Updated useEffect for data fetching with compression
+    // Updated useEffect for data fetching without compression
     useEffect(() => {
         const cacheKey = 'ethRiskData';
         const cachedData = localStorage.getItem(cacheKey);
@@ -196,7 +179,8 @@ const EthereumRisk = ({ isDashboard = false }) => {
                     pruneOldData();
                 }
 
-                localStorage.setItem(cacheKey, compressData(payload));
+                // Store as plain JSON without compression
+                localStorage.setItem(cacheKey, JSON.stringify(payload));
                 setChartData(withRiskMetric);
             } catch (error) {
                 console.error('Error fetching data:', error);
@@ -205,30 +189,18 @@ const EthereumRisk = ({ isDashboard = false }) => {
 
         if (cachedData) {
             try {
-                const decompressed = decompressData(cachedData);
-                const parsedData = JSON.parse(decompressed);
-                if (parsedData.version === 'compressed') {
-                    if (parsedData.data.length > 0) {
-                        const lastCachedDate = new Date(parsedData.data[parsedData.data.length - 1].time);
-                        if (lastCachedDate.setHours(0, 0, 0, 0) === today.setHours(0, 0, 0, 0)) {
-                            setChartData(parsedData.data);
-                        } else {
-                            fetchEthData();
-                        }
+                const parsedData = JSON.parse(cachedData);
+                // Check if the data has the new structure (with timestamp) or is old format (array)
+                const dataToUse = parsedData.data || parsedData;
+                if (dataToUse.length > 0) {
+                    const lastCachedDate = new Date(dataToUse[dataToUse.length - 1].time);
+                    if (lastCachedDate.setHours(0, 0, 0, 0) === today.setHours(0, 0, 0, 0)) {
+                        setChartData(dataToUse);
                     } else {
                         fetchEthData();
                     }
                 } else {
-                    if (parsedData.length > 0) {
-                        const lastCachedDate = new Date(parsedData[parsedData.length - 1].time);
-                        if (lastCachedDate.setHours(0, 0, 0, 0) === today.setHours(0, 0, 0, 0)) {
-                            setChartData(parsedData);
-                        } else {
-                            fetchEthData();
-                        }
-                    } else {
-                        fetchEthData();
-                    }
+                    fetchEthData();
                 }
             } catch (error) {
                 console.error('Error processing cached data:', error);
@@ -239,7 +211,7 @@ const EthereumRisk = ({ isDashboard = false }) => {
         }
     }, []);
 
-    // Chart rendering useEffect (unchanged except interactivity)
+    // Chart rendering useEffect (unchanged)
     useEffect(() => {
         if (chartData.length === 0) return;
 
@@ -400,7 +372,7 @@ const EthereumRisk = ({ isDashboard = false }) => {
         setSimulationRun(true);
     };
 
-    // Render remains mostly unchanged, except for LastUpdated key fix
+    // Render (unchanged)
     return (
         <div style={{ height: '100%' }}>
             {!isDashboard && (
@@ -441,7 +413,7 @@ const EthereumRisk = ({ isDashboard = false }) => {
                 />
             </div>
             {!isDashboard && (
-                <LastUpdated storageKey="ethRiskData" /> // Fixed key to match cacheKey
+                <LastUpdated storageKey="ethRiskData" />
             )}
             <div>
                 {!isDashboard && (
@@ -576,17 +548,22 @@ const EthereumRisk = ({ isDashboard = false }) => {
                         </div>
                     )}
                 </div>
-                {!isDashboard && (
-                    <p className='chart-info'>
-                        The risk metric assesses Ethereum's investment risk over time by comparing its daily prices to a 374-day moving average.
-                        It does so by calculating the normalized logarithmic difference between the price and the moving average,
-                        producing a score between 0 and 1. A higher score indicates higher risk, and a lower score indicates lower risk.
-                        This method provides a simplified view of when it might be riskier or safer to invest in Ethereum based on historical price movements.
-                    </p>
-                )}
+
+                {
+                    !isDashboard && (
+                        <p className='chart-info'>
+                            The risk metric assesses Ethereum's investment risk over time by comparing its daily prices to a 374-day moving average.
+                            It does so by calculating the normalized logarithmic difference between the price and the moving average,
+                            producing a score between 0 and 1. A higher score indicates higher risk, and a lower score indicates lower risk.
+                            This method provides a simplified view of when it might be riskier or safer to invest in Ethereum based on historical price movements.
+                        </p>
+                    )   
+                }
             </div>
         </div>
-    );
+        );
+      
+      
 };
 
 export default EthereumRisk;
