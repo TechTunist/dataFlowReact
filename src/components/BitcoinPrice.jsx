@@ -13,6 +13,8 @@ const BitcoinPrice = ({ isDashboard = false }) => {
     const chartRef = useRef(null);
     const priceSeriesRef = useRef(null);
     const smaSeriesRefs = useRef({}).current;
+    const [fedBalanceData, setFedBalanceData] = useState([]); // State for Fed balance data
+    const fedBalanceSeriesRef = useRef(null); // Ref for Fed balance series
     const [chartData, setChartData] = useState([]);
     const [scaleMode, setScaleMode] = useState(1); // 1 for logarithmic, 0 for linear
     const [tooltipData, setTooltipData] = useState(null);
@@ -28,6 +30,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
         '50w-sma': { period: 50 * 7, color: 'magenta', label: '50 Week SMA' },
         '100w-sma': { period: 100 * 7, color: 'white', label: '100 Week SMA' },
         '200w-sma': { period: 200 * 7, color: 'yellow', label: '200 Week SMA' },
+        'fed-balance': { color: 'purple', label: 'Fed Balance (Trillions)' }, // New Fed balance indicator
     };
 
     const setInteractivity = () => setIsInteractive(!isInteractive);
@@ -87,6 +90,34 @@ const BitcoinPrice = ({ isDashboard = false }) => {
         }
     }, []);
 
+    // Fetch Federal Reserve balance data
+        useEffect(() => {
+            const cacheKeyFed = 'fedBalanceData';
+            const cachedFedData = localStorage.getItem(cacheKeyFed);
+    
+            if (cachedFedData) {
+                const parsedFedData = JSON.parse(cachedFedData);
+                setFedBalanceData(parsedFedData);
+            } else {
+                fetchFedBalanceData();
+            }
+    
+            function fetchFedBalanceData() {
+                // fetch('https://tunist.pythonanywhere.com/api/fed-balance/')
+                fetch('https://vercel-dataflow.vercel.app/api/fed-balance/')
+                    .then(response => response.json())
+                    .then(data => {
+                        const formattedData = data.map(item => ({
+                            time: item.observation_date, // Use observation_date as time
+                            value: parseFloat(item.value) / 1000 // Convert from millions to trillions for scaling
+                        }));
+                        setFedBalanceData(formattedData);
+                        localStorage.setItem(cacheKeyFed, JSON.stringify(formattedData));
+                    })
+                    .catch(error => console.error('Error fetching Federal Reserve balance data: ', error));
+                }
+        }, []);
+
     // Create chart once on mount
     useEffect(() => {
         const chart = createChart(chartContainerRef.current, {
@@ -121,6 +152,16 @@ const BitcoinPrice = ({ isDashboard = false }) => {
         });
         priceSeriesRef.current = priceSeries;
 
+        // Add Federal Reserve balance series (initially hidden) on the left price scale
+        const fedBalanceSeries = chart.addLineSeries({
+            priceScaleId: 'left', // Fed balance on the left
+            color: indicators['fed-balance'].color, // Use color from indicators
+            lineWidth: 2,
+            priceLineVisible: false,
+            visible: activeIndicators.includes('fed-balance'), // Controlled by indicators selection
+        });
+        fedBalanceSeriesRef.current = fedBalanceSeries; // Store the series in the ref
+
         chart.subscribeCrosshairMove(param => {
             if (!param.point || !param.time || param.point.x < 0 ||
                 param.point.x > chartContainerRef.current.clientWidth ||
@@ -128,8 +169,15 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                 setTooltipData(null);
             } else {
                 const dateStr = param.time;
-                const data = param.seriesData.get(priceSeriesRef.current);
-                setTooltipData({ date: dateStr, price: data?.value, x: param.point.x, y: param.point.y });
+                const priceData = param.seriesData.get(priceSeriesRef.current);
+                const fedData = param.seriesData.get(fedBalanceSeriesRef.current); // Use the ref here
+                setTooltipData({
+                    date: dateStr,
+                    price: priceData?.value,
+                    fedBalance: fedData?.value,
+                    x: param.point.x,
+                    y: param.point.y,
+                });
             }
         });
 
@@ -166,6 +214,22 @@ const BitcoinPrice = ({ isDashboard = false }) => {
             chartRef.current.timeScale().fitContent();
         }
     }, [chartData]);
+
+    // Update Fed balance series data (filtered to match Ethereum time range)
+    useEffect(() => {
+        if (fedBalanceSeriesRef.current && chartData.length > 0 && fedBalanceData.length > 0) {
+            // Filter Fed balance data to only include dates within Ethereum data range
+            const ethStartTime = new Date(chartData[0].time).getTime();
+            const ethEndTime = new Date(chartData[chartData.length - 1].time).getTime();
+            const filteredFedData = fedBalanceData.filter(item => {
+                const itemTime = new Date(item.time).getTime();
+                return itemTime >= ethStartTime && itemTime <= ethEndTime;
+            });
+
+            fedBalanceSeriesRef.current.setData(filteredFedData);
+            fedBalanceSeriesRef.current.applyOptions({ visible: activeIndicators.includes('fed-balance') });
+        }
+    }, [fedBalanceData, chartData, activeIndicators]);
 
     // Update indicators
     useEffect(() => {
@@ -237,88 +301,89 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                         alignItems: 'center',
                         justifyContent: 'center',
                         gap: '20px',
-                        marginBottom: '10px',
-                        marginTop: '20px',
+                        marginBottom: '30px',
+                        marginTop: '50px',
                     }}
                 >
-                    <FormControl sx={{ width: { xs: '100%', sm: '150px' } }}>
-                        <InputLabel sx={{ color: colors.grey[100] }}>Scale Mode</InputLabel>
-                        <Select
-                            value={scaleMode}
-                            onChange={(e) => setScaleMode(e.target.value)}
-                            label="Scale Mode"
-                            sx={{
-                                color: colors.grey[100],
-                                '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
-                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                            }}
-                        >
-                            <MenuItem value={0}>Linear</MenuItem>
-                            <MenuItem value={1}>Logarithmic</MenuItem>
-                        </Select>
-                    </FormControl>
                     <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '300px' } }}>
-                        <InputLabel sx={{ color: colors.grey[100] }}>Indicators</InputLabel>
-                        <Select
-                            multiple
-                            value={activeIndicators}
-                            onChange={handleIndicatorChange}
-                            label="Indicators"
-                            renderValue={(selected) => (selected.length > 0 ? selected.map((key) => indicators[key].label).join(', ') : null)}
-                            sx={{
-                                color: colors.grey[100],
-                                '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
-                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                            }}
+                        <InputLabel
+                        id="indicators-label"
+                        shrink
+                        sx={{
+                            color: colors.grey[100],
+                            '&.Mui-focused': { color: colors.greenAccent[500] },
+                            top: 0,
+                            '&.MuiInputLabel-shrink': {
+                            transform: 'translate(14px, -9px) scale(0.75)',
+                            },
+                        }}
                         >
-                            {Object.entries(indicators).map(([key, { label }]) => (
-                                <MenuItem key={key} value={key}>
-                                    <Checkbox
-                                        checked={activeIndicators.includes(key)}
-                                        sx={{ color: colors.grey[100], '&.Mui-checked': { color: colors.greenAccent[500] } }}
-                                    />
-                                    <span>{label}</span>
-                                </MenuItem>
-                            ))}
+                        Indicators
+                        </InputLabel>
+                        <Select
+                        multiple
+                        value={activeIndicators}
+                        onChange={handleIndicatorChange}
+                        labelId="indicators-label"
+                        label="Indicators"
+                        displayEmpty
+                        renderValue={(selected) =>
+                            selected.length > 0
+                            ? selected.map((key) => indicators[key].label).join(', ')
+                            : 'Select Indicators'
+                        }
+                        sx={{
+                            color: colors.grey[100],
+                            backgroundColor: colors.primary[600],
+                            borderRadius: "8px",
+                            '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
+                            '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                            '& .MuiSelect-select': { py: 1.5, pl: 2 },
+                            '& .MuiSelect-select:empty': { color: colors.grey[500] },
+                        }}
+                        >
+                        {Object.entries(indicators).map(([key, { label }]) => (
+                            <MenuItem key={key} value={key}>
+                            <Checkbox
+                                checked={activeIndicators.includes(key)}
+                                sx={{ color: colors.grey[100], '&.Mui-checked': { color: colors.greenAccent[500] } }}
+                            />
+                            <span>{label}</span>
+                            </MenuItem>
+                        ))}
                         </Select>
                     </FormControl>
-                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={0} alignItems="right">
-                        <FormControl sx={{ minWidth: '20px', width: { xs: '100%', sm: '100px' } }}>
-                            <FormControlLabel
-                                control={
-                                    <Checkbox
-                                        checked={isInteractive}
-                                        onChange={(e) => setInteractivity(e.target.checked)}
-                                        sx={{
-                                            color: colors.grey[300],
-                                            '&.Mui-checked': { color: colors.greenAccent[500] },
-                                        }}
-                                    />
-                                }
-                                label="Zoom"
-                                sx={{
-                                    color: colors.grey[100],
-                                    '& .MuiFormControlLabel-label': { color: colors.grey[100] },
-                                }}
-                            />
-                        </FormControl>
-                        <FormControl>
-                            <Button
-                                onClick={resetChartView}
-                                variant="contained"
-                                sx={{
-                                    backgroundColor: colors.greenAccent[500],
-                                    color: colors.grey[900],
-                                    '&:hover': { backgroundColor: colors.greenAccent[100] },
-                                }}
-                            >
-                                Reset Chart
-                            </Button>
-                        </FormControl>
-                    </Stack>
                 </Box>
+                )}
+                {!isDashboard && (
+                <div className="chart-top-div">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                        <label className="switch">
+                            <input type="checkbox" checked={scaleMode === 1} onChange={toggleScaleMode} />
+                            <span className="slider round"></span>
+                        </label>
+                        <span style={{ color: colors.primary[100] }}>
+                            {scaleMode === 1 ? 'Logarithmic' : 'Linear'}
+                        </span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                        <button
+                            onClick={setInteractivity}
+                            className="button-reset"
+                            style={{
+                                backgroundColor: isInteractive ? '#4cceac' : 'transparent',
+                                color: isInteractive ? 'black' : '#31d6aa',
+                                borderColor: isInteractive ? 'violet' : '#70d8bd',
+                            }}
+                        >
+                            {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
+                        </button>
+                        <button onClick={resetChartView} className="button-reset extra-margin">
+                            Reset Chart
+                        </button>
+                    </div>
+                </div>
             )}
             <div
                 className="chart-container"
@@ -414,6 +479,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                 >
                     <div style={{ fontSize: '15px' }}>Bitcoin</div>
                     <div style={{ fontSize: '20px' }}>${tooltipData.price?.toFixed(2)}</div>
+                    {activeIndicators.includes('fed-balance') && tooltipData.fedBalance && <div style={{ color: 'purple' }}>Fed Balance: ${tooltipData.fedBalance.toFixed(2)}T</div>}
                     <div>{tooltipData.date?.toString()}</div>
                 </div>
             )}

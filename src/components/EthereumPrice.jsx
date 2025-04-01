@@ -335,93 +335,89 @@ const EthereumPrice = ({ isDashboard = false }) => {
                         alignItems: 'center',
                         justifyContent: 'center',
                         gap: '20px',
-                        marginBottom: '10px',
-                        marginTop: '20px',
+                        marginBottom: '30px',
+                        marginTop: '50px',
                     }}
                 >
-                    {/* Scale Mode Select */}
-                    <FormControl sx={{ width: { xs: '100%', sm: '150px' } }}>
-                        <InputLabel sx={{ color: colors.grey[100] }}>Scale Mode</InputLabel>
-                        <Select
-                            value={scaleMode}
-                            onChange={(e) => setScaleMode(e.target.value)}
-                            label="Scale Mode"
-                            sx={{
-                                color: colors.grey[100],
-                                '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
-                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                            }}
-                        >
-                            <MenuItem value={0}>Linear</MenuItem>
-                            <MenuItem value={1}>Logarithmic</MenuItem>
-                        </Select>
-                    </FormControl>
-
-                    {/* Indicators Select (now includes Fed balance) */}
                     <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '300px' } }}>
-                        <InputLabel sx={{ color: colors.grey[100] }}>Indicators</InputLabel>
-                        <Select
-                            multiple
-                            value={activeIndicators}
-                            onChange={handleIndicatorChange}
-                            label="Indicators"
-                            renderValue={(selected) => (selected.length > 0 ? selected.map((key) => indicators[key].label).join(', ') : null)}
-                            sx={{
-                                color: colors.grey[100],
-                                '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
-                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                            }}
+                        <InputLabel
+                        id="indicators-label"
+                        shrink
+                        sx={{
+                            color: colors.grey[100],
+                            '&.Mui-focused': { color: colors.greenAccent[500] },
+                            top: 0,
+                            '&.MuiInputLabel-shrink': {
+                            transform: 'translate(14px, -9px) scale(0.75)',
+                            },
+                        }}
                         >
-                            {Object.entries(indicators).map(([key, { label }]) => (
-                                <MenuItem key={key} value={key}>
-                                    <Checkbox
-                                        checked={activeIndicators.includes(key)}
-                                        sx={{ color: colors.grey[100], '&.Mui-checked': { color: colors.greenAccent[500] } }}
-                                    />
-                                    <span>{label}</span>
-                                </MenuItem>
-                            ))}
+                        Indicators
+                        </InputLabel>
+                        <Select
+                        multiple
+                        value={activeIndicators}
+                        onChange={handleIndicatorChange}
+                        labelId="indicators-label"
+                        label="Indicators"
+                        displayEmpty
+                        renderValue={(selected) =>
+                            selected.length > 0
+                            ? selected.map((key) => indicators[key].label).join(', ')
+                            : 'Select Indicators'
+                        }
+                        sx={{
+                            color: colors.grey[100],
+                            backgroundColor: colors.primary[600],
+                            borderRadius: "8px",
+                            '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
+                            '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                            '& .MuiSelect-select': { py: 1.5, pl: 2 },
+                            '& .MuiSelect-select:empty': { color: colors.grey[500] },
+                        }}
+                        >
+                        {Object.entries(indicators).map(([key, { label }]) => (
+                            <MenuItem key={key} value={key}>
+                            <Checkbox
+                                checked={activeIndicators.includes(key)}
+                                sx={{ color: colors.grey[100], '&.Mui-checked': { color: colors.greenAccent[500] } }}
+                            />
+                            <span>{label}</span>
+                            </MenuItem>
+                        ))}
                         </Select>
                     </FormControl>
-
-                    {/* Interactivity and Reset Chart (Stacked for alignment) */}
-                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={0} alignItems="right">
-                        <FormControl sx={{ minWidth: '20px', width: { xs: '100%', sm: '100px' } }}>
-                            <FormControlLabel
-                                control={
-                                    <Checkbox
-                                        checked={isInteractive}
-                                        onChange={(e) => setInteractivity(e)} // Pass the event object
-                                        sx={{
-                                            color: colors.grey[300], // Unchecked color
-                                            '&.Mui-checked': { color: colors.greenAccent[500] }, // Checked color
-                                        }}
-                                    />
-                                }
-                                label="Zoom"
-                                sx={{
-                                    color: colors.grey[100], // Label color
-                                    '& .MuiFormControlLabel-label': { color: colors.grey[100] },
-                                }}
-                            />
-                        </FormControl>
-                        <FormControl>
-                            <Button
-                                onClick={resetChartView}
-                                variant="contained"
-                                sx={{
-                                    backgroundColor: colors.greenAccent[500],
-                                    color: colors.grey[900],
-                                    '&:hover': { backgroundColor: colors.greenAccent[100] },
-                                }}
-                            >
-                                Reset Chart
-                            </Button>
-                        </FormControl>
-                    </Stack>
                 </Box>
+                )}
+                {!isDashboard && (
+                <div className="chart-top-div">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                        <label className="switch">
+                            <input type="checkbox" checked={scaleMode === 1} onChange={toggleScaleMode} />
+                            <span className="slider round"></span>
+                        </label>
+                        <span style={{ color: colors.primary[100] }}>
+                            {scaleMode === 1 ? 'Logarithmic' : 'Linear'}
+                        </span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                        <button
+                            onClick={setInteractivity}
+                            className="button-reset"
+                            style={{
+                                backgroundColor: isInteractive ? '#4cceac' : 'transparent',
+                                color: isInteractive ? 'black' : '#31d6aa',
+                                borderColor: isInteractive ? 'violet' : '#70d8bd',
+                            }}
+                        >
+                            {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
+                        </button>
+                        <button onClick={resetChartView} className="button-reset extra-margin">
+                            Reset Chart
+                        </button>
+                    </div>
+                </div>
             )}
             <div
                 className="chart-container"

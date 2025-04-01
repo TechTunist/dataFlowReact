@@ -372,21 +372,39 @@ const AltcoinPrice = ({ isDashboard = false }) => {
                         alignItems: 'center',
                         justifyContent: 'center',
                         gap: '20px',
-                        marginBottom: '10px',
+                        marginBottom: '30px',
                         marginTop: '50px',
                     }}
                 >
                     <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '200px' } }}>
-                        <InputLabel sx={{ color: colors.grey[100] }}>Altcoin</InputLabel>
+                    <InputLabel
+                        id="altcoin-label"
+                        shrink
+                        sx={{
+                            color: colors.grey[100],
+                            '&.Mui-focused': { color: colors.greenAccent[500] },
+                            top: 0,
+                            '&.MuiInputLabel-shrink': {
+                            transform: 'translate(14px, -9px) scale(0.75)',
+                            },
+                        }}
+                        >
+                        Altcoin
+                        </InputLabel>
                         <Select
                             value={selectedCoin}
                             onChange={(e) => setSelectedCoin(e.target.value)}
                             label="Altcoin"
+                            labelId="altcoin-label"
                             sx={{
                                 color: colors.grey[100],
+                                backgroundColor: colors.primary[600],
+                                borderRadius: "8px",
                                 '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
                                 '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
                                 '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                                '& .MuiSelect-select': { py: 1.5, pl: 2 },
+                                '& .MuiSelect-select:empty': { color: colors.grey[500] },
                             }}
                         >
                             {altcoins.map((coin) => (
@@ -397,16 +415,34 @@ const AltcoinPrice = ({ isDashboard = false }) => {
                         </Select>
                     </FormControl>
                     <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '150px' } }}>
-                        <InputLabel sx={{ color: colors.grey[100] }}>Denominator</InputLabel>
+                    <InputLabel
+                        id="denominator-label"
+                        shrink
+                        sx={{
+                            color: colors.grey[100],
+                            '&.Mui-focused': { color: colors.greenAccent[500] },
+                            top: 0,
+                            '&.MuiInputLabel-shrink': {
+                            transform: 'translate(14px, -9px) scale(0.75)',
+                            },
+                        }}
+                        >
+                        Denominator
+                        </InputLabel>
                         <Select
                             value={denominator}
                             onChange={(e) => setDenominator(e.target.value)}
                             label="Denominator"
+                            labelId="indicators-label"
                             sx={{
                                 color: colors.grey[100],
+                                backgroundColor: colors.primary[600],
+                                borderRadius: "8px",
                                 '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
                                 '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
                                 '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                                '& .MuiSelect-select': { py: 1.5, pl: 2 },
+                                '& .MuiSelect-select:empty': { color: colors.grey[500] },
                             }}
                         >
                             <MenuItem value="USD">USD</MenuItem>
@@ -414,29 +450,52 @@ const AltcoinPrice = ({ isDashboard = false }) => {
                         </Select>
                     </FormControl>
                     <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '300px' } }}>
-                        <InputLabel sx={{ color: colors.grey[100] }}>Indicators</InputLabel>
-                        <Select
-                            multiple
-                            value={activeIndicators}
-                            onChange={handleIndicatorChange}
-                            label="Indicators"
-                            renderValue={(selected) => (selected.length > 0 ? selected.map((key) => indicators[key].label).join(', ') : null)}
-                            sx={{
-                                color: colors.grey[100],
-                                '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
-                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                            }}
+                        <InputLabel
+                        id="indicators-label"
+                        shrink
+                        sx={{
+                            color: colors.grey[100],
+                            '&.Mui-focused': { color: colors.greenAccent[500] },
+                            top: 0,
+                            '&.MuiInputLabel-shrink': {
+                            transform: 'translate(14px, -9px) scale(0.75)',
+                            },
+                        }}
                         >
-                            {Object.entries(indicators).map(([key, { label }]) => (
-                                <MenuItem key={key} value={key}>
-                                    <Checkbox
-                                        checked={activeIndicators.includes(key)}
-                                        sx={{ color: colors.grey[100], '&.Mui-checked': { color: colors.greenAccent[500] } }}
-                                    />
-                                    <span>{label}</span>
-                                </MenuItem>
-                            ))}
+                        Indicators
+                        </InputLabel>
+                        <Select
+                        multiple
+                        value={activeIndicators}
+                        onChange={handleIndicatorChange}
+                        labelId="indicators-label"
+                        label="Indicators"
+                        displayEmpty
+                        renderValue={(selected) =>
+                            selected.length > 0
+                            ? selected.map((key) => indicators[key].label).join(', ')
+                            : 'Select Indicators'
+                        }
+                        sx={{
+                            color: colors.grey[100],
+                            backgroundColor: colors.primary[600],
+                            borderRadius: "8px",
+                            '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
+                            '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                            '& .MuiSelect-select': { py: 1.5, pl: 2 },
+                            '& .MuiSelect-select:empty': { color: colors.grey[500] },
+                        }}
+                        >
+                        {Object.entries(indicators).map(([key, { label }]) => (
+                            <MenuItem key={key} value={key}>
+                            <Checkbox
+                                checked={activeIndicators.includes(key)}
+                                sx={{ color: colors.grey[100], '&.Mui-checked': { color: colors.greenAccent[500] } }}
+                            />
+                            <span>{label}</span>
+                            </MenuItem>
+                        ))}
                         </Select>
                     </FormControl>
                 </Box>

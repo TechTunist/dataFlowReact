@@ -250,14 +250,14 @@ const AltcoinPrice = ({ isDashboard = false }) => {
         };
     }, [chartData, theme.palette.mode, isDashboard]);
 
-    // useEffect(() => {
-    //     if (chartRef.current) {
-    //         chartRef.current.applyOptions({
-    //             handleScroll: isInteractive,
-    //             handleScale: isInteractive,
-    //         });
-    //     }
-    // }, [isInteractive]);
+    useEffect(() => {
+        if (chartRef.current) {
+            chartRef.current.applyOptions({
+                handleScroll: isInteractive,
+                handleScale: isInteractive,
+            });
+        }
+    }, [isInteractive]);
 
     return (
         <div style={{ height: '100%' }}>
@@ -274,17 +274,34 @@ const AltcoinPrice = ({ isDashboard = false }) => {
                 }}
             >
                 <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '200px' } }}>
-                    <InputLabel sx={{ color: colors.grey[100] }}>Altcoin</InputLabel>
+                    <InputLabel
+                        id="altcoin-label"
+                        shrink
+                        sx={{
+                            color: colors.grey[100],
+                            '&.Mui-focused': { color: colors.greenAccent[500] },
+                            top: 0,
+                            '&.MuiInputLabel-shrink': {
+                            transform: 'translate(14px, -9px) scale(0.75)',
+                            },
+                        }}
+                        >
+                        Altcoin
+                    </InputLabel>
                     <Select
                         value={selectedCoin}
                         onChange={(e) => setSelectedCoin(e.target.value)}
                         label="Altcoin"
+                        labelId='altcoin-label'
                         sx={{
                             color: colors.grey[100],
+                            backgroundColor: colors.primary[600],
+                            borderRadius: "8px",
                             '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
                             '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
                             '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                            '& .MuiSelect-select:focus': { outline: 'none !important', boxShadow: 'none !important' },
+                            '& .MuiSelect-select': { py: 1.5, pl: 2 },
+                            '& .MuiSelect-select:empty': { color: colors.grey[500] },
                         }}
                     >
                         {altcoins.map((coin) => (
@@ -295,7 +312,48 @@ const AltcoinPrice = ({ isDashboard = false }) => {
                     </Select>
                 </FormControl>
             </Box>
-        )}
+            )}
+            {!isDashboard && (
+                <div className='chart-top-div'>
+                    {!isDashboard && (
+                        <div className='span-container'>
+                            <span style={{ marginRight: '20px', display: 'inline-block' }}>
+                                <span style={{ backgroundColor: 'gray', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
+                                Altcoin Price
+                            </span>
+                            <span style={{ display: 'inline-block' }}>
+                                <span style={{ backgroundColor: '#ff0062', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
+                                Risk Metric
+                            </span>
+                        </div>
+                    )}
+                    
+                    <div style={{ display: 'flex', justifyContent: 'flex-end'}}>
+                        {
+                            !isDashboard && (
+                                <button
+                                    onClick={setInteractivity}
+                                    className="button-reset"
+                                    style={{
+                                        backgroundColor: isInteractive ? '#4cceac' : 'transparent',
+                                        color: isInteractive ? 'black' : '#31d6aa',
+                                        borderColor: isInteractive ? 'violet' : '#70d8bd'
+                                    }}>
+                                    {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
+                                </button>
+                            )   
+                        }
+                        {
+                            !isDashboard && (
+                                <button onClick={resetChartView} className="button-reset extra-margin">
+                                    Reset Chart
+                                </button>
+                            )   
+                        }
+                    </div>
+                
+                </div>
+            )}
             <div className="chart-container" style={{
                 position: 'relative',
                 height: 'calc(100% - 40px)',
