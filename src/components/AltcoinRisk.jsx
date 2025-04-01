@@ -5,8 +5,7 @@ import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
-import { Select, MenuItem, FormControl, InputLabel, Box, Checkbox } from '@mui/material';
-import pako from 'pako';
+import { Select, MenuItem, FormControl, InputLabel, Box } from '@mui/material';
 
 const AltcoinRisk = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
@@ -53,11 +52,11 @@ const AltcoinRisk = ({ isDashboard = false }) => {
             .filter(key => key.endsWith('RiskData'))
             .map(key => {
                 try {
-                    const decompressed = decompressData(localStorage.getItem(key));
-                    const parsed = JSON.parse(decompressed || localStorage.getItem(key));
+                    const parsed = JSON.parse(localStorage.getItem(key));
+                    // Check if the data has a timestamp (new format) or use 0 for old format
                     return { key, timestamp: parsed.timestamp || 0 };
                 } catch {
-                    return { key, timestamp: 0 }; // Fallback for invalid data
+                    return { key, timestamp: 0 };
                 }
             })
             .sort((a, b) => a.timestamp - b.timestamp);
@@ -67,23 +66,6 @@ const AltcoinRisk = ({ isDashboard = false }) => {
             if (currentSize < MAX_STORAGE_SIZE * 0.8) break;
             localStorage.removeItem(key);
             currentSize = getLocalStorageSize();
-        }
-    };
-
-    const compressData = (data) => {
-        const jsonString = JSON.stringify({ ...data, version: 'compressed' }); // Add version flag
-        const compressed = pako.gzip(jsonString);
-        return btoa(String.fromCharCode(...compressed));
-    };
-
-    const decompressData = (compressedString) => {
-        if (!compressedString) return null;
-        try {
-            const compressed = Uint8Array.from(atob(compressedString), c => c.charCodeAt(0));
-            return pako.ungzip(compressed, { to: 'string' });
-        } catch (error) {
-            console.error('Decompression failed:', error);
-            return compressedString; // Return raw string if it’s not compressed
         }
     };
 
@@ -169,7 +151,8 @@ const AltcoinRisk = ({ isDashboard = false }) => {
                     pruneOldData();
                 }
 
-                localStorage.setItem(cacheKey, compressData(payload));
+                // Store as plain JSON without compression
+                localStorage.setItem(cacheKey, JSON.stringify(payload));
                 setChartData(withRiskMetric);
             } catch (error) {
                 console.error('Error fetching data:', error);
@@ -178,36 +161,22 @@ const AltcoinRisk = ({ isDashboard = false }) => {
 
         if (cachedData) {
             try {
-                const decompressed = decompressData(cachedData);
-                const parsedData = JSON.parse(decompressed);
-                if (parsedData.version === 'compressed') {
-                    // New compressed data
-                    if (parsedData.data.length > 0) {
-                        const lastCachedDate = new Date(parsedData.data[parsedData.data.length - 1].time);
-                        if (lastCachedDate.setHours(0, 0, 0, 0) === today.setHours(0, 0, 0, 0)) {
-                            setChartData(parsedData.data);
-                        } else {
-                            fetchAltData();
-                        }
+                const parsedData = JSON.parse(cachedData);
+                // Check if the data has the new structure (with timestamp) or is old format (array)
+                const dataToUse = parsedData.data || parsedData;
+                if (dataToUse.length > 0) {
+                    const lastCachedDate = new Date(dataToUse[dataToUse.length - 1].time);
+                    if (lastCachedDate.setHours(0, 0, 0, 0) === today.setHours(0, 0, 0, 0)) {
+                        setChartData(dataToUse);
                     } else {
                         fetchAltData();
                     }
                 } else {
-                    // Old uncompressed data (assumed to be an array)
-                    if (parsedData.length > 0) {
-                        const lastCachedDate = new Date(parsedData[parsedData.length - 1].time);
-                        if (lastCachedDate.setHours(0, 0, 0, 0) === today.setHours(0, 0, 0, 0)) {
-                            setChartData(parsedData);
-                        } else {
-                            fetchAltData();
-                        }
-                    } else {
-                        fetchAltData();
-                    }
+                    fetchAltData();
                 }
             } catch (error) {
                 console.error('Error processing cached data:', error);
-                fetchAltData(); // Fetch fresh data if anything goes wrong
+                fetchAltData();
             }
         } else {
             fetchAltData();

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '@mui/material';
 import { tokens } from "../theme";
-import RefreshIcon from '@mui/icons-material/Refresh';
 import '../styling/LastUpdated.css';
 import pako from 'pako';
 
@@ -12,14 +11,29 @@ const LastUpdated = ({ storageKey }) => {
     const [refresh, setRefresh] = useState(0);
     const [isClicked, setIsClicked] = useState(false);
 
-    // Decompression function
-    const decompressData = (compressedString) => {
+    // Helper to check if a string is base64
+    const isBase64 = (str) => {
+        if (!str || typeof str !== 'string') return false;
         try {
-            const compressed = Uint8Array.from(atob(compressedString), c => c.charCodeAt(0));
-            return pako.ungzip(compressed, { to: 'string' });
-        } catch (error) {
-            return null; // Return null if decompression fails
+            return /^[A-Za-z0-9+/=]+$/.test(str) && atob(str) && true;
+        } catch {
+            return false;
         }
+    };
+
+    // Decompression function (only used if data is compressed)
+    const decompressData = (compressedString) => {
+        if (!compressedString) return null;
+        if (isBase64(compressedString)) {
+            try {
+                const compressed = Uint8Array.from(atob(compressedString), c => c.charCodeAt(0));
+                return pako.ungzip(compressed, { to: 'string' });
+            } catch (error) {
+                console.error('Decompression failed:', error);
+                return null;
+            }
+        }
+        return compressedString; // Return as-is if not base64
     };
 
     // Process data (compressed or uncompressed)
@@ -33,28 +47,22 @@ const LastUpdated = ({ storageKey }) => {
         const decompressed = decompressData(dataJson);
 
         if (decompressed !== null) {
-            // Data is compressed
-            parsedData = JSON.parse(decompressed);
-            if (parsedData.version === 'compressed' && parsedData.data?.length) {
-                const lastDataPoint = parsedData.data[parsedData.data.length - 1];
-                setLastUpdated(new Date(lastDataPoint.time).toLocaleDateString());
-            } else {
-                setLastUpdated('');
-            }
-        } else {
-            // Data is uncompressed (old format)
             try {
-                parsedData = JSON.parse(dataJson);
-                if (Array.isArray(parsedData) && parsedData.length) {
-                    const lastDataPoint = parsedData[parsedData.length - 1];
+                parsedData = JSON.parse(decompressed);
+                // Handle both compressed ({ version: 'compressed', data: [...] }) and uncompressed formats
+                const dataArray = parsedData.version === 'compressed' ? parsedData.data : (parsedData.data || parsedData);
+                if (dataArray.length) {
+                    const lastDataPoint = dataArray[dataArray.length - 1];
                     setLastUpdated(new Date(lastDataPoint.time).toLocaleDateString());
                 } else {
                     setLastUpdated('');
                 }
             } catch (error) {
-                console.error('Error parsing uncompressed data:', error);
+                console.error('Error parsing storage data:', error);
                 setLastUpdated('');
             }
+        } else {
+            setLastUpdated('');
         }
     };
 
@@ -95,22 +103,11 @@ const LastUpdated = ({ storageKey }) => {
                 style={{
                     color: colors.greenAccent[500],
                     marginBottom: '0',
-                    marginRight: '10px', // Space between text and icon
+                    marginRight: '10px', // Space between text and icon (if icon were present)
                 }}
             >
                 Last Updated: {lastUpdated || '(click to refresh)'}
             </p>
-            {/* <RefreshIcon
-                    onClick={refreshComponent}
-                    className={isClicked ? 'scale' : ''}
-                    style={{
-                        marginLeft: '10px',
-                        color: colors.greenAccent[500],
-                        cursor: 'pointer',
-                        transition: 'transform 0.3s',
-                        transform: isClicked ? 'scale(1.2)' : 'scale(1)'
-                    }}
-                /> */}
         </div>
     );
 };
