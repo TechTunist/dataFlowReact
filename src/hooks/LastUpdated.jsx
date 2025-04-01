@@ -8,7 +8,7 @@ import pako from 'pako';
 const LastUpdated = ({ storageKey }) => {
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
-    const [lastUpdated, setLastUpdated] = useState('');
+    const [lastUpdated, setLastUpdated] = useState(''); // Empty string by default
     const [refresh, setRefresh] = useState(0);
     const [isClicked, setIsClicked] = useState(false);
 
@@ -25,7 +25,7 @@ const LastUpdated = ({ storageKey }) => {
     // Process data (compressed or uncompressed)
     const processStorageData = (dataJson) => {
         if (!dataJson) {
-            setLastUpdated('');
+            setLastUpdated(''); // No data, set empty string
             return;
         }
 
@@ -74,29 +74,43 @@ const LastUpdated = ({ storageKey }) => {
     }, [storageKey]);
 
     const refreshComponent = () => {
-        setRefresh(prev => prev + 1);
+        setRefresh(prev => prev + 1); // Trigger useEffect to re-check localStorage
         setIsClicked(true);
         setTimeout(() => setIsClicked(false), 300);
     };
 
     return (
-        <div>
-            {lastUpdated && (
-                <p style={{ color: colors.greenAccent[500], marginBottom: '0', display: 'inline-flex', alignItems: 'center' }}>
-                    Last Updated: {lastUpdated}
-                    <RefreshIcon
-                        onClick={refreshComponent}
-                        className={isClicked ? 'scale' : ''}
-                        style={{
-                            marginLeft: '10px',
-                            color: colors.greenAccent[500],
-                            cursor: 'pointer',
-                            transition: 'transform 0.3s',
-                            transform: isClicked ? 'scale(1.2)' : 'scale(1)'
-                        }}
-                    />
-                </p>
-            )}
+        <div
+            onClick={refreshComponent}
+            className={isClicked ? 'scale' : ''}
+            style={{
+                cursor: 'pointer', // Indicate the whole area is clickable
+                display: 'inline-flex',
+                alignItems: 'center',
+                transition: 'transform 0.3s',
+                transform: isClicked ? 'scale(1.05)' : 'scale(1)'
+            }}
+        >
+            <p
+                style={{
+                    color: colors.greenAccent[500],
+                    marginBottom: '0',
+                    marginRight: '10px', // Space between text and icon
+                }}
+            >
+                Last Updated: {lastUpdated || '(click to refresh)'}
+            </p>
+            {/* <RefreshIcon
+                    onClick={refreshComponent}
+                    className={isClicked ? 'scale' : ''}
+                    style={{
+                        marginLeft: '10px',
+                        color: colors.greenAccent[500],
+                        cursor: 'pointer',
+                        transition: 'transform 0.3s',
+                        transform: isClicked ? 'scale(1.2)' : 'scale(1)'
+                    }}
+                /> */}
         </div>
     );
 };
