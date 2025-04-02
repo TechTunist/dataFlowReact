@@ -150,22 +150,29 @@ const AltcoinPrice = ({ isDashboard = false }) => {
     useEffect(() => {
         const cacheKeyFed = 'fedBalanceData';
         const cachedFedData = localStorage.getItem(cacheKeyFed);
+        const today = new Date();
 
         if (cachedFedData) {
             const parsedFedData = JSON.parse(cachedFedData);
-            setFedBalanceData(parsedFedData);
+            const lastCachedDateFed = new Date(parsedFedData[parsedFedData.length - 1].observation_date);
+
+            // Compare dates (ignoring time)
+            if (lastCachedDateFed.setHours(0, 0, 0, 0) === today.setHours(0, 0, 0, 0)) {
+                setFedBalanceData(parsedFedData);
+            } else {
+                fetchFedBalanceData();
+            }
         } else {
             fetchFedBalanceData();
         }
 
         function fetchFedBalanceData() {
-            // fetch('https://tunist.pythonanywhere.com/api/fed-balance/')
             fetch('https://vercel-dataflow.vercel.app/api/fed-balance/')
                 .then(response => response.json())
                 .then(data => {
                     const formattedData = data.map(item => ({
                         time: item.observation_date, // Use observation_date as time
-                        value: parseFloat(item.value) / 1000 // Convert from millions to trillions for scaling
+                        value: parseFloat(item.value) / 1000000 // Convert from millions to trillions for scaling
                     }));
                     setFedBalanceData(formattedData);
                     localStorage.setItem(cacheKeyFed, JSON.stringify(formattedData));

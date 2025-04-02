@@ -25,6 +25,8 @@ body,
   overflow-y: auto; /* Enable vertical scrolling if necessary */
   display: flex;
   top: 0;
+  position: fixed;
+   
 }
 
 

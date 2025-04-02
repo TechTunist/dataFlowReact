@@ -66,7 +66,17 @@ function App() {
               </div>
             )}
 
-            <main className="content" style={{ flex: 1 }}>
+            <main
+              className="content"
+              style={{
+                flex: 1,
+                marginLeft: isMobile ? 0 : (isSidebar ? "270px" : "0"), // Offset for sidebar width
+                transition: "margin-left 0.3s ease", // Smooth transition
+                width: isMobile ? "100%" : (isSidebar ? "calc(100% - 270px)" : "100%"), // Adjust width
+              }}
+            >
+
+            {/* <main className="content" style={{ flex: 1 }}> */}
               {!isSplashPage && <div style={{ height: isMobile ? "65px" : "85px" }}></div>}
               <Routes>
                 {/* Routes that don't involve charts - always render */}
