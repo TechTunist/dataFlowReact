@@ -25,7 +25,7 @@ body,
   overflow-y: auto; /* Enable vertical scrolling if necessary */
   display: flex;
   top: 0;
-  /* position: sticky; */
+  /* position: fixed; */
    
 }
 
@@ -40,10 +40,6 @@ body,
   .content {
     flex-grow: 1;
     width: 100%;
-  }
-
-  .sidebar {
-    position: fixed;
   }
 }
 
