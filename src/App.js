@@ -59,9 +59,17 @@ function App() {
             />
           )}
 
-          <div style={{ display: "flex", flex: 1 }}>
+          <div style={{ display: "flex", flex: 1}}>
             {!isSplashPage && (
-              <div className="sidebar">
+              <div
+              className="sidebar"
+              style={{
+                position: isMobile ? "fixed" : "sticky",
+                top: 0,
+                zIndex: 1100,
+                width: isMobile ? (isSidebar ? "270px" : "0") : "270px",
+              }}
+            >
                 <Sidebar isSidebar={isSidebar} setIsSidebar={setIsSidebar} />
               </div>
             )}
