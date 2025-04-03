@@ -21,6 +21,7 @@ import FearAndGreedChart from "../../components/FearAndGreedChart";
 import UsInflationChart from "../../components/UsInflation";
 import UsUnemploymentChart from "../../components/UsUnemployment";
 import UsInterestChart from "../../components/UsInterest";
+import UsInitialClaimsChart from "../../components/UsInitialClaims";
 import UsCombinedMacroChart from "../../components/UsCombinedMacro";
 
 const Dashboard = ({ isMobile, isSidebar }) => {
@@ -616,6 +617,36 @@ const Dashboard = ({ isMobile, isSidebar }) => {
             </CardContent>
           </Card>
         </Grid>
+
+        {/* US initial claims chart */}
+        <Grid item xs={12} lg={6}>
+          <Card style={{ backgroundColor: colors.primary[500] }}>
+            <CardContent>
+              <Typography
+                variant="h4"
+                gutterBottom
+                component={Link}
+                to="/us-initial-claims"
+                style={{ textDecoration: "none", color: colors.grey[100] }}
+                onMouseOver={({ target }) => (target.style.color = colors.greenAccent[500])}
+                onMouseOut={({ target }) => (target.style.color = colors.grey[100])}
+              >
+                US Initial Claims
+              </Typography>
+              {chartsVisible ? (
+                <Box height="400px" m="10px 0 0 0">
+                  <UsInitialClaimsChart isDashboard={true} />
+                </Box>
+              ) : (
+                <ChartPlaceholder />
+              )}
+              <Typography variant="body3" color="textSecondary" className="dashboard-info">
+                Jobless claims in the US.
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
       </Grid>
     </Box>
   );

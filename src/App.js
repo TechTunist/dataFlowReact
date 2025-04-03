@@ -25,6 +25,7 @@ import FearAndGreedChart from "./components/FearAndGreedChart";
 import UsInflationChart from "./components/UsInflation";
 import UsUnemploymentChart from "./components/UsUnemployment";
 import UsInterestChart from "./components/UsInterest";
+import UsInitialClaimsChart from "./components/UsInitialClaims";
 import UsCombinedMacroChart from "./components/UsCombinedMacro";
 import SplashPage from "./scenes/splash";
 import About from "./scenes/About";
@@ -119,6 +120,7 @@ function App() {
                     <Route path="/us-unemployment" element={<BasicChart ChartComponent={UsUnemploymentChart} />} />
                     <Route path="/us-interest" element={<BasicChart ChartComponent={UsInterestChart} />} />
                     <Route path="/us-combined-macro" element={<BasicChart ChartComponent={UsCombinedMacroChart} />} />
+                    <Route path="/us-initial-claims" element={<BasicChart ChartComponent={UsInitialClaimsChart} />} />
 
                     {/* Optional: catch-all for unmatched routes */}
                     <Route path="*" element={<div>404 - Page Not Found</div>} />
