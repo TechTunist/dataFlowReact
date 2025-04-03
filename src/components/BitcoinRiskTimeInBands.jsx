@@ -7,14 +7,26 @@ import { useTheme } from "@mui/material";
 import '../styling/bitcoinChart.css';
 import LastUpdated from '../hooks/LastUpdated';
 import BitcoinFees from './BitcoinTransactionFees';
+import useIsMobile from '../hooks/useIsMobile';
 
 const BitcoinRiskBandDuration = ({ isDashboard = false }) => {
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
     const [riskBandDurations, setRiskBandDurations] = useState([]);
-
+    const isMobile = useIsMobile();
+    const [layout, setLayout] = useState({});
+    
     // State to store current risk level
     const [currentRiskLevel, setCurrentRiskLevel] = useState(null);
+
+    const resetChartView = () => {
+        setLayout({
+            ...layout,
+            // Resetting zoom and pan by setting the 'autorange' to true
+            xaxis: { ...layout.xaxis, autorange: true },
+            yaxis: { ...layout.yaxis, autorange: true }
+        });
+    };
 
     useEffect(() => {
         const cacheKey = 'btcRiskData';
@@ -107,6 +119,25 @@ const BitcoinRiskBandDuration = ({ isDashboard = false }) => {
 
     return (
         <div style={{ height: '100%', width: '100%' }}>
+            {!isDashboard && (
+                <div className='chart-top-div'>
+                    {/* Interactivity toggles for each dataset */}
+                    <div className="risk-filter">
+                    </div>
+                    <div>
+                        {/* placeholder for styling */}
+                    </div>
+                    <div>
+                        {
+                            !isDashboard && (
+                                <button onClick={resetChartView} className="button-reset">
+                                    Reset Chart
+                                </button>
+                            )   
+                        }
+                    </div>
+                </div>
+            )}
             <Plot
                 data={[
                     {
@@ -143,7 +174,7 @@ const BitcoinRiskBandDuration = ({ isDashboard = false }) => {
                     plot_bgcolor: colors.primary[700],
                     paper_bgcolor: colors.primary[700],
                     font: { color: colors.primary[100] },
-                    xaxis: { title: isDashboard ? '' : 'Risk Bands' },
+                    xaxis: { title: isDashboard || isMobile ? '' : 'Risk Bands' },
                     yaxis: { title: 'Percentage of Time (%)' },
                     showlegend: false,
                 }}

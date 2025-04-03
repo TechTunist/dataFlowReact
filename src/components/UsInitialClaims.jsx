@@ -10,7 +10,7 @@ import BitcoinFees from './BitcoinTransactionFees';
 const UsInitialClaimsChart = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
     const [chartData, setChartData] = useState([]);
-    const [scaleMode, setScaleMode] = useState(0); // 0 = Linear, 1 = Logarithmic
+    const [scaleMode, setScaleMode] = useState(1); // 0 = Linear, 1 = Logarithmic
     const chartRef = useRef(null);
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
@@ -128,7 +128,7 @@ const UsInitialClaimsChart = ({ isDashboard = false }) => {
         const lightThemeColors = {
             topColor: 'rgba(255, 165, 0, 0.56)', // Orange for light mode
             bottomColor: 'rgba(255, 165, 0, 0.2)',
-            lineColor: 'rgba(255, 140 Iris, 0, 0.8)',
+            lineColor: 'rgba(255, 140, 0, 0.8)',
         };
 
         const darkThemeColors = {
@@ -237,7 +237,7 @@ const UsInitialClaimsChart = ({ isDashboard = false }) => {
 
             <div className='under-chart'>
                 {!isDashboard && (
-                    <LastUpdated storageKey="inflationData" />
+                    <LastUpdated storageKey="initialClaimsData" />
                 )}
                 {!isDashboard && (
                     <BitcoinFees />

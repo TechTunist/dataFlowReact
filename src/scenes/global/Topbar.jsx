@@ -46,7 +46,7 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
       case "/bitcoin-dominance":
         return { title: "Bitcoin Dominance", subtitle: "Bitcoin Dominance Chart" };
       case "/total":
-        return { title: "Total Crypto Market Cap", subtitle: "All crypto assets" };
+        return { title: "Total Crypto Market Cap", subtitle: isMobile ? "All Crypto Assets" : "Combined marketcap of the top 125 crypto assets" };
       case "/risk":
         return { title: "Bitcoin", subtitle: "Risk Metric" };
       case "/ethereum":
@@ -83,6 +83,8 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
         return { title: "US Interest Rate", subtitle: "Fed Funds Rate" };
       case "/us-combined-macro":
         return { title: "US Macro Information", subtitle: "Compare US Macro Data" };
+      case "/us-initial-claims":
+        return { title: "US Initial Claims", subtitle: "Jobless Claims" };
       default:
         return { title: "CryptoLogical", subtitle: "" };
     }

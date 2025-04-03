@@ -71,6 +71,7 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
     { title: "Bitcoin Time in Risk Bands", to: "/risk-bands", category: "Bitcoin", icon: <TimerIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
     { title: "Altcoin Chart", to: "/altcoin-price", category: "Altcoins", icon: <ShowChartIcon />, categoryIcon: <WarningOutlinedIcon /> },
     { title: "Altcoin Risk Metric", to: "/altcoin-risk", category: "Altcoins", icon: <AssessmentIcon />, categoryIcon: <WarningOutlinedIcon /> },
+    { title: "US Initial Claims", to: "/us-initial-claims", category: "MacroEconomics", icon: <SentimentVeryDissatisfiedIcon />, categoryIcon: <CategoryIcon /> },
     { title: "Market Cycles", to: "/market-cycles", category: "Bitcoin", icon: <RepeatIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
     { title: "Fear and Greed Chart", to: "/fear-and-greed-chart", category: "Indicators", icon: <BalanceIcon />, categoryIcon: <CategoryIcon /> },
     { title: "US Inflation Chart", to: "/us-inflation", category: "MacroEconomics", icon: <AddShoppingCartIcon />, categoryIcon: <CategoryIcon /> },

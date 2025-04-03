@@ -201,14 +201,28 @@ const EthereumPrice = ({ isDashboard = false }) => {
                 param.point.y < 0 || param.point.y > chartContainerRef.current.clientHeight) {
                 setTooltipData(null);
             } else {
-                const dateStr = param.time;
+                const dateStr = param.time; // e.g., 'YYYY-MM-DD'
                 const priceData = param.seriesData.get(priceSeriesRef.current);
-                const fedData = param.seriesData.get(fedBalanceSeriesRef.current); // Use the ref here
-                
+        
+                // Get all Fed balance data points from the series
+                const fedSeriesData = fedBalanceSeriesRef.current.data();
+                const currentTime = new Date(param.time).getTime(); // Convert to timestamp for comparison
+        
+                // Find the most recent Fed balance data point before or at the current time
+                const nearestFedData = fedSeriesData.reduce((prev, curr) => {
+                    const currTime = new Date(curr.time).getTime();
+                    if (currTime <= currentTime && (prev === null || currTime > new Date(prev.time).getTime())) {
+                        return curr;
+                    }
+                    return prev;
+                }, null);
+        
+                const fedBalanceValue = nearestFedData ? nearestFedData.value : null;
+        
                 setTooltipData({
                     date: dateStr,
                     price: priceData?.value,
-                    fedBalance: fedData?.value,
+                    fedBalance: fedBalanceValue,
                     x: param.point.x,
                     y: param.point.y,
                 });
