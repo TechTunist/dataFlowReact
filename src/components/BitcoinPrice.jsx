@@ -12,9 +12,11 @@ const BitcoinPrice = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
     const chartRef = useRef(null);
     const priceSeriesRef = useRef(null);
-    const smaSeriesRefs = useRef({}).current;
+    const smaSeriesRefs = useRef({}).current; // Store SMA series
     const [fedBalanceData, setFedBalanceData] = useState([]); // State for Fed balance data
     const fedBalanceSeriesRef = useRef(null); // Ref for Fed balance series
+    const [mvrvData, setMvrvData] = useState([]); // New state for MVRV data
+    const mvrvSeriesRef = useRef(null); // Ref for MVRV series
     const [chartData, setChartData] = useState([]);
     const [scaleMode, setScaleMode] = useState(1); // 1 for logarithmic, 0 for linear
     const [tooltipData, setTooltipData] = useState(null);
@@ -30,7 +32,8 @@ const BitcoinPrice = ({ isDashboard = false }) => {
         '50w-sma': { period: 50 * 7, color: 'magenta', label: '50 Week SMA' },
         '100w-sma': { period: 100 * 7, color: 'white', label: '100 Week SMA' },
         '200w-sma': { period: 200 * 7, color: 'yellow', label: '200 Week SMA' },
-        'fed-balance': { color: 'purple', label: 'Fed Balance (Trillions)' }, // New Fed balance indicator
+        'fed-balance': { color: 'purple', label: 'Fed Balance (Trillions)' },
+        'mvrv': { color: 'orange', label: 'MVRV Ratio' }, // New MVRV indicator
     };
 
     const setInteractivity = () => setIsInteractive(!isInteractive);
@@ -56,7 +59,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
         setActiveIndicators(event.target.value);
     };
 
-    // Fetch chart data
+    // Fetch Bitcoin price data
     useEffect(() => {
         const cacheKeyBtc = 'btcData';
         const cachedDataBtc = localStorage.getItem(cacheKeyBtc);
@@ -86,44 +89,77 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                     setChartData(formattedData);
                     localStorage.setItem(cacheKeyBtc, JSON.stringify(formattedData));
                 })
-                .catch(error => console.error('Error fetching data: ', error));
+                .catch(error => console.error('Error fetching Bitcoin price data: ', error));
         }
     }, []);
 
     // Fetch Federal Reserve balance data
-        useEffect(() => {
-            const cacheKeyFed = 'fedBalanceData';
-            const cachedFedData = localStorage.getItem(cacheKeyFed);
-            const today = new Date();
-    
-            if (cachedFedData) {
-                const parsedFedData = JSON.parse(cachedFedData);
-                const lastCachedDateFed = new Date(parsedFedData[parsedFedData.length - 1].observation_date);
-    
-                // Compare dates (ignoring time)
-                if (lastCachedDateFed.setHours(0, 0, 0, 0) === today.setHours(0, 0, 0, 0)) {
-                    setFedBalanceData(parsedFedData);
-                } else {
-                    fetchFedBalanceData();
-                }
+    useEffect(() => {
+        const cacheKeyFed = 'fedBalanceData';
+        const cachedFedData = localStorage.getItem(cacheKeyFed);
+        const today = new Date();
+
+        if (cachedFedData) {
+            const parsedFedData = JSON.parse(cachedFedData);
+            const lastCachedDateFed = new Date(parsedFedData[parsedFedData.length - 1].observation_date);
+
+            if (lastCachedDateFed.setHours(0, 0, 0, 0) === today.setHours(0, 0, 0, 0)) {
+                setFedBalanceData(parsedFedData);
             } else {
                 fetchFedBalanceData();
             }
-    
-            function fetchFedBalanceData() {
-                fetch('https://vercel-dataflow.vercel.app/api/fed-balance/')
-                    .then(response => response.json())
-                    .then(data => {
-                        const formattedData = data.map(item => ({
-                            time: item.observation_date, // Use observation_date as time
-                            value: parseFloat(item.value) / 1000000 // Convert from millions to trillions for scaling
-                        }));
-                        setFedBalanceData(formattedData);
-                        localStorage.setItem(cacheKeyFed, JSON.stringify(formattedData));
-                    })
-                    .catch(error => console.error('Error fetching Federal Reserve balance data: ', error));
+        } else {
+            fetchFedBalanceData();
+        }
+
+        function fetchFedBalanceData() {
+            fetch('https://vercel-dataflow.vercel.app/api/fed-balance/')
+                .then(response => response.json())
+                .then(data => {
+                    const formattedData = data.map(item => ({
+                        time: item.observation_date,
+                        value: parseFloat(item.value) / 1000000 // Convert from millions to trillions
+                    }));
+                    setFedBalanceData(formattedData);
+                    localStorage.setItem(cacheKeyFed, JSON.stringify(formattedData));
+                })
+                .catch(error => console.error('Error fetching Federal Reserve balance data: ', error));
+        }
+    }, []);
+
+    // Fetch MVRV data
+    useEffect(() => {
+        const cacheKeyMvrv = 'mvrvData';
+        const cachedMvrvData = localStorage.getItem(cacheKeyMvrv);
+        const today = new Date();
+
+        if (cachedMvrvData) {
+            const parsedMvrvData = JSON.parse(cachedMvrvData);
+            const lastCachedDateMvrv = new Date(parsedMvrvData[parsedMvrvData.length - 1].time);
+
+            if (lastCachedDateMvrv.setHours(0, 0, 0, 0) === today.setHours(0, 0, 0, 0)) {
+                setMvrvData(parsedMvrvData);
+            } else {
+                fetchMvrvData();
             }
-        }, []);
+        } else {
+            fetchMvrvData();
+        }
+
+        function fetchMvrvData() {
+            fetch('https://vercel-dataflow.vercel.app/api/mvrv/')
+                .then(response => response.json())
+                .then(data => {
+                    const formattedData = data.map(item => ({
+                        time: item.time.split('T')[0], // Convert "2010-07-31T00:00:00Z" to "2010-07-31"
+                        value: parseFloat(item.cap_mvrv_cur)
+                    }));
+                    setMvrvData(formattedData);
+                    localStorage.setItem(cacheKeyMvrv, JSON.stringify(formattedData));
+                })
+                .catch(error => console.error('Error fetching MVRV data: ', error));
+        }
+    }, []);
 
     // Create chart once on mount
     useEffect(() => {
@@ -138,6 +174,16 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                 scaleMargins: { top: 0.05, bottom: 0.05 },
                 width: 50,
             },
+            // Add a second right price scale for MVRV
+            additionalPriceScales: {
+                'mvrv-scale': {
+                    mode: 0, // Linear scale for MVRV
+                    borderVisible: false,
+                    scaleMargins: { top: 0.05, bottom: 0.05 },
+                    position: 'right',
+                    width: 50,
+                }
+            }
         });
 
         const priceSeries = chart.addAreaSeries({
@@ -159,15 +205,25 @@ const BitcoinPrice = ({ isDashboard = false }) => {
         });
         priceSeriesRef.current = priceSeries;
 
-        // Add Federal Reserve balance series (initially hidden) on the left price scale
+        // Add Federal Reserve balance series (on the left price scale)
         const fedBalanceSeries = chart.addLineSeries({
-            priceScaleId: 'left', // Fed balance on the left
-            color: indicators['fed-balance'].color, // Use color from indicators
+            priceScaleId: 'left',
+            color: indicators['fed-balance'].color,
             lineWidth: 2,
             priceLineVisible: false,
-            visible: activeIndicators.includes('fed-balance'), // Controlled by indicators selection
+            visible: activeIndicators.includes('fed-balance'),
         });
-        fedBalanceSeriesRef.current = fedBalanceSeries; // Store the series in the ref
+        fedBalanceSeriesRef.current = fedBalanceSeries;
+
+        // Add MVRV series (on the new right price scale)
+        const mvrvSeries = chart.addLineSeries({
+            priceScaleId: 'mvrv-scale',
+            color: indicators['mvrv'].color,
+            lineWidth: 2,
+            priceLineVisible: false,
+            visible: activeIndicators.includes('mvrv'),
+        });
+        mvrvSeriesRef.current = mvrvSeries;
 
         chart.subscribeCrosshairMove(param => {
             if (!param.point || !param.time || param.point.x < 0 ||
@@ -175,14 +231,12 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                 param.point.y < 0 || param.point.y > chartContainerRef.current.clientHeight) {
                 setTooltipData(null);
             } else {
-                const dateStr = param.time; // e.g., 'YYYY-MM-DD'
+                const dateStr = param.time;
                 const priceData = param.seriesData.get(priceSeriesRef.current);
-        
-                // Get all Fed balance data points from the series
+
+                // Get Fed balance data
                 const fedSeriesData = fedBalanceSeriesRef.current.data();
-                const currentTime = new Date(param.time).getTime(); // Convert to timestamp for comparison
-        
-                // Find the most recent Fed balance data point before or at the current time
+                const currentTime = new Date(param.time).getTime();
                 const nearestFedData = fedSeriesData.reduce((prev, curr) => {
                     const currTime = new Date(curr.time).getTime();
                     if (currTime <= currentTime && (prev === null || currTime > new Date(prev.time).getTime())) {
@@ -190,13 +244,24 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                     }
                     return prev;
                 }, null);
-        
                 const fedBalanceValue = nearestFedData ? nearestFedData.value : null;
-        
+
+                // Get MVRV data
+                const mvrvSeriesData = mvrvSeriesRef.current.data();
+                const nearestMvrvData = mvrvSeriesData.reduce((prev, curr) => {
+                    const currTime = new Date(curr.time).getTime();
+                    if (currTime <= currentTime && (prev === null || currTime > new Date(prev.time).getTime())) {
+                        return curr;
+                    }
+                    return prev;
+                }, null);
+                const mvrvValue = nearestMvrvData ? nearestMvrvData.value : null;
+
                 setTooltipData({
                     date: dateStr,
                     price: priceData?.value,
                     fedBalance: fedBalanceValue,
+                    mvrv: mvrvValue, // Add MVRV to tooltip data
                     x: param.point.x,
                     y: param.point.y,
                 });
@@ -222,14 +287,14 @@ const BitcoinPrice = ({ isDashboard = false }) => {
         };
     }, []);
 
-    // Update scale mode
+    // Update scale mode for the Bitcoin price scale
     useEffect(() => {
         if (chartRef.current) {
             chartRef.current.priceScale('right').applyOptions({ mode: scaleMode, borderVisible: false });
         }
     }, [scaleMode]);
 
-    // Update series data
+    // Update Bitcoin price series data
     useEffect(() => {
         if (priceSeriesRef.current && chartData.length > 0) {
             priceSeriesRef.current.setData(chartData);
@@ -237,15 +302,14 @@ const BitcoinPrice = ({ isDashboard = false }) => {
         }
     }, [chartData]);
 
-    // Update Fed balance series data (filtered to match Ethereum time range)
+    // Update Fed balance series data
     useEffect(() => {
         if (fedBalanceSeriesRef.current && chartData.length > 0 && fedBalanceData.length > 0) {
-            // Filter Fed balance data to only include dates within Ethereum data range
-            const ethStartTime = new Date(chartData[0].time).getTime();
-            const ethEndTime = new Date(chartData[chartData.length - 1].time).getTime();
+            const btcStartTime = new Date(chartData[0].time).getTime();
+            const btcEndTime = new Date(chartData[chartData.length - 1].time).getTime();
             const filteredFedData = fedBalanceData.filter(item => {
                 const itemTime = new Date(item.time).getTime();
-                return itemTime >= ethStartTime && itemTime <= ethEndTime;
+                return itemTime >= btcStartTime && itemTime <= btcEndTime;
             });
 
             fedBalanceSeriesRef.current.setData(filteredFedData);
@@ -253,7 +317,22 @@ const BitcoinPrice = ({ isDashboard = false }) => {
         }
     }, [fedBalanceData, chartData, activeIndicators]);
 
-    // Update indicators
+    // Update MVRV series data
+    useEffect(() => {
+        if (mvrvSeriesRef.current && chartData.length > 0 && mvrvData.length > 0) {
+            const btcStartTime = new Date(chartData[0].time).getTime();
+            const btcEndTime = new Date(chartData[chartData.length - 1].time).getTime();
+            const filteredMvrvData = mvrvData.filter(item => {
+                const itemTime = new Date(item.time).getTime();
+                return itemTime >= btcStartTime && itemTime <= btcEndTime;
+            });
+
+            mvrvSeriesRef.current.setData(filteredMvrvData);
+            mvrvSeriesRef.current.applyOptions({ visible: activeIndicators.includes('mvrv') });
+        }
+    }, [mvrvData, chartData, activeIndicators]);
+
+    // Update SMA indicators
     useEffect(() => {
         if (!chartRef.current || chartData.length === 0) return;
 
@@ -265,15 +344,17 @@ const BitcoinPrice = ({ isDashboard = false }) => {
         });
 
         activeIndicators.forEach(key => {
-            const indicator = indicators[key];
-            const series = chartRef.current.addLineSeries({
-                color: indicator.color,
-                lineWidth: 2,
-                priceLineVisible: false,
-            });
-            smaSeriesRefs[key] = series;
-            const data = calculateMovingAverage(chartData, indicator.period);
-            series.setData(data);
+            if (key.includes('sma')) { // Only process SMA indicators here
+                const indicator = indicators[key];
+                const series = chartRef.current.addLineSeries({
+                    color: indicator.color,
+                    lineWidth: 2,
+                    priceLineVisible: false,
+                });
+                smaSeriesRefs[key] = series;
+                const data = calculateMovingAverage(chartData, indicator.period);
+                series.setData(data);
+            }
         });
     }, [activeIndicators, chartData]);
 
@@ -329,56 +410,56 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                 >
                     <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '300px' } }}>
                         <InputLabel
-                        id="indicators-label"
-                        shrink
-                        sx={{
-                            color: colors.grey[100],
-                            '&.Mui-focused': { color: colors.greenAccent[500] },
-                            top: 0,
-                            '&.MuiInputLabel-shrink': {
-                            transform: 'translate(14px, -9px) scale(0.75)',
-                            },
-                        }}
+                            id="indicators-label"
+                            shrink
+                            sx={{
+                                color: colors.grey[100],
+                                '&.Mui-focused': { color: colors.greenAccent[500] },
+                                top: 0,
+                                '&.MuiInputLabel-shrink': {
+                                    transform: 'translate(14px, -9px) scale(0.75)',
+                                },
+                            }}
                         >
-                        Indicators
+                            Indicators
                         </InputLabel>
                         <Select
-                        multiple
-                        value={activeIndicators}
-                        onChange={handleIndicatorChange}
-                        labelId="indicators-label"
-                        label="Indicators"
-                        displayEmpty
-                        renderValue={(selected) =>
-                            selected.length > 0
-                            ? selected.map((key) => indicators[key].label).join(', ')
-                            : 'Select Indicators'
-                        }
-                        sx={{
-                            color: colors.grey[100],
-                            backgroundColor: colors.primary[500],
-                            borderRadius: "8px",
-                            '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
-                            '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                            '& .MuiSelect-select': { py: 1.5, pl: 2 },
-                            '& .MuiSelect-select:empty': { color: colors.grey[500] },
-                        }}
+                            multiple
+                            value={activeIndicators}
+                            onChange={handleIndicatorChange}
+                            labelId="indicators-label"
+                            label="Indicators"
+                            displayEmpty
+                            renderValue={(selected) =>
+                                selected.length > 0
+                                    ? selected.map((key) => indicators[key].label).join(', ')
+                                    : 'Select Indicators'
+                            }
+                            sx={{
+                                color: colors.grey[100],
+                                backgroundColor: colors.primary[500],
+                                borderRadius: "8px",
+                                '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
+                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                                '& .MuiSelect-select': { py: 1.5, pl: 2 },
+                                '& .MuiSelect-select:empty': { color: colors.grey[500] },
+                            }}
                         >
-                        {Object.entries(indicators).map(([key, { label }]) => (
-                            <MenuItem key={key} value={key}>
-                            <Checkbox
-                                checked={activeIndicators.includes(key)}
-                                sx={{ color: colors.grey[100], '&.Mui-checked': { color: colors.greenAccent[500] } }}
-                            />
-                            <span>{label}</span>
-                            </MenuItem>
-                        ))}
+                            {Object.entries(indicators).map(([key, { label }]) => (
+                                <MenuItem key={key} value={key}>
+                                    <Checkbox
+                                        checked={activeIndicators.includes(key)}
+                                        sx={{ color: colors.grey[100], '&.Mui-checked': { color: colors.greenAccent[500] } }}
+                                    />
+                                    <span>{label}</span>
+                                </MenuItem>
+                            ))}
                         </Select>
                     </FormControl>
                 </Box>
-                )}
-                {!isDashboard && (
+            )}
+            {!isDashboard && (
                 <div className="chart-top-div">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
                         <label className="switch">
@@ -413,7 +494,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                     height: isDashboard ? '100%' : 'calc(100% - 40px)',
                     width: '100%',
                     border: '2px solid #a9a9a9',
-                    position: 'relative', // Ensure the container has position: relative for the legend
+                    position: 'relative',
                     zIndex: 1,
                 }}
                 onDoubleClick={() => setInteractivity(!isInteractive)}
@@ -502,11 +583,14 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                     <div style={{ fontSize: '15px' }}>Bitcoin</div>
                     <div style={{ fontSize: '20px' }}>${tooltipData.price?.toFixed(2)}</div>
                     {activeIndicators.includes('fed-balance') && tooltipData.fedBalance !== undefined && (
-                        <>
-                            <div style={{ color: 'purple' }}>
-                                Fed Balance: ${tooltipData.fedBalance.toFixed(2)}T
-                            </div>
-                        </>
+                        <div style={{ color: 'purple' }}>
+                            Fed Balance: ${tooltipData.fedBalance.toFixed(2)}T
+                        </div>
+                    )}
+                    {activeIndicators.includes('mvrv') && tooltipData.mvrv !== undefined && (
+                        <div style={{ color: indicators['mvrv'].color }}>
+                            MVRV Ratio: {tooltipData.mvrv.toFixed(2)}
+                        </div>
                     )}
                     <div>{tooltipData.date?.toString()}</div>
                 </div>
