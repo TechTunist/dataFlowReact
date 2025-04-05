@@ -3,6 +3,7 @@ import { useTheme } from '@mui/material';
 import { tokens } from "../theme";
 import '../styling/LastUpdated.css';
 import pako from 'pako';
+import RefreshIcon from '@mui/icons-material/Refresh';
 
 const LastUpdated = ({ storageKey }) => {
     const theme = useTheme();
@@ -104,9 +105,12 @@ const LastUpdated = ({ storageKey }) => {
                     color: colors.greenAccent[500],
                     marginBottom: '0',
                     marginRight: '10px', // Space between text and icon (if icon were present)
+                    display: 'inline-flex',
+                    alignItems: 'center'
                 }}
             >
                 Last Updated: {lastUpdated || '(click to refresh)'}
+                <RefreshIcon/>
             </p>
         </div>
     );
