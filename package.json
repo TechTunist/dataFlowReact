@@ -17,6 +17,7 @@
     "react-device-detect": "^2.2.3",
     "react-dom": "^18.2.0",
     "react-gauge-chart": "^0.4.1",
+    "react-lazyload": "^3.2.1",
     "react-plotly.js": "^2.6.0",
     "react-pro-sidebar": "^0.7.1",
     "react-router-dom": "^6.3.0",

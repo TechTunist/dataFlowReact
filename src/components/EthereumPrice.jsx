@@ -1,50 +1,62 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useMemo, useCallback, useContext } from 'react';
 import { createChart } from 'lightweight-charts';
 import '../styling/bitcoinChart.css';
 import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
 import useIsMobile from '../hooks/useIsMobile';
+import { DataContext } from '../DataContext';
+import { Select, MenuItem, FormControl, InputLabel, Box, Button, Checkbox } from '@mui/material';
 import LastUpdated from '../hooks/LastUpdated';
-import { Select, MenuItem, FormControl, InputLabel, Box, FormControlLabel, Checkbox, Button, Stack } from '@mui/material';
 
 const EthereumPrice = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
     const chartRef = useRef(null);
     const priceSeriesRef = useRef(null);
     const smaSeriesRefs = useRef({}).current;
-    const fedBalanceSeriesRef = useRef(null); // Ref for Fed balance series
-    const [chartData, setChartData] = useState([]);
-    const [fedBalanceData, setFedBalanceData] = useState([]); // State for Fed balance data
+    const fedBalanceSeriesRef = useRef(null);
+    const theme = useTheme();
+    const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
+    const isMobile = useIsMobile();
+    const { ethData, fetchEthData, fedBalanceData, fetchFedBalanceData } = useContext(DataContext);
+
     const [scaleMode, setScaleMode] = useState(1); // 1 for logarithmic, 0 for linear
     const [tooltipData, setTooltipData] = useState(null);
     const [isInteractive, setIsInteractive] = useState(false);
-    const [activeIndicators, setActiveIndicators] = useState([]); // Now includes Fed balance as an option
-    const theme = useTheme();
-    const colors = tokens(theme.palette.mode);
-    const isMobile = useIsMobile();
+    const [activeIndicators, setActiveIndicators] = useState([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState(null);
 
-    // Updated indicators object to include Fed balance
-    const indicators = {
+    const indicators = useMemo(() => ({
         '8w-sma': { period: 8 * 7, color: 'blue', label: '8 Week SMA' },
         '20w-sma': { period: 20 * 7, color: 'limegreen', label: '20 Week SMA' },
         '50w-sma': { period: 50 * 7, color: 'magenta', label: '50 Week SMA' },
         '100w-sma': { period: 100 * 7, color: 'white', label: '100 Week SMA' },
         '200w-sma': { period: 200 * 7, color: 'yellow', label: '200 Week SMA' },
-        'fed-balance': { color: 'purple', label: 'Fed Balance (Trillions)' }, // New Fed balance indicator
-    };
+        'fed-balance': { color: 'purple', label: 'Fed Balance (Trillions)' },
+    }), []);
 
-    const setInteractivity = (e = null) => {
-        if (e && typeof e.target?.checked !== 'undefined') {
-            setIsInteractive(e.target.checked);
-        } else {
-            setIsInteractive(prev => !prev); // Toggle if no event is provided (e.g., from onDoubleClick)
-        }
-    };
+    // Fetch data only if not present in context
+    useEffect(() => {
+        const fetchData = async () => {
+            if (ethData.length > 0 && fedBalanceData.length > 0) return;
+            setIsLoading(true);
+            setError(null);
+            try {
+                await Promise.all([
+                    ethData.length === 0 && fetchEthData(),
+                    fedBalanceData.length === 0 && fetchFedBalanceData()
+                ]);
+            } catch (err) {
+                setError('Failed to fetch data. Please try again later.');
+                console.error('Error fetching data:', err);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchData();
+    }, [fetchEthData, fetchFedBalanceData, ethData.length, fedBalanceData.length]);
 
-    const toggleScaleMode = () => setScaleMode(prevMode => (prevMode === 1 ? 0 : 1));
-    const resetChartView = () => chartRef.current?.timeScale().fitContent();
-
-    const calculateMovingAverage = (data, period) => {
+    const calculateMovingAverage = useCallback((data, period) => {
         let movingAverages = [];
         for (let i = period - 1; i < data.length; i++) {
             let sum = 0;
@@ -57,84 +69,14 @@ const EthereumPrice = ({ isDashboard = false }) => {
             });
         }
         return movingAverages;
-    };
-
-    const handleIndicatorChange = (event) => {
-        const newIndicators = event.target.value;
-        setActiveIndicators(newIndicators);
-    };
-
-    // Fetch Ethereum price data
-    useEffect(() => {
-        const cacheKeyEth = 'ethData';
-        const cachedDataEth = localStorage.getItem(cacheKeyEth);
-        const today = new Date();
-
-        if (cachedDataEth) {
-            const parsedDataEth = JSON.parse(cachedDataEth);
-            const lastCachedDateEth = new Date(parsedDataEth[parsedDataEth.length - 1].time);
-
-            if (lastCachedDateEth.setHours(0, 0, 0, 0) === today.setHours(0, 0, 0, 0)) {
-                setChartData(parsedDataEth);
-            } else {
-                fetchEthData();
-            }
-        } else {
-            fetchEthData();
-        }
-
-        function fetchEthData() {
-            // fetch('https://tunist.pythonanywhere.com/api/eth/price/')
-            fetch('https://vercel-dataflow.vercel.app/api/eth/price/')
-                .then(response => response.json())
-                .then(data => {
-                    const formattedData = data.map(item => ({
-                        time: item.date,
-                        value: parseFloat(item.close)
-                    }));
-                    setChartData(formattedData);
-                    localStorage.setItem(cacheKeyEth, JSON.stringify(formattedData));
-                })
-                .catch(error => console.error('Error fetching Ethereum data: ', error));
-        }
     }, []);
 
-    // Fetch Federal Reserve balance data
-    useEffect(() => {
-        const cacheKeyFed = 'fedBalanceData';
-        const cachedFedData = localStorage.getItem(cacheKeyFed);
-        const today = new Date();
+    const setInteractivity = useCallback(() => setIsInteractive(prev => !prev), []);
+    const toggleScaleMode = useCallback(() => setScaleMode(prev => (prev === 1 ? 0 : 1)), []);
+    const resetChartView = useCallback(() => chartRef.current?.timeScale().fitContent(), []);
+    const handleIndicatorChange = useCallback((event) => setActiveIndicators(event.target.value), []);
 
-        if (cachedFedData) {
-            const parsedFedData = JSON.parse(cachedFedData);
-            const lastCachedDateFed = new Date(parsedFedData[parsedFedData.length - 1].observation_date);
-
-            // Compare dates (ignoring time)
-            if (lastCachedDateFed.setHours(0, 0, 0, 0) === today.setHours(0, 0, 0, 0)) {
-                setFedBalanceData(parsedFedData);
-            } else {
-                fetchFedBalanceData();
-            }
-        } else {
-            fetchFedBalanceData();
-        }
-
-        function fetchFedBalanceData() {
-            fetch('https://vercel-dataflow.vercel.app/api/fed-balance/')
-                .then(response => response.json())
-                .then(data => {
-                    const formattedData = data.map(item => ({
-                        time: item.observation_date, // Use observation_date as time
-                        value: parseFloat(item.value) / 1000000 // Convert from millions to trillions for scaling
-                    }));
-                    setFedBalanceData(formattedData);
-                    localStorage.setItem(cacheKeyFed, JSON.stringify(formattedData));
-                })
-                .catch(error => console.error('Error fetching Federal Reserve balance data: ', error));
-        }
-    }, []);
-
-    // Create chart once on mount
+    // Initialize chart
     useEffect(() => {
         const chart = createChart(chartContainerRef.current, {
             width: chartContainerRef.current.clientWidth,
@@ -149,80 +91,51 @@ const EthereumPrice = ({ isDashboard = false }) => {
             lineWidth: 2,
             priceFormat: {
                 type: 'custom',
-                minMove: 1, // Adjusts the smallest price movement; increase for larger steps
-                formatter: (price) => {
-                    if (price >= 1000) {
-                        return (price / 1000).toFixed(1) + 'K'; // e.g., 150000 -> 150.0K
-                    } else if (price >= 100) {
-                        return price.toFixed(0); // e.g., 345.67 -> 346
-                    } else {
-                        return price.toFixed(1); // e.g., 45.67 -> 45.7
-                    }
-                },
+                minMove: 1,
+                formatter: (price) => price >= 1000 ? `${(price / 1000).toFixed(1)}K` : (price >= 100 ? price.toFixed(0) : price.toFixed(1)),
             },
         });
         priceSeriesRef.current = priceSeries;
 
-        // Add Federal Reserve balance series (initially hidden) on the left price scale
         const fedBalanceSeries = chart.addLineSeries({
-            priceScaleId: 'left', // Fed balance on the left
-            color: indicators['fed-balance'].color, // Use color from indicators
+            priceScaleId: 'left',
+            color: indicators['fed-balance'].color,
             lineWidth: 2,
             priceLineVisible: false,
-            visible: activeIndicators.includes('fed-balance'), // Controlled by indicators selection
+            visible: false,
         });
-        fedBalanceSeriesRef.current = fedBalanceSeries; // Store the series in the ref
+        fedBalanceSeriesRef.current = fedBalanceSeries;
 
-        // Configure right price scale for Ethereum price
         chart.priceScale('right').applyOptions({
             mode: scaleMode,
             borderVisible: false,
             scaleMargins: { top: 0.1, bottom: 0.1 },
-            priceFormat: {
-                type: 'custom',
-                formatter: (value) => `$${value.toFixed(2)}`, // Format Ethereum price in dollars
-            },
+            priceFormat: { type: 'custom', formatter: value => `$${value.toFixed(2)}` },
         });
 
-        // Configure left price scale for Fed balance
         chart.priceScale('left').applyOptions({
             mode: scaleMode,
             borderVisible: false,
             scaleMargins: { top: 0.1, bottom: 0.1 },
-            priceFormat: {
-                type: 'custom',
-                formatter: (value) => `$${value.toFixed(2)}T`, // Format Fed balance in trillions
-            },
+            priceFormat: { type: 'custom', formatter: value => `$${value.toFixed(2)}T` },
         });
 
         chart.subscribeCrosshairMove(param => {
-            if (!param.point || !param.time || param.point.x < 0 ||
-                param.point.x > chartContainerRef.current.clientWidth ||
-                param.point.y < 0 || param.point.y > chartContainerRef.current.clientHeight) {
+            if (!param.point || !param.time || param.point.x < 0 || param.point.x > chartContainerRef.current.clientWidth || param.point.y < 0 || param.point.y > chartContainerRef.current.clientHeight) {
                 setTooltipData(null);
             } else {
-                const dateStr = param.time; // e.g., 'YYYY-MM-DD'
                 const priceData = param.seriesData.get(priceSeriesRef.current);
-        
-                // Get all Fed balance data points from the series
                 const fedSeriesData = fedBalanceSeriesRef.current.data();
-                const currentTime = new Date(param.time).getTime(); // Convert to timestamp for comparison
-        
-                // Find the most recent Fed balance data point before or at the current time
+                const currentTime = new Date(param.time).getTime();
                 const nearestFedData = fedSeriesData.reduce((prev, curr) => {
                     const currTime = new Date(curr.time).getTime();
-                    if (currTime <= currentTime && (prev === null || currTime > new Date(prev.time).getTime())) {
-                        return curr;
-                    }
-                    return prev;
+                    return currTime <= currentTime && (!prev || currTime > new Date(prev.time).getTime()) ? curr : prev;
                 }, null);
-        
-                const fedBalanceValue = nearestFedData ? nearestFedData.value : null;
-        
+
                 setTooltipData({
-                    date: dateStr,
+                    date: param.time,
                     price: priceData?.value,
-                    fedBalance: fedBalanceValue,
+                    fedBalance: nearestFedData?.value,
                     x: param.point.x,
                     y: param.point.y,
                 });
@@ -230,61 +143,45 @@ const EthereumPrice = ({ isDashboard = false }) => {
         });
 
         const resizeChart = () => {
-            if (chart && chartContainerRef.current) {
-                chart.applyOptions({
-                    width: chartContainerRef.current.clientWidth,
-                    height: chartContainerRef.current.clientHeight,
-                });
-                chart.timeScale().fitContent();
-            }
+            chart.applyOptions({
+                width: chartContainerRef.current.clientWidth,
+                height: chartContainerRef.current.clientHeight,
+            });
+            chart.timeScale().fitContent();
         };
         window.addEventListener('resize', resizeChart);
 
         chartRef.current = chart;
-
         return () => {
             chart.remove();
             window.removeEventListener('resize', resizeChart);
         };
-    }, []); // Empty dependency array: runs once on mount
+    }, [colors]);
 
-    // Update scale mode
+    // Update chart data
     useEffect(() => {
-        if (chartRef.current) {
-            chartRef.current.priceScale('right').applyOptions({ mode: scaleMode, borderVisible: false });
-            chartRef.current.priceScale('left').applyOptions({ mode: scaleMode, borderVisible: false });
+        if (priceSeriesRef.current && ethData.length > 0) {
+            priceSeriesRef.current.setData(ethData);
+            resetChartView();
         }
-    }, [scaleMode]);
+    }, [ethData, resetChartView]);
 
-    // Update Ethereum price series data
     useEffect(() => {
-        if (priceSeriesRef.current && chartData.length > 0) {
-            priceSeriesRef.current.setData(chartData);
-            chartRef.current.timeScale().fitContent();
-        }
-    }, [chartData]);
-
-    // Update Fed balance series data (filtered to match Ethereum time range)
-    useEffect(() => {
-        if (fedBalanceSeriesRef.current && chartData.length > 0 && fedBalanceData.length > 0) {
-            // Filter Fed balance data to only include dates within Ethereum data range
-            const ethStartTime = new Date(chartData[0].time).getTime();
-            const ethEndTime = new Date(chartData[chartData.length - 1].time).getTime();
+        if (fedBalanceSeriesRef.current && ethData.length > 0 && fedBalanceData.length > 0) {
+            const ethStartTime = new Date(ethData[0].time).getTime();
+            const ethEndTime = new Date(ethData[ethData.length - 1].time).getTime();
             const filteredFedData = fedBalanceData.filter(item => {
                 const itemTime = new Date(item.time).getTime();
                 return itemTime >= ethStartTime && itemTime <= ethEndTime;
             });
-
             fedBalanceSeriesRef.current.setData(filteredFedData);
             fedBalanceSeriesRef.current.applyOptions({ visible: activeIndicators.includes('fed-balance') });
         }
-    }, [fedBalanceData, chartData, activeIndicators]);
+    }, [fedBalanceData, ethData, activeIndicators]);
 
     // Update indicators
     useEffect(() => {
-        if (!chartRef.current || chartData.length === 0) return;
-
-        // Remove all existing indicator series
+        if (!chartRef.current || ethData.length === 0) return;
         Object.keys(smaSeriesRefs).forEach(key => {
             if (smaSeriesRefs[key]) {
                 chartRef.current.removeSeries(smaSeriesRefs[key]);
@@ -292,60 +189,45 @@ const EthereumPrice = ({ isDashboard = false }) => {
             }
         });
 
-        // Add active indicators (including Fed balance)
         activeIndicators.forEach(key => {
-            if (key === 'fed-balance') {
-                // Fed balance is handled separately in its own useEffect
-                return;
-            }
+            if (key === 'fed-balance') return;
             const indicator = indicators[key];
             const series = chartRef.current.addLineSeries({
                 color: indicator.color,
                 lineWidth: 2,
                 priceLineVisible: false,
-                priceScaleId: 'right', // Ensure indicators use the right price scale
+                priceScaleId: 'right',
             });
             smaSeriesRefs[key] = series;
-            const data = calculateMovingAverage(chartData, indicator.period);
+            const data = calculateMovingAverage(ethData, indicator.period);
             series.setData(data);
         });
-    }, [activeIndicators, chartData]);
+    }, [activeIndicators, ethData, calculateMovingAverage, indicators]);
 
-    // Update interactivity
+    // Update scale mode and interactivity
     useEffect(() => {
         if (chartRef.current) {
-            chartRef.current.applyOptions({
-                handleScroll: isInteractive,
-                handleScale: isInteractive,
-            });
+            chartRef.current.priceScale('right').applyOptions({ mode: scaleMode });
+            chartRef.current.priceScale('left').applyOptions({ mode: scaleMode });
+            chartRef.current.applyOptions({ handleScroll: isInteractive, handleScale: isInteractive });
         }
-    }, [isInteractive]);
+    }, [scaleMode, isInteractive]);
 
-    // Update colors based on theme
+    // Update theme colors
     useEffect(() => {
         if (priceSeriesRef.current) {
             const { topColor, bottomColor, lineColor } = theme.palette.mode === 'dark'
                 ? { topColor: 'rgba(38, 198, 218, 0.56)', bottomColor: 'rgba(38, 198, 218, 0.04)', lineColor: 'rgba(38, 198, 218, 1)' }
                 : { topColor: 'rgba(255, 165, 0, 0.56)', bottomColor: 'rgba(255, 165, 0, 0.2)', lineColor: 'rgba(255, 140, 0, 0.8)' };
-            priceSeriesRef.current.applyOptions({
-                topColor,
-                bottomColor,
-                lineColor,
-            });
+            priceSeriesRef.current.applyOptions({ topColor, bottomColor, lineColor });
         }
         if (chartRef.current) {
             chartRef.current.applyOptions({
-                layout: {
-                    background: { type: 'solid', color: colors.primary[700] },
-                    textColor: colors.primary[100],
-                },
-                grid: {
-                    vertLines: { color: colors.greenAccent[700] },
-                    horzLines: { color: colors.greenAccent[700] },
-                },
+                layout: { background: { type: 'solid', color: colors.primary[700] }, textColor: colors.primary[100] },
+                grid: { vertLines: { color: colors.greenAccent[700] }, horzLines: { color: colors.greenAccent[700] } },
             });
         }
-    }, [theme.palette.mode]);
+    }, [colors, theme.palette.mode]);
 
     return (
         <div style={{ height: '100%' }}>
@@ -505,7 +387,7 @@ const EthereumPrice = ({ isDashboard = false }) => {
                         gap: '10px',
                         alignItems: 'center', // Optional: ensures vertical alignment if components have different heights
                     }}>
-                        <LastUpdated storageKey="ethData" />
+                        <LastUpdated storageKey="ethData" useLocalStorage={true}/>
                     </Box>
                 </div>
             )}

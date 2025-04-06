@@ -1,370 +1,212 @@
-import React, { useRef, useEffect, useState } from 'react';
-import { createChart, ISeriesApi } from 'lightweight-charts';
-import '../styling/bitcoinChart.css'
+import React, { useRef, useEffect, useState, useMemo, useCallback, useContext } from 'react';
+import { createChart } from 'lightweight-charts';
+import '../styling/bitcoinChart.css';
 import { useTheme } from '@mui/material';
 import { tokens } from '../theme';
-import LastUpdated from '../hooks/LastUpdated';
+import { DataContext } from '../DataContext';
 import BitcoinFees from './BitcoinTransactionFees';
 import useIsMobile from '../hooks/useIsMobile';
-
+import LastUpdated from '../hooks/LastUpdated';
 
 const PiCycleTopChart = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
     const bitcoinSeriesRef = useRef();
-    const [chartData, setChartData] = useState([]);
-    const [scaleMode, setScaleMode] = useState(1);
+    const ratioSeriesRef = useRef();
     const theme = useTheme();
-    const colors = tokens(theme.palette.mode);
-    const chartRef = useRef(null);
+    const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
+    const isMobile = useIsMobile();
+    const { btcData, fetchBtcData } = useContext(DataContext);
+
+    const [scaleMode, setScaleMode] = useState(1); // 1 for logarithmic, 0 for linear
     const [showMarkers, setShowMarkers] = useState(false);
     const [isInteractive, setIsInteractive] = useState(false);
-    const [setIsDashboard] = useState(isDashboard);
+    const [showRatioSeries, setShowRatioSeries] = useState(false);
     const [tooltipData, setTooltipData] = useState(null);
-    const isMobile = useIsMobile();
-    const [showRatioSeries, setShowRatioSeries] = useState(false); // New state for toggle
-    const ratioSeriesRef = useRef(); // Add ref for ratio series
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState(null);
 
+    const chartRef = useRef(null);
 
-    // Calculate ratio of 111 SMA / (350 SMA * 2)
-    const calculateRatioSeries = (data) => {
+    // Fetch data only if not present in context
+    useEffect(() => {
+        const fetchData = async () => {
+            if (btcData.length > 0) return;
+            setIsLoading(true);
+            setError(null);
+            try {
+                await fetchBtcData();
+            } catch (err) {
+                setError('Failed to fetch Bitcoin data. Please try again later.');
+                console.error('Error fetching data:', err);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchData();
+    }, [fetchBtcData, btcData.length]);
+
+    const calculateSMA = useCallback((data, windowSize) => {
+        let sma = [];
+        for (let i = windowSize - 1; i < data.length; i++) {
+            let sum = 0;
+            for (let j = 0; j < windowSize; j++) {
+                sum += parseFloat(data[i - j].value);
+            }
+            sma.push({ time: data[i].time, value: sum / windowSize });
+        }
+        return sma;
+    }, []);
+
+    const calculateRatioSeries = useCallback((data) => {
         const sma111 = calculateSMA(data, 111);
         const sma350 = calculateSMA(data, 350);
         let ratioData = [];
-        
-        // Start from the longer SMA's starting point
         for (let i = 349; i < data.length; i++) {
-            if (i - 110 >= 0) { // Ensure we have both SMA values
+            if (i - 110 >= 0) {
                 const ratio = sma111[i - 110].value / (sma350[i - 349].value * 2);
-                ratioData.push({
-                    time: data[i].time,
-                    value: ratio
-                });
+                ratioData.push({ time: data[i].time, value: ratio });
             }
         }
         return ratioData;
-    };
+    }, [calculateSMA]);
 
-    const markers = [
-        {
-            time: '2013-04-09',
-            position: 'aboveBar',
-            color: colors.greenAccent[400],
-            shape: 'arrowDown',
-            text: 'Indicated Top',
-            size: 2,
-        },
-        {
-            time: '2013-12-05',
-            position: 'aboveBar',
-            color: colors.greenAccent[400],
-            shape: 'arrowDown',
-            text: 'Indicated Top',
-            size: 2,
-        },
-        // {
-        //     time: '2015-04-30',
-        //     position: 'belowBar',
-        //     color: colors.greenAccent[400],
-        //     shape: 'arrowUp',
-        //     text: 'Indicated Bottom', 
-        // },
-        {
-            time: '2017-12-17',
-            position: 'aboveBar',
-            color: colors.greenAccent[400],
-            shape: 'arrowDown',
-            text: 'Indicated Top', 
-            size: 2,
-        },
-        // {
-        //     time: '2019-03-19',
-        //     position: 'belowBar',
-        //     color: colors.greenAccent[400],
-        //     shape: 'arrowUp',
-        //     text: 'Indicated Bottom', 
-        // },
-        {
-            time: '2021-04-12',
-            position: 'aboveBar',
-            color: colors.greenAccent[400],
-            shape: 'arrowDown',
-            text: 'Indicated Top',
-            size: 2,
-        },
-        // {
-        //     time: '2022-10-13',
-        //     position: 'belowBar',
-        //     color: colors.greenAccent[400],
-        //     shape: 'arrowUp',
-        //     text: 'Indicated Bottom', 
-        // },
-    ];
+    const markers = useMemo(() => [
+        { time: '2013-04-09', position: 'aboveBar', color: colors.greenAccent[400], shape: 'arrowDown', text: 'Indicated Top', size: 2 },
+        { time: '2013-12-05', position: 'aboveBar', color: colors.greenAccent[400], shape: 'arrowDown', text: 'Indicated Top', size: 2 },
+        { time: '2017-12-17', position: 'aboveBar', color: colors.greenAccent[400], shape: 'arrowDown', text: 'Indicated Top', size: 2 },
+        { time: '2021-04-12', position: 'aboveBar', color: colors.greenAccent[400], shape: 'arrowDown', text: 'Indicated Top', size: 2 },
+    ], [colors.greenAccent]);
 
-    // Function to set chart interactivity
-    const setInteractivity = () => {
-        setIsInteractive(!isInteractive);
-    };
-
-    // Function to format numbers to 'k', 'M', etc.
-    function compactNumberFormatter(value) {
-        if (value >= 1000000) {
-            return (value / 1000000).toFixed(0) + 'M'; // Millions
-        } else if (value >= 1000) {
-            return (value / 1000).toFixed(0) + 'k'; // Thousands
-        } else {
-            return value.toFixed(0); // For values less than 1000, show the full number
-        }
-    }
-
-    // Function to toggle the visibility of markers
-    const toggleMarkers = () => {
-        setShowMarkers(!showMarkers);
-    };
-
-    // Function to reset the chart view
-    const resetChartView = () => {
-        if (chartRef.current) {
-            chartRef.current.timeScale().fitContent();
-        }
-    };
-
-    // SMA calculation helper function
-    const calculateSMA = (data, windowSize) => {
-        let sma = [];
-        for (let i = windowSize - 1; i < data.length; i++) {
-        let sum = 0;
-        for (let j = 0; j < windowSize; j++) {
-            sum += parseFloat(data[i - j].value);
-        }
-        sma.push({ time: data[i].time, value: sum / windowSize });
-        }
-        return sma;
-    };
-
-    // This useEffect handles fetching data and updating the local storage cache. It’s self-contained and correctly handles data fetching independently.
-    useEffect(() => {
-        const cacheKey = 'btcData';
-        const cachedData = localStorage.getItem(cacheKey);
-        const today = new Date();
-    
-        const fetchData = async () => {
-            try {
-                // const response = await fetch('https://tunist.pythonanywhere.com/api/btc/price/');
-                const response = await fetch('https://vercel-dataflow.vercel.app/api/btc/price/')
-                const data = await response.json();
-                const formattedData = data.map(item => ({
-                    time: item.date,
-                    value: parseFloat(item.close)
-                }));
-                localStorage.setItem(cacheKey, JSON.stringify(formattedData));
-                setChartData(formattedData);
-            } catch (error) {
-                console.error('Error fetching data:', error);
-            }
-        };
-    
-        if (cachedData) {
-            const parsedData = JSON.parse(cachedData);
-            const lastCachedDate = new Date(parsedData[parsedData.length - 1].time);
-            if (lastCachedDate.setHours(0, 0, 0, 0) === today.setHours(0, 0, 0, 0)) {
-                setChartData(JSON.parse(cachedData));
-            } else {
-                fetchData();
-            }
-        } else {
-            fetchData();
-        }
+    const compactNumberFormatter = useCallback((value) => {
+        if (value >= 1000000) return `${(value / 1000000).toFixed(0)}M`;
+        if (value >= 1000) return `${(value / 1000).toFixed(0)}k`;
+        return value.toFixed(0);
     }, []);
 
+    const setInteractivity = useCallback(() => setIsInteractive(prev => !prev), []);
+    const toggleMarkers = useCallback(() => setShowMarkers(prev => !prev), []);
+    const resetChartView = useCallback(() => chartRef.current?.timeScale().fitContent(), []);
+    const toggleRatioSeries = useCallback(() => setShowRatioSeries(prev => !prev), []);
+
+    // Initialize chart
     useEffect(() => {
-        if (chartData.length === 0) return;      // Create the chart instance and store it in the ref
-            const chart = createChart(chartContainerRef.current, {
-                width: chartContainerRef.current.clientWidth,
-                height: 350,
-                layout: {
-                    background: { type: 'solid', color: colors.primary[700] },
-                    textColor: colors.primary[100],
-                },
-                grid: {
-                    vertLines: {
-                        color: colors.greenAccent[700],
-                    },
-                    horzLines: {
-                        color: colors.greenAccent[700],
-                    },
-                },
-                timeScale: {
-                    minBarSpacing: 0.001,
-                },
-                priceLineVisible: false,
-            });
+        if (btcData.length === 0) return;
 
-            // Update tooltip with new series
-            chart.subscribeCrosshairMove(param => {
-                if (!param.point || !param.time || 
-                    param.point.x < 0 || param.point.x > chartContainerRef.current.clientWidth ||
-                    param.point.y < 0 || param.point.y > chartContainerRef.current.clientHeight) {
-                    setTooltipData(null);
-                } else {
-                    const dateStr = param.time;
-                    setTooltipData({
-                        date: dateStr,
-                        bitcoinValue: param.seriesData.get(bitcoinSeriesRef.current)?.value,
-                        sma111Value: param.seriesData.get(sma111Series)?.value,
-                        sma350Value: param.seriesData.get(sma350Series)?.value,
-                        ratioValue: param.seriesData.get(ratioSeriesRef.current)?.value,
-                        x: param.point.x,
-                        y: param.point.y,
-                    });
-                }
-            });
+        const chart = createChart(chartContainerRef.current, {
+            width: chartContainerRef.current.clientWidth,
+            height: chartContainerRef.current.clientHeight,
+            layout: { background: { type: 'solid', color: colors.primary[700] }, textColor: colors.primary[100] },
+            grid: { vertLines: { color: colors.greenAccent[700] }, horzLines: { color: colors.greenAccent[700] } },
+            timeScale: { minBarSpacing: 0.001 },
+        });
 
-            // Add the series to the chart
-            const bitcoinSeries = chart.addLineSeries({
-                color: '#4ba1c8',
-                lineWidth: 2,
-                priceLineVisible: false,
-                priceFormat: {
-                    type: 'custom',
-                    formatter: compactNumberFormatter, // Use the custom formatter
-                },
-            });
+        const bitcoinSeries = chart.addLineSeries({
+            color: '#4ba1c8',
+            lineWidth: 2,
+            priceLineVisible: false,
+            priceFormat: { type: 'custom', formatter: compactNumberFormatter },
+        });
+        bitcoinSeriesRef.current = bitcoinSeries;
 
-            bitcoinSeriesRef.current = bitcoinSeries;
+        const sma111Series = chart.addLineSeries({
+            color: '#66ff00',
+            lineWidth: 2,
+            priceLineVisible: false,
+            lastValueVisible: false,
+        });
 
-            const sma111Series = chart.addLineSeries({
-                color: '#66ff00',
-                lineWidth: 2,
-                priceLineVisible: false,
-                lastValueVisible: false,
-                
-            });
+        const sma350Series = chart.addLineSeries({
+            color: '#fe2bc9',
+            lineWidth: 2,
+            priceLineVisible: false,
+            lastValueVisible: false,
+        });
 
-            const sma350Series = chart.addLineSeries({
-                color: '#fe2bc9',
-                lineWidth: 2,
-                priceLineVisible: false,
-                lastValueVisible: false,
-            });
+        const ratioSeries = chart.addLineSeries({
+            color: '#ff9900',
+            lineWidth: 2,
+            priceLineVisible: false,
+            lastValueVisible: false,
+            visible: showRatioSeries,
+            priceScaleId: 'left',
+        });
+        ratioSeriesRef.current = ratioSeries;
 
-            // Add new ratio series
-            const ratioSeries = chart.addLineSeries({
-                color: '#ff9900', // Orange color, you can change this
-                lineWidth: 2,
-                priceLineVisible: false,
-                lastValueVisible: false,
-                visible: showRatioSeries, // Controlled by toggle
-                priceScaleId: 'left', // Use separate price scale for ratio
-            });
-            ratioSeriesRef.current = ratioSeries;
-            
+        chart.priceScale('right').applyOptions({
+            mode: scaleMode,
+            autoScale: true,
+            borderVisible: false,
+            scaleMargins: { top: 0.1, bottom: 0.1 },
+            priceFormat: { type: 'custom', formatter: compactNumberFormatter },
+        });
 
-            chart.priceScale('right').applyOptions({
-                mode: scaleMode,
-                autoScale: true,
-                borderVisible: false,
-                scaleMargins: {
-                    top: 0.1, // 10% empty space at the top
-                    bottom: 0.1 // 10% empty space at the bottom
-                },
-                priceFormat: {
-                    type: 'custom',
-                    formatter: compactNumberFormatter,
-                },
-            });
+        chart.priceScale('left').applyOptions({
+            autoScale: true,
+            borderVisible: false,
+            scaleMargins: { top: 0.1, bottom: 0.1 },
+            priceFormat: { type: 'custom', formatter: value => value.toFixed(2) },
+            visible: showRatioSeries,
+        });
 
-            // Add left price scale for ratio
-            chart.priceScale('left').applyOptions({
-                autoScale: true,
-                borderVisible: false,
-                scaleMargins: { top: 0.1, bottom: 0.1 },
-                priceFormat: { type: 'custom', formatter: (value) => value.toFixed(2) },
-                visible: showRatioSeries, // Show left scale only when ratio is visible
-            });
-        
-            const resizeChart = () => {
-                if (chart && chartContainerRef.current) {
-                    chart.applyOptions({
-                        width: chartContainerRef.current.clientWidth,
-                        height: chartContainerRef.current.clientHeight,
-                    });
-                    chart.timeScale().fitContent();
-                }
-            };
+        chart.subscribeCrosshairMove(param => {
+            if (!param.point || !param.time || param.point.x < 0 || param.point.x > chartContainerRef.current.clientWidth || param.point.y < 0 || param.point.y > chartContainerRef.current.clientHeight) {
+                setTooltipData(null);
+            } else {
+                setTooltipData({
+                    date: param.time,
+                    bitcoinValue: param.seriesData.get(bitcoinSeries)?.value,
+                    sma111Value: param.seriesData.get(sma111Series)?.value,
+                    sma350Value: param.seriesData.get(sma350Series)?.value,
+                    ratioValue: param.seriesData.get(ratioSeries)?.value,
+                    x: param.point.x,
+                    y: param.point.y,
+                });
+            }
+        });
 
-            window.addEventListener('resize', resizeChart);
-            // window.addEventListener('resize', resetChartView);
+        bitcoinSeries.setData(btcData);
+        sma111Series.setData(calculateSMA(btcData, 111));
+        sma350Series.setData(calculateSMA(btcData, 350).map(point => ({ time: point.time, value: point.value * 2 })));
+        ratioSeries.setData(calculateRatioSeries(btcData));
 
-            bitcoinSeries.setData(chartData);
-            sma111Series.setData(calculateSMA(chartData, 111));
-            sma350Series.setData(calculateSMA(chartData, 350).map(point => ({
-                time: point.time,
-                value: point.value * 2,
-            })));
-            ratioSeries.setData(calculateRatioSeries(chartData)); // Add ratio data
-
+        const resizeChart = () => {
             chart.applyOptions({
-                handleScroll: !isDashboard,
-                handleScale: !isDashboard,
-                handleScroll: isInteractive,
-                handleScale: isInteractive
+                width: chartContainerRef.current.clientWidth,
+                height: chartContainerRef.current.clientHeight,
             });
-        
-            resizeChart(); // Ensure initial resize and fitContent call
-            chart.timeScale().fitContent(); // Additional call to fitContent to ensure coverage
-            chartRef.current = chart; // Store the chart instance
-        
+            chart.timeScale().fitContent();
+        };
+        window.addEventListener('resize', resizeChart);
 
-        // Cleanup function
+        chartRef.current = chart;
+        resetChartView();
+
         return () => {
             chart.remove();
             window.removeEventListener('resize', resizeChart);
         };
-    }, [chartData, isDashboard, theme.palette.mode ]);
+    }, [btcData, colors, calculateSMA, calculateRatioSeries, scaleMode]);
 
-    // Toggle ratio series visibility
-    const toggleRatioSeries = () => {
-        setShowRatioSeries(!showRatioSeries);
-    };
-
-    // Separate useEffect for ratio visibility toggle
+    // Update interactivity and markers
     useEffect(() => {
+        if (chartRef.current) {
+            chartRef.current.applyOptions({ handleScroll: isInteractive, handleScale: isInteractive });
+        }
+        if (bitcoinSeriesRef.current) {
+            bitcoinSeriesRef.current.setMarkers(showMarkers ? markers : []);
+        }
         if (ratioSeriesRef.current) {
             ratioSeriesRef.current.applyOptions({ visible: showRatioSeries });
-        }
-        if (chartRef.current) {
             chartRef.current.priceScale('left').applyOptions({ visible: showRatioSeries });
         }
-    }, [showRatioSeries]);
+    }, [isInteractive, showMarkers, showRatioSeries, markers]);
 
-
-    useEffect(() => {
-        if (bitcoinSeriesRef.current) {
-            if (showMarkers) {
-                bitcoinSeriesRef.current.setMarkers(markers);
-            } else {
-                bitcoinSeriesRef.current.setMarkers([]);
-            }
-        }
-    }, [showMarkers]);
-
-    useEffect(() => {
-        if (chartRef.current) {
-        chartRef.current.applyOptions({
-            handleScroll: isInteractive,
-            handleScale: isInteractive,
-        });
-        }
-    }, [isInteractive]);
-
-    // Legend data
-    const legendItems = [
+    const legendItems = useMemo(() => [
         { label: 'BTC', color: '#4ba1c8' },
         { label: '111D SMA', color: '#66ff00' },
         { label: '350D SMA x 2', color: '#fe2bc9' },
         { label: '111/350x2 Ratio', color: '#ff9900', visible: showRatioSeries },
-    ];
-
+    ], [showRatioSeries]);
 
     return (
         <div style={{ height: '100%' }}>

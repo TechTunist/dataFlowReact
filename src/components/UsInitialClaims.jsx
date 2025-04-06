@@ -1,182 +1,121 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useMemo, useCallback, useContext } from 'react';
 import { createChart } from 'lightweight-charts';
-import '../styling/bitcoinChart.css'; // Reuse the same CSS file or create a new one if needed
+import '../styling/bitcoinChart.css';
 import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
 import useIsMobile from '../hooks/useIsMobile';
-import LastUpdated from '../hooks/LastUpdated';
+import { DataContext } from '../DataContext';
 import BitcoinFees from './BitcoinTransactionFees';
 
 const UsInitialClaimsChart = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
-    const [chartData, setChartData] = useState([]);
-    const [scaleMode, setScaleMode] = useState(1); // 0 = Linear, 1 = Logarithmic
     const chartRef = useRef(null);
+    const areaSeriesRef = useRef(null);
     const theme = useTheme();
-    const colors = tokens(theme.palette.mode);
+    const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
+    const isMobile = useIsMobile();
+    const { initialClaimsData, fetchInitialClaimsData } = useContext(DataContext);
+
+    const [scaleMode, setScaleMode] = useState(1); // 1 for logarithmic, 0 for linear
     const [tooltipData, setTooltipData] = useState(null);
     const [isInteractive, setIsInteractive] = useState(false);
-    const isMobile = useIsMobile();
-    const currentYear = new Date().getFullYear().toString();
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const currentYear = useMemo(() => new Date().getFullYear().toString(), []);
 
-    const setInteractivity = () => {
-        setIsInteractive(!isInteractive);
-    };
-
-    const toggleScaleMode = () => {
-        setScaleMode(prevMode => (prevMode === 1 ? 0 : 1));
-    };
-
-    const resetChartView = () => {
-        if (chartRef.current) {
-            chartRef.current.timeScale().fitContent();
-        }
-    };
-
+    // Fetch data only if not present in context
     useEffect(() => {
-        const cacheKey = 'initialClaimsData';
-        const cachedData = localStorage.getItem(cacheKey);
-        const today = new Date();
-
         const fetchData = async () => {
+            if (initialClaimsData.length > 0) return;
+            setIsLoading(true);
+            setError(null);
             try {
-                const response = await fetch('https://vercel-dataflow.vercel.app/api/initial-claims/');
-                const data = await response.json();
-                const formattedData = data.map(item => ({
-                    time: item.date,
-                    value: parseInt(item.value, 10) // Convert string to integer
-                }));
-                localStorage.setItem(cacheKey, JSON.stringify(formattedData));
-                setChartData(formattedData);
-            } catch (error) {
-                console.error('Error fetching initial claims data:', error);
+                await fetchInitialClaimsData();
+            } catch (err) {
+                setError('Failed to fetch initial claims data. Please try again later.');
+                console.error('Error fetching data:', err);
+            } finally {
+                setIsLoading(false);
             }
         };
+        fetchData();
+    }, [fetchInitialClaimsData, initialClaimsData.length]);
 
-        if (cachedData) {
-            const parsedData = JSON.parse(cachedData);
-            const lastCachedDate = new Date(parsedData[parsedData.length - 1].time);
-            if (lastCachedDate.setHours(0, 0, 0, 0) === today.setHours(0, 0, 0, 0)) {
-                setChartData(JSON.parse(cachedData));
-            } else {
-                fetchData();
-            }
-        } else {
-            fetchData();
-        }
-    }, []);
+    const setInteractivity = useCallback(() => setIsInteractive(prev => !prev), []);
+    const toggleScaleMode = useCallback(() => setScaleMode(prev => (prev === 1 ? 0 : 1)), []);
+    const resetChartView = useCallback(() => chartRef.current?.timeScale().fitContent(), []);
 
+    // Initialize chart
     useEffect(() => {
-        if (chartData.length === 0) return;
+        if (initialClaimsData.length === 0) return;
 
         const chart = createChart(chartContainerRef.current, {
             width: chartContainerRef.current.clientWidth,
             height: chartContainerRef.current.clientHeight,
-            layout: {
-                background: { type: 'solid', color: colors.primary[700] },
-                textColor: colors.primary[100],
-            },
-            grid: {
-                vertLines: { color: colors.greenAccent[700] },
-                horzLines: { color: colors.greenAccent[700] },
-            },
-            timeScale: {
-                minBarSpacing: 0.001,
-            },
+            layout: { background: { type: 'solid', color: colors.primary[700] }, textColor: colors.primary[100] },
+            grid: { vertLines: { color: colors.greenAccent[700] }, horzLines: { color: colors.greenAccent[700] } },
+            timeScale: { minBarSpacing: 0.001 },
         });
 
-        chart.subscribeCrosshairMove(param => {
-            if (
-                param.point === undefined ||
-                !param.time ||
-                param.point.x < 0 ||
-                param.point.x > chartContainerRef.current.clientWidth ||
-                param.point.y < 0 ||
-                param.point.y > chartContainerRef.current.clientHeight
-            ) {
-                setTooltipData(null);
-            } else {
-                const dateStr = param.time;
-                const data = param.seriesData.get(areaSeries);
-                setTooltipData({
-                    date: dateStr,
-                    value: data.value,
-                    x: param.point.x,
-                    y: param.point.y,
-                });
-            }
+        const areaSeries = chart.addAreaSeries({
+            priceScaleId: 'right',
+            lineWidth: 2,
+            priceFormat: {
+                type: 'custom',
+                minMove: 1,
+                formatter: value => value.toLocaleString(),
+            },
         });
+        areaSeriesRef.current = areaSeries;
 
         chart.priceScale('right').applyOptions({
             mode: scaleMode,
             borderVisible: false,
         });
 
-        const resizeChart = () => {
-            if (chart && chartContainerRef.current) {
-                chart.applyOptions({
-                    width: chartContainerRef.current.clientWidth,
-                    height: chartContainerRef.current.clientHeight,
+        chart.subscribeCrosshairMove(param => {
+            if (!param.point || !param.time || param.point.x < 0 || param.point.x > chartContainerRef.current.clientWidth || param.point.y < 0 || param.point.y > chartContainerRef.current.clientHeight) {
+                setTooltipData(null);
+            } else {
+                const data = param.seriesData.get(areaSeries);
+                setTooltipData({
+                    date: param.time,
+                    value: data?.value,
+                    x: param.point.x,
+                    y: param.point.y,
                 });
-                chart.timeScale().fitContent();
             }
-        };
+        });
 
+        const resizeChart = () => {
+            chart.applyOptions({
+                width: chartContainerRef.current.clientWidth,
+                height: chartContainerRef.current.clientHeight,
+            });
+            chart.timeScale().fitContent();
+        };
         window.addEventListener('resize', resizeChart);
-        window.addEventListener('resize', resetChartView);
 
-        const lightThemeColors = {
-            topColor: 'rgba(255, 165, 0, 0.56)', // Orange for light mode
-            bottomColor: 'rgba(255, 165, 0, 0.2)',
-            lineColor: 'rgba(255, 140, 0, 0.8)',
-        };
+        const { topColor, bottomColor, lineColor } = theme.palette.mode === 'dark'
+            ? { topColor: 'rgba(38, 198, 218, 0.56)', bottomColor: 'rgba(38, 198, 218, 0.04)', lineColor: 'rgba(38, 198, 218, 1)' }
+            : { topColor: 'rgba(255, 165, 0, 0.56)', bottomColor: 'rgba(255, 165, 0, 0.2)', lineColor: 'rgba(255, 140, 0, 0.8)' };
 
-        const darkThemeColors = {
-            topColor: 'rgba(38, 198, 218, 0.56)', // Cyan for dark mode
-            bottomColor: 'rgba(38, 198, 218, 0.04)',
-            lineColor: 'rgba(38, 198, 218, 1)',
-        };
+        areaSeries.applyOptions({ topColor, bottomColor, lineColor });
+        areaSeries.setData(initialClaimsData);
 
-        const { topColor, bottomColor, lineColor } = theme.palette.mode === 'dark' ? darkThemeColors : lightThemeColors;
-
-        const areaSeries = chart.addAreaSeries({
-            priceScaleId: 'right',
-            topColor: topColor,
-            bottomColor: bottomColor,
-            lineColor: lineColor,
-            lineWidth: 2,
-            priceFormat: {
-                type: 'custom',
-                minMove: 1,
-                formatter: value => value.toLocaleString(), // Format large numbers with commas
-            },
-        });
-        areaSeries.setData(chartData);
-
-        chart.applyOptions({
-            handleScroll: !isDashboard,
-            handleScale: !isDashboard,
-            handleScroll: isInteractive,
-            handleScale: isInteractive,
-        });
-
-        resizeChart();
-        chart.timeScale().fitContent();
         chartRef.current = chart;
+        resetChartView();
 
         return () => {
             chart.remove();
             window.removeEventListener('resize', resizeChart);
-            window.removeEventListener('resize', resetChartView);
         };
-    }, [chartData, scaleMode, isDashboard, theme.palette.mode]);
+    }, [initialClaimsData, colors, scaleMode, theme.palette.mode]);
 
+    // Update interactivity
     useEffect(() => {
         if (chartRef.current) {
-            chartRef.current.applyOptions({
-                handleScroll: isInteractive,
-                handleScale: isInteractive,
-            });
+            chartRef.current.applyOptions({ handleScroll: isInteractive, handleScale: isInteractive });
         }
     }, [isInteractive]);
 
@@ -184,101 +123,53 @@ const UsInitialClaimsChart = ({ isDashboard = false }) => {
         <div style={{ height: '100%' }}>
             {!isDashboard && (
                 <div className='chart-top-div'>
-                    <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
                         <label className="switch">
                             <input type="checkbox" checked={scaleMode === 1} onChange={toggleScaleMode} />
                             <span className="slider round"></span>
                         </label>
-                        <span className="scale-mode-label" style={{ color: colors.primary[100] }}>
-                            {scaleMode === 1 ? 'Logarithmic' : 'Linear'}
-                        </span>
+                        <span style={{ color: colors.primary[100] }}>{scaleMode === 1 ? 'Logarithmic' : 'Linear'}</span>
+                        {isLoading && <span style={{ color: colors.grey[100] }}>Loading...</span>}
+                        {error && <span style={{ color: colors.redAccent[500] }}>{error}</span>}
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                        {!isDashboard && (
-                            <button
-                                onClick={setInteractivity}
-                                className="button-reset"
-                                style={{
-                                    backgroundColor: isInteractive ? '#4cceac' : 'transparent',
-                                    color: isInteractive ? 'black' : '#31d6aa',
-                                    borderColor: isInteractive ? 'violet' : '#70d8bd',
-                                }}
-                            >
-                                {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
-                            </button>
-                        )}
-                        {!isDashboard && (
-                            <button onClick={resetChartView} className="button-reset extra-margin">
-                                Reset Chart
-                            </button>
-                        )}
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                        <button onClick={setInteractivity} className="button-reset" style={{ backgroundColor: isInteractive ? '#4cceac' : 'transparent', color: isInteractive ? 'black' : '#31d6aa', borderColor: isInteractive ? 'violet' : '#70d8bd' }}>
+                            {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
+                        </button>
+                        <button onClick={resetChartView} className="button-reset extra-margin">Reset Chart</button>
                     </div>
                 </div>
             )}
-
-            <div
-                className="chart-container"
-                style={{
-                    position: 'relative',
-                    height: 'calc(100% - 40px)',
-                    width: '100%',
-                    border: '2px solid #a9a9a9',
-                }}
-                onDoubleClick={() => {
-                    if (!isInteractive && !isDashboard) {
-                        setInteractivity();
-                    } else {
-                        setInteractivity();
-                    }
-                }}
-            >
+            <div className="chart-container" style={{ position: 'relative', height: isDashboard ? '100%' : 'calc(100% - 40px)', width: '100%', border: '2px solid #a9a9a9' }} onDoubleClick={setInteractivity}>
                 <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
             </div>
-
             <div className='under-chart'>
-                {!isDashboard && (
-                    <LastUpdated storageKey="initialClaimsData" />
+                {!isDashboard && initialClaimsData.length > 0 && (
+                    <div style={{ marginTop: '10px' }}>
+                        <span style={{ color: colors.greenAccent[500] }}>Last Updated: {initialClaimsData[initialClaimsData.length - 1].time}</span>
+                    </div>
                 )}
-                {!isDashboard && (
-                    <BitcoinFees />
-                )}
+                {!isDashboard && <BitcoinFees />}
             </div>
-
             {!isDashboard && tooltipData && (
-                <div
-                    className="tooltip"
-                    style={{
-                        left: (() => {
-                            const sidebarWidth = isMobile ? -80 : -320;
-                            const cursorX = tooltipData.x - sidebarWidth;
-                            const chartWidth = chartContainerRef.current.clientWidth - sidebarWidth;
-                            const tooltipWidth = 200;
-                            const K = 10000;
-                            const C = 300;
-
-                            const offset = K / (chartWidth + C);
-                            const rightPosition = cursorX + offset;
-                            const leftPosition = cursorX - tooltipWidth - offset;
-
-                            if (rightPosition + tooltipWidth <= chartWidth) {
-                                return `${rightPosition}px`;
-                            } else if (leftPosition >= 0) {
-                                return `${leftPosition}px`;
-                            } else {
-                                return `${Math.max(0, Math.min(rightPosition, chartWidth - tooltipWidth))}px`;
-                            }
-                        })(),
-                        top: `${tooltipData.y + 100}px`,
-                    }}
-                >
+                <div className="tooltip" style={{
+                    left: (() => {
+                        const sidebarWidth = isMobile ? -80 : -320;
+                        const cursorX = tooltipData.x - sidebarWidth;
+                        const chartWidth = chartContainerRef.current.clientWidth - sidebarWidth;
+                        const tooltipWidth = 200;
+                        const offset = 10000 / (chartWidth + 300);
+                        const rightPosition = cursorX + offset;
+                        const leftPosition = cursorX - tooltipWidth - offset;
+                        return rightPosition + tooltipWidth <= chartWidth ? `${rightPosition}px` : (leftPosition >= 0 ? `${leftPosition}px` : `${Math.max(0, Math.min(rightPosition, chartWidth - tooltipWidth))}px`);
+                    })(),
+                    top: `${tooltipData.y + 100}px`,
+                }}>
                     <div style={{ fontSize: '15px' }}>Initial Claims</div>
                     <div style={{ fontSize: '20px' }}>{tooltipData.value.toLocaleString()}</div>
-                    {tooltipData.date.toString().substring(0, 4) === currentYear
-                        ? `${tooltipData.date} - latest`
-                        : tooltipData.date}
+                    <div>{tooltipData.date.toString().substring(0, 4) === currentYear ? `${tooltipData.date} - latest` : tooltipData.date}</div>
                 </div>
             )}
-
             {!isDashboard && (
                 <p className='chart-info'>
                     This chart shows the weekly initial unemployment claims in the United States,

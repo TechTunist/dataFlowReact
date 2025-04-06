@@ -1,62 +1,54 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import GaugeChart from 'react-gauge-chart';
 import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
-import LastUpdated from '../hooks/LastUpdated';
 import useIsMobile from '../hooks/useIsMobile';
+import { DataContext } from '../DataContext';
 
 function CryptoFearAndGreedIndex({ isDashboard }) {
-    const [fearAndGreedValue, setFearAndGreedValue] = useState([]);
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
     const isMobile = useIsMobile();
+    const { fetchFearAndGreedData, fearAndGreedData } = useContext(DataContext);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState(null);
 
-    // Function to convert Unix timestamp to date format
+    // First, let's add fearAndGreedData to the DataContext if it's not there already
+    // Note: You'll need to add this to your DataContext.js file separately
+
+    useEffect(() => {
+        const fetchData = async () => {
+            if (fearAndGreedData.length > 0) return; // Skip if data already exists
+            
+            setIsLoading(true);
+            setError(null);
+            try {
+                await fetchFearAndGreedData();
+            } catch (err) {
+                setError('Failed to fetch Fear and Greed data. Please try again later.');
+                console.error('Error fetching Fear and Greed data:', err);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchData();
+    }, [fetchFearAndGreedData, fearAndGreedData.length]);
+
+    // Convert timestamp to date format
     const convertTimestampToDate = (timestamp) => {
         const date = new Date(timestamp * 1000);
         return date.toISOString().split('T')[0];
     };
 
-    // Fetch and process data
-    useEffect(() => {
-        const cacheKey = 'fearAndGreedData';
-        const cachedData = localStorage.getItem(cacheKey);
-        const today = new Date();
+    // Format the data from context
+    const formattedData = fearAndGreedData.map(item => ({
+        value: parseInt(item.value),
+        value_classification: item.value_classification,
+        time: convertTimestampToDate(item.timestamp)
+    }));
 
-        if (cachedData) {
-            const parsedData = JSON.parse(cachedData);
-            const lastCachedDate = new Date(parsedData[parsedData.length - 1].date);
-
-            if (lastCachedDate.setHours(0, 0, 0, 0) === today.setHours(0, 0, 0, 0)) {
-                setFearAndGreedValue(parsedData);
-            } else {
-                fetchData();
-            }
-
-        } else {
-            fetchData();
-        }
-
-        function fetchData() {
-            // fetch('https://tunist.pythonanywhere.com/api/fear-and-greed/')
-            fetch('https://vercel-dataflow.vercel.app/api/fear-and-greed/')
-                .then(response => response.json())
-                .then(data => {
-                    const formattedData = data.map(item => ({
-                        value: parseInt(item.value),
-                        value_classification: item.value_classification,
-                        time: convertTimestampToDate(item.timestamp)
-                    }));
-                    // Save the data to local storage
-                    localStorage.setItem(cacheKey, JSON.stringify(formattedData));
-                    setFearAndGreedValue(formattedData);
-                })
-                .catch(error => console.error('Error fetching data: ', error));
-        }
-    }, []);
-
-    let value = fearAndGreedValue.length ? fearAndGreedValue[fearAndGreedValue.length - 1].value / 100 : 0;
-    const value_classification = fearAndGreedValue.length ? fearAndGreedValue[fearAndGreedValue.length - 1].value_classification : '';
+    const value = formattedData.length ? formattedData[formattedData.length - 1].value / 100 : 0;
+    const value_classification = formattedData.length ? formattedData[formattedData.length - 1].value_classification : '';
 
     const gaugeColors = ["#4BC0C8", "#33D1FF", "#66A3FF", "#9996FF", "#CC89FF", "#FF7DFF", "#FF61C3", "#FF4590", "#FF295D", "#FF0033", "#FF0033"];
 
@@ -89,6 +81,8 @@ function CryptoFearAndGreedIndex({ isDashboard }) {
                     height: '30px'
                 }}>
                     <div>
+                        {isLoading && <span style={{ color: colors.grey[100] }}>Loading...</span>}
+                        {error && <span style={{ color: colors.redAccent[500] }}>{error}</span>}
                     </div>
                 </div>
             )}
@@ -124,17 +118,21 @@ function CryptoFearAndGreedIndex({ isDashboard }) {
                 </div>
                 <h1 style={headerStyle}>{value_classification}</h1>
             </div>
-            {!isDashboard && (
-                <LastUpdated storageKey="fearAndGreedData" />
+            
+            {!isDashboard && formattedData.length > 0 && (
+                <div style={{ marginTop: '10px' }}>
+                    <span style={{ color: colors.grey[100] }}>
+                        Last Updated: {formattedData[formattedData.length - 1].time}
+                    </span>
+                </div>
             )}
-            {
-                !isDashboard && (
-                    <p className='chart-info' style={{ marginTop: '20px', textAlign: 'left', width: '100%' }}>
-                        The Fear and Greed index is a metric that measures the sentiment of the market by analyzing various sources of data, including surveys, social media, volatility, market momentum, and volume among others.
-                        <br /> The information has been provided here: <a href="https://alternative.me/crypto/fear-and-greed-index/">https://alternative.me/crypto/fear-and-greed-index/</a>
-                    </p>
-                )
-            }
+            
+            {!isDashboard && (
+                <p className='chart-info' style={{ marginTop: '20px', textAlign: 'left', width: '100%' }}>
+                    The Fear and Greed index is a metric that measures the sentiment of the market by analyzing various sources of data, including surveys, social media, volatility, market momentum, and volume among others.
+                    <br /> The information has been provided here: <a href="https://alternative.me/crypto/fear-and-greed-index/">https://alternative.me/crypto/fear-and-greed-index/</a>
+                </p>
+            )}
         </div>
     );
 }
