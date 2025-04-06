@@ -387,7 +387,7 @@ const EthereumPrice = ({ isDashboard = false }) => {
                         gap: '10px',
                         alignItems: 'center', // Optional: ensures vertical alignment if components have different heights
                     }}>
-                        <LastUpdated storageKey="ethData" useLocalStorage={true}/>
+                        <LastUpdated storageKey="ethData"/>
                     </Box>
                 </div>
             )}

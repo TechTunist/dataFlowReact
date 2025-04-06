@@ -621,7 +621,7 @@ const AltcoinPrice = ({ isDashboard = false }) => {
                             gap: '10px',
                         }}
                     >
-                        <LastUpdated storageKey={`${selectedCoin.toLowerCase()}Data`} />
+                        <LastUpdated storageKey={`${selectedCoin.toLowerCase()}Data`} useLocalStorage={true}/>
                     </Box>
                 </div>
             )}
