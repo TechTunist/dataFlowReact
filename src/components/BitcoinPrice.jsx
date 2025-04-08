@@ -26,6 +26,9 @@ const BitcoinPrice = ({ isDashboard = false }) => {
   const colors = tokens(theme.palette.mode);
   const isMobile = useIsMobile();
 
+  const mayerPriceLinesRef = useRef([]);
+  const mvrvPriceLinesRef = useRef([]);
+
   const {
     btcData,
     fedBalanceData,
@@ -44,7 +47,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
     'mvrv': { 
       color: 'orange', 
       label: 'MVRV Ratio', 
-      description: 'Market Value to Realized Value ratio, comparing Bitcoin\'s market cap to its realized cap. Values above 3.7 suggest overvaluation; below 1 indicate undervaluation.' 
+      description: 'Market Value to Realized Value ratio with projected peak based on historical decreases. Values above 3.7 suggest overvaluation; below 1 indicate undervaluation.' 
     },
     'mayer-multiple': { 
       color: 'red', 
@@ -81,7 +84,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
   };
 
   const calculateMayerMultiple = (data) => {
-    const period = 200; // 200-day MA
+    const period = 200;
     let mayerMultiples = [];
     for (let i = period - 1; i < data.length; i++) {
       let sum = 0;
@@ -97,6 +100,36 @@ const BitcoinPrice = ({ isDashboard = false }) => {
     return mayerMultiples;
   };
 
+  const calculateMvrvPeakProjection = (mvrvData) => {
+    const peaks = [];
+    const window = 90;
+    for (let i = window; i < mvrvData.length - window; i++) {
+      const isPeak = mvrvData.slice(i - window, i + window + 1).every(
+        (item, idx) => item.value <= mvrvData[i].value || idx === window
+      );
+      if (isPeak && mvrvData[i].value > 2) {
+        peaks.push(mvrvData[i]);
+      }
+    }
+
+    const decreases = [];
+    for (let i = 1; i < peaks.length; i++) {
+      const decrease = (peaks[i - 1].value - peaks[i].value) / peaks[i - 1].value;
+      decreases.push(decrease);
+    }
+
+    const avgDecrease = decreases.length > 0 
+      ? decreases.reduce((sum, val) => sum + val, 0) / decreases.length 
+      : 0;
+
+    const latestPeak = peaks[peaks.length - 1];
+    const projectedPeak = latestPeak 
+      ? latestPeak.value * (1 - avgDecrease) 
+      : null;
+
+    return { peaks, projectedPeak };
+  };
+
   const handleIndicatorChange = (event) => {
     setActiveIndicators(event.target.value);
   };
@@ -105,26 +138,22 @@ const BitcoinPrice = ({ isDashboard = false }) => {
     setActiveSMAs(event.target.value);
   };
 
-  // Trigger lazy fetching when the component mounts
   useEffect(() => {
     fetchBtcData();
   }, [fetchBtcData]);
 
-  // Fetch Fed balance data only if the indicator is active
   useEffect(() => {
     if (activeIndicators.includes('fed-balance')) {
       fetchFedBalanceData();
     }
   }, [activeIndicators, fetchFedBalanceData]);
 
-  // Fetch MVRV data only if the indicator is active
   useEffect(() => {
     if (activeIndicators.includes('mvrv')) {
       fetchMvrvData();
     }
   }, [activeIndicators, fetchMvrvData]);
 
-  // Create chart once on mount
   useEffect(() => {
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
@@ -235,12 +264,15 @@ const BitcoinPrice = ({ isDashboard = false }) => {
           : null;
         const mayerMultipleValue = nearestMayerData ? nearestMayerData.value : null;
 
+        const { projectedPeak } = mvrvSeriesData.length > 0 ? calculateMvrvPeakProjection(mvrvSeriesData) : { projectedPeak: null };
+
         setTooltipData({
           date: dateStr,
           price: priceData?.value,
           fedBalance: fedBalanceValue,
           mvrv: mvrvValue,
           mayerMultiple: mayerMultipleValue,
+          mvrvPeakProjection: projectedPeak,
           x: param.point.x,
           y: param.point.y,
         });
@@ -263,17 +295,21 @@ const BitcoinPrice = ({ isDashboard = false }) => {
     return () => {
       chart.remove();
       window.removeEventListener('resize', resizeChart);
+      mayerPriceLinesRef.current.forEach(priceLine => {
+        mayerMultipleSeriesRef.current?.removePriceLine(priceLine);
+      });
+      mvrvPriceLinesRef.current.forEach(priceLine => {
+        mvrvSeriesRef.current?.removePriceLine(priceLine);
+      });
     };
   }, []);
 
-  // Update scale mode for the Bitcoin price scale
   useEffect(() => {
     if (chartRef.current) {
       chartRef.current.priceScale('right').applyOptions({ mode: scaleMode, borderVisible: false });
     }
   }, [scaleMode]);
 
-  // Update Bitcoin price series data
   useEffect(() => {
     if (priceSeriesRef.current && btcData.length > 0) {
       priceSeriesRef.current.setData(btcData);
@@ -281,7 +317,6 @@ const BitcoinPrice = ({ isDashboard = false }) => {
     }
   }, [btcData]);
 
-  // Update Fed balance series data
   useEffect(() => {
     if (fedBalanceSeriesRef.current && btcData.length > 0 && fedBalanceData.length > 0) {
       const btcStartTime = new Date(btcData[0].time).getTime();
@@ -296,7 +331,6 @@ const BitcoinPrice = ({ isDashboard = false }) => {
     }
   }, [fedBalanceData, btcData, activeIndicators]);
 
-  // Update MVRV series data
   useEffect(() => {
     if (mvrvSeriesRef.current && btcData.length > 0 && mvrvData.length > 0) {
       const btcStartTime = new Date(btcData[0].time).getTime();
@@ -307,20 +341,97 @@ const BitcoinPrice = ({ isDashboard = false }) => {
       });
 
       mvrvSeriesRef.current.setData(filteredMvrvData);
-      mvrvSeriesRef.current.applyOptions({ visible: activeIndicators.includes('mvrv') });
+
+      mvrvPriceLinesRef.current.forEach(priceLine => {
+        mvrvSeriesRef.current.removePriceLine(priceLine);
+      });
+      mvrvPriceLinesRef.current = [];
+
+      const { projectedPeak } = calculateMvrvPeakProjection(filteredMvrvData);
+
+      if (activeIndicators.includes('mvrv')) {
+        const overvaluedLine = mvrvSeriesRef.current.createPriceLine({
+          price: 3.7,
+          color: indicators['mvrv'].color,
+          lineWidth: 1,
+          lineStyle: 2,
+          axisLabelVisible: true,
+          title: 'Overvalued',
+        });
+
+        const undervaluedLine = mvrvSeriesRef.current.createPriceLine({
+          price: 1,
+          color: indicators['mvrv'].color,
+          lineWidth: 1,
+          lineStyle: 2,
+          axisLabelVisible: true,
+          title: 'Undervalued',
+        });
+
+        const projectedPeakLine = projectedPeak ? mvrvSeriesRef.current.createPriceLine({
+          price: projectedPeak,
+          color: 'cyan',
+          lineWidth: 2,
+          lineStyle: 1, // Dotted line
+          axisLabelVisible: true,
+          title: 'Projected Peak',
+        }) : null;
+
+        mvrvPriceLinesRef.current = [overvaluedLine, undervaluedLine];
+        if (projectedPeakLine) mvrvPriceLinesRef.current.push(projectedPeakLine);
+        mvrvSeriesRef.current.applyOptions({ visible: true });
+      } else {
+        mvrvSeriesRef.current.applyOptions({ visible: false });
+      }
     }
   }, [mvrvData, btcData, activeIndicators]);
 
-  // Update Mayer Multiple series data
   useEffect(() => {
     if (mayerMultipleSeriesRef.current && btcData.length > 0) {
       const mayerMultipleData = calculateMayerMultiple(btcData);
       mayerMultipleSeriesRef.current.setData(mayerMultipleData);
-      mayerMultipleSeriesRef.current.applyOptions({ visible: activeIndicators.includes('mayer-multiple') });
+
+      mayerPriceLinesRef.current.forEach(priceLine => {
+        mayerMultipleSeriesRef.current.removePriceLine(priceLine);
+      });
+      mayerPriceLinesRef.current = [];
+
+      if (activeIndicators.includes('mayer-multiple')) {
+        const overboughtLine = mayerMultipleSeriesRef.current.createPriceLine({
+          price: 2.4,
+          color: 'darkred',
+          lineWidth: 1,
+          lineStyle: 2,
+          axisLabelVisible: true,
+          title: 'Overbought',
+        });
+
+        const undervaluedLine = mayerMultipleSeriesRef.current.createPriceLine({
+          price: 1,
+          color: 'darkred',
+          lineWidth: 1,
+          lineStyle: 2,
+          axisLabelVisible: true,
+          title: 'Undervalued',
+        });
+
+        const severelyUndervaluedLine = mayerMultipleSeriesRef.current.createPriceLine({
+          price: 0.6,
+          color: 'darkred',
+          lineWidth: 1,
+          lineStyle: 2, // Dashed line, consistent with other lines
+          axisLabelVisible: true,
+          title: 'Severely Undervalued',
+        });
+
+        mayerPriceLinesRef.current = [overboughtLine, undervaluedLine, severelyUndervaluedLine];
+        mayerMultipleSeriesRef.current.applyOptions({ visible: true });
+      } else {
+        mayerMultipleSeriesRef.current.applyOptions({ visible: false });
+      }
     }
   }, [btcData, activeIndicators]);
 
-  // Update SMA indicators
   useEffect(() => {
     if (!chartRef.current || btcData.length === 0) return;
 
@@ -344,7 +455,6 @@ const BitcoinPrice = ({ isDashboard = false }) => {
     });
   }, [activeSMAs, btcData]);
 
-  // Update interactivity
   useEffect(() => {
     if (chartRef.current) {
       chartRef.current.applyOptions({
@@ -354,7 +464,6 @@ const BitcoinPrice = ({ isDashboard = false }) => {
     }
   }, [isInteractive]);
 
-  // Update colors based on theme
   useEffect(() => {
     if (priceSeriesRef.current) {
       const { topColor, bottomColor, lineColor } = theme.palette.mode === 'dark'
@@ -561,6 +670,20 @@ const BitcoinPrice = ({ isDashboard = false }) => {
               {indicators[key].label}
             </div>
           ))}
+          {activeIndicators.includes('mvrv') && (
+            <div style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>
+              <span
+                style={{
+                  display: 'inline-block',
+                  width: '10px',
+                  height: '10px',
+                  backgroundColor: 'cyan',
+                  marginRight: '5px',
+                }}
+              />
+              MVRV Peak Projection
+            </div>
+          )}
           {activeSMAs.map(key => (
             <div key={key} style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>
               <span
@@ -634,6 +757,11 @@ const BitcoinPrice = ({ isDashboard = false }) => {
           {activeIndicators.includes('mvrv') && tooltipData.mvrv !== null && (
             <div style={{ color: indicators['mvrv'].color }}>
               MVRV Ratio: {tooltipData.mvrv.toFixed(2)}
+            </div>
+          )}
+          {activeIndicators.includes('mvrv') && tooltipData.mvrvPeakProjection !== null && (
+            <div style={{ color: 'cyan' }}>
+              MVRV Peak Projection: {tooltipData.mvrvPeakProjection.toFixed(2)}
             </div>
           )}
           {activeIndicators.includes('mayer-multiple') && tooltipData.mayerMultiple !== null && (
