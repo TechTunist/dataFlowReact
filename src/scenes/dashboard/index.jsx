@@ -25,6 +25,7 @@ import UsInitialClaimsChart from "../../components/UsInitialClaims";
 import UsCombinedMacroChart from "../../components/UsCombinedMacro";
 import { DataContext } from "../../DataContext";
 import LazyLoad from "react-lazyload";
+import BitcoinROI from "../../components/BitcoinROI";
 
 const Dashboard = ({ isMobile, isSidebar }) => {
   const theme = useTheme();
@@ -554,6 +555,44 @@ const Dashboard = ({ isMobile, isSidebar }) => {
                   )}
                   <Typography variant="body3" color="textSecondary" className="dashboard-info">
                     Compare the previous crypto market cycles, either from the bear-market bottom or from the halving event.
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Link>
+          </LazyLoad>
+        </Grid>
+
+                {/* Market Cycles Card */}
+                <Grid item xs={12} lg={6}>
+          <LazyLoad height={400} offset={100}>
+            <Link to="/market-cycles" style={{ textDecoration: "none" }}>
+              <Card
+                sx={{
+                  backgroundColor: colors.primary[500],
+                  border: `1px solid ${colors.greenAccent[500]}`,
+                  '&:hover': {
+                    boxShadow: `0 0 10px ${colors.greenAccent[500]}`,
+                    cursor: 'pointer',
+                  },
+                }}
+              >
+                <CardContent>
+                  <Typography
+                    variant="h4"
+                    gutterBottom
+                    style={{ color: colors.grey[100] }}
+                  >
+                    Bitcoin ROI
+                  </Typography>
+                  {chartsVisible ? (
+                    <Box height="400px" m="10px 0 0 0">
+                      <BitcoinROI isDashboard={true} priceData={btcData} />
+                    </Box>
+                  ) : (
+                    <ChartPlaceholder />
+                  )}
+                  <Typography variant="body3" color="textSecondary" className="dashboard-info">
+                    Annualised ROI for Bitcoin.
                   </Typography>
                 </CardContent>
               </Card>

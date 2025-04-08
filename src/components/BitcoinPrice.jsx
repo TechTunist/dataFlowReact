@@ -6,7 +6,7 @@ import { useTheme } from "@mui/material";
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
 import BitcoinFees from './BitcoinTransactionFees';
-import { Stack, Select, MenuItem, FormControl, FormControlLabel, InputLabel, Box, Checkbox, Button } from '@mui/material';
+import { Stack, Select, MenuItem, FormControl, InputLabel, Box, Checkbox, Button } from '@mui/material';
 import { DataContext } from '../DataContext';
 
 const BitcoinPrice = ({ isDashboard = false }) => {
@@ -16,10 +16,12 @@ const BitcoinPrice = ({ isDashboard = false }) => {
   const smaSeriesRefs = useRef({}).current;
   const fedBalanceSeriesRef = useRef(null);
   const mvrvSeriesRef = useRef(null);
+  const mayerMultipleSeriesRef = useRef(null);
   const [scaleMode, setScaleMode] = useState(1);
   const [tooltipData, setTooltipData] = useState(null);
   const [isInteractive, setIsInteractive] = useState(false);
   const [activeIndicators, setActiveIndicators] = useState([]);
+  const [activeSMAs, setActiveSMAs] = useState([]);
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const isMobile = useIsMobile();
@@ -34,13 +36,29 @@ const BitcoinPrice = ({ isDashboard = false }) => {
   } = useContext(DataContext);
 
   const indicators = {
+    'fed-balance': { 
+      color: 'purple', 
+      label: 'Fed Balance (Trillions)', 
+      description: 'The Federal Reserve\'s balance sheet size in trillions of USD, reflecting monetary policy and liquidity in the economy, which may influence Bitcoin\'s price.' 
+    },
+    'mvrv': { 
+      color: 'orange', 
+      label: 'MVRV Ratio', 
+      description: 'Market Value to Realized Value ratio, comparing Bitcoin\'s market cap to its realized cap. Values above 3.7 suggest overvaluation; below 1 indicate undervaluation.' 
+    },
+    'mayer-multiple': { 
+      color: 'red', 
+      label: 'Mayer Multiple', 
+      description: 'The ratio of Bitcoin\'s current price to its 200-day moving average. Above 2.4 often signals overbought conditions; below 1 may indicate undervaluation.' 
+    },
+  };
+
+  const smaIndicators = {
     '8w-sma': { period: 8 * 7, color: 'blue', label: '8 Week SMA' },
     '20w-sma': { period: 20 * 7, color: 'limegreen', label: '20 Week SMA' },
     '50w-sma': { period: 50 * 7, color: 'magenta', label: '50 Week SMA' },
     '100w-sma': { period: 100 * 7, color: 'white', label: '100 Week SMA' },
     '200w-sma': { period: 200 * 7, color: 'yellow', label: '200 Week SMA' },
-    'fed-balance': { color: 'purple', label: 'Fed Balance (Trillions)' },
-    'mvrv': { color: 'orange', label: 'MVRV Ratio' },
   };
 
   const setInteractivity = () => setIsInteractive(!isInteractive);
@@ -62,8 +80,29 @@ const BitcoinPrice = ({ isDashboard = false }) => {
     return movingAverages;
   };
 
+  const calculateMayerMultiple = (data) => {
+    const period = 200; // 200-day MA
+    let mayerMultiples = [];
+    for (let i = period - 1; i < data.length; i++) {
+      let sum = 0;
+      for (let j = 0; j < period; j++) {
+        sum += data[i - j].value;
+      }
+      const ma200 = sum / period;
+      mayerMultiples.push({
+        time: data[i].time,
+        value: data[i].value / ma200,
+      });
+    }
+    return mayerMultiples;
+  };
+
   const handleIndicatorChange = (event) => {
     setActiveIndicators(event.target.value);
+  };
+
+  const handleSMAChange = (event) => {
+    setActiveSMAs(event.target.value);
   };
 
   // Trigger lazy fetching when the component mounts
@@ -106,6 +145,13 @@ const BitcoinPrice = ({ isDashboard = false }) => {
           position: 'right',
           width: 50,
         },
+        'mayer-multiple-scale': {
+          mode: 0,
+          borderVisible: false,
+          scaleMargins: { top: 0.05, bottom: 0.05 },
+          position: 'right',
+          width: 50,
+        },
       },
     });
 
@@ -116,13 +162,9 @@ const BitcoinPrice = ({ isDashboard = false }) => {
         type: 'custom',
         minMove: 1,
         formatter: (price) => {
-          if (price >= 1000) {
-            return (price / 1000).toFixed(1) + 'K';
-          } else if (price >= 100) {
-            return price.toFixed(0);
-          } else {
-            return price.toFixed(1);
-          }
+          if (price >= 1000) return (price / 1000).toFixed(1) + 'K';
+          else if (price >= 100) return price.toFixed(0);
+          return price.toFixed(1);
         },
       },
     });
@@ -146,6 +188,15 @@ const BitcoinPrice = ({ isDashboard = false }) => {
     });
     mvrvSeriesRef.current = mvrvSeries;
 
+    const mayerMultipleSeries = chart.addLineSeries({
+      priceScaleId: 'mayer-multiple-scale',
+      color: indicators['mayer-multiple'].color,
+      lineWidth: 2,
+      priceLineVisible: false,
+      visible: activeIndicators.includes('mayer-multiple'),
+    });
+    mayerMultipleSeriesRef.current = mayerMultipleSeries;
+
     chart.subscribeCrosshairMove(param => {
       if (
         !param.point ||
@@ -159,33 +210,37 @@ const BitcoinPrice = ({ isDashboard = false }) => {
       } else {
         const dateStr = param.time;
         const priceData = param.seriesData.get(priceSeriesRef.current);
+        const currentTime = new Date(param.time).getTime();
 
         const fedSeriesData = fedBalanceSeriesRef.current.data();
-        const currentTime = new Date(param.time).getTime();
         const nearestFedData = fedSeriesData.reduce((prev, curr) => {
           const currTime = new Date(curr.time).getTime();
-          if (currTime <= currentTime && (prev === null || currTime > new Date(prev.time).getTime())) {
-            return curr;
-          }
-          return prev;
+          return currTime <= currentTime && (!prev || currTime > new Date(prev.time).getTime()) ? curr : prev;
         }, null);
         const fedBalanceValue = nearestFedData ? nearestFedData.value : null;
 
         const mvrvSeriesData = mvrvSeriesRef.current.data();
         const nearestMvrvData = mvrvSeriesData.reduce((prev, curr) => {
           const currTime = new Date(curr.time).getTime();
-          if (currTime <= currentTime && (prev === null || currTime > new Date(prev.time).getTime())) {
-            return curr;
-          }
-          return prev;
+          return currTime <= currentTime && (!prev || currTime > new Date(prev.time).getTime()) ? curr : prev;
         }, null);
         const mvrvValue = nearestMvrvData ? nearestMvrvData.value : null;
+
+        const mayerMultipleData = mayerMultipleSeriesRef.current.data();
+        const nearestMayerData = mayerMultipleData.length > 0
+          ? mayerMultipleData.reduce((prev, curr) => {
+              const currTime = new Date(curr.time).getTime();
+              return currTime <= currentTime && (!prev || currTime > new Date(prev.time).getTime()) ? curr : prev;
+            }, null)
+          : null;
+        const mayerMultipleValue = nearestMayerData ? nearestMayerData.value : null;
 
         setTooltipData({
           date: dateStr,
           price: priceData?.value,
           fedBalance: fedBalanceValue,
           mvrv: mvrvValue,
+          mayerMultiple: mayerMultipleValue,
           x: param.point.x,
           y: param.point.y,
         });
@@ -256,6 +311,15 @@ const BitcoinPrice = ({ isDashboard = false }) => {
     }
   }, [mvrvData, btcData, activeIndicators]);
 
+  // Update Mayer Multiple series data
+  useEffect(() => {
+    if (mayerMultipleSeriesRef.current && btcData.length > 0) {
+      const mayerMultipleData = calculateMayerMultiple(btcData);
+      mayerMultipleSeriesRef.current.setData(mayerMultipleData);
+      mayerMultipleSeriesRef.current.applyOptions({ visible: activeIndicators.includes('mayer-multiple') });
+    }
+  }, [btcData, activeIndicators]);
+
   // Update SMA indicators
   useEffect(() => {
     if (!chartRef.current || btcData.length === 0) return;
@@ -267,20 +331,18 @@ const BitcoinPrice = ({ isDashboard = false }) => {
       }
     });
 
-    activeIndicators.forEach(key => {
-      if (key.includes('sma')) {
-        const indicator = indicators[key];
-        const series = chartRef.current.addLineSeries({
-          color: indicator.color,
-          lineWidth: 2,
-          priceLineVisible: false,
-        });
-        smaSeriesRefs[key] = series;
-        const data = calculateMovingAverage(btcData, indicator.period);
-        series.setData(data);
-      }
+    activeSMAs.forEach(key => {
+      const indicator = smaIndicators[key];
+      const series = chartRef.current.addLineSeries({
+        color: indicator.color,
+        lineWidth: 2,
+        priceLineVisible: false,
+      });
+      smaSeriesRefs[key] = series;
+      const data = calculateMovingAverage(btcData, indicator.period);
+      series.setData(data);
     });
-  }, [activeIndicators, btcData]);
+  }, [activeSMAs, btcData]);
 
   // Update interactivity
   useEffect(() => {
@@ -298,26 +360,15 @@ const BitcoinPrice = ({ isDashboard = false }) => {
       const { topColor, bottomColor, lineColor } = theme.palette.mode === 'dark'
         ? { topColor: 'rgba(38, 198, 218, 0.56)', bottomColor: 'rgba(38, 198, 218, 0.04)', lineColor: 'rgba(38, 198, 218, 1)' }
         : { topColor: 'rgba(255, 165, 0, 0.56)', bottomColor: 'rgba(255, 165, 0, 0.2)', lineColor: 'rgba(255, 140, 0, 0.8)' };
-      priceSeriesRef.current.applyOptions({
-        topColor,
-        bottomColor,
-        lineColor,
-      });
+      priceSeriesRef.current.applyOptions({ topColor, bottomColor, lineColor });
     }
     if (chartRef.current) {
       chartRef.current.applyOptions({
-        layout: {
-          background: { type: 'solid', color: colors.primary[700] },
-          textColor: colors.primary[100],
-        },
-        grid: {
-          vertLines: { color: colors.greenAccent[700] },
-          horzLines: { color: colors.greenAccent[700] },
-        },
+        layout: { background: { type: 'solid', color: colors.primary[700] }, textColor: colors.primary[100] },
+        grid: { vertLines: { color: colors.greenAccent[700] }, horzLines: { color: colors.greenAccent[700] } },
       });
     }
   }, [theme.palette.mode]);
-
 
   return (
     <div style={{ height: '100%', position: 'relative' }}>
@@ -341,9 +392,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                 color: colors.grey[100],
                 '&.Mui-focused': { color: colors.greenAccent[500] },
                 top: 0,
-                '&.MuiInputLabel-shrink': {
-                  transform: 'translate(14px, -9px) scale(0.75)',
-                },
+                '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' },
               }}
             >
               Indicators
@@ -375,6 +424,53 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                 <MenuItem key={key} value={key}>
                   <Checkbox
                     checked={activeIndicators.includes(key)}
+                    sx={{ color: colors.grey[100], '&.Mui-checked': { color: colors.greenAccent[500] } }}
+                  />
+                  <span>{label}</span>
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '300px' } }}>
+            <InputLabel
+              id="sma-label"
+              shrink
+              sx={{
+                color: colors.grey[100],
+                '&.Mui-focused': { color: colors.greenAccent[500] },
+                top: 0,
+                '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' },
+              }}
+            >
+              Moving Averages
+            </InputLabel>
+            <Select
+              multiple
+              value={activeSMAs}
+              onChange={handleSMAChange}
+              labelId="sma-label"
+              label="Moving Averages"
+              displayEmpty
+              renderValue={(selected) =>
+                selected.length > 0
+                  ? selected.map((key) => smaIndicators[key].label).join(', ')
+                  : 'Select Moving Averages'
+              }
+              sx={{
+                color: colors.grey[100],
+                backgroundColor: colors.primary[500],
+                borderRadius: "8px",
+                '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
+                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                '& .MuiSelect-select': { py: 1.5, pl: 2 },
+                '& .MuiSelect-select:empty': { color: colors.grey[500] },
+              }}
+            >
+              {Object.entries(smaIndicators).map(([key, { label }]) => (
+                <MenuItem key={key} value={key}>
+                  <Checkbox
+                    checked={activeSMAs.includes(key)}
                     sx={{ color: colors.grey[100], '&.Mui-checked': { color: colors.greenAccent[500] } }}
                   />
                   <span>{label}</span>
@@ -465,6 +561,20 @@ const BitcoinPrice = ({ isDashboard = false }) => {
               {indicators[key].label}
             </div>
           ))}
+          {activeSMAs.map(key => (
+            <div key={key} style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>
+              <span
+                style={{
+                  display: 'inline-block',
+                  width: '10px',
+                  height: '10px',
+                  backgroundColor: smaIndicators[key].color,
+                  marginRight: '5px',
+                }}
+              />
+              {smaIndicators[key].label}
+            </div>
+          ))}
         </div>
       </div>
       {!isDashboard && (
@@ -481,6 +591,15 @@ const BitcoinPrice = ({ isDashboard = false }) => {
             <BitcoinFees />
           </Box>
         </div>
+      )}
+      {!isDashboard && activeIndicators.length > 0 && (
+        <Box sx={{ margin: '10px 0', color: colors.grey[100] }}>
+          {activeIndicators.map(key => (
+            <p key={key} style={{ margin: '5px 0' }}>
+              <strong style={{ color: indicators[key].color }}>{indicators[key].label}:</strong> {indicators[key].description}
+            </p>
+          ))}
+        </Box>
       )}
       {!isDashboard && tooltipData && (
         <div
@@ -507,14 +626,19 @@ const BitcoinPrice = ({ isDashboard = false }) => {
         >
           <div style={{ fontSize: '15px' }}>Bitcoin</div>
           <div style={{ fontSize: '20px' }}>${tooltipData.price?.toFixed(2)}</div>
-          {activeIndicators.includes('fed-balance') && tooltipData.fedBalance !== undefined && (
-            <div style={{ color: 'purple' }}>
+          {activeIndicators.includes('fed-balance') && tooltipData.fedBalance !== null && (
+            <div style={{ color: indicators['fed-balance'].color }}>
               Fed Balance: ${tooltipData.fedBalance.toFixed(2)}T
             </div>
           )}
-          {activeIndicators.includes('mvrv') && tooltipData.mvrv !== undefined && (
+          {activeIndicators.includes('mvrv') && tooltipData.mvrv !== null && (
             <div style={{ color: indicators['mvrv'].color }}>
               MVRV Ratio: {tooltipData.mvrv.toFixed(2)}
+            </div>
+          )}
+          {activeIndicators.includes('mayer-multiple') && tooltipData.mayerMultiple !== null && (
+            <div style={{ color: indicators['mayer-multiple'].color }}>
+              Mayer Multiple: {tooltipData.mayerMultiple.toFixed(2)}
             </div>
           )}
           <div>{tooltipData.date?.toString()}</div>

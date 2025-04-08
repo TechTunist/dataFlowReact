@@ -31,6 +31,7 @@ import SplashPage from "./scenes/splash";
 import About from "./scenes/About";
 import LoginSignup from "./scenes/LoginSignup";
 import useIsMobile from "./hooks/useIsMobile";
+import BitcoinROI from "./components/BitcoinROI";
 
 function App() {
   const [theme, colorMode] = useMode();
@@ -104,6 +105,7 @@ function App() {
                     <Route path="/total" element={<BasicChart ChartComponent={TotalMarketCap} />} />
                     <Route path="/bitcoin-fees" element={<BasicChart ChartComponent={BitcoinTransactionFees} />} />
                     <Route path="/bitcoin-dominance" element={<BasicChart ChartComponent={BitcoinDominance} />} />
+                    <Route path="/bitcoin-roi" element={<BasicChart ChartComponent={BitcoinROI} />} />
                     <Route path="/ethereum" element={<BasicChart ChartComponent={EthereumPrice} />} />
                     <Route path="/risk" element={<BasicChart ChartComponent={Risk} />} />
                     <Route path="/risk-eth" element={<BasicChart ChartComponent={EthereumRisk} />} />
