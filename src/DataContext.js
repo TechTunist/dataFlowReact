@@ -43,6 +43,9 @@ export const DataProvider = ({ children }) => {
   const [txCountData, setTxCountData] = useState([]);
   const [isTxCountDataFetched, setIsTxCountDataFetched] = useState(false);
   const [txCountLastUpdated, setTxCountLastUpdated] = useState(null);
+  const [txCountCombinedData, setTxCountCombinedData] = useState([]);
+  const [isTxCountCombinedDataFetched, setIsTxCountCombinedDataFetched] = useState(false);
+  const [txCountCombinedLastUpdated, setTxCountCombinedLastUpdated] = useState(null);
 
 
   const fetchBtcData = useCallback(async () => {
@@ -303,6 +306,45 @@ const fetchTxCountData = useCallback(async () => {
 }, [isTxCountDataFetched]);
 
 
+const fetchTxCountCombinedData = useCallback(async () => {
+  if (isTxCountCombinedDataFetched) return;
+  setIsTxCountCombinedDataFetched(true);
+  try {
+    const response = await fetch('https://vercel-dataflow.vercel.app/api/tx-macro/');
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status} ${response.statusText}`);
+    }
+    const data = await response.json();
+    let lastInflation = null;
+    let lastUnemployment = null;
+    let lastFedFunds = null;
+
+    const formattedData = data.map(item => {
+      // Update last known values when new data is available
+      if (item.inflation_rate !== null) lastInflation = parseFloat(item.inflation_rate);
+      if (item.unemployment_rate !== null) lastUnemployment = parseFloat(item.unemployment_rate);
+      if (item.interest_rate !== null) lastFedFunds = parseFloat(item.interest_rate); // Assuming interest_rate is Fed funds rate
+
+      return {
+        time: item.date.split('T')[0],
+        tx_count: item.tx_count ? parseFloat(item.tx_count) : null,
+        price: item.price ? parseFloat(item.price) : null,
+        inflation_rate: lastInflation,
+        unemployment_rate: lastUnemployment,
+        fed_funds_rate: lastFedFunds,
+      };
+    }).sort((a, b) => new Date(a.time) - new Date(b.time));
+
+    setTxCountCombinedData(formattedData);
+    if (formattedData.length > 0) {
+      setTxCountCombinedLastUpdated(formattedData[formattedData.length - 1].time);
+    }
+  } catch (error) {
+    console.error('Error fetching combined transaction count data:', error);
+    setIsTxCountCombinedDataFetched(false);
+  }
+}, [isTxCountCombinedDataFetched]);
+
 
   return (
     <DataContext.Provider value={{
@@ -345,6 +387,8 @@ const fetchTxCountData = useCallback(async () => {
       txCountData,
       txCountLastUpdated,
       fetchTxCountData,
+      fetchTxCountCombinedData,
+      txCountCombinedData,
       
     }}>
       {children}
