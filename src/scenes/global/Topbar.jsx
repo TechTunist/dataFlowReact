@@ -89,6 +89,8 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
         return { title: "US Macro Information", subtitle: "Compare US Macro Data" };
       case "/us-initial-claims":
         return { title: "US Initial Claims", subtitle: "Jobless Claims" };
+      case "/tx-combined":
+        return { title: "US Macro and BTC Tx Count", subtitle: "Macro and On-Chain Data" };
       default:
         return { title: "CryptoLogical", subtitle: "" };
     }
