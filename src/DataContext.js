@@ -40,6 +40,9 @@ export const DataProvider = ({ children }) => {
   const [unemploymentData, setUnemploymentData] = useState([]);
   const [isUnemploymentDataFetched, setIsUnemploymentDataFetched] = useState(false);
   const [unemploymentLastUpdated, setUnemploymentLastUpdated] = useState(null);
+  const [txCountData, setTxCountData] = useState([]);
+  const [isTxCountDataFetched, setIsTxCountDataFetched] = useState(false);
+  const [txCountLastUpdated, setTxCountLastUpdated] = useState(null);
 
 
   const fetchBtcData = useCallback(async () => {
@@ -274,6 +277,29 @@ const fetchUnemploymentData = useCallback(async () => {
   }
 }, [isUnemploymentDataFetched]);
 
+  // New fetch function for Transaction Count
+  const fetchTxCountData = useCallback(async () => {
+    if (isTxCountDataFetched) return;
+    setIsTxCountDataFetched(true);
+    try {
+      const response = await fetch('https://community-api.coinmetrics.io/v4/timeseries/asset-metrics?metrics=TxCnt&assets=btc&start_time=2010-01-01');
+      const data = await response.json();
+      const formattedData = data.data.map(item => ({
+        time: item.time.split('T')[0], // Format date to match your existing convention (YYYY-MM-DD)
+        value: parseFloat(item.TxCnt), // Transaction count as a number
+      }));
+      setTxCountData(formattedData);
+      if (formattedData.length > 0) {
+        setTxCountLastUpdated(formattedData[formattedData.length - 1].time);
+      }
+    } catch (error) {
+      console.error('Error fetching Bitcoin transaction count data:', error);
+      setIsTxCountDataFetched(false); // Allow retry on error
+    }
+  }, [isTxCountDataFetched]);
+
+// https://community-api.coinmetrics.io/v4/timeseries/asset-metrics?metrics=TxCnt&assets=btc&start_time=2010-01-01
+
   return (
     <DataContext.Provider value={{
       btcData,
@@ -312,6 +338,9 @@ const fetchUnemploymentData = useCallback(async () => {
       unemploymentData,
       fetchUnemploymentData,
       unemploymentLastUpdated,
+      txCountData,
+      txCountLastUpdated,
+      fetchTxCountData,
     }}>
       {children}
     </DataContext.Provider>
