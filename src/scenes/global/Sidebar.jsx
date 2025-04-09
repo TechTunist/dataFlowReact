@@ -27,6 +27,9 @@ import FitbitIcon from "@mui/icons-material/Fitbit";
 import CategoryIcon from "@mui/icons-material/Category";
 import XIcon from "@mui/icons-material/X";
 import EmailIcon from "@mui/icons-material/Email";
+import BarChartIcon from '@mui/icons-material/BarChart';
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
+import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import useIsMobile from "../../hooks/useIsMobile";
 
 
@@ -70,18 +73,18 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
     { title: "Bitcoin Logarithmic Regression", to: "/logarithmic-regression", category: "Indicators", icon: <TrendingUpIcon />, categoryIcon: <CategoryIcon /> },
     { title: "Bitcoin Risk Colour Chart", to: "/risk-color", category: "Bitcoin", icon: <PaletteIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
     { title: "Bitcoin Time in Risk Bands", to: "/risk-bands", category: "Bitcoin", icon: <TimerIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
-    { title: "Bitcoin Transaction Count", to: "/btc-tx-count", category: "Bitcoin", icon: <TimerIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
+    { title: "Bitcoin Transaction Count", to: "/btc-tx-count", category: "Bitcoin", icon: <SwapHorizIcon />, categoryIcon: <SwapHorizIcon /> },
     { title: "Altcoin Chart", to: "/altcoin-price", category: "Altcoins", icon: <ShowChartIcon />, categoryIcon: <WarningOutlinedIcon /> },
     { title: "Altcoin Risk Metric", to: "/altcoin-risk", category: "Altcoins", icon: <AssessmentIcon />, categoryIcon: <WarningOutlinedIcon /> },
     { title: "US Initial Claims", to: "/us-initial-claims", category: "MacroEconomics", icon: <SentimentVeryDissatisfiedIcon />, categoryIcon: <CategoryIcon /> },
     { title: "Market Cycles", to: "/market-cycles", category: "Bitcoin", icon: <RepeatIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
-    { title: "Bitcoin ROI", to: "/bitcoin-roi", category: "Bitcoin", icon: <RepeatIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
+    { title: "Bitcoin ROI", to: "/bitcoin-roi", category: "Bitcoin", icon: <AttachMoneyIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
     { title: "Fear and Greed Chart", to: "/fear-and-greed-chart", category: "Indicators", icon: <BalanceIcon />, categoryIcon: <CategoryIcon /> },
     { title: "US Inflation Chart", to: "/us-inflation", category: "MacroEconomics", icon: <AddShoppingCartIcon />, categoryIcon: <CategoryIcon /> },
     { title: "US Unemployment Chart", to: "/us-unemployment", category: "MacroEconomics", icon: <SentimentVeryDissatisfiedIcon />, categoryIcon: <CategoryIcon /> },
     { title: "US Interest Rate Chart", to: "/us-interest", category: "MacroEconomics", icon: <BalanceIcon />, categoryIcon: <CategoryIcon /> },
     { title: "US Macro Information Chart", to: "/us-combined-macro", category: "MacroEconomics", icon: <MultilineChartIcon />, categoryIcon: <CategoryIcon /> },
-    { title: "US Macro and BTC Tx Count", to: "/tx-combined", category: "MacroEconomics", icon: <MultilineChartIcon />, categoryIcon: <CategoryIcon /> },
+    { title: "US Macro and BTC Tx Count", to: "/tx-combined", category: "MacroEconomics", icon: <BarChartIcon />, categoryIcon: <CategoryIcon /> },
   ];
 
   const filteredItems = itemsData.filter(item =>
