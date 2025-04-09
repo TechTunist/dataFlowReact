@@ -32,6 +32,7 @@ import About from "./scenes/About";
 import LoginSignup from "./scenes/LoginSignup";
 import useIsMobile from "./hooks/useIsMobile";
 import BitcoinROI from "./components/BitcoinROI";
+import BitcoinTxCountChart from "./components/BitcoinTxCount";
 
 function App() {
   const [theme, colorMode] = useMode();
@@ -106,6 +107,7 @@ function App() {
                     <Route path="/bitcoin-fees" element={<BasicChart ChartComponent={BitcoinTransactionFees} />} />
                     <Route path="/bitcoin-dominance" element={<BasicChart ChartComponent={BitcoinDominance} />} />
                     <Route path="/bitcoin-roi" element={<BasicChart ChartComponent={BitcoinROI} />} />
+                    <Route path="/btc-tx-count" element={<BasicChart ChartComponent={BitcoinTxCountChart} />} />
                     <Route path="/ethereum" element={<BasicChart ChartComponent={EthereumPrice} />} />
                     <Route path="/risk" element={<BasicChart ChartComponent={Risk} />} />
                     <Route path="/risk-eth" element={<BasicChart ChartComponent={EthereumRisk} />} />
@@ -123,6 +125,7 @@ function App() {
                     <Route path="/us-interest" element={<BasicChart ChartComponent={UsInterestChart} />} />
                     <Route path="/us-combined-macro" element={<BasicChart ChartComponent={UsCombinedMacroChart} />} />
                     <Route path="/us-initial-claims" element={<BasicChart ChartComponent={UsInitialClaimsChart} />} />
+          
 
                     {/* Optional: catch-all for unmatched routes */}
                     <Route path="*" element={<div>404 - Page Not Found</div>} />

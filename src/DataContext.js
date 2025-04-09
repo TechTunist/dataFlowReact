@@ -277,28 +277,32 @@ const fetchUnemploymentData = useCallback(async () => {
   }
 }, [isUnemploymentDataFetched]);
 
-  // New fetch function for Transaction Count
-  const fetchTxCountData = useCallback(async () => {
-    if (isTxCountDataFetched) return;
-    setIsTxCountDataFetched(true);
-    try {
-      const response = await fetch('https://community-api.coinmetrics.io/v4/timeseries/asset-metrics?metrics=TxCnt&assets=btc&start_time=2010-01-01');
-      const data = await response.json();
-      const formattedData = data.data.map(item => ({
-        time: item.time.split('T')[0], // Format date to match your existing convention (YYYY-MM-DD)
-        value: parseFloat(item.TxCnt), // Transaction count as a number
-      }));
-      setTxCountData(formattedData);
-      if (formattedData.length > 0) {
-        setTxCountLastUpdated(formattedData[formattedData.length - 1].time);
-      }
-    } catch (error) {
-      console.error('Error fetching Bitcoin transaction count data:', error);
-      setIsTxCountDataFetched(false); // Allow retry on error
+const fetchTxCountData = useCallback(async () => {
+  if (isTxCountDataFetched) return;
+  setIsTxCountDataFetched(true);
+  try {
+    const response = await fetch('https://vercel-dataflow.vercel.app/api/btc-tx-count/');
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status} ${response.statusText}`);
     }
-  }, [isTxCountDataFetched]);
+    const data = await response.json();
+    const formattedData = data
+      .map(item => ({
+        time: item.time.split('T')[0], // YYYY-MM-DD
+        value: parseFloat(item.tx_count),
+      }))
+      .sort((a, b) => new Date(a.time) - new Date(b.time)); // Sort ascending by time
+    setTxCountData(formattedData);
+    if (formattedData.length > 0) {
+      setTxCountLastUpdated(formattedData[formattedData.length - 1].time);
+    }
+  } catch (error) {
+    console.error('Error fetching Bitcoin transaction count data:', error);
+    setIsTxCountDataFetched(false);
+  }
+}, [isTxCountDataFetched]);
 
-// https://community-api.coinmetrics.io/v4/timeseries/asset-metrics?metrics=TxCnt&assets=btc&start_time=2010-01-01
+
 
   return (
     <DataContext.Provider value={{
@@ -341,6 +345,7 @@ const fetchUnemploymentData = useCallback(async () => {
       txCountData,
       txCountLastUpdated,
       fetchTxCountData,
+      
     }}>
       {children}
     </DataContext.Provider>
