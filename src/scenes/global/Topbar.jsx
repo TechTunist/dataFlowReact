@@ -91,6 +91,8 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
         return { title: "US Initial Claims", subtitle: "Jobless Claims" };
       case "/tx-combined":
         return { title: "US Macro and BTC Tx Count", subtitle: "Macro and On-Chain Data" };
+      case "/tx-mvrv":
+        return { title: "BTC Tx Count to MVRV", subtitle: "Transactions to MVRV Chart" };
       default:
         return { title: "CryptoLogical", subtitle: "" };
     }

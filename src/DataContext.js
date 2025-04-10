@@ -46,6 +46,9 @@ export const DataProvider = ({ children }) => {
   const [txCountCombinedData, setTxCountCombinedData] = useState([]);
   const [isTxCountCombinedDataFetched, setIsTxCountCombinedDataFetched] = useState(false);
   const [txCountCombinedLastUpdated, setTxCountCombinedLastUpdated] = useState(null);
+  const [txMvrvData, setTxMvrvData] = useState([]);
+  const [isTxMvrvDataFetched, setIsTxMvrvDataFetched] = useState(false);
+  const [txMvrvLastUpdated, setTxMvrvLastUpdated] = useState(null);
 
 
   const fetchBtcData = useCallback(async () => {
@@ -345,6 +348,33 @@ const fetchTxCountCombinedData = useCallback(async () => {
   }
 }, [isTxCountCombinedDataFetched]);
 
+  // New fetch function for tx-mvrv data
+  const fetchTxMvrvData = useCallback(async () => {
+    if (isTxMvrvDataFetched) return;
+    setIsTxMvrvDataFetched(true);
+    try {
+      const response = await fetch('https://vercel-dataflow.vercel.app/api/tx-mvrv/');
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status} ${response.statusText}`);
+      }
+      const data = await response.json();
+      const formattedData = data
+        .map(item => ({
+          time: item.date, // Assuming date is in YYYY-MM-DD format
+          tx_count: parseFloat(item.tx_count),
+          mvrv: parseFloat(item.mvrv),
+        }))
+        .sort((a, b) => new Date(a.time) - new Date(b.time)); // Sort by date ascending
+      setTxMvrvData(formattedData);
+      if (formattedData.length > 0) {
+        setTxMvrvLastUpdated(formattedData[formattedData.length - 1].time);
+      }
+    } catch (error) {
+      console.error('Error fetching Bitcoin tx-mvrv data:', error);
+      setIsTxMvrvDataFetched(false); // Allow retry on error
+    }
+  }, [isTxMvrvDataFetched]);
+
 
   return (
     <DataContext.Provider value={{
@@ -389,6 +419,9 @@ const fetchTxCountCombinedData = useCallback(async () => {
       fetchTxCountData,
       fetchTxCountCombinedData,
       txCountCombinedData,
+      txMvrvData,
+      txMvrvLastUpdated,
+      fetchTxMvrvData,
       
     }}>
       {children}

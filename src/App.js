@@ -34,6 +34,7 @@ import useIsMobile from "./hooks/useIsMobile";
 import BitcoinROI from "./components/BitcoinROI";
 import BitcoinTxCountChart from "./components/BitcoinTxCount";
 import TxCombinedChart from "./components/TxMacroCombined";
+import BitcoinTxMvrvChart from "./components/BitcoinTxMvrv";
 
 function App() {
   const [theme, colorMode] = useMode();
@@ -127,6 +128,7 @@ function App() {
                     <Route path="/us-combined-macro" element={<BasicChart ChartComponent={UsCombinedMacroChart} />} />
                     <Route path="/us-initial-claims" element={<BasicChart ChartComponent={UsInitialClaimsChart} />} />
                     <Route path="/tx-combined" element={<BasicChart ChartComponent={TxCombinedChart} />} />
+                    <Route path="/tx-mvrv" element={<BasicChart ChartComponent={BitcoinTxMvrvChart} />} />
 
                     {/* Optional: catch-all for unmatched routes */}
                     <Route path="*" element={<div>404 - Page Not Found</div>} />
