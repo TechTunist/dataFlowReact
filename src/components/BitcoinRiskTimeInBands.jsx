@@ -7,17 +7,18 @@ import LastUpdated from '../hooks/LastUpdated';
 import BitcoinFees from './BitcoinTransactionFees';
 import useIsMobile from '../hooks/useIsMobile';
 import { DataContext } from '../DataContext';
+import { Box, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 
 const BitcoinRiskBandDuration = ({ isDashboard = false, riskData: propRiskData }) => {
   const theme = useTheme();
-  const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]); // Memoize colors
+  const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
   const isMobile = useIsMobile();
   const { btcData, fetchBtcData } = useContext(DataContext);
 
   const [riskBandDurations, setRiskBandDurations] = useState([]);
   const [currentRiskLevel, setCurrentRiskLevel] = useState(null);
+  const [riskBandMode, setRiskBandMode] = useState('0.1'); // Default to 0.1 increments
 
-  // Calculate risk data if not provided via prop
   const calculateRiskMetric = (data) => {
     const movingAverage = data.map((item, index) => {
       const start = Math.max(index - 373, 0);
@@ -63,39 +64,41 @@ const BitcoinRiskBandDuration = ({ isDashboard = false, riskData: propRiskData }
     showlegend: false,
   });
 
-  const calculateRiskBandDurations = (data) => {
-    const riskBands = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0];
-    const bandCounts = Array(10).fill(0);
+  const calculateRiskBandDurations = (data, bandSize) => {
+    const numBands = Math.ceil(1.0 / bandSize);
+    const bandCounts = Array(numBands).fill(0);
 
     for (let i = 0; i < data.length; i++) {
       const risk = data[i].Risk;
-      const bandIndex = Math.min(Math.floor(risk * 10), 9);
+      const bandIndex = Math.min(Math.floor(risk / bandSize), numBands - 1);
       bandCounts[bandIndex]++;
     }
 
     const totalDays = bandCounts.reduce((sum, count) => sum + count, 0);
-    return bandCounts.map((count, index) => ({
-      band: `${(index * 0.1).toFixed(1)} - ${(index + 1) * 0.1 <= 1.0 ? ((index + 1) * 0.1).toFixed(1) : '1.0'}`,
-      percentage: (count / totalDays * 100).toFixed(2),
-      days: count,
-    }));
+    return bandCounts.map((count, index) => {
+      const bandStart = (index * bandSize).toFixed(2);
+      const bandEnd = Math.min((index + 1) * bandSize, 1.0).toFixed(2);
+      return {
+        band: `${bandStart} - ${bandEnd}`,
+        percentage: (count / totalDays * 100).toFixed(2),
+        days: count,
+      };
+    });
   };
 
-  // Trigger lazy fetching when the component mounts
   useEffect(() => {
     fetchBtcData();
   }, [fetchBtcData]);
 
-  // Update risk band durations and current risk level when chartData changes
   useEffect(() => {
     if (chartData.length === 0) return;
 
-    const durations = calculateRiskBandDurations(chartData);
+    const bandSize = parseFloat(riskBandMode);
+    const durations = calculateRiskBandDurations(chartData, bandSize);
     setRiskBandDurations(durations);
     setCurrentRiskLevel(chartData[chartData.length - 1].Risk.toFixed(2));
-  }, [chartData]);
+  }, [chartData, riskBandMode]);
 
-  // Update layout when theme or isDashboard/isMobile changes
   useEffect(() => {
     setLayout(prevLayout => ({
       ...prevLayout,
@@ -115,7 +118,6 @@ const BitcoinRiskBandDuration = ({ isDashboard = false, riskData: propRiskData }
     }));
   };
 
-  // Handle zoom and pan updates
   const handleRelayout = (event) => {
     if (event['xaxis.range[0]'] || event['yaxis.range[0]']) {
       setLayout(prevLayout => ({
@@ -134,8 +136,79 @@ const BitcoinRiskBandDuration = ({ isDashboard = false, riskData: propRiskData }
     }
   };
 
+  const handleRiskBandModeChange = (event) => {
+    setRiskBandMode(event.target.value);
+  };
+
+  const getBandColor = (index, numBands) => {
+    const midPoint = Math.floor(numBands / 2);
+    const redShades = [colors.redAccent[800], colors.redAccent[700], colors.redAccent[500], colors.redAccent[300], colors.redAccent[100]];
+    const blueShades = [colors.blueAccent[100], colors.blueAccent[300], colors.blueAccent[500], colors.blueAccent[700], colors.blueAccent[800]];
+    const maxShades = Math.min(redShades.length, blueShades.length);
+
+    if (index === midPoint && numBands % 2 === 1) {
+      return colors.grey[100]; // Near-white for odd-numbered midpoint
+    }
+
+    if (index < midPoint) {
+      // Red side
+      const shadeIndex = Math.floor((index / midPoint) * maxShades);
+      return redShades[Math.min(shadeIndex, redShades.length - 1)];
+    } else {
+      // Blue side
+      const adjustedIndex = index - (numBands % 2 === 1 ? midPoint + 1 : midPoint);
+      const shadeIndex = Math.floor((adjustedIndex / (numBands - midPoint)) * maxShades);
+      return blueShades[Math.min(shadeIndex, blueShades.length - 1)];
+    }
+  };
+
   return (
     <div style={{ height: '100%', width: '100%' }}>
+      {!isDashboard && (
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            marginBottom: '20px',
+            marginTop: '20px',
+          }}
+        >
+          <FormControl sx={{ minWidth: '200px' }}>
+            <InputLabel
+              id="risk-band-mode-label"
+              shrink
+              sx={{
+                color: colors.grey[100],
+                '&.Mui-focused': { color: colors.greenAccent[500] },
+                top: 0,
+                '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' },
+              }}
+            >
+              Risk Band Size
+            </InputLabel>
+            <Select
+              value={riskBandMode}
+              onChange={handleRiskBandModeChange}
+              labelId="risk-band-mode-label"
+              label="Risk Band Size"
+              sx={{
+                color: colors.grey[100],
+                backgroundColor: colors.primary[500],
+                borderRadius: "8px",
+                '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
+                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                '& .MuiSelect-select': { py: 1.5, pl: 2 },
+              }}
+            >
+              <MenuItem value="0.05">0.05 (Half Bands)</MenuItem>
+              <MenuItem value="0.1">0.1 (Single Bands)</MenuItem>
+              <MenuItem value="0.2">0.2 (Double Bands)</MenuItem>
+            </Select>
+          </FormControl>
+        </Box>
+      )}
+
       {!isDashboard && (
         <div className='chart-top-div'>
           <div className="risk-filter">
@@ -170,21 +243,9 @@ const BitcoinRiskBandDuration = ({ isDashboard = false, riskData: propRiskData }
               hovertemplate: 'Risk Band: %{x}<br>Time in: %{y}%<br>Total Days: %{customdata} days<extra></extra>',
               customdata: riskBandDurations.map(risk => risk.days),
               marker: {
-                color: riskBandDurations.map((_, index) => {
-                  switch (index) {
-                    case 0: return colors.redAccent[800];
-                    case 1: return colors.redAccent[700];
-                    case 2: return colors.redAccent[500];
-                    case 3: return colors.redAccent[300];
-                    case 4: return colors.redAccent[100];
-                    case 5: return colors.blueAccent[100];
-                    case 6: return colors.blueAccent[300];
-                    case 7: return colors.blueAccent[500];
-                    case 8: return colors.blueAccent[700];
-                    case 9: return colors.blueAccent[800];
-                    default: return colors.grey[400];
-                  }
-                }),
+                color: riskBandDurations.map((_, index) => 
+                  getBandColor(index, riskBandDurations.length)
+                ),
               },
             },
           ]}
@@ -213,11 +274,10 @@ const BitcoinRiskBandDuration = ({ isDashboard = false, riskData: propRiskData }
       {!isDashboard && (
         <div>
           <p className='chart-info'>
-            This chart shows the total amount of time Bitcoin has spent in each risk band over its entire existence, which
-            can help to understand the fleeting nature of the extreme risk bands at either ends of the spectrum.
-            The risk metric assesses Bitcoin's investment risk over time by comparing its daily prices to a 374-day moving average.
-            It does so by calculating the normalized logarithmic difference between the price and the moving average.
-            <br />
+            This chart shows the total amount of time Bitcoin has spent in each risk band over its entire existence, 
+            adjustable by risk band size (0.05, 0.1, or 0.2 increments). This helps to understand the distribution 
+            of time spent across different risk levels. The risk metric assesses Bitcoin's investment risk over time 
+            by comparing its daily prices to a 374-day moving average, calculating the normalized logarithmic difference.
           </p>
         </div>
       )}

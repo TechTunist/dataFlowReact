@@ -12,14 +12,16 @@ const LastUpdated = ({ storageKey, useLocalStorage = false }) => {
   const [refresh, setRefresh] = useState(0);
   const [isClicked, setIsClicked] = useState(false);
 
-  // Access DataContext to get last updated dates
+  // Access DataContext to get last updated dates and fetch functions
   const {
     btcLastUpdated,
     fedLastUpdated,
     mvrvLastUpdated,
-    fetchBtcData, // Include fetch functions to trigger refresh
+    ethLastUpdated, // Added
+    fetchBtcData,
     fetchFedBalanceData,
     fetchMvrvData,
+    fetchEthData, // Added
   } = useContext(DataContext);
 
   // Map storageKey to the corresponding last updated date from DataContext
@@ -27,6 +29,7 @@ const LastUpdated = ({ storageKey, useLocalStorage = false }) => {
     btcData: btcLastUpdated,
     fedBalanceData: fedLastUpdated,
     mvrvData: mvrvLastUpdated,
+    ethData: ethLastUpdated, // Added
   };
 
   // Map storageKey to the corresponding fetch function for refreshing
@@ -34,6 +37,7 @@ const LastUpdated = ({ storageKey, useLocalStorage = false }) => {
     btcData: fetchBtcData,
     fedBalanceData: fetchFedBalanceData,
     mvrvData: fetchMvrvData,
+    ethData: fetchEthData, // Added
   };
 
   // Process data from local storage
@@ -74,7 +78,7 @@ const LastUpdated = ({ storageKey, useLocalStorage = false }) => {
         setLastUpdated(''); // No data yet
       }
     }
-  }, [storageKey, useLocalStorage, refresh, btcLastUpdated, fedLastUpdated, mvrvLastUpdated]);
+  }, [storageKey, useLocalStorage, refresh, btcLastUpdated, fedLastUpdated, mvrvLastUpdated, ethLastUpdated]); // Added ethLastUpdated to dependencies
 
   // Listen for changes in local storage (if using local storage)
   useEffect(() => {

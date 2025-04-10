@@ -17,7 +17,7 @@ const EthereumPrice = ({ isDashboard = false }) => {
     const theme = useTheme();
     const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
     const isMobile = useIsMobile();
-    const { ethData, fetchEthData, fedBalanceData, fetchFedBalanceData } = useContext(DataContext);
+    const { ethData, fetchEthData, fedBalanceData, fetchFedBalanceData, ethLastUpdated } = useContext(DataContext); // Added ethLastUpdated
 
     const [scaleMode, setScaleMode] = useState(1); // 1 for logarithmic, 0 for linear
     const [tooltipData, setTooltipData] = useState(null);
@@ -245,56 +245,56 @@ const EthereumPrice = ({ isDashboard = false }) => {
                 >
                     <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '300px' } }}>
                         <InputLabel
-                        id="indicators-label"
-                        shrink
-                        sx={{
-                            color: colors.grey[100],
-                            '&.Mui-focused': { color: colors.greenAccent[500] },
-                            top: 0,
-                            '&.MuiInputLabel-shrink': {
-                            transform: 'translate(14px, -9px) scale(0.75)',
-                            },
-                        }}
+                            id="indicators-label"
+                            shrink
+                            sx={{
+                                color: colors.grey[100],
+                                '&.Mui-focused': { color: colors.greenAccent[500] },
+                                top: 0,
+                                '&.MuiInputLabel-shrink': {
+                                    transform: 'translate(14px, -9px) scale(0.75)',
+                                },
+                            }}
                         >
-                        Indicators
+                            Indicators
                         </InputLabel>
                         <Select
-                        multiple
-                        value={activeIndicators}
-                        onChange={handleIndicatorChange}
-                        labelId="indicators-label"
-                        label="Indicators"
-                        displayEmpty
-                        renderValue={(selected) =>
-                            selected.length > 0
-                            ? selected.map((key) => indicators[key].label).join(', ')
-                            : 'Select Indicators'
-                        }
-                        sx={{
-                            color: colors.grey[100],
-                            backgroundColor: colors.primary[500],
-                            borderRadius: "8px",
-                            '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
-                            '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                            '& .MuiSelect-select': { py: 1.5, pl: 2 },
-                            '& .MuiSelect-select:empty': { color: colors.grey[500] },
-                        }}
+                            multiple
+                            value={activeIndicators}
+                            onChange={handleIndicatorChange}
+                            labelId="indicators-label"
+                            label="Indicators"
+                            displayEmpty
+                            renderValue={(selected) =>
+                                selected.length > 0
+                                    ? selected.map((key) => indicators[key].label).join(', ')
+                                    : 'Select Indicators'
+                            }
+                            sx={{
+                                color: colors.grey[100],
+                                backgroundColor: colors.primary[500],
+                                borderRadius: "8px",
+                                '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
+                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                                '& .MuiSelect-select': { py: 1.5, pl: 2 },
+                                '& .MuiSelect-select:empty': { color: colors.grey[500] },
+                            }}
                         >
-                        {Object.entries(indicators).map(([key, { label }]) => (
-                            <MenuItem key={key} value={key}>
-                            <Checkbox
-                                checked={activeIndicators.includes(key)}
-                                sx={{ color: colors.grey[100], '&.Mui-checked': { color: colors.greenAccent[500] } }}
-                            />
-                            <span>{label}</span>
-                            </MenuItem>
-                        ))}
+                            {Object.entries(indicators).map(([key, { label }]) => (
+                                <MenuItem key={key} value={key}>
+                                    <Checkbox
+                                        checked={activeIndicators.includes(key)}
+                                        sx={{ color: colors.grey[100], '&.Mui-checked': { color: colors.greenAccent[500] } }}
+                                    />
+                                    <span>{label}</span>
+                                </MenuItem>
+                            ))}
                         </Select>
                     </FormControl>
                 </Box>
-                )}
-                {!isDashboard && (
+            )}
+            {!isDashboard && (
                 <div className="chart-top-div">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
                         <label className="switch">
@@ -382,12 +382,11 @@ const EthereumPrice = ({ isDashboard = false }) => {
                         display: 'flex',
                         justifyContent: 'space-between',
                         width: '100%',
-                        // maxWidth: '800px',
                         flexWrap: 'wrap',
                         gap: '10px',
-                        alignItems: 'center', // Optional: ensures vertical alignment if components have different heights
+                        alignItems: 'center',
                     }}>
-                        <LastUpdated storageKey="ethData"/>
+                        <LastUpdated storageKey="ethData" />
                     </Box>
                 </div>
             )}
@@ -426,8 +425,7 @@ const EthereumPrice = ({ isDashboard = false }) => {
                     Ethereum supports a vast ecosystem of developers and projects, making it the most actively used blockchain for innovation
                     in finance, NFTs, gaming, and more.
                     This description highlights Ethereum’s key features and significance, fitting nicely into your app’s context alongside
-                    the price chart. Let me know if you'd like it adjusted further!
-                    <br /><br /><br />
+                    the price chart.
                 </p>
             )}
         </div>

@@ -6,6 +6,7 @@ import { useTheme } from "@mui/material";
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
 import BitcoinFees from './BitcoinTransactionFees';
+import { Box, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import { DataContext } from '../DataContext';
 
 const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData }) => {
@@ -13,23 +14,51 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
   const chartRef = useRef(null);
   const txCountSeriesRef = useRef(null);
   const mvrvSeriesRef = useRef(null);
-  const [scaleMode, setScaleMode] = useState(0); // 1 = logarithmic, 0 = linear
+  const priceSeriesRef = useRef(null);
   const [tooltipData, setTooltipData] = useState(null);
   const [isInteractive, setIsInteractive] = useState(false);
+  const [txCountMode, setTxCountMode] = useState('28-day'); // Default to 7-day moving average
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const isMobile = useIsMobile();
 
-  const { txMvrvData: contextTxMvrvData, fetchTxMvrvData } = useContext(DataContext);
+  const { txMvrvData: contextTxMvrvData, fetchTxMvrvData, btcData, fetchBtcData } = useContext(DataContext);
   const txMvrvData = propTxMvrvData || contextTxMvrvData;
   const { txMvrvLastUpdated } = useContext(DataContext);
 
-  const setInteractivity = () => {
-    setIsInteractive(prev => !prev);
+  // Define static indicators with descriptions
+  const getIndicators = (mode) => ({
+    'tx-count': {
+      color: theme.palette.mode === 'dark' ? 'rgba(38, 198, 218, 1)' : 'rgba(255, 140, 0, 0.8)',
+      label: `Tx Count (${mode === 'daily' ? 'Daily' : mode === '7-day' ? '7-day Avg' : '28-day Avg'})`,
+      description: `The ${mode === 'daily' ? 'daily' : mode === '7-day' ? '7-day' : '28-day'} moving average of Bitcoin transaction counts, indicating network activity and usage over time.`
+    },
+    'price': {
+      color: 'gray',
+      label: 'Bitcoin Price',
+      description: 'The market price of Bitcoin in USD, plotted on a logarithmic scale to highlight long-term trends.'
+    },
+    'mvrv': {
+      color: theme.palette.mode === 'dark' ? 'rgba(255, 99, 71, 1)' : 'rgba(0, 128, 0, 1)',
+      label: 'MVRV',
+      description: 'Market Value to Realized Value ratio, scaled by 100,000, showing Bitcoin’s valuation relative to its realized capitalization.'
+    }
+  });
+
+  // Generic moving average calculator
+  const calculateMovingAverage = (data, period) => {
+    const result = [];
+    for (let i = 0; i < data.length; i++) {
+      const start = Math.max(0, i - (period - 1)); // Window includes current day
+      const window = data.slice(start, i + 1);
+      const avg = window.reduce((sum, item) => sum + item.tx_count, 0) / window.length;
+      result.push({ time: data[i].time, value: avg });
+    }
+    return result;
   };
 
-  const toggleScaleMode = () => {
-    setScaleMode(prevMode => (prevMode === 1 ? 0 : 1));
+  const setInteractivity = () => {
+    setIsInteractive(prev => !prev);
   };
 
   const resetChartView = () => {
@@ -38,12 +67,27 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
     }
   };
 
-  useEffect(() => {
-    fetchTxMvrvData();
-  }, [fetchTxMvrvData]);
+  const handleTxCountModeChange = (event) => {
+    setTxCountMode(event.target.value);
+  };
 
   useEffect(() => {
-    if (txMvrvData.length === 0) return;
+    fetchTxMvrvData();
+    fetchBtcData();
+  }, [fetchTxMvrvData, fetchBtcData]);
+
+  useEffect(() => {
+    if (txMvrvData.length === 0 || btcData.length === 0) return;
+
+    const cutoffDate = new Date('2011-08-19');
+
+    // Filter txMvrvData to start from August 19, 2011
+    const filteredTxMvrvData = txMvrvData.filter(item => new Date(item.time) >= cutoffDate);
+
+    // Filter btcData to start from August 19, 2011
+    const filteredBtcData = btcData.filter(item => new Date(item.time) >= cutoffDate);
+
+    if (filteredTxMvrvData.length === 0 || filteredBtcData.length === 0) return;
 
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
@@ -63,13 +107,15 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
       handleScale: isInteractive && !isDashboard,
     });
 
+    // Left scale for transaction count and MVRV (fixed linear)
     chart.priceScale('left').applyOptions({
-      mode: scaleMode,
+      mode: 0, // Linear
       borderVisible: false,
     });
 
+    // Right scale for Bitcoin price (fixed logarithmic)
     chart.priceScale('right').applyOptions({
-      mode: 0, // Linear for MVRV
+      mode: 1, // Logarithmic
       borderVisible: false,
     });
 
@@ -87,10 +133,12 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
         const dateStr = param.time;
         const txCountData = param.seriesData.get(txCountSeriesRef.current);
         const mvrvData = param.seriesData.get(mvrvSeriesRef.current);
+        const priceData = param.seriesData.get(priceSeriesRef.current);
         setTooltipData({
           date: dateStr,
           txCount: txCountData?.value,
           mvrv: mvrvData?.value,
+          price: priceData?.value,
           x: param.point.x,
           y: param.point.y,
         });
@@ -109,35 +157,24 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
     window.addEventListener('resize', resizeChart);
 
     const lightThemeColors = {
-      txCount: {
-        topColor: 'rgba(255, 165, 0, 0.56)',
-        bottomColor: 'rgba(255, 165, 0, 0.2)',
-        lineColor: 'rgba(255, 140, 0, 0.8)',
-      },
-      mvrv: {
-        lineColor: 'rgba(0, 128, 0, 1)',
-      },
+      txCount: { lineColor: 'rgba(255, 140, 0, 0.8)' },
+      mvrv: { lineColor: 'rgba(0, 128, 0, 1)' },
+      price: { lineColor: 'gray' },
     };
 
     const darkThemeColors = {
-      txCount: {
-        topColor: 'rgba(38, 198, 218, 0.56)',
-        bottomColor: 'rgba(38, 198, 218, 0.04)',
-        lineColor: 'rgba(38, 198, 218, 1)',
-      },
-      mvrv: {
-        lineColor: 'rgba(255, 99, 71, 1)',
-      },
+      txCount: { lineColor: 'rgba(38, 198, 218, 1)' },
+      mvrv: { lineColor: 'rgba(255, 99, 71, 1)' },
+      price: { lineColor: 'gray' },
     };
 
-    const { txCount: txCountColors, mvrv: mvrvColors } = theme.palette.mode === 'dark' ? darkThemeColors : lightThemeColors;
+    const { txCount: txCountColors, mvrv: mvrvColors, price: priceColors } = 
+      theme.palette.mode === 'dark' ? darkThemeColors : lightThemeColors;
 
-    // Full tx_count data
-    const txCountSeries = chart.addAreaSeries({
+    // Transaction Count Series (left, linear)
+    const txCountSeries = chart.addLineSeries({
       priceScaleId: 'left',
-      topColor: txCountColors.topColor,
-      bottomColor: txCountColors.bottomColor,
-      lineColor: txCountColors.lineColor,
+      color: txCountColors.lineColor,
       lineWidth: 2,
       priceFormat: {
         type: 'custom',
@@ -146,11 +183,29 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
       },
     });
     txCountSeriesRef.current = txCountSeries;
-    txCountSeries.setData(txMvrvData.map(item => ({ time: item.time, value: item.tx_count })));
+    const txCountData = txCountMode === 'daily'
+      ? filteredTxMvrvData.map(item => ({ time: item.time, value: item.tx_count }))
+      : txCountMode === '7-day'
+      ? calculateMovingAverage(filteredTxMvrvData, 7)
+      : calculateMovingAverage(filteredTxMvrvData, 28);
+    txCountSeries.setData(txCountData);
 
-    // MVRV data filtered to start from 2011-04-14
-    const mvrvSeries = chart.addLineSeries({
+    // Bitcoin Price Series (right, logarithmic)
+    const priceSeries = chart.addLineSeries({
       priceScaleId: 'right',
+      color: priceColors.lineColor,
+      lineWidth: 0.7,
+      priceFormat: {
+        type: 'custom',
+        formatter: value => (value >= 1000 ? (value / 1000).toFixed(0) + 'k' : value.toFixed(0)),
+      },
+    });
+    priceSeriesRef.current = priceSeries;
+    priceSeries.setData(filteredBtcData.map(data => ({ time: data.time, value: data.value })));
+
+    // MVRV Series (left, linear)
+    const mvrvSeries = chart.addLineSeries({
+      priceScaleId: 'left',
       color: mvrvColors.lineColor,
       lineWidth: 2,
       priceFormat: {
@@ -160,11 +215,8 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
       },
     });
     mvrvSeriesRef.current = mvrvSeries;
-    const cutoffDate = new Date('2011-04-14');
     mvrvSeries.setData(
-      txMvrvData
-        .filter(item => new Date(item.time) >= cutoffDate)
-        .map(item => ({ time: item.time, value: item.mvrv }))
+      filteredTxMvrvData.map(item => ({ time: item.time, value: item.mvrv * 100000 }))
     );
 
     chart.timeScale().fitContent();
@@ -174,7 +226,7 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
       chart.remove();
       window.removeEventListener('resize', resizeChart);
     };
-  }, [txMvrvData, scaleMode, isDashboard, theme.palette.mode]);
+  }, [txMvrvData, btcData, isDashboard, theme.palette.mode, txCountMode]);
 
   useEffect(() => {
     if (chartRef.current) {
@@ -185,20 +237,59 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
     }
   }, [isInteractive, isDashboard]);
 
+  const indicatorsForMode = getIndicators(txCountMode);
+
   return (
     <div style={{ height: '100%' }}>
       {!isDashboard && (
-        <div className='chart-top-div'>
-          <div>
-            <label className="switch">
-              <input type="checkbox" checked={scaleMode === 1} onChange={toggleScaleMode} />
-              <span className="slider round"></span>
-            </label>
-            <span className="scale-mode-label" style={{ color: colors.primary[100] }}>
-              {scaleMode === 1 ? 'Logarithmic' : 'Linear'}
-            </span>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            marginBottom: '20px',
+            marginTop: '20px',
+          }}
+        >
+          <FormControl sx={{ minWidth: '200px' }}>
+            <InputLabel
+              id="tx-count-mode-label"
+              shrink
+              sx={{
+                color: colors.grey[100],
+                '&.Mui-focused': { color: colors.greenAccent[500] },
+                top: 0,
+                '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' },
+              }}
+            >
+              Transaction Count Mode
+            </InputLabel>
+            <Select
+              value={txCountMode}
+              onChange={handleTxCountModeChange}
+              labelId="tx-count-mode-label"
+              label="Transaction Count Mode"
+              sx={{
+                color: colors.grey[100],
+                backgroundColor: colors.primary[500],
+                borderRadius: "8px",
+                '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
+                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                '& .MuiSelect-select': { py: 1.5, pl: 2 },
+              }}
+            >
+              <MenuItem value="daily">Daily</MenuItem>
+              <MenuItem value="7-day">7-day Moving Average</MenuItem>
+              <MenuItem value="28-day">28-day Moving Average</MenuItem>
+            </Select>
+          </FormControl>
+        </Box>
+      )}
+
+      {!isDashboard && (
+        <div className='chart-top-div' style={{ display: 'flex', alignItems: 'center' }}>
+          <div style={{ flexGrow: 1 }}></div> {/* Empty div to push buttons right */}
+          <div style={{ display: 'flex', gap: '10px' }}>
             <button
               onClick={setInteractivity}
               className="button-reset"
@@ -221,50 +312,116 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
         className="chart-container"
         style={{
           position: 'relative',
-          height: 'calc(100% - 40px)',
+          height: isDashboard ? '100%' : 'calc(100% - 40px)',
           width: '100%',
           border: '2px solid #a9a9a9',
+          zIndex: 1,
         }}
         onDoubleClick={() => setInteractivity(prev => !prev)}
       >
         <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
+        {/* Legend inside chart */}
+        {!isDashboard && (
+          <div
+            style={{
+              position: 'absolute',
+              top: '10px',
+              left: '10px',
+              zIndex: 2,
+              backgroundColor: colors.primary[900],
+              padding: '5px 10px',
+              borderRadius: '4px',
+              color: colors.grey[100],
+              fontSize: '12px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>
+              <span
+                style={{
+                  display: 'inline-block',
+                  width: '10px',
+                  height: '10px',
+                  backgroundColor: indicatorsForMode['tx-count'].color,
+                  marginRight: '5px',
+                }}
+              />
+              {indicatorsForMode['tx-count'].label}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>
+              <span
+                style={{
+                  display: 'inline-block',
+                  width: '10px',
+                  height: '10px',
+                  backgroundColor: indicatorsForMode['price'].color,
+                  marginRight: '5px',
+                }}
+              />
+              {indicatorsForMode['price'].label}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>
+              <span
+                style={{
+                  display: 'inline-block',
+                  width: '10px',
+                  height: '10px',
+                  backgroundColor: indicatorsForMode['mvrv'].color,
+                  marginRight: '5px',
+                }}
+              />
+              {indicatorsForMode['mvrv'].label}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className='under-chart'>
-      <span style={{ color: colors.greenAccent[500] }}>Last Updated: {txMvrvLastUpdated}</span>
+        <span style={{ color: colors.greenAccent[500] }}>Last Updated: {txMvrvLastUpdated}</span>
         {!isDashboard && <BitcoinFees />}
       </div>
+
+      {!isDashboard && (
+        <Box sx={{ margin: '10px 0', color: colors.grey[100] }}>
+          {Object.entries(indicatorsForMode).map(([key, { label, color, description }]) => (
+            <p key={key} style={{ margin: '5px 0' }}>
+              <strong style={{ color }}>{label}:</strong> {description}
+            </p>
+          ))}
+        </Box>
+      )}
 
       {!isDashboard && tooltipData && (
         <div
           className="tooltip"
           style={{
+            position: 'fixed',
             left: (() => {
               const sidebarWidth = isMobile ? -80 : -320;
               const cursorX = tooltipData.x - sidebarWidth;
               const chartWidth = chartContainerRef.current.clientWidth - sidebarWidth;
               const tooltipWidth = 200;
-              const K = 10000;
-              const C = 300;
+              const offset = 10000 / (chartWidth + 300);
 
-              const offset = K / (chartWidth + C);
               const rightPosition = cursorX + offset;
               const leftPosition = cursorX - tooltipWidth - offset;
 
-              if (rightPosition + tooltipWidth <= chartWidth) {
-                return `${rightPosition}px`;
-              } else if (leftPosition >= 0) {
-                return `${leftPosition}px`;
-              } else {
-                return `${Math.max(0, Math.min(rightPosition, chartWidth - tooltipWidth))}px`;
-              }
+              if (rightPosition + tooltipWidth <= chartWidth) return `${rightPosition}px`;
+              if (leftPosition >= 0) return `${leftPosition}px`;
+              return `${Math.max(0, Math.min(rightPosition, chartWidth - tooltipWidth))}px`;
             })(),
             top: `${tooltipData.y + 100}px`,
+            zIndex: 1000,
           }}
         >
-          <div style={{ fontSize: '15px' }}>Bitcoin Tx Count & MVRV</div>
-          <div style={{ fontSize: '20px' }}>
-            Tx: {tooltipData.txCount?.toFixed(0)} | MVRV: {tooltipData.mvrv?.toFixed(2) ?? 'N/A'}
+          
+          <div style={{ fontSize: '15px', color: indicatorsForMode['price'].color }}>
+            BTC price: ${tooltipData.price ? (tooltipData.price / 1000).toFixed(1) + 'k' : 'N/A'}
+          </div>
+          <div style={{ color: indicatorsForMode['tx-count'].color }}>
+            {indicatorsForMode['tx-count'].label}: {tooltipData.txCount?.toFixed(0) ?? 'N/A'}
+          </div>
+          <div style={{ color: indicatorsForMode['mvrv'].color }}>
+            MVRV: {(tooltipData.mvrv / 100000)?.toFixed(2) ?? 'N/A'}
           </div>
           <div>{tooltipData.date?.toString()}</div>
         </div>
@@ -272,7 +429,7 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
 
       {!isDashboard && (
         <p className='chart-info'>
-          The Bitcoin Tx Count & MVRV chart shows the daily transaction count (left axis) and the Market Value to Realized Value ratio (right axis, starting April 14, 2011) over time, illustrating network activity and valuation trends.
+          The Bitcoin Tx Count, Price & MVRV chart shows the {txCountMode === 'daily' ? 'daily' : txCountMode === '7-day' ? '7-day' : '28-day'} moving average of daily transaction count and scaled MVRV (left axis, linear) and Bitcoin price (right axis, logarithmic) starting from August 19, 2011, illustrating network activity, price trends, and valuation. MVRV is scaled by 100,000 to fit the linear axis.
         </p>
       )}
     </div>
