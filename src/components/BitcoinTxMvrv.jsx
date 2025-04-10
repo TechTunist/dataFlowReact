@@ -13,7 +13,7 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
   const chartRef = useRef(null);
   const txCountSeriesRef = useRef(null);
   const mvrvSeriesRef = useRef(null);
-  const [scaleMode, setScaleMode] = useState(1); // 1 = logarithmic, 0 = linear
+  const [scaleMode, setScaleMode] = useState(0); // 1 = logarithmic, 0 = linear
   const [tooltipData, setTooltipData] = useState(null);
   const [isInteractive, setIsInteractive] = useState(false);
   const theme = useTheme();
