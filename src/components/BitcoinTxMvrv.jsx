@@ -41,7 +41,7 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
     'mvrv': {
       color: theme.palette.mode === 'dark' ? 'rgba(255, 99, 71, 1)' : 'rgba(0, 128, 0, 1)',
       label: 'MVRV',
-      description: 'Market Value to Realized Value ratio, scaled by 100,000, showing Bitcoin’s valuation relative to its realized capitalization.'
+      description: 'Market Value to Realized Value ratio, showing Bitcoin’s valuation relative to its realized capitalization.'
     }
   });
 
@@ -429,8 +429,21 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
 
       {!isDashboard && (
         <p className='chart-info'>
-          The Bitcoin Tx Count, Price & MVRV chart shows the {txCountMode === 'daily' ? 'daily' : txCountMode === '7-day' ? '7-day' : '28-day'} moving average of daily transaction count and scaled MVRV (left axis, linear) and Bitcoin price (right axis, logarithmic) starting from August 19, 2011, illustrating network activity, price trends, and valuation. MVRV is scaled by 100,000 to fit the linear axis.
+          <hr />
+          The Bitcoin Tx Count, Price & MVRV chart shows the {txCountMode === 'daily' ? 'daily' : txCountMode === '7-day' ? '7-day' : '28-day'} moving
+          average of daily transaction count and scaled MVRV (left axis, linear) and Bitcoin price (right axis, logarithmic) starting from
+          August 19, 2011, illustrating network activity, price trends, and valuation. MVRV is scaled by 100,000 to fit the linear axis.
+          <br />
+          <br />
+          This chart shows the Bitcoin transaction count, Bitcoin price, and MVRV ratio, you’re seeing a snapshot of how Bitcoin’s network and value interact over time.
+          The transaction count shows how much people are using Bitcoin—more transactions often mean more activity or interest.
+          The price, shown on a special scale to make big trends clearer, tells you what Bitcoin is worth in dollars.
+          The MVRV ratio acts like a thermometer for whether Bitcoin is overpriced or underpriced compared to what people paid for it.
+          Together, these indicators can hint at patterns: for example, a rising transaction count with a climbing price might suggest growing demand,
+          while a high MVRV could warn that Bitcoin’s price is getting ahead of its "true" value, possibly signaling a market peak.
+          <br /><br /><br />
         </p>
+        
       )}
     </div>
   );
