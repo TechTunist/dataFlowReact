@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useContext, useMemo } from 'react';
 import { createChart } from 'lightweight-charts';
 import '../styling/bitcoinChart.css';
 import { tokens } from "../theme";
@@ -6,6 +6,7 @@ import { useTheme } from "@mui/material";
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
 import { Select, MenuItem, FormControl, InputLabel, Box, Checkbox } from '@mui/material';
+import { DataContext } from '../DataContext';
 
 const AltcoinPrice = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
@@ -13,27 +14,37 @@ const AltcoinPrice = ({ isDashboard = false }) => {
     const priceSeriesRef = useRef(null);
     const smaSeriesRefs = useRef({}).current; // Object to store SMA series references
     const fedBalanceSeriesRef = useRef(null); // Ref for Fed balance series
-    const [fedBalanceData, setFedBalanceData] = useState([]); // State for Fed balance data
     const [chartData, setChartData] = useState([]);
+    const [isLoading, setIsLoading] = useState(false);
     const [scaleMode, setScaleMode] = useState(0); // 0: linear, 1: logarithmic
     const [tooltipData, setTooltipData] = useState(null);
     const [isInteractive, setIsInteractive] = useState(false);
     const [selectedCoin, setSelectedCoin] = useState('SOL');
     const [denominator, setDenominator] = useState('USD');
-    const [btcData, setBtcData] = useState([]);
-    const [altData, setAltData] = useState([]);
-    const [activeIndicators, setActiveIndicators] = useState([]); // Array for selected indicators
+    const [activeIndicators, setActiveIndicators] = useState([]);
     const theme = useTheme();
-    const colors = tokens(theme.palette.mode);
+    const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
     const isMobile = useIsMobile();
 
-    // Define available indicators, including Fed balance
+    // Access DataContext
+    const {
+        altcoinData,
+        fetchAltcoinData,
+        altcoinLastUpdated,
+        btcData,
+        fetchBtcData,
+        fedBalanceData,
+        fetchFedBalanceData,
+        fedLastUpdated,
+    } = useContext(DataContext);
+
+    // Define available indicators
     const indicators = {
         '8w-sma': { period: 8 * 7, color: 'blue', label: '8 Week SMA' },
         '20w-sma': { period: 20 * 7, color: 'limegreen', label: '20 Week SMA' },
         '100w-sma': { period: 100 * 7, color: 'white', label: '100 Week SMA' },
         '200w-sma': { period: 200 * 7, color: 'yellow', label: '200 Week SMA' },
-        'fed-balance': { color: 'purple', label: 'Fed Balance (Trillions)' }, // New Fed balance indicator
+        'fed-balance': { color: 'purple', label: 'Fed Balance (Trillions)' },
     };
 
     // Hardcoded list of altcoins
@@ -52,6 +63,15 @@ const AltcoinPrice = ({ isDashboard = false }) => {
         { label: 'Sui', value: 'SUI' },
         { label: 'Hedera', value: 'HBAR' },
         { label: 'Stellar', value: 'XLM' },
+        { label: 'Aptos', value: 'APT' },
+        { label: 'Polkadot', value: 'DOT' },
+        { label: 'VeChain', value: 'VET' },
+        { label: 'Uniswap', value: 'UNI' },
+        { label: 'Litecoin', value: 'LTC' },
+        { label: 'Leo Utility Token', value: 'LEO' },
+        { label: 'Hyperliquid', value: 'HYPE' },
+        { label: 'Near Protocol', value: 'NEAR' },
+        
     ];
 
     // Utility functions
@@ -79,120 +99,40 @@ const AltcoinPrice = ({ isDashboard = false }) => {
         setActiveIndicators(newIndicators);
     };
 
-    // Fetch data for altcoin and BTC
+    // Fetch altcoin and BTC data
     useEffect(() => {
-        const cacheKey = `${selectedCoin.toLowerCase()}Data`;
-        const cacheKeyBtc = 'btcData';
-        const cachedData = localStorage.getItem(cacheKey);
-        const cachedDataBtc = localStorage.getItem(cacheKeyBtc);
-        const today = new Date();
-
-        const fetchAltData = () => {
-            // fetch(`https://tunist.pythonanywhere.com/api/${selectedCoin.toLowerCase()}/price/`)
-            fetch(`https://vercel-dataflow.vercel.app/api/${selectedCoin.toLowerCase()}/price/`)
-                .then(response => response.json())
-                .then(data => {
-                    const formattedData = data.map(item => ({
-                        time: item.date,
-                        value: parseFloat(item.close)
-                    }));
-                    setAltData(formattedData);
-                    localStorage.setItem(cacheKey, JSON.stringify(formattedData));
-                })
-                .catch(error => console.error('Error fetching altcoin data: ', error));
-        };
-
-        const fetchBtcData = () => {
-            // fetch('https://tunist.pythonanywhere.com/api/btc/price/')
-            fetch('https://vercel-dataflow.vercel.app/api/btc/price/')
-                .then(response => response.json())
-                .then(data => {
-                    const formattedData = data.map(item => ({
-                        time: item.date,
-                        value: parseFloat(item.close)
-                    }));
-                    setBtcData(formattedData);
-                    localStorage.setItem(cacheKeyBtc, JSON.stringify(formattedData));
-                })
-                .catch(error => console.error('Error fetching BTC data: ', error));
-        };
-
-        if (cachedData) {
-            const parsedData = JSON.parse(cachedData);
-            if (parsedData.length > 0) {
-                const lastCachedDate = new Date(parsedData[parsedData.length - 1].time);
-                if (lastCachedDate.setHours(0, 0, 0, 0) === today.setHours(0, 0, 0, 0)) {
-                    setAltData(parsedData);
-                } else {
-                    fetchAltData();
-                }
-            } else {
-                fetchAltData();
-            }
-        } else {
-            fetchAltData();
+        setIsLoading(true);
+        if (!altcoinData[selectedCoin]) {
+            fetchAltcoinData(selectedCoin);
         }
-
-        if (cachedDataBtc) {
-            const parsedDataBtc = JSON.parse(cachedDataBtc);
-            const lastCachedDateBtc = new Date(parsedDataBtc[parsedDataBtc.length - 1].time);
-            if (lastCachedDateBtc.setHours(0, 0, 0, 0) === today.setHours(0, 0, 0, 0)) {
-                setBtcData(parsedDataBtc);
-            } else {
-                fetchBtcData();
-            }
-        } else {
+        if (denominator === 'BTC' && btcData.length === 0) {
             fetchBtcData();
         }
-    }, [selectedCoin]);
+    }, [selectedCoin, altcoinData, btcData, fetchAltcoinData, fetchBtcData, denominator]);
 
     // Fetch Federal Reserve balance data
     useEffect(() => {
-        const cacheKeyFed = 'fedBalanceData';
-        const cachedFedData = localStorage.getItem(cacheKeyFed);
-        const today = new Date();
-
-        if (cachedFedData) {
-            const parsedFedData = JSON.parse(cachedFedData);
-            const lastCachedDateFed = new Date(parsedFedData[parsedFedData.length - 1].observation_date);
-
-            // Compare dates (ignoring time)
-            if (lastCachedDateFed.setHours(0, 0, 0, 0) === today.setHours(0, 0, 0, 0)) {
-                setFedBalanceData(parsedFedData);
-            } else {
-                fetchFedBalanceData();
-            }
-        } else {
+        if (fedBalanceData.length === 0 && activeIndicators.includes('fed-balance')) {
             fetchFedBalanceData();
         }
-
-        function fetchFedBalanceData() {
-            fetch('https://vercel-dataflow.vercel.app/api/fed-balance/')
-                .then(response => response.json())
-                .then(data => {
-                    const formattedData = data.map(item => ({
-                        time: item.observation_date, // Use observation_date as time
-                        value: parseFloat(item.value) / 1000000 // Convert from millions to trillions for scaling
-                    }));
-                    setFedBalanceData(formattedData);
-                    localStorage.setItem(cacheKeyFed, JSON.stringify(formattedData));
-                })
-                .catch(error => console.error('Error fetching Federal Reserve balance data: ', error));
-        }
-    }, []);
+    }, [fedBalanceData, fetchFedBalanceData, activeIndicators]);
 
     // Compute chart data based on denominator
     useEffect(() => {
-        if (denominator === 'USD') {
-            setChartData(altData);
-        } else if (denominator === 'BTC' && btcData.length > 0) {
-            const newDataset = altData.map(altEntry => {
-                const btcEntry = btcData.find(btc => btc.time === altEntry.time);
-                return btcEntry ? { ...altEntry, value: altEntry.value / btcEntry.value } : null;
-            }).filter(Boolean);
-            setChartData(newDataset);
+        const altData = altcoinData[selectedCoin] || [];
+        if (altData.length > 0) {
+            if (denominator === 'USD') {
+                setChartData(altData);
+            } else if (denominator === 'BTC' && btcData.length > 0) {
+                const newDataset = altData.map(altEntry => {
+                    const btcEntry = btcData.find(btc => btc.time === altEntry.time);
+                    return btcEntry ? { ...altEntry, value: altEntry.value / btcEntry.value } : null;
+                }).filter(Boolean);
+                setChartData(newDataset);
+            }
+            setIsLoading(false);
         }
-    }, [denominator, altData, btcData]);
+    }, [denominator, altcoinData, selectedCoin, btcData]);
 
     // Initialize chart once on mount
     useEffect(() => {
@@ -205,44 +145,33 @@ const AltcoinPrice = ({ isDashboard = false }) => {
         });
 
         const priceSeries = chart.addAreaSeries({
-            priceScaleId: 'right', // Altcoin price on the right
+            priceScaleId: 'right',
             lineWidth: 2,
-            priceFormat: { type: 'price', precision: denominator === 'BTC' ? 8 : 2, minMove: denominator === 'BTC' ? 0.00000001 : 0.01 },
         });
         priceSeriesRef.current = priceSeries;
 
-        // Add Federal Reserve balance series (initially hidden) on the left price scale
         const fedBalanceSeries = chart.addLineSeries({
-            priceScaleId: 'left', // Fed balance on the left
-            color: indicators['fed-balance'].color, // Use color from indicators
+            priceScaleId: 'left',
+            color: indicators['fed-balance'].color,
             lineWidth: 2,
             priceLineVisible: false,
-            visible: activeIndicators.includes('fed-balance'), // Controlled by indicators selection
+            visible: activeIndicators.includes('fed-balance'),
         });
-        fedBalanceSeriesRef.current = fedBalanceSeries; // Store the series in the ref
+        fedBalanceSeriesRef.current = fedBalanceSeries;
 
-        // Configure right price scale for altcoin price
         chart.priceScale('right').applyOptions({
             mode: scaleMode,
             borderVisible: false,
             scaleMargins: { top: 0.1, bottom: 0.1 },
-            priceFormat: {
-                type: 'custom',
-                formatter: (value) => {
-                    if (denominator === 'BTC') return `₿${value.toFixed(8)}`; // Format in BTC
-                    return `$${value.toFixed(2)}`; // Format in USD
-                },
-            },
         });
 
-        // Configure left price scale for Fed balance
         chart.priceScale('left').applyOptions({
             mode: scaleMode,
             borderVisible: false,
             scaleMargins: { top: 0.1, bottom: 0.1 },
             priceFormat: {
                 type: 'custom',
-                formatter: (value) => `$${value.toFixed(2)}T`, // Format Fed balance in trillions
+                formatter: (value) => `$${value.toFixed(2)}T`,
             },
         });
 
@@ -252,14 +181,10 @@ const AltcoinPrice = ({ isDashboard = false }) => {
                 param.point.y < 0 || param.point.y > chartContainerRef.current.clientHeight) {
                 setTooltipData(null);
             } else {
-                const dateStr = param.time; // e.g., 'YYYY-MM-DD'
+                const dateStr = param.time;
                 const priceData = param.seriesData.get(priceSeriesRef.current);
-        
-                // Get all Fed balance data points from the series
                 const fedSeriesData = fedBalanceSeriesRef.current.data();
-                const currentTime = new Date(param.time).getTime(); // Convert to timestamp for comparison
-        
-                // Find the most recent Fed balance data point before or at the current time
+                const currentTime = new Date(param.time).getTime();
                 const nearestFedData = fedSeriesData.reduce((prev, curr) => {
                     const currTime = new Date(curr.time).getTime();
                     if (currTime <= currentTime && (prev === null || currTime > new Date(prev.time).getTime())) {
@@ -267,9 +192,8 @@ const AltcoinPrice = ({ isDashboard = false }) => {
                     }
                     return prev;
                 }, null);
-        
                 const fedBalanceValue = nearestFedData ? nearestFedData.value : null;
-        
+
                 setTooltipData({
                     date: dateStr,
                     price: priceData?.value,
@@ -295,7 +219,28 @@ const AltcoinPrice = ({ isDashboard = false }) => {
             chart.remove();
             window.removeEventListener('resize', resizeChart);
         };
-    }, []); // Empty dependency array ensures chart is created only once
+    }, [colors]); // Only reinitialize if colors change
+
+    // Update price series format based on denominator
+    useEffect(() => {
+        if (priceSeriesRef.current) {
+            priceSeriesRef.current.applyOptions({
+                priceFormat: {
+                    type: 'price',
+                    precision: denominator === 'BTC' ? 8 : 2,
+                    minMove: denominator === 'BTC' ? 0.00000001 : 0.01,
+                },
+                priceScaleId: 'right',
+                priceFormat: {
+                    type: 'custom',
+                    formatter: (value) => {
+                        if (denominator === 'BTC') return `₿${value.toFixed(8)}`;
+                        return `$${value.toFixed(2)}`;
+                    },
+                },
+            });
+        }
+    }, [denominator]);
 
     // Update scale mode
     useEffect(() => {
@@ -313,17 +258,15 @@ const AltcoinPrice = ({ isDashboard = false }) => {
         }
     }, [chartData]);
 
-    // Update Fed balance series data (filtered to match altcoin time range)
+    // Update Fed balance series data
     useEffect(() => {
         if (fedBalanceSeriesRef.current && chartData.length > 0 && fedBalanceData.length > 0) {
-            // Filter Fed balance data to only include dates within altcoin data range
             const altStartTime = new Date(chartData[0].time).getTime();
             const altEndTime = new Date(chartData[chartData.length - 1].time).getTime();
             const filteredFedData = fedBalanceData.filter(item => {
                 const itemTime = new Date(item.time).getTime();
                 return itemTime >= altStartTime && itemTime <= altEndTime;
             });
-
             fedBalanceSeriesRef.current.setData(filteredFedData);
             fedBalanceSeriesRef.current.applyOptions({ visible: activeIndicators.includes('fed-balance') });
         }
@@ -333,7 +276,6 @@ const AltcoinPrice = ({ isDashboard = false }) => {
     useEffect(() => {
         if (!chartRef.current || chartData.length === 0) return;
 
-        // Remove all existing SMA series
         Object.keys(smaSeriesRefs).forEach(key => {
             if (smaSeriesRefs[key]) {
                 chartRef.current.removeSeries(smaSeriesRefs[key]);
@@ -341,18 +283,14 @@ const AltcoinPrice = ({ isDashboard = false }) => {
             }
         });
 
-        // Add active indicators (including Fed balance)
         activeIndicators.forEach(key => {
-            if (key === 'fed-balance') {
-                // Fed balance is handled separately in its own useEffect
-                return;
-            }
+            if (key === 'fed-balance') return;
             const indicator = indicators[key];
             const series = chartRef.current.addLineSeries({
                 color: indicator.color,
                 lineWidth: 2,
                 priceLineVisible: false,
-                priceScaleId: 'right', // Ensure indicators use the right price scale
+                priceScaleId: 'right',
             });
             smaSeriesRefs[key] = series;
             const data = calculateMovingAverage(chartData, indicator.period);
@@ -384,7 +322,7 @@ const AltcoinPrice = ({ isDashboard = false }) => {
                 grid: { vertLines: { color: colors.greenAccent[700] }, horzLines: { color: colors.greenAccent[700] } },
             });
         }
-    }, [theme.palette.mode]);
+    }, [theme.palette.mode, colors]);
 
     return (
         <div style={{ height: '100%' }}>
@@ -401,19 +339,19 @@ const AltcoinPrice = ({ isDashboard = false }) => {
                     }}
                 >
                     <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '200px' } }}>
-                    <InputLabel
-                        id="altcoin-label"
-                        shrink
-                        sx={{
-                            color: colors.grey[100],
-                            '&.Mui-focused': { color: colors.greenAccent[500] },
-                            top: 0,
-                            '&.MuiInputLabel-shrink': {
-                            transform: 'translate(14px, -9px) scale(0.75)',
-                            },
-                        }}
+                        <InputLabel
+                            id="altcoin-label"
+                            shrink
+                            sx={{
+                                color: colors.grey[100],
+                                '&.Mui-focused': { color: colors.greenAccent[500] },
+                                top: 0,
+                                '&.MuiInputLabel-shrink': {
+                                    transform: 'translate(14px, -9px) scale(0.75)',
+                                },
+                            }}
                         >
-                        Altcoin
+                            Altcoin
                         </InputLabel>
                         <Select
                             value={selectedCoin}
@@ -439,25 +377,25 @@ const AltcoinPrice = ({ isDashboard = false }) => {
                         </Select>
                     </FormControl>
                     <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '150px' } }}>
-                    <InputLabel
-                        id="denominator-label"
-                        shrink
-                        sx={{
-                            color: colors.grey[100],
-                            '&.Mui-focused': { color: colors.greenAccent[500] },
-                            top: 0,
-                            '&.MuiInputLabel-shrink': {
-                            transform: 'translate(14px, -9px) scale(0.75)',
-                            },
-                        }}
+                        <InputLabel
+                            id="denominator-label"
+                            shrink
+                            sx={{
+                                color: colors.grey[100],
+                                '&.Mui-focused': { color: colors.greenAccent[500] },
+                                top: 0,
+                                '&.MuiInputLabel-shrink': {
+                                    transform: 'translate(14px, -9px) scale(0.75)',
+                                },
+                            }}
                         >
-                        Denominator
+                            Denominator
                         </InputLabel>
                         <Select
                             value={denominator}
                             onChange={(e) => setDenominator(e.target.value)}
                             label="Denominator"
-                            labelId="indicators-label"
+                            labelId="denominator-label"
                             sx={{
                                 color: colors.grey[100],
                                 backgroundColor: colors.primary[500],
@@ -475,51 +413,51 @@ const AltcoinPrice = ({ isDashboard = false }) => {
                     </FormControl>
                     <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '300px' } }}>
                         <InputLabel
-                        id="indicators-label"
-                        shrink
-                        sx={{
-                            color: colors.grey[100],
-                            '&.Mui-focused': { color: colors.greenAccent[500] },
-                            top: 0,
-                            '&.MuiInputLabel-shrink': {
-                            transform: 'translate(14px, -9px) scale(0.75)',
-                            },
-                        }}
+                            id="indicators-label"
+                            shrink
+                            sx={{
+                                color: colors.grey[100],
+                                '&.Mui-focused': { color: colors.greenAccent[500] },
+                                top: 0,
+                                '&.MuiInputLabel-shrink': {
+                                    transform: 'translate(14px, -9px) scale(0.75)',
+                                },
+                            }}
                         >
-                        Indicators
+                            Indicators
                         </InputLabel>
                         <Select
-                        multiple
-                        value={activeIndicators}
-                        onChange={handleIndicatorChange}
-                        labelId="indicators-label"
-                        label="Indicators"
-                        displayEmpty
-                        renderValue={(selected) =>
-                            selected.length > 0
-                            ? selected.map((key) => indicators[key].label).join(', ')
-                            : 'Select Indicators'
-                        }
-                        sx={{
-                            color: colors.grey[100],
-                            backgroundColor: colors.primary[500],
-                            borderRadius: "8px",
-                            '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
-                            '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                            '& .MuiSelect-select': { py: 1.5, pl: 2 },
-                            '& .MuiSelect-select:empty': { color: colors.grey[500] },
-                        }}
+                            multiple
+                            value={activeIndicators}
+                            onChange={handleIndicatorChange}
+                            label="Indicators"
+                            labelId="indicators-label"
+                            displayEmpty
+                            renderValue={(selected) =>
+                                selected.length > 0
+                                    ? selected.map((key) => indicators[key].label).join(', ')
+                                    : 'Select Indicators'
+                            }
+                            sx={{
+                                color: colors.grey[100],
+                                backgroundColor: colors.primary[500],
+                                borderRadius: "8px",
+                                '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
+                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                                '& .MuiSelect-select': { py: 1.5, pl: 2 },
+                                '& .MuiSelect-select:empty': { color: colors.grey[500] },
+                            }}
                         >
-                        {Object.entries(indicators).map(([key, { label }]) => (
-                            <MenuItem key={key} value={key}>
-                            <Checkbox
-                                checked={activeIndicators.includes(key)}
-                                sx={{ color: colors.grey[100], '&.Mui-checked': { color: colors.greenAccent[500] } }}
-                            />
-                            <span>{label}</span>
-                            </MenuItem>
-                        ))}
+                            {Object.entries(indicators).map(([key, { label }]) => (
+                                <MenuItem key={key} value={key}>
+                                    <Checkbox
+                                        checked={activeIndicators.includes(key)}
+                                        sx={{ color: colors.grey[100], '&.Mui-checked': { color: colors.greenAccent[500] } }}
+                                    />
+                                    <span>{label}</span>
+                                </MenuItem>
+                            ))}
                         </Select>
                     </FormControl>
                 </Box>
@@ -564,13 +502,27 @@ const AltcoinPrice = ({ isDashboard = false }) => {
                 onDoubleClick={() => setInteractivity(!isInteractive)}
             >
                 <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
+                {isLoading && (
+                    <div
+                        style={{
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            color: colors.grey[100],
+                            zIndex: 2,
+                        }}
+                    >
+                        Loading...
+                    </div>
+                )}
                 <div
                     style={{
                         position: 'absolute',
                         top: '10px',
                         left: '10px',
                         zIndex: 2,
-                        backgroundColor: colors.primary[900],
+                        backgroundColor鹬: colors.primary[900],
                         padding: '5px 10px',
                         borderRadius: '4px',
                         color: colors.grey[100],
@@ -621,7 +573,10 @@ const AltcoinPrice = ({ isDashboard = false }) => {
                             gap: '10px',
                         }}
                     >
-                        <LastUpdated storageKey={`${selectedCoin.toLowerCase()}Data`} useLocalStorage={true}/>
+                        <LastUpdated storageKey={`${selectedCoin.toLowerCase()}Data`} />
+                        {activeIndicators.includes('fed-balance') && (
+                            <LastUpdated storageKey="fedBalanceData" />
+                        )}
                     </Box>
                 </div>
             )}

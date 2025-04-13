@@ -1,3 +1,4 @@
+// LastUpdated.jsx
 import React, { useState, useEffect, useContext } from 'react';
 import { useTheme } from '@mui/material';
 import { tokens } from "../theme";
@@ -5,104 +6,76 @@ import '../styling/LastUpdated.css';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { DataContext } from '../DataContext';
 
-const LastUpdated = ({ storageKey, useLocalStorage = false }) => {
+const LastUpdated = ({ storageKey }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
-  const [lastUpdated, setLastUpdated] = useState(''); // Empty string by default
+  const [lastUpdated, setLastUpdated] = useState('');
   const [refresh, setRefresh] = useState(0);
   const [isClicked, setIsClicked] = useState(false);
 
-  // Access DataContext to get last updated dates and fetch functions
+  // Access DataContext
   const {
     btcLastUpdated,
     fedLastUpdated,
     mvrvLastUpdated,
-    ethLastUpdated, // Added
+    ethLastUpdated,
+    dominanceLastUpdated,
+    altcoinLastUpdated,
     fetchBtcData,
     fetchFedBalanceData,
     fetchMvrvData,
-    fetchEthData, // Added
-    dominanceLastUpdated,
+    fetchEthData,
+    fetchAltcoinData,
   } = useContext(DataContext);
 
-  // Map storageKey to the corresponding last updated date from DataContext
+  // Map storageKey to last updated date
   const lastUpdatedMap = {
     btcData: btcLastUpdated,
     fedBalanceData: fedLastUpdated,
     mvrvData: mvrvLastUpdated,
-    ethData: ethLastUpdated, // Added
+    ethData: ethLastUpdated,
     dominanceData: dominanceLastUpdated,
   };
 
-  // Map storageKey to the corresponding fetch function for refreshing
+  // Map storageKey to fetch function
   const fetchFunctionMap = {
     btcData: fetchBtcData,
     fedBalanceData: fetchFedBalanceData,
     mvrvData: fetchMvrvData,
-    ethData: fetchEthData, // Added
+    ethData: fetchEthData,
   };
 
-  // Process data from local storage
-  const processLocalStorageData = (dataJson) => {
-    if (!dataJson) {
-      setLastUpdated(''); // No data, set empty string
-      return;
-    }
-
-    try {
-      const parsedData = JSON.parse(dataJson);
-      // Handle both array and object formats
-      const dataArray = Array.isArray(parsedData) ? parsedData : (parsedData.data || []);
-      if (dataArray.length) {
-        const lastDataPoint = dataArray[dataArray.length - 1];
-        setLastUpdated(new Date(lastDataPoint.time).toLocaleDateString());
-      } else {
-        setLastUpdated('');
-      }
-    } catch (error) {
-      console.error('Error parsing local storage data:', error);
-      setLastUpdated('');
-    }
-  };
-
-  // Get the last updated date based on the data source
+  // Get the last updated date
   useEffect(() => {
-    if (useLocalStorage) {
-      // Use local storage if specified
-      const dataJson = localStorage.getItem(storageKey);
-      processLocalStorageData(dataJson);
+    // Check if storageKey is for an altcoin (e.g., solData, ethData)
+    const coin = Object.keys(altcoinLastUpdated).find(
+      key => `${key.toLowerCase()}Data` === storageKey
+    );
+    if (coin && altcoinLastUpdated[coin]) {
+      setLastUpdated(new Date(altcoinLastUpdated[coin]).toLocaleDateString());
     } else {
-      // Use DataContext
       const lastUpdatedDate = lastUpdatedMap[storageKey];
       if (lastUpdatedDate) {
         setLastUpdated(new Date(lastUpdatedDate).toLocaleDateString());
       } else {
-        setLastUpdated(''); // No data yet
+        setLastUpdated('');
       }
     }
-  }, [storageKey, useLocalStorage, refresh, btcLastUpdated, fedLastUpdated, mvrvLastUpdated, ethLastUpdated, dominanceLastUpdated]); // Added ethLastUpdated to dependencies
-
-  // Listen for changes in local storage (if using local storage)
-  useEffect(() => {
-    if (useLocalStorage) {
-      const handleStorageChange = (e) => {
-        if (e.key === storageKey) {
-          setRefresh(prev => prev + 1);
-        }
-      };
-      window.addEventListener('storage', handleStorageChange);
-      return () => window.removeEventListener('storage', handleStorageChange);
-    }
-  }, [storageKey, useLocalStorage]);
+  }, [storageKey, refresh, btcLastUpdated, fedLastUpdated, mvrvLastUpdated, ethLastUpdated, dominanceLastUpdated, altcoinLastUpdated]);
 
   // Refresh handler
   const refreshComponent = () => {
-    setRefresh(prev => prev + 1); // Trigger useEffect to re-check data
+    setRefresh(prev => prev + 1);
     setIsClicked(true);
     setTimeout(() => setIsClicked(false), 300);
 
-    // If using DataContext, trigger the appropriate fetch function to refresh the data
-    if (!useLocalStorage) {
+    // Trigger fetch for altcoin or mapped data
+    const coin = Object.keys(altcoinLastUpdated).find(
+      key => `${key.toLowerCase()}Data` === storageKey
+    );
+    if (coin) {
+      fetchAltcoinData(coin);
+    } else {
       const fetchFunction = fetchFunctionMap[storageKey];
       if (fetchFunction) {
         fetchFunction();

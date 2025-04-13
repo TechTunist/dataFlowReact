@@ -50,9 +50,13 @@ export const DataProvider = ({ children }) => {
   const [isTxMvrvDataFetched, setIsTxMvrvDataFetched] = useState(false);
   const [txMvrvLastUpdated, setTxMvrvLastUpdated] = useState(null);
 
+  // Altcoin data
+  const [altcoinData, setAltcoinData] = useState({});
+  const [altcoinLastUpdated, setAltcoinLastUpdated] = useState({});
+  const [isAltcoinDataFetched, setIsAltcoinDataFetched] = useState({});
 
   const fetchBtcData = useCallback(async () => {
-    if (isBtcDataFetched) return; // Skip if already fetched
+    if (isBtcDataFetched) return;
     setIsBtcDataFetched(true);
     try {
       const response = await fetch('https://vercel-dataflow.vercel.app/api/btc/price/');
@@ -67,9 +71,29 @@ export const DataProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('Error fetching Bitcoin price data:', error);
-      setIsBtcDataFetched(false); // Allow retry on error
+      setIsBtcDataFetched(false);
     }
   }, [isBtcDataFetched]);
+
+  const fetchAltcoinData = useCallback(async (coin) => {
+    if (isAltcoinDataFetched[coin]) return;
+    setIsAltcoinDataFetched(prev => ({ ...prev, [coin]: true }));
+    try {
+      const response = await fetch(`https://vercel-dataflow.vercel.app/api/${coin.toLowerCase()}/price/`);
+      const data = await response.json();
+      const formattedData = data.map(item => ({
+        time: item.date,
+        value: parseFloat(item.close),
+      }));
+      setAltcoinData(prev => ({ ...prev, [coin]: formattedData }));
+      if (formattedData.length > 0) {
+        setAltcoinLastUpdated(prev => ({ ...prev, [coin]: formattedData[formattedData.length - 1].time }));
+      }
+    } catch (error) {
+      console.error(`Error fetching ${coin} price data:`, error);
+      setIsAltcoinDataFetched(prev => ({ ...prev, [coin]: false }));
+    }
+  }, [isAltcoinDataFetched]);
 
   const fetchFedBalanceData = useCallback(async () => {
     if (isFedBalanceDataFetched) return;
@@ -132,7 +156,7 @@ export const DataProvider = ({ children }) => {
   }, [isDominanceDataFetched]);
 
   const fetchEthData = useCallback(async () => {
-    if (isEthDataFetched) return; // Skip if already fetched
+    if (isEthDataFetched) return;
     setIsEthDataFetched(true);
     try {
       const response = await fetch('https://vercel-dataflow.vercel.app/api/eth/price/');
@@ -147,7 +171,7 @@ export const DataProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('Error fetching Ethereum price data:', error);
-      setIsEthDataFetched(false); // Allow retry on error
+      setIsEthDataFetched(false);
     }
   }, [isEthDataFetched]);
 
@@ -155,200 +179,197 @@ export const DataProvider = ({ children }) => {
     if (isFearAndGreedDataFetched) return;
     setIsFearAndGreedDataFetched(true);
     try {
-        const response = await fetch('https://vercel-dataflow.vercel.app/api/fear-and-greed/');
-        const data = await response.json();
-        setFearAndGreedData(data);
-        if (data.length > 0) {
-            setFearAndGreedLastUpdated(data[data.length - 1].timestamp);
-        }
+      const response = await fetch('https://vercel-dataflow.vercel.app/api/fear-and-greed/');
+      const data = await response.json();
+      setFearAndGreedData(data);
+      if (data.length > 0) {
+        setFearAndGreedLastUpdated(data[data.length - 1].timestamp);
+      }
     } catch (error) {
-        console.error('Error fetching Fear and Greed data:', error);
-        setIsFearAndGreedDataFetched(false);
+      console.error('Error fetching Fear and Greed data:', error);
+      setIsFearAndGreedDataFetched(false);
     }
-}, [isFearAndGreedDataFetched]);
+  }, [isFearAndGreedDataFetched]);
 
-const fetchMarketCapData = useCallback(async () => {
-  if (isMarketCapDataFetched) return;
-  setIsMarketCapDataFetched(true);
-  try {
+  const fetchMarketCapData = useCallback(async () => {
+    if (isMarketCapDataFetched) return;
+    setIsMarketCapDataFetched(true);
+    try {
       const response = await fetch('https://vercel-dataflow.vercel.app/api/total/marketcap/');
       const data = await response.json();
       const formattedData = data.map(item => ({
-          time: item.date,
-          value: parseFloat(item.market_cap)
+        time: item.date,
+        value: parseFloat(item.market_cap)
       }));
       setMarketCapData(formattedData);
       if (formattedData.length > 0) {
-          setMarketCapLastUpdated(formattedData[formattedData.length - 1].time);
+        setMarketCapLastUpdated(formattedData[formattedData.length - 1].time);
       }
-  } catch (error) {
+    } catch (error) {
       console.error('Error fetching total market cap data:', error);
       setIsMarketCapDataFetched(false);
-  }
-}, [isMarketCapDataFetched]);
+    }
+  }, [isMarketCapDataFetched]);
 
-const fetchMacroData = useCallback(async () => {
-  if (isMacroDataFetched) return;
-  setIsMacroDataFetched(true);
-  try {
+  const fetchMacroData = useCallback(async () => {
+    if (isMacroDataFetched) return;
+    setIsMacroDataFetched(true);
+    try {
       const response = await fetch('https://vercel-dataflow.vercel.app/api/combined-macro-data/');
       const data = await response.json();
       setMacroData(data);
       if (data.length > 0) {
-          setMacroLastUpdated(data[data.length - 1].date);
+        setMacroLastUpdated(data[data.length - 1].date);
       }
-  } catch (error) {
+    } catch (error) {
       console.error('Error fetching combined macro data:', error);
       setIsMacroDataFetched(false);
-  }
-}, [isMacroDataFetched]);
+    }
+  }, [isMacroDataFetched]);
 
-const fetchInflationData = useCallback(async () => {
-  if (isInflationDataFetched) return;
-  setIsInflationDataFetched(true);
-  try {
+  const fetchInflationData = useCallback(async () => {
+    if (isInflationDataFetched) return;
+    setIsInflationDataFetched(true);
+    try {
       const response = await fetch('https://vercel-dataflow.vercel.app/api/us-inflation/');
       const data = await response.json();
       const formattedData = data.map(item => ({
-          time: item.date,
-          value: parseFloat(item.value)
+        time: item.date,
+        value: parseFloat(item.value)
       }));
       setInflationData(formattedData);
       if (formattedData.length > 0) {
-          setInflationLastUpdated(formattedData[formattedData.length - 1].time);
+        setInflationLastUpdated(formattedData[formattedData.length - 1].time);
       }
-  } catch (error) {
+    } catch (error) {
       console.error('Error fetching US inflation data:', error);
       setIsInflationDataFetched(false);
-  }
-}, [isInflationDataFetched]);
+    }
+  }, [isInflationDataFetched]);
 
-const fetchInitialClaimsData = useCallback(async () => {
-  if (isInitialClaimsDataFetched) return;
-  setIsInitialClaimsDataFetched(true);
-  try {
+  const fetchInitialClaimsData = useCallback(async () => {
+    if (isInitialClaimsDataFetched) return;
+    setIsInitialClaimsDataFetched(true);
+    try {
       const response = await fetch('https://vercel-dataflow.vercel.app/api/initial-claims/');
       const data = await response.json();
       const formattedData = data.map(item => ({
-          time: item.date,
-          value: parseInt(item.value, 10)
+        time: item.date,
+        value: parseInt(item.value, 10)
       }));
       setInitialClaimsData(formattedData);
       if (formattedData.length > 0) {
-          setInitialClaimsLastUpdated(formattedData[formattedData.length - 1].time);
+        setInitialClaimsLastUpdated(formattedData[formattedData.length - 1].time);
       }
-  } catch (error) {
+    } catch (error) {
       console.error('Error fetching initial claims data:', error);
       setIsInitialClaimsDataFetched(false);
-  }
-}, [isInitialClaimsDataFetched]);
+    }
+  }, [isInitialClaimsDataFetched]);
 
-const fetchInterestData = useCallback(async () => {
-  if (isInterestDataFetched) return;
-  setIsInterestDataFetched(true);
-  try {
+  const fetchInterestData = useCallback(async () => {
+    if (isInterestDataFetched) return;
+    setIsInterestDataFetched(true);
+    try {
       const response = await fetch('https://vercel-dataflow.vercel.app/api/us-interest/');
       const data = await response.json();
       const formattedData = data.map(item => ({
-          time: item.date,
-          value: parseFloat(item.value)
+        time: item.date,
+        value: parseFloat(item.value)
       }));
       setInterestData(formattedData);
       if (formattedData.length > 0) {
-          setInterestLastUpdated(formattedData[formattedData.length - 1].time);
+        setInterestLastUpdated(formattedData[formattedData.length - 1].time);
       }
-  } catch (error) {
+    } catch (error) {
       console.error('Error fetching US interest data:', error);
       setIsInterestDataFetched(false);
-  }
-}, [isInterestDataFetched]);
+    }
+  }, [isInterestDataFetched]);
 
-const fetchUnemploymentData = useCallback(async () => {
-  if (isUnemploymentDataFetched) return;
-  setIsUnemploymentDataFetched(true);
-  try {
+  const fetchUnemploymentData = useCallback(async () => {
+    if (isUnemploymentDataFetched) return;
+    setIsUnemploymentDataFetched(true);
+    try {
       const response = await fetch('https://vercel-dataflow.vercel.app/api/us-unemployment/');
       const data = await response.json();
       const formattedData = data.map(item => ({
-          time: item.date,
-          value: parseFloat(item.value)
+        time: item.date,
+        value: parseFloat(item.value)
       }));
       setUnemploymentData(formattedData);
       if (formattedData.length > 0) {
-          setUnemploymentLastUpdated(formattedData[formattedData.length - 1].time);
+        setUnemploymentLastUpdated(formattedData[formattedData.length - 1].time);
       }
-  } catch (error) {
+    } catch (error) {
       console.error('Error fetching US unemployment data:', error);
       setIsUnemploymentDataFetched(false);
-  }
-}, [isUnemploymentDataFetched]);
-
-const fetchTxCountData = useCallback(async () => {
-  if (isTxCountDataFetched) return;
-  setIsTxCountDataFetched(true);
-  try {
-    const response = await fetch('https://vercel-dataflow.vercel.app/api/btc-tx-count/');
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status} ${response.statusText}`);
     }
-    const data = await response.json();
-    const formattedData = data
-      .map(item => ({
-        time: item.time.split('T')[0], // YYYY-MM-DD
-        value: parseFloat(item.tx_count),
-      }))
-      .sort((a, b) => new Date(a.time) - new Date(b.time)); // Sort ascending by time
-    setTxCountData(formattedData);
-    if (formattedData.length > 0) {
-      setTxCountLastUpdated(formattedData[formattedData.length - 1].time);
+  }, [isUnemploymentDataFetched]);
+
+  const fetchTxCountData = useCallback(async () => {
+    if (isTxCountDataFetched) return;
+    setIsTxCountDataFetched(true);
+    try {
+      const response = await fetch('https://vercel-dataflow.vercel.app/api/btc-tx-count/');
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status} ${response.statusText}`);
+      }
+      const data = await response.json();
+      const formattedData = data
+        .map(item => ({
+          time: item.time.split('T')[0], // YYYY-MM-DD
+          value: parseFloat(item.tx_count),
+        }))
+        .sort((a, b) => new Date(a.time) - new Date(b.time));
+      setTxCountData(formattedData);
+      if (formattedData.length > 0) {
+        setTxCountLastUpdated(formattedData[formattedData.length - 1].time);
+      }
+    } catch (error) {
+      console.error('Error fetching Bitcoin transaction count data:', error);
+      setIsTxCountDataFetched(false);
     }
-  } catch (error) {
-    console.error('Error fetching Bitcoin transaction count data:', error);
-    setIsTxCountDataFetched(false);
-  }
-}, [isTxCountDataFetched]);
+  }, [isTxCountDataFetched]);
 
+  const fetchTxCountCombinedData = useCallback(async () => {
+    if (isTxCountCombinedDataFetched) return;
+    setIsTxCountCombinedDataFetched(true);
+    try {
+      const response = await fetch('https://vercel-dataflow.vercel.app/api/tx-macro/');
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status} ${response.statusText}`);
+      }
+      const data = await response.json();
+      let lastInflation = null;
+      let lastUnemployment = null;
+      let lastFedFunds = null;
 
-const fetchTxCountCombinedData = useCallback(async () => {
-  if (isTxCountCombinedDataFetched) return;
-  setIsTxCountCombinedDataFetched(true);
-  try {
-    const response = await fetch('https://vercel-dataflow.vercel.app/api/tx-macro/');
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status} ${response.statusText}`);
+      const formattedData = data.map(item => {
+        if (item.inflation_rate !== null) lastInflation = parseFloat(item.inflation_rate);
+        if (item.unemployment_rate !== null) lastUnemployment = parseFloat(item.unemployment_rate);
+        if (item.interest_rate !== null) lastFedFunds = parseFloat(item.interest_rate);
+
+        return {
+          time: item.date.split('T')[0],
+          tx_count: item.tx_count ? parseFloat(item.tx_count) : null,
+          price: item.price ? parseFloat(item.price) : null,
+          inflation_rate: lastInflation,
+          unemployment_rate: lastUnemployment,
+          fed_funds_rate: lastFedFunds,
+        };
+      }).sort((a, b) => new Date(a.time) - new Date(b.time));
+
+      setTxCountCombinedData(formattedData);
+      if (formattedData.length > 0) {
+        setTxCountCombinedLastUpdated(formattedData[formattedData.length - 1].time);
+      }
+    } catch (error) {
+      console.error('Error fetching combined transaction count data:', error);
+      setIsTxCountCombinedDataFetched(false);
     }
-    const data = await response.json();
-    let lastInflation = null;
-    let lastUnemployment = null;
-    let lastFedFunds = null;
+  }, [isTxCountCombinedDataFetched]);
 
-    const formattedData = data.map(item => {
-      // Update last known values when new data is available
-      if (item.inflation_rate !== null) lastInflation = parseFloat(item.inflation_rate);
-      if (item.unemployment_rate !== null) lastUnemployment = parseFloat(item.unemployment_rate);
-      if (item.interest_rate !== null) lastFedFunds = parseFloat(item.interest_rate); // Assuming interest_rate is Fed funds rate
-
-      return {
-        time: item.date.split('T')[0],
-        tx_count: item.tx_count ? parseFloat(item.tx_count) : null,
-        price: item.price ? parseFloat(item.price) : null,
-        inflation_rate: lastInflation,
-        unemployment_rate: lastUnemployment,
-        fed_funds_rate: lastFedFunds,
-      };
-    }).sort((a, b) => new Date(a.time) - new Date(b.time));
-
-    setTxCountCombinedData(formattedData);
-    if (formattedData.length > 0) {
-      setTxCountCombinedLastUpdated(formattedData[formattedData.length - 1].time);
-    }
-  } catch (error) {
-    console.error('Error fetching combined transaction count data:', error);
-    setIsTxCountCombinedDataFetched(false);
-  }
-}, [isTxCountCombinedDataFetched]);
-
-  // New fetch function for tx-mvrv data
   const fetchTxMvrvData = useCallback(async () => {
     if (isTxMvrvDataFetched) return;
     setIsTxMvrvDataFetched(true);
@@ -360,21 +381,20 @@ const fetchTxCountCombinedData = useCallback(async () => {
       const data = await response.json();
       const formattedData = data
         .map(item => ({
-          time: item.date, // Assuming date is in YYYY-MM-DD format
+          time: item.date,
           tx_count: parseFloat(item.tx_count),
           mvrv: parseFloat(item.mvrv),
         }))
-        .sort((a, b) => new Date(a.time) - new Date(b.time)); // Sort by date ascending
+        .sort((a, b) => new Date(a.time) - new Date(b.time));
       setTxMvrvData(formattedData);
       if (formattedData.length > 0) {
         setTxMvrvLastUpdated(formattedData[formattedData.length - 1].time);
       }
     } catch (error) {
       console.error('Error fetching Bitcoin tx-mvrv data:', error);
-      setIsTxMvrvDataFetched(false); // Allow retry on error
+      setIsTxMvrvDataFetched(false);
     }
   }, [isTxMvrvDataFetched]);
-
 
   return (
     <DataContext.Provider value={{
@@ -422,7 +442,9 @@ const fetchTxCountCombinedData = useCallback(async () => {
       txMvrvData,
       txMvrvLastUpdated,
       fetchTxMvrvData,
-      
+      altcoinData,
+      fetchAltcoinData,
+      altcoinLastUpdated
     }}>
       {children}
     </DataContext.Provider>

@@ -429,7 +429,6 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
 
       {!isDashboard && (
         <p className='chart-info'>
-          <hr />
           The Bitcoin Tx Count, Price & MVRV chart shows the {txCountMode === 'daily' ? 'daily' : txCountMode === '7-day' ? '7-day' : '28-day'} moving
           average of daily transaction count and scaled MVRV (left axis, linear) and Bitcoin price (right axis, logarithmic) starting from
           August 19, 2011, illustrating network activity, price trends, and valuation. MVRV is scaled by 100,000 to fit the linear axis.
