@@ -22,6 +22,7 @@ const LastUpdated = ({ storageKey, useLocalStorage = false }) => {
     fetchFedBalanceData,
     fetchMvrvData,
     fetchEthData, // Added
+    dominanceLastUpdated,
   } = useContext(DataContext);
 
   // Map storageKey to the corresponding last updated date from DataContext
@@ -30,6 +31,7 @@ const LastUpdated = ({ storageKey, useLocalStorage = false }) => {
     fedBalanceData: fedLastUpdated,
     mvrvData: mvrvLastUpdated,
     ethData: ethLastUpdated, // Added
+    dominanceData: dominanceLastUpdated,
   };
 
   // Map storageKey to the corresponding fetch function for refreshing
@@ -78,7 +80,7 @@ const LastUpdated = ({ storageKey, useLocalStorage = false }) => {
         setLastUpdated(''); // No data yet
       }
     }
-  }, [storageKey, useLocalStorage, refresh, btcLastUpdated, fedLastUpdated, mvrvLastUpdated, ethLastUpdated]); // Added ethLastUpdated to dependencies
+  }, [storageKey, useLocalStorage, refresh, btcLastUpdated, fedLastUpdated, mvrvLastUpdated, ethLastUpdated, dominanceLastUpdated]); // Added ethLastUpdated to dependencies
 
   // Listen for changes in local storage (if using local storage)
   useEffect(() => {
