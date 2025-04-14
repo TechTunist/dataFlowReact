@@ -71,6 +71,16 @@ const AltcoinPrice = ({ isDashboard = false }) => {
         { label: 'Leo Utility Token', value: 'LEO' },
         { label: 'Hyperliquid', value: 'HYPE' },
         { label: 'Near Protocol', value: 'NEAR' },
+        { label: 'Fetch.ai', value: 'FET' },
+        { label: 'Ondo Finance', value: 'ONDO' },
+        { label: 'Internet Computer', value: 'ICP' },
+        { label: 'Monero', value: 'XMR' },
+        { label: 'Polygon', value: 'POL' },
+        { label: 'Algorand', value: 'ALGO' },
+        { label: 'Render', value: 'RENDER' },
+        { label: 'Arbitrum', value: 'ARB' },
+        { label: 'Raydium', value: 'RAY' },
+        { label: 'Move', value: 'MOVE' },
         
     ];
 
