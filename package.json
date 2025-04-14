@@ -13,6 +13,8 @@
     "lightweight-charts": "4.1.1",
     "pako": "^2.1.0",
     "plotly.js": "^2.30.1",
+    "plotly.js-dist": "^3.0.1",
+    "plotly.js-gl2d-dist": "^3.0.1",
     "react": "^18.2.0",
     "react-device-detect": "^2.2.3",
     "react-dom": "^18.2.0",
