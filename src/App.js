@@ -36,6 +36,7 @@ import BitcoinTxCountChart from "./components/BitcoinTxCount";
 import TxCombinedChart from "./components/TxMacroCombined";
 import BitcoinTxMvrvChart from "./components/BitcoinTxMvrv";
 import FredSeriesChart from "./components/FredSeriesChart";
+import Bitcoin10YearChart from "./components/Bitcoin10YearRecession";
 
 function App() {
   const [theme, colorMode] = useMode();
@@ -466,6 +467,16 @@ function App() {
                           chartType="line"
                           valueFormatter={value => `${value.toFixed(2)}%`}
                           explanation="This chart shows the monthly German 10-Year Government Bond Yield."
+                        />
+                      }
+                    />
+                    <Route
+                      path="/indicators/btc-yield-recession"
+                      element={
+                        <BasicChart
+                          ChartComponent={Bitcoin10YearChart}
+                          indicatorId="btc-yield-recession"
+                          explanation="Bitcoin price vs. 10Y-2Y Treasury yield spread and US recessions. Yield curve inversions (negative spread) often precede BTC rallies, while recessions may signal caution."
                         />
                       }
                     />

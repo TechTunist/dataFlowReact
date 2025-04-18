@@ -1,6 +1,6 @@
 import { Box } from "@mui/material";
 
-const BasicChart = ({ ChartComponent, ...props }) => {
+const BasicChart = ({ ChartComponent, seriesId, indicatorId, chartType, explanation, ...props }) => {
   return (
     <Box m="20px" mt="10px">
       <Box
@@ -14,7 +14,7 @@ const BasicChart = ({ ChartComponent, ...props }) => {
           zIndex: 1, // Ensure the chart container is below the sidebar (zIndex: 5000)
         }}
       >
-        <ChartComponent {...props} />
+        <ChartComponent seriesId={seriesId} indicatorId={indicatorId} explanation={explanation} {...props} />
       </Box>
     </Box>
   );

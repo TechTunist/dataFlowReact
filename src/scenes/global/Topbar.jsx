@@ -149,11 +149,13 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
         return { title: "Nikkei 225", subtitle: isMobile ? "Stock Index" : "Nikkei 225 Index" };
       case "/fred/german-bond-yield":
         return { title: "German Bond Yield", subtitle: isMobile ? "Bond Yield" : "German 10-Year Bond Yield" };
+      case "/indicators/btc-yield-recession":
+        return { title: "Bitcoin to 10 Year Yield", subtitle: isMobile ? "BTC vs 10 Year" : "Bitcoin Vs 10 year Bond Yield with Recesion Indicator" };
       default:
         return { title: "CryptoLogical", subtitle: "" };
     }
   };
-
+  
   const { title, subtitle } = getTitleAndSubtitle(location.pathname);
 
   return (
