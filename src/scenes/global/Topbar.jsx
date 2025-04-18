@@ -93,6 +93,62 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
         return { title: "US Macro and BTC Tx Count", subtitle: "Macro and On-Chain Data" };
       case "/tx-mvrv":
         return { title: "BTC Tx Count to MVRV", subtitle: "Transactions to MVRV Chart" };
+      case "/fred/fed-funds-rate":
+        return { title: "Federal Funds Rate", subtitle: isMobile ? "Fed Rate" : "Effective Federal Funds Rate" };
+      case "/fred/sp500":
+        return { title: "S&P 500", subtitle: isMobile ? "Stock Index" : "S&P 500 Index Daily Closing Values" };
+      case "/fred/recession-indicator":
+        return { title: "US Recession", subtitle: isMobile ? "Recession Periods" : "US Recession Indicator" };
+      case "/fred/cpi":
+        return { title: "Consumer Price Index", subtitle: isMobile ? "CPI" : "US Consumer Price Index" };
+      case "/fred/unemployment-rate":
+        return { title: "Unemployment Rate", subtitle: isMobile ? "Unemployment" : "US Unemployment Rate" };
+      case "/fred/10-year-treasury":
+        return { title: "10-Year Treasury", subtitle: isMobile ? "Treasury Yield" : "10-Year Treasury Note Yield" };
+      case "/fred/10y-2y-spread":
+        return { title: "10Y-2Y Spread", subtitle: isMobile ? "Yield Spread" : "10-Year to 2-Year Treasury Spread" };
+      case "/fred/5y-inflation-expectation":
+        return { title: "Inflation Expectation", subtitle: isMobile ? "5Y Inflation" : "5-Year Breakeven Inflation Rate" };
+      case "/fred/euro-dollar":
+        return { title: "Euro to USD", subtitle: isMobile ? "Exchange Rate" : "Euro to USD Exchange Rate" };
+      case "/fred/crude-oil":
+        return { title: "Crude Oil Price", subtitle: isMobile ? "Oil Price" : "WTI Crude Oil Price" };
+      case "/fred/producer-price":
+        return { title: "Producer Price Index", subtitle: isMobile ? "PPI" : "Producer Price Index for Commodities" };
+      case "/fred/nonfarm-payrolls":
+        return { title: "Nonfarm Payrolls", subtitle: isMobile ? "Payrolls" : "US Nonfarm Payroll Employment" };
+      case "/fred/gdp":
+        return { title: "Real GDP", subtitle: isMobile ? "GDP" : "US Real Gross Domestic Product" };
+      case "/fred/gdp-growth":
+        return { title: "GDP Growth", subtitle: isMobile ? "Growth Rate" : "US Real GDP Growth Rate" };
+      case "/fred/m1-money-supply":
+        return { title: "M1 Money Supply", subtitle: isMobile ? "M1" : "US M1 Money Supply" };
+      case "/fred/m2-money-supply":
+        return { title: "M2 Money Supply", subtitle: isMobile ? "M2" : "US M2 Money Supply" };
+      case "/fred/consumer-sentiment":
+        return { title: "Consumer Sentiment", subtitle: isMobile ? "Sentiment" : "US Consumer Sentiment Index" };
+      case "/fred/vix":
+        return { title: "VIX Index", subtitle: isMobile ? "Volatility" : "CBOE Volatility Index" };
+      case "/fred/ted-spread":
+        return { title: "TED Spread", subtitle: isMobile ? "Spread" : "LIBOR to T-Bill Spread" };
+      case "/fred/yen-dollar":
+        return { title: "Yen to USD", subtitle: isMobile ? "Exchange Rate" : "Japanese Yen to USD Exchange Rate" };
+      case "/fred/pound-dollar":
+        return { title: "Pound to USD", subtitle: isMobile ? "Exchange Rate" : "British Pound to USD Exchange Rate" };
+      case "/fred/cad-dollar":
+        return { title: "CAD to USD", subtitle: isMobile ? "Exchange Rate" : "Canadian Dollar to USD Exchange Rate" };
+      case "/fred/chicago-fed-index":
+        return { title: "Chicago Fed Index", subtitle: isMobile ? "Activity Index" : "Chicago Fed National Activity Index" };
+      case "/fred/economic-policy-uncertainty":
+        return { title: "Policy Uncertainty", subtitle: isMobile ? "Uncertainty" : "US Economic Policy Uncertainty Index" };
+      case "/fred/housing-starts":
+        return { title: "Housing Starts", subtitle: isMobile ? "Housing" : "US Housing Starts" };
+      case "/fred/case-shiller":
+        return { title: "Home Price Index", subtitle: isMobile ? "Home Prices" : "Case-Shiller US Home Price Index" };
+      case "/fred/nikkei-225":
+        return { title: "Nikkei 225", subtitle: isMobile ? "Stock Index" : "Nikkei 225 Index" };
+      case "/fred/german-bond-yield":
+        return { title: "German Bond Yield", subtitle: isMobile ? "Bond Yield" : "German 10-Year Bond Yield" };
       default:
         return { title: "CryptoLogical", subtitle: "" };
     }

@@ -601,7 +601,7 @@ const Dashboard = ({ isMobile, isSidebar }) => {
         </Grid>
 
         {/* Fear And Greed Chart Card */}
-        <Grid item xs={12} lg={6}>
+        {/* <Grid item xs={12} lg={6}>
           <LazyLoad height={400} offset={100}>
             <Link to="/fear-and-greed-chart" style={{ textDecoration: "none" }}>
               <Card
@@ -636,10 +636,10 @@ const Dashboard = ({ isMobile, isSidebar }) => {
               </Card>
             </Link>
           </LazyLoad>
-        </Grid>
+        </Grid> */}
 
         {/* Altcoin Risk Chart */}
-        <Grid item xs={12} lg={6}>
+        {/* <Grid item xs={12} lg={6}>
           <LazyLoad height={400} offset={100}>
             <Link to="/altcoin-risk" style={{ textDecoration: "none" }}>
               <Card
@@ -674,10 +674,10 @@ const Dashboard = ({ isMobile, isSidebar }) => {
               </Card>
             </Link>
           </LazyLoad>
-        </Grid>
+        </Grid> */}
 
         {/* Inflation Chart */}
-        <Grid item xs={12} lg={6}>
+        {/* <Grid item xs={12} lg={6}>
           <LazyLoad height={400} offset={100}>
             <Link to="/us-inflation" style={{ textDecoration: "none" }}>
               <Card
@@ -712,10 +712,10 @@ const Dashboard = ({ isMobile, isSidebar }) => {
               </Card>
             </Link>
           </LazyLoad>
-        </Grid>
+        </Grid> */}
 
         {/* Unemployment Chart */}
-        <Grid item xs={12} lg={6}>
+        {/* <Grid item xs={12} lg={6}>
           <LazyLoad height={400} offset={100}>
             <Link to="/us-unemployment" style={{ textDecoration: "none" }}>
               <Card
@@ -750,10 +750,10 @@ const Dashboard = ({ isMobile, isSidebar }) => {
               </Card>
             </Link>
           </LazyLoad>
-        </Grid>
+        </Grid> */}
 
         {/* Interest Chart */}
-        <Grid item xs={12} lg={6}>
+        {/* <Grid item xs={12} lg={6}>
           <LazyLoad height={400} offset={100}>
             <Link to="/us-interest" style={{ textDecoration: "none" }}>
               <Card
@@ -788,10 +788,10 @@ const Dashboard = ({ isMobile, isSidebar }) => {
               </Card>
             </Link>
           </LazyLoad>
-        </Grid>
+        </Grid> */}
 
         {/* Combined US Macro Chart */}
-        <Grid item xs={12} lg={6}>
+        {/* <Grid item xs={12} lg={6}>
           <LazyLoad height={400} offset={100}>
             <Link to="/us-combined-macro" style={{ textDecoration: "none" }}>
               <Card
@@ -826,10 +826,10 @@ const Dashboard = ({ isMobile, isSidebar }) => {
               </Card>
             </Link>
           </LazyLoad>
-        </Grid>
+        </Grid> */}
 
         {/* US Initial Claims Chart */}
-        <Grid item xs={12} lg={6}>
+        {/* <Grid item xs={12} lg={6}>
           <LazyLoad height={400} offset={100}>
             <Link to="/us-initial-claims" style={{ textDecoration: "none" }}>
               <Card
@@ -864,7 +864,7 @@ const Dashboard = ({ isMobile, isSidebar }) => {
               </Card>
             </Link>
           </LazyLoad>
-        </Grid>
+        </Grid> */}
       </Grid>
     </Box>
   );

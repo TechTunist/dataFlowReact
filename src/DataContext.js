@@ -49,6 +49,7 @@ export const DataProvider = ({ children }) => {
   const [txMvrvData, setTxMvrvData] = useState([]);
   const [isTxMvrvDataFetched, setIsTxMvrvDataFetched] = useState(false);
   const [txMvrvLastUpdated, setTxMvrvLastUpdated] = useState(null);
+  const [fredSeriesData, setFredSeriesData] = useState({}); // Store fetched series data
 
   // Altcoin data
   const [altcoinData, setAltcoinData] = useState({});
@@ -396,6 +397,25 @@ export const DataProvider = ({ children }) => {
     }
   }, [isTxMvrvDataFetched]);
 
+  const fetchFredSeriesData = useCallback(async (seriesId) => {
+    if (fredSeriesData[seriesId]?.length > 0) return; // Skip if already fetched
+    try {
+      const response = await fetch(`https://vercel-dataflow.vercel.app/api/series/${seriesId}/observations/`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      const data = await response.json();
+      const formattedData = data.map(item => ({
+        time: item.date,
+        value: parseFloat(item.value) || 0, // Handle non-numeric values
+      }));
+      setFredSeriesData(prev => ({ ...prev, [seriesId]: formattedData }));
+    } catch (error) {
+      console.error(`Error fetching series ${seriesId}:`, error);
+      throw error;
+    }
+  }, [fredSeriesData]);
+
   return (
     <DataContext.Provider value={{
       btcData,
@@ -444,7 +464,9 @@ export const DataProvider = ({ children }) => {
       fetchTxMvrvData,
       altcoinData,
       fetchAltcoinData,
-      altcoinLastUpdated
+      altcoinLastUpdated,
+      fredSeriesData,
+      fetchFredSeriesData,
     }}>
       {children}
     </DataContext.Provider>

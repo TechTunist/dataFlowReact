@@ -33,6 +33,21 @@ import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import useIsMobile from "../../hooks/useIsMobile";
 
 
+import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
+import CandlestickChartIcon from '@mui/icons-material/CandlestickChart';
+import WarningIcon from '@mui/icons-material/Warning';
+import CurrencyExchangeIcon from '@mui/icons-material/CurrencyExchange';
+import OilBarrelIcon from '@mui/icons-material/OilBarrel';
+import FactoryIcon from '@mui/icons-material/Factory';
+import WorkIcon from '@mui/icons-material/Work';
+import ApartmentIcon from '@mui/icons-material/Apartment';
+import MonetizationOnIcon from '@mui/icons-material/MonetizationOn';
+import MoodIcon from '@mui/icons-material/Mood';
+import ReportIcon from '@mui/icons-material/Report';
+import ConstructionIcon from '@mui/icons-material/Construction';
+import HomeIcon from '@mui/icons-material/Home';
+
+
 const Item = ({ title, to, icon, selected, setSelected, isNested, onClick }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
@@ -86,6 +101,34 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
     { title: "US Interest Rate Chart", to: "/us-interest", category: "MacroEconomics", icon: <BalanceIcon />, categoryIcon: <CategoryIcon /> },
     { title: "US Macro Information Chart", to: "/us-combined-macro", category: "MacroEconomics", icon: <MultilineChartIcon />, categoryIcon: <CategoryIcon /> },
     { title: "US Macro and BTC Tx Count", to: "/tx-combined", category: "MacroEconomics", icon: <BarChartIcon />, categoryIcon: <CategoryIcon /> },
+    { title: "Federal Funds Rate", to: "/fred/fed-funds-rate", category: "MacroEconomics", icon: <AccountBalanceIcon />, categoryIcon: <ShowChartIcon /> },
+    { title: "S&P 500 Index", to: "/fred/sp500", category: "MacroEconomics", icon: <CandlestickChartIcon />, categoryIcon: <ShowChartIcon /> },
+    { title: "US Recession Indicator", to: "/fred/recession-indicator", category: "MacroEconomics", icon: <WarningIcon />, categoryIcon: <ShowChartIcon /> },
+    { title: "Consumer Price Index (CPI)", to: "/fred/cpi", category: "MacroEconomics", icon: <AddShoppingCartIcon />, categoryIcon: <ShowChartIcon /> },
+    { title: "Unemployment Rate", to: "/fred/unemployment-rate", category: "MacroEconomics", icon: <SentimentVeryDissatisfiedIcon />, categoryIcon: <ShowChartIcon /> },
+    { title: "10-Year Treasury Yield", to: "/fred/10-year-treasury", category: "MacroEconomics", icon: <AccountBalanceIcon />, categoryIcon: <ShowChartIcon /> },
+    { title: "10Y-2Y Treasury Spread", to: "/fred/10y-2y-spread", category: "MacroEconomics", icon: <AccountBalanceIcon />, categoryIcon: <ShowChartIcon /> },
+    { title: "5-Year Inflation Expectation", to: "/fred/5y-inflation-expectation", category: "MacroEconomics", icon: <TrendingUpIcon />, categoryIcon: <ShowChartIcon /> },
+    { title: "Euro to USD Exchange Rate", to: "/fred/euro-dollar", category: "MacroEconomics", icon: <CurrencyExchangeIcon />, categoryIcon: <ShowChartIcon /> },
+    { title: "WTI Crude Oil Price", to: "/fred/crude-oil", category: "MacroEconomics", icon: <OilBarrelIcon />, categoryIcon: <ShowChartIcon /> },
+    { title: "Producer Price Index", to: "/fred/producer-price", category: "MacroEconomics", icon: <FactoryIcon />, categoryIcon: <ShowChartIcon /> },
+    { title: "Nonfarm Payrolls", to: "/fred/nonfarm-payrolls", category: "MacroEconomics", icon: <WorkIcon />, categoryIcon: <ShowChartIcon /> },
+    { title: "Real GDP", to: "/fred/gdp", category: "MacroEconomics", icon: <ApartmentIcon />, categoryIcon: <ShowChartIcon /> },
+    { title: "Real GDP Growth Rate", to: "/fred/gdp-growth", category: "MacroEconomics", icon: <TrendingUpIcon />, categoryIcon: <ShowChartIcon /> },
+    { title: "M1 Money Supply", to: "/fred/m1-money-supply", category: "MacroEconomics", icon: <MonetizationOnIcon />, categoryIcon: <ShowChartIcon /> },
+    { title: "M2 Money Supply", to: "/fred/m2-money-supply", category: "MacroEconomics", icon: <MonetizationOnIcon />, categoryIcon: <ShowChartIcon /> },
+    { title: "Consumer Sentiment", to: "/fred/consumer-sentiment", category: "MacroEconomics", icon: <MoodIcon />, categoryIcon: <ShowChartIcon /> },
+    { title: "VIX Volatility Index", to: "/fred/vix", category: "MacroEconomics", icon: <ReportIcon />, categoryIcon: <ShowChartIcon /> },
+    { title: "TED Spread", to: "/fred/ted-spread", category: "MacroEconomics", icon: <AccountBalanceIcon />, categoryIcon: <ShowChartIcon /> },
+    { title: "Yen to USD Exchange Rate", to: "/fred/yen-dollar", category: "MacroEconomics", icon: <CurrencyExchangeIcon />, categoryIcon: <ShowChartIcon /> },
+    { title: "Pound to USD Exchange Rate", to: "/fred/pound-dollar", category: "MacroEconomics", icon: <CurrencyExchangeIcon />, categoryIcon: <ShowChartIcon /> },
+    { title: "CAD to USD Exchange Rate", to: "/fred/cad-dollar", category: "MacroEconomics", icon: <CurrencyExchangeIcon />, categoryIcon: <ShowChartIcon /> },
+    { title: "Chicago Fed Activity Index", to: "/fred/chicago-fed-index", category: "MacroEconomics", icon: <ApartmentIcon />, categoryIcon: <ShowChartIcon /> },
+    { title: "Economic Policy Uncertainty", to: "/fred/economic-policy-uncertainty", category: "MacroEconomics", icon: <WarningIcon />, categoryIcon: <ShowChartIcon /> },
+    { title: "Housing Starts", to: "/fred/housing-starts", category: "MacroEconomics", icon: <ConstructionIcon />, categoryIcon: <ShowChartIcon /> },
+    { title: "Case-Shiller Home Price Index", to: "/fred/case-shiller", category: "MacroEconomics", icon: <HomeIcon />, categoryIcon: <ShowChartIcon /> },
+    { title: "Nikkei 225 Index", to: "/fred/nikkei-225", category: "MacroEconomics", icon: <CandlestickChartIcon />, categoryIcon: <ShowChartIcon /> },
+    { title: "German 10-Year Bond Yield", to: "/fred/german-bond-yield", category: "MacroEconomics", icon: <AccountBalanceIcon />, categoryIcon: <ShowChartIcon /> },
   ];
 
   const filteredItems = itemsData.filter(item =>
