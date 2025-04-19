@@ -1,9 +1,6 @@
-// DataContext.js
-
-
-// https://vercel-dataflow.vercel.app
-
+// src/DataContext.js
 import React, { createContext, useState, useCallback } from 'react';
+import { initDB, cacheData, getCachedData, clearCache } from './utility/idbUtils';
 
 export const DataContext = createContext();
 
@@ -57,26 +54,49 @@ export const DataProvider = ({ children }) => {
   const [altcoinData, setAltcoinData] = useState({});
   const [altcoinLastUpdated, setAltcoinLastUpdated] = useState({});
   const [isAltcoinDataFetched, setIsAltcoinDataFetched] = useState({});
-  // New state for indicator data
   const [indicatorData, setIndicatorData] = useState({});
   const [isIndicatorDataFetched, setIsIndicatorDataFetched] = useState({});
 
+  // const API_BASE_URL = 'https://vercel-dataflow.vercel.app/api'; 
+  const API_BASE_URL = 'http://127.0.0.1:8000/api'; 
+  
   const fetchBtcData = useCallback(async () => {
     if (isBtcDataFetched) return;
+    
+    const cacheId = 'btcData';
+    let cached = null;
+    if (typeof indexedDB !== 'undefined') {
+      try {
+        cached = await getCachedData(cacheId);
+        const ONE_DAY = 24 * 60 * 60 * 1000;
+        if (cached && Date.now() - cached.timestamp < ONE_DAY) {
+          setBtcData(cached.data);
+          setBtcLastUpdated(cached.data[cached.data.length - 1].time);
+          setIsBtcDataFetched(true);
+          return;
+        }
+      } catch (error) {
+        console.error('Error accessing IndexedDB for BTC data:', error);
+      }
+    }
+
     setIsBtcDataFetched(true);
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/btc/price/');
+      const response = await fetch(`${API_BASE_URL}/btc/price/`);
       if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
       const data = await response.json();
       const formattedData = data
-        .filter(item => item.close != null && !isNaN(parseFloat(item.close)))
-        .map(item => ({
+        .filter((item) => item.close != null && !isNaN(parseFloat(item.close)))
+        .map((item) => ({
           time: item.date,
           value: parseFloat(item.close),
         }));
       setBtcData(formattedData);
       if (formattedData.length > 0) {
         setBtcLastUpdated(formattedData[formattedData.length - 1].time);
+        if (typeof indexedDB !== 'undefined') {
+          await cacheData(cacheId, formattedData, Date.now());
+        }
       }
     } catch (error) {
       console.error('Error fetching Bitcoin price data:', error);
@@ -84,37 +104,109 @@ export const DataProvider = ({ children }) => {
     }
   }, [isBtcDataFetched]);
 
-  const fetchAltcoinData = useCallback(async (coin) => {
-    if (isAltcoinDataFetched[coin]) return;
-    setIsAltcoinDataFetched(prev => ({ ...prev, [coin]: true }));
+  const refreshBtcData = useCallback(async () => {
     try {
-      const response = await fetch(`http://127.0.0.1:8000/api/${coin.toLowerCase()}/price/`);
+      await clearCache('btcData');
+      setIsBtcDataFetched(false);
+      setBtcData([]);
+      await fetchBtcData();
+    } catch (error) {
+      console.error('Error refreshing BTC data:', error);
+    }
+  }, [fetchBtcData]);
+
+  const fetchMarketCapData = useCallback(async () => {
+    if (isMarketCapDataFetched) return;
+
+    const cacheId = 'marketCapData';
+    let cached = null;
+    if (typeof indexedDB !== 'undefined') {
+      try {
+        cached = await getCachedData(cacheId);
+        const ONE_DAY = 24 * 60 * 60 * 1000;
+        if (cached && Date.now() - cached.timestamp < ONE_DAY) {
+          setMarketCapData(cached.data);
+          setMarketCapLastUpdated(cached.data[cached.data.length - 1].time);
+          setIsMarketCapDataFetched(true);
+          return;
+        }
+      } catch (error) {
+        console.error('Error accessing IndexedDB for market cap data:', error);
+      }
+    }
+
+    setIsMarketCapDataFetched(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/total/marketcap/`);
       if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
       const data = await response.json();
-      const formattedData = data
-        .filter(item => item.close != null && !isNaN(parseFloat(item.close)))
-        .map(item => ({
-          time: item.date,
-          value: parseFloat(item.close),
-        }));
-      setAltcoinData(prev => ({ ...prev, [coin]: formattedData }));
+      const formattedData = data.map((item) => ({
+        time: item.date,
+        value: parseFloat(item.market_cap),
+      }));
+      setMarketCapData(formattedData);
       if (formattedData.length > 0) {
-        setAltcoinLastUpdated(prev => ({ ...prev, [coin]: formattedData[formattedData.length - 1].time }));
+        setMarketCapLastUpdated(formattedData[formattedData.length - 1].time);
+        if (typeof indexedDB !== 'undefined') {
+          await cacheData(cacheId, formattedData, Date.now());
+        }
       }
     } catch (error) {
-      console.error(`Error fetching ${coin} price data:`, error);
-      setIsAltcoinDataFetched(prev => ({ ...prev, [coin]: false }));
+      console.error('Error fetching total market cap data:', error);
+      setIsMarketCapDataFetched(false);
     }
-  }, [isAltcoinDataFetched]);
+  }, [isMarketCapDataFetched]);
+
+  const refreshMarketCapData = useCallback(async () => {
+    try {
+      await clearCache('marketCapData');
+      setIsMarketCapDataFetched(false);
+      setMarketCapData([]);
+      await fetchMarketCapData();
+    } catch (error) {
+      console.error('Error refreshing market cap data:', error);
+    }
+  }, [fetchMarketCapData]);
+
+  // ... other fetch functions (e.g., fetchEthData, fetchFedBalanceData) can be updated similarly
+
+  const fetchAltcoinData = useCallback(
+    async (coin) => {
+      if (isAltcoinDataFetched[coin]) return;
+      setIsAltcoinDataFetched((prev) => ({ ...prev, [coin]: true }));
+      try {
+        const response = await fetch(`${API_BASE_URL}/${coin.toLowerCase()}/price/`);
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+        const data = await response.json();
+        const formattedData = data
+          .filter((item) => item.close != null && !isNaN(parseFloat(item.close)))
+          .map((item) => ({
+            time: item.date,
+            value: parseFloat(item.close),
+          }));
+        setAltcoinData((prev) => ({ ...prev, [coin]: formattedData }));
+        if (formattedData.length > 0) {
+          setAltcoinLastUpdated((prev) => ({
+            ...prev,
+            [coin]: formattedData[formattedData.length - 1].time,
+          }));
+        }
+      } catch (error) {
+        console.error(`Error fetching ${coin} price data:`, error);
+        setIsAltcoinDataFetched((prev) => ({ ...prev, [coin]: false }));
+      }
+    },
+    [isAltcoinDataFetched]
+  );
 
   const fetchFedBalanceData = useCallback(async () => {
     if (isFedBalanceDataFetched) return;
     setIsFedBalanceDataFetched(true);
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/fed-balance/');
+      const response = await fetch(`${API_BASE_URL}/fed-balance/`);
       if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
       const data = await response.json();
-      const formattedData = data.map(item => ({
+      const formattedData = data.map((item) => ({
         time: item.observation_date,
         value: parseFloat(item.value) / 1000000,
       }));
@@ -132,10 +224,10 @@ export const DataProvider = ({ children }) => {
     if (isMvrvDataFetched) return;
     setIsMvrvDataFetched(true);
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/mvrv/');
+      const response = await fetch(`${API_BASE_URL}/mvrv/`);
       if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
       const data = await response.json();
-      const formattedData = data.map(item => ({
+      const formattedData = data.map((item) => ({
         time: item.time.split('T')[0],
         value: parseFloat(item.cap_mvrv_cur),
       }));
@@ -153,10 +245,10 @@ export const DataProvider = ({ children }) => {
     if (isDominanceDataFetched) return;
     setIsDominanceDataFetched(true);
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/dominance/');
+      const response = await fetch(`${API_BASE_URL}/dominance/`);
       if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
       const data = await response.json();
-      const formattedData = data.map(item => ({
+      const formattedData = data.map((item) => ({
         time: item.date,
         value: parseFloat(item.btc),
       }));
@@ -174,12 +266,12 @@ export const DataProvider = ({ children }) => {
     if (isEthDataFetched) return;
     setIsEthDataFetched(true);
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/eth/price/');
+      const response = await fetch(`${API_BASE_URL}/eth/price/`);
       if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
       const data = await response.json();
       const formattedData = data
-        .filter(item => item.close != null && !isNaN(parseFloat(item.close)))
-        .map(item => ({
+        .filter((item) => item.close != null && !isNaN(parseFloat(item.close)))
+        .map((item) => ({
           time: item.date,
           value: parseFloat(item.close),
         }));
@@ -197,7 +289,7 @@ export const DataProvider = ({ children }) => {
     if (isFearAndGreedDataFetched) return;
     setIsFearAndGreedDataFetched(true);
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/fear-and-greed/');
+      const response = await fetch(`${API_BASE_URL}/fear-and-greed/`);
       if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
       const data = await response.json();
       setFearAndGreedData(data);
@@ -210,32 +302,11 @@ export const DataProvider = ({ children }) => {
     }
   }, [isFearAndGreedDataFetched]);
 
-  const fetchMarketCapData = useCallback(async () => {
-    if (isMarketCapDataFetched) return;
-    setIsMarketCapDataFetched(true);
-    try {
-      const response = await fetch('http://127.0.0.1:8000/api/total/marketcap/');
-      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-      const data = await response.json();
-      const formattedData = data.map(item => ({
-        time: item.date,
-        value: parseFloat(item.market_cap),
-      }));
-      setMarketCapData(formattedData);
-      if (formattedData.length > 0) {
-        setMarketCapLastUpdated(formattedData[formattedData.length - 1].time);
-      }
-    } catch (error) {
-      console.error('Error fetching total market cap data:', error);
-      setIsMarketCapDataFetched(false);
-    }
-  }, [isMarketCapDataFetched]);
-
   const fetchMacroData = useCallback(async () => {
     if (isMacroDataFetched) return;
     setIsMacroDataFetched(true);
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/combined-macro-data/');
+      const response = await fetch(`${API_BASE_URL}/combined-macro-data/`);
       if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
       const data = await response.json();
       setMacroData(data);
@@ -252,10 +323,10 @@ export const DataProvider = ({ children }) => {
     if (isInflationDataFetched) return;
     setIsInflationDataFetched(true);
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/us-inflation/');
+      const response = await fetch(`${API_BASE_URL}/us-inflation/`);
       if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
       const data = await response.json();
-      const formattedData = data.map(item => ({
+      const formattedData = data.map((item) => ({
         time: item.date,
         value: parseFloat(item.value),
       }));
@@ -273,10 +344,10 @@ export const DataProvider = ({ children }) => {
     if (isInitialClaimsDataFetched) return;
     setIsInitialClaimsDataFetched(true);
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/initial-claims/');
+      const response = await fetch(`${API_BASE_URL}/initial-claims/`);
       if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
       const data = await response.json();
-      const formattedData = data.map(item => ({
+      const formattedData = data.map((item) => ({
         time: item.date,
         value: parseInt(item.value, 10),
       }));
@@ -294,10 +365,10 @@ export const DataProvider = ({ children }) => {
     if (isInterestDataFetched) return;
     setIsInterestDataFetched(true);
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/us-interest/');
+      const response = await fetch(`${API_BASE_URL}/us-interest/`);
       if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
       const data = await response.json();
-      const formattedData = data.map(item => ({
+      const formattedData = data.map((item) => ({
         time: item.date,
         value: parseFloat(item.value),
       }));
@@ -315,10 +386,10 @@ export const DataProvider = ({ children }) => {
     if (isUnemploymentDataFetched) return;
     setIsUnemploymentDataFetched(true);
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/us-unemployment/');
+      const response = await fetch(`${API_BASE_URL}/us-unemployment/`);
       if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
       const data = await response.json();
-      const formattedData = data.map(item => ({
+      const formattedData = data.map((item) => ({
         time: item.date,
         value: parseFloat(item.value),
       }));
@@ -336,11 +407,11 @@ export const DataProvider = ({ children }) => {
     if (isTxCountDataFetched) return;
     setIsTxCountDataFetched(true);
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/btc-tx-count/');
+      const response = await fetch(`${API_BASE_URL}/btc-tx-count/`);
       if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
       const data = await response.json();
       const formattedData = data
-        .map(item => ({
+        .map((item) => ({
           time: item.time.split('T')[0],
           value: parseFloat(item.tx_count),
         }))
@@ -359,27 +430,29 @@ export const DataProvider = ({ children }) => {
     if (isTxCountCombinedDataFetched) return;
     setIsTxCountCombinedDataFetched(true);
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/tx-macro/');
+      const response = await fetch(`${API_BASE_URL}/tx-macro/`);
       if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
       const data = await response.json();
       let lastInflation = null;
       let lastUnemployment = null;
       let lastFedFunds = null;
 
-      const formattedData = data.map(item => {
-        if (item.inflation_rate !== null) lastInflation = parseFloat(item.inflation_rate);
-        if (item.unemployment_rate !== null) lastUnemployment = parseFloat(item.unemployment_rate);
-        if (item.interest_rate !== null) lastFedFunds = parseFloat(item.interest_rate);
+      const formattedData = data
+        .map((item) => {
+          if (item.inflation_rate !== null) lastInflation = parseFloat(item.inflation_rate);
+          if (item.unemployment_rate !== null) lastUnemployment = parseFloat(item.unemployment_rate);
+          if (item.interest_rate !== null) lastFedFunds = parseFloat(item.interest_rate);
 
-        return {
-          time: item.date.split('T')[0],
-          tx_count: item.tx_count ? parseFloat(item.tx_count) : null,
-          price: item.price ? parseFloat(item.price) : null,
-          inflation_rate: lastInflation,
-          unemployment_rate: lastUnemployment,
-          fed_funds_rate: lastFedFunds,
-        };
-      }).sort((a, b) => new Date(a.time) - new Date(b.time));
+          return {
+            time: item.date.split('T')[0],
+            tx_count: item.tx_count ? parseFloat(item.tx_count) : null,
+            price: item.price ? parseFloat(item.price) : null,
+            inflation_rate: lastInflation,
+            unemployment_rate: lastUnemployment,
+            fed_funds_rate: lastFedFunds,
+          };
+        })
+        .sort((a, b) => new Date(a.time) - new Date(b.time));
 
       setTxCountCombinedData(formattedData);
       if (formattedData.length > 0) {
@@ -395,11 +468,11 @@ export const DataProvider = ({ children }) => {
     if (isTxMvrvDataFetched) return;
     setIsTxMvrvDataFetched(true);
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/tx-mvrv/');
+      const response = await fetch(`${API_BASE_URL}/tx-mvrv/`);
       if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
       const data = await response.json();
       const formattedData = data
-        .map(item => ({
+        .map((item) => ({
           time: item.date,
           tx_count: parseFloat(item.tx_count),
           mvrv: parseFloat(item.mvrv),
@@ -418,13 +491,14 @@ export const DataProvider = ({ children }) => {
   const fetchFredSeriesData = useCallback(async (seriesId) => {
     if (fredSeriesData[seriesId]?.length > 0) return;
     try {
-      const response = await fetch(`http://127.0.0.1:8000/api/series/${seriesId}/observations/`);
+      const response = await fetch(`${API_BASE_URL}/series/${seriesId}/observations/`);
       if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
       const data = await response.json();
       let lastValidValue = null;
       const formattedData = data
-        .map(item => {
-          const value = item.value != null && !isNaN(parseFloat(item.value)) ? parseFloat(item.value) : lastValidValue;
+        .map((item) => {
+          const value =
+            item.value != null && !isNaN(parseFloat(item.value)) ? parseFloat(item.value) : lastValidValue;
           if (value !== null) {
             lastValidValue = value;
           }
@@ -433,40 +507,33 @@ export const DataProvider = ({ children }) => {
             value,
           };
         })
-        .filter(item => item.value !== null);
-      setFredSeriesData(prev => ({ ...prev, [seriesId]: formattedData }));
+        .filter((item) => item.value !== null);
+      setFredSeriesData((prev) => ({ ...prev, [seriesId]: formattedData }));
     } catch (error) {
       console.error(`Error fetching series ${seriesId}:`, error);
       throw error;
     }
   }, [fredSeriesData]);
 
-  // New fetchIndicatorData for combining BTC, T10Y2Y, USRECD
   const fetchIndicatorData = async (indicatorId) => {
     if (indicatorId !== 'btc-yield-recession') return;
-  
+
     try {
-      // Fetch Bitcoin price
-      const btcResponse = await fetch('http://127.0.0.1:8000/api/btc/price/');
+      const btcResponse = await fetch(`${API_BASE_URL}/btc/price/`);
       const btcData = await btcResponse.json();
-  
-      // Fetch T10Y2Y
-      const t10y2yResponse = await fetch('http://127.0.0.1:8000/api/series/T10Y2Y/observations/');
+
+      const t10y2yResponse = await fetch(`${API_BASE_URL}/series/T10Y2Y/observations/`);
       const t10y2yData = await t10y2yResponse.json();
-  
-      // Fetch USRECD
-      const usrecdResponse = await fetch('http://127.0.0.1:8000/api/series/USRECD/observations/');
+
+      const usrecdResponse = await fetch(`${API_BASE_URL}/series/USRECD/observations/`);
       let usrecdData = await usrecdResponse.json();
-  
-      // Fetch Federal Funds Rate (FEDFUNDS)
-      const fedFundsResponse = await fetch('http://127.0.0.1:8000/api/us-interest/');
+
+      const fedFundsResponse = await fetch(`${API_BASE_URL}/us-interest/`);
       const fedFundsData = await fedFundsResponse.json();
-  
-      // Fetch M2 Money Supply (M2SL)
-      const m2Response = await fetch('http://127.0.0.1:8000/api/series/M2SL/observations/');
+
+      const m2Response = await fetch(`${API_BASE_URL}/series/M2SL/observations/`);
       const m2Data = await m2Response.json();
-  
-      // Process dates (start from Bitcoin's earliest date, 2011-08-19)
+
       const startDate = '2011-08-19';
       const endDate = new Date().toISOString().split('T')[0];
       const dateRange = [];
@@ -475,50 +542,47 @@ export const DataProvider = ({ children }) => {
         dateRange.push(currentDate.toISOString().split('T')[0]);
         currentDate.setDate(currentDate.getDate() + 1);
       }
-  
-      // Map data to dates
-      const btcMap = new Map(btcData.map(d => [d.date, parseFloat(d.close)]));
-      const t10y2yMap = new Map(t10y2yData.map(d => [d.date, parseFloat(d.value)]));
-      const usrecdMap = new Map(usrecdData.map(d => [d.date, parseInt(d.value)]));
-      const fedFundsMap = new Map(fedFundsData.map(d => [d.date, parseFloat(d.value)]));
-      const m2Map = new Map(m2Data.map(d => [d.date, parseFloat(d.value)]));
-  
-      // Calculate M2 year-over-year growth
+
+      const btcMap = new Map(btcData.map((d) => [d.date, parseFloat(d.close)]));
+      const t10y2yMap = new Map(t10y2yData.map((d) => [d.date, parseFloat(d.value)]));
+      const usrecdMap = new Map(usrecdData.map((d) => [d.date, parseInt(d.value)]));
+      const fedFundsMap = new Map(fedFundsData.map((d) => [d.date, parseFloat(d.value)]));
+      const m2Map = new Map(m2Data.map((d) => [d.date, parseFloat(d.value)]));
+
       const m2GrowthMap = new Map();
-      dateRange.forEach(date => {
+      dateRange.forEach((date) => {
         const dateObj = new Date(date);
         const oneYearAgo = new Date(dateObj);
         oneYearAgo.setFullYear(dateObj.getFullYear() - 1);
         const oneYearAgoDate = oneYearAgo.toISOString().split('T')[0];
-        const currentM2 = m2Map.get(date) || m2Map.get([...m2Map.keys()].reverse().find(d => d < date));
-        const pastM2 = m2Map.get(oneYearAgoDate) || m2Map.get([...m2Map.keys()].reverse().find(d => d < oneYearAgoDate));
+        const currentM2 = m2Map.get(date) || m2Map.get([...m2Map.keys()].reverse().find((d) => d < date));
+        const pastM2 =
+          m2Map.get(oneYearAgoDate) || m2Map.get([...m2Map.keys()].reverse().find((d) => d < oneYearAgoDate));
         if (currentM2 && pastM2) {
           const growth = ((currentM2 - pastM2) / pastM2) * 100;
           m2GrowthMap.set(date, growth);
         }
       });
-  
-      // Forward-fill USRECD
-      usrecdData = dateRange.map(date => {
-        const value = usrecdMap.get(date) || usrecdMap.get([...usrecdMap.keys()].reverse().find(d => d < date)) || 0;
+
+      usrecdData = dateRange.map((date) => {
+        const value = usrecdMap.get(date) || usrecdMap.get([...usrecdMap.keys()].reverse().find((d) => d < date)) || 0;
         return { date, value };
       });
       usrecdMap.clear();
-      usrecdData.forEach(d => usrecdMap.set(d.date, d.value));
-  
-      // Combine data
+      usrecdData.forEach((d) => usrecdMap.set(d.date, d.value));
+
       const combinedData = dateRange
-        .map(date => ({
+        .map((date) => ({
           date,
-          btc: btcMap.get(date) || btcMap.get([...btcMap.keys()].reverse().find(d => d < date)),
-          t10y2y: t10y2yMap.get(date) || t10y2yMap.get([...t10y2yMap.keys()].reverse().find(d => d < date)),
-          fedFunds: fedFundsMap.get(date) || fedFundsMap.get([...fedFundsMap.keys()].reverse().find(d => d < date)),
-          m2Growth: m2GrowthMap.get(date) || m2GrowthMap.get([...m2GrowthMap.keys()].reverse().find(d => d < date)),
+          btc: btcMap.get(date) || btcMap.get([...btcMap.keys()].reverse().find((d) => d < date)),
+          t10y2y: t10y2yMap.get(date) || t10y2yMap.get([...t10y2yMap.keys()].reverse().find((d) => d < date)),
+          fedFunds: fedFundsMap.get(date) || fedFundsMap.get([...fedFundsMap.keys()].reverse().find((d) => d < date)),
+          m2Growth: m2GrowthMap.get(date) || m2GrowthMap.get([...m2GrowthMap.keys()].reverse().find((d) => d < date)),
           usrecd: usrecdMap.get(date) || 0,
         }))
-        .filter(d => d.btc !== undefined && d.t10y2y !== undefined && d.fedFunds !== undefined && d.m2Growth !== undefined);
-  
-      setIndicatorData(prev => ({ ...prev, [indicatorId]: combinedData }));
+        .filter((d) => d.btc !== undefined && d.t10y2y !== undefined && d.fedFunds !== undefined && d.m2Growth !== undefined);
+
+      setIndicatorData((prev) => ({ ...prev, [indicatorId]: combinedData }));
     } catch (error) {
       console.error('Error fetching indicator data:', error);
       throw error;
@@ -526,59 +590,64 @@ export const DataProvider = ({ children }) => {
   };
 
   return (
-    <DataContext.Provider value={{
-      btcData,
-      fedBalanceData,
-      mvrvData,
-      btcLastUpdated,
-      fedLastUpdated,
-      mvrvLastUpdated,
-      fetchBtcData,
-      fetchFedBalanceData,
-      fetchMvrvData,
-      dominanceData,
-      dominanceLastUpdated,
-      fetchDominanceData,
-      ethData,
-      fetchEthData,
-      ethLastUpdated,
-      fearAndGreedData,
-      fetchFearAndGreedData,
-      fearAndGreedLastUpdated,
-      marketCapData,
-      fetchMarketCapData,
-      marketCapLastUpdated,
-      macroData,
-      fetchMacroData,
-      macroLastUpdated,
-      inflationData,
-      fetchInflationData,
-      inflationLastUpdated,
-      initialClaimsData,
-      fetchInitialClaimsData,
-      initialClaimsLastUpdated,
-      interestData,
-      fetchInterestData,
-      interestLastUpdated,
-      unemploymentData,
-      fetchUnemploymentData,
-      unemploymentLastUpdated,
-      txCountData,
-      txCountLastUpdated,
-      fetchTxCountData,
-      fetchTxCountCombinedData,
-      txCountCombinedData,
-      txMvrvData,
-      txMvrvLastUpdated,
-      fetchTxMvrvData,
-      altcoinData,
-      fetchAltcoinData,
-      altcoinLastUpdated,
-      fredSeriesData,
-      fetchFredSeriesData,
-      indicatorData,
-      fetchIndicatorData, // Add new fetch function
-    }}>
+    <DataContext.Provider
+      value={{
+        btcData,
+        fetchBtcData,
+        refreshBtcData,
+        btcLastUpdated,
+        fedBalanceData,
+        fetchFedBalanceData,
+        fedLastUpdated,
+        mvrvData,
+        fetchMvrvData,
+        mvrvLastUpdated,
+        dominanceData,
+        fetchDominanceData,
+        dominanceLastUpdated,
+        ethData,
+        fetchEthData,
+        ethLastUpdated,
+        fearAndGreedData,
+        fetchFearAndGreedData,
+        fearAndGreedLastUpdated,
+        marketCapData,
+        fetchMarketCapData,
+        refreshMarketCapData,
+        marketCapLastUpdated,
+        macroData,
+        fetchMacroData,
+        macroLastUpdated,
+        inflationData,
+        fetchInflationData,
+        inflationLastUpdated,
+        initialClaimsData,
+        fetchInitialClaimsData,
+        initialClaimsLastUpdated,
+        interestData,
+        fetchInterestData,
+        interestLastUpdated,
+        unemploymentData,
+        fetchUnemploymentData,
+        unemploymentLastUpdated,
+        txCountData,
+        fetchTxCountData,
+        txCountLastUpdated,
+        txCountCombinedData,
+        fetchTxCountCombinedData,
+        txCountCombinedLastUpdated,
+        txMvrvData,
+        fetchTxMvrvData,
+        txMvrvLastUpdated,
+        altcoinData,
+        fetchAltcoinData,
+        altcoinLastUpdated,
+        fredSeriesData,
+        fetchFredSeriesData,
+        indicatorData,
+        fetchIndicatorData,
+      }}
+    >
       {children}
     </DataContext.Provider>
   );
