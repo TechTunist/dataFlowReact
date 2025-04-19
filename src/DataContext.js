@@ -1,4 +1,8 @@
 // DataContext.js
+
+
+// https://vercel-dataflow.vercel.app
+
 import React, { createContext, useState, useCallback } from 'react';
 
 export const DataContext = createContext();
@@ -61,7 +65,7 @@ export const DataProvider = ({ children }) => {
     if (isBtcDataFetched) return;
     setIsBtcDataFetched(true);
     try {
-      const response = await fetch('https://vercel-dataflow.vercel.app/api/btc/price/');
+      const response = await fetch('http://127.0.0.1:8000/api/btc/price/');
       if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
       const data = await response.json();
       const formattedData = data
@@ -84,7 +88,7 @@ export const DataProvider = ({ children }) => {
     if (isAltcoinDataFetched[coin]) return;
     setIsAltcoinDataFetched(prev => ({ ...prev, [coin]: true }));
     try {
-      const response = await fetch(`https://vercel-dataflow.vercel.app/api/${coin.toLowerCase()}/price/`);
+      const response = await fetch(`http://127.0.0.1:8000/api/${coin.toLowerCase()}/price/`);
       if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
       const data = await response.json();
       const formattedData = data
@@ -107,7 +111,7 @@ export const DataProvider = ({ children }) => {
     if (isFedBalanceDataFetched) return;
     setIsFedBalanceDataFetched(true);
     try {
-      const response = await fetch('https://vercel-dataflow.vercel.app/api/fed-balance/');
+      const response = await fetch('http://127.0.0.1:8000/api/fed-balance/');
       if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
       const data = await response.json();
       const formattedData = data.map(item => ({
@@ -128,7 +132,7 @@ export const DataProvider = ({ children }) => {
     if (isMvrvDataFetched) return;
     setIsMvrvDataFetched(true);
     try {
-      const response = await fetch('https://vercel-dataflow.vercel.app/api/mvrv/');
+      const response = await fetch('http://127.0.0.1:8000/api/mvrv/');
       if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
       const data = await response.json();
       const formattedData = data.map(item => ({
@@ -149,7 +153,7 @@ export const DataProvider = ({ children }) => {
     if (isDominanceDataFetched) return;
     setIsDominanceDataFetched(true);
     try {
-      const response = await fetch('https://vercel-dataflow.vercel.app/api/dominance/');
+      const response = await fetch('http://127.0.0.1:8000/api/dominance/');
       if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
       const data = await response.json();
       const formattedData = data.map(item => ({
@@ -170,7 +174,7 @@ export const DataProvider = ({ children }) => {
     if (isEthDataFetched) return;
     setIsEthDataFetched(true);
     try {
-      const response = await fetch('https://vercel-dataflow.vercel.app/api/eth/price/');
+      const response = await fetch('http://127.0.0.1:8000/api/eth/price/');
       if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
       const data = await response.json();
       const formattedData = data
@@ -193,7 +197,7 @@ export const DataProvider = ({ children }) => {
     if (isFearAndGreedDataFetched) return;
     setIsFearAndGreedDataFetched(true);
     try {
-      const response = await fetch('https://vercel-dataflow.vercel.app/api/fear-and-greed/');
+      const response = await fetch('http://127.0.0.1:8000/api/fear-and-greed/');
       if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
       const data = await response.json();
       setFearAndGreedData(data);
@@ -210,7 +214,7 @@ export const DataProvider = ({ children }) => {
     if (isMarketCapDataFetched) return;
     setIsMarketCapDataFetched(true);
     try {
-      const response = await fetch('https://vercel-dataflow.vercel.app/api/total/marketcap/');
+      const response = await fetch('http://127.0.0.1:8000/api/total/marketcap/');
       if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
       const data = await response.json();
       const formattedData = data.map(item => ({
@@ -231,7 +235,7 @@ export const DataProvider = ({ children }) => {
     if (isMacroDataFetched) return;
     setIsMacroDataFetched(true);
     try {
-      const response = await fetch('https://vercel-dataflow.vercel.app/api/combined-macro-data/');
+      const response = await fetch('http://127.0.0.1:8000/api/combined-macro-data/');
       if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
       const data = await response.json();
       setMacroData(data);
@@ -248,7 +252,7 @@ export const DataProvider = ({ children }) => {
     if (isInflationDataFetched) return;
     setIsInflationDataFetched(true);
     try {
-      const response = await fetch('https://vercel-dataflow.vercel.app/api/us-inflation/');
+      const response = await fetch('http://127.0.0.1:8000/api/us-inflation/');
       if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
       const data = await response.json();
       const formattedData = data.map(item => ({
@@ -269,7 +273,7 @@ export const DataProvider = ({ children }) => {
     if (isInitialClaimsDataFetched) return;
     setIsInitialClaimsDataFetched(true);
     try {
-      const response = await fetch('https://vercel-dataflow.vercel.app/api/initial-claims/');
+      const response = await fetch('http://127.0.0.1:8000/api/initial-claims/');
       if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
       const data = await response.json();
       const formattedData = data.map(item => ({
@@ -290,7 +294,7 @@ export const DataProvider = ({ children }) => {
     if (isInterestDataFetched) return;
     setIsInterestDataFetched(true);
     try {
-      const response = await fetch('https://vercel-dataflow.vercel.app/api/us-interest/');
+      const response = await fetch('http://127.0.0.1:8000/api/us-interest/');
       if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
       const data = await response.json();
       const formattedData = data.map(item => ({
@@ -311,7 +315,7 @@ export const DataProvider = ({ children }) => {
     if (isUnemploymentDataFetched) return;
     setIsUnemploymentDataFetched(true);
     try {
-      const response = await fetch('https://vercel-dataflow.vercel.app/api/us-unemployment/');
+      const response = await fetch('http://127.0.0.1:8000/api/us-unemployment/');
       if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
       const data = await response.json();
       const formattedData = data.map(item => ({
@@ -332,7 +336,7 @@ export const DataProvider = ({ children }) => {
     if (isTxCountDataFetched) return;
     setIsTxCountDataFetched(true);
     try {
-      const response = await fetch('https://vercel-dataflow.vercel.app/api/btc-tx-count/');
+      const response = await fetch('http://127.0.0.1:8000/api/btc-tx-count/');
       if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
       const data = await response.json();
       const formattedData = data
@@ -355,7 +359,7 @@ export const DataProvider = ({ children }) => {
     if (isTxCountCombinedDataFetched) return;
     setIsTxCountCombinedDataFetched(true);
     try {
-      const response = await fetch('https://vercel-dataflow.vercel.app/api/tx-macro/');
+      const response = await fetch('http://127.0.0.1:8000/api/tx-macro/');
       if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
       const data = await response.json();
       let lastInflation = null;
@@ -391,7 +395,7 @@ export const DataProvider = ({ children }) => {
     if (isTxMvrvDataFetched) return;
     setIsTxMvrvDataFetched(true);
     try {
-      const response = await fetch('https://vercel-dataflow.vercel.app/api/tx-mvrv/');
+      const response = await fetch('http://127.0.0.1:8000/api/tx-mvrv/');
       if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
       const data = await response.json();
       const formattedData = data
@@ -414,7 +418,7 @@ export const DataProvider = ({ children }) => {
   const fetchFredSeriesData = useCallback(async (seriesId) => {
     if (fredSeriesData[seriesId]?.length > 0) return;
     try {
-      const response = await fetch(`https://vercel-dataflow.vercel.app/api/series/${seriesId}/observations/`);
+      const response = await fetch(`http://127.0.0.1:8000/api/series/${seriesId}/observations/`);
       if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
       const data = await response.json();
       let lastValidValue = null;
@@ -438,74 +442,88 @@ export const DataProvider = ({ children }) => {
   }, [fredSeriesData]);
 
   // New fetchIndicatorData for combining BTC, T10Y2Y, USRECD
-  const fetchIndicatorData = useCallback(async (indicatorId) => {
-    if (isIndicatorDataFetched[indicatorId]) return;
-    setIsIndicatorDataFetched(prev => ({ ...prev, [indicatorId]: true }));
-
+  const fetchIndicatorData = async (indicatorId) => {
+    if (indicatorId !== 'btc-yield-recession') return;
+  
     try {
-      // Fetch required data
-      await Promise.all([
-        fetchBtcData(),
-        fetchFredSeriesData('T10Y2Y'),
-        fetchFredSeriesData('USRECD'),
-      ]);
-
-      // Get data from context
-      const btc = btcData;
-      const t10y2y = fredSeriesData['T10Y2Y'] || [];
-      const usrecd = fredSeriesData['USRECD'] || [];
-
-      // Use BTC dates as the base (2011-08-19 onward)
-      const dates = btc.map(d => d.time);
-      if (dates.length === 0) {
-        console.error('No Bitcoin data available');
-        setIsIndicatorDataFetched(prev => ({ ...prev, [indicatorId]: false }));
-        return;
+      // Fetch Bitcoin price
+      const btcResponse = await fetch('http://127.0.0.1:8000/api/btc/price/');
+      const btcData = await btcResponse.json();
+  
+      // Fetch T10Y2Y
+      const t10y2yResponse = await fetch('http://127.0.0.1:8000/api/series/T10Y2Y/observations/');
+      const t10y2yData = await t10y2yResponse.json();
+  
+      // Fetch USRECD
+      const usrecdResponse = await fetch('http://127.0.0.1:8000/api/series/USRECD/observations/');
+      let usrecdData = await usrecdResponse.json();
+  
+      // Fetch Federal Funds Rate (FEDFUNDS)
+      const fedFundsResponse = await fetch('http://127.0.0.1:8000/api/us-interest/');
+      const fedFundsData = await fedFundsResponse.json();
+  
+      // Fetch M2 Money Supply (M2SL)
+      const m2Response = await fetch('http://127.0.0.1:8000/api/series/M2SL/observations/');
+      const m2Data = await m2Response.json();
+  
+      // Process dates (start from Bitcoin's earliest date, 2011-08-19)
+      const startDate = '2011-08-19';
+      const endDate = new Date().toISOString().split('T')[0];
+      const dateRange = [];
+      let currentDate = new Date(startDate);
+      while (currentDate <= new Date(endDate)) {
+        dateRange.push(currentDate.toISOString().split('T')[0]);
+        currentDate.setDate(currentDate.getDate() + 1);
       }
-
-      // Forward-fill USRECD to daily
-      const dailyUsrecd = [];
-      let lastUsrecd = 0;
-      let usrecdIndex = 0;
-      for (const date of dates) {
-        while (
-          usrecdIndex < usrecd.length &&
-          usrecd[usrecdIndex].time <= date
-        ) {
-          lastUsrecd = usrecd[usrecdIndex].value;
-          usrecdIndex++;
+  
+      // Map data to dates
+      const btcMap = new Map(btcData.map(d => [d.date, parseFloat(d.close)]));
+      const t10y2yMap = new Map(t10y2yData.map(d => [d.date, parseFloat(d.value)]));
+      const usrecdMap = new Map(usrecdData.map(d => [d.date, parseInt(d.value)]));
+      const fedFundsMap = new Map(fedFundsData.map(d => [d.date, parseFloat(d.value)]));
+      const m2Map = new Map(m2Data.map(d => [d.date, parseFloat(d.value)]));
+  
+      // Calculate M2 year-over-year growth
+      const m2GrowthMap = new Map();
+      dateRange.forEach(date => {
+        const dateObj = new Date(date);
+        const oneYearAgo = new Date(dateObj);
+        oneYearAgo.setFullYear(dateObj.getFullYear() - 1);
+        const oneYearAgoDate = oneYearAgo.toISOString().split('T')[0];
+        const currentM2 = m2Map.get(date) || m2Map.get([...m2Map.keys()].reverse().find(d => d < date));
+        const pastM2 = m2Map.get(oneYearAgoDate) || m2Map.get([...m2Map.keys()].reverse().find(d => d < oneYearAgoDate));
+        if (currentM2 && pastM2) {
+          const growth = ((currentM2 - pastM2) / pastM2) * 100;
+          m2GrowthMap.set(date, growth);
         }
-        dailyUsrecd.push({ time: date, value: lastUsrecd });
-      }
-
-      // Combine datasets
-      const combinedData = dates.map((date, i) => {
-        const btcValue = btc[i].value;
-        const t10y2yValue = t10y2y.find(d => d.time === date)?.value || null;
-        const usrecdValue = dailyUsrecd[i].value;
-        return {
+      });
+  
+      // Forward-fill USRECD
+      usrecdData = dateRange.map(date => {
+        const value = usrecdMap.get(date) || usrecdMap.get([...usrecdMap.keys()].reverse().find(d => d < date)) || 0;
+        return { date, value };
+      });
+      usrecdMap.clear();
+      usrecdData.forEach(d => usrecdMap.set(d.date, d.value));
+  
+      // Combine data
+      const combinedData = dateRange
+        .map(date => ({
           date,
-          btc: btcValue,
-          t10y2y: t10y2yValue,
-          usrecd: usrecdValue,
-        };
-      }).filter(d => d.t10y2y !== null); // Skip missing T10Y2Y values
-
-      setIndicatorData(prev => ({
-        ...prev,
-        [indicatorId]: combinedData,
-      }));
+          btc: btcMap.get(date) || btcMap.get([...btcMap.keys()].reverse().find(d => d < date)),
+          t10y2y: t10y2yMap.get(date) || t10y2yMap.get([...t10y2yMap.keys()].reverse().find(d => d < date)),
+          fedFunds: fedFundsMap.get(date) || fedFundsMap.get([...fedFundsMap.keys()].reverse().find(d => d < date)),
+          m2Growth: m2GrowthMap.get(date) || m2GrowthMap.get([...m2GrowthMap.keys()].reverse().find(d => d < date)),
+          usrecd: usrecdMap.get(date) || 0,
+        }))
+        .filter(d => d.btc !== undefined && d.t10y2y !== undefined && d.fedFunds !== undefined && d.m2Growth !== undefined);
+  
+      setIndicatorData(prev => ({ ...prev, [indicatorId]: combinedData }));
     } catch (error) {
-      console.error(`Error fetching indicator ${indicatorId}:`, error);
-      setIsIndicatorDataFetched(prev => ({ ...prev, [indicatorId]: false }));
+      console.error('Error fetching indicator data:', error);
+      throw error;
     }
-  }, [
-    btcData,
-    fredSeriesData,
-    fetchBtcData,
-    fetchFredSeriesData,
-    isIndicatorDataFetched,
-  ]);
+  };
 
   return (
     <DataContext.Provider value={{
