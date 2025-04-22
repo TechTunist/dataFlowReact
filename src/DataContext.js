@@ -57,8 +57,8 @@ export const DataProvider = ({ children }) => {
   const [indicatorData, setIndicatorData] = useState({});
   const [isIndicatorDataFetched, setIsIndicatorDataFetched] = useState({});
 
-  // const API_BASE_URL = 'https://vercel-dataflow.vercel.app/api'; 
-  const API_BASE_URL = 'http://127.0.0.1:8000/api'; 
+  const API_BASE_URL = 'https://vercel-dataflow.vercel.app/api'; 
+  // const API_BASE_URL = 'http://127.0.0.1:8000/api'; 
   
   const fetchBtcData = useCallback(async () => {
     if (isBtcDataFetched) return;
