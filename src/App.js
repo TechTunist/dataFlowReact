@@ -37,6 +37,7 @@ import TxCombinedChart from "./components/TxMacroCombined";
 import BitcoinTxMvrvChart from "./components/BitcoinTxMvrv";
 import FredSeriesChart from "./components/FredSeriesChart";
 import Bitcoin10YearChart from "./components/Bitcoin10YearRecession";
+import WorkbenchChart from "./components/Workbench";
 
 
 function App() {
@@ -132,6 +133,7 @@ function App() {
                     <Route path="/us-initial-claims" element={<BasicChart ChartComponent={UsInitialClaimsChart} />} />
                     <Route path="/tx-combined" element={<BasicChart ChartComponent={TxCombinedChart} />} />
                     <Route path="/tx-mvrv" element={<BasicChart ChartComponent={BitcoinTxMvrvChart} />} />
+                    <Route path="/workbench" element={<WorkbenchChart />} />
 
                     {/* New FRED series routes */}
                     <Route
@@ -505,6 +507,19 @@ function App() {
                           ChartComponent={Bitcoin10YearChart}
                           indicatorId="btc-yield-recession"
                           explanation="Bitcoin price vs. 10Y-2Y Treasury yield spread and US recessions. Yield curve inversions (negative spread) often precede BTC rallies, while recessions may signal caution."
+                        />
+                      }
+                    />
+                    <Route
+                      path="/fred/workbench"
+                      element={
+                        <BasicChart
+                          ChartComponent={WorkbenchChart}
+                          seriesId="UMCSENT"
+                          chartType="area"
+                          scaleMode="linear"
+                          valueFormatter={value => value.toLocaleString()}
+                          explanation="Create your own indicator by choosing your own data series' to compare."
                         />
                       }
                     />

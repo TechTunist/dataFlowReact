@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { ProSidebar, Menu, MenuItem, SubMenu } from "react-pro-sidebar";
 import { Box, IconButton, Typography, useTheme } from "@mui/material";
 import { Link } from "react-router-dom";
@@ -31,8 +31,6 @@ import BarChartIcon from '@mui/icons-material/BarChart';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import useIsMobile from "../../hooks/useIsMobile";
-
-
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import CandlestickChartIcon from '@mui/icons-material/CandlestickChart';
 import WarningIcon from '@mui/icons-material/Warning';
@@ -46,7 +44,6 @@ import MoodIcon from '@mui/icons-material/Mood';
 import ReportIcon from '@mui/icons-material/Report';
 import ConstructionIcon from '@mui/icons-material/Construction';
 import HomeIcon from '@mui/icons-material/Home';
-
 
 const Item = ({ title, to, icon, selected, setSelected, isNested, onClick }) => {
   const theme = useTheme();
@@ -81,7 +78,7 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
     { title: "Total Market Cap", to: "/total", category: "Indicators", icon: <ShowChartIcon />, categoryIcon: <ShowChartIcon /> },
     { title: "Bitcoin Dominance", to: "/bitcoin-dominance", category: "Indicators", icon: <ShowChartIcon />, categoryIcon: <ShowChartIcon /> },
     { title: "Bitcoin Risk Metric", to: "/risk", category: "Bitcoin", icon: <AssessmentIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
-    { title: "BTC Transactions to MVRV", to: "/tx-mvrv", category: "Bitcoin", icon: <AssessmentIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
+    { title: "BTC Transactions to MVRV", to: "/tx-mvrv", category: "On Chain Data", icon: <AssessmentIcon />, categoryIcon: <SwapHorizIcon /> },
     { title: "Ethereum Chart", to: "/ethereum", category: "Ethereum", icon: <ShowChartIcon />, categoryIcon: <FitbitIcon /> },
     { title: "Ethereum Risk Metric", to: "/risk-eth", category: "Ethereum", icon: <AssessmentIcon />, categoryIcon: <FitbitIcon /> },
     { title: "PiCycleTop Indicator", to: "/pi-cycle", category: "Indicators", icon: <TimelineIcon />, categoryIcon: <CategoryIcon /> },
@@ -89,7 +86,7 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
     { title: "Bitcoin Logarithmic Regression", to: "/logarithmic-regression", category: "Indicators", icon: <TrendingUpIcon />, categoryIcon: <CategoryIcon /> },
     { title: "Bitcoin Risk Colour Chart", to: "/risk-color", category: "Bitcoin", icon: <PaletteIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
     { title: "Bitcoin Time in Risk Bands", to: "/risk-bands", category: "Bitcoin", icon: <TimerIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
-    { title: "Bitcoin Transaction Count", to: "/btc-tx-count", category: "Bitcoin", icon: <SwapHorizIcon />, categoryIcon: <SwapHorizIcon /> },
+    { title: "Bitcoin Transaction Count", to: "/btc-tx-count", category: "On Chain Data", icon: <SwapHorizIcon />, categoryIcon: <SwapHorizIcon /> },
     { title: "Altcoin Chart", to: "/altcoin-price", category: "Altcoins", icon: <ShowChartIcon />, categoryIcon: <WarningOutlinedIcon /> },
     { title: "Altcoin Risk Metric", to: "/altcoin-risk", category: "Altcoins", icon: <AssessmentIcon />, categoryIcon: <WarningOutlinedIcon /> },
     { title: "US Initial Claims", to: "/us-initial-claims", category: "MacroEconomics", icon: <SentimentVeryDissatisfiedIcon />, categoryIcon: <CategoryIcon /> },
@@ -130,21 +127,35 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
     { title: "Nikkei 225 Index", to: "/fred/nikkei-225", category: "MacroEconomics", icon: <CandlestickChartIcon />, categoryIcon: <ShowChartIcon /> },
     { title: "German 10-Year Bond Yield", to: "/fred/german-bond-yield", category: "MacroEconomics", icon: <AccountBalanceIcon />, categoryIcon: <ShowChartIcon /> },
     { title: "Bitcoin to 10 Year Yield", to: "indicators/btc-yield-recession", category: "Indicators", icon: <MultilineChartIcon />, categoryIcon: <ShowChartIcon /> },
+    { title: "Workbench", to: "/workbench", category: "Workbench", icon: <MultilineChartIcon />, categoryIcon: <ShowChartIcon /> },
   ];
-  
-  const filteredItems = itemsData.filter(item =>
-    (item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (item.category && item.category.toLowerCase().includes(searchQuery.toLowerCase()))) &&
-    item.title !== "Dashboard"
+
+  const filteredItems = useMemo(() =>
+    itemsData.filter(item =>
+      (item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (item.category && item.category.toLowerCase().includes(searchQuery.toLowerCase()))) &&
+      item.title !== "Dashboard"
+    ), [searchQuery]
   );
 
   const handleSearchChange = (event) => setSearchQuery(event.target.value);
   const handleClearSearch = () => setSearchQuery("");
   const handleMenuClick = () => isMobile && setIsSidebar(false);
 
+  const itemsByCategory = useMemo(() =>
+    itemsData.reduce((acc, item) => {
+      const { category } = item;
+      if (category) {
+        if (!acc[category]) acc[category] = [];
+        acc[category].push(item);
+      }
+      return acc;
+    }, {})
+  );
+
   const renderMenuItem = (item, index, isNested = false) => (
     <Item
-      key={index}
+      key={item.title}
       title={item.title}
       to={item.to}
       icon={item.icon}
@@ -154,15 +165,6 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
       onClick={handleMenuClick}
     />
   );
-
-  const itemsByCategory = itemsData.reduce((acc, item) => {
-    const { category } = item;
-    if (category) {
-      if (!acc[category]) acc[category] = [];
-      acc[category].push(item);
-    }
-    return acc;
-  }, {});
 
   const renderSubMenus = () => (
     Object.entries(itemsByCategory).map(([category, items]) => (
@@ -179,7 +181,6 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
 
   return (
     <>
-      {/* Overlay for clicking outside to close */}
       {isMobile && isSidebar && (
         <Box
           sx={{
@@ -189,7 +190,7 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
             width: "100%",
             height: "100%",
             backgroundColor: "rgba(0, 0, 0, 0.5)",
-            zIndex: 1099, // Above Topbar (1000), below sidebar (1100)
+            zIndex: 1099,
           }}
           onClick={() => setIsSidebar(false)}
         />
@@ -218,7 +219,7 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
           position: isMobile ? "fixed" : "sticky",
           top: 0,
           left: 0,
-          zIndex: 1100, // Above charts (1) and Topbar (1000)
+          zIndex: 1100,
           height: "100vh",
           width: isMobile ? (isSidebar ? "270px" : "0") : "270px",
           overflowX: isMobile && !isSidebar ? "hidden" : "auto",

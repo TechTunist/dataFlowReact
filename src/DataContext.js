@@ -1029,7 +1029,7 @@ export const DataProvider = ({ children }) => {
     eventSource.onmessage = (event) => {
       const data = JSON.parse(event.data);
       if (data.type === 'update') {
-        console.log(`Update detected for ${data.dataset}`);
+        // console.log(`Update detected for ${data.dataset}`);
         // Handle altcoin datasets (e.g., altcoinData_sol)
         if (data.dataset.startsWith('altcoinData_')) {
           const coin = data.dataset.replace('altcoinData_', '').toUpperCase();
