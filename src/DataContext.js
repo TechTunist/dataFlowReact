@@ -1,8 +1,121 @@
 // src/DataContext.js
-import React, { createContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useState, useCallback, useContext, useEffect } from 'react';
 import { initDB, cacheData, getCachedData, clearCache } from './utility/idbUtils';
 
 export const DataContext = createContext();
+
+// Utility function for fetching and caching data with hybrid date/timestamp check
+const fetchWithCache = async ({
+  cacheId,
+  apiUrl,
+  formatData,
+  setData,
+  setLastUpdated,
+  setIsFetched,
+  cacheDuration = 24 * 60 * 60 * 1000, // Default to 24 hours (used only if useDateCheck is false)
+  useDateCheck = true, // Default to date-based check for daily updates
+}) => {
+  if (typeof indexedDB === 'undefined') {
+    console.warn('IndexedDB is not supported in this environment.');
+    return false;
+  }
+
+  try {
+    const currentDate = new Date().toISOString().split('T')[0];
+    const currentTimestamp = Date.now();
+
+    // Check for cached data
+    const cached = await getCachedData(cacheId);
+    if (cached && cached.data.length > 0) {
+      const { data: cachedData, timestamp } = cached;
+      const latestCachedDate = cachedData[cachedData.length - 1].time;
+
+      // Determine if we should reuse the cached data
+      let shouldReuseCache = false;
+
+      if (useDateCheck) {
+        // Use date-based check for daily-updating data
+        shouldReuseCache = latestCachedDate >= currentDate;
+      } else {
+        // Use timestamp-based check for datasets with custom cache duration
+        const timeSinceLastFetch = currentTimestamp - timestamp;
+        shouldReuseCache = timeSinceLastFetch < cacheDuration;
+      }
+
+      if (shouldReuseCache) {
+        setData(cachedData);
+        if (setLastUpdated) {
+          setLastUpdated(latestCachedDate);
+        }
+        setIsFetched(true);
+        return true;
+      }
+
+      // If the cache is stale, fetch new data and compare the latest date
+      const response = await fetch(apiUrl);
+      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+      const data = await response.json();
+      const formattedData = formatData(data);
+      const latestFetchedDate = formattedData.length > 0 ? formattedData[formattedData.length - 1].time : null;
+
+      // If the fetched data isn't newer, reuse the cached data
+      if (latestFetchedDate && latestCachedDate && latestFetchedDate <= latestCachedDate) {
+        setData(cachedData);
+        if (setLastUpdated) {
+          setLastUpdated(latestCachedDate);
+        }
+        setIsFetched(true);
+        // Update the timestamp to prevent refetching soon (even for date-based checks)
+        await cacheData(cacheId, cachedData, currentTimestamp);
+        return true;
+      }
+
+      // New data is available; update the cache
+      setData(formattedData);
+      if (formattedData.length > 0 && setLastUpdated) {
+        setLastUpdated(latestFetchedDate);
+      }
+      await cacheData(cacheId, formattedData, currentTimestamp);
+      setIsFetched(true);
+      return true;
+    }
+
+    // No cached data; fetch from API
+    const response = await fetch(apiUrl);
+    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+    const data = await response.json();
+    const formattedData = formatData(data);
+
+    setData(formattedData);
+    if (formattedData.length > 0 && setLastUpdated) {
+      setLastUpdated(formattedData[formattedData.length - 1].time);
+    }
+    await cacheData(cacheId, formattedData, currentTimestamp);
+    setIsFetched(true);
+    return true;
+  } catch (error) {
+    console.error(`Error fetching or caching data for ${cacheId}:`, error);
+    setIsFetched(false);
+    return false;
+  }
+};
+
+// Utility function for refreshing data
+const refreshData = async ({
+  cacheId,
+  setData,
+  setIsFetched,
+  fetchFunction,
+}) => {
+  try {
+    await clearCache(cacheId);
+    setIsFetched(false);
+    setData([]);
+    await fetchFunction();
+  } catch (error) {
+    console.error(`Error refreshing data for ${cacheId}:`, error);
+  }
+};
 
 export const DataProvider = ({ children }) => {
   const [btcData, setBtcData] = useState([]);
@@ -58,956 +171,594 @@ export const DataProvider = ({ children }) => {
   const [isIndicatorDataFetched, setIsIndicatorDataFetched] = useState({});
 
   const API_BASE_URL = 'https://vercel-dataflow.vercel.app/api';
-  // const API_BASE_URL = 'http://127.0.0.1:8000/api';
 
-  const fetchBtcData = useCallback(async (force = false) => {
-    const cacheId = 'btcData';
-    if (!force && isBtcDataFetched) return;
+  // Preload all of IndexedDB into state on app start to prevent unnecessary fetches
+  useEffect(() => {
+    const preloadData = async () => {
+      const cacheConfigs = [
+        { id: 'btcData', setData: setBtcData, setLastUpdated: setBtcLastUpdated, setIsFetched: setIsBtcDataFetched, useDateCheck: true },
+        { id: 'fedBalanceData', setData: setFedBalanceData, setLastUpdated: setFedLastUpdated, setIsFetched: setIsFedBalanceDataFetched, useDateCheck: false, cacheDuration: 7 * 24 * 60 * 60 * 1000 },
+        { id: 'mvrvData', setData: setMvrvData, setLastUpdated: setMvrvLastUpdated, setIsFetched: setIsMvrvDataFetched, useDateCheck: false, cacheDuration: 7 * 24 * 60 * 60 * 1000 },
+        { id: 'dominanceData', setData: setDominanceData, setLastUpdated: setDominanceLastUpdated, setIsFetched: setIsDominanceDataFetched, useDateCheck: true },
+        { id: 'ethData', setData: setEthData, setLastUpdated: setEthLastUpdated, setIsFetched: setIsEthDataFetched, useDateCheck: true },
+        { id: 'fearAndGreedData', setData: setFearAndGreedData, setLastUpdated: setFearAndGreedLastUpdated, setIsFetched: setIsFearAndGreedDataFetched, useDateCheck: true },
+        { id: 'marketCapData', setData: setMarketCapData, setLastUpdated: setMarketCapLastUpdated, setIsFetched: setIsMarketCapDataFetched, useDateCheck: true },
+        { id: 'macroData', setData: setMacroData, setLastUpdated: setMacroLastUpdated, setIsFetched: setIsMacroDataFetched, useDateCheck: true },
+        { id: 'inflationData', setData: setInflationData, setLastUpdated: setInflationLastUpdated, setIsFetched: setIsInflationDataFetched, useDateCheck: true },
+        { id: 'initialClaimsData', setData: setInitialClaimsData, setLastUpdated: setInitialClaimsLastUpdated, setIsFetched: setIsInitialClaimsDataFetched, useDateCheck: true },
+        { id: 'interestData', setData: setInterestData, setLastUpdated: setInterestLastUpdated, setIsFetched: setIsInterestDataFetched, useDateCheck: true },
+        { id: 'unemploymentData', setData: setUnemploymentData, setLastUpdated: setUnemploymentLastUpdated, setIsFetched: setIsUnemploymentDataFetched, useDateCheck: true },
+        { id: 'txCountData', setData: setTxCountData, setLastUpdated: setTxCountLastUpdated, setIsFetched: setIsTxCountDataFetched, useDateCheck: true },
+        { id: 'txCountCombinedData', setData: setTxCountCombinedData, setLastUpdated: setTxCountCombinedLastUpdated, setIsFetched: setIsTxCountCombinedDataFetched, useDateCheck: true },
+        { id: 'txMvrvData', setData: setTxMvrvData, setLastUpdated: setTxMvrvLastUpdated, setIsFetched: setIsTxMvrvDataFetched, useDateCheck: true },
+      ];
 
-    let cached = null;
-    if (!force && typeof indexedDB !== 'undefined') {
-      try {
-        cached = await getCachedData(cacheId);
-        const ONE_DAY = 24 * 60 * 60 * 1000;
-        if (cached && Date.now() - cached.timestamp < ONE_DAY) {
-          setBtcData(cached.data);
-          setBtcLastUpdated(cached.data[cached.data.length - 1].time);
-          setIsBtcDataFetched(true);
-          return;
+      for (const { id, setData, setLastUpdated, setIsFetched, useDateCheck, cacheDuration } of cacheConfigs) {
+        try {
+          const cached = await getCachedData(id);
+          if (cached && cached.data.length > 0) {
+            const { data: cachedData, timestamp } = cached;
+            const currentDate = new Date().toISOString().split('T')[0];
+            const currentTimestamp = Date.now();
+            const latestCachedDate = cachedData[cachedData.length - 1].time;
+
+            let shouldReuseCache = false;
+            if (useDateCheck) {
+              shouldReuseCache = latestCachedDate >= currentDate;
+            } else {
+              const timeSinceLastFetch = currentTimestamp - timestamp;
+              shouldReuseCache = timeSinceLastFetch < (cacheDuration || 24 * 60 * 60 * 1000);
+            }
+
+            if (shouldReuseCache) {
+              setData(cachedData);
+              if (setLastUpdated) {
+                setLastUpdated(latestCachedDate);
+              }
+              setIsFetched(true);
+            }
+          }
+        } catch (error) {
+          console.error(`Error preloading data for ${id}:`, error);
         }
-      } catch (error) {
-        console.error('Error accessing IndexedDB for BTC data:', error);
       }
-    }
+    };
 
-    setIsBtcDataFetched(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}/btc/price/`);
-      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-      const data = await response.json();
-      const formattedData = data
-        .filter((item) => item.close != null && !isNaN(parseFloat(item.close)))
-        .map((item) => ({
-          time: item.date,
-          value: parseFloat(item.close),
-        }));
-      setBtcData(formattedData);
-      if (formattedData.length > 0) {
-        setBtcLastUpdated(formattedData[formattedData.length - 1].time);
-        if (typeof indexedDB !== 'undefined') {
-          await cacheData(cacheId, formattedData, Date.now());
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching Bitcoin price data:', error);
-      setIsBtcDataFetched(false);
-    }
+    preloadData();
+  }, []);
+
+  const fetchBtcData = useCallback(async () => {
+    if (isBtcDataFetched) return;
+    await fetchWithCache({
+      cacheId: 'btcData',
+      apiUrl: `${API_BASE_URL}/btc/price/`,
+      formatData: (data) =>
+        data
+          .filter((item) => item.close != null && !isNaN(parseFloat(item.close)))
+          .map((item) => ({
+            time: item.date,
+            value: parseFloat(item.close),
+          })),
+      setData: setBtcData,
+      setLastUpdated: setBtcLastUpdated,
+      setIsFetched: setIsBtcDataFetched,
+      useDateCheck: true, // Daily updates
+    });
   }, [isBtcDataFetched]);
 
   const refreshBtcData = useCallback(async () => {
-    try {
-      await clearCache('btcData');
-      setIsBtcDataFetched(false);
-      setBtcData([]);
-      await fetchBtcData(true);
-    } catch (error) {
-      console.error('Error refreshing BTC data:', error);
-      setIsBtcDataFetched(false);
-    }
+    await refreshData({
+      cacheId: 'btcData',
+      setData: setBtcData,
+      setIsFetched: setIsBtcDataFetched,
+      fetchFunction: fetchBtcData,
+    });
   }, [fetchBtcData]);
 
-  const fetchMarketCapData = useCallback(async (force = false) => {
-    const cacheId = 'marketCapData';
-    if (!force && isMarketCapDataFetched) return;
+  const fetchFedBalanceData = useCallback(async () => {
+    if (isFedBalanceDataFetched) return;
+    await fetchWithCache({
+      cacheId: 'fedBalanceData',
+      apiUrl: `${API_BASE_URL}/fed-balance/`,
+      formatData: (data) =>
+        data.map((item) => ({
+          time: item.observation_date,
+          value: parseFloat(item.value) / 1000000,
+        })),
+      setData: setFedBalanceData,
+      setLastUpdated: setFedLastUpdated,
+      setIsFetched: setIsFedBalanceDataFetched,
+      useDateCheck: false, // Use timestamp check
+      cacheDuration: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+  }, [isFedBalanceDataFetched]);
 
-    let cached = null;
-    if (!force && typeof indexedDB !== 'undefined') {
-      try {
-        cached = await getCachedData(cacheId);
-        const ONE_DAY = 24 * 60 * 60 * 1000;
-        if (cached && Date.now() - cached.timestamp < ONE_DAY) {
-          setMarketCapData(cached.data);
-          setMarketCapLastUpdated(cached.data[cached.data.length - 1].time);
-          setIsMarketCapDataFetched(true);
-          return;
-        }
-      } catch (error) {
-        console.error('Error accessing IndexedDB for market cap data:', error);
-      }
-    }
+  const refreshFedBalanceData = useCallback(async () => {
+    await refreshData({
+      cacheId: 'fedBalanceData',
+      setData: setFedBalanceData,
+      setIsFetched: setIsFedBalanceDataFetched,
+      fetchFunction: fetchFedBalanceData,
+    });
+  }, [fetchFedBalanceData]);
 
-    setIsMarketCapDataFetched(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}/total/marketcap/`);
-      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-      const data = await response.json();
-      const formattedData = data.map((item) => ({
-        time: item.date,
-        value: parseFloat(item.market_cap),
-      }));
-      setMarketCapData(formattedData);
-      if (formattedData.length > 0) {
-        setMarketCapLastUpdated(formattedData[formattedData.length - 1].time);
-        if (typeof indexedDB !== 'undefined') {
-          await cacheData(cacheId, formattedData, Date.now());
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching total market cap data:', error);
-      setIsMarketCapDataFetched(false);
-    }
+  const fetchMvrvData = useCallback(async () => {
+    if (isMvrvDataFetched) return;
+    await fetchWithCache({
+      cacheId: 'mvrvData',
+      apiUrl: `${API_BASE_URL}/mvrv/`,
+      formatData: (data) =>
+        data.map((item) => ({
+          time: item.time.split('T')[0],
+          value: parseFloat(item.cap_mvrv_cur),
+        })),
+      setData: setMvrvData,
+      setLastUpdated: setMvrvLastUpdated,
+      setIsFetched: setIsMvrvDataFetched,
+      useDateCheck: false, // Use timestamp check
+      cacheDuration: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+  }, [isMvrvDataFetched]);
+
+  const refreshMvrvData = useCallback(async () => {
+    await refreshData({
+      cacheId: 'mvrvData',
+      setData: setMvrvData,
+      setIsFetched: setIsMvrvDataFetched,
+      fetchFunction: fetchMvrvData,
+    });
+  }, [fetchMvrvData]);
+
+  const fetchDominanceData = useCallback(async () => {
+    if (isDominanceDataFetched) return;
+    await fetchWithCache({
+      cacheId: 'dominanceData',
+      apiUrl: `${API_BASE_URL}/dominance/`,
+      formatData: (data) =>
+        data.map((item) => ({
+          time: item.date,
+          value: parseFloat(item.btc),
+        })),
+      setData: setDominanceData,
+      setLastUpdated: setDominanceLastUpdated,
+      setIsFetched: setIsDominanceDataFetched,
+      useDateCheck: true, // Daily updates
+    });
+  }, [isDominanceDataFetched]);
+
+  const refreshDominanceData = useCallback(async () => {
+    await refreshData({
+      cacheId: 'dominanceData',
+      setData: setDominanceData,
+      setIsFetched: setIsDominanceDataFetched,
+      fetchFunction: fetchDominanceData,
+    });
+  }, [fetchDominanceData]);
+
+  const fetchEthData = useCallback(async () => {
+    if (isEthDataFetched) return;
+    await fetchWithCache({
+      cacheId: 'ethData',
+      apiUrl: `${API_BASE_URL}/eth/price/`,
+      formatData: (data) =>
+        data
+          .filter((item) => item.close != null && !isNaN(parseFloat(item.close)))
+          .map((item) => ({
+            time: item.date,
+            value: parseFloat(item.close),
+          })),
+      setData: setEthData,
+      setLastUpdated: setEthLastUpdated,
+      setIsFetched: setIsEthDataFetched,
+      useDateCheck: true, // Daily updates
+    });
+  }, [isEthDataFetched]);
+
+  const refreshEthData = useCallback(async () => {
+    await refreshData({
+      cacheId: 'ethData',
+      setData: setEthData,
+      setIsFetched: setIsEthDataFetched,
+      fetchFunction: fetchEthData,
+    });
+  }, [fetchEthData]);
+
+  const fetchFearAndGreedData = useCallback(async () => {
+    if (isFearAndGreedDataFetched) return;
+    await fetchWithCache({
+      cacheId: 'fearAndGreedData',
+      apiUrl: `${API_BASE_URL}/fear-and-greed/`,
+      formatData: (data) => data,
+      setData: setFearAndGreedData,
+      setLastUpdated: setFearAndGreedLastUpdated,
+      setIsFetched: setIsFearAndGreedDataFetched,
+      useDateCheck: true, // Daily updates
+    });
+  }, [isFearAndGreedDataFetched]);
+
+  const refreshFearAndGreedData = useCallback(async () => {
+    await refreshData({
+      cacheId: 'fearAndGreedData',
+      setData: setFearAndGreedData,
+      setIsFetched: setIsFearAndGreedDataFetched,
+      fetchFunction: fetchFearAndGreedData,
+    });
+  }, [fetchFearAndGreedData]);
+
+  const fetchMarketCapData = useCallback(async () => {
+    if (isMarketCapDataFetched) return;
+    await fetchWithCache({
+      cacheId: 'marketCapData',
+      apiUrl: `${API_BASE_URL}/total/marketcap/`,
+      formatData: (data) =>
+        data.map((item) => ({
+          time: item.date,
+          value: parseFloat(item.market_cap),
+        })),
+      setData: setMarketCapData,
+      setLastUpdated: setMarketCapLastUpdated,
+      setIsFetched: setIsMarketCapDataFetched,
+      useDateCheck: true, // Daily updates
+    });
   }, [isMarketCapDataFetched]);
 
   const refreshMarketCapData = useCallback(async () => {
-    try {
-      await clearCache('marketCapData');
-      setIsMarketCapDataFetched(false);
-      setMarketCapData([]);
-      await fetchMarketCapData(true);
-    } catch (error) {
-      console.error('Error refreshing market cap data:', error);
-      setIsMarketCapDataFetched(false);
-    }
+    await refreshData({
+      cacheId: 'marketCapData',
+      setData: setMarketCapData,
+      setIsFetched: setIsMarketCapDataFetched,
+      fetchFunction: fetchMarketCapData,
+    });
   }, [fetchMarketCapData]);
 
-  const fetchAltcoinData = useCallback(async (coin, force = false) => {
-    const cacheId = `altcoinData_${coin}`;
-    if (!force && isAltcoinDataFetched[coin]) return;
+  const fetchMacroData = useCallback(async () => {
+    if (isMacroDataFetched) return;
+    await fetchWithCache({
+      cacheId: 'macroData',
+      apiUrl: `${API_BASE_URL}/combined-macro-data/`,
+      formatData: (data) => data,
+      setData: setMacroData,
+      setLastUpdated: setMacroLastUpdated,
+      setIsFetched: setIsMacroDataFetched,
+      useDateCheck: true, // Daily updates
+    });
+  }, [isMacroDataFetched]);
 
-    let cached = null;
-    if (!force && typeof indexedDB !== 'undefined') {
-      try {
-        cached = await getCachedData(cacheId);
-        const ONE_DAY = 24 * 60 * 60 * 1000;
-        if (cached && Date.now() - cached.timestamp < ONE_DAY) {
-          setAltcoinData((prev) => ({ ...prev, [coin]: cached.data }));
-          setAltcoinLastUpdated((prev) => ({
-            ...prev,
-            [coin]: cached.data[cached.data.length - 1].time,
-          }));
-          setIsAltcoinDataFetched((prev) => ({ ...prev, [coin]: true }));
-          return;
-        }
-      } catch (error) {
-        console.error(`Error accessing IndexedDB for ${coin} data:`, error);
-      }
-    }
+  const refreshMacroData = useCallback(async () => {
+    await refreshData({
+      cacheId: 'macroData',
+      setData: setMacroData,
+      setIsFetched: setIsMacroDataFetched,
+      fetchFunction: fetchMacroData,
+    });
+  }, [fetchMacroData]);
 
-    setIsAltcoinDataFetched((prev) => ({ ...prev, [coin]: true }));
-    try {
-      const response = await fetch(`${API_BASE_URL}/${coin.toLowerCase()}/price/`);
-      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-      const data = await response.json();
-      const formattedData = data
-        .filter((item) => item.close != null && !isNaN(parseFloat(item.close)))
-        .map((item) => ({
+  const fetchInflationData = useCallback(async () => {
+    if (isInflationDataFetched) return;
+    await fetchWithCache({
+      cacheId: 'inflationData',
+      apiUrl: `${API_BASE_URL}/us-inflation/`,
+      formatData: (data) =>
+        data.map((item) => ({
           time: item.date,
-          value: parseFloat(item.close),
-        }));
-      setAltcoinData((prev) => ({ ...prev, [coin]: formattedData }));
-      if (formattedData.length > 0) {
-        setAltcoinLastUpdated((prev) => ({
-          ...prev,
-          [coin]: formattedData[formattedData.length - 1].time,
-        }));
-        if (typeof indexedDB !== 'undefined') {
-          await cacheData(cacheId, formattedData, Date.now());
-        }
-      }
-    } catch (error) {
-      console.error(`Error fetching ${coin} price data:`, error);
+          value: parseFloat(item.value),
+        })),
+      setData: setInflationData,
+      setLastUpdated: setInflationLastUpdated,
+      setIsFetched: setIsInflationDataFetched,
+      useDateCheck: true, // Daily updates (though this might update monthly; adjust if needed)
+    });
+  }, [isInflationDataFetched]);
+
+  const refreshInflationData = useCallback(async () => {
+    await refreshData({
+      cacheId: 'inflationData',
+      setData: setInflationData,
+      setIsFetched: setIsInflationDataFetched,
+      fetchFunction: fetchInflationData,
+    });
+  }, [fetchInflationData]);
+
+  const fetchInitialClaimsData = useCallback(async () => {
+    if (isInitialClaimsDataFetched) return;
+    await fetchWithCache({
+      cacheId: 'initialClaimsData',
+      apiUrl: `${API_BASE_URL}/initial-claims/`,
+      formatData: (data) =>
+        data.map((item) => ({
+          time: item.date,
+          value: parseInt(item.value, 10),
+        })),
+      setData: setInitialClaimsData,
+      setLastUpdated: setInitialClaimsLastUpdated,
+      setIsFetched: setIsInitialClaimsDataFetched,
+      useDateCheck: true, // Daily updates (though this might update weekly; adjust if needed)
+    });
+  }, [isInitialClaimsDataFetched]);
+
+  const refreshInitialClaimsData = useCallback(async () => {
+    await refreshData({
+      cacheId: 'initialClaimsData',
+      setData: setInitialClaimsData,
+      setIsFetched: setIsInitialClaimsDataFetched,
+      fetchFunction: fetchInitialClaimsData,
+    });
+  }, [fetchInitialClaimsData]);
+
+  const fetchInterestData = useCallback(async () => {
+    if (isInterestDataFetched) return;
+    await fetchWithCache({
+      cacheId: 'interestData',
+      apiUrl: `${API_BASE_URL}/us-interest/`,
+      formatData: (data) =>
+        data.map((item) => ({
+          time: item.date,
+          value: parseFloat(item.value),
+        })),
+      setData: setInterestData,
+      setLastUpdated: setInterestLastUpdated,
+      setIsFetched: setIsInterestDataFetched,
+      useDateCheck: true, // Daily updates (though this might update less frequently; adjust if needed)
+    });
+  }, [isInterestDataFetched]);
+
+  const refreshInterestData = useCallback(async () => {
+    await refreshData({
+      cacheId: 'interestData',
+      setData: setInterestData,
+      setIsFetched: setIsInterestDataFetched,
+      fetchFunction: fetchInterestData,
+    });
+  }, [fetchInterestData]);
+
+  const fetchUnemploymentData = useCallback(async () => {
+    if (isUnemploymentDataFetched) return;
+    await fetchWithCache({
+      cacheId: 'unemploymentData',
+      apiUrl: `${API_BASE_URL}/us-unemployment/`,
+      formatData: (data) =>
+        data.map((item) => ({
+          time: item.date,
+          value: parseFloat(item.value),
+        })),
+      setData: setUnemploymentData,
+      setLastUpdated: setUnemploymentLastUpdated,
+      setIsFetched: setIsUnemploymentDataFetched,
+      useDateCheck: true, // Daily updates (though this might update monthly; adjust if needed)
+    });
+  }, [isUnemploymentDataFetched]);
+
+  const refreshUnemploymentData = useCallback(async () => {
+    await refreshData({
+      cacheId: 'unemploymentData',
+      setData: setUnemploymentData,
+      setIsFetched: setIsUnemploymentDataFetched,
+      fetchFunction: fetchUnemploymentData,
+    });
+  }, [fetchUnemploymentData]);
+
+  const fetchTxCountData = useCallback(async () => {
+    if (isTxCountDataFetched) return;
+    await fetchWithCache({
+      cacheId: 'txCountData',
+      apiUrl: `${API_BASE_URL}/btc-tx-count/`,
+      formatData: (data) =>
+        data
+          .map((item) => ({
+            time: item.time.split('T')[0],
+            value: parseFloat(item.tx_count),
+          }))
+          .sort((a, b) => new Date(a.time) - new Date(b.time)),
+      setData: setTxCountData,
+      setLastUpdated: setTxCountLastUpdated,
+      setIsFetched: setIsTxCountDataFetched,
+      useDateCheck: true, // Daily updates
+    });
+  }, [isTxCountDataFetched]);
+
+  const refreshTxCountData = useCallback(async () => {
+    await refreshData({
+      cacheId: 'txCountData',
+      setData: setTxCountData,
+      setIsFetched: setIsTxCountDataFetched,
+      fetchFunction: fetchTxCountData,
+    });
+  }, [fetchTxCountData]);
+
+  const fetchTxCountCombinedData = useCallback(async () => {
+    if (isTxCountCombinedDataFetched) return;
+    await fetchWithCache({
+      cacheId: 'txCountCombinedData',
+      apiUrl: `${API_BASE_URL}/tx-macro/`,
+      formatData: (data) => {
+        let lastInflation = null;
+        let lastUnemployment = null;
+        let lastFedFunds = null;
+        return data
+          .map((item) => {
+            if (item.inflation_rate !== null) lastInflation = parseFloat(item.inflation_rate);
+            if (item.unemployment_rate !== null) lastUnemployment = parseFloat(item.unemployment_rate);
+            if (item.interest_rate !== null) lastFedFunds = parseFloat(item.interest_rate);
+            return {
+              time: item.date.split('T')[0],
+              tx_count: item.tx_count ? parseFloat(item.tx_count) : null,
+              price: item.price ? parseFloat(item.price) : null,
+              inflation_rate: lastInflation,
+              unemployment_rate: lastUnemployment,
+              fed_funds_rate: lastFedFunds,
+            };
+          })
+          .sort((a, b) => new Date(a.time) - new Date(b.time));
+      },
+      setData: setTxCountCombinedData,
+      setLastUpdated: setTxCountCombinedLastUpdated,
+      setIsFetched: setIsTxCountCombinedDataFetched,
+      useDateCheck: true, // Daily updates
+    });
+  }, [isTxCountCombinedDataFetched]);
+
+  const refreshTxCountCombinedData = useCallback(async () => {
+    await refreshData({
+      cacheId: 'txCountCombinedData',
+      setData: setTxCountCombinedData,
+      setIsFetched: setIsTxCountCombinedDataFetched,
+      fetchFunction: fetchTxCountCombinedData,
+    });
+  }, [fetchTxCountCombinedData]);
+
+  const fetchTxMvrvData = useCallback(async () => {
+    if (isTxMvrvDataFetched) return;
+    await fetchWithCache({
+      cacheId: 'txMvrvData',
+      apiUrl: `${API_BASE_URL}/tx-mvrv/`,
+      formatData: (data) =>
+        data
+          .map((item) => ({
+            time: item.date,
+            tx_count: parseFloat(item.tx_count),
+            mvrv: parseFloat(item.mvrv),
+          }))
+          .sort((a, b) => new Date(a.time) - new Date(b.time)),
+      setData: setTxMvrvData,
+      setLastUpdated: setTxMvrvLastUpdated,
+      setIsFetched: setIsTxMvrvDataFetched,
+      useDateCheck: true, // Daily updates
+    });
+  }, [isTxMvrvDataFetched]);
+
+  const refreshTxMvrvData = useCallback(async () => {
+    await refreshData({
+      cacheId: 'txMvrvData',
+      setData: setTxMvrvData,
+      setIsFetched: setIsTxMvrvDataFetched,
+      fetchFunction: fetchTxMvrvData,
+    });
+  }, [fetchTxMvrvData]);
+
+  const fetchAltcoinData = useCallback(async (coin) => {
+    if (isAltcoinDataFetched[coin]) return;
+    setIsAltcoinDataFetched((prev) => ({ ...prev, [coin]: true }));
+    const success = await fetchWithCache({
+      cacheId: `altcoinData_${coin}`,
+      apiUrl: `${API_BASE_URL}/${coin.toLowerCase()}/price/`,
+      formatData: (data) =>
+        data
+          .filter((item) => item.close != null && !isNaN(parseFloat(item.close)))
+          .map((item) => ({
+            time: item.date,
+            value: parseFloat(item.close),
+          })),
+      setData: (data) => setAltcoinData((prev) => ({ ...prev, [coin]: data })),
+      setLastUpdated: (time) =>
+        setAltcoinLastUpdated((prev) => ({ ...prev, [coin]: time })),
+      setIsFetched: (fetched) =>
+        setIsAltcoinDataFetched((prev) => ({ ...prev, [coin]: fetched })),
+      useDateCheck: true, // Daily updates
+    });
+    if (!success) {
       setIsAltcoinDataFetched((prev) => ({ ...prev, [coin]: false }));
     }
   }, [isAltcoinDataFetched]);
 
   const refreshAltcoinData = useCallback(async (coin) => {
-    try {
-      await clearCache(`altcoinData_${coin}`);
-      setIsAltcoinDataFetched((prev) => ({ ...prev, [coin]: false }));
-      setAltcoinData((prev) => ({ ...prev, [coin]: [] }));
-      await fetchAltcoinData(coin, true);
-    } catch (error) {
-      console.error(`Error refreshing ${coin} data:`, error);
-      setIsAltcoinDataFetched((prev) => ({ ...prev, [coin]: false }));
-    }
+    await refreshData({
+      cacheId: `altcoinData_${coin}`,
+      setData: () => setAltcoinData((prev) => ({ ...prev, [coin]: [] })),
+      setIsFetched: () =>
+        setIsAltcoinDataFetched((prev) => ({ ...prev, [coin]: false })),
+      fetchFunction: () => fetchAltcoinData(coin),
+    });
   }, [fetchAltcoinData]);
-
-  const fetchFedBalanceData = useCallback(async (force = false) => {
-    const cacheId = 'fedBalanceData';
-    if (!force && isFedBalanceDataFetched) return;
-
-    let cached = null;
-    if (!force && typeof indexedDB !== 'undefined') {
-      try {
-        cached = await getCachedData(cacheId);
-        const ONE_DAY = 24 * 60 * 60 * 1000;
-        if (cached && Date.now() - cached.timestamp < ONE_DAY) {
-          setFedBalanceData(cached.data);
-          setFedLastUpdated(cached.data[cached.data.length - 1].time);
-          setIsFedBalanceDataFetched(true);
-          return;
-        }
-      } catch (error) {
-        console.error('Error accessing IndexedDB for Fed balance data:', error);
-      }
-    }
-
-    setIsFedBalanceDataFetched(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}/fed-balance/`);
-      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-      const data = await response.json();
-      const formattedData = data.map((item) => ({
-        time: item.observation_date,
-        value: parseFloat(item.value) / 1000000,
-      }));
-      setFedBalanceData(formattedData);
-      if (formattedData.length > 0) {
-        setFedLastUpdated(formattedData[formattedData.length - 1].time);
-        if (typeof indexedDB !== 'undefined') {
-          await cacheData(cacheId, formattedData, Date.now());
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching Federal Reserve balance data:', error);
-      setIsFedBalanceDataFetched(false);
-    }
-  }, [isFedBalanceDataFetched]);
-
-  const refreshFedBalanceData = useCallback(async () => {
-    try {
-      await clearCache('fedBalanceData');
-      setIsFedBalanceDataFetched(false);
-      setFedBalanceData([]);
-      await fetchFedBalanceData(true);
-    } catch (error) {
-      console.error('Error refreshing Fed balance data:', error);
-      setIsFedBalanceDataFetched(false);
-    }
-  }, [fetchFedBalanceData]);
-
-  const fetchMvrvData = useCallback(async (force = false) => {
-    const cacheId = 'mvrvData';
-    if (!force && isMvrvDataFetched) return;
-
-    let cached = null;
-    if (!force && typeof indexedDB !== 'undefined') {
-      try {
-        cached = await getCachedData(cacheId);
-        const ONE_DAY = 24 * 60 * 60 * 1000;
-        if (cached && Date.now() - cached.timestamp < ONE_DAY) {
-          setMvrvData(cached.data);
-          setMvrvLastUpdated(cached.data[cached.data.length - 1].time);
-          setIsMvrvDataFetched(true);
-          return;
-        }
-      } catch (error) {
-        console.error('Error accessing IndexedDB for MVRV data:', error);
-      }
-    }
-
-    setIsMvrvDataFetched(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}/mvrv/`);
-      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-      const data = await response.json();
-      const formattedData = data.map((item) => ({
-        time: item.time.split('T')[0],
-        value: parseFloat(item.cap_mvrv_cur),
-      }));
-      setMvrvData(formattedData);
-      if (formattedData.length > 0) {
-        setMvrvLastUpdated(formattedData[formattedData.length - 1].time);
-        if (typeof indexedDB !== 'undefined') {
-          await cacheData(cacheId, formattedData, Date.now());
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching MVRV data:', error);
-      setIsMvrvDataFetched(false);
-    }
-  }, [isMvrvDataFetched]);
-
-  const refreshMvrvData = useCallback(async () => {
-    try {
-      await clearCache('mvrvData');
-      setIsMvrvDataFetched(false);
-      setMvrvData([]);
-      await fetchMvrvData(true);
-    } catch (error) {
-      console.error('Error refreshing MVRV data:', error);
-      setIsMvrvDataFetched(false);
-    }
-  }, [fetchMvrvData]);
-
-  const fetchDominanceData = useCallback(async (force = false) => {
-    const cacheId = 'dominanceData';
-    if (!force && isDominanceDataFetched) return;
-
-    let cached = null;
-    if (!force && typeof indexedDB !== 'undefined') {
-      try {
-        cached = await getCachedData(cacheId);
-        const ONE_DAY = 24 * 60 * 60 * 1000;
-        if (cached && Date.now() - cached.timestamp < ONE_DAY) {
-          setDominanceData(cached.data);
-          setDominanceLastUpdated(cached.data[cached.data.length - 1].time);
-          setIsDominanceDataFetched(true);
-          return;
-        }
-      } catch (error) {
-        console.error('Error accessing IndexedDB for dominance data:', error);
-      }
-    }
-
-    setIsDominanceDataFetched(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}/dominance/`);
-      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-      const data = await response.json();
-      const formattedData = data.map((item) => ({
-        time: item.date,
-        value: parseFloat(item.btc),
-      }));
-      setDominanceData(formattedData);
-      if (formattedData.length > 0) {
-        setDominanceLastUpdated(formattedData[formattedData.length - 1].time);
-        if (typeof indexedDB !== 'undefined') {
-          await cacheData(cacheId, formattedData, Date.now());
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching Bitcoin dominance data:', error);
-      setIsDominanceDataFetched(false);
-    }
-  }, [isDominanceDataFetched]);
-
-  const refreshDominanceData = useCallback(async () => {
-    try {
-      await clearCache('dominanceData');
-      setIsDominanceDataFetched(false);
-      setDominanceData([]);
-      await fetchDominanceData(true);
-    } catch (error) {
-      console.error('Error refreshing dominance data:', error);
-      setIsDominanceDataFetched(false);
-    }
-  }, [fetchDominanceData]);
-
-  const fetchEthData = useCallback(async (force = false) => {
-    const cacheId = 'ethData';
-    if (!force && isEthDataFetched) return;
-
-    let cached = null;
-    if (!force && typeof indexedDB !== 'undefined') {
-      try {
-        cached = await getCachedData(cacheId);
-        const ONE_DAY = 24 * 60 * 60 * 1000;
-        if (cached && Date.now() - cached.timestamp < ONE_DAY) {
-          setEthData(cached.data);
-          setEthLastUpdated(cached.data[cached.data.length - 1].time);
-          setIsEthDataFetched(true);
-          return;
-        }
-      } catch (error) {
-        console.error('Error accessing IndexedDB for ETH data:', error);
-      }
-    }
-
-    setIsEthDataFetched(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}/eth/price/`);
-      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-      const data = await response.json();
-      const formattedData = data
-        .filter((item) => item.close != null && !isNaN(parseFloat(item.close)))
-        .map((item) => ({
-          time: item.date,
-          value: parseFloat(item.close),
-        }));
-      setEthData(formattedData);
-      if (formattedData.length > 0) {
-        setEthLastUpdated(formattedData[formattedData.length - 1].time);
-        if (typeof indexedDB !== 'undefined') {
-          await cacheData(cacheId, formattedData, Date.now());
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching Ethereum price data:', error);
-      setIsEthDataFetched(false);
-    }
-  }, [isEthDataFetched]);
-
-  const refreshEthData = useCallback(async () => {
-    try {
-      await clearCache('ethData');
-      setIsEthDataFetched(false);
-      setEthData([]);
-      await fetchEthData(true);
-    } catch (error) {
-      console.error('Error refreshing ETH data:', error);
-      setIsEthDataFetched(false);
-    }
-  }, [fetchEthData]);
-
-  const fetchFearAndGreedData = useCallback(async (force = false) => {
-    const cacheId = 'fearAndGreedData';
-    if (!force && isFearAndGreedDataFetched) return;
-
-    let cached = null;
-    if (!force && typeof indexedDB !== 'undefined') {
-      try {
-        cached = await getCachedData(cacheId);
-        const ONE_DAY = 24 * 60 * 60 * 1000;
-        if (cached && Date.now() - cached.timestamp < ONE_DAY) {
-          setFearAndGreedData(cached.data);
-          setFearAndGreedLastUpdated(cached.data[cached.data.length - 1].timestamp.split('T')[0]); // Normalize format
-          setIsFearAndGreedDataFetched(true);
-          return;
-        }
-      } catch (error) {
-        console.error('Error accessing IndexedDB for Fear and Greed data:', error);
-      }
-    }
-
-    setIsFearAndGreedDataFetched(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}/fear-and-greed/`);
-      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-      const data = await response.json();
-      setFearAndGreedData(data);
-      if (data.length > 0) {
-        const timestamp = data[data.length - 1].timestamp;
-        setFearAndGreedLastUpdated(timestamp.split('T')[0]); // Normalize format
-        if (typeof indexedDB !== 'undefined') {
-          await cacheData(cacheId, data, Date.now());
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching Fear and Greed data:', error);
-      setIsFearAndGreedDataFetched(false);
-    }
-  }, [isFearAndGreedDataFetched]);
-
-  const refreshFearAndGreedData = useCallback(async () => {
-    try {
-      await clearCache('fearAndGreedData');
-      setIsFearAndGreedDataFetched(false);
-      setFearAndGreedData([]);
-      await fetchFearAndGreedData(true);
-    } catch (error) {
-      console.error('Error refreshing Fear and Greed data:', error);
-      setIsFearAndGreedDataFetched(false);
-    }
-  }, [fetchFearAndGreedData]);
-
-  const fetchMacroData = useCallback(async (force = false) => {
-    const cacheId = 'macroData';
-    if (!force && isMacroDataFetched) return;
-
-    let cached = null;
-    if (!force && typeof indexedDB !== 'undefined') {
-      try {
-        cached = await getCachedData(cacheId);
-        const ONE_DAY = 24 * 60 * 60 * 1000;
-        if (cached && Date.now() - cached.timestamp < ONE_DAY) {
-          setMacroData(cached.data);
-          setMacroLastUpdated(cached.data[cached.data.length - 1].date);
-          setIsMacroDataFetched(true);
-          return;
-        }
-      } catch (error) {
-        console.error('Error accessing IndexedDB for macro data:', error);
-      }
-    }
-
-    setIsMacroDataFetched(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}/combined-macro-data/`);
-      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-      const data = await response.json();
-      setMacroData(data);
-      if (data.length > 0) {
-        setMacroLastUpdated(data[data.length - 1].date);
-        if (typeof indexedDB !== 'undefined') {
-          await cacheData(cacheId, data, Date.now());
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching combined macro data:', error);
-      setIsMacroDataFetched(false);
-    }
-  }, [isMacroDataFetched]);
-
-  const refreshMacroData = useCallback(async () => {
-    try {
-      await clearCache('macroData');
-      setIsMacroDataFetched(false);
-      setMacroData([]);
-      await fetchMacroData(true);
-    } catch (error) {
-      console.error('Error refreshing macro data:', error);
-      setIsMacroDataFetched(false);
-    }
-  }, [fetchMacroData]);
-
-  const fetchInflationData = useCallback(async (force = false) => {
-    const cacheId = 'inflationData';
-    if (!force && isInflationDataFetched) return;
-
-    let cached = null;
-    if (!force && typeof indexedDB !== 'undefined') {
-      try {
-        cached = await getCachedData(cacheId);
-        const ONE_DAY = 24 * 60 * 60 * 1000;
-        if (cached && Date.now() - cached.timestamp < ONE_DAY) {
-          setInflationData(cached.data);
-          setInflationLastUpdated(cached.data[cached.data.length - 1].time);
-          setIsInflationDataFetched(true);
-          return;
-        }
-      } catch (error) {
-        console.error('Error accessing IndexedDB for inflation data:', error);
-      }
-    }
-
-    setIsInflationDataFetched(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}/us-inflation/`);
-      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-      const data = await response.json();
-      const formattedData = data.map((item) => ({
-        time: item.date,
-        value: parseFloat(item.value),
-      }));
-      setInflationData(formattedData);
-      if (formattedData.length > 0) {
-        setInflationLastUpdated(formattedData[formattedData.length - 1].time);
-        if (typeof indexedDB !== 'undefined') {
-          await cacheData(cacheId, formattedData, Date.now());
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching US inflation data:', error);
-      setIsInflationDataFetched(false);
-    }
-  }, [isInflationDataFetched]);
-
-  const refreshInflationData = useCallback(async () => {
-    try {
-      await clearCache('inflationData');
-      setIsInflationDataFetched(false);
-      setInflationData([]);
-      await fetchInflationData(true);
-    } catch (error) {
-      console.error('Error refreshing inflation data:', error);
-      setIsInflationDataFetched(false);
-    }
-  }, [fetchInflationData]);
-
-  const fetchInitialClaimsData = useCallback(async (force = false) => {
-    const cacheId = 'initialClaimsData';
-    if (!force && isInitialClaimsDataFetched) return;
-
-    let cached = null;
-    if (!force && typeof indexedDB !== 'undefined') {
-      try {
-        cached = await getCachedData(cacheId);
-        const ONE_DAY = 24 * 60 * 60 * 1000;
-        if (cached && Date.now() - cached.timestamp < ONE_DAY) {
-          setInitialClaimsData(cached.data);
-          setInitialClaimsLastUpdated(cached.data[cached.data.length - 1].time);
-          setIsInitialClaimsDataFetched(true);
-          return;
-        }
-      } catch (error) {
-        console.error('Error accessing IndexedDB for initial claims data:', error);
-      }
-    }
-
-    setIsInitialClaimsDataFetched(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}/initial-claims/`);
-      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-      const data = await response.json();
-      const formattedData = data.map((item) => ({
-        time: item.date,
-        value: parseInt(item.value, 10),
-      }));
-      setInitialClaimsData(formattedData);
-      if (formattedData.length > 0) {
-        setInitialClaimsLastUpdated(formattedData[formattedData.length - 1].time);
-        if (typeof indexedDB !== 'undefined') {
-          await cacheData(cacheId, formattedData, Date.now());
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching initial claims data:', error);
-      setIsInitialClaimsDataFetched(false);
-    }
-  }, [isInitialClaimsDataFetched]);
-
-  const refreshInitialClaimsData = useCallback(async () => {
-    try {
-      await clearCache('initialClaimsData');
-      setIsInitialClaimsDataFetched(false);
-      setInitialClaimsData([]);
-      await fetchInitialClaimsData(true);
-    } catch (error) {
-      console.error('Error refreshing initial claims data:', error);
-      setIsInitialClaimsDataFetched(false);
-    }
-  }, [fetchInitialClaimsData]);
-
-  const fetchInterestData = useCallback(async (force = false) => {
-    const cacheId = 'interestData';
-    if (!force && isInterestDataFetched) return;
-
-    let cached = null;
-    if (!force && typeof indexedDB !== 'undefined') {
-      try {
-        cached = await getCachedData(cacheId);
-        const ONE_DAY = 24 * 60 * 60 * 1000;
-        if (cached && Date.now() - cached.timestamp < ONE_DAY) {
-          setInterestData(cached.data);
-          setInterestLastUpdated(cached.data[cached.data.length - 1].time);
-          setIsInterestDataFetched(true);
-          return;
-        }
-      } catch (error) {
-        console.error('Error accessing IndexedDB for interest data:', error);
-      }
-    }
-
-    setIsInterestDataFetched(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}/us-interest/`);
-      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-      const data = await response.json();
-      const formattedData = data.map((item) => ({
-        time: item.date,
-        value: parseFloat(item.value),
-      }));
-      setInterestData(formattedData);
-      if (formattedData.length > 0) {
-        setInterestLastUpdated(formattedData[formattedData.length - 1].time);
-        if (typeof indexedDB !== 'undefined') {
-          await cacheData(cacheId, formattedData, Date.now());
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching US interest data:', error);
-      setIsInterestDataFetched(false);
-    }
-  }, [isInterestDataFetched]);
-
-  const refreshInterestData = useCallback(async () => {
-    try {
-      await clearCache('interestData');
-      setIsInterestDataFetched(false);
-      setInterestData([]);
-      await fetchInterestData(true);
-    } catch (error) {
-      console.error('Error refreshing interest data:', error);
-      setIsInterestDataFetched(false);
-    }
-  }, [fetchInterestData]);
-
-  const fetchUnemploymentData = useCallback(async (force = false) => {
-    const cacheId = 'unemploymentData';
-    if (!force && isUnemploymentDataFetched) return;
-
-    let cached = null;
-    if (!force && typeof indexedDB !== 'undefined') {
-      try {
-        cached = await getCachedData(cacheId);
-        const ONE_DAY = 24 * 60 * 60 * 1000;
-        if (cached && Date.now() - cached.timestamp < ONE_DAY) {
-          setUnemploymentData(cached.data);
-          setUnemploymentLastUpdated(cached.data[cached.data.length - 1].time);
-          setIsUnemploymentDataFetched(true);
-          return;
-        }
-      } catch (error) {
-        console.error('Error accessing IndexedDB for unemployment data:', error);
-      }
-    }
-
-    setIsUnemploymentDataFetched(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}/us-unemployment/`);
-      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-      const data = await response.json();
-      const formattedData = data.map((item) => ({
-        time: item.date,
-        value: parseFloat(item.value),
-      }));
-      setUnemploymentData(formattedData);
-      if (formattedData.length > 0) {
-        setUnemploymentLastUpdated(formattedData[formattedData.length - 1].time);
-        if (typeof indexedDB !== 'undefined') {
-          await cacheData(cacheId, formattedData, Date.now());
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching US unemployment data:', error);
-      setIsUnemploymentDataFetched(false);
-    }
-  }, [isUnemploymentDataFetched]);
-
-  const refreshUnemploymentData = useCallback(async () => {
-    try {
-      await clearCache('unemploymentData');
-      setIsUnemploymentDataFetched(false);
-      setUnemploymentData([]);
-      await fetchUnemploymentData(true);
-    } catch (error) {
-      console.error('Error refreshing unemployment data:', error);
-      setIsUnemploymentDataFetched(false);
-    }
-  }, [fetchUnemploymentData]);
-
-  const fetchTxCountData = useCallback(async (force = false) => {
-    const cacheId = 'txCountData';
-    if (!force && isTxCountDataFetched) return;
-
-    let cached = null;
-    if (!force && typeof indexedDB !== 'undefined') {
-      try {
-        cached = await getCachedData(cacheId);
-        const ONE_DAY = 24 * 60 * 60 * 1000;
-        if (cached && Date.now() - cached.timestamp < ONE_DAY) {
-          setTxCountData(cached.data);
-          setTxCountLastUpdated(cached.data[cached.data.length - 1].time);
-          setIsTxCountDataFetched(true);
-          return;
-        }
-      } catch (error) {
-        console.error('Error accessing IndexedDB for tx count data:', error);
-      }
-    }
-
-    setIsTxCountDataFetched(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}/btc-tx-count/`);
-      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-      const data = await response.json();
-      const formattedData = data
-        .map((item) => ({
-          time: item.time.split('T')[0],
-          value: parseFloat(item.tx_count),
-        }))
-        .sort((a, b) => new Date(a.time) - new Date(b.time));
-      setTxCountData(formattedData);
-      if (formattedData.length > 0) {
-        setTxCountLastUpdated(formattedData[formattedData.length - 1].time);
-        if (typeof indexedDB !== 'undefined') {
-          await cacheData(cacheId, formattedData, Date.now());
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching Bitcoin transaction count data:', error);
-      setIsTxCountDataFetched(false);
-    }
-  }, [isTxCountDataFetched]);
-
-  const refreshTxCountData = useCallback(async () => {
-    try {
-      await clearCache('txCountData');
-      setIsTxCountDataFetched(false);
-      setTxCountData([]);
-      await fetchTxCountData(true);
-    } catch (error) {
-      console.error('Error refreshing tx count data:', error);
-      setIsTxCountDataFetched(false);
-    }
-  }, [fetchTxCountData]);
-
-  const fetchTxCountCombinedData = useCallback(async (force = false) => {
-    const cacheId = 'txCountCombinedData';
-    if (!force && isTxCountCombinedDataFetched) return;
-
-    let cached = null;
-    if (!force && typeof indexedDB !== 'undefined') {
-      try {
-        cached = await getCachedData(cacheId);
-        const ONE_DAY = 24 * 60 * 60 * 1000;
-        if (cached && Date.now() - cached.timestamp < ONE_DAY) {
-          setTxCountCombinedData(cached.data);
-          setTxCountCombinedLastUpdated(cached.data[cached.data.length - 1].time);
-          setIsTxCountCombinedDataFetched(true);
-          return;
-        }
-      } catch (error) {
-        console.error('Error accessing IndexedDB for tx count combined data:', error);
-      }
-    }
-
-    setIsTxCountCombinedDataFetched(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}/tx-macro/`);
-      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-      const data = await response.json();
-      let lastInflation = null;
-      let lastUnemployment = null;
-      let lastFedFunds = null;
-
-      const formattedData = data
-        .map((item) => {
-          if (item.inflation_rate !== null) lastInflation = parseFloat(item.inflation_rate);
-          if (item.unemployment_rate !== null) lastUnemployment = parseFloat(item.unemployment_rate);
-          if (item.interest_rate !== null) lastFedFunds = parseFloat(item.interest_rate);
-
-          return {
-            time: item.date.split('T')[0],
-            tx_count: item.tx_count ? parseFloat(item.tx_count) : null,
-            price: item.price ? parseFloat(item.price) : null,
-            inflation_rate: lastInflation,
-            unemployment_rate: lastUnemployment,
-            fed_funds_rate: lastFedFunds,
-          };
-        })
-        .sort((a, b) => new Date(a.time) - new Date(b.time));
-
-      setTxCountCombinedData(formattedData);
-      if (formattedData.length > 0) {
-        setTxCountCombinedLastUpdated(formattedData[formattedData.length - 1].time);
-        if (typeof indexedDB !== 'undefined') {
-          await cacheData(cacheId, formattedData, Date.now());
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching combined transaction count data:', error);
-      setIsTxCountCombinedDataFetched(false);
-    }
-  }, [isTxCountCombinedDataFetched]);
-
-  const refreshTxCountCombinedData = useCallback(async () => {
-    try {
-      await clearCache('txCountCombinedData');
-      setIsTxCountCombinedDataFetched(false);
-      setTxCountCombinedData([]);
-      await fetchTxCountCombinedData(true);
-    } catch (error) {
-      console.error('Error refreshing tx count combined data:', error);
-      setIsTxCountCombinedDataFetched(false);
-    }
-  }, [fetchTxCountCombinedData]);
-
-  const fetchTxMvrvData = useCallback(async (force = false) => {
-    const cacheId = 'txMvrvData';
-    if (!force && isTxMvrvDataFetched) return;
-
-    let cached = null;
-    if (!force && typeof indexedDB !== 'undefined') {
-      try {
-        cached = await getCachedData(cacheId);
-        const ONE_DAY = 24 * 60 * 60 * 1000;
-        if (cached && Date.now() - cached.timestamp < ONE_DAY) {
-          setTxMvrvData(cached.data);
-          setTxMvrvLastUpdated(cached.data[cached.data.length - 1].time);
-          setIsTxMvrvDataFetched(true);
-          return;
-        }
-      } catch (error) {
-        console.error('Error accessing IndexedDB for tx-mvrv data:', error);
-      }
-    }
-
-    setIsTxMvrvDataFetched(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}/tx-mvrv/`);
-      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-      const data = await response.json();
-      const formattedData = data
-        .map((item) => ({
-          time: item.date,
-          tx_count: parseFloat(item.tx_count),
-          mvrv: parseFloat(item.mvrv),
-        }))
-        .sort((a, b) => new Date(a.time) - new Date(b.time));
-      setTxMvrvData(formattedData);
-      if (formattedData.length > 0) {
-        setTxMvrvLastUpdated(formattedData[formattedData.length - 1].time);
-        if (typeof indexedDB !== 'undefined') {
-          await cacheData(cacheId, formattedData, Date.now());
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching Bitcoin tx-mvrv data:', error);
-      setIsTxMvrvDataFetched(false);
-    }
-  }, [isTxMvrvDataFetched]);
-
-  const refreshTxMvrvData = useCallback(async () => {
-    try {
-      await clearCache('txMvrvData');
-      setIsTxMvrvDataFetched(false);
-      setTxMvrvData([]);
-      await fetchTxMvrvData(true);
-    } catch (error) {
-      console.error('Error refreshing tx-mvrv data:', error);
-      setIsTxMvrvDataFetched(false);
-    }
-  }, [fetchTxMvrvData]);
 
   const fetchFredSeriesData = useCallback(async (seriesId) => {
     if (fredSeriesData[seriesId]?.length > 0) return;
-    try {
-      const response = await fetch(`${API_BASE_URL}/series/${seriesId}/observations/`);
-      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-      const data = await response.json();
-      let lastValidValue = null;
-      const formattedData = data
-        .map((item) => {
-          const value = item.value != null && !isNaN(parseFloat(item.value)) ? parseFloat(item.value) : lastValidValue;
-          if (value !== null && !isNaN(value)) {
-            lastValidValue = value;
-          }
-          return {
-            time: item.date,
-            value,
-          };
-        })
-        .filter((item) => item.value !== null && !isNaN(item.value))
-        .sort((a, b) => new Date(a.time) - new Date(b.time));
-      if (formattedData.length === 0) {
-        console.warn(`No valid data points for series ${seriesId}`);
-      }
-      setFredSeriesData((prev) => ({ ...prev, [seriesId]: formattedData }));
-    } catch (error) {
-      console.error(`Error fetching series ${seriesId}:`, error);
-      throw error;
+    const success = await fetchWithCache({
+      cacheId: `fredSeriesData_${seriesId}`,
+      apiUrl: `${API_BASE_URL}/series/${seriesId}/observations/`,
+      formatData: (data) => {
+        let lastValidValue = null;
+        return data
+          .map((item) => {
+            const value =
+              item.value != null && !isNaN(parseFloat(item.value))
+                ? parseFloat(item.value)
+                : lastValidValue;
+            if (value !== null) {
+              lastValidValue = value;
+            }
+            return {
+              time: item.date,
+              value,
+            };
+          })
+          .filter((item) => item.value !== null);
+      },
+      setData: (data) => setFredSeriesData((prev) => ({ ...prev, [seriesId]: data })),
+      setLastUpdated: () => {}, // No lastUpdated state for fredSeriesData
+      setIsFetched: () => {}, // No isFetched state for fredSeriesData
+      useDateCheck: false, // Use timestamp check
+      cacheDuration: 7 * 24 * 60 * 60 * 1000, // 7 days (FRED series typically update less frequently)
+    });
+    if (!success) {
+      console.error(`Failed to fetch series ${seriesId}`);
     }
   }, [fredSeriesData]);
 
-  const fetchIndicatorData = async (indicatorId, force = false) => {
-    if (indicatorId !== 'btc-yield-recession' || (isIndicatorDataFetched[indicatorId] && !force)) return;
+  const refreshFredSeriesData = useCallback(async (seriesId) => {
+    await refreshData({
+      cacheId: `fredSeriesData_${seriesId}`,
+      setData: () => setFredSeriesData((prev) => ({ ...prev, [seriesId]: [] })),
+      setIsFetched: () => {},
+      fetchFunction: () => fetchFredSeriesData(seriesId),
+    });
+  }, [fetchFredSeriesData]);
+
+  const fetchIndicatorData = useCallback(async (indicatorId) => {
+    if (indicatorId !== 'btc-yield-recession') return;
+    if (isIndicatorDataFetched[indicatorId]) return;
 
     setIsIndicatorDataFetched((prev) => ({ ...prev, [indicatorId]: true }));
+    const cacheId = 'indicatorData_btc-yield-recession';
+    const currentDate = new Date().toISOString().split('T')[0];
+    const currentTimestamp = Date.now();
+
+    if (typeof indexedDB !== 'undefined') {
+      try {
+        const cached = await getCachedData(cacheId);
+        if (cached && cached.data.length > 0) {
+          const { data: cachedData, timestamp } = cached;
+          const latestCachedDate = cachedData[cachedData.length - 1].date;
+          // Use date check since this includes daily Bitcoin price data
+          if (latestCachedDate >= currentDate) {
+            setIndicatorData((prev) => ({ ...prev, [indicatorId]: cachedData }));
+            setIsIndicatorDataFetched((prev) => ({ ...prev, [indicatorId]: true }));
+            return;
+          }
+        }
+      } catch (error) {
+        console.error('Error accessing IndexedDB for indicator data:', error);
+      }
+    }
+
     try {
       const btcResponse = await fetch(`${API_BASE_URL}/btc/price/`);
       const btcData = await btcResponse.json();
-
       const t10y2yResponse = await fetch(`${API_BASE_URL}/series/T10Y2Y/observations/`);
       const t10y2yData = await t10y2yResponse.json();
-
       const usrecdResponse = await fetch(`${API_BASE_URL}/series/USRECD/observations/`);
       let usrecdData = await usrecdResponse.json();
-
       const fedFundsResponse = await fetch(`${API_BASE_URL}/us-interest/`);
       const fedFundsData = await fedFundsResponse.json();
-
       const m2Response = await fetch(`${API_BASE_URL}/series/M2SL/observations/`);
       const m2Data = await m2Response.json();
 
       const startDate = '2011-08-19';
-      const endDate = new Date().toISOString().split('T')[0];
+      const endDate = currentDate;
       const dateRange = [];
-      let currentDate = new Date(startDate);
-      while (currentDate <= new Date(endDate)) {
-        dateRange.push(currentDate.toISOString().split('T')[0]);
-        currentDate.setDate(currentDate.getDate() + 1);
+      let currentDateObj = new Date(startDate);
+      while (currentDateObj <= new Date(endDate)) {
+        dateRange.push(currentDateObj.toISOString().split('T')[0]);
+        currentDateObj.setDate(currentDateObj.getDate() + 1);
       }
 
       const btcMap = new Map(btcData.map((d) => [d.date, parseFloat(d.close)]));
@@ -1050,125 +801,26 @@ export const DataProvider = ({ children }) => {
         .filter((d) => d.btc !== undefined && d.t10y2y !== undefined && d.fedFunds !== undefined && d.m2Growth !== undefined);
 
       setIndicatorData((prev) => ({ ...prev, [indicatorId]: combinedData }));
+      if (typeof indexedDB !== 'undefined' && combinedData.length > 0) {
+        await cacheData(cacheId, combinedData, Date.now());
+      }
     } catch (error) {
       console.error('Error fetching indicator data:', error);
       setIsIndicatorDataFetched((prev) => ({ ...prev, [indicatorId]: false }));
-      throw error;
     }
-  };
+  }, [isIndicatorDataFetched]);
 
   const refreshIndicatorData = useCallback(async (indicatorId) => {
+    if (indicatorId !== 'btc-yield-recession') return;
     try {
-      setIsIndicatorDataFetched((prev) => ({ ...prev, [indicatorId]: false }));
+      await clearCache('indicatorData_btc-yield-recession');
       setIndicatorData((prev) => ({ ...prev, [indicatorId]: [] }));
-      await fetchIndicatorData(indicatorId, true);
-    } catch (error) {
-      console.error(`Error refreshing indicator data for ${indicatorId}:`, error);
       setIsIndicatorDataFetched((prev) => ({ ...prev, [indicatorId]: false }));
+      await fetchIndicatorData(indicatorId);
+    } catch (error) {
+      console.error('Error refreshing indicator data:', error);
     }
   }, [fetchIndicatorData]);
-
-  // Polling Logic: Check /api/updates/ on mount
-  useEffect(() => {
-    const checkForUpdates = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/updates/`);
-        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-        const metadata = await response.json();
-
-        const refreshIfStale = async (dataset, localTimestamp, refreshFn) => {
-          const backendTimestamp = metadata[dataset];
-          if (backendTimestamp && (!localTimestamp || backendTimestamp !== localTimestamp)) {
-            console.log(`Update detected for ${dataset}: backend ${backendTimestamp}, local ${localTimestamp}`);
-            await refreshFn();
-          }
-        };
-
-        // Check standard datasets
-        await refreshIfStale('btcData', btcLastUpdated, refreshBtcData);
-        await refreshIfStale('dominanceData', dominanceLastUpdated, refreshDominanceData);
-        await refreshIfStale('marketCapData', marketCapLastUpdated, refreshMarketCapData);
-        await refreshIfStale('ethData', ethLastUpdated, refreshEthData);
-        await refreshIfStale('fearAndGreedData', fearAndGreedLastUpdated, refreshFearAndGreedData);
-        await refreshIfStale('fedBalanceData', fedLastUpdated, refreshFedBalanceData);
-        await refreshIfStale('inflationData', inflationLastUpdated, refreshInflationData);
-        await refreshIfStale('interestData', interestLastUpdated, refreshInterestData);
-        await refreshIfStale('unemploymentData', unemploymentLastUpdated, refreshUnemploymentData);
-        await refreshIfStale('initialClaimsData', initialClaimsLastUpdated, refreshInitialClaimsData);
-        await refreshIfStale('macroData', macroLastUpdated, refreshMacroData);
-        await refreshIfStale('mvrvData', mvrvLastUpdated, refreshMvrvData);
-        await refreshIfStale('txCountData', txCountLastUpdated, refreshTxCountData);
-        await refreshIfStale('txCountCombinedData', txCountCombinedLastUpdated, refreshTxCountCombinedData);
-        await refreshIfStale('txMvrvData', txMvrvLastUpdated, refreshTxMvrvData);
-
-        // Check altcoin datasets
-        for (const dataset in metadata) {
-          if (dataset.startsWith('altcoinData_')) {
-            const coin = dataset.replace('altcoinData_', '').toUpperCase();
-            const localTimestamp = altcoinLastUpdated[coin];
-            const backendTimestamp = metadata[dataset];
-            if (backendTimestamp && (!localTimestamp || backendTimestamp !== localTimestamp)) {
-              console.log(`Update detected for altcoin ${coin}: backend ${backendTimestamp}, local ${localTimestamp}`);
-              await refreshAltcoinData(coin);
-            }
-          }
-        }
-
-        // Check indicator datasets
-        if (metadata['btcData'] || metadata['interestData']) {
-          const btcTimestamp = metadata['btcData'];
-          const interestTimestamp = metadata['interestData'];
-          const indicatorId = 'btc-yield-recession';
-          const lastUpdated = indicatorData[indicatorId]?.length > 0
-            ? indicatorData[indicatorId][indicatorData[indicatorId].length - 1].date
-            : null;
-          if ((btcTimestamp && btcTimestamp !== lastUpdated) || (interestTimestamp && interestTimestamp !== lastUpdated)) {
-            console.log(`Update detected for indicator ${indicatorId}`);
-            await refreshIndicatorData(indicatorId);
-          }
-        }
-      } catch (error) {
-        console.error('Error checking for updates:', error);
-      }
-    };
-
-    checkForUpdates();
-  }, [
-    btcLastUpdated,
-    dominanceLastUpdated,
-    marketCapLastUpdated,
-    ethLastUpdated,
-    fearAndGreedLastUpdated,
-    fedLastUpdated,
-    inflationLastUpdated,
-    interestLastUpdated,
-    unemploymentLastUpdated,
-    initialClaimsLastUpdated,
-    macroLastUpdated,
-    mvrvLastUpdated,
-    txCountLastUpdated,
-    txCountCombinedLastUpdated,
-    txMvrvLastUpdated,
-    altcoinLastUpdated,
-    indicatorData,
-    refreshBtcData,
-    refreshDominanceData,
-    refreshMarketCapData,
-    refreshEthData,
-    refreshFearAndGreedData,
-    refreshFedBalanceData,
-    refreshInflationData,
-    refreshInterestData,
-    refreshUnemploymentData,
-    refreshInitialClaimsData,
-    refreshMacroData,
-    refreshMvrvData,
-    refreshTxCountData,
-    refreshTxCountCombinedData,
-    refreshTxMvrvData,
-    refreshAltcoinData,
-    refreshIndicatorData,
-  ]);
 
   return (
     <DataContext.Provider
@@ -1239,6 +891,7 @@ export const DataProvider = ({ children }) => {
         altcoinLastUpdated,
         fredSeriesData,
         fetchFredSeriesData,
+        refreshFredSeriesData,
         indicatorData,
         fetchIndicatorData,
         refreshIndicatorData,
@@ -1249,4 +902,4 @@ export const DataProvider = ({ children }) => {
   );
 };
 
-export const useData = () => React.useContext(DataContext);
+export const useData = () => useContext(DataContext);

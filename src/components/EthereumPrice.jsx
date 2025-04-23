@@ -5,7 +5,7 @@ import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
 import useIsMobile from '../hooks/useIsMobile';
 import { DataContext } from '../DataContext';
-import { Select, MenuItem, FormControl, InputLabel, Box, Button, Checkbox } from '@mui/material';
+import { Select, MenuItem, FormControl, InputLabel, Box, Checkbox } from '@mui/material';
 import LastUpdated from '../hooks/LastUpdated';
 
 const EthereumPrice = ({ isDashboard = false }) => {
@@ -17,9 +17,9 @@ const EthereumPrice = ({ isDashboard = false }) => {
     const theme = useTheme();
     const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
     const isMobile = useIsMobile();
-    const { ethData, fetchEthData, fedBalanceData, fetchFedBalanceData, ethLastUpdated } = useContext(DataContext); // Added ethLastUpdated
+    const { ethData, fetchEthData, fedBalanceData, fetchFedBalanceData, ethLastUpdated } = useContext(DataContext);
 
-    const [scaleMode, setScaleMode] = useState(1); // 1 for logarithmic, 0 for linear
+    const [scaleMode, setScaleMode] = useState(1);
     const [tooltipData, setTooltipData] = useState(null);
     const [isInteractive, setIsInteractive] = useState(false);
     const [activeIndicators, setActiveIndicators] = useState([]);
@@ -35,26 +35,41 @@ const EthereumPrice = ({ isDashboard = false }) => {
         'fed-balance': { color: 'purple', label: 'Fed Balance (Trillions)' },
     }), []);
 
-    // Fetch data only if not present in context
+    // Fetch Ethereum data (always needed)
     useEffect(() => {
         const fetchData = async () => {
-            if (ethData.length > 0 && fedBalanceData.length > 0) return;
+            if (ethData.length > 0) return;
             setIsLoading(true);
             setError(null);
             try {
-                await Promise.all([
-                    ethData.length === 0 && fetchEthData(),
-                    fedBalanceData.length === 0 && fetchFedBalanceData()
-                ]);
+                await fetchEthData();
             } catch (err) {
-                setError('Failed to fetch data. Please try again later.');
-                console.error('Error fetching data:', err);
+                setError('Failed to fetch Ethereum data. Please try again later.');
+                console.error('Error fetching Ethereum data:', err);
             } finally {
                 setIsLoading(false);
             }
         };
         fetchData();
-    }, [fetchEthData, fetchFedBalanceData, ethData.length, fedBalanceData.length]);
+    }, [fetchEthData, ethData.length]);
+
+    // Fetch Fed Balance data only if the indicator is active
+    useEffect(() => {
+        const fetchIndicatorData = async () => {
+            if (!activeIndicators.includes('fed-balance') || fedBalanceData.length > 0) return;
+            setIsLoading(true);
+            setError(null);
+            try {
+                await fetchFedBalanceData();
+            } catch (err) {
+                setError('Failed to fetch Fed Balance data. Please try again later.');
+                console.error('Error fetching Fed Balance data:', err);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchIndicatorData();
+    }, [activeIndicators, fetchFedBalanceData, fedBalanceData.length]);
 
     const calculateMovingAverage = useCallback((data, period) => {
         let movingAverages = [];
@@ -76,7 +91,7 @@ const EthereumPrice = ({ isDashboard = false }) => {
     const resetChartView = useCallback(() => chartRef.current?.timeScale().fitContent(), []);
     const handleIndicatorChange = useCallback((event) => setActiveIndicators(event.target.value), []);
 
-    // Initialize chart
+    // Initialize chart (unchanged)
     useEffect(() => {
         const chart = createChart(chartContainerRef.current, {
             width: chartContainerRef.current.clientWidth,
@@ -158,7 +173,7 @@ const EthereumPrice = ({ isDashboard = false }) => {
         };
     }, [colors]);
 
-    // Update chart data
+    // Update chart data (unchanged)
     useEffect(() => {
         if (priceSeriesRef.current && ethData.length > 0) {
             priceSeriesRef.current.setData(ethData);
@@ -179,7 +194,7 @@ const EthereumPrice = ({ isDashboard = false }) => {
         }
     }, [fedBalanceData, ethData, activeIndicators]);
 
-    // Update indicators
+    // Update indicators (unchanged)
     useEffect(() => {
         if (!chartRef.current || ethData.length === 0) return;
         Object.keys(smaSeriesRefs).forEach(key => {
@@ -204,7 +219,7 @@ const EthereumPrice = ({ isDashboard = false }) => {
         });
     }, [activeIndicators, ethData, calculateMovingAverage, indicators]);
 
-    // Update scale mode and interactivity
+    // Update scale mode and interactivity (unchanged)
     useEffect(() => {
         if (chartRef.current) {
             chartRef.current.priceScale('right').applyOptions({ mode: scaleMode });
@@ -213,7 +228,7 @@ const EthereumPrice = ({ isDashboard = false }) => {
         }
     }, [scaleMode, isInteractive]);
 
-    // Update theme colors
+    // Update theme colors (unchanged)
     useEffect(() => {
         if (priceSeriesRef.current) {
             const { topColor, bottomColor, lineColor } = theme.palette.mode === 'dark'
@@ -229,6 +244,7 @@ const EthereumPrice = ({ isDashboard = false }) => {
         }
     }, [colors, theme.palette.mode]);
 
+    // JSX return (unchanged)
     return (
         <div style={{ height: '100%' }}>
             {!isDashboard && (

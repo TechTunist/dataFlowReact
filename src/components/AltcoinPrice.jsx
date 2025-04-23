@@ -81,7 +81,6 @@ const AltcoinPrice = ({ isDashboard = false }) => {
         { label: 'Arbitrum', value: 'ARB' },
         { label: 'Raydium', value: 'RAY' },
         { label: 'Move', value: 'MOVE' },
-        
     ];
 
     // Utility functions
@@ -109,40 +108,58 @@ const AltcoinPrice = ({ isDashboard = false }) => {
         setActiveIndicators(newIndicators);
     };
 
-    // Fetch altcoin and BTC data
+    // Fetch all necessary data
     useEffect(() => {
-        setIsLoading(true);
-        if (!altcoinData[selectedCoin]) {
-            fetchAltcoinData(selectedCoin);
-        }
-        if (denominator === 'BTC' && btcData.length === 0) {
-            fetchBtcData();
-        }
-    }, [selectedCoin, altcoinData, btcData, fetchAltcoinData, fetchBtcData, denominator]);
+        const fetchData = async () => {
+            const promises = [];
+            // Fetch altcoin data
+            if (!altcoinData[selectedCoin]) {
+                promises.push(fetchAltcoinData(selectedCoin));
+            }
+            // Fetch BTC data if needed
+            if (denominator === 'BTC' && btcData.length === 0) {
+                promises.push(fetchBtcData());
+            }
+            // Fetch Fed balance data if needed
+            if (activeIndicators.includes('fed-balance') && fedBalanceData.length === 0) {
+                promises.push(fetchFedBalanceData());
+            }
 
-    // Fetch Federal Reserve balance data
-    useEffect(() => {
-        if (fedBalanceData.length === 0 && activeIndicators.includes('fed-balance')) {
-            fetchFedBalanceData();
-        }
-    }, [fedBalanceData, fetchFedBalanceData, activeIndicators]);
+            if (promises.length > 0) {
+                setIsLoading(true);
+                await Promise.all(promises);
+            }
+        };
 
-    // Compute chart data based on denominator
+        fetchData();
+    }, [selectedCoin, altcoinData, btcData, denominator, activeIndicators, fedBalanceData, fetchAltcoinData, fetchBtcData, fetchFedBalanceData]);
+
+    // Compute chart data and manage loading state
     useEffect(() => {
         const altData = altcoinData[selectedCoin] || [];
-        if (altData.length > 0) {
+        
+        // Check if all required data is loaded
+        const isAltcoinDataLoaded = altData.length > 0;
+        const isBtcDataLoaded = denominator === 'BTC' ? btcData.length > 0 : true;
+        const isFedBalanceDataLoaded = activeIndicators.includes('fed-balance') ? fedBalanceData.length > 0 : true;
+
+        if (isAltcoinDataLoaded && isBtcDataLoaded && isFedBalanceDataLoaded) {
+            // Compute chart data
+            let newChartData = [];
             if (denominator === 'USD') {
-                setChartData(altData);
+                newChartData = altData;
             } else if (denominator === 'BTC' && btcData.length > 0) {
-                const newDataset = altData.map(altEntry => {
-                    const btcEntry = btcData.find(btc => btc.time === altEntry.time);
-                    return btcEntry ? { ...altEntry, value: altEntry.value / btcEntry.value } : null;
-                }).filter(Boolean);
-                setChartData(newDataset);
+                newChartData = altData
+                    .map(altEntry => {
+                        const btcEntry = btcData.find(btc => btc.time === altEntry.time);
+                        return btcEntry ? { ...altEntry, value: altEntry.value / btcEntry.value } : null;
+                    })
+                    .filter(Boolean);
             }
-            setIsLoading(false);
+            setChartData(newChartData);
+            setIsLoading(false); // All data is loaded, hide loading message
         }
-    }, [denominator, altcoinData, selectedCoin, btcData]);
+    }, [denominator, altcoinData, selectedCoin, btcData, activeIndicators, fedBalanceData]);
 
     // Initialize chart once on mount
     useEffect(() => {
@@ -532,7 +549,7 @@ const AltcoinPrice = ({ isDashboard = false }) => {
                         top: '10px',
                         left: '10px',
                         zIndex: 2,
-                        backgroundColor鹬: colors.primary[900],
+                        backgroundColor: colors.primary[900],
                         padding: '5px 10px',
                         borderRadius: '4px',
                         color: colors.grey[100],

@@ -133,7 +133,7 @@ function App() {
                     <Route path="/us-initial-claims" element={<BasicChart ChartComponent={UsInitialClaimsChart} />} />
                     <Route path="/tx-combined" element={<BasicChart ChartComponent={TxCombinedChart} />} />
                     <Route path="/tx-mvrv" element={<BasicChart ChartComponent={BitcoinTxMvrvChart} />} />
-                    <Route path="/workbench" element={<WorkbenchChart />} />
+                    
 
                     {/* New FRED series routes */}
                     <Route
@@ -511,7 +511,7 @@ function App() {
                       }
                     />
                     <Route
-                      path="/fred/workbench"
+                      path="/workbench"
                       element={
                         <BasicChart
                           ChartComponent={WorkbenchChart}

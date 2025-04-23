@@ -151,7 +151,7 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
         return { title: "German Bond Yield", subtitle: isMobile ? "Bond Yield" : "German 10-Year Bond Yield" };
       case "/indicators/btc-yield-recession":
         return { title: "Bitcoin to 10 Year Yield", subtitle: isMobile ? "BTC vs 10 Year" : "Bitcoin Vs 10 year Bond Yield with Recesion Indicator" };
-      case "/fred/workbench":
+      case "/workbench":
         return { title: "Workbench", subtitle: isMobile ? "Create your own indicator" : "Create your own indicator from a selection of data" };
       default:
         return { title: "CryptoLogical", subtitle: "" };
