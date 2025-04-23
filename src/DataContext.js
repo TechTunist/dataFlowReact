@@ -107,10 +107,12 @@ export const DataProvider = ({ children }) => {
   const refreshBtcData = useCallback(async () => {
     try {
       await clearCache('btcData');
+      setIsBtcDataFetched(false);
       setBtcData([]);
       await fetchBtcData(true);
     } catch (error) {
       console.error('Error refreshing BTC data:', error);
+      setIsBtcDataFetched(false);
     }
   }, [fetchBtcData]);
 
@@ -159,10 +161,12 @@ export const DataProvider = ({ children }) => {
   const refreshMarketCapData = useCallback(async () => {
     try {
       await clearCache('marketCapData');
+      setIsMarketCapDataFetched(false);
       setMarketCapData([]);
       await fetchMarketCapData(true);
     } catch (error) {
       console.error('Error refreshing market cap data:', error);
+      setIsMarketCapDataFetched(false);
     }
   }, [fetchMarketCapData]);
 
@@ -219,10 +223,12 @@ export const DataProvider = ({ children }) => {
   const refreshAltcoinData = useCallback(async (coin) => {
     try {
       await clearCache(`altcoinData_${coin}`);
+      setIsAltcoinDataFetched((prev) => ({ ...prev, [coin]: false }));
       setAltcoinData((prev) => ({ ...prev, [coin]: [] }));
       await fetchAltcoinData(coin, true);
     } catch (error) {
       console.error(`Error refreshing ${coin} data:`, error);
+      setIsAltcoinDataFetched((prev) => ({ ...prev, [coin]: false }));
     }
   }, [fetchAltcoinData]);
 
@@ -271,10 +277,12 @@ export const DataProvider = ({ children }) => {
   const refreshFedBalanceData = useCallback(async () => {
     try {
       await clearCache('fedBalanceData');
+      setIsFedBalanceDataFetched(false);
       setFedBalanceData([]);
       await fetchFedBalanceData(true);
     } catch (error) {
       console.error('Error refreshing Fed balance data:', error);
+      setIsFedBalanceDataFetched(false);
     }
   }, [fetchFedBalanceData]);
 
@@ -323,10 +331,12 @@ export const DataProvider = ({ children }) => {
   const refreshMvrvData = useCallback(async () => {
     try {
       await clearCache('mvrvData');
+      setIsMvrvDataFetched(false);
       setMvrvData([]);
       await fetchMvrvData(true);
     } catch (error) {
       console.error('Error refreshing MVRV data:', error);
+      setIsMvrvDataFetched(false);
     }
   }, [fetchMvrvData]);
 
@@ -375,10 +385,12 @@ export const DataProvider = ({ children }) => {
   const refreshDominanceData = useCallback(async () => {
     try {
       await clearCache('dominanceData');
+      setIsDominanceDataFetched(false);
       setDominanceData([]);
       await fetchDominanceData(true);
     } catch (error) {
       console.error('Error refreshing dominance data:', error);
+      setIsDominanceDataFetched(false);
     }
   }, [fetchDominanceData]);
 
@@ -429,10 +441,12 @@ export const DataProvider = ({ children }) => {
   const refreshEthData = useCallback(async () => {
     try {
       await clearCache('ethData');
+      setIsEthDataFetched(false);
       setEthData([]);
       await fetchEthData(true);
     } catch (error) {
       console.error('Error refreshing ETH data:', error);
+      setIsEthDataFetched(false);
     }
   }, [fetchEthData]);
 
@@ -447,7 +461,7 @@ export const DataProvider = ({ children }) => {
         const ONE_DAY = 24 * 60 * 60 * 1000;
         if (cached && Date.now() - cached.timestamp < ONE_DAY) {
           setFearAndGreedData(cached.data);
-          setFearAndGreedLastUpdated(cached.data[cached.data.length - 1].timestamp);
+          setFearAndGreedLastUpdated(cached.data[cached.data.length - 1].timestamp.split('T')[0]); // Normalize format
           setIsFearAndGreedDataFetched(true);
           return;
         }
@@ -463,7 +477,8 @@ export const DataProvider = ({ children }) => {
       const data = await response.json();
       setFearAndGreedData(data);
       if (data.length > 0) {
-        setFearAndGreedLastUpdated(data[data.length - 1].timestamp);
+        const timestamp = data[data.length - 1].timestamp;
+        setFearAndGreedLastUpdated(timestamp.split('T')[0]); // Normalize format
         if (typeof indexedDB !== 'undefined') {
           await cacheData(cacheId, data, Date.now());
         }
@@ -477,10 +492,12 @@ export const DataProvider = ({ children }) => {
   const refreshFearAndGreedData = useCallback(async () => {
     try {
       await clearCache('fearAndGreedData');
+      setIsFearAndGreedDataFetched(false);
       setFearAndGreedData([]);
       await fetchFearAndGreedData(true);
     } catch (error) {
       console.error('Error refreshing Fear and Greed data:', error);
+      setIsFearAndGreedDataFetched(false);
     }
   }, [fetchFearAndGreedData]);
 
@@ -525,10 +542,12 @@ export const DataProvider = ({ children }) => {
   const refreshMacroData = useCallback(async () => {
     try {
       await clearCache('macroData');
+      setIsMacroDataFetched(false);
       setMacroData([]);
       await fetchMacroData(true);
     } catch (error) {
       console.error('Error refreshing macro data:', error);
+      setIsMacroDataFetched(false);
     }
   }, [fetchMacroData]);
 
@@ -577,10 +596,12 @@ export const DataProvider = ({ children }) => {
   const refreshInflationData = useCallback(async () => {
     try {
       await clearCache('inflationData');
+      setIsInflationDataFetched(false);
       setInflationData([]);
       await fetchInflationData(true);
     } catch (error) {
       console.error('Error refreshing inflation data:', error);
+      setIsInflationDataFetched(false);
     }
   }, [fetchInflationData]);
 
@@ -629,10 +650,12 @@ export const DataProvider = ({ children }) => {
   const refreshInitialClaimsData = useCallback(async () => {
     try {
       await clearCache('initialClaimsData');
+      setIsInitialClaimsDataFetched(false);
       setInitialClaimsData([]);
       await fetchInitialClaimsData(true);
     } catch (error) {
       console.error('Error refreshing initial claims data:', error);
+      setIsInitialClaimsDataFetched(false);
     }
   }, [fetchInitialClaimsData]);
 
@@ -681,10 +704,12 @@ export const DataProvider = ({ children }) => {
   const refreshInterestData = useCallback(async () => {
     try {
       await clearCache('interestData');
+      setIsInterestDataFetched(false);
       setInterestData([]);
       await fetchInterestData(true);
     } catch (error) {
       console.error('Error refreshing interest data:', error);
+      setIsInterestDataFetched(false);
     }
   }, [fetchInterestData]);
 
@@ -733,10 +758,12 @@ export const DataProvider = ({ children }) => {
   const refreshUnemploymentData = useCallback(async () => {
     try {
       await clearCache('unemploymentData');
+      setIsUnemploymentDataFetched(false);
       setUnemploymentData([]);
       await fetchUnemploymentData(true);
     } catch (error) {
       console.error('Error refreshing unemployment data:', error);
+      setIsUnemploymentDataFetched(false);
     }
   }, [fetchUnemploymentData]);
 
@@ -787,10 +814,12 @@ export const DataProvider = ({ children }) => {
   const refreshTxCountData = useCallback(async () => {
     try {
       await clearCache('txCountData');
+      setIsTxCountDataFetched(false);
       setTxCountData([]);
       await fetchTxCountData(true);
     } catch (error) {
       console.error('Error refreshing tx count data:', error);
+      setIsTxCountDataFetched(false);
     }
   }, [fetchTxCountData]);
 
@@ -856,10 +885,12 @@ export const DataProvider = ({ children }) => {
   const refreshTxCountCombinedData = useCallback(async () => {
     try {
       await clearCache('txCountCombinedData');
+      setIsTxCountCombinedDataFetched(false);
       setTxCountCombinedData([]);
       await fetchTxCountCombinedData(true);
     } catch (error) {
       console.error('Error refreshing tx count combined data:', error);
+      setIsTxCountCombinedDataFetched(false);
     }
   }, [fetchTxCountCombinedData]);
 
@@ -911,10 +942,12 @@ export const DataProvider = ({ children }) => {
   const refreshTxMvrvData = useCallback(async () => {
     try {
       await clearCache('txMvrvData');
+      setIsTxMvrvDataFetched(false);
       setTxMvrvData([]);
       await fetchTxMvrvData(true);
     } catch (error) {
       console.error('Error refreshing tx-mvrv data:', error);
+      setIsTxMvrvDataFetched(false);
     }
   }, [fetchTxMvrvData]);
 
@@ -948,9 +981,10 @@ export const DataProvider = ({ children }) => {
     }
   }, [fredSeriesData]);
 
-  const fetchIndicatorData = async (indicatorId) => {
-    if (indicatorId !== 'btc-yield-recession') return;
+  const fetchIndicatorData = async (indicatorId, force = false) => {
+    if (indicatorId !== 'btc-yield-recession' || (isIndicatorDataFetched[indicatorId] && !force)) return;
 
+    setIsIndicatorDataFetched((prev) => ({ ...prev, [indicatorId]: true }));
     try {
       const btcResponse = await fetch(`${API_BASE_URL}/btc/price/`);
       const btcData = await btcResponse.json();
@@ -1018,103 +1052,122 @@ export const DataProvider = ({ children }) => {
       setIndicatorData((prev) => ({ ...prev, [indicatorId]: combinedData }));
     } catch (error) {
       console.error('Error fetching indicator data:', error);
+      setIsIndicatorDataFetched((prev) => ({ ...prev, [indicatorId]: false }));
       throw error;
     }
   };
 
-  // SSE Connection
-  useEffect(() => {
-    const eventSource = new EventSource(`${API_BASE_URL}/updates/stream/`);
+  const refreshIndicatorData = useCallback(async (indicatorId) => {
+    try {
+      setIsIndicatorDataFetched((prev) => ({ ...prev, [indicatorId]: false }));
+      setIndicatorData((prev) => ({ ...prev, [indicatorId]: [] }));
+      await fetchIndicatorData(indicatorId, true);
+    } catch (error) {
+      console.error(`Error refreshing indicator data for ${indicatorId}:`, error);
+      setIsIndicatorDataFetched((prev) => ({ ...prev, [indicatorId]: false }));
+    }
+  }, [fetchIndicatorData]);
 
-    eventSource.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === 'update') {
-        // console.log(`Update detected for ${data.dataset}`);
-        // Handle altcoin datasets (e.g., altcoinData_sol)
-        if (data.dataset.startsWith('altcoinData_')) {
-          const coin = data.dataset.replace('altcoinData_', '').toUpperCase();
-          fetchAltcoinData(coin, true);
-          return;
+  // Polling Logic: Check /api/updates/ on mount
+  useEffect(() => {
+    const checkForUpdates = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/updates/`);
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+        const metadata = await response.json();
+
+        const refreshIfStale = async (dataset, localTimestamp, refreshFn) => {
+          const backendTimestamp = metadata[dataset];
+          if (backendTimestamp && (!localTimestamp || backendTimestamp !== localTimestamp)) {
+            console.log(`Update detected for ${dataset}: backend ${backendTimestamp}, local ${localTimestamp}`);
+            await refreshFn();
+          }
+        };
+
+        // Check standard datasets
+        await refreshIfStale('btcData', btcLastUpdated, refreshBtcData);
+        await refreshIfStale('dominanceData', dominanceLastUpdated, refreshDominanceData);
+        await refreshIfStale('marketCapData', marketCapLastUpdated, refreshMarketCapData);
+        await refreshIfStale('ethData', ethLastUpdated, refreshEthData);
+        await refreshIfStale('fearAndGreedData', fearAndGreedLastUpdated, refreshFearAndGreedData);
+        await refreshIfStale('fedBalanceData', fedLastUpdated, refreshFedBalanceData);
+        await refreshIfStale('inflationData', inflationLastUpdated, refreshInflationData);
+        await refreshIfStale('interestData', interestLastUpdated, refreshInterestData);
+        await refreshIfStale('unemploymentData', unemploymentLastUpdated, refreshUnemploymentData);
+        await refreshIfStale('initialClaimsData', initialClaimsLastUpdated, refreshInitialClaimsData);
+        await refreshIfStale('macroData', macroLastUpdated, refreshMacroData);
+        await refreshIfStale('mvrvData', mvrvLastUpdated, refreshMvrvData);
+        await refreshIfStale('txCountData', txCountLastUpdated, refreshTxCountData);
+        await refreshIfStale('txCountCombinedData', txCountCombinedLastUpdated, refreshTxCountCombinedData);
+        await refreshIfStale('txMvrvData', txMvrvLastUpdated, refreshTxMvrvData);
+
+        // Check altcoin datasets
+        for (const dataset in metadata) {
+          if (dataset.startsWith('altcoinData_')) {
+            const coin = dataset.replace('altcoinData_', '').toUpperCase();
+            const localTimestamp = altcoinLastUpdated[coin];
+            const backendTimestamp = metadata[dataset];
+            if (backendTimestamp && (!localTimestamp || backendTimestamp !== localTimestamp)) {
+              console.log(`Update detected for altcoin ${coin}: backend ${backendTimestamp}, local ${localTimestamp}`);
+              await refreshAltcoinData(coin);
+            }
+          }
         }
-        switch (data.dataset) {
-          case 'btcData':
-            fetchBtcData(true);
-            break;
-          case 'dominanceData':
-            fetchDominanceData(true);
-            break;
-          case 'marketCapData':
-            fetchMarketCapData(true);
-            break;
-          case 'ethData':
-            fetchEthData(true);
-            break;
-          case 'fearAndGreedData':
-            fetchFearAndGreedData(true);
-            break;
-          case 'fedBalanceData':
-            fetchFedBalanceData(true);
-            break;
-          case 'inflationData':
-            fetchInflationData(true);
-            break;
-          case 'interestData':
-            fetchInterestData(true);
-            break;
-          case 'unemploymentData':
-            fetchUnemploymentData(true);
-            break;
-          case 'initialClaimsData':
-            fetchInitialClaimsData(true);
-            break;
-          case 'macroData':
-            fetchMacroData(true);
-            break;
-          case 'mvrvData':
-            fetchMvrvData(true);
-            break;
-          case 'txCountData':
-            fetchTxCountData(true);
-            break;
-          case 'txCountCombinedData':
-            fetchTxCountCombinedData(true);
-            break;
-          case 'txMvrvData':
-            fetchTxMvrvData(true);
-            break;
-          default:
-            console.warn(`No fetch function defined for dataset: ${data.dataset}`);
+
+        // Check indicator datasets
+        if (metadata['btcData'] || metadata['interestData']) {
+          const btcTimestamp = metadata['btcData'];
+          const interestTimestamp = metadata['interestData'];
+          const indicatorId = 'btc-yield-recession';
+          const lastUpdated = indicatorData[indicatorId]?.length > 0
+            ? indicatorData[indicatorId][indicatorData[indicatorId].length - 1].date
+            : null;
+          if ((btcTimestamp && btcTimestamp !== lastUpdated) || (interestTimestamp && interestTimestamp !== lastUpdated)) {
+            console.log(`Update detected for indicator ${indicatorId}`);
+            await refreshIndicatorData(indicatorId);
+          }
         }
+      } catch (error) {
+        console.error('Error checking for updates:', error);
       }
     };
 
-    eventSource.onerror = (error) => {
-      console.error('SSE connection error:', error);
-      eventSource.close();
-    };
-
-    // Cleanup on unmount
-    return () => {
-      eventSource.close();
-      console.log('SSE connection closed');
-    };
+    checkForUpdates();
   }, [
-    fetchBtcData,
-    fetchMarketCapData,
-    fetchFedBalanceData,
-    fetchMvrvData,
-    fetchDominanceData,
-    fetchEthData,
-    fetchFearAndGreedData,
-    fetchMacroData,
-    fetchInflationData,
-    fetchInitialClaimsData,
-    fetchInterestData,
-    fetchUnemploymentData,
-    fetchTxCountData,
-    fetchTxCountCombinedData,
-    fetchTxMvrvData,
-    fetchAltcoinData,
+    btcLastUpdated,
+    dominanceLastUpdated,
+    marketCapLastUpdated,
+    ethLastUpdated,
+    fearAndGreedLastUpdated,
+    fedLastUpdated,
+    inflationLastUpdated,
+    interestLastUpdated,
+    unemploymentLastUpdated,
+    initialClaimsLastUpdated,
+    macroLastUpdated,
+    mvrvLastUpdated,
+    txCountLastUpdated,
+    txCountCombinedLastUpdated,
+    txMvrvLastUpdated,
+    altcoinLastUpdated,
+    indicatorData,
+    refreshBtcData,
+    refreshDominanceData,
+    refreshMarketCapData,
+    refreshEthData,
+    refreshFearAndGreedData,
+    refreshFedBalanceData,
+    refreshInflationData,
+    refreshInterestData,
+    refreshUnemploymentData,
+    refreshInitialClaimsData,
+    refreshMacroData,
+    refreshMvrvData,
+    refreshTxCountData,
+    refreshTxCountCombinedData,
+    refreshTxMvrvData,
+    refreshAltcoinData,
+    refreshIndicatorData,
   ]);
 
   return (
@@ -1188,6 +1241,7 @@ export const DataProvider = ({ children }) => {
         fetchFredSeriesData,
         indicatorData,
         fetchIndicatorData,
+        refreshIndicatorData,
       }}
     >
       {children}
