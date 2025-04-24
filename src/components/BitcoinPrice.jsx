@@ -293,14 +293,40 @@ const BitcoinPrice = ({ isDashboard = false }) => {
     chartRef.current = chart;
 
     return () => {
-      chart.remove();
+      // First, remove the price lines if the series still exist
+      if (mayerMultipleSeriesRef.current) {
+        mayerPriceLinesRef.current.forEach(priceLine => {
+          try {
+            mayerMultipleSeriesRef.current?.removePriceLine(priceLine);
+          } catch (error) {
+            console.error('Error removing Mayer Multiple price line:', error);
+          }
+        });
+        mayerPriceLinesRef.current = []; // Clear the price lines ref
+        mayerMultipleSeriesRef.current = null; // Clear the series ref
+      }
+    
+      if (mvrvSeriesRef.current) {
+        mvrvPriceLinesRef.current.forEach(priceLine => {
+          try {
+            mvrvSeriesRef.current?.removePriceLine(priceLine);
+          } catch (error) {
+            console.error('Error removing MVRV price line:', error);
+          }
+        });
+        mvrvPriceLinesRef.current = []; // Clear the price lines ref
+        mvrvSeriesRef.current = null; // Clear the series ref
+      }
+    
+      // Remove the chart after cleaning up the price lines
+      try {
+        chart.remove();
+      } catch (error) {
+        console.error('Error removing chart:', error);
+      }
+    
+      // Remove the resize event listener
       window.removeEventListener('resize', resizeChart);
-      mayerPriceLinesRef.current.forEach(priceLine => {
-        mayerMultipleSeriesRef.current?.removePriceLine(priceLine);
-      });
-      mvrvPriceLinesRef.current.forEach(priceLine => {
-        mvrvSeriesRef.current?.removePriceLine(priceLine);
-      });
     };
   }, []);
 

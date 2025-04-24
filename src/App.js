@@ -517,7 +517,6 @@ function App() {
                           ChartComponent={WorkbenchChart}
                           seriesId="UMCSENT"
                           chartType="area"
-                          scaleMode="linear"
                           valueFormatter={value => value.toLocaleString()}
                           explanation="Create your own indicator by choosing your own data series' to compare."
                         />

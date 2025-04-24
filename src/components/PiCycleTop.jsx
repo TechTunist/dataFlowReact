@@ -7,6 +7,7 @@ import { DataContext } from '../DataContext';
 import BitcoinFees from './BitcoinTransactionFees';
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
+import { Box } from '@mui/material'; // Import Box for consistent styling
 
 const PiCycleTopChart = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
@@ -201,129 +202,162 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
         }
     }, [isInteractive, showMarkers, showRatioSeries, markers]);
 
+    // Define legend items with colors matching the series
     const legendItems = useMemo(() => [
-        { label: 'BTC', color: '#4ba1c8' },
+        { label: 'Bitcoin Price', color: '#4ba1c8' },
         { label: '111D SMA', color: '#66ff00' },
         { label: '350D SMA x 2', color: '#fe2bc9' },
         { label: '111/350x2 Ratio', color: '#ff9900', visible: showRatioSeries },
     ], [showRatioSeries]);
 
+    // Define indicator description for the ratio, matching the Bitcoin chart's style
+    const ratioIndicator = {
+        label: '111/350x2 Ratio',
+        color: '#ff9900',
+        description:
+            'The 111/350x2 Ratio represents the ratio of the 111-day Simple Moving Average (SMA) to twice the 350-day SMA. ' +
+            'This ratio helps visualize the relative movement between these two moving averages over time. ' +
+            'A ratio value near or above 1.0 has historically coincided with market tops, as seen in the PiCycle Top indicator. ' +
+            'The decreasing volatility in this ratio suggests that future market tops may not see the same level of divergence between the 111 SMA and 350 SMA.',
+    };
+
     return (
-        <div style={{ height: '100%' }}>
+        <div style={{ height: '100%', position: 'relative' }}>
             {!isDashboard && (
                 <div className='chart-top-div'>
                     <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                         {/* Button to toggle markers */}
-                        {
-                            !isDashboard && (
-                                <button
+                        {!isDashboard && (
+                            <button
                                 onClick={toggleMarkers}
                                 className="button-reset extra-margin-right"
                                 style={
-                                    showMarkers 
+                                    showMarkers
                                         ? {
-                                            backgroundColor: '#4cceac',
-                                            color: 'black',
-                                            borderColor: 'violet'
+                                              backgroundColor: '#4cceac',
+                                              color: 'black',
+                                              borderColor: 'violet',
                                           }
                                         : {}
                                 }
                             >
                                 {showMarkers ? 'Hide Top Markers' : 'Show Top Markers'}
-                            </button>)
-                        }
-                        {/* New toggle button for ratio series */}
+                            </button>
+                        )}
+                        {/* Toggle button for ratio series */}
                         {!isDashboard && (
                             <button
                                 onClick={toggleRatioSeries}
                                 className="button-reset"
-                                style={showRatioSeries ? {
-                                    backgroundColor: '#4cceac',
-                                    color: 'black',
-                                    borderColor: 'violet'
-                                } : {}}
+                                style={
+                                    showRatioSeries
+                                        ? {
+                                              backgroundColor: '#4cceac',
+                                              color: 'black',
+                                              borderColor: 'violet',
+                                          }
+                                        : {}
+                                }
                             >
                                 {showRatioSeries ? 'Hide Ratio' : 'Show Ratio'}
                             </button>
                         )}
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'flex-end'}}>
-                        {
-                            !isDashboard && (
-                                <button
-                                    onClick={setInteractivity}
-                                    className="button-reset"
-                                    style={{
-                                        backgroundColor: isInteractive ? '#4cceac' : 'transparent',
-                                        color: isInteractive ? 'black' : '#31d6aa',
-                                        borderColor: isInteractive ? 'violet' : '#70d8bd'
-                                    }}>
-                                    {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
-                                </button>
-                            )   
-                        }
-                        {
-                            !isDashboard && (
-                                <button onClick={resetChartView} className="button-reset extra-margin">
-                                    Reset Chart
-                                </button>
-                            )   
-                        }
+                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                        {!isDashboard && (
+                            <button
+                                onClick={setInteractivity}
+                                className="button-reset"
+                                style={{
+                                    backgroundColor: isInteractive ? '#4cceac' : 'transparent',
+                                    color: isInteractive ? 'black' : '#31d6aa',
+                                    borderColor: isInteractive ? 'violet' : '#70d8bd',
+                                }}
+                            >
+                                {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
+                            </button>
+                        )}
+                        {!isDashboard && (
+                            <button onClick={resetChartView} className="button-reset extra-margin">
+                                Reset Chart
+                            </button>
+                        )}
                     </div>
                 </div>
             )}
             
-            <div className="chart-container" style={{ 
-                    position: 'relative', 
-                    height: 'calc(100% - 40px)', 
-                    width: '100%', 
-                    border: '2px solid #a9a9a9' // Adds dark border with your specified color
-                    }}> 
+            <div
+                className="chart-container"
+                style={{
+                    position: 'relative',
+                    height: 'calc(100% - 40px)',
+                    width: '100%',
+                    border: '2px solid #a9a9a9',
+                    zIndex: 1,
+                }}
+                onDoubleClick={() => {
+                    if (!isInteractive && !isDashboard) {
+                        setInteractivity();
+                    } else {
+                        setInteractivity();
+                    }
+                }}
+            >
                 <div
                     ref={chartContainerRef}
                     style={{ height: '100%', width: '100%', zIndex: 1 }}
-                    onDoubleClick={() => {
-                        if (!isInteractive && !isDashboard) {  
-                            setInteractivity();
-                        } else {
-                            setInteractivity();
-                        }
-                    }}
-                    />
+                />
+                {/* Legend - Styled to match Bitcoin chart's Active Indicators */}
+                {!isDashboard && (
+                    <div
+                        style={{
+                            position: 'absolute',
+                            top: '10px',
+                            left: '10px',
+                            zIndex: 2,
+                            backgroundColor: colors.primary[900],
+                            padding: '5px 10px',
+                            borderRadius: '4px',
+                            color: colors.grey[100],
+                            fontSize: '12px',
+                        }}
+                    >
+                        <div>Active Indicators</div>
+                        {legendItems.map((item) => (
+                            item.visible !== false && (
+                                <div
+                                    key={item.label}
+                                    style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}
+                                >
+                                    <span
+                                        style={{
+                                            display: 'inline-block',
+                                            width: '10px',
+                                            height: '10px',
+                                            backgroundColor: item.color,
+                                            marginRight: '5px',
+                                        }}
+                                    />
+                                    {item.label}
+                                </div>
+                            )
+                        ))}
+                    </div>
+                )}
             </div>
-            {/* Legend */}
-            {!isDashboard && (
-                <div style={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                    flexWrap: 'wrap',
-                    gap: '15px',
-                    padding: '10px',
-                    backgroundColor: colors.primary[700],
-                    color: colors.primary[100],
-                    fontSize: isMobile ? '12px' : '14px',
-                }}>
-                    {legendItems.map((item) => (
-                        item.visible !== false && (
-                            <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                                <div style={{
-                                    width: '12px',
-                                    height: '12px',
-                                    backgroundColor: item.color,
-                                    borderRadius: '2px',
-                                }} />
-                                <span>{item.label}</span>
-                            </div>
-                        )
-                    ))}
-                </div>
-            )}
             <div className='under-chart'>
                 {!isDashboard && (
-                    <LastUpdated storageKey="btcData" />
-                )}
-                {!isDashboard && (
-                    <BitcoinFees />
+                    <Box sx={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        width: '100%',
+                        flexWrap: 'wrap',
+                        gap: '10px',
+                        alignItems: 'center',
+                    }}>
+                        <LastUpdated storageKey="btcData" />
+                        <BitcoinFees />
+                    </Box>
                 )}
             </div>
             {/* Conditional Rendering for the Tooltip */}
@@ -331,52 +365,77 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
                 <div
                     className="tooltip"
                     style={{
+                        position: 'fixed', // Use fixed positioning to match Bitcoin chart
                         left: (() => {
-                            const sidebarWidth = isMobile ? -80 : -300; // Adjust sidebarWidth based on isMobile
-                            const cursorX = tooltipData.x - sidebarWidth; // Adjust cursorX for sidebar
-                            const chartWidth = chartContainerRef.current.clientWidth - sidebarWidth; // Adjust chartWidth for sidebar
-                            const tooltipWidth = 200; // Your tooltip's actual width
-                            const K = 10000; // Adjust this constant based on desired sensitivity
-                            const C = 300; // Base addition to stabilize the calculation
+                            const sidebarWidth = isMobile ? -80 : -320;
+                            const cursorX = tooltipData.x - sidebarWidth;
+                            const chartWidth = chartContainerRef.current.clientWidth - sidebarWidth;
+                            const tooltipWidth = 200;
+                            const offset = 10000 / (chartWidth + 300);
 
-                            // Calculate the inverse proportional offset
-                            const offset = K / (chartWidth + C);
-
-                            // Calculate potential left and right positions with dynamic offset
                             const rightPosition = cursorX + offset;
                             const leftPosition = cursorX - tooltipWidth - offset;
 
                             if (rightPosition + tooltipWidth <= chartWidth) {
-                                return `${rightPosition}px`; // Fits on the right
+                                return `${rightPosition}px`;
                             } else if (leftPosition >= 0) {
-                                return `${leftPosition}px`; // Fits on the left
+                                return `${leftPosition}px`;
                             } else {
-                                return `${Math.max(0, Math.min(rightPosition, chartWidth - tooltipWidth))}px`; // Adjust near edge
+                                return `${Math.max(0, Math.min(rightPosition, chartWidth - tooltipWidth))}px`;
                             }
                         })(),
-                        top: `${tooltipData.y + 100}px`, // Adjust as needed
+                        top: `${tooltipData.y + 100}px`,
+                        zIndex: 1000, // Match Bitcoin chart's zIndex
                     }}
                 >
-                    <b>{tooltipData.bitcoinValue && <div>Bitcoin Price: ${tooltipData.bitcoinValue.toFixed(2)}</div>}
-                    {tooltipData.sma111Value && <div style={{color: 'lime'}}>111SMA: ${tooltipData.sma111Value.toFixed(2)}</div>}
-                    {tooltipData.sma350Value && <div style={{color: 'violet'}}>350SMA: ${tooltipData.sma350Value.toFixed(2)}</div>}
-                    {tooltipData.ratioValue && showRatioSeries && <div style={{color: '#ff9900'}}>111/350*2 Ratio: {tooltipData.ratioValue.toFixed(4)}</div>}
-                    {tooltipData.date && <div style={{fontSize: '13px'}}>{tooltipData.date}</div>}</b>
+                    <div style={{ fontSize: '15px' }}>PiCycle Top</div>
+                    {tooltipData.bitcoinValue && (
+                        <div style={{ fontSize: '20px' }}>
+                            Bitcoin Price: ${tooltipData.bitcoinValue.toFixed(2)}
+                        </div>
+                    )}
+                    {tooltipData.sma111Value && (
+                        <div style={{ color: '#66ff00' }}>
+                            111SMA: ${tooltipData.sma111Value.toFixed(2)}
+                        </div>
+                    )}
+                    {tooltipData.sma350Value && (
+                        <div style={{ color: '#fe2bc9' }}>
+                            350SMA x 2: ${tooltipData.sma350Value.toFixed(2)}
+                        </div>
+                    )}
+                    {tooltipData.ratioValue && showRatioSeries && (
+                        <div style={{ color: '#ff9900' }}>
+                            111/350x2 Ratio: {tooltipData.ratioValue.toFixed(4)}
+                        </div>
+                    )}
+                    {tooltipData.date && (
+                        <div style={{ fontSize: '13px' }}>{tooltipData.date}</div>
+                    )}
                 </div>
             )}
+            {/* Indicator Description - Styled to match Bitcoin chart */}
+            {!isDashboard && showRatioSeries && (
+                <Box sx={{ margin: '10px 0', color: colors.grey[100] }}>
+                    <p style={{ margin: '5px 0' }}>
+                        <strong style={{ color: ratioIndicator.color }}>
+                            {ratioIndicator.label}:
+                        </strong>{' '}
+                        {ratioIndicator.description}
+                    </p>
+                </Box>
+            )}
+            {/* PiCycle Top General Description */}
             <div>
-                {
-                    !isDashboard && (
-                        <p className='chart-info'>
-                            The PiCycle Top indicator was created by Phillip Swift in 2019, with the intention of calling the top of the Bitcoin bull market within 3 days.
-                            The indicator is calculated by dividing the 111-day moving average of the Bitcoin price by the 350-day moving average of the Bitcoin price.
-                            When the 111 day SMA crosses above the 350 day SMA, it is considered a bearish signal, and has historically been able to predict the
-                            2 market peaks in 2013, the bull market peak in 2017 and the first market peak in 2021.
-                            <br/>The yellow "ratio" line shows how the relationship between the 111 SMA and the 350 SMA has reduced in volatility over time
-                            and indicates that it may not reach 1.0 in the next bull market peak, meaning that the 111 SMA & 350 SMA may not cross.
-                        </p>
-                    )   
-                }
+                {!isDashboard && (
+                    <p className='chart-info'>
+                        The PiCycle Top indicator was created by Phillip Swift in 2019, with the intention of calling the top of the Bitcoin bull market within 3 days.
+                        The indicator is calculated by dividing the 111-day moving average of the Bitcoin price by the 350-day moving average of the Bitcoin price.
+                        When the 111 day SMA crosses above the 350 day SMA, it is considered a bearish signal, and has historically been able to predict the
+                        2 market peaks in 2013, the bull market peak in 2017 and the first market peak in 2021.
+                        <br /><br /><br />
+                    </p>
+                )}
             </div>
         </div>
     );
