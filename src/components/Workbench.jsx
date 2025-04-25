@@ -5,9 +5,9 @@ import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
 import useIsMobile from '../hooks/useIsMobile';
 import { DataContext } from '../DataContext';
-import { Box, FormControl, InputLabel, Select, MenuItem, Checkbox } from '@mui/material';
+import { Box, FormControl, InputLabel, Select, MenuItem, Checkbox, Button, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 
-// Color mapping for named colors to RGB
+// Color mapping for named colors to RGB (kept for fallback compatibility)
 const colorMap = {
   orange: '255, 165, 0',
   blue: '0, 0, 255',
@@ -25,29 +25,64 @@ const colorMap = {
   gold: '255, 215, 0',
 };
 
-// Available FRED series for selection
-const availableFredSeries = {
-  UMCSENT: { label: 'Consumer Sentiment (UMCSI)', color: 'orange', chartType: 'area', scaleId: 'umcsent-scale', allowLogScale: true },
-  SP500: { label: 'S&P 500 Index', color: 'blue', chartType: 'area', scaleId: 'sp500-scale', allowLogScale: true },
-  DFF: { label: 'Federal Funds Rate', color: 'purple', chartType: 'line', scaleId: 'dff-scale', allowLogScale: true },
-  CPIAUCSL: { label: 'Consumer Price Index (CPI)', color: 'green', chartType: 'area', scaleId: 'cpi-scale', allowLogScale: true },
-  UNRATE: { label: 'Unemployment Rate', color: 'red', chartType: 'area', scaleId: 'unrate-scale', allowLogScale: true },
-  DGS10: { label: '10-Year Treasury Yield', color: 'cyan', chartType: 'line', scaleId: 'dgs10-scale', allowLogScale: true },
-  T10Y2Y: { label: '10Y-2Y Treasury Spread', color: 'magenta', chartType: 'line', scaleId: 't10y2y-scale', allowLogScale: true }, // Can be negative
-  USRECD: { label: 'U.S. Recession Indicator', color: 'rgba(28, 28, 28, 0.1)', chartType: 'histogram', scaleId: 'usrecd-scale', allowLogScale: true }, // Contains zeros
-  M2SL: { label: 'M2 Money Supply', color: 'yellow', chartType: 'area', scaleId: 'm2sl-scale', allowLogScale: true },
-  GDPC1: { label: 'U.S. GDP', color: 'white', chartType: 'area', scaleId: 'gdpc1-scale', allowLogScale: true },
-  PAYEMS: { label: 'Nonfarm Payrolls', color: 'gray', chartType: 'area', scaleId: 'payems-scale', allowLogScale: true },
-  HOUST: { label: 'Housing Starts', color: 'pink', chartType: 'area', scaleId: 'houst-scale', allowLogScale: true },
-  VIXCLS: { label: 'VIX Volatility Index', color: 'teal', chartType: 'line', scaleId: 'vixcls-scale', allowLogScale: true },
+// Convert hex to RGB for rgba properties
+const hexToRgb = (hex) => {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : hex;
 };
 
-// Available Crypto series for selection (all share the same scale)
+// Available FRED series for selection (updated to hex colors)
+const availableFredSeries = {
+  UMCSENT: { label: 'Consumer Sentiment (UMCSI)', color: '#FFA500', chartType: 'area', scaleId: 'umcsent-scale', allowLogScale: true },
+  SP500: { label: 'S&P 500 Index', color: '#0000FF', chartType: 'area', scaleId: 'sp500-scale', allowLogScale: true },
+  DFF: { label: 'Federal Funds Rate', color: '#800080', chartType: 'line', scaleId: 'dff-scale', allowLogScale: true },
+  CPIAUCSL: { label: 'Consumer Price Index (CPI)', color: '#328032', chartType: 'area', scaleId: 'cpi-scale', allowLogScale: true },
+  UNRATE: { label: 'Unemployment Rate', color: '#FF0000', chartType: 'area', scaleId: 'unrate-scale', allowLogScale: true },
+  DGS10: { label: '10-Year Treasury Yield', color: '#00FFFF', chartType: 'line', scaleId: 'dgs10-scale', allowLogScale: true },
+  T10Y2Y: { label: '10Y-2Y Treasury Spread', color: '#FF00FF', chartType: 'line', scaleId: 't10y2y-scale', allowLogScale: true },
+  USRECD: { label: 'U.S. Recession Indicator', color: 'rgba(28, 28, 28, 0.1)', chartType: 'histogram', scaleId: 'usrecd-scale', allowLogScale: true },
+  M2SL: { label: 'M2 Money Supply', color: '#FFFF00', chartType: 'area', scaleId: 'm2sl-scale', allowLogScale: true },
+  GDPC1: { label: 'U.S. GDP', color: '#FFFFFF', chartType: 'area', scaleId: 'gdpc1-scale', allowLogScale: true },
+  PAYEMS: { label: 'Nonfarm Payrolls', color: '#808080', chartType: 'area', scaleId: 'payems-scale', allowLogScale: true },
+  HOUST: { label: 'Housing Starts', color: '#FF8DA1', chartType: 'area', scaleId: 'houst-scale', allowLogScale: true },
+  VIXCLS: { label: 'VIX Volatility Index', color: '#008080', chartType: 'line', scaleId: 'vixcls-scale', allowLogScale: true },
+};
+
+// Available Crypto series for selection (updated to hex colors)
 const availableCryptoSeries = {
-  BTC: { label: 'Bitcoin (BTC)', color: 'gold', chartType: 'line', scaleId: 'crypto-shared-scale', dataKey: 'btcData', fetchFunction: 'fetchBtcData', allowLogScale: true },
-  ETH: { label: 'Ethereum (ETH)', color: 'purple', chartType: 'line', scaleId: 'crypto-shared-scale', dataKey: 'ethData', fetchFunction: 'fetchEthData', allowLogScale: true },
-  LTC: { label: 'Litecoin (LTC)', color: 'gray', chartType: 'line', scaleId: 'crypto-shared-scale', dataKey: 'altcoinData', fetchFunction: 'fetchAltcoinData', coin: 'LTC', allowLogScale: true },
-  XRP: { label: 'Ripple (XRP)', color: 'blue', chartType: 'line', scaleId: 'crypto-shared-scale', dataKey: 'altcoinData', fetchFunction: 'fetchAltcoinData', coin: 'XRP', allowLogScale: true },
+  BTC: { label: 'Bitcoin (BTC)', color: '#FFD700', chartType: 'line', scaleId: 'crypto-shared-scale', dataKey: 'btcData', fetchFunction: 'fetchBtcData', allowLogScale: true },
+  ETH: { label: 'Ethereum (ETH)', color: '#4169E1', chartType: 'line', scaleId: 'crypto-shared-scale', dataKey: 'ethData', fetchFunction: 'fetchEthData', allowLogScale: true },
+  SOL: { label: 'Solana (SOL)', color: '#FF8C00', chartType: 'line', scaleId: 'crypto-shared-scale', dataKey: 'altcoinData', fetchFunction: 'fetchAltcoinData', coin: 'SOL', allowLogScale: true },
+  ADA: { label: 'Cardano (ADA)', color: '#DC143C', chartType: 'line', scaleId: 'crypto-shared-scale', dataKey: 'altcoinData', fetchFunction: 'fetchAltcoinData', coin: 'ADA', allowLogScale: true },
+  DOGE: { label: 'Dogecoin (DOGE)', color: '#00FFFF', chartType: 'line', scaleId: 'crypto-shared-scale', dataKey: 'altcoinData', fetchFunction: 'fetchAltcoinData', coin: 'DOGE', allowLogScale: true },
+  LINK: { label: 'Chainlink (LINK)', color: '#FF69B4', chartType: 'line', scaleId: 'crypto-shared-scale', dataKey: 'altcoinData', fetchFunction: 'fetchAltcoinData', coin: 'LINK', allowLogScale: true },
+  XRP: { label: 'Ripple (XRP)', color: '#1E90FF', chartType: 'line', scaleId: 'crypto-shared-scale', dataKey: 'altcoinData', fetchFunction: 'fetchAltcoinData', coin: 'XRP', allowLogScale: true },
+  AVAX: { label: 'Avalanche (AVAX)', color: '#00BFFF', chartType: 'line', scaleId: 'crypto-shared-scale', dataKey: 'altcoinData', fetchFunction: 'fetchAltcoinData', coin: 'AVAX', allowLogScale: true },
+  TON: { label: 'Toncoin (TON)', color: '#8A2BE2', chartType: 'line', scaleId: 'crypto-shared-scale', dataKey: 'altcoinData', fetchFunction: 'fetchAltcoinData', coin: 'TON', allowLogScale: true },
+  BNB: { label: 'Binance Coin (BNB)', color: '#FFA500', chartType: 'line', scaleId: 'crypto-shared-scale', dataKey: 'altcoinData', fetchFunction: 'fetchAltcoinData', coin: 'BNB', allowLogScale: true },
+  AAVE: { label: 'Aave (AAVE)', color: '#9400D3', chartType: 'line', scaleId: 'crypto-shared-scale', dataKey: 'altcoinData', fetchFunction: 'fetchAltcoinData', coin: 'AAVE', allowLogScale: true },
+  CRO: { label: 'Crypto.com Coin (CRO)', color: '#228B22', chartType: 'line', scaleId: 'crypto-shared-scale', dataKey: 'altcoinData', fetchFunction: 'fetchAltcoinData', coin: 'CRO', allowLogScale: true },
+  SUI: { label: 'Sui (SUI)', color: '#B22222', chartType: 'line', scaleId: 'crypto-shared-scale', dataKey: 'altcoinData', fetchFunction: 'fetchAltcoinData', coin: 'SUI', allowLogScale: true },
+  HBAR: { label: 'Hedera (HBAR)', color: '#4682B4', chartType: 'line', scaleId: 'crypto-shared-scale', dataKey: 'altcoinData', fetchFunction: 'fetchAltcoinData', coin: 'HBAR', allowLogScale: true },
+  XLM: { label: 'Stellar (XLM)', color: '#0080FF', chartType: 'line', scaleId: 'crypto-shared-scale', dataKey: 'altcoinData', fetchFunction: 'fetchAltcoinData', coin: 'XLM', allowLogScale: true },
+  APT: { label: 'Aptos (APT)', color: '#BA55D3', chartType: 'line', scaleId: 'crypto-shared-scale', dataKey: 'altcoinData', fetchFunction: 'fetchAltcoinData', coin: 'APT', allowLogScale: true },
+  DOT: { label: 'Polkadot (DOT)', color: '#32CD32', chartType: 'line', scaleId: 'crypto-shared-scale', dataKey: 'altcoinData', fetchFunction: 'fetchAltcoinData', coin: 'DOT', allowLogScale: true },
+  VET: { label: 'VeChain (VET)', color: '#FF7F50', chartType: 'line', scaleId: 'crypto-shared-scale', dataKey: 'altcoinData', fetchFunction: 'fetchAltcoinData', coin: 'VET', allowLogScale: true },
+  UNI: { label: 'Uniswap (UNI)', color: '#8B4513', chartType: 'line', scaleId: 'crypto-shared-scale', dataKey: 'altcoinData', fetchFunction: 'fetchAltcoinData', coin: 'UNI', allowLogScale: true },
+  LTC: { label: 'Litecoin (LTC)', color: '#A9A9A9', chartType: 'line', scaleId: 'crypto-shared-scale', dataKey: 'altcoinData', fetchFunction: 'fetchAltcoinData', coin: 'LTC', allowLogScale: true },
+  LEO: { label: 'UNUS SED LEO (LEO)', color: '#CD5C5C', chartType: 'line', scaleId: 'crypto-shared-scale', dataKey: 'altcoinData', fetchFunction: 'fetchAltcoinData', coin: 'LEO', allowLogScale: true },
+  HYPE: { label: 'Hype (HYPE)', color: '#9932CC', chartType: 'line', scaleId: 'crypto-shared-scale', dataKey: 'altcoinData', fetchFunction: 'fetchAltcoinData', coin: 'HYPE', allowLogScale: true },
+  NEAR: { label: 'NEAR Protocol (NEAR)', color: '#00CED1', chartType: 'line', scaleId: 'crypto-shared-scale', dataKey: 'altcoinData', fetchFunction: 'fetchAltcoinData', coin: 'NEAR', allowLogScale: true },
+  FET: { label: 'Fetch.ai (FET)', color: '#6B8E23', chartType: 'line', scaleId: 'crypto-shared-scale', dataKey: 'altcoinData', fetchFunction: 'fetchAltcoinData', coin: 'FET', allowLogScale: true },
+  ONDO: { label: 'Ondo Finance (ONDO)', color: '#FF6347', chartType: 'line', scaleId: 'crypto-shared-scale', dataKey: 'altcoinData', fetchFunction: 'fetchAltcoinData', coin: 'ONDO', allowLogScale: true },
+  ICP: { label: 'Internet Computer (ICP)', color: '#C71585', chartType: 'line', scaleId: 'crypto-shared-scale', dataKey: 'altcoinData', fetchFunction: 'fetchAltcoinData', coin: 'ICP', allowLogScale: true },
+  XMR: { label: 'Monero (XMR)', color: '#A52A2A', chartType: 'line', scaleId: 'crypto-shared-scale', dataKey: 'altcoinData', fetchFunction: 'fetchAltcoinData', coin: 'XMR', allowLogScale: true },
+  MATIC: { label: 'Polygon (MATIC)', color: '#9370DB', chartType: 'line', scaleId: 'crypto-shared-scale', dataKey: 'altcoinData', fetchFunction: 'fetchAltcoinData', coin: 'POL', allowLogScale: true },
+  ALGO: { label: 'Algorand (ALGO)', color: '#008B8B', chartType: 'line', scaleId: 'crypto-shared-scale', dataKey: 'altcoinData', fetchFunction: 'fetchAltcoinData', coin: 'ALGO', allowLogScale: true },
+  RENDER: { label: 'Render Token (RNDR)', color: '#3CB371', chartType: 'line', scaleId: 'crypto-shared-scale', dataKey: 'altcoinData', fetchFunction: 'fetchAltcoinData', coin: 'RENDER', allowLogScale: true },
+  ARB: { label: 'Arbitrum (ARB)', color: '#FF4500', chartType: 'line', scaleId: 'crypto-shared-scale', dataKey: 'altcoinData', fetchFunction: 'fetchAltcoinData', coin: 'ARB', allowLogScale: true },
+  RAY: { label: 'Raydium (RAY)', color: '#DA70D6', chartType: 'line', scaleId: 'crypto-shared-scale', dataKey: 'altcoinData', fetchFunction: 'fetchAltcoinData', coin: 'RAY', allowLogScale: true },
+  MOVE: { label: 'Move (MOVE)', color: '#8B0000', chartType: 'line', scaleId: 'crypto-shared-scale', dataKey: 'altcoinData', fetchFunction: 'fetchAltcoinData', coin: 'MOVE', allowLogScale: true },
 };
 
 const WorkbenchChart = ({
@@ -60,7 +95,7 @@ const WorkbenchChart = ({
 }) => {
   const chartContainerRef = useRef();
   const chartRef = useRef(null);
-  const seriesRefs = useRef({}); // Store references to all series
+  const seriesRefs = useRef({});
   const theme = useTheme();
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
   const isMobile = useIsMobile();
@@ -72,13 +107,126 @@ const WorkbenchChart = ({
   const [isInteractive, setIsInteractive] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [activeFredSeries, setActiveFredSeries] = useState([]); // FRED series
-  const [activeCryptoSeries, setActiveCryptoSeries] = useState([]); // Crypto series
+  const [activeFredSeries, setActiveFredSeries] = useState([]);
+  const [activeCryptoSeries, setActiveCryptoSeries] = useState([]);
+  const [editClicked, setEditClicked] = useState({});
+  const [openDialog, setOpenDialog] = useState({ open: false, seriesId: null });
+  const [seriesMovingAverages, setSeriesMovingAverages] = useState({});
+  const [seriesColors, setSeriesColors] = useState({});
+  const [dialogMovingAverage, setDialogMovingAverage] = useState('');
+  const [dialogColor, setDialogColor] = useState('');
   const currentYear = useMemo(() => new Date().getFullYear().toString(), []);
 
   const setInteractivity = useCallback(() => setIsInteractive(prev => !prev), []);
   const toggleScaleMode = useCallback(() => setScaleModeState(prev => (prev === 1 ? 0 : 1)), []);
   const resetChartView = useCallback(() => chartRef.current?.timeScale().fitContent(), []);
+
+  // Clear all series
+  const clearAllSeries = useCallback(() => {
+    setActiveFredSeries([]);
+    setActiveCryptoSeries([]);
+  }, []);
+
+  // Calculate moving average
+  const calculateMovingAverage = (data, period) => {
+    if (!data || data.length < period) return [];
+
+    const result = [];
+    for (let i = period - 1; i < data.length; i++) {
+      const window = data.slice(i - period + 1, i + 1);
+      const avg = window.reduce((sum, item) => sum + (item.value || 0), 0) / period;
+      result.push({
+        time: data[i].time,
+        value: avg,
+      });
+    }
+    return result;
+  };
+
+  // Get data with moving average applied (if any)
+  const getSeriesData = (seriesId, rawData) => {
+    if (!rawData) return [];
+    const movingAverage = seriesMovingAverages[seriesId];
+    if (!movingAverage || movingAverage === 'None') return rawData;
+
+    const periodMap = {
+      '7 day': 7,
+      '28 day': 28,
+      '3 month': 90, // Assuming daily data, ~3 months
+    };
+    const period = periodMap[movingAverage];
+    if (!period) return rawData;
+
+    return calculateMovingAverage(rawData, period);
+  };
+
+  // Get the latest value for a series at or before a given time
+  const getLatestValue = (data, time) => {
+    if (!data || data.length === 0) return null;
+    const targetTime = new Date(time).getTime();
+    const latestPoint = data
+      .filter(item => new Date(item.time).getTime() <= targetTime)
+      .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())[0];
+    return latestPoint ? latestPoint.value : null;
+  };
+
+  // Get series color (custom or default)
+  const getSeriesColor = (id) => {
+    if (seriesColors[id]) return seriesColors[id];
+    return (availableFredSeries[id] || availableCryptoSeries[id])?.color || '#00FFFF';
+  };
+
+  // Handle edit button click
+  const handleEditClick = (event, seriesId) => {
+    if (event && typeof event.stopPropagation === 'function') {
+      event.stopPropagation();
+      event.preventDefault();
+    } else {
+      console.warn('Invalid event object:', event);
+    }
+
+    setEditClicked(prev => ({ ...prev, [seriesId]: true }));
+    setDialogMovingAverage(seriesMovingAverages[seriesId] || 'None');
+    setDialogColor(seriesColors[seriesId] || availableFredSeries[seriesId]?.color || '#00FFFF');
+    setOpenDialog({ open: true, seriesId });
+    setTimeout(() => {
+      setEditClicked(prev => ({ ...prev, [seriesId]: false }));
+    }, 300);
+  };
+
+  // Handle dialog moving average change
+  const handleMovingAverageChange = (event) => {
+    setDialogMovingAverage(event.target.value);
+  };
+
+  // Handle dialog color change
+  const handleColorChange = (event) => {
+    setDialogColor(event.target.value); // Stores hex color (e.g., "#FF0000")
+  };
+
+  // Save moving average and color, then close dialog
+  const handleSaveDialog = () => {
+    if (openDialog.seriesId) {
+      setSeriesMovingAverages(prev => ({
+        ...prev,
+        [openDialog.seriesId]: dialogMovingAverage,
+      }));
+      setSeriesColors(prev => ({
+        ...prev,
+        [openDialog.seriesId]: dialogColor,
+      }));
+    }
+    setOpenDialog({ open: false, seriesId: null });
+    setDialogMovingAverage('');
+    setDialogColor('');
+  };
+
+  // Close dialog without saving
+  const handleCloseDialog = () => {
+    setOpenDialog({ open: false, seriesId: null });
+    setDialogMovingAverage('');
+    setDialogColor('');
+  };
 
   // Handle FRED series selection change
   const handleFredSeriesChange = (event) => {
@@ -172,38 +320,9 @@ const WorkbenchChart = ({
     };
   }, [colors, theme.palette.mode]);
 
-  // Update chart when series or data changes
+  // Update chart and scales when series, data, moving averages, or colors change
   useEffect(() => {
     if (!chartRef.current) return;
-
-    // Define price scales for all possible series (FRED + shared crypto scale)
-    const priceScales = Object.keys(availableFredSeries).reduce((acc, id) => {
-      const seriesInfo = availableFredSeries[id];
-      const mode = seriesInfo.allowLogScale && scaleModeState === 1 ? 1 : 0;
-      return {
-        ...acc,
-        [seriesInfo.scaleId]: {
-          mode,
-          borderVisible: false,
-          scaleMargins: { top: 0.05, bottom: 0.05 },
-          position: 'right',
-          width: 50,
-        },
-      };
-    }, {});
-    const cryptoMode = activeCryptoSeries.every(id => availableCryptoSeries[id].allowLogScale) && scaleModeState === 1 ? 1 : 0;
-    priceScales['crypto-shared-scale'] = {
-      mode: cryptoMode,
-      borderVisible: false,
-      scaleMargins: { top: 0.05, bottom: 0.05 },
-      position: 'right',
-      width: 50,
-    };
-
-    // Apply the price scales to the chart
-    chartRef.current.applyOptions({
-      additionalPriceScales: priceScales,
-    });
 
     // Clear existing series
     Object.keys(seriesRefs.current).forEach(id => {
@@ -222,10 +341,14 @@ const WorkbenchChart = ({
       return 0;
     });
 
+    // Track used price scales
+    const usedPriceScales = new Set();
+
     // Add series to the chart
     sortedSeries.forEach(({ id, type }) => {
       const seriesInfo = type === 'fred' ? availableFredSeries[id] : availableCryptoSeries[id];
-      const rgbColor = colorMap[seriesInfo.color] || seriesInfo.color;
+      const seriesColor = getSeriesColor(id);
+      const rgbColor = seriesColor.startsWith('rgba') ? seriesColor : hexToRgb(seriesColor);
       let series;
       if (seriesInfo.chartType === 'area') {
         series = chartRef.current.addAreaSeries({
@@ -238,7 +361,7 @@ const WorkbenchChart = ({
           },
           topColor: `rgba(${rgbColor}, 0.56)`,
           bottomColor: `rgba(${rgbColor}, 0.04)`,
-          lineColor: seriesInfo.color,
+          lineColor: seriesColor,
         });
       } else if (seriesInfo.chartType === 'line') {
         series = chartRef.current.addLineSeries({
@@ -249,7 +372,7 @@ const WorkbenchChart = ({
             minMove: 0.01,
             formatter: valueFormatter,
           },
-          color: seriesInfo.color,
+          color: seriesColor,
         });
       } else if (seriesInfo.chartType === 'histogram') {
         series = chartRef.current.addHistogramSeries({
@@ -259,17 +382,19 @@ const WorkbenchChart = ({
             minMove: 0.01,
             formatter: valueFormatter,
           },
-          color: seriesInfo.color,
+          color: seriesColor,
         });
       }
       seriesRefs.current[id] = series;
+      usedPriceScales.add(seriesInfo.scaleId);
 
       // Set data based on type
       let data = [];
       if (type === 'fred' && fredSeriesData[id]?.length > 0) {
-        data = fredSeriesData[id]
+        const rawData = fredSeriesData[id]
           .filter(item => item.value != null && !isNaN(item.value))
           .sort((a, b) => new Date(a.time) - new Date(b.time));
+        data = getSeriesData(id, rawData);
       } else if (type === 'crypto') {
         if (seriesInfo.dataKey === 'btcData' && btcData.length > 0) {
           data = btcData;
@@ -281,17 +406,63 @@ const WorkbenchChart = ({
       }
       if (data.length > 0) {
         try {
-          series.setData(data);
+          // Filter out invalid data for logarithmic scale
+          const validData = scaleModeState === 1
+            ? data.filter(item => item.value > 0) // Log scale requires positive values
+            : data;
+          if (validData.length > 0) {
+            series.setData(validData);
+          } else {
+            console.warn(`No valid data for series ${id} in logarithmic scale`);
+            setError(`Cannot display ${seriesInfo.label} in logarithmic scale due to non-positive values.`);
+          }
         } catch (err) {
           console.error(`Error setting data for series ${id}:`, err);
-          setError(`Failed to display ${seriesInfo.label}. The data may be incompatible with the current scale.`);
-          // If setting data fails due to scale incompatibility, force linear scale for this series
-          chartRef.current.priceScale(seriesInfo.scaleId).applyOptions({ mode: 0 });
-          // If this series cannot use logarithmic scale, update the global scaleModeState
-          if (scaleModeState === 1 && !seriesInfo.allowLogScale) {
-            setScaleModeState(0);
-          }
+          setError(`Failed to display ${seriesInfo.label}. The data may be incompatible.`);
         }
+      }
+    });
+
+    // Define and apply price scales for all possible series
+    const priceScales = Object.keys(availableFredSeries).reduce((acc, id) => {
+      const seriesInfo = availableFredSeries[id];
+      return {
+        ...acc,
+        [seriesInfo.scaleId]: {
+          mode: scaleModeState, // Apply user-selected scale mode
+          borderVisible: false,
+          scaleMargins: { top: 0.05, bottom: 0.05 },
+          position: 'right',
+          width: 50,
+          visible: usedPriceScales.has(seriesInfo.scaleId),
+        },
+      };
+    }, {});
+    priceScales['crypto-shared-scale'] = {
+      mode: scaleModeState, // Apply user-selected scale mode
+      borderVisible: false,
+      scaleMargins: { top: 0.05, bottom: 0.05 },
+      position: 'right',
+      width: 50,
+      visible: usedPriceScales.has('crypto-shared-scale'),
+    };
+
+    try {
+      chartRef.current.applyOptions({
+        additionalPriceScales: priceScales,
+      });
+    } catch (err) {
+      console.error('Error applying price scales:', err);
+      setError('Failed to apply chart scales.');
+    }
+
+    // Apply scale mode to all used scales
+    usedPriceScales.forEach(scaleId => {
+      try {
+        chartRef.current.priceScale(scaleId).applyOptions({ mode: scaleModeState });
+      } catch (err) {
+        console.error(`Failed to apply scale mode for ${scaleId}:`, err);
+        setError(`Cannot apply ${scaleModeState === 1 ? 'logarithmic' : 'linear'} scale to ${scaleId}.`);
       }
     });
 
@@ -309,10 +480,18 @@ const WorkbenchChart = ({
         y: param.point.y,
       };
 
-      sortedSeries.forEach(({ id }) => {
-        const series = seriesRefs.current[id];
-        const data = param.seriesData.get(series);
-        tooltip.values[id] = data?.value ?? null;
+      sortedSeries.forEach(({ id, type }) => {
+        let data;
+        if (type === 'fred') {
+          data = getSeriesData(id, fredSeriesData[id]);
+        } else if (type === 'crypto') {
+          const seriesInfo = availableCryptoSeries[id];
+          if (seriesInfo.dataKey === 'btcData') data = btcData;
+          else if (seriesInfo.dataKey === 'ethData') data = ethData;
+          else if (seriesInfo.dataKey === 'altcoinData') data = altcoinData[seriesInfo.coin];
+        }
+        const value = param.seriesData.get(seriesRefs.current[id])?.value ?? getLatestValue(data, param.time);
+        tooltip.values[id] = value;
       });
 
       setTooltipData(tooltip);
@@ -320,7 +499,10 @@ const WorkbenchChart = ({
 
     // Fit content if there are active series with data
     if (sortedSeries.some(({ id, type }) => {
-      if (type === 'fred') return fredSeriesData[id]?.length > 0;
+      if (type === 'fred') {
+        const data = getSeriesData(id, fredSeriesData[id]);
+        return data?.length > 0;
+      }
       const seriesInfo = availableCryptoSeries[id];
       if (seriesInfo.dataKey === 'btcData') return btcData.length > 0;
       if (seriesInfo.dataKey === 'ethData') return ethData.length > 0;
@@ -333,59 +515,7 @@ const WorkbenchChart = ({
     return () => {
       chartRef.current?.unsubscribeCrosshairMove();
     };
-  }, [fredSeriesData, btcData, ethData, altcoinData, activeFredSeries, activeCryptoSeries, chartType, valueFormatter, scaleModeState]);
-
-  // Update scale mode when scaleModeState changes
-  useEffect(() => {
-    if (!chartRef.current) return;
-
-    // Check if any active series cannot use logarithmic scale
-    const hasIncompatibleSeries = [
-      ...activeFredSeries.map(id => availableFredSeries[id]),
-      ...activeCryptoSeries.map(id => availableCryptoSeries[id]),
-    ].some(seriesInfo => !seriesInfo.allowLogScale);
-
-    // If there are incompatible series and scaleModeState is logarithmic, force it to linear
-    if (hasIncompatibleSeries && scaleModeState === 1) {
-      setScaleModeState(0);
-      return;
-    }
-
-    // Update FRED series scales
-    activeFredSeries.forEach(id => {
-      const seriesInfo = availableFredSeries[id];
-      const scaleId = seriesInfo?.scaleId || 'right';
-      const mode = seriesInfo.allowLogScale && scaleModeState === 1 ? 1 : 0;
-      try {
-        chartRef.current.priceScale(scaleId).applyOptions({ mode });
-      } catch (err) {
-        console.error(`Failed to apply scale mode for ${id} (scale: ${scaleId}):`, err);
-        setError(`Cannot apply ${scaleModeState === 1 ? 'logarithmic' : 'linear'} scale to ${seriesInfo.label}. Using linear scale instead.`);
-        chartRef.current.priceScale(scaleId).applyOptions({ mode: 0 });
-        // Update scaleModeState to reflect the fallback
-        if (scaleModeState === 1) {
-          setScaleModeState(0);
-        }
-      }
-    });
-
-    // Update shared crypto scale if any crypto series are active
-    if (activeCryptoSeries.length > 0) {
-      const cryptoCanUseLog = activeCryptoSeries.every(id => availableCryptoSeries[id].allowLogScale);
-      const mode = cryptoCanUseLog && scaleModeState === 1 ? 1 : 0;
-      try {
-        chartRef.current.priceScale('crypto-shared-scale').applyOptions({ mode });
-      } catch (err) {
-        console.error(`Failed to apply scale mode for crypto-shared-scale:`, err);
-        setError(`Cannot apply ${scaleModeState === 1 ? 'logarithmic' : 'linear'} scale to crypto series. Using linear scale instead.`);
-        chartRef.current.priceScale('crypto-shared-scale').applyOptions({ mode: 0 });
-        // Update scaleModeState to reflect the fallback
-        if (scaleModeState === 1) {
-          setScaleModeState(0);
-        }
-      }
-    }
-  }, [scaleModeState, activeFredSeries, activeCryptoSeries]);
+  }, [fredSeriesData, btcData, ethData, altcoinData, activeFredSeries, activeCryptoSeries, seriesMovingAverages, seriesColors, chartType, valueFormatter, scaleModeState, isLoading]);
 
   // Update interactivity
   useEffect(() => {
@@ -420,14 +550,14 @@ const WorkbenchChart = ({
                 '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' },
               }}
             >
-              FRED Series
+              Macro Data
             </InputLabel>
             <Select
               multiple
               value={activeFredSeries}
               onChange={handleFredSeriesChange}
               labelId="fred-series-label"
-              label="FRED Series"
+              label="Macro Data"
               displayEmpty
               renderValue={(selected) =>
                 selected.length > 0
@@ -446,12 +576,46 @@ const WorkbenchChart = ({
               }}
             >
               {Object.entries(availableFredSeries).map(([id, { label }]) => (
-                <MenuItem key={id} value={id}>
-                  <Checkbox
-                    checked={activeFredSeries.includes(id)}
-                    sx={{ color: colors.grey[100], '&.Mui-checked': { color: colors.greenAccent[500] } }}
-                  />
-                  <span>{label}</span>
+                <MenuItem key={id} value={id} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Checkbox
+                      checked={activeFredSeries.includes(id)}
+                      sx={{ color: colors.grey[100], '&.Mui-checked': { color: colors.greenAccent[500] } }}
+                    />
+                    <span>{label}</span>
+                  </Box>
+                  <Box
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEditClick(e, id);
+                    }}
+                    sx={{ display: 'inline-block' }}
+                  >
+                    <Button
+                      disabled={!activeFredSeries.includes(id)}
+                      sx={{
+                        textTransform: 'none',
+                        fontSize: '12px',
+                        color: activeFredSeries.includes(id) ? colors.grey[100] : colors.grey[500],
+                        border: `1px solid ${activeFredSeries.includes(id) ? colors.grey[300] : colors.grey[500]}`,
+                        borderRadius: '4px',
+                        padding: '2px 8px',
+                        minWidth: '50px',
+                        backgroundColor: editClicked[id] ? '#4cceac' : 'transparent',
+                        ...(editClicked[id] && { color: 'black', borderColor: 'violet' }),
+                        '&:hover': {
+                          borderColor: activeFredSeries.includes(id) ? colors.greenAccent[500] : colors.grey[500],
+                          backgroundColor: activeFredSeries.includes(id) && !editClicked[id] ? colors.primary[600] : 'transparent',
+                        },
+                        '&.Mui-disabled': {
+                          pointerEvents: 'none',
+                          opacity: 0.6,
+                        },
+                      }}
+                    >
+                      Edit
+                    </Button>
+                  </Box>
                 </MenuItem>
               ))}
             </Select>
@@ -507,6 +671,114 @@ const WorkbenchChart = ({
           </FormControl>
         </Box>
       )}
+
+      {/* Dialog for Moving Average and Color Settings */}
+      <Dialog
+        open={openDialog.open}
+        onClose={handleCloseDialog}
+        maxWidth="xs"
+        fullWidth
+        sx={{
+          '& .MuiDialog-paper': {
+            backgroundColor: colors.primary[500],
+            color: colors.grey[100],
+            borderRadius: '8px',
+          },
+        }}
+      >
+        <DialogTitle sx={{ color: colors.grey[100], fontSize: '18px' }}>
+          {openDialog.seriesId ? availableFredSeries[openDialog.seriesId]?.label : ''}
+        </DialogTitle>
+        <DialogContent>
+          <FormControl fullWidth sx={{ mt: 2 }}>
+            <InputLabel
+              id="moving-average-label"
+              sx={{
+                color: colors.grey[100],
+                '&.Mui-focused': { color: colors.greenAccent[500] },
+              }}
+            >
+              Moving Averages
+            </InputLabel>
+            <Select
+              labelId="moving-average-label"
+              label="Moving Averages"
+              value={dialogMovingAverage}
+              onChange={handleMovingAverageChange}
+              sx={{
+                color: colors.grey[100],
+                backgroundColor: colors.primary[600],
+                borderRadius: '4px',
+                '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
+                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+              }}
+            >
+              <MenuItem value="None">None</MenuItem>
+              <MenuItem value="7 day">7 day</MenuItem>
+              <MenuItem value="28 day">28 day</MenuItem>
+              <MenuItem value="3 month">3 month</MenuItem>
+            </Select>
+          </FormControl>
+          <FormControl fullWidth sx={{ mt: 2 }}>
+            <InputLabel
+              id="color-label"
+              sx={{
+                color: colors.grey[100],
+                '&.Mui-focused': { color: colors.greenAccent[500] },
+              }}
+            >
+              Color
+            </InputLabel>
+            <input
+              type="color"
+              value={dialogColor}
+              onChange={handleColorChange}
+              style={{
+                width: '100%',
+                height: '40px',
+                marginTop: '8px',
+                borderRadius: '4px',
+                border: `1px solid ${colors.grey[300]}`,
+                backgroundColor: colors.primary[600],
+              }}
+            />
+          </FormControl>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={handleCloseDialog}
+            sx={{
+              color: colors.grey[100],
+              border: `1px solid ${colors.grey[300]}`,
+              borderRadius: '4px',
+              textTransform: 'none',
+              '&:hover': {
+                borderColor: colors.greenAccent[500],
+                backgroundColor: colors.primary[600],
+              },
+            }}
+          >
+            Close
+          </Button>
+          <Button
+            onClick={handleSaveDialog}
+            sx={{
+              color: colors.grey[100],
+              border: `1px solid ${colors.grey[300]}`,
+              borderRadius: '4px',
+              textTransform: 'none',
+              '&:hover': {
+                borderColor: colors.greenAccent[500],
+                backgroundColor: colors.primary[600],
+              },
+            }}
+          >
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {!isDashboard && (
         <div className='chart-top-div'>
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
@@ -519,10 +791,19 @@ const WorkbenchChart = ({
             {error && <span style={{ color: colors.redAccent[500] }}>{error}</span>}
           </div>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-            <button onClick={setInteractivity} className="button-reset" style={{ backgroundColor: isInteractive ? '#4cceac' : 'transparent', color: isInteractive ? 'black' : '#31d6aa', borderColor: isInteractive ? 'violet' : '#70d8bd' }}>
+            <button
+              onClick={setInteractivity}
+              className="button-reset"
+              style={{
+                backgroundColor: isInteractive ? '#4cceac' : 'transparent',
+                color: isInteractive ? 'black' : '#31d6aa',
+                borderColor: isInteractive ? 'violet' : '#70d8bd',
+              }}
+            >
               {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
             </button>
-            <button onClick={resetChartView} className="button-reset extra-margin">Reset Chart</button>
+            <button onClick={resetChartView} className="button-reset">Reset Chart</button>
+            <button onClick={clearAllSeries} className="button-reset">Clear All</button>
           </div>
         </div>
       )}
@@ -564,7 +845,7 @@ const WorkbenchChart = ({
                   display: 'inline-block',
                   width: '10px',
                   height: '10px',
-                  backgroundColor: (availableFredSeries[id] || availableCryptoSeries[id])?.color || 'cyan',
+                  backgroundColor: getSeriesColor(id),
                   marginRight: '5px',
                 }}
               />
@@ -575,7 +856,10 @@ const WorkbenchChart = ({
       </div>
       <div className='under-chart'>
         {!isDashboard && [...activeFredSeries, ...activeCryptoSeries].some(id => {
-          if (activeFredSeries.includes(id)) return fredSeriesData[id]?.length > 0;
+          if (activeFredSeries.includes(id)) {
+            const data = getSeriesData(id, fredSeriesData[id]);
+            return data?.length > 0;
+          }
           const seriesInfo = availableCryptoSeries[id];
           if (seriesInfo.dataKey === 'btcData') return btcData.length > 0;
           if (seriesInfo.dataKey === 'ethData') return ethData.length > 0;
@@ -588,8 +872,11 @@ const WorkbenchChart = ({
               {new Date(
                 Math.max(
                   ...[...activeFredSeries, ...activeCryptoSeries].map(id => {
-                    if (activeFredSeries.includes(id) && fredSeriesData[id]?.length > 0) {
-                      return new Date(fredSeriesData[id][fredSeriesData[id].length - 1].time).getTime();
+                    if (activeFredSeries.includes(id)) {
+                      const data = getSeriesData(id, fredSeriesData[id]);
+                      if (data?.length > 0) {
+                        return new Date(data[data.length - 1].time).getTime();
+                      }
                     } else if (activeCryptoSeries.includes(id)) {
                       const seriesInfo = availableCryptoSeries[id];
                       if (seriesInfo.dataKey === 'btcData' && btcData.length > 0) {
@@ -624,8 +911,13 @@ const WorkbenchChart = ({
         }}>
           {[...activeFredSeries, ...activeCryptoSeries].map(id => (
             <div key={id}>
-              <div style={{ fontSize: '15px' }}>{(availableFredSeries[id] || availableCryptoSeries[id])?.label || id}</div>
-              <div style={{ fontSize: '20px' }}>{tooltipData.values[id] != null ? valueFormatter(tooltipData.values[id]) : 'N/A'}</div>
+              <div style={{ fontSize: '15px' }}>
+                <span style={{ color: getSeriesColor(id) }}>
+                  {(availableFredSeries[id] || availableCryptoSeries[id])?.label || id}
+                  {activeFredSeries.includes(id) && seriesMovingAverages[id] && seriesMovingAverages[id] !== 'None' ? ` (${seriesMovingAverages[id]} MA): ` : ': '}
+                  {tooltipData.values[id] != null ? valueFormatter(tooltipData.values[id]) : ' : N/A'}
+                </span>
+              </div>
             </div>
           ))}
           <div>{tooltipData.date.toString().substring(0, 4) === currentYear ? `${tooltipData.date} - latest` : tooltipData.date}</div>
