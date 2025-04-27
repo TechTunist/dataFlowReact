@@ -562,10 +562,10 @@ const Dashboard = ({ isMobile, isSidebar }) => {
           </LazyLoad>
         </Grid>
 
-                {/* Market Cycles Card */}
+                {/* Bitcion ROI Card */}
                 <Grid item xs={12} lg={6}>
           <LazyLoad height={400} offset={100}>
-            <Link to="/market-cycles" style={{ textDecoration: "none" }}>
+            <Link to="/bitcoin-roi" style={{ textDecoration: "none" }}>
               <Card
                 sx={{
                   backgroundColor: colors.primary[500],

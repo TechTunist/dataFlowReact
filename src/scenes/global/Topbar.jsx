@@ -48,7 +48,7 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
       case "/total":
         return { title: "Total Crypto Market Cap", subtitle: isMobile ? "All Crypto Assets" : "Combined marketcap of the top 125 crypto assets" };
       case "/risk":
-        return { title: "Bitcoin", subtitle: "Risk Metric" };
+        return { title: "Bitcoin", subtitle: "Historical Risk Metric for Bitcoin" };
       case "/ethereum":
         return { title: "Ethereum", subtitle: "Historical Chart" };
       case "/risk-eth":
@@ -153,6 +153,8 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
         return { title: "Bitcoin to 10 Year Yield", subtitle: isMobile ? "BTC vs 10 Year" : "Bitcoin Vs 10 year Bond Yield with Recesion Indicator" };
       case "/workbench":
         return { title: "Workbench", subtitle: isMobile ? "Create your own indicator" : "Create your own indicator from a selection of data" };
+      case "/on-chain-historical-risk":
+        return { title: "OnChain Risk", subtitle: isMobile ? "Historical Risk" : "Historical Risk Levels of OnChain Indicators" };
       default:
         return { title: "CryptoLogical", subtitle: "" };
     }

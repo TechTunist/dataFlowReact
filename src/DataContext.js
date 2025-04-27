@@ -178,7 +178,7 @@ export const DataProvider = ({ children }) => {
       const cacheConfigs = [
         { id: 'btcData', setData: setBtcData, setLastUpdated: setBtcLastUpdated, setIsFetched: setIsBtcDataFetched, useDateCheck: true },
         { id: 'fedBalanceData', setData: setFedBalanceData, setLastUpdated: setFedLastUpdated, setIsFetched: setIsFedBalanceDataFetched, useDateCheck: false, cacheDuration: 7 * 24 * 60 * 60 * 1000 },
-        { id: 'mvrvData', setData: setMvrvData, setLastUpdated: setMvrvLastUpdated, setIsFetched: setIsMvrvDataFetched, useDateCheck: false, cacheDuration: 7 * 24 * 60 * 60 * 1000 },
+        { id: 'mvrvData', setData: setMvrvData, setLastUpdated: setMvrvLastUpdated, setIsFetched: setIsMvrvDataFetched, useDateCheck: true},
         { id: 'dominanceData', setData: setDominanceData, setLastUpdated: setDominanceLastUpdated, setIsFetched: setIsDominanceDataFetched, useDateCheck: true },
         { id: 'ethData', setData: setEthData, setLastUpdated: setEthLastUpdated, setIsFetched: setIsEthDataFetched, useDateCheck: true },
         { id: 'fearAndGreedData', setData: setFearAndGreedData, setLastUpdated: setFearAndGreedLastUpdated, setIsFetched: setIsFearAndGreedDataFetched, useDateCheck: true },

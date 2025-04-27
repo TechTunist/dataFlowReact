@@ -38,6 +38,7 @@ import BitcoinTxMvrvChart from "./components/BitcoinTxMvrv";
 import FredSeriesChart from "./components/FredSeriesChart";
 import Bitcoin10YearChart from "./components/Bitcoin10YearRecession";
 import WorkbenchChart from "./components/Workbench";
+import OnChainHistoricalRisk from "./components/OnChainHistoricalRisk";
 
 
 function App() {
@@ -133,6 +134,7 @@ function App() {
                     <Route path="/us-initial-claims" element={<BasicChart ChartComponent={UsInitialClaimsChart} />} />
                     <Route path="/tx-combined" element={<BasicChart ChartComponent={TxCombinedChart} />} />
                     <Route path="/tx-mvrv" element={<BasicChart ChartComponent={BitcoinTxMvrvChart} />} />
+                    <Route path="/on-chain-historical-risk" element={<BasicChart ChartComponent={OnChainHistoricalRisk} />} />
                     
 
                     {/* New FRED series routes */}
