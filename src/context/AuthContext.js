@@ -80,13 +80,21 @@ export const AuthProvider = ({ children }) => {
         username,
         password,
       }, { withCredentials: true });
-      const { access, refresh, email } = response.data; // Assuming the API returns the email
+      const { access, refresh } = response.data;
       localStorage.setItem('token', access);
       localStorage.setItem('refresh_token', refresh);
       setToken(access);
       setRefreshToken(refresh);
-      setUser({ username, email }); // Include email in the user object
       axios.defaults.headers.common['Authorization'] = `Bearer ${access}`;
+  
+      // Fetch user details
+      const userResponse = await axios.get('https://vercel-dataflow.vercel.app/accounts/me/', {
+        headers: { Authorization: `Bearer ${access}` },
+        withCredentials: true,
+      });
+      const { username: fetchedUsername, email } = userResponse.data;
+      setUser({ username: fetchedUsername, email });
+  
       return { success: true };
     } catch (error) {
       return { success: false, error: error.response?.data?.detail || 'Login failed' };
