@@ -18,7 +18,7 @@ const SignIn = () => {
         setError('');
         const result = await login(username, password);
         if (result.success) {
-            navigate.push('/dashboard'); // Redirect to dashboard after login
+            navigate('/dashboard'); // Redirect to dashboard after login
         } else {
             setError(result.error);
         }

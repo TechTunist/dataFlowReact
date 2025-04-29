@@ -19,7 +19,7 @@ const Register = () => {
         setError('');
         const result = await signup(username, email, password);
         if (result.success) {
-            navigate.push('/login'); // Redirect to login after signup
+            navigate('/login'); // Redirect to login after signup
         } else {
             setError(result.error);
         }
