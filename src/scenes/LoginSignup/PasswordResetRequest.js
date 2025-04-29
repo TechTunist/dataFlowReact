@@ -1,26 +1,27 @@
-import React, { useState, useContext } from 'react';
-import { AuthContext } from '../../context/AuthContext';
+import React, { useState } from 'react';
+import axios from 'axios';
 import { Box, Typography, TextField, Button, Alert, useTheme } from '@mui/material';
-import { tokens } from '../../theme';
-import { Link, useNavigate } from 'react-router-dom';
+import { tokens } from '../theme';
+import { Link } from 'react-router-dom';
 
-const SignIn = () => {
+const PasswordResetRequest = () => {
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
-    const { login } = useContext(AuthContext);
-    const navigate = useNavigate();
-    const [username, setUsername] = useState('');
-    const [password, setPassword] = useState('');
+    const [email, setEmail] = useState('');
+    const [message, setMessage] = useState('');
     const [error, setError] = useState('');
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setMessage('');
         setError('');
-        const result = await login(username, password);
-        if (result.success) {
-            navigate.push('/dashboard'); // Redirect to dashboard after login
-        } else {
-            setError(result.error);
+        try {
+            const response = await axios.post('https://vercel-dataflow.vercel.app/api/accounts/password-reset/', {
+                email,
+            });
+            setMessage(response.data.message);
+        } catch (error) {
+            setError(error.response?.data?.error || 'Failed to send reset email');
         }
     };
 
@@ -46,24 +47,17 @@ const SignIn = () => {
                 }}
             >
                 <Typography variant="h3" sx={{ color: colors.grey[100], marginBottom: '20px', textAlign: 'center' }}>
-                    Sign In
+                    Reset Password
                 </Typography>
+                {message && <Alert severity="success" sx={{ marginBottom: '20px' }}>{message}</Alert>}
                 {error && <Alert severity="error" sx={{ marginBottom: '20px' }}>{error}</Alert>}
                 <form onSubmit={handleSubmit}>
                     <TextField
                         fullWidth
-                        label="Username"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        sx={{ marginBottom: '20px', input: { color: colors.grey[100] } }}
-                        InputLabelProps={{ style: { color: colors.grey[300] } }}
-                    />
-                    <TextField
-                        fullWidth
-                        label="Password"
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                        label="Email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
                         sx={{ marginBottom: '20px', input: { color: colors.grey[100] } }}
                         InputLabelProps={{ style: { color: colors.grey[300] } }}
                     />
@@ -78,19 +72,15 @@ const SignIn = () => {
                             '&:hover': { backgroundColor: colors.greenAccent[600] },
                         }}
                     >
-                        Sign In
+                        Send Reset Email
                     </Button>
                 </form>
                 <Typography sx={{ color: colors.grey[300], textAlign: 'center' }}>
-                    Forgot your <Link to="/password-reset" style={{ color: colors.greenAccent[500] }}>password</Link> or{' '}
-                    <Link to="/account-recovery" style={{ color: colors.greenAccent[500] }}>username</Link>?
-                </Typography>
-                <Typography sx={{ color: colors.grey[300], textAlign: 'center', marginTop: '10px' }}>
-                    Don't have an account? <Link to="/register" style={{ color: colors.greenAccent[500] }}>Register</Link>
+                    Back to <Link to="/login" style={{ color: colors.greenAccent[500] }}>Sign In</Link>
                 </Typography>
             </Box>
         </Box>
     );
 };
 
-export default SignIn;
+export default PasswordResetRequest;

@@ -1,3 +1,4 @@
+// src/context/AuthContext.js
 import React, { createContext, useState, useEffect } from 'react';
 import axios from 'axios';
 
@@ -10,11 +11,11 @@ export const AuthProvider = ({ children }) => {
 
     const signup = async (username, email, password) => {
         try {
-            await axios.post('https://vercel-dataflow.vercel.app/api/accounts/signup/', {
+            await axios.post('https://vercel-dataflow.vercel.app/accounts/signup/', {
                 username,
                 email,
                 password,
-            });
+            }, { withCredentials: true });
             return { success: true };
         } catch (error) {
             return { success: false, error: error.response?.data?.error || 'Signup failed' };
@@ -23,10 +24,10 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (username, password) => {
         try {
-            const response = await axios.post('https://vercel-dataflow.vercel.app/api/accounts/login/', {
+            const response = await axios.post('https://vercel-dataflow.vercel.app/accounts/login/', {
                 username,
                 password,
-            });
+            }, { withCredentials: true });
             const { access, refresh } = response.data;
             localStorage.setItem('token', access);
             localStorage.setItem('refresh_token', refresh);
@@ -43,9 +44,9 @@ export const AuthProvider = ({ children }) => {
     const logout = async () => {
         try {
             await axios.post(
-                'https://vercel-dataflow.vercel.app/api/accounts/logout/',
+                'https://vercel-dataflow.vercel.app/accounts/logout/',
                 { refresh_token: refreshToken },
-                { headers: { Authorization: `Bearer ${token}` } }
+                { headers: { Authorization: `Bearer ${token}` }, withCredentials: true }
             );
             localStorage.removeItem('token');
             localStorage.removeItem('refresh_token');
@@ -61,9 +62,9 @@ export const AuthProvider = ({ children }) => {
 
     const refreshAccessToken = async () => {
         try {
-            const response = await axios.post('https://vercel-dataflow.vercel.app/api/token/refresh/', {
+            const response = await axios.post('https://vercel-dataflow.vercel.app/token/refresh/', {
                 refresh: refreshToken,
-            });
+            }, { withCredentials: true });
             const { access } = response.data;
             localStorage.setItem('token', access);
             setToken(access);
@@ -78,7 +79,6 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         if (token && refreshToken) {
             axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-            // Optionally refresh token periodically
         }
     }, [token, refreshToken]);
 

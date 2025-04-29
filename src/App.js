@@ -40,6 +40,8 @@ import Bitcoin10YearChart from "./components/Bitcoin10YearRecession";
 import WorkbenchChart from "./components/Workbench";
 import OnChainHistoricalRisk from "./components/OnChainHistoricalRisk";
 import { AuthProvider } from './context/AuthContext';
+import Register from './scenes/LoginSignup/Register';
+import SignIn from './scenes/LoginSignup/SignIn';
 
 function App() {
   const [theme, colorMode] = useMode();
@@ -94,8 +96,9 @@ function App() {
                     element={<Dashboard isMobile={isMobile} isSidebar={isSidebar} />}
                   />
                   <Route path="/about" element={<About />} />
-                  <Route path="/login-signup" element={<LoginSignup />} />
                   <Route path="/splash" element={<SplashPage />} />
+                  <Route path="/login" element={<SignIn />} />
+                  <Route path="/register" element={<Register />} />
 
                   {/* Chart routes - only render if shouldRenderCharts is true */}
                   {shouldRenderCharts && (

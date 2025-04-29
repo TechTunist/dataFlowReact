@@ -4,21 +4,22 @@ import { Box, Typography, TextField, Button, Alert, useTheme } from '@mui/materi
 import { tokens } from '../../theme';
 import { Link, useNavigate } from 'react-router-dom';
 
-const SignIn = () => {
+const Register = () => {
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
-    const { login } = useContext(AuthContext);
+    const { signup } = useContext(AuthContext);
     const navigate = useNavigate();
     const [username, setUsername] = useState('');
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
-        const result = await login(username, password);
+        const result = await signup(username, email, password);
         if (result.success) {
-            navigate.push('/dashboard'); // Redirect to dashboard after login
+            navigate.push('/login'); // Redirect to login after signup
         } else {
             setError(result.error);
         }
@@ -46,7 +47,7 @@ const SignIn = () => {
                 }}
             >
                 <Typography variant="h3" sx={{ color: colors.grey[100], marginBottom: '20px', textAlign: 'center' }}>
-                    Sign In
+                    Register
                 </Typography>
                 {error && <Alert severity="error" sx={{ marginBottom: '20px' }}>{error}</Alert>}
                 <form onSubmit={handleSubmit}>
@@ -55,6 +56,15 @@ const SignIn = () => {
                         label="Username"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
+                        sx={{ marginBottom: '20px', input: { color: colors.grey[100] } }}
+                        InputLabelProps={{ style: { color: colors.grey[300] } }}
+                    />
+                    <TextField
+                        fullWidth
+                        label="Email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
                         sx={{ marginBottom: '20px', input: { color: colors.grey[100] } }}
                         InputLabelProps={{ style: { color: colors.grey[300] } }}
                     />
@@ -78,19 +88,15 @@ const SignIn = () => {
                             '&:hover': { backgroundColor: colors.greenAccent[600] },
                         }}
                     >
-                        Sign In
+                        Register
                     </Button>
                 </form>
                 <Typography sx={{ color: colors.grey[300], textAlign: 'center' }}>
-                    Forgot your <Link to="/password-reset" style={{ color: colors.greenAccent[500] }}>password</Link> or{' '}
-                    <Link to="/account-recovery" style={{ color: colors.greenAccent[500] }}>username</Link>?
-                </Typography>
-                <Typography sx={{ color: colors.grey[300], textAlign: 'center', marginTop: '10px' }}>
-                    Don't have an account? <Link to="/register" style={{ color: colors.greenAccent[500] }}>Register</Link>
+                    Already have an account? <Link to="/login" style={{ color: colors.greenAccent[500] }}>Sign In</Link>
                 </Typography>
             </Box>
         </Box>
     );
 };
 
-export default SignIn;
+export default Register;

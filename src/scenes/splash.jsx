@@ -2,19 +2,19 @@ import React, { useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { Box, Typography, Button, useTheme } from '@mui/material';
 import { tokens } from '../theme';
-import { Link, useHistory } from 'react-router-dom';
+import { Link, useNavigate  } from 'react-router-dom';
 import '../styling/splashPage.css';
 
 const SplashPage = () => {
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
     const { user, logout } = useContext(AuthContext);
-    const history = useHistory();
+    const navigate = useNavigate(); // Change history to navigate
 
     const handleLogout = async () => {
         const result = await logout();
         if (result.success) {
-            history.push('/login');
+            navigate('/login'); // Use navigate instead of history.push
         }
     };
 
