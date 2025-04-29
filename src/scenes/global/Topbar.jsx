@@ -1,24 +1,51 @@
-import React, { useContext } from "react";
-import { Box, IconButton, useTheme } from "@mui/material";
+// src/components/Topbar.js
+import React, { useContext, useState } from "react";
+import { Box, IconButton, useTheme, Menu, MenuItem, Typography } from "@mui/material";
 import { ColorModeContext, tokens } from "../../theme";
 import LightModeOutlinedIcon from "@mui/icons-material/LightModeOutlined";
 import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
 import MenuOutlinedIcon from "@mui/icons-material/MenuOutlined";
-import { useLocation } from "react-router-dom";
-import { Link } from "react-router-dom";
+import PersonOutlinedIcon from "@mui/icons-material/PersonOutlined";
+import { useLocation, Link, useNavigate } from "react-router-dom";
 import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import useIsMobile from "../../hooks/useIsMobile";
 import "../../styling/bitcoinChart.css";
 import Header from "../../components/Header";
+import { AuthContext } from "../../context/AuthContext";
 
 const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const colorMode = useContext(ColorModeContext);
+  const { user, logout } = useContext(AuthContext);
   const location = useLocation();
+  const navigate = useNavigate();
   const isMobile = useIsMobile();
   const sidebarWidth = isSidebar ? 270 : 0;
+
+  // State for the user menu
+  const [anchorEl, setAnchorEl] = useState(null);
+  const open = Boolean(anchorEl);
+
+  const handleUserMenuClick = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleUserMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    handleUserMenuClose();
+    navigate("/login");
+  };
+
+  const handleLogin = () => {
+    handleUserMenuClose();
+    navigate("/login");
+  };
 
   const topBarStyle = {
     position: "fixed",
@@ -159,7 +186,7 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
         return { title: "CryptoLogical", subtitle: "" };
     }
   };
-  
+
   const { title, subtitle } = getTitleAndSubtitle(location.pathname);
 
   return (
@@ -190,6 +217,56 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
         <IconButton onClick={colorMode.toggleColorMode} color="inherit">
           {theme.palette.mode === "dark" ? <LightModeOutlinedIcon /> : <DarkModeOutlinedIcon />}
         </IconButton>
+        <IconButton
+          onClick={handleUserMenuClick}
+          color="inherit"
+          aria-label="user menu"
+          aria-controls={open ? "user-menu" : undefined}
+          aria-haspopup="true"
+          aria-expanded={open ? "true" : undefined}
+        >
+          <PersonOutlinedIcon style={{ color: colors.primary[100] }} />
+        </IconButton>
+        <Menu
+          id="user-menu"
+          anchorEl={anchorEl}
+          open={open}
+          onClose={handleUserMenuClose}
+          MenuListProps={{
+            "aria-labelledby": "user-button",
+          }}
+          PaperProps={{
+            style: {
+              backgroundColor: colors.primary[400],
+              color: colors.primary[100],
+              border: `1px solid ${colors.greenAccent[500]}`,
+            },
+          }}
+        >
+          {user ? (
+            <>
+              <MenuItem disabled>
+                <Typography variant="body2">
+                  {user.username} ({user.email || "No email"})
+                </Typography>
+              </MenuItem>
+              <MenuItem onClick={handleUserMenuClose} component={Link} to="/profile">
+                Profile
+              </MenuItem>
+              <MenuItem onClick={handleUserMenuClose} component={Link} to="/subscription">
+                Subscription
+              </MenuItem>
+              <MenuItem onClick={handleLogout}>Logout</MenuItem>
+            </>
+          ) : (
+            <>
+              <MenuItem disabled>
+                <Typography variant="body2">Not logged in</Typography>
+              </MenuItem>
+              <MenuItem onClick={handleLogin}>Login</MenuItem>
+            </>
+          )}
+        </Menu>
       </Box>
     </Box>
   );

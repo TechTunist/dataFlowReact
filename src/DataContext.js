@@ -5,6 +5,7 @@ import { initDB, cacheData, getCachedData, clearCache } from './utility/idbUtils
 export const DataContext = createContext();
 
 // Utility function for fetching and caching data with hybrid date/timestamp check
+// src/DataContext.js
 const fetchWithCache = async ({
   cacheId,
   apiUrl,
@@ -12,8 +13,8 @@ const fetchWithCache = async ({
   setData,
   setLastUpdated,
   setIsFetched,
-  cacheDuration = 24 * 60 * 60 * 1000, // Default to 24 hours (used only if useDateCheck is false)
-  useDateCheck = true, // Default to date-based check for daily updates
+  cacheDuration = 24 * 60 * 60 * 1000,
+  useDateCheck = true,
 }) => {
   if (typeof indexedDB === 'undefined') {
     console.warn('IndexedDB is not supported in this environment.');
@@ -30,14 +31,10 @@ const fetchWithCache = async ({
       const { data: cachedData, timestamp } = cached;
       const latestCachedDate = cachedData[cachedData.length - 1].time;
 
-      // Determine if we should reuse the cached data
       let shouldReuseCache = false;
-
       if (useDateCheck) {
-        // Use date-based check for daily-updating data
         shouldReuseCache = latestCachedDate >= currentDate;
       } else {
-        // Use timestamp-based check for datasets with custom cache duration
         const timeSinceLastFetch = currentTimestamp - timestamp;
         shouldReuseCache = timeSinceLastFetch < cacheDuration;
       }
@@ -51,26 +48,32 @@ const fetchWithCache = async ({
         return true;
       }
 
-      // If the cache is stale, fetch new data and compare the latest date
-      const response = await fetch(apiUrl);
+      // Fetch new data with Authorization header
+      const token = localStorage.getItem('token');
+      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+      const response = await fetch(apiUrl, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...headers,
+        },
+        credentials: 'include', // Include credentials for CORS
+      });
+
       if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
       const data = await response.json();
       const formattedData = formatData(data);
       const latestFetchedDate = formattedData.length > 0 ? formattedData[formattedData.length - 1].time : null;
 
-      // If the fetched data isn't newer, reuse the cached data
       if (latestFetchedDate && latestCachedDate && latestFetchedDate <= latestCachedDate) {
         setData(cachedData);
         if (setLastUpdated) {
           setLastUpdated(latestCachedDate);
         }
         setIsFetched(true);
-        // Update the timestamp to prevent refetching soon (even for date-based checks)
         await cacheData(cacheId, cachedData, currentTimestamp);
         return true;
       }
 
-      // New data is available; update the cache
       setData(formattedData);
       if (formattedData.length > 0 && setLastUpdated) {
         setLastUpdated(latestFetchedDate);
@@ -80,8 +83,17 @@ const fetchWithCache = async ({
       return true;
     }
 
-    // No cached data; fetch from API
-    const response = await fetch(apiUrl);
+    // No cached data; fetch from API with Authorization header
+    const token = localStorage.getItem('token');
+    const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+    const response = await fetch(apiUrl, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...headers,
+      },
+      credentials: 'include',
+    });
+
     if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
     const data = await response.json();
     const formattedData = formatData(data);
@@ -716,19 +728,18 @@ export const DataProvider = ({ children }) => {
   const fetchIndicatorData = useCallback(async (indicatorId) => {
     if (indicatorId !== 'btc-yield-recession') return;
     if (isIndicatorDataFetched[indicatorId]) return;
-
+  
     setIsIndicatorDataFetched((prev) => ({ ...prev, [indicatorId]: true }));
     const cacheId = 'indicatorData_btc-yield-recession';
     const currentDate = new Date().toISOString().split('T')[0];
     const currentTimestamp = Date.now();
-
+  
     if (typeof indexedDB !== 'undefined') {
       try {
         const cached = await getCachedData(cacheId);
         if (cached && cached.data.length > 0) {
           const { data: cachedData, timestamp } = cached;
           const latestCachedDate = cachedData[cachedData.length - 1].date;
-          // Use date check since this includes daily Bitcoin price data
           if (latestCachedDate >= currentDate) {
             setIndicatorData((prev) => ({ ...prev, [indicatorId]: cachedData }));
             setIsIndicatorDataFetched((prev) => ({ ...prev, [indicatorId]: true }));
@@ -739,19 +750,56 @@ export const DataProvider = ({ children }) => {
         console.error('Error accessing IndexedDB for indicator data:', error);
       }
     }
-
+  
     try {
-      const btcResponse = await fetch(`${API_BASE_URL}/btc/price/`);
+      const token = localStorage.getItem('token');
+      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+  
+      const btcResponse = await fetch(`${API_BASE_URL}/btc/price/`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...headers,
+        },
+        credentials: 'include',
+      });
       const btcData = await btcResponse.json();
-      const t10y2yResponse = await fetch(`${API_BASE_URL}/series/T10Y2Y/observations/`);
+  
+      const t10y2yResponse = await fetch(`${API_BASE_URL}/series/T10Y2Y/observations/`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...headers,
+        },
+        credentials: 'include',
+      });
       const t10y2yData = await t10y2yResponse.json();
-      const usrecdResponse = await fetch(`${API_BASE_URL}/series/USRECD/observations/`);
+  
+      const usrecdResponse = await fetch(`${API_BASE_URL}/series/USRECD/observations/`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...headers,
+        },
+        credentials: 'include',
+      });
       let usrecdData = await usrecdResponse.json();
-      const fedFundsResponse = await fetch(`${API_BASE_URL}/us-interest/`);
+  
+      const fedFundsResponse = await fetch(`${API_BASE_URL}/us-interest/`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...headers,
+        },
+        credentials: 'include',
+      });
       const fedFundsData = await fedFundsResponse.json();
-      const m2Response = await fetch(`${API_BASE_URL}/series/M2SL/observations/`);
+  
+      const m2Response = await fetch(`${API_BASE_URL}/series/M2SL/observations/`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...headers,
+        },
+        credentials: 'include',
+      });
       const m2Data = await m2Response.json();
-
+  
       const startDate = '2011-08-19';
       const endDate = currentDate;
       const dateRange = [];
@@ -760,13 +808,13 @@ export const DataProvider = ({ children }) => {
         dateRange.push(currentDateObj.toISOString().split('T')[0]);
         currentDateObj.setDate(currentDateObj.getDate() + 1);
       }
-
+  
       const btcMap = new Map(btcData.map((d) => [d.date, parseFloat(d.close)]));
       const t10y2yMap = new Map(t10y2yData.map((d) => [d.date, parseFloat(d.value)]));
       const usrecdMap = new Map(usrecdData.map((d) => [d.date, parseInt(d.value)]));
       const fedFundsMap = new Map(fedFundsData.map((d) => [d.date, parseFloat(d.value)]));
       const m2Map = new Map(m2Data.map((d) => [d.date, parseFloat(d.value)]));
-
+  
       const m2GrowthMap = new Map();
       dateRange.forEach((date) => {
         const dateObj = new Date(date);
@@ -781,14 +829,14 @@ export const DataProvider = ({ children }) => {
           m2GrowthMap.set(date, growth);
         }
       });
-
+  
       usrecdData = dateRange.map((date) => {
         const value = usrecdMap.get(date) || usrecdMap.get([...usrecdMap.keys()].reverse().find((d) => d < date)) || 0;
         return { date, value };
       });
       usrecdMap.clear();
       usrecdData.forEach((d) => usrecdMap.set(d.date, d.value));
-
+  
       const combinedData = dateRange
         .map((date) => ({
           date,
@@ -799,7 +847,7 @@ export const DataProvider = ({ children }) => {
           usrecd: usrecdMap.get(date) || 0,
         }))
         .filter((d) => d.btc !== undefined && d.t10y2y !== undefined && d.fedFunds !== undefined && d.m2Growth !== undefined);
-
+  
       setIndicatorData((prev) => ({ ...prev, [indicatorId]: combinedData }));
       if (typeof indexedDB !== 'undefined' && combinedData.length > 0) {
         await cacheData(cacheId, combinedData, Date.now());
