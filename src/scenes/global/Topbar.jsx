@@ -66,8 +66,8 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
 
   const getTitleAndSubtitle = (pathname) => {
     switch (pathname) {
-      case "/":
-        return { title: "Dashboard", subtitle: "All charts" };
+      case "/dashboard":
+        return { title: "Dashboard", subtitle: "A Selection of your favourite charts" };
       case "/bitcoin":
         return { title: "Bitcoin", subtitle: "Historical Chart" };
       case "/bitcoin-dominance":
