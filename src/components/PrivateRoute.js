@@ -4,14 +4,16 @@ import { Navigate, Outlet } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 
 const PrivateRoute = () => {
-  const { user } = useContext(AuthContext);
+  const { user, isLoading } = useContext(AuthContext);
 
-  // If user is not logged in, redirect to login page
+  if (isLoading) {
+    return <div>Loading...</div>; // Or a proper loading spinner
+  }
+
   if (!user) {
     return <Navigate to="/login" replace />;
   }
 
-  // If user is logged in, render the child routes/components
   return <Outlet />;
 };
 
