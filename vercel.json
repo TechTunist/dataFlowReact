@@ -1,6 +1,6 @@
 {
-    "rewrites": [
-      { "source": "/api/:path*", "destination": "https://vercel-dataflow.vercel.app/api/:path" }
-    ]
-  }
-  
+  "rewrites": [
+    { "source": "/api/:path*",
+      "destination": "https://vercel-dataflow.vercel.app/api/:path*" }
+  ]
+}
