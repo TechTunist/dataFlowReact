@@ -1,6 +1,6 @@
 {
     "rewrites": [
-      { "source": "/(.*)", "destination": "/" }
+      { "source": "/api/:path*", "destination": "https://vercel-dataflow.vercel.app/api/:path" }
     ]
   }
   
