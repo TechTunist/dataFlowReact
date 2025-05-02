@@ -94,10 +94,6 @@ function App() {
                 {!isSplashPage && <div style={{ height: isMobile ? "65px" : "85px" }}></div>}
                 <Routes>
                   {/* Routes that don't involve charts - always render */}
-                  <Route
-                    path="/dashboard"
-                    element={<Dashboard isMobile={isMobile} isSidebar={isSidebar} />}
-                  />
                   <Route path="/about" element={<About />} />
                   <Route path="/splash" element={<SplashPage />} />
                   <Route path="/login" element={<SignIn />} />
@@ -110,6 +106,7 @@ function App() {
                     <>
                       {/* Protected Routes (require authentication) */}
                       <Route element={<PrivateRoute />}>
+                        <Route path="/dashboard" element={<Dashboard isMobile={isMobile} isSidebar={isSidebar} />} />
                         <Route path="/bitcoin" element={<BasicChart ChartComponent={BitcoinPrice} />} />
                         <Route path="/total" element={<BasicChart ChartComponent={TotalMarketCap} />} />
                         <Route path="/bitcoin-fees" element={<BasicChart ChartComponent={BitcoinTransactionFees} />} />
