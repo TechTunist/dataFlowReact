@@ -39,6 +39,7 @@ import FredSeriesChart from "./components/FredSeriesChart";
 import Bitcoin10YearChart from "./components/Bitcoin10YearRecession";
 import WorkbenchChart from "./components/Workbench";
 import OnChainHistoricalRisk from "./components/OnChainHistoricalRisk";
+import TestAPI from './components/TestAPI';
 
 
 function App() {
@@ -109,6 +110,7 @@ function App() {
                 {/* Chart routes - only render if shouldRenderCharts is true */}
                 {shouldRenderCharts && (
                   <>
+                    <Route path="/test" element={<TestAPI />} />
                     <Route path="/bitcoin" element={<BasicChart ChartComponent={BitcoinPrice} />} />
                     <Route path="/total" element={<BasicChart ChartComponent={TotalMarketCap} />} />
                     <Route path="/bitcoin-fees" element={<BasicChart ChartComponent={BitcoinTransactionFees} />} />

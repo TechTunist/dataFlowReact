@@ -171,6 +171,7 @@ export const DataProvider = ({ children }) => {
   const [isIndicatorDataFetched, setIsIndicatorDataFetched] = useState({});
 
   const API_BASE_URL = 'https://vercel-dataflow.vercel.app/api';
+  // const API_BASE_URL = 'http://127.0.0.1:8000/api';
 
   // Preload all of IndexedDB into state on app start to prevent unnecessary fetches
   useEffect(() => {
