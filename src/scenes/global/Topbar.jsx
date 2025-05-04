@@ -1,24 +1,53 @@
-import React, { useContext } from "react";
-import { Box, IconButton, useTheme } from "@mui/material";
+// src/scenes/global/Topbar.js
+import React, { useContext, useState } from "react";
+import { Box, IconButton, useTheme, Typography, Menu, MenuItem, Avatar } from "@mui/material";
 import { ColorModeContext, tokens } from "../../theme";
 import LightModeOutlinedIcon from "@mui/icons-material/LightModeOutlined";
 import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
 import MenuOutlinedIcon from "@mui/icons-material/MenuOutlined";
-import { useLocation } from "react-router-dom";
-import { Link } from "react-router-dom";
+import { useLocation, Link, useNavigate } from "react-router-dom";
 import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import useIsMobile from "../../hooks/useIsMobile";
 import "../../styling/bitcoinChart.css";
 import Header from "../../components/Header";
+import { useClerk, useUser } from "@clerk/clerk-react"; // Add Clerk hooks
+import PersonOutlinedIcon from "@mui/icons-material/PersonOutlined";
+import PaymentOutlinedIcon from "@mui/icons-material/PaymentOutlined";
+import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
+import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 
 const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const colorMode = useContext(ColorModeContext);
   const location = useLocation();
+  const navigate = useNavigate();
   const isMobile = useIsMobile();
   const sidebarWidth = isSidebar ? 270 : 0;
+  const { user } = useUser(); // Get user data
+  const { signOut } = useClerk(); // Clerk sign-out function
+  const [anchorEl, setAnchorEl] = useState(null); // State for menu anchor
+
+  // Open/close menu
+  const handleMenuOpen = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  // Handle logout
+  const handleLogout = async () => {
+    await signOut();
+    handleMenuClose();
+    // Redirect is handled by App.js routing (unauthenticated users go to /splash)
+  };
+
+  // Placeholder for user plan (to be updated with actual plan data later)
+  const userPlan = "Free"; // Replace with actual plan data from backend later
 
   const topBarStyle = {
     position: "fixed",
@@ -159,7 +188,7 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
         return { title: "CryptoLogical", subtitle: "" };
     }
   };
-  
+
   const { title, subtitle } = getTitleAndSubtitle(location.pathname);
 
   return (
@@ -190,6 +219,121 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
         <IconButton onClick={colorMode.toggleColorMode} color="inherit">
           {theme.palette.mode === "dark" ? <LightModeOutlinedIcon /> : <DarkModeOutlinedIcon />}
         </IconButton>
+
+        {/* User Element */}
+        {user && (
+          <Box display="flex" alignItems="center">
+            <IconButton onClick={handleMenuOpen}>
+              <Avatar
+                sx={{
+                  bgcolor: colors.greenAccent[500],
+                  width: 32,
+                  height: 32,
+                  fontSize: "1rem",
+                }}
+              >
+                {user.emailAddresses[0]?.emailAddress.charAt(0).toUpperCase()}
+              </Avatar>
+            </IconButton>
+
+            {/* User Menu */}
+            <Menu
+              anchorEl={anchorEl}
+              open={Boolean(anchorEl)}
+              onClose={handleMenuClose}
+              anchorOrigin={{
+                vertical: "bottom",
+                horizontal: "right",
+              }}
+              transformOrigin={{
+                vertical: "top",
+                horizontal: "right",
+              }}
+              PaperProps={{
+                sx: {
+                  backgroundColor: colors.primary[800],
+                  color: colors.grey[100],
+                  minWidth: "200px",
+                },
+              }}
+            >
+              {/* User Email and Plan */}
+              <Box
+                sx={{
+                  padding: "8px 16px",
+                  borderBottom: `1px solid ${colors.grey[700]}`,
+                  backgroundColor: colors.primary[900],
+                }}
+              >
+                <Typography variant="body2" sx={{ fontWeight: "bold" }}>
+                  {user.emailAddresses[0]?.emailAddress}
+                </Typography>
+                <Typography variant="caption" sx={{ color: colors.grey[400] }}>
+                  Plan: {userPlan}
+                </Typography>
+              </Box>
+
+              {/* Menu Items */}
+              <MenuItem
+                onClick={() => {
+                  navigate("/profile");
+                  handleMenuClose();
+                }}
+                sx={{
+                  "&:hover": { backgroundColor: colors.primary[700] },
+                }}
+              >
+                <PersonOutlinedIcon sx={{ mr: 1 }} />
+                View Profile
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  navigate("/subscription");
+                  handleMenuClose();
+                }}
+                sx={{
+                  "&:hover": { backgroundColor: colors.primary[700] },
+                }}
+              >
+                <PaymentOutlinedIcon sx={{ mr: 1 }} />
+                Manage Subscription
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  navigate("/settings");
+                  handleMenuClose();
+                }}
+                sx={{
+                  "&:hover": { backgroundColor: colors.primary[700] },
+                }}
+              >
+                <SettingsOutlinedIcon sx={{ mr: 1 }} />
+                Settings
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  navigate("/change-password");
+                  handleMenuClose();
+                }}
+                sx={{
+                  "&:hover": { backgroundColor: colors.primary[700] },
+                }}
+              >
+                <LockOutlinedIcon sx={{ mr: 1 }} />
+                Change Password
+              </MenuItem>
+              <MenuItem
+                onClick={handleLogout}
+                sx={{
+                  "&:hover": { backgroundColor: colors.primary[700] },
+                }}
+              >
+                <LogoutOutlinedIcon sx={{ mr: 1 }} />
+                Logout
+              </MenuItem>
+            </Menu>
+          </Box>
+        )}
       </Box>
     </Box>
   );

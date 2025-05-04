@@ -29,3 +29,14 @@
   .MuiBox-root > .MuiBox-root {
     animation: fadeIn 1s ease-out;
   }
+
+  /* src/styling/splashPage.css */
+.splash-page {
+  scroll-behavior: smooth;
+}
+
+.splash-page section {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
