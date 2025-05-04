@@ -7,7 +7,11 @@ import Header from "../components/Header";
 import { useUser } from "@clerk/clerk-react";
 
 // Initialize Stripe with your publishable key
-const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
+const stripePublishableKey = process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY;
+if (!stripePublishableKey) {
+  console.error("Stripe Publishable Key is missing. Please set REACT_APP_STRIPE_PUBLISHABLE_KEY in your .env file.");
+}
+const stripePromise = stripePublishableKey ? loadStripe(stripePublishableKey) : null;
 
 const Subscription = () => {
   const theme = useTheme();
@@ -16,25 +20,28 @@ const Subscription = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Placeholder for current plan (to be updated with Clerk metadata later)
-  const currentPlan = "Free";
+  const currentPlan = user?.publicMetadata?.plan || "Free";
 
   const handleUpgrade = async () => {
+    if (!stripePromise) {
+      setError("Stripe is not initialized. Please check your configuration.");
+      return;
+    }
+
     setLoading(true);
     setError("");
 
     try {
-      // Call your Django backend to create a Stripe Checkout session
       const response = await fetch("https://vercel-dataflow.vercel.app/api/create-checkout-session", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          priceId: "price_xxxxxxxxxx", // Replace with your Premium plan Price ID
+          priceId: "price_1RL6vDQ2fPLucCvVLF0NyRQ9", 
           successUrl: `${window.location.origin}/subscription?success=true`,
           cancelUrl: `${window.location.origin}/subscription?canceled=true`,
-          userId: user.id, // Pass the Clerk user ID to associate with the subscription
+          userId: user.id,
         }),
       });
 
@@ -94,7 +101,7 @@ const Subscription = () => {
               </Typography>
               <Button
                 onClick={handleUpgrade}
-                disabled={loading}
+                disabled={loading || !stripePromise}
                 sx={{
                   backgroundColor: colors.greenAccent[500],
                   color: colors.grey[900],

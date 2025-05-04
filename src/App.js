@@ -47,6 +47,7 @@ import ChangePassword from "./scenes/ChangePassword";
 import Profile from "./scenes/Profile";
 import Settings from "./scenes/Settings";
 import AccountNavBar from "./scenes/global/AccountNavBar";
+import Subscription from "./scenes/Subscription";
 
 const PUBLISHABLE_KEY = process.env.REACT_APP_CLERK_PUBLISHABLE_KEY;
 
@@ -156,7 +157,7 @@ function AppContent() {
                   path="/subscription"
                   element={
                     <ProtectedRoute>
-                      <div>Subscription Page (Under Construction)</div> {/* Placeholder */}
+                      <Subscription />
                     </ProtectedRoute>
                   }
                 />
