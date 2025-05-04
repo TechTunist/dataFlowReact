@@ -74,7 +74,7 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
   const isMobile = useIsMobile();
 
   const itemsData = [
-    { title: "Dashboard", to: "/", icon: <DashboardIcon />, category: null },
+    { title: "Dashboard", to: "/dashboard", icon: <DashboardIcon />, category: null },
     { title: "Bitcoin Chart", to: "/bitcoin", category: "Bitcoin", icon: <ShowChartIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
     { title: "Total Market Cap", to: "/total", category: "Indicators", icon: <ShowChartIcon />, categoryIcon: <ShowChartIcon /> },
     { title: "Bitcoin Dominance", to: "/bitcoin-dominance", category: "Indicators", icon: <ShowChartIcon />, categoryIcon: <ShowChartIcon /> },

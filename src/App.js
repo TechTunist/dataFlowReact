@@ -43,6 +43,10 @@ import WorkbenchChart from "./components/Workbench";
 import OnChainHistoricalRisk from "./components/OnChainHistoricalRisk";
 import TestAPI from './components/TestAPI';
 import ProtectedRoute from "./components/ProtectedRoute";
+import ChangePassword from "./scenes/ChangePassword";
+import Profile from "./scenes/Profile";
+import Settings from "./scenes/Settings";
+import AccountNavBar from "./scenes/global/AccountNavBar";
 
 const PUBLISHABLE_KEY = process.env.REACT_APP_CLERK_PUBLISHABLE_KEY;
 
@@ -55,7 +59,7 @@ function AppContent() {
   const isMobile = useIsMobile();
   const [isSidebar, setIsSidebar] = useState(!isMobile);
   const location = useLocation();
-  const { isLoaded, isSignedIn } = useAuth(); // Add isSignedIn to check authentication
+  const { isLoaded, isSignedIn } = useAuth(); 
   const isDashboardTopbar = location.pathname === "/dashboard";
   const isSplashPage = location.pathname === "/splash";
 
@@ -71,15 +75,24 @@ function AppContent() {
     return <div>Loading...</div>;
   }
 
-  // Only render Topbar and Sidebar if the user is authenticated
-  const shouldRenderTopbarAndSidebar = isSignedIn && !isSplashPage;
+  // Define routes where Topbar and Sidebar should be hidden
+  const userMenuRoutes = [
+    "/profile",
+    "/subscription",
+    "/settings",
+    "/change-password",
+  ];
+  const isUserMenuPage = userMenuRoutes.includes(location.pathname);
+
+  // Only render Topbar and Sidebar if the user is authenticated and not on a user menu page or splash page
+  const shouldRenderTopbarAndSidebar = isSignedIn && !isSplashPage && !isUserMenuPage;
 
   return (
     <ColorModeContext.Provider value={colorMode}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <div className="app" style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-          {/* Render Topbar only if authenticated */}
+          {/* Render Topbar or accountnav bar only if authenticated */}
           {shouldRenderTopbarAndSidebar && (
             <Topbar
               setIsSidebar={setIsSidebar}
@@ -87,6 +100,7 @@ function AppContent() {
               isDashboardTopbar={isDashboardTopbar}
             />
           )}
+          {isSignedIn && isUserMenuPage && <AccountNavBar />}
 
           <div style={{ display: "flex", flex: 1 }}>
             {/* Render Sidebar only if authenticated */}
@@ -105,8 +119,9 @@ function AppContent() {
             )}
 
             <main className="content" style={{ flex: 1 }}>
-              {/* Adjust spacing for Topbar only if authenticated */}
-              {shouldRenderTopbarAndSidebar && <div style={{ height: isMobile ? "65px" : "85px" }}></div>}
+              {/* Adjust spacing for Topbar or accountnavbar */}
+              {shouldRenderTopbarAndSidebar && <div style={{ height: isMobile ? "65px" : "85px" }} />}
+              {isSignedIn && isUserMenuPage && <div style={{ height: "65px" }} />}
               <Routes>
                 {/* Public routes accessible to all users */}
                 <Route path="/splash" element={<SplashPage />} />
@@ -133,7 +148,7 @@ function AppContent() {
                   path="/profile"
                   element={
                     <ProtectedRoute>
-                      <div>Profile Page (Under Construction)</div> {/* Placeholder */}
+                      <Profile />
                     </ProtectedRoute>
                   }
                 />
@@ -149,7 +164,7 @@ function AppContent() {
                   path="/settings"
                   element={
                     <ProtectedRoute>
-                      <div>Settings Page (Under Construction)</div> {/* Placeholder */}
+                      <Settings />
                     </ProtectedRoute>
                   }
                 />
@@ -157,7 +172,7 @@ function AppContent() {
                   path="/change-password"
                   element={
                     <ProtectedRoute>
-                      <div>Change Password Page (Under Construction)</div>
+                      <ChangePassword />
                     </ProtectedRoute>
                   }
                 />
