@@ -168,7 +168,12 @@ const BitcoinROI = ({ isDashboard = false }) => {
                 </div>
             )}
             
-            <div className="chart-container" style={{ height: 'calc(100% - 40px)', width: '100%', border: '2px solid #a9a9a9' }}>
+            <div className="chart-container" 
+            style={{ 
+                height: isDashboard ? "100%" : 'calc(100% - 40px)', 
+                width: '100%', 
+                border: '2px solid #a9a9a9' 
+                }}>
                 <Plot
                     data={yearDataSets.map(year => ({
                         x: year.data.map(d => d.day),

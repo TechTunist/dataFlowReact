@@ -298,7 +298,13 @@ const AltcoinRisk = ({ isDashboard = false }) => {
                     </div>
                 </div>
             )}
-            <div className="chart-container" style={{ position: 'relative', height: 'calc(100% - 40px)', width: '100%', border: '2px solid #a9a9a9' }} onDoubleClick={() => { if (!isInteractive && !isDashboard) setInteractivity(); else setInteractivity(); }}>
+            <div className="chart-container" 
+            style={{ 
+                position: 'relative', 
+                height: isDashboard ? "100%" : 'calc(100% - 40px)',
+                width: '100%', 
+                border: '2px solid #a9a9a9' 
+                }} onDoubleClick={() => { if (!isInteractive && !isDashboard) setInteractivity(); else setInteractivity(); }}>
                 <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
             </div>
             {!isDashboard && <LastUpdated storageKey={`${selectedCoin.toLowerCase()}RiskData`} useLocalStorage={true}/>}

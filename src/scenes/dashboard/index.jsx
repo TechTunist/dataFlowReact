@@ -59,6 +59,31 @@ const Dashboard = ({ isMobile, isSidebar }) => {
   const [chartsVisible, setChartsVisible] = useState(!isMobile || !isSidebar);
   const { btcData, ethData, riskData, marketCapData } = useContext(DataContext);
 
+  const dashboardStyles = {
+    card: {
+      height: isMobile ? "440px" : "550px",
+      display: "flex",
+      flexDirection: "column",
+      transition: "box-shadow 0.3s ease",
+    },
+    cardContent: {
+      flexGrow: 1,
+      display: "flex",
+      flexDirection: "column",
+      height: "100%",
+    },
+    chartContainer: {
+      flex: 1,
+      minHeight: isMobile ? "350px" : "400px",
+      marginTop: "10px",
+      marginBottom: "10px",
+    },
+    infoText: {
+      marginTop: "auto",
+      fontSize: "0.875rem",
+    },
+  };
+
   useEffect(() => {
     if (!isMobile) {
       setChartsVisible(true);
