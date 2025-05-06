@@ -3,7 +3,6 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useTheme } from '@mui/material';
 import { tokens } from "../theme";
 import '../styling/LastUpdated.css';
-import RefreshIcon from '@mui/icons-material/Refresh';
 import { DataContext } from '../DataContext';
 
 const LastUpdated = ({ storageKey }) => {
@@ -105,7 +104,6 @@ const LastUpdated = ({ storageKey }) => {
         }}
       >
         Last Updated: {lastUpdated || '(click to refresh)'}
-        <RefreshIcon />
       </p>
     </div>
   );
