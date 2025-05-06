@@ -103,7 +103,7 @@ const LastUpdated = ({ storageKey }) => {
           alignItems: 'center',
         }}
       >
-        Last Updated: {lastUpdated || '(click to refresh)'}
+        Last Updated: {lastUpdated || 'loading...'}
       </p>
     </div>
   );

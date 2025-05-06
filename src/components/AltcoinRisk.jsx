@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useContext } from 'react';
 import { createChart } from 'lightweight-charts';
 import '../styling/bitcoinChart.css';
 import { tokens } from "../theme";
@@ -6,6 +6,7 @@ import { useTheme } from "@mui/material";
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
 import { Select, MenuItem, FormControl, InputLabel, Box } from '@mui/material';
+import { DataContext } from '../DataContext';
 
 const AltcoinRisk = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
@@ -17,6 +18,9 @@ const AltcoinRisk = ({ isDashboard = false }) => {
     const [isInteractive, setIsInteractive] = useState(false);
     const isMobile = useIsMobile();
     const [tooltipData, setTooltipData] = useState(null);
+
+    // Access DataContext
+    const { altcoinData, fetchAltcoinData } = useContext(DataContext);
 
     const altcoins = [
         { label: 'Solana', value: 'SOL' },
@@ -34,40 +38,6 @@ const AltcoinRisk = ({ isDashboard = false }) => {
         { label: 'Hedera', value: 'HBAR' },
         { label: 'Stellar', value: 'XLM' },
     ];
-
-    const getLocalStorageSize = () => {
-        let total = 0;
-        for (let key in localStorage) {
-            if (localStorage.hasOwnProperty(key)) {
-                total += ((localStorage[key].length + key.length) * 2);
-            }
-        }
-        return total;
-    };
-
-    const MAX_STORAGE_SIZE = 4 * 1024 * 1024;
-
-    const pruneOldData = () => {
-        const keys = Object.keys(localStorage)
-            .filter(key => key.endsWith('RiskData'))
-            .map(key => {
-                try {
-                    const parsed = JSON.parse(localStorage.getItem(key));
-                    // Check if the data has a timestamp (new format) or use 0 for old format
-                    return { key, timestamp: parsed.timestamp || 0 };
-                } catch {
-                    return { key, timestamp: 0 };
-                }
-            })
-            .sort((a, b) => a.timestamp - b.timestamp);
-
-        let currentSize = getLocalStorageSize();
-        for (let { key } of keys) {
-            if (currentSize < MAX_STORAGE_SIZE * 0.8) break;
-            localStorage.removeItem(key);
-            currentSize = getLocalStorageSize();
-        }
-    };
 
     const handleSelectChange = (event) => {
         setSelectedCoin(event.target.value);
@@ -130,59 +100,22 @@ const AltcoinRisk = ({ isDashboard = false }) => {
         return normalizedRisk;
     };
 
+    // Fetch altcoin price data
     useEffect(() => {
-        const cacheKey = `${selectedCoin.toLowerCase()}RiskData`;
-        const cachedData = localStorage.getItem(cacheKey);
-        const today = new Date();
-
-        const fetchAltData = async () => {
-            try {
-                const response = await fetch(`https://vercel-dataflow.vercel.app/api/${selectedCoin.toLowerCase()}/price/`);
-                const data = await response.json();
-                const formattedData = data.map(item => ({
-                    time: item.date,
-                    value: parseFloat(item.close)
-                }));
-                const withRiskMetric = calculateRiskMetric(formattedData);
-                const payload = { data: withRiskMetric, timestamp: Date.now() };
-
-                const currentSize = getLocalStorageSize();
-                if (currentSize > MAX_STORAGE_SIZE * 0.9) {
-                    pruneOldData();
-                }
-
-                // Store as plain JSON without compression
-                localStorage.setItem(cacheKey, JSON.stringify(payload));
-                setChartData(withRiskMetric);
-            } catch (error) {
-                console.error('Error fetching data:', error);
-            }
-        };
-
-        if (cachedData) {
-            try {
-                const parsedData = JSON.parse(cachedData);
-                // Check if the data has the new structure (with timestamp) or is old format (array)
-                const dataToUse = parsedData.data || parsedData;
-                if (dataToUse.length > 0) {
-                    const lastCachedDate = new Date(dataToUse[dataToUse.length - 1].time);
-                    if (lastCachedDate.setHours(0, 0, 0, 0) === today.setHours(0, 0, 0, 0)) {
-                        setChartData(dataToUse);
-                    } else {
-                        fetchAltData();
-                    }
-                } else {
-                    fetchAltData();
-                }
-            } catch (error) {
-                console.error('Error processing cached data:', error);
-                fetchAltData();
-            }
-        } else {
-            fetchAltData();
+        if (!altcoinData[selectedCoin]) {
+            fetchAltcoinData(selectedCoin);
         }
-    }, [selectedCoin]);
+    }, [selectedCoin, altcoinData, fetchAltcoinData]);
 
+    // Update chart data when altcoin data is available
+    useEffect(() => {
+        if (altcoinData[selectedCoin] && altcoinData[selectedCoin].length > 0) {
+            const withRiskMetric = calculateRiskMetric(altcoinData[selectedCoin]);
+            setChartData(withRiskMetric);
+        }
+    }, [altcoinData, selectedCoin]);
+
+    // Initialize chart
     useEffect(() => {
         if (chartData.length === 0) return;
 
@@ -255,8 +188,9 @@ const AltcoinRisk = ({ isDashboard = false }) => {
             window.removeEventListener('resize', resizeChart);
             window.removeEventListener('resize', resetChartView);
         };
-    }, [chartData, theme.palette.mode, isDashboard]);
+    }, [chartData, theme.palette.mode, isDashboard, colors]);
 
+    // Update chart interactivity
     useEffect(() => {
         if (chartRef.current) {
             chartRef.current.applyOptions({
@@ -299,15 +233,17 @@ const AltcoinRisk = ({ isDashboard = false }) => {
                 </div>
             )}
             <div className="chart-container" 
-            style={{ 
-                position: 'relative', 
-                height: isDashboard ? "100%" : 'calc(100% - 40px)',
-                width: '100%', 
-                border: '2px solid #a9a9a9' 
-                }} onDoubleClick={() => { if (!isInteractive && !isDashboard) setInteractivity(); else setInteractivity(); }}>
+                style={{ 
+                    position: 'relative', 
+                    height: isDashboard ? "100%" : 'calc(100% - 40px)',
+                    width: '100%', 
+                    border: '2px solid #a9a9a9' 
+                }} 
+                onDoubleClick={() => { if (!isInteractive && !isDashboard) setInteractivity(); else setInteractivity(); }}
+            >
                 <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
             </div>
-            {!isDashboard && <LastUpdated storageKey={`${selectedCoin.toLowerCase()}RiskData`} useLocalStorage={true}/>}
+            {!isDashboard && <LastUpdated storageKey={`${selectedCoin.toLowerCase()}Data`} />}
             {!isDashboard && tooltipData && (
                 <div className="tooltip" style={{ left: `${tooltipData.x}px`, top: `${tooltipData.y}px` }}>
                     <div>{selectedCoin}</div>
