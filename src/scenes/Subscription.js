@@ -3,8 +3,8 @@ import { useUser, useClerk } from '@clerk/clerk-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 const Subscription = () => {
-  const { user } = useUser();
-  const { getToken } = useClerk();
+  const { user, isSignedIn } = useUser();
+  const { getToken, session } = useClerk();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -17,20 +17,30 @@ const Subscription = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Available plans (match SubscriptionPlan IDs from backend)
-const plans = [
-  { id: 'prod_SGiujn0P6GfQAC', name: 'Premium', billing_interval: 'MONTHLY', price: 10.00 },
-  { id: 'prod_SGioq8WtiKlOIc', name: 'Premium', billing_interval: 'YEARLY', price: 100.00 },
-  { id: 'prod_SGisX0np5wxY05', name: 'Lifetime', billing_interval: 'ONE_TIME', price: 500.00 },
-];
+  // Available plans (use SubscriptionPlan IDs from backend, not Stripe product IDs)
+  const plans = [
+    { id: 1, name: 'Premium', billing_interval: 'MONTHLY', price: 30.00 },
+    { id: 2, name: 'Premium', billing_interval: 'YEARLY', price: 300.00 },
+    { id: 3, name: 'Lifetime', billing_interval: 'ONE_TIME', price: 2500.00 },
+  ];
 
   // Fetch subscription status from backend
   const fetchSubscriptionStatus = async () => {
+    if (!isSignedIn || !session) {
+      setError('Please sign in to view subscription status.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
     try {
       const token = await getToken();
+      if (!token) {
+        throw new Error('Failed to obtain authentication token');
+      }
+      console.log('Subscription status token:', token); // Debug
+
       const response = await fetch('https://vercel-dataflow.vercel.app/api/subscription-status/', {
         method: 'GET',
         headers: {
@@ -40,13 +50,14 @@ const plans = [
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorData = await response.json();
+        throw new Error(`HTTP error! status: ${response.status}, message: ${errorData.error || 'Unknown error'}`);
       }
 
       const data = await response.json();
       setSubscriptionStatus(data);
 
-      // Update Clerk publicMetadata (optional, for consistency)
+      // Update Clerk publicMetadata
       if (user) {
         await user.update({
           publicMetadata: {
@@ -57,8 +68,8 @@ const plans = [
         });
       }
     } catch (err) {
-      setError('Failed to fetch subscription status. Please try again.');
-      console.error(err);
+      setError(`Failed to fetch subscription status: ${err.message}`);
+      console.error('Subscription status error:', err);
     } finally {
       setLoading(false);
     }
@@ -66,11 +77,21 @@ const plans = [
 
   // Handle checkout
   const handleCheckout = async (planId) => {
+    if (!isSignedIn || !session) {
+      setError('Please sign in to subscribe.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
     try {
       const token = await getToken();
+      if (!token) {
+        throw new Error('Failed to obtain authentication token');
+      }
+      console.log('Checkout token:', token); // Debug
+
       const response = await fetch('https://vercel-dataflow.vercel.app/api/create-checkout-session/', {
         method: 'POST',
         headers: {
@@ -81,15 +102,16 @@ const plans = [
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorData = await response.json();
+        throw new Error(`HTTP error! status: ${response.status}, message: ${errorData.error || 'Unknown error'}`);
       }
 
       const { sessionId } = await response.json();
-      const stripe = window.Stripe('pk_test_51RL5v0Q2fPLucCvVIKbZAI9ctbXv9kVN2RlnmLmWQSE0a2cZxZBob1E1KOTpUzgOaVrTvusolX5xVK5q17kqkzE500FxIqJDHY'); // Replace with your Stripe publishable key
+      const stripe = window.Stripe('pk_test_51RL5v0Q2fPLucCvVIKbZAI9ctbXv9kVN2RlnmLmWQSE0a2cZxZBob1E1KOTpUzgOaVrTvusolX5xVK5q17kqkzE500FxIqJDHY');
       await stripe.redirectToCheckout({ sessionId });
     } catch (err) {
-      setError('Failed to initiate checkout. Please try again.');
-      console.error(err);
+      setError(`Failed to initiate checkout: ${err.message}`);
+      console.error('Checkout error:', err);
       setLoading(false);
     }
   };
@@ -98,22 +120,22 @@ const plans = [
   useEffect(() => {
     const query = new URLSearchParams(location.search);
     if (query.get('success')) {
-      fetchSubscriptionStatus(); // Refresh status after successful checkout
-      navigate('/subscription', { replace: true }); // Clear query params
+      fetchSubscriptionStatus();
+      navigate('/subscription', { replace: true });
     } else if (query.get('canceled')) {
       setError('Checkout was canceled. Please try again.');
       navigate('/subscription', { replace: true });
     }
   }, [location, navigate]);
 
-  // Initial fetch on mount (optional, if you want to sync on load)
+  // Initial fetch on mount
   useEffect(() => {
-    if (user) {
+    if (isSignedIn && user) {
       fetchSubscriptionStatus();
     }
-  }, [user]);
+  }, [user, isSignedIn]);
 
-  if (!user) {
+  if (!isSignedIn || !user) {
     return <div>Please sign in to view subscription options.</div>;
   }
 
@@ -136,7 +158,7 @@ const plans = [
               onClick={() => handleCheckout(plan.id)}
               disabled={loading || subscriptionStatus.plan === plan.name}
             >
-              Subscribe
+              {subscriptionStatus.plan === plan.name ? 'Subscribed' : 'Subscribe'}
             </button>
           </div>
         ))}
