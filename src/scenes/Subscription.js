@@ -1,10 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { useUser, useClerk } from '@clerk/clerk-react';
+import { useUser, useAuth } from '@clerk/clerk-react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { loadStripe } from '@stripe/stripe-js';
+import { Box, Typography, useTheme, Button, Alert } from '@mui/material';
+import { tokens } from '../theme';
+import Header from '../components/Header';
+
+// Initialize Stripe
+const stripePublishableKey = process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY;
+if (!stripePublishableKey) {
+  console.error('Stripe Publishable Key is missing. Please set REACT_APP_STRIPE_PUBLISHABLE_KEY in your .env file.');
+}
+const stripePromise = stripePublishableKey ? loadStripe(stripePublishableKey) : null;
 
 const Subscription = () => {
+  const theme = useTheme();
+  const colors = tokens(theme.palette.mode);
   const { user, isSignedIn } = useUser();
-  const { getToken, session } = useClerk();
+  const { getToken } = useAuth(); // Use useAuth for getToken
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -15,9 +28,9 @@ const Subscription = () => {
     features: user?.publicMetadata.features || { basic_charts: true },
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState('');
 
-  // Available plans (use SubscriptionPlan IDs from backend, not Stripe product IDs)
+  // Available plans (use SubscriptionPlan IDs from backend)
   const plans = [
     { id: 1, name: 'Premium', billing_interval: 'MONTHLY', price: 30.00 },
     { id: 2, name: 'Premium', billing_interval: 'YEARLY', price: 300.00 },
@@ -26,13 +39,13 @@ const Subscription = () => {
 
   // Fetch subscription status from backend
   const fetchSubscriptionStatus = async () => {
-    if (!isSignedIn || !session) {
+    if (!isSignedIn || !user) {
       setError('Please sign in to view subscription status.');
       return;
     }
 
     setLoading(true);
-    setError(null);
+    setError('');
 
     try {
       const token = await getToken();
@@ -77,13 +90,18 @@ const Subscription = () => {
 
   // Handle checkout
   const handleCheckout = async (planId) => {
-    if (!isSignedIn || !session) {
+    if (!isSignedIn || !user) {
       setError('Please sign in to subscribe.');
       return;
     }
 
+    if (!stripePromise) {
+      setError('Stripe is not initialized. Please check your configuration.');
+      return;
+    }
+
     setLoading(true);
-    setError(null);
+    setError('');
 
     try {
       const token = await getToken();
@@ -107,11 +125,16 @@ const Subscription = () => {
       }
 
       const { sessionId } = await response.json();
-      const stripe = window.Stripe('pk_test_51RL5v0Q2fPLucCvVIKbZAI9ctbXv9kVN2RlnmLmWQSE0a2cZxZBob1E1KOTpUzgOaVrTvusolX5xVK5q17kqkzE500FxIqJDHY');
-      await stripe.redirectToCheckout({ sessionId });
+      const stripe = await stripePromise;
+      const { error } = await stripe.redirectToCheckout({ sessionId });
+
+      if (error) {
+        throw new Error(error.message);
+      }
     } catch (err) {
       setError(`Failed to initiate checkout: ${err.message}`);
       console.error('Checkout error:', err);
+    } finally {
       setLoading(false);
     }
   };
@@ -136,34 +159,104 @@ const Subscription = () => {
   }, [user, isSignedIn]);
 
   if (!isSignedIn || !user) {
-    return <div>Please sign in to view subscription options.</div>;
+    return (
+      <Box
+        sx={{
+          minHeight: '100vh',
+          backgroundColor: colors.primary[900],
+          padding: '20px',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}
+      >
+        <Typography variant="h5" sx={{ color: colors.grey[100] }}>
+          Please sign in to view subscription options.
+        </Typography>
+      </Box>
+    );
   }
 
   return (
-    <div>
-      <h1>Subscription</h1>
-      {loading && <p>Loading...</p>}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      <h2>Current Plan: {subscriptionStatus.plan} ({subscriptionStatus.billing_interval})</h2>
-      <p>Status: {subscriptionStatus.subscription_status}</p>
-      <p>Features: {JSON.stringify(subscriptionStatus.features)}</p>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        backgroundColor: colors.primary[900],
+        padding: '20px',
+      }}
+    >
+      <Header title="Subscription" subtitle="Manage your plan" />
+      <Box
+        sx={{
+          maxWidth: '800px',
+          margin: '0 auto',
+          backgroundColor: colors.primary[800],
+          borderRadius: '8px',
+          padding: '20px',
+          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+        }}
+      >
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        )}
+        {loading && (
+          <Typography variant="body1" sx={{ color: colors.grey[300], mb: 2 }}>
+            Loading...
+          </Typography>
+        )}
+        <Typography variant="h4" sx={{ color: colors.grey[100], mb: 2 }}>
+          Current Plan
+        </Typography>
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="body1" sx={{ color: colors.grey[300], mb: 1 }}>
+            <strong>Plan:</strong> {subscriptionStatus.plan} ({subscriptionStatus.billing_interval})
+          </Typography>
+          <Typography variant="body1" sx={{ color: colors.grey[300], mb: 1 }}>
+            <strong>Status:</strong> {subscriptionStatus.subscription_status}
+          </Typography>
+          <Typography variant="body1" sx={{ color: colors.grey[300], mb: 2 }}>
+            <strong>Features:</strong> {JSON.stringify(subscriptionStatus.features)}
+          </Typography>
+        </Box>
 
-      <h3>Available Plans</h3>
-      <div>
-        {plans.map((plan) => (
-          <div key={plan.id}>
-            <h4>{plan.name} ({plan.billing_interval})</h4>
-            <p>Price: ${plan.price}</p>
-            <button
-              onClick={() => handleCheckout(plan.id)}
-              disabled={loading || subscriptionStatus.plan === plan.name}
+        <Typography variant="h4" sx={{ color: colors.grey[100], mb: 2 }}>
+          Available Plans
+        </Typography>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {plans.map((plan) => (
+            <Box
+              key={plan.id}
+              sx={{
+                backgroundColor: colors.primary[700],
+                borderRadius: '4px',
+                padding: '15px',
+              }}
             >
-              {subscriptionStatus.plan === plan.name ? 'Subscribed' : 'Subscribe'}
-            </button>
-          </div>
-        ))}
-      </div>
-    </div>
+              <Typography variant="h6" sx={{ color: colors.grey[100], mb: 1 }}>
+                {plan.name} ({plan.billing_interval})
+              </Typography>
+              <Typography variant="body1" sx={{ color: colors.grey[300], mb: 1 }}>
+                Price: ${plan.price}
+              </Typography>
+              <Button
+                onClick={() => handleCheckout(plan.id)}
+                disabled={loading || subscriptionStatus.plan === plan.name || !stripePromise}
+                sx={{
+                  backgroundColor: colors.greenAccent[500],
+                  color: colors.grey[900],
+                  '&:hover': { backgroundColor: colors.greenAccent[600] },
+                  '&:disabled': { backgroundColor: colors.grey[700], color: colors.grey[400] },
+                }}
+              >
+                {subscriptionStatus.plan === plan.name ? 'Subscribed' : 'Subscribe'}
+              </Button>
+            </Box>
+          ))}
+        </Box>
+      </Box>
+    </Box>
   );
 };
 
