@@ -19,9 +19,9 @@ const Subscription = () => {
 
   // Available plans (match SubscriptionPlan IDs from backend)
 const plans = [
-  { id: prod_SGiujn0P6GfQAC, name: 'Premium', billing_interval: 'MONTHLY', price: 10.00 },
-  { id: prod_SGioq8WtiKlOIc, name: 'Premium', billing_interval: 'YEARLY', price: 100.00 },
-  { id: prod_SGisX0np5wxY05, name: 'Lifetime', billing_interval: 'ONE_TIME', price: 500.00 },
+  { id: 'prod_SGiujn0P6GfQAC', name: 'Premium', billing_interval: 'MONTHLY', price: 10.00 },
+  { id: 'prod_SGioq8WtiKlOIc', name: 'Premium', billing_interval: 'YEARLY', price: 100.00 },
+  { id: 'prod_SGisX0np5wxY05', name: 'Lifetime', billing_interval: 'ONE_TIME', price: 500.00 },
 ];
 
   // Fetch subscription status from backend
