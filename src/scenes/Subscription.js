@@ -17,7 +17,7 @@ const Subscription = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const { user, isSignedIn } = useUser();
-  const { getToken } = useAuth(); // Use useAuth for getToken
+  const { getToken } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -30,14 +30,14 @@ const Subscription = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Available plans (use SubscriptionPlan IDs from backend)
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://vercel-dataflow.vercel.app';
+
   const plans = [
-    { id: 1, name: 'Premium', billing_interval: 'MONTHLY', price: 30.00 },
-    { id: 2, name: 'Premium', billing_interval: 'YEARLY', price: 300.00 },
-    { id: 3, name: 'Lifetime', billing_interval: 'ONE_TIME', price: 2500.00 },
+    { id: 7, name: 'Premium', billing_interval: 'MONTHLY', price: 30.00 },
+    { id: 9, name: 'Annual', billing_interval: 'YEARLY', price: 300.00 },
+    { id: 10, name: 'Lifetime', billing_interval: 'ONE_TIME', price: 2500.00 },
   ];
 
-  // Fetch subscription status from backend
   const fetchSubscriptionStatus = async () => {
     if (!isSignedIn || !user) {
       setError('Please sign in to view subscription status.');
@@ -52,9 +52,9 @@ const Subscription = () => {
       if (!token) {
         throw new Error('Failed to obtain authentication token');
       }
-      console.log('Subscription status token:', token); // Debug
+      console.log('Subscription status token:', token);
 
-      const response = await fetch('https://vercel-dataflow.vercel.app/api/subscription-status/', {
+      const response = await fetch(`${API_BASE_URL}/api/subscription-status/`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -62,24 +62,19 @@ const Subscription = () => {
         },
       });
 
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch {
+        errorData = { error: 'Invalid response format' };
+      }
+
       if (!response.ok) {
-        const errorData = await response.json();
         throw new Error(`HTTP error! status: ${response.status}, message: ${errorData.error || 'Unknown error'}`);
       }
 
-      const data = await response.json();
+      const data = errorData;
       setSubscriptionStatus(data);
-
-      // Update Clerk publicMetadata
-      if (user) {
-        await user.update({
-          publicMetadata: {
-            plan: data.plan,
-            billing_interval: data.billing_interval,
-            features: data.features,
-          },
-        });
-      }
     } catch (err) {
       setError(`Failed to fetch subscription status: ${err.message}`);
       console.error('Subscription status error:', err);
@@ -88,7 +83,6 @@ const Subscription = () => {
     }
   };
 
-  // Handle checkout
   const handleCheckout = async (planId) => {
     if (!isSignedIn || !user) {
       setError('Please sign in to subscribe.');
@@ -108,9 +102,9 @@ const Subscription = () => {
       if (!token) {
         throw new Error('Failed to obtain authentication token');
       }
-      console.log('Checkout token:', token); // Debug
+      console.log('Checkout token:', token);
 
-      const response = await fetch('https://vercel-dataflow.vercel.app/api/create-checkout-session/', {
+      const response = await fetch(`${API_BASE_URL}/api/create-checkout-session/`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -119,12 +113,18 @@ const Subscription = () => {
         body: JSON.stringify({ plan_id: planId }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`HTTP error! status: ${response.status}, message: ${errorData.error || 'Unknown error'}`);
+      let responseData;
+      try {
+        responseData = await response.json();
+      } catch {
+        responseData = { error: 'Invalid response format' };
       }
 
-      const { sessionId } = await response.json();
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}, message: ${responseData.error || 'Unknown error'}`);
+      }
+
+      const { sessionId } = responseData;
       const stripe = await stripePromise;
       const { error } = await stripe.redirectToCheckout({ sessionId });
 
@@ -139,7 +139,6 @@ const Subscription = () => {
     }
   };
 
-  // Check for success or canceled redirect
   useEffect(() => {
     const query = new URLSearchParams(location.search);
     if (query.get('success')) {
@@ -151,7 +150,6 @@ const Subscription = () => {
     }
   }, [location, navigate]);
 
-  // Initial fetch on mount
   useEffect(() => {
     if (isSignedIn && user) {
       fetchSubscriptionStatus();
