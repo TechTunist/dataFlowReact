@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useUser, useAuth } from '@clerk/clerk-react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Box, Typography, useTheme, Alert } from '@mui/material';
 import { tokens } from '../theme';
 import Header from '../components/Header';
@@ -9,17 +10,19 @@ const Profile = () => {
   const colors = tokens(theme.palette.mode);
   const { user, isSignedIn } = useUser();
   const { getToken } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const [subscriptionStatus, setSubscriptionStatus] = useState({
-    plan: 'Free',
-    billing_interval: 'NONE',
+    plan: user?.publicMetadata.plan || 'Free',
+    billing_interval: user?.publicMetadata.billing_interval || 'NONE',
     subscription_status: 'ACTIVE',
+    features: user?.publicMetadata.features || { basic_charts: true },
     display_name: '',
     current_period_end: null,
     last_payment_date: null,
     payment_method: null,
     subscription_start_date: null,
-    features: { basic_charts: true },
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -40,7 +43,7 @@ const Profile = () => {
       if (!token) {
         throw new Error('Failed to obtain authentication token');
       }
-      console.log('Profile token:', token);
+      console.log('Profile subscription status token:', token);
 
       const response = await fetch(`${API_BASE_URL}/api/subscription-status/`, {
         method: 'GET',
@@ -64,12 +67,20 @@ const Profile = () => {
       const data = errorData;
       setSubscriptionStatus(data);
     } catch (err) {
-      setError(`Failed to fetch profile: ${err.message}`);
-      console.error('Profile error:', err);
+      setError(`Failed to fetch subscription status: ${err.message}`);
+      console.error('Profile subscription status error:', err);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const query = new URLSearchParams(location.search);
+    if (query.get('success')) {
+      fetchSubscriptionStatus();
+      navigate('/profile', { replace: true });
+    }
+  }, [location, navigate]);
 
   useEffect(() => {
     if (isSignedIn && user) {
@@ -126,15 +137,21 @@ const Profile = () => {
           </Typography>
         )}
         <Typography variant="h4" sx={{ color: colors.grey[100], mb: 2 }}>
-          Account Details
+          Account Information
         </Typography>
         <Box sx={{ mb: 3 }}>
           <Typography variant="body1" sx={{ color: colors.grey[300], mb: 1 }}>
-            <strong>Name:</strong> {subscriptionStatus.display_name || user.firstName + ' ' + user.lastName}
+            <strong>Email:</strong> {user.primaryEmailAddress?.emailAddress || 'N/A'}
           </Typography>
           <Typography variant="body1" sx={{ color: colors.grey[300], mb: 1 }}>
-            <strong>Email:</strong> {user.emailAddresses[0]?.emailAddress || 'N/A'}
+            <strong>Name:</strong> {subscriptionStatus.display_name || user.fullName || 'N/A'}
           </Typography>
+        </Box>
+
+        <Typography variant="h4" sx={{ color: colors.grey[100], mb: 2 }}>
+          Subscription Details
+        </Typography>
+        <Box sx={{ mb: 3 }}>
           <Typography variant="body1" sx={{ color: colors.grey[300], mb: 1 }}>
             <strong>Plan:</strong> {subscriptionStatus.plan} ({subscriptionStatus.billing_interval})
           </Typography>
@@ -143,20 +160,17 @@ const Profile = () => {
           </Typography>
           {subscriptionStatus.subscription_start_date && (
             <Typography variant="body1" sx={{ color: colors.grey[300], mb: 1 }}>
-              <strong>Member Since:</strong>{' '}
-              {new Date(subscriptionStatus.subscription_start_date).toLocaleDateString()}
-            </Typography>
-          )}
-          {subscriptionStatus.last_payment_date && (
-            <Typography variant="body1" sx={{ color: colors.grey[300], mb: 1 }}>
-              <strong>Last Payment:</strong>{' '}
-              {new Date(subscriptionStatus.last_payment_date).toLocaleDateString()}
+              <strong>Start Date:</strong> {new Date(subscriptionStatus.subscription_start_date * 1000).toLocaleDateString()}
             </Typography>
           )}
           {subscriptionStatus.current_period_end && (
             <Typography variant="body1" sx={{ color: colors.grey[300], mb: 1 }}>
-              <strong>Next Billing:</strong>{' '}
-              {new Date(subscriptionStatus.current_period_end).toLocaleDateString()}
+              <strong>Current Period End:</strong> {new Date(subscriptionStatus.current_period_end * 1000).toLocaleDateString()}
+            </Typography>
+          )}
+          {subscriptionStatus.last_payment_date && (
+            <Typography variant="body1" sx={{ color: colors.grey[300], mb: 1 }}>
+              <strong>Last Payment Date:</strong> {new Date(subscriptionStatus.last_payment_date * 1000).toLocaleDateString()}
             </Typography>
           )}
           {subscriptionStatus.payment_method && (

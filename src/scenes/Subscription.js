@@ -1,17 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useUser, useAuth } from '@clerk/clerk-react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { loadStripe } from '@stripe/stripe-js';
 import { Box, Typography, useTheme, Button, Alert } from '@mui/material';
 import { tokens } from '../theme';
 import Header from '../components/Header';
-
-// Initialize Stripe
-const stripePublishableKey = process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY;
-if (!stripePublishableKey) {
-  console.error('Stripe Publishable Key is missing. Please set REACT_APP_STRIPE_PUBLISHABLE_KEY in your .env file.');
-}
-const stripePromise = stripePublishableKey ? loadStripe(stripePublishableKey) : null;
+import { StripeContext } from '../App';
 
 const Subscription = () => {
   const theme = useTheme();
@@ -20,6 +13,7 @@ const Subscription = () => {
   const { getToken } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const stripe = useContext(StripeContext);
 
   const [subscriptionStatus, setSubscriptionStatus] = useState({
     plan: user?.publicMetadata.plan || 'Free',
@@ -89,8 +83,8 @@ const Subscription = () => {
       return;
     }
 
-    if (!stripePromise) {
-      setError('Stripe is not initialized. Please check your configuration.');
+    if (!stripe) {
+      setError('Stripe is not initialized. Please wait or refresh the page.');
       return;
     }
 
@@ -121,15 +115,19 @@ const Subscription = () => {
       }
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}, message: ${responseData.error || 'Unknown error'}`);
+        let errorMessage = responseData.error || 'Unknown error';
+        if (errorMessage.includes('Cannot create subscription')) {
+          errorMessage = 'Currency mismatch: Your existing subscription is in a different currency. Please cancel it or contact support.';
+        }
+        throw new Error(`HTTP error! status: ${response.status}, message: ${errorMessage}`);
       }
 
       const { sessionId } = responseData;
-      const stripe = await stripePromise;
+      console.log('Stripe checkout session ID:', sessionId);
       const { error } = await stripe.redirectToCheckout({ sessionId });
-
       if (error) {
-        throw new Error(error.message);
+        console.error('Stripe redirect error:', error);
+        throw new Error(`Failed to redirect to checkout: ${error.message}`);
       }
     } catch (err) {
       setError(`Failed to initiate checkout: ${err.message}`);
@@ -143,7 +141,7 @@ const Subscription = () => {
     const query = new URLSearchParams(location.search);
     if (query.get('success')) {
       fetchSubscriptionStatus();
-      navigate('/subscription', { replace: true });
+      navigate('/profile', { replace: true }); // Redirect to /profile
     } else if (query.get('canceled')) {
       setError('Checkout was canceled. Please try again.');
       navigate('/subscription', { replace: true });
@@ -240,7 +238,7 @@ const Subscription = () => {
               </Typography>
               <Button
                 onClick={() => handleCheckout(plan.id)}
-                disabled={loading || subscriptionStatus.plan === plan.name || !stripePromise}
+                disabled={loading || subscriptionStatus.plan === plan.name || !stripe}
                 sx={{
                   backgroundColor: colors.greenAccent[500],
                   color: colors.grey[900],
