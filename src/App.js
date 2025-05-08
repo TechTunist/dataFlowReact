@@ -48,6 +48,9 @@ import Profile from "./scenes/Profile";
 import Settings from "./scenes/Settings";
 import AccountNavBar from "./scenes/global/AccountNavBar";
 import Subscription from "./scenes/Subscription";
+import { loadStripe } from '@stripe/stripe-js';
+
+window.Stripe = loadStripe('pk_test_51RL5v0Q2fPLucCvVIKbZAI9ctbXv9kVN2RlnmLmWQSE0a2cZxZBob1E1KOTpUzgOaVrTvusolX5xVK5q17kqkzE500FxIqJDHY');
 
 const PUBLISHABLE_KEY = process.env.REACT_APP_CLERK_PUBLISHABLE_KEY;
 

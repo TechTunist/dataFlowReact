@@ -1,120 +1,147 @@
-// src/scenes/Subscription.js
-import { useState } from "react";
-import { loadStripe } from "@stripe/stripe-js";
-import { Box, Typography, useTheme, Button, Alert } from "@mui/material";
-import { tokens } from "../theme";
-import Header from "../components/Header";
-import { useUser } from "@clerk/clerk-react";
-
-// Initialize Stripe with your publishable key
-const stripePublishableKey = process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY;
-if (!stripePublishableKey) {
-  console.error("Stripe Publishable Key is missing. Please set REACT_APP_STRIPE_PUBLISHABLE_KEY in your .env file.");
-}
-const stripePromise = stripePublishableKey ? loadStripe(stripePublishableKey) : null;
+import React, { useState, useEffect } from 'react';
+import { useUser, useClerk } from '@clerk/clerk-react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const Subscription = () => {
-  const theme = useTheme();
-  const colors = tokens(theme.palette.mode);
   const { user } = useUser();
-  const [error, setError] = useState("");
+  const { getToken } = useClerk();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const [subscriptionStatus, setSubscriptionStatus] = useState({
+    plan: user?.publicMetadata.plan || 'Free',
+    billing_interval: user?.publicMetadata.billing_interval || 'NONE',
+    subscription_status: 'ACTIVE',
+    features: user?.publicMetadata.features || { basic_charts: true },
+  });
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const currentPlan = user?.publicMetadata?.plan || "Free";
+  // Available plans (match SubscriptionPlan IDs from backend)
+const plans = [
+  { id: prod_SGiujn0P6GfQAC, name: 'Premium', billing_interval: 'MONTHLY', price: 10.00 },
+  { id: prod_SGioq8WtiKlOIc, name: 'Premium', billing_interval: 'YEARLY', price: 100.00 },
+  { id: prod_SGisX0np5wxY05, name: 'Lifetime', billing_interval: 'ONE_TIME', price: 500.00 },
+];
 
-  const handleUpgrade = async () => {
-    if (!stripePromise) {
-      setError("Stripe is not initialized. Please check your configuration.");
-      return;
-    }
-
+  // Fetch subscription status from backend
+  const fetchSubscriptionStatus = async () => {
     setLoading(true);
-    setError("");
+    setError(null);
 
     try {
-      const response = await fetch("https://vercel-dataflow.vercel.app/api/create-checkout-session", {
-        method: "POST",
+      const token = await getToken();
+      const response = await fetch('https://vercel-dataflow.vercel.app/api/subscription-status/', {
+        method: 'GET',
         headers: {
-          "Content-Type": "application/json",
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          priceId: "price_1RL6vDQ2fPLucCvVLF0NyRQ9", 
-          successUrl: `${window.location.origin}/subscription?success=true`,
-          cancelUrl: `${window.location.origin}/subscription?canceled=true`,
-          userId: user.id,
-        }),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to create Checkout session");
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const session = await response.json();
-      const stripe = await stripePromise;
-      const { error } = await stripe.redirectToCheckout({ sessionId: session.id });
+      const data = await response.json();
+      setSubscriptionStatus(data);
 
-      if (error) {
-        setError(error.message);
+      // Update Clerk publicMetadata (optional, for consistency)
+      if (user) {
+        await user.update({
+          publicMetadata: {
+            plan: data.plan,
+            billing_interval: data.billing_interval,
+            features: data.features,
+          },
+        });
       }
     } catch (err) {
-      setError("Failed to initiate checkout. Please try again.");
+      setError('Failed to fetch subscription status. Please try again.');
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
+  // Handle checkout
+  const handleCheckout = async (planId) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const token = await getToken();
+      const response = await fetch('https://vercel-dataflow.vercel.app/api/create-checkout-session/', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ plan_id: planId }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const { sessionId } = await response.json();
+      const stripe = window.Stripe('pk_test_51RL5v0Q2fPLucCvVIKbZAI9ctbXv9kVN2RlnmLmWQSE0a2cZxZBob1E1KOTpUzgOaVrTvusolX5xVK5q17kqkzE500FxIqJDHY'); // Replace with your Stripe publishable key
+      await stripe.redirectToCheckout({ sessionId });
+    } catch (err) {
+      setError('Failed to initiate checkout. Please try again.');
+      console.error(err);
+      setLoading(false);
+    }
+  };
+
+  // Check for success or canceled redirect
+  useEffect(() => {
+    const query = new URLSearchParams(location.search);
+    if (query.get('success')) {
+      fetchSubscriptionStatus(); // Refresh status after successful checkout
+      navigate('/subscription', { replace: true }); // Clear query params
+    } else if (query.get('canceled')) {
+      setError('Checkout was canceled. Please try again.');
+      navigate('/subscription', { replace: true });
+    }
+  }, [location, navigate]);
+
+  // Initial fetch on mount (optional, if you want to sync on load)
+  useEffect(() => {
+    if (user) {
+      fetchSubscriptionStatus();
+    }
+  }, [user]);
+
+  if (!user) {
+    return <div>Please sign in to view subscription options.</div>;
+  }
+
   return (
-    <Box
-      sx={{
-        minHeight: "100vh",
-        backgroundColor: colors.primary[900],
-        padding: "20px",
-      }}
-    >
-      <Header title="Subscription" subtitle="Manage your plan" />
-      <Box
-        sx={{
-          maxWidth: "800px",
-          margin: "0 auto",
-          backgroundColor: colors.primary[800],
-          borderRadius: "8px",
-          padding: "20px",
-          boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-        }}
-      >
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
-        <Typography variant="h4" sx={{ color: colors.grey[100], mb: 2 }}>
-          Current Plan
-        </Typography>
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="body1" sx={{ color: colors.grey[300], mb: 1 }}>
-            <strong>Plan:</strong> {currentPlan}
-          </Typography>
-          {currentPlan === "Free" && (
-            <>
-              <Typography variant="body1" sx={{ color: colors.grey[300], mb: 2 }}>
-                Upgrade to Premium for access to exclusive charts and features.
-              </Typography>
-              <Button
-                onClick={handleUpgrade}
-                disabled={loading || !stripePromise}
-                sx={{
-                  backgroundColor: colors.greenAccent[500],
-                  color: colors.grey[900],
-                  "&:hover": { backgroundColor: colors.greenAccent[600] },
-                }}
-              >
-                {loading ? "Processing..." : "Upgrade to Premium"}
-              </Button>
-            </>
-          )}
-        </Box>
-      </Box>
-    </Box>
+    <div>
+      <h1>Subscription</h1>
+      {loading && <p>Loading...</p>}
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+      <h2>Current Plan: {subscriptionStatus.plan} ({subscriptionStatus.billing_interval})</h2>
+      <p>Status: {subscriptionStatus.subscription_status}</p>
+      <p>Features: {JSON.stringify(subscriptionStatus.features)}</p>
+
+      <h3>Available Plans</h3>
+      <div>
+        {plans.map((plan) => (
+          <div key={plan.id}>
+            <h4>{plan.name} ({plan.billing_interval})</h4>
+            <p>Price: ${plan.price}</p>
+            <button
+              onClick={() => handleCheckout(plan.id)}
+              disabled={loading || subscriptionStatus.plan === plan.name}
+            >
+              Subscribe
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 };
 
