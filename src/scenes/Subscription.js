@@ -16,7 +16,7 @@ const Subscription = () => {
   const stripe = useContext(StripeContext);
 
   const [subscriptionStatus, setSubscriptionStatus] = useState({
-    plan: user?.publicMetadata.plan || 'Free',
+    plan: user?.publicMetadata?.plan || 'Free',
     billing_interval: user?.publicMetadata.billing_interval || 'NONE',
     subscription_status: 'ACTIVE',
     features: user?.publicMetadata.features || { basic_charts: true },
@@ -46,7 +46,7 @@ const Subscription = () => {
       if (!token) {
         throw new Error('Failed to obtain authentication token');
       }
-      console.log('Subscription status token:', token);
+      // console.log('Subscription status token:', token);
 
       const response = await fetch(`${API_BASE_URL}/api/subscription-status/`, {
         method: 'GET',
@@ -96,7 +96,7 @@ const Subscription = () => {
       if (!token) {
         throw new Error('Failed to obtain authentication token');
       }
-      console.log('Checkout token:', token);
+      // console.log('Checkout token:', token);
 
       const response = await fetch(`${API_BASE_URL}/api/create-checkout-session/`, {
         method: 'POST',
@@ -123,7 +123,7 @@ const Subscription = () => {
       }
 
       const { sessionId } = responseData;
-      console.log('Stripe checkout session ID:', sessionId);
+      // console.log('Stripe checkout session ID:', sessionId);
       const { error } = await stripe.redirectToCheckout({ sessionId });
       if (error) {
         console.error('Stripe redirect error:', error);

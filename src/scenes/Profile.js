@@ -43,7 +43,7 @@ const Profile = () => {
       if (!token) {
         throw new Error('Failed to obtain authentication token');
       }
-      console.log('Profile subscription status token:', token);
+      // console.log('Profile subscription status token:', token);
 
       const response = await fetch(`${API_BASE_URL}/api/subscription-status/`, {
         method: 'GET',

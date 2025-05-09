@@ -46,7 +46,7 @@ export default function LoginSignup() {
         await setActive({ session: result.createdSessionId });
         navigate("/dashboard");
       } else {
-        console.log("Verification incomplete:", result);
+        // console.log("Verification incomplete:", result);
         alert("Verification incomplete. Please try again.");
       }
     } catch (err) {

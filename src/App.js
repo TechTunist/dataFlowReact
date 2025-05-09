@@ -79,10 +79,10 @@ function AppContent() {
     const initializeStripe = async () => {
       try {
         const stripeInstance = await loadStripe(stripePublishableKey);
-        console.log('Stripe instance loaded in App.js:', stripeInstance);
+        // console.log('Stripe instance loaded in App.js:', stripeInstance);
         setStripe(stripeInstance);
       } catch (error) {
-        console.error('Failed to load Stripe:', error);
+        // console.error('Failed to load Stripe:', error);
         setStripeError(error.message);
       }
     };
