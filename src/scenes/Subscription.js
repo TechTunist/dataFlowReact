@@ -17,9 +17,14 @@ const Subscription = () => {
 
   const [subscriptionStatus, setSubscriptionStatus] = useState({
     plan: user?.publicMetadata?.plan || 'Free',
-    billing_interval: user?.publicMetadata.billing_interval || 'NONE',
-    subscription_status: 'ACTIVE',
-    features: user?.publicMetadata.features || { basic_charts: true },
+    billing_interval: user?.publicMetadata?.billing_interval || 'NONE',
+    subscription_status: 'free',
+    current_period_end: null,
+    last_payment_date: null,
+    payment_method: null,
+    subscription_start_date: null,
+    display_name: '',
+    features: user?.publicMetadata.features || { basic_charts: true, advanced_charts: false, custom_indicators: false },
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -40,13 +45,14 @@ const Subscription = () => {
 
     setLoading(true);
     setError('');
+    console.log('Fetching subscription status...');
 
     try {
       const token = await getToken();
       if (!token) {
         throw new Error('Failed to obtain authentication token');
       }
-      // console.log('Subscription status token:', token);
+      console.log('Subscription status token:', token);
 
       const response = await fetch(`${API_BASE_URL}/api/subscription-status/`, {
         method: 'GET',
@@ -68,12 +74,44 @@ const Subscription = () => {
       }
 
       const data = errorData;
-      setSubscriptionStatus(data);
+      // Fallback to publicMetadata if database data is incomplete
+      if (data.plan === 'Free' && user?.publicMetadata?.plan && user.publicMetadata.plan !== 'Free') {
+        console.log('Falling back to publicMetadata due to incomplete database data');
+        setSubscriptionStatus({
+          plan: user.publicMetadata.plan,
+          billing_interval: user.publicMetadata.billing_interval || 'NONE',
+          subscription_status: user.publicMetadata.subscription_status || 'ACTIVE',
+          features: user.publicMetadata.features || { basic_charts: true, advanced_charts: false, custom_indicators: false },
+          current_period_end: data.current_period_end,
+          last_payment_date: data.last_payment_date,
+          payment_method: data.payment_method,
+          subscription_start_date: data.subscription_start_date,
+          display_name: data.display_name,
+        });
+      } else {
+        setSubscriptionStatus(data);
+      }
+      console.log('Subscription status fetched:', data);
     } catch (err) {
       setError(`Failed to fetch subscription status: ${err.message}`);
       console.error('Subscription status error:', err);
+      // Fallback to publicMetadata on error
+      if (user?.publicMetadata?.plan) {
+        setSubscriptionStatus({
+          plan: user.publicMetadata.plan || 'Free',
+          billing_interval: user.publicMetadata.billing_interval || 'NONE',
+          subscription_status: user.publicMetadata.subscription_status || 'free',
+          features: user.publicMetadata.features || { basic_charts: true, advanced_charts: false, custom_indicators: false },
+          current_period_end: null,
+          last_payment_date: null,
+          payment_method: null,
+          subscription_start_date: null,
+          display_name: '',
+        });
+      }
     } finally {
       setLoading(false);
+      console.log('Fetch subscription status complete, loading:', false);
     }
   };
 
@@ -90,13 +128,14 @@ const Subscription = () => {
 
     setLoading(true);
     setError('');
+    console.log('Initiating checkout for plan ID:', planId);
 
     try {
       const token = await getToken();
       if (!token) {
         throw new Error('Failed to obtain authentication token');
       }
-      // console.log('Checkout token:', token);
+      console.log('Checkout token:', token);
 
       const response = await fetch(`${API_BASE_URL}/api/create-checkout-session/`, {
         method: 'POST',
@@ -123,7 +162,7 @@ const Subscription = () => {
       }
 
       const { sessionId } = responseData;
-      // console.log('Stripe checkout session ID:', sessionId);
+      console.log('Stripe checkout session ID:', sessionId);
       const { error } = await stripe.redirectToCheckout({ sessionId });
       if (error) {
         console.error('Stripe redirect error:', error);
@@ -173,6 +212,10 @@ const Subscription = () => {
     );
   }
 
+  // Feature gating logic
+  const canAccessAdvancedCharts = subscriptionStatus.features.advanced_charts;
+  const canAccessCustomIndicators = subscriptionStatus.features.custom_indicators;
+
   return (
     <Box
       sx={{
@@ -212,9 +255,82 @@ const Subscription = () => {
           <Typography variant="body1" sx={{ color: colors.grey[300], mb: 1 }}>
             <strong>Status:</strong> {subscriptionStatus.subscription_status}
           </Typography>
+          {subscriptionStatus.current_period_end && (
+            <Typography variant="body1" sx={{ color: colors.grey[300], mb: 1 }}>
+              <strong>Period End:</strong> {new Date(subscriptionStatus.current_period_end).toLocaleDateString()}
+            </Typography>
+          )}
+          {subscriptionStatus.payment_method && (
+            <Typography variant="body1" sx={{ color: colors.grey[300], mb: 1 }}>
+              <strong>Payment Method:</strong> {subscriptionStatus.payment_method}
+            </Typography>
+          )}
           <Typography variant="body1" sx={{ color: colors.grey[300], mb: 2 }}>
-            <strong>Features:</strong> {JSON.stringify(subscriptionStatus.features)}
+            <strong>Features:</strong> Basic Charts: {subscriptionStatus.features.basic_charts ? 'Yes' : 'No'},
+            Advanced Charts: {subscriptionStatus.features.advanced_charts ? 'Yes' : 'No'},
+            Custom Indicators: {subscriptionStatus.features.custom_indicators ? 'Yes' : 'No'}
           </Typography>
+        </Box>
+
+        {/* Feature Gating Examples */}
+        <Typography variant="h4" sx={{ color: colors.grey[100], mb: 2 }}>
+          Available Features
+        </Typography>
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="h6" sx={{ color: colors.grey[100], mb: 1 }}>
+            Basic Charts
+          </Typography>
+          <Typography variant="body1" sx={{ color: colors.grey[300], mb: 2 }}>
+            Access to basic charting tools is available to all users.
+          </Typography>
+
+          <Typography variant="h6" sx={{ color: colors.grey[100], mb: 1 }}>
+            Advanced Charts
+          </Typography>
+          {canAccessAdvancedCharts ? (
+            <Typography variant="body1" sx={{ color: colors.grey[300], mb: 2 }}>
+              You have access to advanced charts! Explore enhanced charting features.
+              <Button
+                onClick={() => navigate('/charts/advanced')}
+                sx={{
+                  ml: 2,
+                  backgroundColor: colors.greenAccent[500],
+                  color: colors.grey[900],
+                  '&:hover': { backgroundColor: colors.greenAccent[600] },
+                }}
+              >
+                Go to Advanced Charts
+              </Button>
+            </Typography>
+          ) : (
+            <Typography variant="body1" sx={{ color: colors.grey[300], mb: 2 }}>
+              Upgrade to a Premium, Annual, or Lifetime plan to access advanced charts.
+            </Typography>
+          )}
+
+          <Typography variant="h6" sx={{ color: colors.grey[100], mb: 1 }}>
+            Custom Indicators
+          </Typography>
+          {canAccessCustomIndicators ? (
+            <Typography variant="body1" sx={{ color: colors.grey[300], mb: 2 }}>
+              You have access to custom indicators! Create and use your own indicators.
+              <Button
+                onClick={() => navigate('/indicators/custom')}
+                sx={{
+                  ml: 2,
+                  backgroundColor: colors.greenAccent[500],
+                  color: colors.grey[900],
+                  '&:hover': { backgroundColor: colors.greenAccent[600] },
+                }}
+              >
+                Go to Custom Indicators
+              </Button>
+            </Typography>
+          ) : (
+            <Typography variant="body1" sx={{ color: colors.grey[300], mb: 2 }}>
+              Upgrade to an Annual or Lifetime plan to access custom indicators.
+            </Typography>
+          )}
         </Box>
 
         <Typography variant="h4" sx={{ color: colors.grey[100], mb: 2 }}>
