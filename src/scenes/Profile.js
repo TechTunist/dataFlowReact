@@ -43,7 +43,6 @@ const Profile = () => {
       if (!token) {
         throw new Error('Failed to obtain authentication token');
       }
-      // console.log('Profile subscription status token:', token);
 
       const response = await fetch(`${API_BASE_URL}/api/subscription-status/`, {
         method: 'GET',
@@ -160,17 +159,17 @@ const Profile = () => {
           </Typography>
           {subscriptionStatus.subscription_start_date && (
             <Typography variant="body1" sx={{ color: colors.grey[300], mb: 1 }}>
-              <strong>Start Date:</strong> {new Date(subscriptionStatus.subscription_start_date * 1000).toLocaleDateString()}
+              <strong>Start Date:</strong> {new Date(subscriptionStatus.subscription_start_date).toLocaleDateString()}
             </Typography>
           )}
           {subscriptionStatus.current_period_end && (
             <Typography variant="body1" sx={{ color: colors.grey[300], mb: 1 }}>
-              <strong>Current Period End:</strong> {new Date(subscriptionStatus.current_period_end * 1000).toLocaleDateString()}
+              <strong>Current Period End:</strong> {new Date(subscriptionStatus.current_period_end).toLocaleDateString()}
             </Typography>
           )}
           {subscriptionStatus.last_payment_date && (
             <Typography variant="body1" sx={{ color: colors.grey[300], mb: 1 }}>
-              <strong>Last Payment Date:</strong> {new Date(subscriptionStatus.last_payment_date * 1000).toLocaleDateString()}
+              <strong>Last Payment Date:</strong> {new Date(subscriptionStatus.last_payment_date).toLocaleDateString()}
             </Typography>
           )}
           {subscriptionStatus.payment_method && (
