@@ -273,7 +273,7 @@ const Subscription = () => {
         </Box>
 
         {/* Feature Gating Examples */}
-        <Typography variant="h4" sx={{ color: colors.grey[100], mb: 2 }}>
+        {/* <Typography variant="h4" sx={{ color: colors.grey[100], mb: 2 }}>
           Available Features
         </Typography>
         <Box sx={{ mb: 3 }}>
@@ -331,7 +331,7 @@ const Subscription = () => {
               Upgrade to an Annual or Lifetime plan to access custom indicators.
             </Typography>
           )}
-        </Box>
+        </Box> */}
 
         <Typography variant="h4" sx={{ color: colors.grey[100], mb: 2 }}>
           Available Plans

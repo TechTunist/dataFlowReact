@@ -7,6 +7,7 @@ import useIsMobile from '../hooks/useIsMobile';
 import { DataContext } from '../DataContext';
 import { Select, MenuItem, FormControl, InputLabel, Box, Checkbox } from '@mui/material';
 import LastUpdated from '../hooks/LastUpdated';
+import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 
 const EthereumPrice = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
@@ -448,4 +449,6 @@ const EthereumPrice = ({ isDashboard = false }) => {
     );
 };
 
-export default EthereumPrice;
+// export default EthereumPrice;
+// Wrap with HOC to restrict access
+export default restrictToPaidSubscription(EthereumPrice);
