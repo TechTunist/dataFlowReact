@@ -6,6 +6,7 @@ import '../styling/bitcoinChart.css';
 import useIsMobile from '../hooks/useIsMobile';
 import BitcoinFees from './BitcoinTransactionFees';
 import { DataContext } from '../DataContext';
+import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 
 const MarketCycles = ({ isDashboard = false }) => {
     const theme = useTheme();
@@ -267,4 +268,5 @@ const MarketCycles = ({ isDashboard = false }) => {
     );
 };
 
-export default MarketCycles;
+// export default MarketCycles;
+export default restrictToPaidSubscription(MarketCycles);

@@ -7,6 +7,7 @@ import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
 import { Select, MenuItem, FormControl, InputLabel, Box, Checkbox } from '@mui/material';
 import { DataContext } from '../DataContext';
+import  restrictToPaidSubscription  from '../scenes/RestrictToPaid';
 
 const AltcoinPrice = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
@@ -660,4 +661,5 @@ const AltcoinPrice = ({ isDashboard = false }) => {
     );
 };
 
-export default AltcoinPrice;
+// export default AltcoinPrice;
+export default restrictToPaidSubscription(AltcoinPrice);

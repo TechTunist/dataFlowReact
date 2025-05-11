@@ -7,6 +7,7 @@ import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
 import BitcoinFees from './BitcoinTransactionFees';
 import { DataContext } from '../DataContext';
+import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 
 const BitcoinRisk = ({ isDashboard = false, riskData: propRiskData }) => {
   const chartContainerRef = useRef();
@@ -633,4 +634,5 @@ const calculateRiskMetric = (data) => {
   );
 };
 
-export default BitcoinRisk;
+// export default BitcoinRisk;
+export default restrictToPaidSubscription(BitcoinRisk);

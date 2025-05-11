@@ -6,6 +6,7 @@ import '../styling/bitcoinChart.css';
 import useIsMobile from '../hooks/useIsMobile';
 import BitcoinFees from './BitcoinTransactionFees';
 import { DataContext } from '../DataContext';
+import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 
 const BitcoinROI = ({ isDashboard = false }) => {
     const theme = useTheme();
@@ -220,4 +221,5 @@ const BitcoinROI = ({ isDashboard = false }) => {
     );
 };
 
-export default BitcoinROI;
+// export default BitcoinROI;
+export default restrictToPaidSubscription(BitcoinROI);

@@ -5,6 +5,7 @@ import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
 import useIsMobile from '../hooks/useIsMobile';
 import { DataContext } from '../DataContext';
+import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 
 const BitcoinTxCountChart = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
@@ -211,4 +212,5 @@ const BitcoinTxCountChart = ({ isDashboard = false }) => {
     );
 };
 
-export default BitcoinTxCountChart;
+// export default BitcoinTxCountChart;
+export default restrictToPaidSubscription(BitcoinTxCountChart);

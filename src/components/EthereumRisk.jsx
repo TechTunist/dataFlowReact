@@ -6,6 +6,7 @@ import '../styling/bitcoinChart.css';
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
 import { DataContext } from '../DataContext';
+import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 
 const EthereumRisk = ({ isDashboard = false, riskData: propRiskData }) => {
   const chartContainerRef = useRef();
@@ -506,4 +507,5 @@ const EthereumRisk = ({ isDashboard = false, riskData: propRiskData }) => {
       
 };
 
-export default EthereumRisk;
+// export default EthereumRisk;
+export default restrictToPaidSubscription(EthereumRisk);

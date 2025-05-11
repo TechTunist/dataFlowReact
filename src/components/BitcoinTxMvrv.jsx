@@ -8,6 +8,7 @@ import LastUpdated from '../hooks/LastUpdated';
 import BitcoinFees from './BitcoinTransactionFees';
 import { Box, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import { DataContext } from '../DataContext';
+import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 
 const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData }) => {
   const chartContainerRef = useRef();
@@ -448,4 +449,5 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
   );
 };
 
-export default BitcoinTxMvrvChart;
+// export default BitcoinTxMvrvChart;
+export default restrictToPaidSubscription(BitcoinTxMvrvChart);

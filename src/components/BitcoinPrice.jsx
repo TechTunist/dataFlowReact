@@ -8,6 +8,7 @@ import LastUpdated from '../hooks/LastUpdated';
 import BitcoinFees from './BitcoinTransactionFees';
 import { Stack, Select, MenuItem, FormControl, InputLabel, Box, Checkbox, Button } from '@mui/material';
 import { DataContext } from '../DataContext';
+import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 
 const BitcoinPrice = ({ isDashboard = false }) => {
   const chartContainerRef = useRef();
@@ -811,4 +812,5 @@ const BitcoinPrice = ({ isDashboard = false }) => {
   );
 };
 
-export default BitcoinPrice;
+// export default BitcoinPrice;
+export default restrictToPaidSubscription(BitcoinPrice);

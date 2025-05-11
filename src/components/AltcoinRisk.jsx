@@ -7,6 +7,7 @@ import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
 import { Select, MenuItem, FormControl, InputLabel, Box } from '@mui/material';
 import { DataContext } from '../DataContext';
+import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 
 const AltcoinRisk = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
@@ -271,4 +272,5 @@ const AltcoinRisk = ({ isDashboard = false }) => {
     );
 };
 
-export default AltcoinRisk;
+// export default AltcoinRisk;
+export default restrictToPaidSubscription(AltcoinRisk);

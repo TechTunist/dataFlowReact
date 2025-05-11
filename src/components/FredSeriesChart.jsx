@@ -5,6 +5,7 @@ import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
 import useIsMobile from '../hooks/useIsMobile';
 import { DataContext } from '../DataContext';
+import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 
 const FredSeriesChart = ({
     seriesId,
@@ -228,4 +229,5 @@ const FredSeriesChart = ({
     );
   };
   
-  export default FredSeriesChart;
+  // export default FredSeriesChart;
+  export default restrictToPaidSubscription(FredSeriesChart);

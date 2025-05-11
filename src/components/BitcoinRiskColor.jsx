@@ -6,6 +6,7 @@ import '../styling/bitcoinChart.css';
 import LastUpdated from '../hooks/LastUpdated';
 import BitcoinFees from './BitcoinTransactionFees';
 import { DataContext } from '../DataContext';
+import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 
 const BitcoinRiskColor = ({ isDashboard = false, riskData: propRiskData }) => {
   const theme = useTheme();
@@ -261,4 +262,5 @@ const BitcoinRiskColor = ({ isDashboard = false, riskData: propRiskData }) => {
   );
 };
 
-export default BitcoinRiskColor;
+// export default BitcoinRiskColor;
+export default restrictToPaidSubscription(BitcoinRiskColor);

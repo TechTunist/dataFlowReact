@@ -6,6 +6,7 @@ import '../styling/bitcoinChart.css';
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
 import { DataContext } from '../DataContext';
+import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 
 const OnChainHistoricalRisk = ({ isDashboard = false, mvrvData: propMvrvData, btcData: propBtcData }) => {
   const chartContainerRef = useRef();
@@ -410,4 +411,5 @@ const OnChainHistoricalRisk = ({ isDashboard = false, mvrvData: propMvrvData, bt
   );
 };
 
-export default OnChainHistoricalRisk;
+// export default OnChainHistoricalRisk;
+export default restrictToPaidSubscription(OnChainHistoricalRisk);

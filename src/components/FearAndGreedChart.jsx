@@ -7,6 +7,7 @@ import BitcoinFees from './BitcoinTransactionFees';
 import useIsMobile from '../hooks/useIsMobile';
 import { DataContext } from '../DataContext';
 import Plotly from 'plotly.js-gl2d-dist';
+import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 
 const FearAndGreedChart = ({ isDashboard = false }) => {
     const theme = useTheme();
@@ -297,4 +298,5 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
     );
 };
 
-export default FearAndGreedChart;
+// export default FearAndGreedChart;
+export default restrictToPaidSubscription(FearAndGreedChart);

@@ -8,6 +8,7 @@ import BitcoinFees from './BitcoinTransactionFees';
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
 import { Box } from '@mui/material'; // Import Box for consistent styling
+import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 
 const PiCycleTopChart = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
@@ -441,4 +442,5 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
     );
 };
 
-export default PiCycleTopChart;
+// export default PiCycleTopChart;
+export default restrictToPaidSubscription(PiCycleTopChart);
