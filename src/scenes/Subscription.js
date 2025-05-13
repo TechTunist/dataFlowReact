@@ -23,11 +23,12 @@ const Subscription = () => {
     last_payment_date: null,
     payment_method: null,
     subscription_start_date: null,
-    display_name: '',
+    display_name: user?.publicMetadata?.display_name || 'User',
     features: user?.publicMetadata.features || { basic_charts: true, advanced_charts: false, custom_indicators: false },
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://vercel-dataflow.vercel.app';
 
@@ -45,6 +46,7 @@ const Subscription = () => {
 
     setLoading(true);
     setError('');
+    setSuccess('');
     console.log('Fetching subscription status...');
 
     try {
@@ -86,10 +88,13 @@ const Subscription = () => {
           last_payment_date: data.last_payment_date,
           payment_method: data.payment_method,
           subscription_start_date: data.subscription_start_date,
-          display_name: data.display_name,
+          display_name: data.display_name || 'User',
         });
       } else {
-        setSubscriptionStatus(data);
+        setSubscriptionStatus({
+          ...data,
+          display_name: data.display_name || 'User',
+        });
       }
       console.log('Subscription status fetched:', data);
     } catch (err) {
@@ -106,7 +111,7 @@ const Subscription = () => {
           last_payment_date: null,
           payment_method: null,
           subscription_start_date: null,
-          display_name: '',
+          display_name: 'User',
         });
       }
     } finally {
@@ -128,6 +133,7 @@ const Subscription = () => {
 
     setLoading(true);
     setError('');
+    setSuccess('');
     console.log('Initiating checkout for plan ID:', planId);
 
     try {
@@ -171,6 +177,55 @@ const Subscription = () => {
     } catch (err) {
       setError(`Failed to initiate checkout: ${err.message}`);
       console.error('Checkout error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancelSubscription = async () => {
+    if (!isSignedIn || !user) {
+      setError('Please sign in to cancel your subscription.');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    setSuccess('');
+    console.log('Initiating subscription cancellation...');
+
+    try {
+      const token = await getToken();
+      if (!token) {
+        throw new Error('Failed to obtain authentication token');
+      }
+      console.log('Cancellation token:', token);
+
+      const response = await fetch(`${API_BASE_URL}/api/cancel-subscription/`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      let responseData;
+      try {
+        responseData = await response.json();
+      } catch {
+        responseData = { error: 'Invalid response format' };
+      }
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}, message: ${responseData.error || 'Unknown error'}`);
+      }
+
+      setSuccess('Your subscription has been cancelled successfully.');
+      console.log('Subscription cancelled:', responseData);
+      // Refresh subscription status
+      await fetchSubscriptionStatus();
+    } catch (err) {
+      setError(`Failed to cancel subscription: ${err.message}`);
+      console.error('Cancellation error:', err);
     } finally {
       setLoading(false);
     }
@@ -240,6 +295,11 @@ const Subscription = () => {
             {error}
           </Alert>
         )}
+        {success && (
+          <Alert severity="success" sx={{ mb: 2 }}>
+            {success}
+          </Alert>
+        )}
         {loading && (
           <Typography variant="body1" sx={{ color: colors.grey[300], mb: 2 }}>
             Loading...
@@ -265,73 +325,35 @@ const Subscription = () => {
               <strong>Payment Method:</strong> {subscriptionStatus.payment_method}
             </Typography>
           )}
+          {subscriptionStatus.last_payment_date && (
+            <Typography variant="body1" sx={{ color: colors.grey[300], mb: 1 }}>
+              <strong>Last Payment:</strong> {new Date(subscriptionStatus.last_payment_date).toLocaleDateString()}
+            </Typography>
+          )}
+          <Typography variant="body1" sx={{ color: colors.grey[300], mb: 1 }}>
+            <strong>Display Name:</strong> {subscriptionStatus.display_name}
+          </Typography>
           <Typography variant="body1" sx={{ color: colors.grey[300], mb: 2 }}>
             <strong>Features:</strong> Basic Charts: {subscriptionStatus.features.basic_charts ? 'Yes' : 'No'},
             Advanced Charts: {subscriptionStatus.features.advanced_charts ? 'Yes' : 'No'},
             Custom Indicators: {subscriptionStatus.features.custom_indicators ? 'Yes' : 'No'}
           </Typography>
+          {subscriptionStatus.subscription_status === 'premium' && (
+            <Button
+              onClick={handleCancelSubscription}
+              disabled={loading}
+              sx={{
+                backgroundColor: colors.redAccent[500],
+                color: colors.grey[100],
+                '&:hover': { backgroundColor: colors.redAccent[600] },
+                '&:disabled': { backgroundColor: colors.grey[700], color: colors.grey[400] },
+                mt: 2,
+              }}
+            >
+              Cancel Subscription
+            </Button>
+          )}
         </Box>
-
-        {/* Feature Gating Examples */}
-        {/* <Typography variant="h4" sx={{ color: colors.grey[100], mb: 2 }}>
-          Available Features
-        </Typography>
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="h6" sx={{ color: colors.grey[100], mb: 1 }}>
-            Basic Charts
-          </Typography>
-          <Typography variant="body1" sx={{ color: colors.grey[300], mb: 2 }}>
-            Access to basic charting tools is available to all users.
-          </Typography>
-
-          <Typography variant="h6" sx={{ color: colors.grey[100], mb: 1 }}>
-            Advanced Charts
-          </Typography>
-          {canAccessAdvancedCharts ? (
-            <Typography variant="body1" sx={{ color: colors.grey[300], mb: 2 }}>
-              You have access to advanced charts! Explore enhanced charting features.
-              <Button
-                onClick={() => navigate('/charts/advanced')}
-                sx={{
-                  ml: 2,
-                  backgroundColor: colors.greenAccent[500],
-                  color: colors.grey[900],
-                  '&:hover': { backgroundColor: colors.greenAccent[600] },
-                }}
-              >
-                Go to Advanced Charts
-              </Button>
-            </Typography>
-          ) : (
-            <Typography variant="body1" sx={{ color: colors.grey[300], mb: 2 }}>
-              Upgrade to a Premium, Annual, or Lifetime plan to access advanced charts.
-            </Typography>
-          )}
-
-          <Typography variant="h6" sx={{ color: colors.grey[100], mb: 1 }}>
-            Custom Indicators
-          </Typography>
-          {canAccessCustomIndicators ? (
-            <Typography variant="body1" sx={{ color: colors.grey[300], mb: 2 }}>
-              You have access to custom indicators! Create and use your own indicators.
-              <Button
-                onClick={() => navigate('/indicators/custom')}
-                sx={{
-                  ml: 2,
-                  backgroundColor: colors.greenAccent[500],
-                  color: colors.grey[900],
-                  '&:hover': { backgroundColor: colors.greenAccent[600] },
-                }}
-              >
-                Go to Custom Indicators
-              </Button>
-            </Typography>
-          ) : (
-            <Typography variant="body1" sx={{ color: colors.grey[300], mb: 2 }}>
-              Upgrade to an Annual or Lifetime plan to access custom indicators.
-            </Typography>
-          )}
-        </Box> */}
 
         <Typography variant="h4" sx={{ color: colors.grey[100], mb: 2 }}>
           Available Plans
