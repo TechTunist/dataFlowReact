@@ -178,7 +178,9 @@ const Profile = () => {
             </Typography>
           )}
           <Typography variant="body1" sx={{ color: colors.grey[300], mb: 2 }}>
-            <strong>Features:</strong> {JSON.stringify(subscriptionStatus.features)}
+            <strong>Features:</strong> Basic Charts: {subscriptionStatus.features.basic_charts ? 'Yes' : 'No'},
+            Advanced Charts: {subscriptionStatus.features.advanced_charts ? 'Yes' : 'No'},
+            Custom Indicators: {subscriptionStatus.features.custom_indicators ? 'Yes' : 'No'}
           </Typography>
         </Box>
       </Box>

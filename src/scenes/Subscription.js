@@ -6,6 +6,7 @@ import { tokens } from '../theme';
 import Header from '../components/Header';
 import { StripeContext } from '../App';
 
+
 const Subscription = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
@@ -15,16 +16,18 @@ const Subscription = () => {
   const navigate = useNavigate();
   const stripe = useContext(StripeContext);
 
+  const DEFAULT_FREE_FEATURES = process.env.DEFAULT_FREE_FEATURES;
+
   const [subscriptionStatus, setSubscriptionStatus] = useState({
-    plan: user?.publicMetadata?.plan || 'Free',
-    billing_interval: user?.publicMetadata?.billing_interval || 'NONE',
+    plan: 'Free',
+    billing_interval: 'NONE',
     subscription_status: 'free',
     current_period_end: null,
     last_payment_date: null,
     payment_method: null,
     subscription_start_date: null,
-    display_name: user?.publicMetadata?.display_name || 'User',
-    features: user?.publicMetadata.features || { basic_charts: true, advanced_charts: false, custom_indicators: false },
+    display_name: 'User',
+    features: { basic_charts: true, advanced_charts: false, custom_indicators: false },
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -64,56 +67,45 @@ const Subscription = () => {
         },
       });
 
-      let errorData;
+      let data;
       try {
-        errorData = await response.json();
+        data = await response.json();
       } catch {
-        errorData = { error: 'Invalid response format' };
+        throw new Error('Invalid response format');
       }
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}, message: ${errorData.error || 'Unknown error'}`);
+        throw new Error(`HTTP error! status: ${response.status}, message: ${data.error || 'Unknown error'}`);
       }
 
-      const data = errorData;
-      // Fallback to publicMetadata if database data is incomplete
-      if (data.plan === 'Free' && user?.publicMetadata?.plan && user.publicMetadata.plan !== 'Free') {
-        console.log('Falling back to publicMetadata due to incomplete database data');
-        setSubscriptionStatus({
-          plan: user.publicMetadata.plan,
-          billing_interval: user.publicMetadata.billing_interval || 'NONE',
-          subscription_status: user.publicMetadata.subscription_status || 'ACTIVE',
-          features: user.publicMetadata.features || { basic_charts: true, advanced_charts: false, custom_indicators: false },
-          current_period_end: data.current_period_end,
-          last_payment_date: data.last_payment_date,
-          payment_method: data.payment_method,
-          subscription_start_date: data.subscription_start_date,
-          display_name: data.display_name || 'User',
-        });
-      } else {
-        setSubscriptionStatus({
-          ...data,
-          display_name: data.display_name || 'User',
-        });
-      }
+      // Prioritize database data over publicMetadata
+      setSubscriptionStatus({
+        plan: data.plan || 'Free',
+        billing_interval: data.billing_interval || 'NONE',
+        subscription_status: data.subscription_status || 'free',
+        current_period_end: data.current_period_end ? new Date(data.current_period_end) : null,
+        last_payment_date: data.last_payment_date ? new Date(data.last_payment_date) : null,
+        payment_method: data.payment_method || null,
+        subscription_start_date: data.subscription_start_date ? new Date(data.subscription_start_date) : null,
+        display_name: data.display_name || 'User',
+        features: data.features && typeof data.features === 'object' ? data.features : DEFAULT_FREE_FEATURES,
+      });
+       
       console.log('Subscription status fetched:', data);
     } catch (err) {
       setError(`Failed to fetch subscription status: ${err.message}`);
       console.error('Subscription status error:', err);
-      // Fallback to publicMetadata on error
-      if (user?.publicMetadata?.plan) {
-        setSubscriptionStatus({
-          plan: user.publicMetadata.plan || 'Free',
-          billing_interval: user.publicMetadata.billing_interval || 'NONE',
-          subscription_status: user.publicMetadata.subscription_status || 'free',
-          features: user.publicMetadata.features || { basic_charts: true, advanced_charts: false, custom_indicators: false },
-          current_period_end: null,
-          last_payment_date: null,
-          payment_method: null,
-          subscription_start_date: null,
-          display_name: 'User',
-        });
-      }
+      setSubscriptionStatus({
+        plan: 'Free',
+        billing_interval: 'NONE',
+        subscription_status: 'free',
+        current_period_end: null,
+        last_payment_date: null,
+        payment_method: null,
+        subscription_start_date: null,
+        display_name: 'User',
+        features: { basic_charts: true, advanced_charts: false, custom_indicators: false },
+      });
     } finally {
       setLoading(false);
       console.log('Fetch subscription status complete, loading:', false);
@@ -235,7 +227,7 @@ const Subscription = () => {
     const query = new URLSearchParams(location.search);
     if (query.get('success')) {
       fetchSubscriptionStatus();
-      navigate('/profile', { replace: true }); // Redirect to /profile
+      navigate('/profile', { replace: true });
     } else if (query.get('canceled')) {
       setError('Checkout was canceled. Please try again.');
       navigate('/subscription', { replace: true });
@@ -372,7 +364,7 @@ const Subscription = () => {
                 {plan.name} ({plan.billing_interval})
               </Typography>
               <Typography variant="body1" sx={{ color: colors.grey[300], mb: 1 }}>
-                Price: ${plan.price}
+                Price: £{plan.price} {/* Updated to GBP based on logs */}
               </Typography>
               <Button
                 onClick={() => handleCheckout(plan.id)}
