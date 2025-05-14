@@ -31,6 +31,7 @@ const Subscription = () => {
     subscription_start_date: null,
     display_name: 'User',
     features: DEFAULT_FREE_FEATURES,
+    previous_plan: null, // Changed to null to expect an object
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -92,6 +93,7 @@ const Subscription = () => {
         subscription_start_date: data.subscription_start_date ? new Date(data.subscription_start_date) : null,
         display_name: data.display_name || 'User',
         features: data.features && typeof data.features === 'object' ? data.features : DEFAULT_FREE_FEATURES,
+        previous_plan: data.previous_plan || null, // Expect object
       });
     } catch (err) {
       console.error('Subscription fetch error:', err); // Debug error
@@ -106,6 +108,7 @@ const Subscription = () => {
         subscription_start_date: null,
         display_name: 'User',
         features: DEFAULT_FREE_FEATURES,
+        previous_plan: null,
       });
     } finally {
       setLoading(false);
@@ -298,9 +301,16 @@ const Subscription = () => {
         </Typography>
         <Box sx={{ mb: 3 }}>
           <Typography variant="body1" sx={{ color: colors.grey[300], mb: 1 }}>
-            <strong>Plan:</strong> {subscriptionStatus.plan} ({subscriptionStatus.billing_interval})
-            {subscriptionStatus.subscription_status.includes('Access will end') && (
-              <> - Retained access from previous plan until period end</>
+            <strong>Plan:</strong>{' '}
+            {subscriptionStatus.subscription_status.includes('Access will end') && subscriptionStatus.previous_plan ? (
+              <>
+                {subscriptionStatus.previous_plan.name} ({subscriptionStatus.previous_plan.billing_interval}) - Retained
+                access until period end
+              </>
+            ) : (
+              <>
+                {subscriptionStatus.plan} ({subscriptionStatus.billing_interval})
+              </>
             )}
           </Typography>
           <Typography variant="body1" sx={{ color: colors.grey[300], mb: 1 }}>

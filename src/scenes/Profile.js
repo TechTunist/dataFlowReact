@@ -19,6 +19,7 @@ const Profile = () => {
     subscription_start_date: null,
     display_name: 'User',
     features: { basic_charts: true, advanced_charts: false, custom_indicators: false },
+    previous_plan: null, // Added previous_plan
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -68,6 +69,7 @@ const Profile = () => {
           advanced_charts: false,
           custom_indicators: false,
         },
+        previous_plan: data.previous_plan || null, // Store previous_plan as object
       });
     } catch (err) {
       console.error('Profile fetch error:', err); // Debug error
@@ -82,6 +84,7 @@ const Profile = () => {
         subscription_start_date: null,
         display_name: 'User',
         features: { basic_charts: true, advanced_charts: false, custom_indicators: false },
+        previous_plan: null,
       });
     } finally {
       setLoading(false);
@@ -138,7 +141,17 @@ const Profile = () => {
         </Typography>
         <Box sx={{ mb: 3 }}>
           <Typography variant="body1" sx={{ color: colors.grey[300], mb: 1 }}>
-            <strong>Plan:</strong> {subscriptionStatus.plan} ({subscriptionStatus.billing_interval})
+            <strong>Plan:</strong>{' '}
+            {subscriptionStatus.subscription_status.includes('Access will end') && subscriptionStatus.previous_plan ? (
+              <>
+                {subscriptionStatus.previous_plan.name} ({subscriptionStatus.previous_plan.billing_interval}) - Retained
+                access until period end
+              </>
+            ) : (
+              <>
+                {subscriptionStatus.plan} ({subscriptionStatus.billing_interval})
+              </>
+            )}
           </Typography>
           <Typography variant="body1" sx={{ color: colors.grey[300], mb: 1 }}>
             <strong>Status:</strong> {subscriptionStatus.subscription_status}
