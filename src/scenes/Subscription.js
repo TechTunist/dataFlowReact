@@ -6,7 +6,6 @@ import { tokens } from '../theme';
 import Header from '../components/Header';
 import { StripeContext } from '../App';
 
-
 const Subscription = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
@@ -16,7 +15,11 @@ const Subscription = () => {
   const navigate = useNavigate();
   const stripe = useContext(StripeContext);
 
-  const DEFAULT_FREE_FEATURES = process.env.DEFAULT_FREE_FEATURES;
+  const DEFAULT_FREE_FEATURES = {
+    basic_charts: true,
+    advanced_charts: false,
+    custom_indicators: false,
+  };
 
   const [subscriptionStatus, setSubscriptionStatus] = useState({
     plan: 'Free',
@@ -27,7 +30,7 @@ const Subscription = () => {
     payment_method: null,
     subscription_start_date: null,
     display_name: 'User',
-    features: { basic_charts: true, advanced_charts: false, custom_indicators: false },
+    features: DEFAULT_FREE_FEATURES,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -78,7 +81,7 @@ const Subscription = () => {
         throw new Error(`HTTP error! status: ${response.status}, message: ${data.error || 'Unknown error'}`);
       }
 
-      // Prioritize database data over publicMetadata
+      console.log('Subscription API response:', data); // Debug API response
       setSubscriptionStatus({
         plan: data.plan || 'Free',
         billing_interval: data.billing_interval || 'NONE',
@@ -90,11 +93,9 @@ const Subscription = () => {
         display_name: data.display_name || 'User',
         features: data.features && typeof data.features === 'object' ? data.features : DEFAULT_FREE_FEATURES,
       });
-       
-      console.log('Subscription status fetched:', data);
     } catch (err) {
+      console.error('Subscription fetch error:', err); // Debug error
       setError(`Failed to fetch subscription status: ${err.message}`);
-      console.error('Subscription status error:', err);
       setSubscriptionStatus({
         plan: 'Free',
         billing_interval: 'NONE',
@@ -104,7 +105,7 @@ const Subscription = () => {
         payment_method: null,
         subscription_start_date: null,
         display_name: 'User',
-        features: { basic_charts: true, advanced_charts: false, custom_indicators: false },
+        features: DEFAULT_FREE_FEATURES,
       });
     } finally {
       setLoading(false);
@@ -213,7 +214,6 @@ const Subscription = () => {
 
       setSuccess('Your subscription has been cancelled successfully.');
       console.log('Subscription cancelled:', responseData);
-      // Refresh subscription status
       await fetchSubscriptionStatus();
     } catch (err) {
       setError(`Failed to cancel subscription: ${err.message}`);
@@ -259,10 +259,6 @@ const Subscription = () => {
     );
   }
 
-  // Feature gating logic
-  const canAccessAdvancedCharts = subscriptionStatus.features.advanced_charts;
-  const canAccessCustomIndicators = subscriptionStatus.features.custom_indicators;
-
   return (
     <Box
       sx={{
@@ -303,13 +299,16 @@ const Subscription = () => {
         <Box sx={{ mb: 3 }}>
           <Typography variant="body1" sx={{ color: colors.grey[300], mb: 1 }}>
             <strong>Plan:</strong> {subscriptionStatus.plan} ({subscriptionStatus.billing_interval})
+            {subscriptionStatus.subscription_status.includes('Access will end') && (
+              <> - Retained access from previous plan until period end</>
+            )}
           </Typography>
           <Typography variant="body1" sx={{ color: colors.grey[300], mb: 1 }}>
             <strong>Status:</strong> {subscriptionStatus.subscription_status}
           </Typography>
           {subscriptionStatus.current_period_end && (
             <Typography variant="body1" sx={{ color: colors.grey[300], mb: 1 }}>
-              <strong>Period End:</strong> {new Date(subscriptionStatus.current_period_end).toLocaleDateString()}
+              <strong>Access Ends:</strong> {new Date(subscriptionStatus.current_period_end).toLocaleDateString()}
             </Typography>
           )}
           {subscriptionStatus.payment_method && (
@@ -364,7 +363,7 @@ const Subscription = () => {
                 {plan.name} ({plan.billing_interval})
               </Typography>
               <Typography variant="body1" sx={{ color: colors.grey[300], mb: 1 }}>
-                Price: £{plan.price} {/* Updated to GBP based on logs */}
+                Price: £{plan.price}
               </Typography>
               <Button
                 onClick={() => handleCheckout(plan.id)}
