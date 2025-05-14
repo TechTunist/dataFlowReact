@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useUser, useAuth } from '@clerk/clerk-react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { Box, Typography, useTheme, Alert } from '@mui/material';
+import { Box, Typography, useTheme } from '@mui/material';
 import { tokens } from '../theme';
 import Header from '../components/Header';
 
@@ -10,19 +9,16 @@ const Profile = () => {
   const colors = tokens(theme.palette.mode);
   const { user, isSignedIn } = useUser();
   const { getToken } = useAuth();
-  const location = useLocation();
-  const navigate = useNavigate();
-
   const [subscriptionStatus, setSubscriptionStatus] = useState({
-    plan: user?.publicMetadata.plan || 'Free',
-    billing_interval: user?.publicMetadata.billing_interval || 'NONE',
-    subscription_status: 'ACTIVE',
-    features: user?.publicMetadata.features || { basic_charts: true },
-    display_name: '',
+    plan: 'Free',
+    billing_interval: 'NONE',
+    subscription_status: 'free',
     current_period_end: null,
     last_payment_date: null,
     payment_method: null,
     subscription_start_date: null,
+    display_name: 'User',
+    features: { basic_charts: true, advanced_charts: false, custom_indicators: false },
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -37,7 +33,6 @@ const Profile = () => {
 
     setLoading(true);
     setError('');
-
     try {
       const token = await getToken();
       if (!token) {
@@ -52,53 +47,54 @@ const Profile = () => {
         },
       });
 
-      let errorData;
-      try {
-        errorData = await response.json();
-      } catch {
-        errorData = { error: 'Invalid response format' };
-      }
-
       if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
         throw new Error(`HTTP error! status: ${response.status}, message: ${errorData.error || 'Unknown error'}`);
       }
 
-      const data = errorData;
-      setSubscriptionStatus(data);
+      const data = await response.json();
+      setSubscriptionStatus({
+        plan: data.plan || 'Free',
+        billing_interval: data.billing_interval || 'NONE',
+        subscription_status: data.subscription_status || 'free',
+        current_period_end: data.current_period_end ? new Date(data.current_period_end) : null,
+        last_payment_date: data.last_payment_date ? new Date(data.last_payment_date) : null,
+        payment_method: data.payment_method || null,
+        subscription_start_date: data.subscription_start_date ? new Date(data.subscription_start_date) : null,
+        display_name: data.display_name || 'User',
+        features: data.features && typeof data.features === 'object' ? data.features : {
+          basic_charts: true,
+          advanced_charts: false,
+          custom_indicators: false,
+        },
+      });
     } catch (err) {
       setError(`Failed to fetch subscription status: ${err.message}`);
-      console.error('Profile subscription status error:', err);
+      setSubscriptionStatus({
+        plan: 'Free',
+        billing_interval: 'NONE',
+        subscription_status: 'free',
+        current_period_end: null,
+        last_payment_date: null,
+        payment_method: null,
+        subscription_start_date: null,
+        display_name: 'User',
+        features: { basic_charts: true, advanced_charts: false, custom_indicators: false },
+      });
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    const query = new URLSearchParams(location.search);
-    if (query.get('success')) {
-      fetchSubscriptionStatus();
-      navigate('/profile', { replace: true });
-    }
-  }, [location, navigate]);
-
-  useEffect(() => {
     if (isSignedIn && user) {
       fetchSubscriptionStatus();
     }
-  }, [user, isSignedIn]);
+  }, [isSignedIn, user]);
 
   if (!isSignedIn || !user) {
     return (
-      <Box
-        sx={{
-          minHeight: '100vh',
-          backgroundColor: colors.primary[900],
-          padding: '20px',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-        }}
-      >
+      <Box sx={{ padding: '20px', textAlign: 'center' }}>
         <Typography variant="h5" sx={{ color: colors.grey[100] }}>
           Please sign in to view your profile.
         </Typography>
@@ -114,7 +110,7 @@ const Profile = () => {
         padding: '20px',
       }}
     >
-      <Header title="Profile" subtitle="View your account details" />
+      <Header title="Profile" subtitle="Your account details" />
       <Box
         sx={{
           maxWidth: '800px',
@@ -126,27 +122,15 @@ const Profile = () => {
         }}
       >
         {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
+          <Typography variant="body1" sx={{ color: colors.redAccent[500], mb: 2 }}>
             {error}
-          </Alert>
+          </Typography>
         )}
         {loading && (
           <Typography variant="body1" sx={{ color: colors.grey[300], mb: 2 }}>
             Loading...
           </Typography>
         )}
-        <Typography variant="h4" sx={{ color: colors.grey[100], mb: 2 }}>
-          Account Information
-        </Typography>
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="body1" sx={{ color: colors.grey[300], mb: 1 }}>
-            <strong>Email:</strong> {user.primaryEmailAddress?.emailAddress || 'N/A'}
-          </Typography>
-          <Typography variant="body1" sx={{ color: colors.grey[300], mb: 1 }}>
-            <strong>Name:</strong> {subscriptionStatus.display_name || user.fullName || 'N/A'}
-          </Typography>
-        </Box>
-
         <Typography variant="h4" sx={{ color: colors.grey[100], mb: 2 }}>
           Subscription Details
         </Typography>
@@ -157,26 +141,19 @@ const Profile = () => {
           <Typography variant="body1" sx={{ color: colors.grey[300], mb: 1 }}>
             <strong>Status:</strong> {subscriptionStatus.subscription_status}
           </Typography>
-          {subscriptionStatus.subscription_start_date && (
-            <Typography variant="body1" sx={{ color: colors.grey[300], mb: 1 }}>
-              <strong>Start Date:</strong> {new Date(subscriptionStatus.subscription_start_date).toLocaleDateString()}
-            </Typography>
-          )}
-          {subscriptionStatus.current_period_end && (
-            <Typography variant="body1" sx={{ color: colors.grey[300], mb: 1 }}>
-              <strong>Current Period End:</strong> {new Date(subscriptionStatus.current_period_end).toLocaleDateString()}
-            </Typography>
-          )}
-          {subscriptionStatus.last_payment_date && (
-            <Typography variant="body1" sx={{ color: colors.grey[300], mb: 1 }}>
-              <strong>Last Payment Date:</strong> {new Date(subscriptionStatus.last_payment_date).toLocaleDateString()}
-            </Typography>
-          )}
           {subscriptionStatus.payment_method && (
             <Typography variant="body1" sx={{ color: colors.grey[300], mb: 1 }}>
               <strong>Payment Method:</strong> {subscriptionStatus.payment_method}
             </Typography>
           )}
+          {subscriptionStatus.last_payment_date && (
+            <Typography variant="body1" sx={{ color: colors.grey[300], mb: 1 }}>
+              <strong>Last Payment:</strong> {subscriptionStatus.last_payment_date.toLocaleDateString()}
+            </Typography>
+          )}
+          <Typography variant="body1" sx={{ color: colors.grey[300], mb: 1 }}>
+            <strong>Display Name:</strong> {subscriptionStatus.display_name}
+          </Typography>
           <Typography variant="body1" sx={{ color: colors.grey[300], mb: 2 }}>
             <strong>Features:</strong> Basic Charts: {subscriptionStatus.features.basic_charts ? 'Yes' : 'No'},
             Advanced Charts: {subscriptionStatus.features.advanced_charts ? 'Yes' : 'No'},
