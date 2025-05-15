@@ -46,7 +46,7 @@ const RestrictedComponent = memo(
     const isPaidSubscription =
       subscriptionStatus.plan !== 'Free' && subscriptionStatus.subscription_status === 'premium';
     const isCancelledButValid =
-      subscriptionStatus.subscription_status === 'CANCELED' &&
+      subscriptionStatus.subscription_status === 'canceled' &&
       subscriptionStatus.current_period_end &&
       subscriptionStatus.current_period_end > new Date();
 
