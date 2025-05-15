@@ -1,7 +1,18 @@
 import React, { useState, useEffect, useContext, memo } from 'react';
 import { useUser, useAuth } from '@clerk/clerk-react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Box, Typography, useTheme, Button, Alert } from '@mui/material';
+import {
+  Box,
+  Typography,
+  useTheme,
+  Button,
+  Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+} from '@mui/material';
 import { tokens } from '../theme';
 import Header from '../components/Header';
 import { StripeContext } from '../App';
@@ -31,11 +42,12 @@ const Subscription = memo(() => {
     subscription_start_date: null,
     display_name: 'User',
     features: DEFAULT_FREE_FEATURES,
-    previous_plan: null, // Changed to null to expect an object
+    previous_plan: null,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [openCancelDialog, setOpenCancelDialog] = useState(false); // State for dialog
 
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://vercel-dataflow.vercel.app';
 
@@ -54,14 +66,12 @@ const Subscription = memo(() => {
     setLoading(true);
     setError('');
     setSuccess('');
-    // console.log('Fetching subscription status...');
 
     try {
       const token = await getToken();
       if (!token) {
         throw new Error('Failed to obtain authentication token');
       }
-      // console.log('Subscription status token:', token);
 
       const response = await fetch(`${API_BASE_URL}/api/subscription-status/`, {
         method: 'GET',
@@ -82,7 +92,6 @@ const Subscription = memo(() => {
         throw new Error(`HTTP error! status: ${response.status}, message: ${data.error || 'Unknown error'}`);
       }
 
-      // console.log('Subscription API response:', data); // Debug API response
       setSubscriptionStatus({
         plan: data.plan || 'Free',
         billing_interval: data.billing_interval || 'NONE',
@@ -93,10 +102,9 @@ const Subscription = memo(() => {
         subscription_start_date: data.subscription_start_date ? new Date(data.subscription_start_date) : null,
         display_name: data.display_name || 'User',
         features: data.features && typeof data.features === 'object' ? data.features : DEFAULT_FREE_FEATURES,
-        previous_plan: data.previous_plan || null, // Expect object
+        previous_plan: data.previous_plan || null,
       });
     } catch (err) {
-      // console.error('Subscription fetch error:', err); // Debug error
       setError(`Failed to fetch subscription status: ${err.message}`);
       setSubscriptionStatus({
         plan: 'Free',
@@ -112,7 +120,6 @@ const Subscription = memo(() => {
       });
     } finally {
       setLoading(false);
-      // console.log('Fetch subscription status complete, loading:', false);
     }
   };
 
@@ -130,7 +137,6 @@ const Subscription = memo(() => {
     setLoading(true);
     setError('');
     setSuccess('');
-    // console.log('Initiating checkout for plan ID:', planId);
 
     try {
       const token = await getToken();
@@ -164,7 +170,6 @@ const Subscription = memo(() => {
       }
 
       const { sessionId } = responseData;
-      // console.log('Stripe checkout session ID:', sessionId);
       const { error } = await stripe.redirectToCheckout({ sessionId });
       if (error) {
         console.error('Stripe redirect error:', error);
@@ -172,7 +177,6 @@ const Subscription = memo(() => {
       }
     } catch (err) {
       setError(`Failed to initiate checkout: ${err.message}`);
-      // console.error('Checkout error:', err);
     } finally {
       setLoading(false);
     }
@@ -187,14 +191,12 @@ const Subscription = memo(() => {
     setLoading(true);
     setError('');
     setSuccess('');
-    // console.log('Initiating subscription cancellation...');
 
     try {
       const token = await getToken();
       if (!token) {
         throw new Error('Failed to obtain authentication token');
       }
-      // console.log('Cancellation token:', token);
 
       const response = await fetch(`${API_BASE_URL}/api/cancel-subscription/`, {
         method: 'POST',
@@ -216,7 +218,6 @@ const Subscription = memo(() => {
       }
 
       setSuccess('Your subscription has been cancelled successfully.');
-      // console.log('Subscription cancelled:', responseData);
       await fetchSubscriptionStatus();
     } catch (err) {
       setError(`Failed to cancel subscription: ${err.message}`);
@@ -224,6 +225,20 @@ const Subscription = memo(() => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Handle opening and closing the cancellation dialog
+  const handleOpenCancelDialog = () => {
+    setOpenCancelDialog(true);
+  };
+
+  const handleCloseCancelDialog = () => {
+    setOpenCancelDialog(false);
+  };
+
+  const handleConfirmCancel = () => {
+    setOpenCancelDialog(false);
+    handleCancelSubscription();
   };
 
   useEffect(() => {
@@ -341,7 +356,7 @@ const Subscription = memo(() => {
           </Typography>
           {subscriptionStatus.subscription_status === 'premium' && (
             <Button
-              onClick={handleCancelSubscription}
+              onClick={handleOpenCancelDialog} // Open dialog instead of canceling directly
               disabled={loading}
               sx={{
                 backgroundColor: colors.redAccent[500],
@@ -355,6 +370,33 @@ const Subscription = memo(() => {
             </Button>
           )}
         </Box>
+
+        {/* Cancellation Confirmation Dialog */}
+        <Dialog
+          open={openCancelDialog}
+          onClose={handleCloseCancelDialog}
+          aria-labelledby="cancel-subscription-dialog-title"
+          aria-describedby="cancel-subscription-dialog-description"
+        >
+          <DialogTitle id="cancel-subscription-dialog-title">Confirm Subscription Cancellation</DialogTitle>
+          <DialogContent>
+            <DialogContentText id="cancel-subscription-dialog-description">
+              Are you sure you want to cancel your subscription? You will retain access to premium features until{' '}
+              {subscriptionStatus.current_period_end
+                ? new Date(subscriptionStatus.current_period_end).toLocaleDateString()
+                : 'the end of your billing period'}
+              .
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseCancelDialog} color="primary">
+              Cancel
+            </Button>
+            <Button onClick={handleConfirmCancel} color="error" autoFocus>
+              Confirm
+            </Button>
+          </DialogActions>
+        </Dialog>
 
         <Typography variant="h4" sx={{ color: colors.grey[100], mb: 2 }}>
           Available Plans
