@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, memo } from 'react';
 import { useUser, useAuth } from '@clerk/clerk-react';
 import { Box, Typography, useTheme } from '@mui/material';
 import { tokens } from '../theme';
@@ -9,7 +9,65 @@ const DEFAULT_FREE_FEATURES = {
   custom_indicators: false,
 };
 
-const restrictToPaidSubscription = (WrappedComponent, fallbackMessage = "Please upgrade to a paid subscription to view this chart.") => {
+// Memoize the RestrictedComponent to prevent unnecessary re-renders
+const RestrictedComponent = memo(
+  ({ WrappedComponent, props, fallbackMessage, subscriptionStatus, loading, error, isSignedIn, user, colors }) => {
+    if (!isSignedIn || !user) {
+      return (
+        <Box sx={{ padding: '20px', textAlign: 'center' }}>
+          <Typography variant="h5" sx={{ color: colors.grey[100] }}>
+            Please sign in to view this chart.
+          </Typography>
+        </Box>
+      );
+    }
+
+    if (loading) {
+      return (
+        <Box sx={{ padding: '20px', textAlign: 'center' }}>
+          <Typography variant="h5" sx={{ color: colors.grey[100] }}>
+            Loading subscription status...
+          </Typography>
+        </Box>
+      );
+    }
+
+    if (error) {
+      return (
+        <Box sx={{ padding: '20px', textAlign: 'center' }}>
+          <Typography variant="h5" sx={{ color: colors.grey[100] }}>
+            {error}
+          </Typography>
+        </Box>
+      );
+    }
+
+    // Check if user has a paid subscription or a cancelled subscription with valid current_period_end
+    const isPaidSubscription =
+      subscriptionStatus.plan !== 'Free' && subscriptionStatus.subscription_status === 'premium';
+    const isCancelledButValid =
+      subscriptionStatus.subscription_status === 'CANCELED' &&
+      subscriptionStatus.current_period_end &&
+      subscriptionStatus.current_period_end > new Date();
+
+    if (isPaidSubscription || isCancelledButValid) {
+      return <WrappedComponent {...props} />;
+    }
+
+    return (
+      <Box sx={{ padding: '20px', textAlign: 'center' }}>
+        <Typography variant="h5" sx={{ color: colors.grey[100] }}>
+          {fallbackMessage}
+        </Typography>
+      </Box>
+    );
+  }
+);
+
+const restrictToPaidSubscription = (
+  WrappedComponent,
+  fallbackMessage = 'Please upgrade to a paid subscription to view this chart.'
+) => {
   return (props) => {
     const { user, isSignedIn } = useUser();
     const { getToken } = useAuth();
@@ -21,7 +79,8 @@ const restrictToPaidSubscription = (WrappedComponent, fallbackMessage = "Please 
 
     const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://vercel-dataflow.vercel.app';
 
-    const fetchSubscriptionStatus = async () => {
+    // Memoize fetchSubscriptionStatus to prevent recreation on every render
+    const fetchSubscriptionStatus = useCallback(async () => {
       if (!isSignedIn || !user) {
         setError('Please sign in to view this chart.');
         setLoading(false);
@@ -68,60 +127,26 @@ const restrictToPaidSubscription = (WrappedComponent, fallbackMessage = "Please 
       } finally {
         setLoading(false);
       }
-    };
+    }, [isSignedIn, user, getToken]); // Dependencies for useCallback
 
     useEffect(() => {
       if (isSignedIn && user) {
         fetchSubscriptionStatus();
       }
-    }, [isSignedIn, user]);
-
-    if (!isSignedIn || !user) {
-      return (
-        <Box sx={{ padding: '20px', textAlign: 'center' }}>
-          <Typography variant="h5" sx={{ color: colors.grey[100] }}>
-            Please sign in to view this chart.
-          </Typography>
-        </Box>
-      );
-    }
-
-    if (loading) {
-      return (
-        <Box sx={{ padding: '20px', textAlign: 'center' }}>
-          <Typography variant="h5" sx={{ color: colors.grey[100] }}>
-            Loading subscription status...
-          </Typography>
-        </Box>
-      );
-    }
-
-    if (error) {
-      return (
-        <Box sx={{ padding: '20px', textAlign: 'center' }}>
-          <Typography variant="h5" sx={{ color: colors.grey[100] }}>
-            {error}
-          </Typography>
-        </Box>
-      );
-    }
-
-    // Check if user has a paid subscription or a cancelled subscription with valid current_period_end
-    const isPaidSubscription = subscriptionStatus.plan !== 'Free' && subscriptionStatus.subscription_status === 'premium';
-    const isCancelledButValid = subscriptionStatus.subscription_status === 'CANCELED' &&
-                                subscriptionStatus.current_period_end &&
-                                subscriptionStatus.current_period_end > new Date();
-
-    if (isPaidSubscription || isCancelledButValid) {
-      return <WrappedComponent {...props} />;
-    }
+    }, [isSignedIn, user, fetchSubscriptionStatus]); // Dependencies for useEffect
 
     return (
-      <Box sx={{ padding: '20px', textAlign: 'center' }}>
-        <Typography variant="h5" sx={{ color: colors.grey[100] }}>
-          {fallbackMessage}
-        </Typography>
-      </Box>
+      <RestrictedComponent
+        WrappedComponent={WrappedComponent}
+        props={props}
+        fallbackMessage={fallbackMessage}
+        subscriptionStatus={subscriptionStatus || { plan: 'Free', subscription_status: 'free', current_period_end: null, features: DEFAULT_FREE_FEATURES }}
+        loading={loading}
+        error={error}
+        isSignedIn={isSignedIn}
+        user={user}
+        colors={colors}
+      />
     );
   };
 };

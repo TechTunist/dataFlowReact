@@ -1,4 +1,4 @@
-import { useState, useEffect, createContext, useMemo } from "react";
+import { useState, useEffect, createContext, memo } from "react";
 import { Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { ClerkProvider, useAuth } from "@clerk/clerk-react";
 import Topbar from "./scenes/global/Topbar";
@@ -62,7 +62,7 @@ if (!PUBLISHABLE_KEY) {
   throw new Error("Missing Clerk Publishable Key");
 }
 
-function AppContent() {
+const AppContent = memo(() => {
   const [theme, colorMode] = useMode();
   const isMobile = useIsMobile();
   const [isSidebar, setIsSidebar] = useState(!isMobile);
@@ -878,15 +878,15 @@ function AppContent() {
       </ColorModeContext.Provider>
     </StripeContext.Provider>
   );
-}
+});
 
-function App() {
+const App = memo(() => {
   return (
     <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
       <AppContent />
     </ClerkProvider>
   );
-}
+});
 
 export default App;
 export { StripeContext }; // Export the context for use in other components

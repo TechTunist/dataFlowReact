@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, memo } from 'react';
 import { useUser, useAuth } from '@clerk/clerk-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Box, Typography, useTheme, Button, Alert } from '@mui/material';
@@ -6,7 +6,7 @@ import { tokens } from '../theme';
 import Header from '../components/Header';
 import { StripeContext } from '../App';
 
-const Subscription = () => {
+const Subscription = memo(() => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const { user, isSignedIn } = useUser();
@@ -54,14 +54,14 @@ const Subscription = () => {
     setLoading(true);
     setError('');
     setSuccess('');
-    console.log('Fetching subscription status...');
+    // console.log('Fetching subscription status...');
 
     try {
       const token = await getToken();
       if (!token) {
         throw new Error('Failed to obtain authentication token');
       }
-      console.log('Subscription status token:', token);
+      // console.log('Subscription status token:', token);
 
       const response = await fetch(`${API_BASE_URL}/api/subscription-status/`, {
         method: 'GET',
@@ -82,7 +82,7 @@ const Subscription = () => {
         throw new Error(`HTTP error! status: ${response.status}, message: ${data.error || 'Unknown error'}`);
       }
 
-      console.log('Subscription API response:', data); // Debug API response
+      // console.log('Subscription API response:', data); // Debug API response
       setSubscriptionStatus({
         plan: data.plan || 'Free',
         billing_interval: data.billing_interval || 'NONE',
@@ -96,7 +96,7 @@ const Subscription = () => {
         previous_plan: data.previous_plan || null, // Expect object
       });
     } catch (err) {
-      console.error('Subscription fetch error:', err); // Debug error
+      // console.error('Subscription fetch error:', err); // Debug error
       setError(`Failed to fetch subscription status: ${err.message}`);
       setSubscriptionStatus({
         plan: 'Free',
@@ -112,7 +112,7 @@ const Subscription = () => {
       });
     } finally {
       setLoading(false);
-      console.log('Fetch subscription status complete, loading:', false);
+      // console.log('Fetch subscription status complete, loading:', false);
     }
   };
 
@@ -130,7 +130,7 @@ const Subscription = () => {
     setLoading(true);
     setError('');
     setSuccess('');
-    console.log('Initiating checkout for plan ID:', planId);
+    // console.log('Initiating checkout for plan ID:', planId);
 
     try {
       const token = await getToken();
@@ -164,7 +164,7 @@ const Subscription = () => {
       }
 
       const { sessionId } = responseData;
-      console.log('Stripe checkout session ID:', sessionId);
+      // console.log('Stripe checkout session ID:', sessionId);
       const { error } = await stripe.redirectToCheckout({ sessionId });
       if (error) {
         console.error('Stripe redirect error:', error);
@@ -172,7 +172,7 @@ const Subscription = () => {
       }
     } catch (err) {
       setError(`Failed to initiate checkout: ${err.message}`);
-      console.error('Checkout error:', err);
+      // console.error('Checkout error:', err);
     } finally {
       setLoading(false);
     }
@@ -187,14 +187,14 @@ const Subscription = () => {
     setLoading(true);
     setError('');
     setSuccess('');
-    console.log('Initiating subscription cancellation...');
+    // console.log('Initiating subscription cancellation...');
 
     try {
       const token = await getToken();
       if (!token) {
         throw new Error('Failed to obtain authentication token');
       }
-      console.log('Cancellation token:', token);
+      // console.log('Cancellation token:', token);
 
       const response = await fetch(`${API_BASE_URL}/api/cancel-subscription/`, {
         method: 'POST',
@@ -216,7 +216,7 @@ const Subscription = () => {
       }
 
       setSuccess('Your subscription has been cancelled successfully.');
-      console.log('Subscription cancelled:', responseData);
+      // console.log('Subscription cancelled:', responseData);
       await fetchSubscriptionStatus();
     } catch (err) {
       setError(`Failed to cancel subscription: ${err.message}`);
@@ -393,6 +393,6 @@ const Subscription = () => {
       </Box>
     </Box>
   );
-};
+});
 
 export default Subscription;

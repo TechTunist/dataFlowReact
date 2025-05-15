@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import { useUser, useAuth } from '@clerk/clerk-react';
 import { Box, Typography, useTheme } from '@mui/material';
 import { tokens } from '../theme';
 import Header from '../components/Header';
 
-const Profile = () => {
+const Profile = memo(() => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const { user, isSignedIn } = useUser();
@@ -54,7 +54,8 @@ const Profile = () => {
       }
 
       const data = await response.json();
-      console.log('Profile API response:', data); // Debug API response
+      // Debug API response
+      // console.log('Profile API response:', data); 
       setSubscriptionStatus({
         plan: data.plan || 'Free',
         billing_interval: data.billing_interval || 'NONE',
@@ -183,6 +184,6 @@ const Profile = () => {
       </Box>
     </Box>
   );
-};
+});
 
 export default Profile;
