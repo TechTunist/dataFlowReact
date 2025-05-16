@@ -145,7 +145,7 @@ const SplashPage = () => {
               component={Link}
               to="/login-signup?mode=signin"
               sx={{
-                backgroundColor: colors.grey[500],
+                backgroundColor: colors.greenAccent[800],
                 color: colors.grey[100],
                 padding: { xs: '10px 20px', sm: '12px 24px' },
                 fontSize: { xs: '1rem', sm: '1.1rem' },
