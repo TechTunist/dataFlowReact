@@ -259,7 +259,7 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
             {searchQuery ? filteredItems.map(renderMenuItem) : renderSubMenus()}
           </Menu>
           <Box sx={{ padding: theme.spacing(2) }}>
-            <Box display="flex" justifyContent="center" alignItems="center">
+            {/* <Box display="flex" justifyContent="center" alignItems="center">
               <img alt="main-logo" width="100px" height="100px" src={`../../assets/bc1qnekceuntjc2ga3vm8r85l842umzh35xs6yxyvx.JPG`} style={{ cursor: "pointer", borderRadius: "10%", marginTop: "50px" }} />
             </Box>
             <Box textAlign="center" padding={theme.spacing(1)}>
@@ -267,7 +267,7 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
               <Typography variant="h5" color={colors.greenAccent[500]}>
                 I'm a solo developer trying to create a free useful tool. If you found any value from this site, please consider donating some BTC by using the QR code. Thanks
               </Typography>
-            </Box>
+            </Box> */}
             <Box display="flex" justifyContent="center" alignItems="center">
               <Typography variant="h5" color={colors.greenAccent[500]}>
                 Contact me here:

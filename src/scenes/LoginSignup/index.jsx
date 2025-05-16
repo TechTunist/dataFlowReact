@@ -1,26 +1,36 @@
 // src/scenes/LoginSignup.js
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSignUp, useSignIn } from "@clerk/clerk-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Box, Typography, TextField, Button, useTheme } from "@mui/material";
 import { tokens } from "../../theme";
 
 export default function LoginSignup() {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
-  const [isSignUp, setIsSignUp] = useState(true); // Toggle between sign-up and sign-in
+  const location = useLocation();
+  const [isSignUp, setIsSignUp] = useState(true);
   const [emailAddress, setEmailAddress] = useState("");
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
   const [pendingVerification, setPendingVerification] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const { signUp, setActive } = useSignUp();
   const { signIn } = useSignIn();
   const navigate = useNavigate();
+
+  // Read query parameters
+  useEffect(() => {
+    const query = new URLSearchParams(location.search);
+    const mode = query.get('mode');
+    setIsSignUp(mode !== 'signin');
+  }, [location.search]);
 
   // Handle Sign-Up
   const onSignUpPress = async () => {
     if (!signUp) return;
 
+    setIsLoading(true);
     try {
       await signUp.create({
         emailAddress,
@@ -33,6 +43,8 @@ export default function LoginSignup() {
     } catch (err) {
       console.error("Sign-up error:", JSON.stringify(err, null, 2));
       alert("Sign-up failed: " + (err.errors?.[0]?.message || "Unknown error"));
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -40,18 +52,30 @@ export default function LoginSignup() {
   const onVerifyPress = async () => {
     if (!signUp) return;
 
+    setIsLoading(true);
     try {
       const result = await signUp.attemptEmailAddressVerification({ code });
       if (result.status === "complete") {
         await setActive({ session: result.createdSessionId });
-        navigate("/dashboard");
+
+        // Check if Premium Plan was selected
+        const query = new URLSearchParams(location.search);
+        const plan = query.get('plan');
+
+        // Redirect based on plan
+        if (plan === 'premium') {
+          navigate("/subscription");
+        } else {
+          navigate("/dashboard");
+        }
       } else {
-        // console.log("Verification incomplete:", result);
         alert("Verification incomplete. Please try again.");
       }
     } catch (err) {
       console.error("Verification error:", JSON.stringify(err, null, 2));
-      alert("Verification failed: " + (err.errors?.[0]?.message || "Unknown error"));
+      alert("Verification failed: " + (err.message || "Unknown error"));
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -59,6 +83,7 @@ export default function LoginSignup() {
   const onSignInPress = async () => {
     if (!signIn) return;
 
+    setIsLoading(true);
     try {
       const result = await signIn.create({
         identifier: emailAddress,
@@ -69,7 +94,6 @@ export default function LoginSignup() {
         await setActive({ session: result.createdSessionId });
         navigate("/dashboard");
       } else if (result.status === "needs_first_factor") {
-        // If email verification is required during sign-in
         await signIn.prepareFirstFactor({
           strategy: "email_code",
           emailAddressId: result.supportedFirstFactors.find(
@@ -81,6 +105,8 @@ export default function LoginSignup() {
     } catch (err) {
       console.error("Sign-in error:", JSON.stringify(err, null, 2));
       alert("Sign-in failed: " + (err.errors?.[0]?.message || "Unknown error"));
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -142,6 +168,7 @@ export default function LoginSignup() {
             />
             <Button
               onClick={onVerifyPress}
+              disabled={isLoading}
               sx={{
                 backgroundColor: colors.greenAccent[500],
                 color: colors.grey[900],
@@ -152,7 +179,7 @@ export default function LoginSignup() {
                 },
               }}
             >
-              Verify
+              {isLoading ? "Processing..." : "Verify"}
             </Button>
           </Box>
         ) : (
@@ -201,6 +228,7 @@ export default function LoginSignup() {
             />
             <Button
               onClick={isSignUp ? onSignUpPress : onSignInPress}
+              disabled={isLoading}
               sx={{
                 backgroundColor: colors.greenAccent[500],
                 color: colors.grey[900],
@@ -212,7 +240,7 @@ export default function LoginSignup() {
                 },
               }}
             >
-              {isSignUp ? "Continue" : "Sign In"}
+              {isLoading ? "Processing..." : (isSignUp ? "Continue" : "Sign In")}
             </Button>
             <Typography
               variant="body1"

@@ -1,7 +1,9 @@
+// src/components/restrictToPaidSubscription.js
 import React, { useState, useEffect, useCallback, memo } from 'react';
 import { useUser, useAuth } from '@clerk/clerk-react';
-import { Box, Typography, useTheme } from '@mui/material';
+import { Box, Typography, useTheme, Button } from '@mui/material';
 import { tokens } from '../theme';
+import { Link } from 'react-router-dom'; // Import Link for navigation
 
 const DEFAULT_FREE_FEATURES = {
   basic_charts: true,
@@ -56,9 +58,24 @@ const RestrictedComponent = memo(
 
     return (
       <Box sx={{ padding: '20px', textAlign: 'center' }}>
-        <Typography variant="h5" sx={{ color: colors.grey[100] }}>
+        <Typography variant="h5" sx={{ color: colors.grey[100], mb: 2 }}>
           {fallbackMessage}
         </Typography>
+        <Button
+          component={Link}
+          to="/subscription"
+          sx={{
+            backgroundColor: colors.greenAccent[500],
+            color: colors.grey[900],
+            padding: '10px 20px',
+            fontWeight: 'bold',
+            '&:hover': {
+              backgroundColor: colors.greenAccent[600],
+            },
+          }}
+        >
+          Upgrade Now
+        </Button>
       </Box>
     );
   }

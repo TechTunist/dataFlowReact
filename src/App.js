@@ -70,6 +70,7 @@ const AppContent = memo(() => {
   const { isLoaded, isSignedIn } = useAuth();
   const isDashboardTopbar = location.pathname === "/dashboard";
   const isSplashPage = location.pathname === "/splash";
+  const isLoginSignupPage = location.pathname === "/login-signup";
 
   // Initialize stripePromise and handle loading/error states
   const [stripe, setStripe] = useState(null);
@@ -96,7 +97,7 @@ const AppContent = memo(() => {
   // Determine if sidebar and topbar should be rendered
   const userMenuRoutes = ["/profile", "/subscription", "/settings", "/change-password"];
   const isUserMenuPage = userMenuRoutes.includes(location.pathname);
-  const shouldRenderTopbarAndSidebar = isSignedIn && !isSplashPage && !isUserMenuPage;
+  const shouldRenderTopbarAndSidebar = isSignedIn && !isSplashPage && !isLoginSignupPage && !isUserMenuPage;
 
   // Wait for Clerk to load authentication state
   if (!isLoaded) {
