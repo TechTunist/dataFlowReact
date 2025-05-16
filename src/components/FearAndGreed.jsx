@@ -13,6 +13,9 @@ function CryptoFearAndGreedIndex({ isDashboard }) {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
 
+    // First, let's add fearAndGreedData to the DataContext if it's not there already
+    // Note: You'll need to add this to your DataContext.js file separately
+
     useEffect(() => {
         const fetchData = async () => {
             if (fearAndGreedData.length > 0) return; // Skip if data already exists
@@ -31,10 +34,10 @@ function CryptoFearAndGreedIndex({ isDashboard }) {
         fetchData();
     }, [fetchFearAndGreedData, fearAndGreedData.length]);
 
-    // Convert timestamp to date format (day/year/month as requested later)
+    // Convert timestamp to date format
     const convertTimestampToDate = (timestamp) => {
         const date = new Date(timestamp * 1000);
-        return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`; // Changed to day/year/month
+        return date.toISOString().split('T')[0];
     };
 
     // Format the data from context
@@ -57,8 +60,8 @@ function CryptoFearAndGreedIndex({ isDashboard }) {
     const textColor = getColorByPercent(value - 0.05);
 
     const gaugeChartStyle = {
-        width: isDashboard ? '80%' : '90%',
-        maxWidth: isMobile ? (isDashboard ? '540px' : '650px') : (isDashboard ? '720px' : '1250px'),
+        width: isDashboard ? '70%' : '90%',
+        maxWidth: isMobile ? (isDashboard ? '550px' : '650px') : (isDashboard ? '720px' : '1250px'),
         minWidth: isMobile ? '500px' : '550px',
     };
 
@@ -119,7 +122,7 @@ function CryptoFearAndGreedIndex({ isDashboard }) {
             
             {!isDashboard && formattedData.length > 0 && (
                 <div style={{ marginTop: '10px' }}>
-                    <span style={{ color: colors.greenAccent[100] }}>
+                    <span style={{ color: colors.grey[100] }}>
                         Last Updated: {formattedData[formattedData.length - 1].time}
                     </span>
                 </div>
