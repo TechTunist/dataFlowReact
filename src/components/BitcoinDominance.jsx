@@ -199,7 +199,7 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
         className="chart-container"
         style={{
           position: 'relative',
-          height: 'calc(100% - 40px)',
+          height: isDashboard ? '100%' : 'calc(100% - 40px)',
           width: '100%',
           border: '2px solid #a9a9a9',
         }}

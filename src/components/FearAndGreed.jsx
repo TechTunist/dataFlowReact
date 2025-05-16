@@ -1,4 +1,4 @@
-import React, { useContext } from 'react'; // Removed useEffect, useState
+import React, { useEffect, useState, useContext } from 'react';
 import GaugeChart from 'react-gauge-chart';
 import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
@@ -9,12 +9,32 @@ function CryptoFearAndGreedIndex({ isDashboard }) {
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
     const isMobile = useIsMobile();
-    const { fearAndGreedData } = useContext(DataContext);
+    const { fetchFearAndGreedData, fearAndGreedData } = useContext(DataContext);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            if (fearAndGreedData.length > 0) return; // Skip if data already exists
+            
+            setIsLoading(true);
+            setError(null);
+            try {
+                await fetchFearAndGreedData();
+            } catch (err) {
+                setError('Failed to fetch Fear and Greed data. Please try again later.');
+                console.error('Error fetching Fear and Greed data:', err);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchData();
+    }, [fetchFearAndGreedData, fearAndGreedData.length]);
 
     // Convert timestamp to date format (day/year/month as requested later)
     const convertTimestampToDate = (timestamp) => {
         const date = new Date(timestamp * 1000);
-        return `${date.getDate()}/${date.getFullYear()}/${date.getMonth() + 1}`; // Changed to day/year/month
+        return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`; // Changed to day/year/month
     };
 
     // Format the data from context
@@ -38,7 +58,7 @@ function CryptoFearAndGreedIndex({ isDashboard }) {
 
     const gaugeChartStyle = {
         width: isDashboard ? '80%' : '90%',
-        maxWidth: isMobile ? (isDashboard ? '540px' : '540px') : (isDashboard ? '720px' : '1250px'),
+        maxWidth: isMobile ? (isDashboard ? '540px' : '650px') : (isDashboard ? '720px' : '1250px'),
         minWidth: isMobile ? '500px' : '550px',
     };
 
@@ -58,13 +78,16 @@ function CryptoFearAndGreedIndex({ isDashboard }) {
                     marginBottom: '0px',
                     height: '30px'
                 }}>
-                    {/* Removed loading/error since DataContext handles this */}
+                    <div>
+                        {isLoading && <span style={{ color: colors.grey[100] }}>Loading...</span>}
+                        {error && <span style={{ color: colors.redAccent[500] }}>{error}</span>}
+                    </div>
                 </div>
             )}
 
             <div className="chart-container" style={{
                 position: 'relative',
-                height: 'calc(100% - 40px)',
+                height: isDashboard ? '100%' : 'calc(100% - 40px)',
                 width: '100%',
                 border: '2px solid #a9a9a9',
                 display: 'flex',
@@ -96,7 +119,7 @@ function CryptoFearAndGreedIndex({ isDashboard }) {
             
             {!isDashboard && formattedData.length > 0 && (
                 <div style={{ marginTop: '10px' }}>
-                    <span style={{ color: colors.grey[100] }}>
+                    <span style={{ color: colors.greenAccent[100] }}>
                         Last Updated: {formattedData[formattedData.length - 1].time}
                     </span>
                 </div>

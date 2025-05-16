@@ -29,12 +29,18 @@ import BitcoinROI from "../../components/BitcoinROI";
 
 // Memoize DashboardCard to prevent recreation on every render
 const DashboardCard = memo(({ title, component, description, linkTo, isMobile, chartsVisible, colors }) => {
+  const theme = useTheme();
+  const wideMobile = theme.breakpoints.between('sm', 'lg');
+
   const dashboardStyles = {
     card: {
-      height: isMobile ? "440px" : "550px",
+      aspectRatio: "4 / 3", // Width:Height ratio of 4:3 (height is 3/4 of width)
+      minHeight: isMobile ? (wideMobile ? "400px" : "350px") : "400px",
+      maxHeight: isMobile ? "550px" : "650px",
       display: "flex",
       flexDirection: "column",
       transition: "box-shadow 0.3s ease",
+      width: "100%",
     },
     cardContent: {
       flexGrow: 1,
@@ -44,7 +50,7 @@ const DashboardCard = memo(({ title, component, description, linkTo, isMobile, c
     },
     chartContainer: {
       flex: 1,
-      minHeight: isMobile ? "350px" : "400px",
+      minHeight: isMobile ? (wideMobile ? "310px" : "260px") : "310px",
       marginTop: "10px",
       marginBottom: "10px",
     },

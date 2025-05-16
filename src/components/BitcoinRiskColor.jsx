@@ -197,7 +197,7 @@ const BitcoinRiskColor = ({ isDashboard = false, riskData: propRiskData }) => {
       <div
         className="chart-container"
         style={{
-          height: 'calc(100% - 40px)',
+          height: isDashboard ? '100%' : 'calc(100% - 40px)',
           width: '100%',
           border: '2px solid #a9a9a9',
         }}
