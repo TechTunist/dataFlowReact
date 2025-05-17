@@ -284,7 +284,7 @@ const WorkbenchChart = ({
     });
   };
 
-  // Initialize chart on mount
+  // Initialize chart on mount (removed dependency on colors and theme.palette.mode)
   useEffect(() => {
     if (!chartContainerRef.current) {
       console.error('Chart container is not available');
@@ -318,6 +318,16 @@ const WorkbenchChart = ({
       chart.remove();
       window.removeEventListener('resize', resizeChart);
     };
+  }, []); // Empty dependencies to initialize chart only once
+
+  // Update chart styling when theme changes
+  useEffect(() => {
+    if (chartRef.current) {
+      chartRef.current.applyOptions({
+        layout: { background: { type: 'solid', color: colors.primary[700] }, textColor: colors.primary[100] },
+        grid: { vertLines: { color: colors.greenAccent[700] }, horzLines: { color: colors.greenAccent[700] } },
+      });
+    }
   }, [colors, theme.palette.mode]);
 
   // Update chart and scales when series, data, moving averages, or colors change
@@ -544,7 +554,7 @@ const WorkbenchChart = ({
               id="fred-series-label"
               shrink
               sx={{
-                color: colors.grey[100],
+                color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900], // Darker text in light mode
                 '&.Mui-focused': { color: colors.greenAccent[500] },
                 top: 0,
                 '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' },
@@ -565,14 +575,14 @@ const WorkbenchChart = ({
                   : 'Select FRED Series'
               }
               sx={{
-                color: colors.grey[100],
-                backgroundColor: colors.primary[500],
+                color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900], // Darker text in light mode
+                backgroundColor: theme.palette.mode === 'dark' ? colors.primary[500] : colors.primary[200], // Lighter background in light mode
                 borderRadius: "8px",
-                '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
+                '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[700] },
                 '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
                 '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
                 '& .MuiSelect-select': { py: 1.5, pl: 2 },
-                '& .MuiSelect-select:empty': { color: colors.grey[500] },
+                '& .MuiSelect-select:empty': { color: theme.palette.mode === 'dark' ? colors.grey[500] : colors.grey[600] },
               }}
             >
               {Object.entries(availableFredSeries).map(([id, { label }]) => (
@@ -580,7 +590,7 @@ const WorkbenchChart = ({
                   <Box sx={{ display: 'flex', alignItems: 'center' }}>
                     <Checkbox
                       checked={activeFredSeries.includes(id)}
-                      sx={{ color: colors.grey[100], '&.Mui-checked': { color: colors.greenAccent[500] } }}
+                      sx={{ color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900], '&.Mui-checked': { color: colors.greenAccent[500] } }}
                     />
                     <span>{label}</span>
                   </Box>
@@ -596,16 +606,16 @@ const WorkbenchChart = ({
                       sx={{
                         textTransform: 'none',
                         fontSize: '12px',
-                        color: activeFredSeries.includes(id) ? colors.grey[100] : colors.grey[500],
-                        border: `1px solid ${activeFredSeries.includes(id) ? colors.grey[300] : colors.grey[500]}`,
+                        color: activeFredSeries.includes(id) ? (theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900]) : (theme.palette.mode === 'dark' ? colors.grey[500] : colors.grey[600]),
+                        border: `1px solid ${activeFredSeries.includes(id) ? (theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[700]) : (theme.palette.mode === 'dark' ? colors.grey[500] : colors.grey[600])}`,
                         borderRadius: '4px',
                         padding: '2px 8px',
                         minWidth: '50px',
                         backgroundColor: editClicked[id] ? '#4cceac' : 'transparent',
                         ...(editClicked[id] && { color: 'black', borderColor: 'violet' }),
                         '&:hover': {
-                          borderColor: activeFredSeries.includes(id) ? colors.greenAccent[500] : colors.grey[500],
-                          backgroundColor: activeFredSeries.includes(id) && !editClicked[id] ? colors.primary[600] : 'transparent',
+                          borderColor: activeFredSeries.includes(id) ? colors.greenAccent[500] : (theme.palette.mode === 'dark' ? colors.grey[500] : colors.grey[600]),
+                          backgroundColor: activeFredSeries.includes(id) && !editClicked[id] ? (theme.palette.mode === 'dark' ? colors.primary[600] : colors.primary[300]) : 'transparent',
                         },
                         '&.Mui-disabled': {
                           pointerEvents: 'none',
@@ -627,7 +637,7 @@ const WorkbenchChart = ({
               id="crypto-series-label"
               shrink
               sx={{
-                color: colors.grey[100],
+                color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900], // Darker text in light mode
                 '&.Mui-focused': { color: colors.greenAccent[500] },
                 top: 0,
                 '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' },
@@ -648,21 +658,21 @@ const WorkbenchChart = ({
                   : 'Select Crypto Series'
               }
               sx={{
-                color: colors.grey[100],
-                backgroundColor: colors.primary[500],
+                color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900], // Darker text in light mode
+                backgroundColor: theme.palette.mode === 'dark' ? colors.primary[500] : colors.primary[200], // Lighter background in light mode
                 borderRadius: "8px",
-                '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
+                '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[700] },
                 '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
                 '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
                 '& .MuiSelect-select': { py: 1.5, pl: 2 },
-                '& .MuiSelect-select:empty': { color: colors.grey[500] },
+                '& .MuiSelect-select:empty': { color: theme.palette.mode === 'dark' ? colors.grey[500] : colors.grey[600] },
               }}
             >
               {Object.entries(availableCryptoSeries).map(([id, { label }]) => (
                 <MenuItem key={id} value={id}>
                   <Checkbox
                     checked={activeCryptoSeries.includes(id)}
-                    sx={{ color: colors.grey[100], '&.Mui-checked': { color: colors.greenAccent[500] } }}
+                    sx={{ color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900], '&.Mui-checked': { color: colors.greenAccent[500] } }}
                   />
                   <span>{label}</span>
                 </MenuItem>
@@ -680,13 +690,13 @@ const WorkbenchChart = ({
         fullWidth
         sx={{
           '& .MuiDialog-paper': {
-            backgroundColor: colors.primary[500],
-            color: colors.grey[100],
+            backgroundColor: theme.palette.mode === 'dark' ? colors.primary[500] : colors.primary[200], // Lighter background in light mode
+            color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900], // Darker text in light mode
             borderRadius: '8px',
           },
         }}
       >
-        <DialogTitle sx={{ color: colors.grey[100], fontSize: '18px' }}>
+        <DialogTitle sx={{ color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900], fontSize: '18px' }}>
           {openDialog.seriesId ? availableFredSeries[openDialog.seriesId]?.label : ''}
         </DialogTitle>
         <DialogContent>
@@ -694,7 +704,7 @@ const WorkbenchChart = ({
             <InputLabel
               id="moving-average-label"
               sx={{
-                color: colors.grey[100],
+                color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900], // Darker text in light mode
                 '&.Mui-focused': { color: colors.greenAccent[500] },
               }}
             >
@@ -706,10 +716,10 @@ const WorkbenchChart = ({
               value={dialogMovingAverage}
               onChange={handleMovingAverageChange}
               sx={{
-                color: colors.grey[100],
-                backgroundColor: colors.primary[600],
+                color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900], // Darker text in light mode
+                backgroundColor: theme.palette.mode === 'dark' ? colors.primary[600] : colors.primary[300], // Lighter background in light mode
                 borderRadius: '4px',
-                '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
+                '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[700] },
                 '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
                 '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
               }}
@@ -724,7 +734,7 @@ const WorkbenchChart = ({
             <InputLabel
               id="color-label"
               sx={{
-                color: colors.grey[100],
+                color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900], // Darker text in light mode
                 '&.Mui-focused': { color: colors.greenAccent[500] },
               }}
             >
@@ -739,8 +749,8 @@ const WorkbenchChart = ({
                 height: '40px',
                 marginTop: '8px',
                 borderRadius: '4px',
-                border: `1px solid ${colors.grey[300]}`,
-                backgroundColor: colors.primary[600],
+                border: `1px solid ${theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[700]}`,
+                backgroundColor: theme.palette.mode === 'dark' ? colors.primary[600] : colors.primary[300], // Lighter background in light mode
               }}
             />
           </FormControl>
@@ -749,13 +759,13 @@ const WorkbenchChart = ({
           <Button
             onClick={handleCloseDialog}
             sx={{
-              color: colors.grey[100],
-              border: `1px solid ${colors.grey[300]}`,
+              color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900], // Darker text in light mode
+              border: `1px solid ${theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[700]}`,
               borderRadius: '4px',
               textTransform: 'none',
               '&:hover': {
                 borderColor: colors.greenAccent[500],
-                backgroundColor: colors.primary[600],
+                backgroundColor: theme.palette.mode === 'dark' ? colors.primary[600] : colors.primary[300],
               },
             }}
           >
@@ -764,13 +774,13 @@ const WorkbenchChart = ({
           <Button
             onClick={handleSaveDialog}
             sx={{
-              color: colors.grey[100],
-              border: `1px solid ${colors.grey[300]}`,
+              color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900], // Darker text in light mode
+              border: `1px solid ${theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[700]}`,
               borderRadius: '4px',
               textTransform: 'none',
               '&:hover': {
                 borderColor: colors.greenAccent[500],
-                backgroundColor: colors.primary[600],
+                backgroundColor: theme.palette.mode === 'dark' ? colors.primary[600] : colors.primary[300],
               },
             }}
           >
@@ -786,8 +796,14 @@ const WorkbenchChart = ({
               <input type="checkbox" checked={scaleModeState === 1} onChange={toggleScaleMode} />
               <span className="slider round"></span>
             </label>
-            <span style={{ color: colors.primary[100] }}>{scaleModeState === 1 ? 'Logarithmic' : 'Linear'}</span>
-            {isLoading && <span style={{ color: colors.grey[100] }}>Loading...</span>}
+            <span style={{ color: theme.palette.mode === 'dark' ? colors.primary[100] : colors.grey[900] }}>
+              {scaleModeState === 1 ? 'Logarithmic' : 'Linear'}
+            </span>
+            {isLoading && (
+              <span style={{ color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900] }}>
+                Loading...
+              </span>
+            )}
             {error && <span style={{ color: colors.redAccent[500] }}>{error}</span>}
           </div>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
@@ -796,18 +812,36 @@ const WorkbenchChart = ({
               className="button-reset"
               style={{
                 backgroundColor: isInteractive ? '#4cceac' : 'transparent',
-                color: isInteractive ? 'black' : '#31d6aa',
-                borderColor: isInteractive ? 'violet' : '#70d8bd',
+                color: isInteractive ? 'black' : (theme.palette.mode === 'dark' ? '#31d6aa' : colors.grey[900]),
+                borderColor: isInteractive ? 'violet' : (theme.palette.mode === 'dark' ? '#70d8bd' : colors.grey[700]),
               }}
             >
               {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
             </button>
-            <button onClick={resetChartView} className="button-reset">Reset Chart</button>
-            <button onClick={clearAllSeries} className="button-reset">Clear All</button>
+            <button
+              onClick={resetChartView}
+              className="button-reset"
+              style={{
+                color: theme.palette.mode === 'dark' ? '#31d6aa' : colors.grey[900],
+                borderColor: theme.palette.mode === 'dark' ? '#70d8bd' : colors.grey[700],
+              }}
+            >
+              Reset Chart
+            </button>
+            <button
+              onClick={clearAllSeries}
+              className="button-reset"
+              style={{
+                color: theme.palette.mode === 'dark' ? '#31d6aa' : colors.grey[900],
+                borderColor: theme.palette.mode === 'dark' ? '#70d8bd' : colors.grey[700],
+              }}
+            >
+              Clear All
+            </button>
           </div>
         </div>
       )}
-      <div className="chart-container" style={{ position: 'relative', height: isDashboard ? '100%' : 'calc(100% - 40px)', width: '100%', border: '2px solid #a9a9a9' }} onDoubleClick={setInteractivity}>
+      <div className="chart-container" style={{ position: 'relative', height: isDashboard ? '100%' : 'calc(100% - 40px)', width: '100%', border: `2px solid ${theme.palette.mode === 'dark' ? '#a9a9a9' : colors.grey[700]}` }} onDoubleClick={setInteractivity}>
         <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
         {activeFredSeries.length === 0 && activeCryptoSeries.length === 0 && !isDashboard && (
           <div
@@ -816,7 +850,7 @@ const WorkbenchChart = ({
               top: '50%',
               left: '50%',
               transform: 'translate(-50%, -50%)',
-              color: colors.grey[100],
+              color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900], // Darker text in light mode
               fontSize: '16px',
               zIndex: 2,
             }}
@@ -830,10 +864,10 @@ const WorkbenchChart = ({
             top: '10px',
             left: '10px',
             zIndex: 2,
-            backgroundColor: colors.primary[900],
+            backgroundColor: theme.palette.mode === 'dark' ? colors.primary[900] : colors.primary[200], // Lighter background in light mode
             padding: '5px 10px',
             borderRadius: '4px',
-            color: colors.grey[100],
+            color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900], // Darker text in light mode
             fontSize: '12px',
           }}
         >
@@ -896,19 +930,27 @@ const WorkbenchChart = ({
         )}
       </div>
       {!isDashboard && tooltipData && (activeFredSeries.length > 0 || activeCryptoSeries.length > 0) && (
-        <div className="tooltip" style={{
-          left: (() => {
-            const sidebarWidth = isMobile ? -80 : -320;
-            const cursorX = tooltipData.x - sidebarWidth;
-            const chartWidth = chartContainerRef.current.clientWidth - sidebarWidth;
-            const tooltipWidth = 200;
-            const offset = 10000 / (chartWidth + 300);
-            const rightPosition = cursorX + offset;
-            const leftPosition = cursorX - tooltipWidth - offset;
-            return rightPosition + tooltipWidth <= chartWidth ? `${rightPosition}px` : (leftPosition >= 0 ? `${leftPosition}px` : `${Math.max(0, Math.min(rightPosition, chartWidth - tooltipWidth))}px`);
-          })(),
-          top: `${tooltipData.y + 100}px`,
-        }}>
+        <div
+          className="tooltip"
+          style={{
+            left: (() => {
+              const sidebarWidth = isMobile ? -80 : -320;
+              const cursorX = tooltipData.x - sidebarWidth;
+              const chartWidth = chartContainerRef.current.clientWidth - sidebarWidth;
+              const tooltipWidth = 200;
+              const offset = 10000 / (chartWidth + 300);
+              const rightPosition = cursorX + offset;
+              const leftPosition = cursorX - tooltipWidth - offset;
+              return rightPosition + tooltipWidth <= chartWidth ? `${rightPosition}px` : (leftPosition >= 0 ? `${leftPosition}px` : `${Math.max(0, Math.min(rightPosition, chartWidth - tooltipWidth))}px`);
+            })(),
+            top: `${tooltipData.y + 100}px`,
+            backgroundColor: theme.palette.mode === 'dark' ? colors.primary[900] : colors.primary[200], // Lighter background in light mode
+            color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900], // Darker text in light mode
+            padding: '5px',
+            borderRadius: '4px',
+            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
+          }}
+        >
           {[...activeFredSeries, ...activeCryptoSeries].map(id => (
             <div key={id}>
               <div style={{ fontSize: '15px' }}>
@@ -924,7 +966,7 @@ const WorkbenchChart = ({
         </div>
       )}
       {!isDashboard && explanation && (
-        <p className='chart-info'>
+        <p className='chart-info' style={{ color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900] }}>
           {explanation}
         </p>
       )}

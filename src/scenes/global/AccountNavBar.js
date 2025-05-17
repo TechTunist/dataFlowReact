@@ -87,7 +87,7 @@ const AccountNavBar = () => {
                 color:
                   location.pathname === item.path
                     ? colors.greenAccent[500]
-                    : colors.grey[300],
+                    : colors.grey[100],
                 fontWeight: location.pathname === item.path ? "bold" : "normal",
                 "&:hover": { color: colors.grey[100] },
                 fontSize: isMobile ? "0.9rem" : "1rem", // Slightly smaller text on mobile

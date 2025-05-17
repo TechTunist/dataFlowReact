@@ -141,7 +141,7 @@ const Profile = memo(() => {
           Subscription Details
         </Typography>
         <Box sx={{ mb: 3 }}>
-          <Typography variant="body1" sx={{ color: colors.grey[300], mb: 1 }}>
+          <Typography variant="body1" sx={{ color: colors.grey[100], mb: 1 }}>
             <strong>Plan:</strong>{' '}
             {subscriptionStatus.subscription_status.includes('Access will end') && subscriptionStatus.previous_plan ? (
               <>
@@ -154,28 +154,28 @@ const Profile = memo(() => {
               </>
             )}
           </Typography>
-          <Typography variant="body1" sx={{ color: colors.grey[300], mb: 1 }}>
+          <Typography variant="body1" sx={{ color: colors.grey[100], mb: 1 }}>
             <strong>Status:</strong> {subscriptionStatus.subscription_status}
           </Typography>
           {subscriptionStatus.current_period_end && (
-            <Typography variant="body1" sx={{ color: colors.grey[300], mb: 1 }}>
+            <Typography variant="body1" sx={{ color: colors.grey[100], mb: 1 }}>
               <strong>Access Ends:</strong> {subscriptionStatus.current_period_end.toLocaleDateString()}
             </Typography>
           )}
           {subscriptionStatus.payment_method && (
-            <Typography variant="body1" sx={{ color: colors.grey[300], mb: 1 }}>
+            <Typography variant="body1" sx={{ color: colors.grey[100], mb: 1 }}>
               <strong>Payment Method:</strong> {subscriptionStatus.payment_method}
             </Typography>
           )}
           {subscriptionStatus.last_payment_date && (
-            <Typography variant="body1" sx={{ color: colors.grey[300], mb: 1 }}>
+            <Typography variant="body1" sx={{ color: colors.grey[100], mb: 1 }}>
               <strong>Last Payment:</strong> {subscriptionStatus.last_payment_date.toLocaleDateString()}
             </Typography>
           )}
-          <Typography variant="body1" sx={{ color: colors.grey[300], mb: 1 }}>
+          <Typography variant="body1" sx={{ color: colors.grey[100], mb: 1 }}>
             <strong>Display Name:</strong> {subscriptionStatus.display_name}
           </Typography>
-          <Typography variant="body1" sx={{ color: colors.grey[300], mb: 2 }}>
+          <Typography variant="body1" sx={{ color: colors.grey[100], mb: 2 }}>
             <strong>Features:</strong> Basic Charts: {subscriptionStatus.features.basic_charts ? 'Yes' : 'No'},
             Advanced Charts: {subscriptionStatus.features.advanced_charts ? 'Yes' : 'No'},
             Custom Indicators: {subscriptionStatus.features.custom_indicators ? 'Yes' : 'No'}

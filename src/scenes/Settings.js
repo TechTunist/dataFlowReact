@@ -50,9 +50,9 @@ const Settings = () => {
               />
             }
             label="Email Notifications"
-            sx={{ color: colors.grey[300] }}
+            sx={{ color: colors.grey[100] }}
           />
-          <Typography variant="body2" sx={{ color: colors.grey[400], ml: 4 }}>
+          <Typography variant="body2" sx={{ color: colors.grey[100], ml: 4 }}>
             Receive email updates about new features and subscription changes.
           </Typography>
         </Box>

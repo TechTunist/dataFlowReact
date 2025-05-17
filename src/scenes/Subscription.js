@@ -315,7 +315,7 @@ const Subscription = memo(() => {
           Current Plan
         </Typography>
         <Box sx={{ mb: 3 }}>
-          <Typography variant="body1" sx={{ color: colors.grey[300], mb: 1 }}>
+          <Typography variant="body1" sx={{ color: colors.grey[100], mb: 1 }}>
             <strong>Plan:</strong>{' '}
             {subscriptionStatus.subscription_status.includes('Access will end') && subscriptionStatus.previous_plan ? (
               <>
@@ -328,28 +328,28 @@ const Subscription = memo(() => {
               </>
             )}
           </Typography>
-          <Typography variant="body1" sx={{ color: colors.grey[300], mb: 1 }}>
+          <Typography variant="body1" sx={{ color: colors.grey[100], mb: 1 }}>
             <strong>Status:</strong> {subscriptionStatus.subscription_status}
           </Typography>
           {subscriptionStatus.current_period_end && (
-            <Typography variant="body1" sx={{ color: colors.grey[300], mb: 1 }}>
+            <Typography variant="body1" sx={{ color: colors.grey[100], mb: 1 }}>
               <strong>Access Ends:</strong> {new Date(subscriptionStatus.current_period_end).toLocaleDateString()}
             </Typography>
           )}
           {subscriptionStatus.payment_method && (
-            <Typography variant="body1" sx={{ color: colors.grey[300], mb: 1 }}>
+            <Typography variant="body1" sx={{ color: colors.grey[100], mb: 1 }}>
               <strong>Payment Method:</strong> {subscriptionStatus.payment_method}
             </Typography>
           )}
           {subscriptionStatus.last_payment_date && (
-            <Typography variant="body1" sx={{ color: colors.grey[300], mb: 1 }}>
+            <Typography variant="body1" sx={{ color: colors.grey[100], mb: 1 }}>
               <strong>Last Payment:</strong> {new Date(subscriptionStatus.last_payment_date).toLocaleDateString()}
             </Typography>
           )}
-          <Typography variant="body1" sx={{ color: colors.grey[300], mb: 1 }}>
+          <Typography variant="body1" sx={{ color: colors.grey[100], mb: 1 }}>
             <strong>Display Name:</strong> {subscriptionStatus.display_name}
           </Typography>
-          <Typography variant="body1" sx={{ color: colors.grey[300], mb: 2 }}>
+          <Typography variant="body1" sx={{ color: colors.grey[100], mb: 2 }}>
             <strong>Features:</strong> Basic Charts: {subscriptionStatus.features.basic_charts ? 'Yes' : 'No'},
             Advanced Charts: {subscriptionStatus.features.advanced_charts ? 'Yes' : 'No'},
             Custom Indicators: {subscriptionStatus.features.custom_indicators ? 'Yes' : 'No'}
@@ -406,7 +406,7 @@ const Subscription = memo(() => {
             <Box
               key={plan.id}
               sx={{
-                backgroundColor: colors.primary[700],
+                backgroundColor: colors.primary[900],
                 borderRadius: '4px',
                 padding: '15px',
               }}
@@ -414,7 +414,7 @@ const Subscription = memo(() => {
               <Typography variant="h6" sx={{ color: colors.grey[100], mb: 1 }}>
                 {plan.name} ({plan.billing_interval})
               </Typography>
-              <Typography variant="body1" sx={{ color: colors.grey[300], mb: 1 }}>
+              <Typography variant="body1" sx={{ color: colors.grey[100], mb: 1 }}>
                 Price: £{plan.price}
               </Typography>
               <Button
