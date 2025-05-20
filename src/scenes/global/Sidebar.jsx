@@ -128,7 +128,7 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
     { title: "Case-Shiller Home Price Index", to: "/fred/case-shiller", category: "MacroEconomics", icon: <HomeIcon />, categoryIcon: <ShowChartIcon /> },
     { title: "Nikkei 225 Index", to: "/fred/nikkei-225", category: "MacroEconomics", icon: <CandlestickChartIcon />, categoryIcon: <ShowChartIcon /> },
     { title: "German 10-Year Bond Yield", to: "/fred/german-bond-yield", category: "MacroEconomics", icon: <AccountBalanceIcon />, categoryIcon: <ShowChartIcon /> },
-    { title: "Bitcoin to 10 Year Yield", to: "indicators/btc-yield-recession", category: "Indicators", icon: <MultilineChartIcon />, categoryIcon: <ShowChartIcon /> },
+    // { title: "Bitcoin to 10 Year Yield", to: "indicators/btc-yield-recession", category: "Indicators", icon: <MultilineChartIcon />, categoryIcon: <ShowChartIcon /> },
     { title: "Workbench", to: "/workbench", category: "Workbench", icon: <MultilineChartIcon />, categoryIcon: <ShowChartIcon /> },
   ];
 

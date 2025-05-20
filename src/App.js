@@ -839,7 +839,7 @@ const AppContent = memo(() => {
                         </ProtectedRoute>
                       }
                     />
-                    <Route
+                    {/* <Route
                       path="/indicators/btc-yield-recession"
                       element={
                         <ProtectedRoute>
@@ -850,7 +850,7 @@ const AppContent = memo(() => {
                           />
                         </ProtectedRoute>
                       }
-                    />
+                    /> */}
                     <Route
                       path="/workbench"
                       element={

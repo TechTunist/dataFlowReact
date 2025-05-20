@@ -4,7 +4,6 @@ import { initDB, cacheData, getCachedData, clearCache } from './utility/idbUtils
 
 export const DataContext = createContext();
 
-// Utility function for fetching and caching data with hybrid date/timestamp check
 const fetchWithCache = async ({
   cacheId,
   apiUrl,
@@ -12,8 +11,8 @@ const fetchWithCache = async ({
   setData,
   setLastUpdated,
   setIsFetched,
-  cacheDuration = 24 * 60 * 60 * 1000, // Default to 24 hours (used only if useDateCheck is false)
-  useDateCheck = true, // Default to date-based check for daily updates
+  cacheDuration = 24 * 60 * 60 * 1000,
+  useDateCheck = true,
 }) => {
   if (typeof indexedDB === 'undefined') {
     console.warn('IndexedDB is not supported in this environment.');
@@ -21,68 +20,124 @@ const fetchWithCache = async ({
   }
 
   try {
+    setIsFetched(true);
+
     const currentDate = new Date().toISOString().split('T')[0];
     const currentTimestamp = Date.now();
 
-    // Check for cached data
+    console.log(`Checking IndexedDB for ${cacheId}...`);
+    const cachedStart = performance.now();
     const cached = await getCachedData(cacheId);
-    if (cached && cached.data.length > 0) {
-      const { data: cachedData, timestamp } = cached;
-      const latestCachedDate = cachedData[cachedData.length - 1].time;
+    console.log(`IndexedDB read for ${cacheId} took ${performance.now() - cachedStart}ms`);
 
-      // Determine if we should reuse the cached data
+    if (cached && cached.data && Array.isArray(cached.data) && cached.data.length > 0) {
+      let cachedData = cached.data;
+
+      // Sort by timestamp to ensure the most recent record is last
+      cachedData = [...cachedData].sort((a, b) => {
+        const timestampA = parseInt(a.timestamp, 10);
+        const timestampB = parseInt(b.timestamp, 10);
+        return timestampB - timestampA; // Descending order
+      });
+
+      // Log the last record for debugging
+      console.log('Last cached record:', cachedData[cachedData.length - 1]);
+
+      // Extract latestCachedDate with a fallback
+      const lastRecord = cachedData[cachedData.length - 1];
+      let latestCachedDate = lastRecord.time;
+
+      // Fallback: If time is missing, compute it from timestamp
+      if (!latestCachedDate && lastRecord.timestamp) {
+        latestCachedDate = new Date(parseInt(lastRecord.timestamp, 10) * 1000).toISOString().split('T')[0];
+        console.warn(`Missing time field in last record for ${cacheId}, computed from timestamp: ${latestCachedDate}`);
+      }
+
       let shouldReuseCache = false;
-
       if (useDateCheck) {
-        // Use date-based check for daily-updating data
-        shouldReuseCache = latestCachedDate >= currentDate;
+        console.log(`Using date check: latestCachedDate=${latestCachedDate}, currentDate=${currentDate}`);
+        if (!latestCachedDate) {
+          console.warn(`latestCachedDate is undefined for ${cacheId}, treating cache as stale`);
+          shouldReuseCache = false;
+        } else {
+          shouldReuseCache = latestCachedDate >= currentDate;
+        }
       } else {
-        // Use timestamp-based check for datasets with custom cache duration
-        const timeSinceLastFetch = currentTimestamp - timestamp;
+        const timeSinceLastFetch = currentTimestamp - cached.timestamp;
+        console.log(`Using timestamp check: timeSinceLastFetch=${timeSinceLastFetch}ms, cacheDuration=${cacheDuration}ms`);
         shouldReuseCache = timeSinceLastFetch < cacheDuration;
       }
 
       if (shouldReuseCache) {
+        console.log(`Reusing cached data for ${cacheId}`);
         setData(cachedData);
         if (setLastUpdated) {
           setLastUpdated(latestCachedDate);
         }
-        setIsFetched(true);
         return true;
       }
 
-      // If the cache is stale, fetch new data and compare the latest date
-      const response = await fetch(apiUrl);
-      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+      console.log(`Cache is stale for ${cacheId}, fetching from API...`);
+      const maxRetries = 2;
+      let attempts = 0;
+      let response;
+      while (attempts < maxRetries) {
+        try {
+          const fetchStart = performance.now();
+          response = await fetch(apiUrl);
+          console.log(`Fetch for ${apiUrl} took ${performance.now() - fetchStart}ms`);
+          if (response.ok) break;
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        } catch (err) {
+          attempts++;
+          console.warn(`Attempt ${attempts} failed for ${apiUrl}:`, err);
+          if (attempts === maxRetries) throw err;
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      }
+
       const data = await response.json();
       const formattedData = formatData(data);
       const latestFetchedDate = formattedData.length > 0 ? formattedData[formattedData.length - 1].time : null;
 
-      // If the fetched data isn't newer, reuse the cached data
       if (latestFetchedDate && latestCachedDate && latestFetchedDate <= latestCachedDate) {
+        console.log(`Fetched data is not newer than cached data for ${cacheId}, reusing cache`);
         setData(cachedData);
         if (setLastUpdated) {
           setLastUpdated(latestCachedDate);
         }
-        setIsFetched(true);
-        // Update the timestamp to prevent refetching soon (even for date-based checks)
         await cacheData(cacheId, cachedData, currentTimestamp);
         return true;
       }
 
-      // New data is available; update the cache
+      console.log(`Updating cache with new data for ${cacheId}`);
       setData(formattedData);
       if (formattedData.length > 0 && setLastUpdated) {
         setLastUpdated(latestFetchedDate);
       }
       await cacheData(cacheId, formattedData, currentTimestamp);
-      setIsFetched(true);
       return true;
     }
 
-    // No cached data; fetch from API
-    const response = await fetch(apiUrl);
-    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+    console.log(`No cached data for ${cacheId}, fetching from API...`);
+    const maxRetries = 2;
+    let attempts = 0;
+    let response;
+    while (attempts < maxRetries) {
+      try {
+        const fetchStart = performance.now();
+        response = await fetch(apiUrl);
+        console.log(`Fetch for ${apiUrl} took ${performance.now() - fetchStart}ms`);
+        if (response.ok) break;
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      } catch (err) {
+        attempts++;
+        console.warn(`Attempt ${attempts} failed for ${apiUrl}:`, err);
+        if (attempts === maxRetries) throw err;
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+    }
+
     const data = await response.json();
     const formattedData = formatData(data);
 
@@ -91,7 +146,6 @@ const fetchWithCache = async ({
       setLastUpdated(formattedData[formattedData.length - 1].time);
     }
     await cacheData(cacheId, formattedData, currentTimestamp);
-    setIsFetched(true);
     return true;
   } catch (error) {
     console.error(`Error fetching or caching data for ${cacheId}:`, error);
@@ -100,7 +154,6 @@ const fetchWithCache = async ({
   }
 };
 
-// Utility function for refreshing data
 const refreshData = async ({
   cacheId,
   setData,
@@ -108,6 +161,7 @@ const refreshData = async ({
   fetchFunction,
 }) => {
   try {
+    console.log(`Refreshing data for ${cacheId}...`);
     await clearCache(cacheId);
     setIsFetched(false);
     setData([]);
@@ -118,6 +172,7 @@ const refreshData = async ({
 };
 
 export const DataProvider = ({ children }) => {
+  const [preloadComplete, setPreloadComplete] = useState(false);
   const [btcData, setBtcData] = useState([]);
   const [fedBalanceData, setFedBalanceData] = useState([]);
   const [mvrvData, setMvrvData] = useState([]);
@@ -173,13 +228,12 @@ export const DataProvider = ({ children }) => {
   const API_BASE_URL = 'https://vercel-dataflow.vercel.app/api';
   // const API_BASE_URL = 'http://127.0.0.1:8000/api';
 
-  // Preload all of IndexedDB into state on app start to prevent unnecessary fetches
   useEffect(() => {
     const preloadData = async () => {
       const cacheConfigs = [
         { id: 'btcData', setData: setBtcData, setLastUpdated: setBtcLastUpdated, setIsFetched: setIsBtcDataFetched, useDateCheck: true },
         { id: 'fedBalanceData', setData: setFedBalanceData, setLastUpdated: setFedLastUpdated, setIsFetched: setIsFedBalanceDataFetched, useDateCheck: false, cacheDuration: 7 * 24 * 60 * 60 * 1000 },
-        { id: 'mvrvData', setData: setMvrvData, setLastUpdated: setMvrvLastUpdated, setIsFetched: setIsMvrvDataFetched, useDateCheck: true},
+        { id: 'mvrvData', setData: setMvrvData, setLastUpdated: setMvrvLastUpdated, setIsFetched: setIsMvrvDataFetched, useDateCheck: true },
         { id: 'dominanceData', setData: setDominanceData, setLastUpdated: setDominanceLastUpdated, setIsFetched: setIsDominanceDataFetched, useDateCheck: true },
         { id: 'ethData', setData: setEthData, setLastUpdated: setEthLastUpdated, setIsFetched: setIsEthDataFetched, useDateCheck: true },
         { id: 'fearAndGreedData', setData: setFearAndGreedData, setLastUpdated: setFearAndGreedLastUpdated, setIsFetched: setIsFearAndGreedDataFetched, useDateCheck: true },
@@ -223,6 +277,7 @@ export const DataProvider = ({ children }) => {
           console.error(`Error preloading data for ${id}:`, error);
         }
       }
+      setPreloadComplete(true);
     };
 
     preloadData();
@@ -230,6 +285,10 @@ export const DataProvider = ({ children }) => {
 
   const fetchBtcData = useCallback(async () => {
     if (isBtcDataFetched) return;
+    if (!preloadComplete) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      if (isBtcDataFetched) return;
+    }
     await fetchWithCache({
       cacheId: 'btcData',
       apiUrl: `${API_BASE_URL}/btc/price/`,
@@ -243,9 +302,9 @@ export const DataProvider = ({ children }) => {
       setData: setBtcData,
       setLastUpdated: setBtcLastUpdated,
       setIsFetched: setIsBtcDataFetched,
-      useDateCheck: true, // Daily updates
+      useDateCheck: true,
     });
-  }, [isBtcDataFetched]);
+  }, [isBtcDataFetched, preloadComplete]);
 
   const refreshBtcData = useCallback(async () => {
     await refreshData({
@@ -258,6 +317,10 @@ export const DataProvider = ({ children }) => {
 
   const fetchFedBalanceData = useCallback(async () => {
     if (isFedBalanceDataFetched) return;
+    if (!preloadComplete) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      if (isFedBalanceDataFetched) return;
+    }
     await fetchWithCache({
       cacheId: 'fedBalanceData',
       apiUrl: `${API_BASE_URL}/fed-balance/`,
@@ -269,10 +332,10 @@ export const DataProvider = ({ children }) => {
       setData: setFedBalanceData,
       setLastUpdated: setFedLastUpdated,
       setIsFetched: setIsFedBalanceDataFetched,
-      useDateCheck: false, // Use timestamp check
-      cacheDuration: 7 * 24 * 60 * 60 * 1000, // 7 days
+      useDateCheck: false,
+      cacheDuration: 7 * 24 * 60 * 60 * 1000,
     });
-  }, [isFedBalanceDataFetched]);
+  }, [isFedBalanceDataFetched, preloadComplete]);
 
   const refreshFedBalanceData = useCallback(async () => {
     await refreshData({
@@ -285,6 +348,10 @@ export const DataProvider = ({ children }) => {
 
   const fetchMvrvData = useCallback(async () => {
     if (isMvrvDataFetched) return;
+    if (!preloadComplete) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      if (isMvrvDataFetched) return;
+    }
     await fetchWithCache({
       cacheId: 'mvrvData',
       apiUrl: `${API_BASE_URL}/mvrv/`,
@@ -296,10 +363,10 @@ export const DataProvider = ({ children }) => {
       setData: setMvrvData,
       setLastUpdated: setMvrvLastUpdated,
       setIsFetched: setIsMvrvDataFetched,
-      useDateCheck: false, // Use timestamp check
-      cacheDuration: 7 * 24 * 60 * 60 * 1000, // 7 days
+      useDateCheck: false,
+      cacheDuration: 7 * 24 * 60 * 60 * 1000,
     });
-  }, [isMvrvDataFetched]);
+  }, [isMvrvDataFetched, preloadComplete]);
 
   const refreshMvrvData = useCallback(async () => {
     await refreshData({
@@ -312,6 +379,10 @@ export const DataProvider = ({ children }) => {
 
   const fetchDominanceData = useCallback(async () => {
     if (isDominanceDataFetched) return;
+    if (!preloadComplete) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      if (isDominanceDataFetched) return;
+    }
     await fetchWithCache({
       cacheId: 'dominanceData',
       apiUrl: `${API_BASE_URL}/dominance/`,
@@ -323,9 +394,9 @@ export const DataProvider = ({ children }) => {
       setData: setDominanceData,
       setLastUpdated: setDominanceLastUpdated,
       setIsFetched: setIsDominanceDataFetched,
-      useDateCheck: true, // Daily updates
+      useDateCheck: true,
     });
-  }, [isDominanceDataFetched]);
+  }, [isDominanceDataFetched, preloadComplete]);
 
   const refreshDominanceData = useCallback(async () => {
     await refreshData({
@@ -338,6 +409,10 @@ export const DataProvider = ({ children }) => {
 
   const fetchEthData = useCallback(async () => {
     if (isEthDataFetched) return;
+    if (!preloadComplete) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      if (isEthDataFetched) return;
+    }
     await fetchWithCache({
       cacheId: 'ethData',
       apiUrl: `${API_BASE_URL}/eth/price/`,
@@ -351,9 +426,9 @@ export const DataProvider = ({ children }) => {
       setData: setEthData,
       setLastUpdated: setEthLastUpdated,
       setIsFetched: setIsEthDataFetched,
-      useDateCheck: true, // Daily updates
+      useDateCheck: true,
     });
-  }, [isEthDataFetched]);
+  }, [isEthDataFetched, preloadComplete]);
 
   const refreshEthData = useCallback(async () => {
     await refreshData({
@@ -366,16 +441,30 @@ export const DataProvider = ({ children }) => {
 
   const fetchFearAndGreedData = useCallback(async () => {
     if (isFearAndGreedDataFetched) return;
+    if (!preloadComplete) {
+      console.log('Waiting for preload to complete before fetching Fear and Greed data...');
+      await new Promise(resolve => setTimeout(resolve, 100));
+      if (isFearAndGreedDataFetched) {
+        console.log('Fear and Greed data already fetched during preload, skipping fetch');
+        return;
+      }
+    }
     await fetchWithCache({
       cacheId: 'fearAndGreedData',
       apiUrl: `${API_BASE_URL}/fear-and-greed/`,
-      formatData: (data) => data,
+      formatData: (data) =>
+        data.map(item => ({
+          value: item.value,
+          value_classification: item.value_classification,
+          timestamp: item.timestamp, // Keep the original timestamp
+          time: new Date(item.timestamp * 1000).toISOString().split('T')[0], // Add time field
+        })),
       setData: setFearAndGreedData,
       setLastUpdated: setFearAndGreedLastUpdated,
       setIsFetched: setIsFearAndGreedDataFetched,
-      useDateCheck: true, // Daily updates
+      useDateCheck: true,
     });
-  }, [isFearAndGreedDataFetched]);
+  }, [isFearAndGreedDataFetched, preloadComplete]);
 
   const refreshFearAndGreedData = useCallback(async () => {
     await refreshData({
@@ -388,6 +477,10 @@ export const DataProvider = ({ children }) => {
 
   const fetchMarketCapData = useCallback(async () => {
     if (isMarketCapDataFetched) return;
+    if (!preloadComplete) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      if (isMarketCapDataFetched) return;
+    }
     await fetchWithCache({
       cacheId: 'marketCapData',
       apiUrl: `${API_BASE_URL}/total/marketcap/`,
@@ -399,9 +492,9 @@ export const DataProvider = ({ children }) => {
       setData: setMarketCapData,
       setLastUpdated: setMarketCapLastUpdated,
       setIsFetched: setIsMarketCapDataFetched,
-      useDateCheck: true, // Daily updates
+      useDateCheck: true,
     });
-  }, [isMarketCapDataFetched]);
+  }, [isMarketCapDataFetched, preloadComplete]);
 
   const refreshMarketCapData = useCallback(async () => {
     await refreshData({
@@ -414,6 +507,10 @@ export const DataProvider = ({ children }) => {
 
   const fetchMacroData = useCallback(async () => {
     if (isMacroDataFetched) return;
+    if (!preloadComplete) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      if (isMacroDataFetched) return;
+    }
     await fetchWithCache({
       cacheId: 'macroData',
       apiUrl: `${API_BASE_URL}/combined-macro-data/`,
@@ -421,9 +518,9 @@ export const DataProvider = ({ children }) => {
       setData: setMacroData,
       setLastUpdated: setMacroLastUpdated,
       setIsFetched: setIsMacroDataFetched,
-      useDateCheck: true, // Daily updates
+      useDateCheck: true,
     });
-  }, [isMacroDataFetched]);
+  }, [isMacroDataFetched, preloadComplete]);
 
   const refreshMacroData = useCallback(async () => {
     await refreshData({
@@ -436,6 +533,10 @@ export const DataProvider = ({ children }) => {
 
   const fetchInflationData = useCallback(async () => {
     if (isInflationDataFetched) return;
+    if (!preloadComplete) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      if (isInflationDataFetched) return;
+    }
     await fetchWithCache({
       cacheId: 'inflationData',
       apiUrl: `${API_BASE_URL}/us-inflation/`,
@@ -447,9 +548,9 @@ export const DataProvider = ({ children }) => {
       setData: setInflationData,
       setLastUpdated: setInflationLastUpdated,
       setIsFetched: setIsInflationDataFetched,
-      useDateCheck: true, // Daily updates (though this might update monthly; adjust if needed)
+      useDateCheck: true,
     });
-  }, [isInflationDataFetched]);
+  }, [isInflationDataFetched, preloadComplete]);
 
   const refreshInflationData = useCallback(async () => {
     await refreshData({
@@ -462,6 +563,10 @@ export const DataProvider = ({ children }) => {
 
   const fetchInitialClaimsData = useCallback(async () => {
     if (isInitialClaimsDataFetched) return;
+    if (!preloadComplete) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      if (isInitialClaimsDataFetched) return;
+    }
     await fetchWithCache({
       cacheId: 'initialClaimsData',
       apiUrl: `${API_BASE_URL}/initial-claims/`,
@@ -473,9 +578,9 @@ export const DataProvider = ({ children }) => {
       setData: setInitialClaimsData,
       setLastUpdated: setInitialClaimsLastUpdated,
       setIsFetched: setIsInitialClaimsDataFetched,
-      useDateCheck: true, // Daily updates (though this might update weekly; adjust if needed)
+      useDateCheck: true,
     });
-  }, [isInitialClaimsDataFetched]);
+  }, [isInitialClaimsDataFetched, preloadComplete]);
 
   const refreshInitialClaimsData = useCallback(async () => {
     await refreshData({
@@ -488,6 +593,10 @@ export const DataProvider = ({ children }) => {
 
   const fetchInterestData = useCallback(async () => {
     if (isInterestDataFetched) return;
+    if (!preloadComplete) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      if (isInterestDataFetched) return;
+    }
     await fetchWithCache({
       cacheId: 'interestData',
       apiUrl: `${API_BASE_URL}/us-interest/`,
@@ -499,9 +608,9 @@ export const DataProvider = ({ children }) => {
       setData: setInterestData,
       setLastUpdated: setInterestLastUpdated,
       setIsFetched: setIsInterestDataFetched,
-      useDateCheck: true, // Daily updates (though this might update less frequently; adjust if needed)
+      useDateCheck: true,
     });
-  }, [isInterestDataFetched]);
+  }, [isInterestDataFetched, preloadComplete]);
 
   const refreshInterestData = useCallback(async () => {
     await refreshData({
@@ -514,6 +623,10 @@ export const DataProvider = ({ children }) => {
 
   const fetchUnemploymentData = useCallback(async () => {
     if (isUnemploymentDataFetched) return;
+    if (!preloadComplete) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      if (isUnemploymentDataFetched) return;
+    }
     await fetchWithCache({
       cacheId: 'unemploymentData',
       apiUrl: `${API_BASE_URL}/us-unemployment/`,
@@ -525,9 +638,9 @@ export const DataProvider = ({ children }) => {
       setData: setUnemploymentData,
       setLastUpdated: setUnemploymentLastUpdated,
       setIsFetched: setIsUnemploymentDataFetched,
-      useDateCheck: true, // Daily updates (though this might update monthly; adjust if needed)
+      useDateCheck: true,
     });
-  }, [isUnemploymentDataFetched]);
+  }, [isUnemploymentDataFetched, preloadComplete]);
 
   const refreshUnemploymentData = useCallback(async () => {
     await refreshData({
@@ -540,6 +653,10 @@ export const DataProvider = ({ children }) => {
 
   const fetchTxCountData = useCallback(async () => {
     if (isTxCountDataFetched) return;
+    if (!preloadComplete) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      if (isTxCountDataFetched) return;
+    }
     await fetchWithCache({
       cacheId: 'txCountData',
       apiUrl: `${API_BASE_URL}/btc-tx-count/`,
@@ -553,9 +670,9 @@ export const DataProvider = ({ children }) => {
       setData: setTxCountData,
       setLastUpdated: setTxCountLastUpdated,
       setIsFetched: setIsTxCountDataFetched,
-      useDateCheck: true, // Daily updates
+      useDateCheck: true,
     });
-  }, [isTxCountDataFetched]);
+  }, [isTxCountDataFetched, preloadComplete]);
 
   const refreshTxCountData = useCallback(async () => {
     await refreshData({
@@ -568,6 +685,10 @@ export const DataProvider = ({ children }) => {
 
   const fetchTxCountCombinedData = useCallback(async () => {
     if (isTxCountCombinedDataFetched) return;
+    if (!preloadComplete) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      if (isTxCountCombinedDataFetched) return;
+    }
     await fetchWithCache({
       cacheId: 'txCountCombinedData',
       apiUrl: `${API_BASE_URL}/tx-macro/`,
@@ -594,9 +715,9 @@ export const DataProvider = ({ children }) => {
       setData: setTxCountCombinedData,
       setLastUpdated: setTxCountCombinedLastUpdated,
       setIsFetched: setIsTxCountCombinedDataFetched,
-      useDateCheck: true, // Daily updates
+      useDateCheck: true,
     });
-  }, [isTxCountCombinedDataFetched]);
+  }, [isTxCountCombinedDataFetched, preloadComplete]);
 
   const refreshTxCountCombinedData = useCallback(async () => {
     await refreshData({
@@ -609,6 +730,10 @@ export const DataProvider = ({ children }) => {
 
   const fetchTxMvrvData = useCallback(async () => {
     if (isTxMvrvDataFetched) return;
+    if (!preloadComplete) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      if (isTxMvrvDataFetched) return;
+    }
     await fetchWithCache({
       cacheId: 'txMvrvData',
       apiUrl: `${API_BASE_URL}/tx-mvrv/`,
@@ -623,9 +748,9 @@ export const DataProvider = ({ children }) => {
       setData: setTxMvrvData,
       setLastUpdated: setTxMvrvLastUpdated,
       setIsFetched: setIsTxMvrvDataFetched,
-      useDateCheck: true, // Daily updates
+      useDateCheck: true,
     });
-  }, [isTxMvrvDataFetched]);
+  }, [isTxMvrvDataFetched, preloadComplete]);
 
   const refreshTxMvrvData = useCallback(async () => {
     await refreshData({
@@ -638,6 +763,10 @@ export const DataProvider = ({ children }) => {
 
   const fetchAltcoinData = useCallback(async (coin) => {
     if (isAltcoinDataFetched[coin]) return;
+    if (!preloadComplete) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      if (isAltcoinDataFetched[coin]) return;
+    }
     setIsAltcoinDataFetched((prev) => ({ ...prev, [coin]: true }));
     const success = await fetchWithCache({
       cacheId: `altcoinData_${coin}`,
@@ -654,12 +783,12 @@ export const DataProvider = ({ children }) => {
         setAltcoinLastUpdated((prev) => ({ ...prev, [coin]: time })),
       setIsFetched: (fetched) =>
         setIsAltcoinDataFetched((prev) => ({ ...prev, [coin]: fetched })),
-      useDateCheck: true, // Daily updates
+      useDateCheck: true,
     });
     if (!success) {
       setIsAltcoinDataFetched((prev) => ({ ...prev, [coin]: false }));
     }
-  }, [isAltcoinDataFetched]);
+  }, [isAltcoinDataFetched, preloadComplete]);
 
   const refreshAltcoinData = useCallback(async (coin) => {
     await refreshData({
@@ -673,6 +802,10 @@ export const DataProvider = ({ children }) => {
 
   const fetchFredSeriesData = useCallback(async (seriesId) => {
     if (fredSeriesData[seriesId]?.length > 0) return;
+    if (!preloadComplete) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      if (fredSeriesData[seriesId]?.length > 0) return;
+    }
     const success = await fetchWithCache({
       cacheId: `fredSeriesData_${seriesId}`,
       apiUrl: `${API_BASE_URL}/series/${seriesId}/observations/`,
@@ -695,15 +828,15 @@ export const DataProvider = ({ children }) => {
           .filter((item) => item.value !== null);
       },
       setData: (data) => setFredSeriesData((prev) => ({ ...prev, [seriesId]: data })),
-      setLastUpdated: () => {}, // No lastUpdated state for fredSeriesData
-      setIsFetched: () => {}, // No isFetched state for fredSeriesData
-      useDateCheck: false, // Use timestamp check
-      cacheDuration: 7 * 24 * 60 * 60 * 1000, // 7 days (FRED series typically update less frequently)
+      setLastUpdated: () => {},
+      setIsFetched: () => {},
+      useDateCheck: false,
+      cacheDuration: 7 * 24 * 60 * 60 * 1000,
     });
     if (!success) {
       console.error(`Failed to fetch series ${seriesId}`);
     }
-  }, [fredSeriesData]);
+  }, [fredSeriesData, preloadComplete]);
 
   const refreshFredSeriesData = useCallback(async (seriesId) => {
     await refreshData({
@@ -717,6 +850,10 @@ export const DataProvider = ({ children }) => {
   const fetchIndicatorData = useCallback(async (indicatorId) => {
     if (indicatorId !== 'btc-yield-recession') return;
     if (isIndicatorDataFetched[indicatorId]) return;
+    if (!preloadComplete) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      if (isIndicatorDataFetched[indicatorId]) return;
+    }
 
     setIsIndicatorDataFetched((prev) => ({ ...prev, [indicatorId]: true }));
     const cacheId = 'indicatorData_btc-yield-recession';
@@ -727,9 +864,8 @@ export const DataProvider = ({ children }) => {
       try {
         const cached = await getCachedData(cacheId);
         if (cached && cached.data.length > 0) {
-          const { data: cachedData, timestamp } = cached;
+          const { data: cachedData } = cached;
           const latestCachedDate = cachedData[cachedData.length - 1].date;
-          // Use date check since this includes daily Bitcoin price data
           if (latestCachedDate >= currentDate) {
             setIndicatorData((prev) => ({ ...prev, [indicatorId]: cachedData }));
             setIsIndicatorDataFetched((prev) => ({ ...prev, [indicatorId]: true }));
@@ -809,7 +945,7 @@ export const DataProvider = ({ children }) => {
       console.error('Error fetching indicator data:', error);
       setIsIndicatorDataFetched((prev) => ({ ...prev, [indicatorId]: false }));
     }
-  }, [isIndicatorDataFetched]);
+  }, [isIndicatorDataFetched, preloadComplete]);
 
   const refreshIndicatorData = useCallback(async (indicatorId) => {
     if (indicatorId !== 'btc-yield-recession') return;
