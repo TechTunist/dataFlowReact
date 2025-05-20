@@ -31,7 +31,7 @@ const hexToRgb = (hex) => {
   return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : hex;
 };
 
-// Available FRED series for selection (updated to hex colors)
+// Available FRED series for selection
 const availableFredSeries = {
   UMCSENT: { label: 'Consumer Sentiment (UMCSI)', color: '#FFA500', chartType: 'area', scaleId: 'umcsent-scale', allowLogScale: true },
   SP500: { label: 'S&P 500 Index', color: '#0000FF', chartType: 'area', scaleId: 'sp500-scale', allowLogScale: true },
@@ -48,7 +48,7 @@ const availableFredSeries = {
   VIXCLS: { label: 'VIX Volatility Index', color: '#008080', chartType: 'line', scaleId: 'vixcls-scale', allowLogScale: true },
 };
 
-// Available Crypto series for selection (updated to hex colors)
+// Available Crypto series for selection
 const availableCryptoSeries = {
   BTC: { label: 'Bitcoin (BTC)', color: '#FFD700', chartType: 'line', scaleId: 'crypto-shared-scale', dataKey: 'btcData', fetchFunction: 'fetchBtcData', allowLogScale: true },
   ETH: { label: 'Ethereum (ETH)', color: '#4169E1', chartType: 'line', scaleId: 'crypto-shared-scale', dataKey: 'ethData', fetchFunction: 'fetchEthData', allowLogScale: true },
@@ -96,6 +96,7 @@ const WorkbenchChart = ({
   const chartContainerRef = useRef();
   const chartRef = useRef(null);
   const seriesRefs = useRef({});
+  const prevSeriesRef = useRef({ fred: [], crypto: [] }); // Track previous series for changes
   const theme = useTheme();
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
   const isMobile = useIsMobile();
@@ -115,16 +116,23 @@ const WorkbenchChart = ({
   const [seriesColors, setSeriesColors] = useState({});
   const [dialogMovingAverage, setDialogMovingAverage] = useState('');
   const [dialogColor, setDialogColor] = useState('');
+  const [zoomRange, setZoomRange] = useState(null); // Store zoom state
   const currentYear = useMemo(() => new Date().getFullYear().toString(), []);
 
   const setInteractivity = useCallback(() => setIsInteractive(prev => !prev), []);
   const toggleScaleMode = useCallback(() => setScaleModeState(prev => (prev === 1 ? 0 : 1)), []);
-  const resetChartView = useCallback(() => chartRef.current?.timeScale().fitContent(), []);
+  const resetChartView = useCallback(() => {
+    if (chartRef.current) {
+      chartRef.current.timeScale().fitContent();
+      setZoomRange(null); // Clear saved zoom on reset
+    }
+  }, []);
 
   // Clear all series
   const clearAllSeries = useCallback(() => {
     setActiveFredSeries([]);
     setActiveCryptoSeries([]);
+    setZoomRange(null); // Reset zoom when clearing series
   }, []);
 
   // Calculate moving average
@@ -284,7 +292,7 @@ const WorkbenchChart = ({
     });
   };
 
-  // Initialize chart on mount (removed dependency on colors and theme.palette.mode)
+  // Initialize chart once on mount
   useEffect(() => {
     if (!chartContainerRef.current) {
       console.error('Chart container is not available');
@@ -296,7 +304,12 @@ const WorkbenchChart = ({
       height: chartContainerRef.current.clientHeight,
       layout: { background: { type: 'solid', color: colors.primary[700] }, textColor: colors.primary[100] },
       grid: { vertLines: { color: colors.greenAccent[700] }, horzLines: { color: colors.greenAccent[700] } },
-      timeScale: { minBarSpacing: 0.001 },
+      timeScale: {
+        minBarSpacing: 0.001,
+        timeVisible: true,
+        secondsVisible: false,
+        smoothScroll: true, // Improve panning smoothness
+      },
       rightPriceScale: {
         borderVisible: false,
         scaleMargins: { top: 0.05, bottom: 0.05 },
@@ -306,19 +319,22 @@ const WorkbenchChart = ({
     chartRef.current = chart;
 
     const resizeChart = () => {
-      chart.applyOptions({
-        width: chartContainerRef.current.clientWidth,
-        height: chartContainerRef.current.clientHeight,
-      });
-      chart.timeScale().fitContent();
+      if (chartRef.current && chartContainerRef.current) {
+        chartRef.current.applyOptions({
+          width: chartContainerRef.current.clientWidth,
+          height: chartContainerRef.current.clientHeight,
+        });
+      }
     };
     window.addEventListener('resize', resizeChart);
 
     return () => {
-      chart.remove();
+      if (chartRef.current) {
+        chartRef.current.remove();
+      }
       window.removeEventListener('resize', resizeChart);
     };
-  }, []); // Empty dependencies to initialize chart only once
+  }, [colors]);
 
   // Update chart styling when theme changes
   useEffect(() => {
@@ -328,15 +344,27 @@ const WorkbenchChart = ({
         grid: { vertLines: { color: colors.greenAccent[700] }, horzLines: { color: colors.greenAccent[700] } },
       });
     }
-  }, [colors, theme.palette.mode]);
+  }, [colors]);
 
-  // Update chart and scales when series, data, moving averages, or colors change
+  // Update series and scales
   useEffect(() => {
     if (!chartRef.current) return;
 
+    // Check if series changed
+    const isNewSeries =
+      JSON.stringify(activeFredSeries.sort()) !== JSON.stringify(prevSeriesRef.current.fred.sort()) ||
+      JSON.stringify(activeCryptoSeries.sort()) !== JSON.stringify(prevSeriesRef.current.crypto.sort());
+    prevSeriesRef.current = { fred: activeFredSeries, crypto: activeCryptoSeries };
+
     // Clear existing series
     Object.keys(seriesRefs.current).forEach(id => {
-      chartRef.current.removeSeries(seriesRefs.current[id]);
+      if (chartRef.current && seriesRefs.current[id]) {
+        try {
+          chartRef.current.removeSeries(seriesRefs.current[id]);
+        } catch (err) {
+          console.error(`Error removing series ${id}:`, err);
+        }
+      }
       delete seriesRefs.current[id];
     });
 
@@ -420,11 +448,11 @@ const WorkbenchChart = ({
           const validData = scaleModeState === 1
             ? data.filter(item => item.value > 0) // Log scale requires positive values
             : data;
-          if (validData.length > 0) {
-            series.setData(validData);
-          } else {
+          if (validData.length === 0) {
             console.warn(`No valid data for series ${id} in logarithmic scale`);
             setError(`Cannot display ${seriesInfo.label} in logarithmic scale due to non-positive values.`);
+          } else {
+            series.setData(validData);
           }
         } catch (err) {
           console.error(`Error setting data for series ${id}:`, err);
@@ -433,13 +461,13 @@ const WorkbenchChart = ({
       }
     });
 
-    // Define and apply price scales for all possible series
+    // Define and apply price scales
     const priceScales = Object.keys(availableFredSeries).reduce((acc, id) => {
       const seriesInfo = availableFredSeries[id];
       return {
         ...acc,
         [seriesInfo.scaleId]: {
-          mode: scaleModeState, // Apply user-selected scale mode
+          mode: scaleModeState,
           borderVisible: false,
           scaleMargins: { top: 0.05, bottom: 0.05 },
           position: 'right',
@@ -449,7 +477,7 @@ const WorkbenchChart = ({
       };
     }, {});
     priceScales['crypto-shared-scale'] = {
-      mode: scaleModeState, // Apply user-selected scale mode
+      mode: scaleModeState,
       borderVisible: false,
       scaleMargins: { top: 0.05, bottom: 0.05 },
       position: 'right',
@@ -476,9 +504,24 @@ const WorkbenchChart = ({
       }
     });
 
-    // Set up the tooltip handler
+    // Fit content only for new series or initial load
+    if (isNewSeries || zoomRange === null) {
+      chartRef.current.timeScale().fitContent();
+      setZoomRange(null);
+    }
+
+    // Tooltip subscription with debounced updates
+    let tooltipTimeout = null;
     chartRef.current.subscribeCrosshairMove(param => {
-      if (!param.point || !param.time || param.point.x < 0 || param.point.x > chartContainerRef.current.clientWidth || param.point.y < 0 || param.point.y > chartContainerRef.current.clientHeight) {
+      if (
+        !param.point ||
+        !param.time ||
+        param.point.x < 0 ||
+        param.point.x > chartContainerRef.current.clientWidth ||
+        param.point.y < 0 ||
+        param.point.y > chartContainerRef.current.clientHeight
+      ) {
+        clearTimeout(tooltipTimeout);
         setTooltipData(null);
         return;
       }
@@ -491,6 +534,8 @@ const WorkbenchChart = ({
       };
 
       sortedSeries.forEach(({ id, type }) => {
+        const series = seriesRefs.current[id];
+        if (!series) return;
         let data;
         if (type === 'fred') {
           data = getSeriesData(id, fredSeriesData[id]);
@@ -500,37 +545,64 @@ const WorkbenchChart = ({
           else if (seriesInfo.dataKey === 'ethData') data = ethData;
           else if (seriesInfo.dataKey === 'altcoinData') data = altcoinData[seriesInfo.coin];
         }
-        const value = param.seriesData.get(seriesRefs.current[id])?.value ?? getLatestValue(data, param.time);
+        const value = param.seriesData.get(series)?.value ?? getLatestValue(data, param.time);
         tooltip.values[id] = value;
       });
 
-      setTooltipData(tooltip);
+      clearTimeout(tooltipTimeout);
+      tooltipTimeout = setTimeout(() => {
+        setTooltipData(tooltip);
+      }, 50); // Debounce tooltip updates
     });
 
-    // Fit content if there are active series with data
-    if (sortedSeries.some(({ id, type }) => {
-      if (type === 'fred') {
-        const data = getSeriesData(id, fredSeriesData[id]);
-        return data?.length > 0;
-      }
-      const seriesInfo = availableCryptoSeries[id];
-      if (seriesInfo.dataKey === 'btcData') return btcData.length > 0;
-      if (seriesInfo.dataKey === 'ethData') return ethData.length > 0;
-      if (seriesInfo.dataKey === 'altcoinData') return altcoinData[seriesInfo.coin]?.length > 0;
-      return false;
-    })) {
-      chartRef.current.timeScale().fitContent();
-    }
-
     return () => {
-      chartRef.current?.unsubscribeCrosshairMove();
+      if (chartRef.current) {
+        chartRef.current.unsubscribeCrosshairMove();
+      }
     };
-  }, [fredSeriesData, btcData, ethData, altcoinData, activeFredSeries, activeCryptoSeries, seriesMovingAverages, seriesColors, chartType, valueFormatter, scaleModeState, isLoading]);
+  }, [fredSeriesData, btcData, ethData, altcoinData, activeFredSeries, activeCryptoSeries, seriesMovingAverages, seriesColors, chartType, valueFormatter, scaleModeState]);
+
+  // Restore zoom
+  useEffect(() => {
+    if (!chartRef.current || !zoomRange) return;
+    chartRef.current.timeScale().setVisibleLogicalRange(zoomRange);
+  }, [zoomRange]);
+
+  // Save zoom state on change
+  useEffect(() => {
+    if (!chartRef.current) return;
+    let zoomTimeout = null;
+    const handler = () => {
+      const range = chartRef.current.timeScale().getVisibleLogicalRange();
+      if (range) {
+        clearTimeout(zoomTimeout);
+        zoomTimeout = setTimeout(() => {
+          setZoomRange(prev => {
+            if (prev && prev.from === range.from && prev.to === range.to) {
+              return prev;
+            }
+            return range;
+          });
+        }, 100); // Debounce zoom updates
+      }
+    };
+    chartRef.current.timeScale().subscribeVisibleLogicalRangeChange(handler);
+    return () => {
+      clearTimeout(zoomTimeout);
+      if (chartRef.current) {
+        chartRef.current.timeScale().unsubscribeVisibleLogicalRangeChange(handler);
+      }
+    };
+  }, []);
 
   // Update interactivity
   useEffect(() => {
     if (chartRef.current) {
-      chartRef.current.applyOptions({ handleScroll: isInteractive, handleScale: isInteractive });
+      chartRef.current.applyOptions({
+        handleScroll: isInteractive,
+        handleScale: isInteractive,
+        kineticScroll: { touch: true, mouse: true }, // Enable smooth kinetic scrolling
+      });
     }
   }, [isInteractive]);
 
@@ -554,7 +626,7 @@ const WorkbenchChart = ({
               id="fred-series-label"
               shrink
               sx={{
-                color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900], // Darker text in light mode
+                color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900],
                 '&.Mui-focused': { color: colors.greenAccent[500] },
                 top: 0,
                 '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' },
@@ -575,8 +647,8 @@ const WorkbenchChart = ({
                   : 'Select FRED Series'
               }
               sx={{
-                color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900], // Darker text in light mode
-                backgroundColor: theme.palette.mode === 'dark' ? colors.primary[500] : colors.primary[200], // Lighter background in light mode
+                color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900],
+                backgroundColor: theme.palette.mode === 'dark' ? colors.primary[500] : colors.primary[200],
                 borderRadius: "8px",
                 '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[700] },
                 '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
@@ -637,7 +709,7 @@ const WorkbenchChart = ({
               id="crypto-series-label"
               shrink
               sx={{
-                color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900], // Darker text in light mode
+                color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900],
                 '&.Mui-focused': { color: colors.greenAccent[500] },
                 top: 0,
                 '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' },
@@ -658,8 +730,8 @@ const WorkbenchChart = ({
                   : 'Select Crypto Series'
               }
               sx={{
-                color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900], // Darker text in light mode
-                backgroundColor: theme.palette.mode === 'dark' ? colors.primary[500] : colors.primary[200], // Lighter background in light mode
+                color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900],
+                backgroundColor: theme.palette.mode === 'dark' ? colors.primary[500] : colors.primary[200],
                 borderRadius: "8px",
                 '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[700] },
                 '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
@@ -690,8 +762,8 @@ const WorkbenchChart = ({
         fullWidth
         sx={{
           '& .MuiDialog-paper': {
-            backgroundColor: theme.palette.mode === 'dark' ? colors.primary[500] : colors.primary[200], // Lighter background in light mode
-            color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900], // Darker text in light mode
+            backgroundColor: theme.palette.mode === 'dark' ? colors.primary[500] : colors.primary[200],
+            color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900],
             borderRadius: '8px',
           },
         }}
@@ -704,7 +776,7 @@ const WorkbenchChart = ({
             <InputLabel
               id="moving-average-label"
               sx={{
-                color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900], // Darker text in light mode
+                color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900],
                 '&.Mui-focused': { color: colors.greenAccent[500] },
               }}
             >
@@ -716,8 +788,8 @@ const WorkbenchChart = ({
               value={dialogMovingAverage}
               onChange={handleMovingAverageChange}
               sx={{
-                color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900], // Darker text in light mode
-                backgroundColor: theme.palette.mode === 'dark' ? colors.primary[600] : colors.primary[300], // Lighter background in light mode
+                color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900],
+                backgroundColor: theme.palette.mode === 'dark' ? colors.primary[600] : colors.primary[300],
                 borderRadius: '4px',
                 '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[700] },
                 '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
@@ -734,7 +806,7 @@ const WorkbenchChart = ({
             <InputLabel
               id="color-label"
               sx={{
-                color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900], // Darker text in light mode
+                color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900],
                 '&.Mui-focused': { color: colors.greenAccent[500] },
               }}
             >
@@ -750,7 +822,7 @@ const WorkbenchChart = ({
                 marginTop: '8px',
                 borderRadius: '4px',
                 border: `1px solid ${theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[700]}`,
-                backgroundColor: theme.palette.mode === 'dark' ? colors.primary[600] : colors.primary[300], // Lighter background in light mode
+                backgroundColor: theme.palette.mode === 'dark' ? colors.primary[600] : colors.primary[300],
               }}
             />
           </FormControl>
@@ -759,7 +831,7 @@ const WorkbenchChart = ({
           <Button
             onClick={handleCloseDialog}
             sx={{
-              color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900], // Darker text in light mode
+              color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900],
               border: `1px solid ${theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[700]}`,
               borderRadius: '4px',
               textTransform: 'none',
@@ -774,7 +846,7 @@ const WorkbenchChart = ({
           <Button
             onClick={handleSaveDialog}
             sx={{
-              color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900], // Darker text in light mode
+              color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900],
               border: `1px solid ${theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[700]}`,
               borderRadius: '4px',
               textTransform: 'none',
@@ -850,7 +922,7 @@ const WorkbenchChart = ({
               top: '50%',
               left: '50%',
               transform: 'translate(-50%, -50%)',
-              color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900], // Darker text in light mode
+              color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900],
               fontSize: '16px',
               zIndex: 2,
             }}
@@ -864,10 +936,10 @@ const WorkbenchChart = ({
             top: '10px',
             left: '10px',
             zIndex: 2,
-            backgroundColor: theme.palette.mode === 'dark' ? colors.primary[900] : colors.primary[200], // Lighter background in light mode
+            backgroundColor: theme.palette.mode === 'dark' ? colors.primary[900] : colors.primary[200],
             padding: '5px 10px',
             borderRadius: '4px',
-            color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900], // Darker text in light mode
+            color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900],
             fontSize: '12px',
           }}
         >
@@ -944,8 +1016,8 @@ const WorkbenchChart = ({
               return rightPosition + tooltipWidth <= chartWidth ? `${rightPosition}px` : (leftPosition >= 0 ? `${leftPosition}px` : `${Math.max(0, Math.min(rightPosition, chartWidth - tooltipWidth))}px`);
             })(),
             top: `${tooltipData.y + 100}px`,
-            backgroundColor: theme.palette.mode === 'dark' ? colors.primary[900] : colors.primary[200], // Lighter background in light mode
-            color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900], // Darker text in light mode
+            backgroundColor: theme.palette.mode === 'dark' ? colors.primary[900] : colors.primary[200],
+            color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900],
             padding: '5px',
             borderRadius: '4px',
             boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
