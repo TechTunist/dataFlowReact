@@ -49,6 +49,8 @@ import AccountNavBar from "./scenes/global/AccountNavBar";
 import Subscription from "./scenes/Subscription";
 import { loadStripe } from '@stripe/stripe-js';
 import { SubscriptionProvider } from './contexts/SubscriptionContext';
+import FearAndGreedBinaryChart from "./components/FearAndGreedBinaryChart"; 
+import { FearAndGreedBinaryProvider } from "./DataContextfngBinary";
 
 // Stripe Context
 const StripeContext = createContext(null);
@@ -81,10 +83,8 @@ const AppContent = memo(() => {
     const initializeStripe = async () => {
       try {
         const stripeInstance = await loadStripe(stripePublishableKey);
-        // console.log('Stripe instance loaded in App.js:', stripeInstance);
         setStripe(stripeInstance);
       } catch (error) {
-        // console.error('Failed to load Stripe:', error);
         setStripeError(error.message);
       }
     };
@@ -352,6 +352,16 @@ const AppContent = memo(() => {
                       element={
                         <ProtectedRoute>
                           <BasicChart ChartComponent={FearAndGreedChart} />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/fear-and-greed-binary-chart"
+                      element={
+                        <ProtectedRoute>
+                          <FearAndGreedBinaryProvider>
+                            <BasicChart ChartComponent={FearAndGreedBinaryChart} />
+                          </FearAndGreedBinaryProvider>
                         </ProtectedRoute>
                       }
                     />
@@ -839,18 +849,6 @@ const AppContent = memo(() => {
                         </ProtectedRoute>
                       }
                     />
-                    {/* <Route
-                      path="/indicators/btc-yield-recession"
-                      element={
-                        <ProtectedRoute>
-                          <BasicChart
-                            ChartComponent={Bitcoin10YearChart}
-                            indicatorId="btc-yield-recession"
-                            explanation="Bitcoin price vs. 10Y-2Y Treasury yield spread and US recessions. Yield curve inversions (negative spread) often precede BTC rallies, while recessions may signal caution."
-                          />
-                        </ProtectedRoute>
-                      }
-                    /> */}
                     <Route
                       path="/workbench"
                       element={
@@ -877,7 +875,7 @@ const AppContent = memo(() => {
                 </main>
               </div>
             </div>
-            </SubscriptionProvider>
+          </SubscriptionProvider>
         </ThemeProvider>
       </ColorModeContext.Provider>
     </StripeContext.Provider>
@@ -893,4 +891,4 @@ const App = memo(() => {
 });
 
 export default App;
-export { StripeContext }; // Export the context for use in other components
+export { StripeContext };
