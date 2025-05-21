@@ -15,142 +15,114 @@ const fetchWithCache = async ({
   useDateCheck = true,
 }) => {
   if (typeof indexedDB === 'undefined') {
-    console.warn('IndexedDB is not supported in this environment.');
-    return false;
+      console.warn('IndexedDB is not supported in this environment.');
+      return false;
   }
 
   try {
-    setIsFetched(true);
+      setIsFetched(true);
+      const currentDate = new Date().toISOString().split('T')[0];
+      const currentTimestamp = Date.now();
 
-    const currentDate = new Date().toISOString().split('T')[0];
-    const currentTimestamp = Date.now();
+      console.log(`Checking IndexedDB for ${cacheId}...`);
+      const cachedStart = performance.now();
+      const cached = await getCachedData(cacheId);
+      console.log(`IndexedDB read for ${cacheId} took ${performance.now() - cachedStart}ms`);
 
-    console.log(`Checking IndexedDB for ${cacheId}...`);
-    const cachedStart = performance.now();
-    const cached = await getCachedData(cacheId);
-    console.log(`IndexedDB read for ${cacheId} took ${performance.now() - cachedStart}ms`);
+      if (cached && cached.data) {
+          let cachedData = Array.isArray(cached.data) ? cached.data : [cached.data]; // Handle single object or array
+          if (cachedData.length > 0) {
+              cachedData = [...cachedData].sort((a, b) => {
+                  const timestampA = parseInt(a.timestamp, 10);
+                  const timestampB = parseInt(b.timestamp, 10);
+                  return timestampB - timestampA;
+              });
 
-    if (cached && cached.data && Array.isArray(cached.data) && cached.data.length > 0) {
-      let cachedData = cached.data;
+              const lastRecord = cachedData[0];
+              let latestCachedDate = lastRecord.time;
 
-      // Sort by timestamp to ensure the most recent record is last
-      cachedData = [...cachedData].sort((a, b) => {
-        const timestampA = parseInt(a.timestamp, 10);
-        const timestampB = parseInt(b.timestamp, 10);
-        return timestampB - timestampA; // Descending order
-      });
+              if (!latestCachedDate && lastRecord.timestamp) {
+                  latestCachedDate = new Date(parseInt(lastRecord.timestamp, 10) * 1000).toISOString().split('T')[0];
+                  console.warn(`Missing time field in last record for ${cacheId}, computed from timestamp: ${latestCachedDate}`);
+              }
 
-      // Log the last record for debugging
-      console.log('Last cached record:', cachedData[cachedData.length - 1]);
+              let shouldReuseCache = false;
+              if (useDateCheck) {
+                  console.log(`Using date check: latestCachedDate=${latestCachedDate}, currentDate=${currentDate}`);
+                  if (!latestCachedDate) {
+                      console.warn(`latestCachedDate is undefined for ${cacheId}, treating cache as stale`);
+                      shouldReuseCache = false;
+                  } else {
+                      shouldReuseCache = latestCachedDate >= currentDate;
+                  }
+              } else {
+                  const timeSinceLastFetch = currentTimestamp - cached.timestamp;
+                  console.log(`Using timestamp check: timeSinceLastFetch=${timeSinceLastFetch}ms, cacheDuration=${cacheDuration}ms`);
+                  shouldReuseCache = timeSinceLastFetch < cacheDuration;
+              }
 
-      // Extract latestCachedDate with a fallback
-      const lastRecord = cachedData[cachedData.length - 1];
-      let latestCachedDate = lastRecord.time;
-
-      // Fallback: If time is missing, compute it from timestamp
-      if (!latestCachedDate && lastRecord.timestamp) {
-        latestCachedDate = new Date(parseInt(lastRecord.timestamp, 10) * 1000).toISOString().split('T')[0];
-        console.warn(`Missing time field in last record for ${cacheId}, computed from timestamp: ${latestCachedDate}`);
+              if (shouldReuseCache) {
+                  console.log(`Reusing cached data for ${cacheId}`);
+                  setData(Array.isArray(cached.data) ? cachedData : cached.data); // Set single object or array
+                  if (setLastUpdated) {
+                      setLastUpdated(latestCachedDate);
+                  }
+                  return true;
+              }
+          }
       }
 
-      let shouldReuseCache = false;
-      if (useDateCheck) {
-        console.log(`Using date check: latestCachedDate=${latestCachedDate}, currentDate=${currentDate}`);
-        if (!latestCachedDate) {
-          console.warn(`latestCachedDate is undefined for ${cacheId}, treating cache as stale`);
-          shouldReuseCache = false;
-        } else {
-          shouldReuseCache = latestCachedDate >= currentDate;
-        }
-      } else {
-        const timeSinceLastFetch = currentTimestamp - cached.timestamp;
-        console.log(`Using timestamp check: timeSinceLastFetch=${timeSinceLastFetch}ms, cacheDuration=${cacheDuration}ms`);
-        shouldReuseCache = timeSinceLastFetch < cacheDuration;
-      }
-
-      if (shouldReuseCache) {
-        console.log(`Reusing cached data for ${cacheId}`);
-        setData(cachedData);
-        if (setLastUpdated) {
-          setLastUpdated(latestCachedDate);
-        }
-        return true;
-      }
-
-      console.log(`Cache is stale for ${cacheId}, fetching from API...`);
+      console.log(`No cached data or stale cache for ${cacheId}, fetching from API...`);
       const maxRetries = 2;
       let attempts = 0;
       let response;
       while (attempts < maxRetries) {
-        try {
-          const fetchStart = performance.now();
-          response = await fetch(apiUrl);
-          console.log(`Fetch for ${apiUrl} took ${performance.now() - fetchStart}ms`);
-          if (response.ok) break;
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        } catch (err) {
-          attempts++;
-          console.warn(`Attempt ${attempts} failed for ${apiUrl}:`, err);
-          if (attempts === maxRetries) throw err;
-          await new Promise(resolve => setTimeout(resolve, 500));
-        }
+          try {
+              const fetchStart = performance.now();
+              response = await fetch(apiUrl);
+              console.log(`Fetch for ${apiUrl} took ${performance.now() - fetchStart}ms`);
+              if (response.ok) break;
+              throw new Error(`HTTP error! Status: ${response.status}`);
+          } catch (err) {
+              attempts++;
+              console.warn(`Attempt ${attempts} failed for ${apiUrl}:`, err);
+              if (attempts === maxRetries) throw err;
+              await new Promise(resolve => setTimeout(resolve, 500));
+          }
       }
 
       const data = await response.json();
       const formattedData = formatData(data);
-      const latestFetchedDate = formattedData.length > 0 ? formattedData[formattedData.length - 1].time : null;
+      const isArray = Array.isArray(formattedData);
+      const latestFetchedDate = isArray && formattedData.length > 0 
+          ? formattedData[formattedData.length - 1].time 
+          : formattedData.time || null;
 
-      if (latestFetchedDate && latestCachedDate && latestFetchedDate <= latestCachedDate) {
-        console.log(`Fetched data is not newer than cached data for ${cacheId}, reusing cache`);
-        setData(cachedData);
-        if (setLastUpdated) {
-          setLastUpdated(latestCachedDate);
-        }
-        await cacheData(cacheId, cachedData, currentTimestamp);
-        return true;
+      if (latestFetchedDate && cached && cached.data) {
+          const cachedData = Array.isArray(cached.data) ? cached.data : [cached.data];
+          const latestCachedDate = cachedData[cachedData.length - 1]?.time;
+          if (latestCachedDate && latestFetchedDate <= latestCachedDate) {
+              console.log(`Fetched data is not newer than cached data for ${cacheId}, reusing cache`);
+              setData(Array.isArray(cached.data) ? cachedData : cached.data);
+              if (setLastUpdated) {
+                  setLastUpdated(latestCachedDate);
+              }
+              await cacheData(cacheId, cached.data, currentTimestamp);
+              return true;
+          }
       }
 
       console.log(`Updating cache with new data for ${cacheId}`);
       setData(formattedData);
-      if (formattedData.length > 0 && setLastUpdated) {
-        setLastUpdated(latestFetchedDate);
+      if (latestFetchedDate && setLastUpdated) {
+          setLastUpdated(latestFetchedDate);
       }
       await cacheData(cacheId, formattedData, currentTimestamp);
       return true;
-    }
-
-    console.log(`No cached data for ${cacheId}, fetching from API...`);
-    const maxRetries = 2;
-    let attempts = 0;
-    let response;
-    while (attempts < maxRetries) {
-      try {
-        const fetchStart = performance.now();
-        response = await fetch(apiUrl);
-        console.log(`Fetch for ${apiUrl} took ${performance.now() - fetchStart}ms`);
-        if (response.ok) break;
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      } catch (err) {
-        attempts++;
-        console.warn(`Attempt ${attempts} failed for ${apiUrl}:`, err);
-        if (attempts === maxRetries) throw err;
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }
-    }
-
-    const data = await response.json();
-    const formattedData = formatData(data);
-
-    setData(formattedData);
-    if (formattedData.length > 0 && setLastUpdated) {
-      setLastUpdated(formattedData[formattedData.length - 1].time);
-    }
-    await cacheData(cacheId, formattedData, currentTimestamp);
-    return true;
   } catch (error) {
-    console.error(`Error fetching or caching data for ${cacheId}:`, error);
-    setIsFetched(false);
-    return false;
+      console.error(`Error fetching or caching data for ${cacheId}:`, error);
+      setIsFetched(false);
+      return false;
   }
 };
 
@@ -224,6 +196,9 @@ export const DataProvider = ({ children }) => {
   const [isAltcoinDataFetched, setIsAltcoinDataFetched] = useState({});
   const [indicatorData, setIndicatorData] = useState({});
   const [isIndicatorDataFetched, setIsIndicatorDataFetched] = useState({});
+  const [latestFearAndGreed, setLatestFearAndGreed] = useState(null);
+  const [isLatestFearAndGreedFetched, setIsLatestFearAndGreedFetched] = useState(false);
+  const [latestFearAndGreedLastUpdated, setLatestFearAndGreedLastUpdated] = useState(null);
 
   const API_BASE_URL = 'https://vercel-dataflow.vercel.app/api';
   // const API_BASE_URL = 'http://127.0.0.1:8000/api';
@@ -246,6 +221,7 @@ export const DataProvider = ({ children }) => {
         { id: 'txCountData', setData: setTxCountData, setLastUpdated: setTxCountLastUpdated, setIsFetched: setIsTxCountDataFetched, useDateCheck: true },
         { id: 'txCountCombinedData', setData: setTxCountCombinedData, setLastUpdated: setTxCountCombinedLastUpdated, setIsFetched: setIsTxCountCombinedDataFetched, useDateCheck: true },
         { id: 'txMvrvData', setData: setTxMvrvData, setLastUpdated: setTxMvrvLastUpdated, setIsFetched: setIsTxMvrvDataFetched, useDateCheck: true },
+        { id: 'latestFearAndGreed', setData: setLatestFearAndGreed, setLastUpdated: setLatestFearAndGreedLastUpdated, setIsFetched: setIsLatestFearAndGreedFetched, useDateCheck: true },
       ];
 
       for (const { id, setData, setLastUpdated, setIsFetched, useDateCheck, cacheDuration } of cacheConfigs) {
@@ -314,6 +290,38 @@ export const DataProvider = ({ children }) => {
       fetchFunction: fetchBtcData,
     });
   }, [fetchBtcData]);
+
+  const fetchLatestFearAndGreed = useCallback(async () => {
+    if (isLatestFearAndGreedFetched) return;
+    if (!preloadComplete) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        if (isLatestFearAndGreedFetched) return;
+    }
+    await fetchWithCache({
+        cacheId: 'latestFearAndGreed',
+        apiUrl: `${API_BASE_URL}/fear-and-greed/latest/`,
+        formatData: (data) => ({
+            value: parseInt(data.value),
+            value_classification: data.value_classification,
+            timestamp: data.timestamp,
+            time: new Date(data.timestamp * 1000).toISOString().split('T')[0],
+        }),
+        setData: setLatestFearAndGreed,
+        setLastUpdated: setLatestFearAndGreedLastUpdated,
+        setIsFetched: setIsLatestFearAndGreedFetched,
+        useDateCheck: true,
+    });
+  }, [isLatestFearAndGreedFetched, preloadComplete]);
+
+  // Add refresh function
+  const refreshLatestFearAndGreed = useCallback(async () => {
+      await refreshData({
+          cacheId: 'latestFearAndGreed',
+          setData: setLatestFearAndGreed,
+          setIsFetched: setIsLatestFearAndGreedFetched,
+          fetchFunction: fetchLatestFearAndGreed,
+      });
+  }, [fetchLatestFearAndGreed]);
 
   const fetchFedBalanceData = useCallback(async () => {
     if (isFedBalanceDataFetched) return;
@@ -986,6 +994,10 @@ export const DataProvider = ({ children }) => {
         fetchFearAndGreedData,
         refreshFearAndGreedData,
         fearAndGreedLastUpdated,
+        latestFearAndGreed,
+        fetchLatestFearAndGreed,
+        refreshLatestFearAndGreed,
+        latestFearAndGreedLastUpdated,
         marketCapData,
         fetchMarketCapData,
         refreshMarketCapData,

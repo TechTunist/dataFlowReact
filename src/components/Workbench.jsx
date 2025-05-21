@@ -552,7 +552,7 @@ const WorkbenchChart = ({
       clearTimeout(tooltipTimeout);
       tooltipTimeout = setTimeout(() => {
         setTooltipData(tooltip);
-      }, 50); // Debounce tooltip updates
+      }, 1); // Debounce tooltip updates
     });
 
     return () => {

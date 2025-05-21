@@ -207,7 +207,7 @@ const FredSeriesChart = ({
           x: param.point.x,
           y: param.point.y,
         });
-      }, 50); // Debounce tooltip updates
+      }, 1); // Debounce tooltip updates
     });
   }, [seriesData, chartType, scaleModeState, valueFormatter, theme.palette.mode, seriesId]);
 
