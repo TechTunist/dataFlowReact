@@ -294,33 +294,33 @@ export const DataProvider = ({ children }) => {
   const fetchLatestFearAndGreed = useCallback(async () => {
     if (isLatestFearAndGreedFetched) return;
     if (!preloadComplete) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        if (isLatestFearAndGreedFetched) return;
+      await new Promise(resolve => setTimeout(resolve, 100));
+      if (isLatestFearAndGreedFetched) return;
     }
     await fetchWithCache({
-        cacheId: 'latestFearAndGreed',
-        apiUrl: `${API_BASE_URL}/fear-and-greed/latest/`,
-        formatData: (data) => ({
-            value: parseInt(data.value),
-            value_classification: data.value_classification,
-            timestamp: data.timestamp,
-            time: new Date(data.timestamp * 1000).toISOString().split('T')[0],
-        }),
-        setData: setLatestFearAndGreed,
-        setLastUpdated: setLatestFearAndGreedLastUpdated,
-        setIsFetched: setIsLatestFearAndGreedFetched,
-        useDateCheck: true,
+      cacheId: 'latestFearAndGreed',
+      apiUrl: `${API_BASE_URL}/fear-and-greed-binary-latest/`, // Updated endpoint
+      formatData: (data) => ({
+        value: parseInt(data.value), // Parse string to number
+        value_classification: data.value_classification,
+        timestamp: data.timestamp,
+        time: new Date(data.timestamp * 1000).toISOString().split('T')[0],
+      }),
+      setData: setLatestFearAndGreed,
+      setLastUpdated: setLatestFearAndGreedLastUpdated,
+      setIsFetched: setIsLatestFearAndGreedFetched,
+      useDateCheck: true,
     });
   }, [isLatestFearAndGreedFetched, preloadComplete]);
-
+  
   // Add refresh function
   const refreshLatestFearAndGreed = useCallback(async () => {
-      await refreshData({
-          cacheId: 'latestFearAndGreed',
-          setData: setLatestFearAndGreed,
-          setIsFetched: setIsLatestFearAndGreedFetched,
-          fetchFunction: fetchLatestFearAndGreed,
-      });
+    await refreshData({
+      cacheId: 'latestFearAndGreed',
+      setData: setLatestFearAndGreed,
+      setIsFetched: setIsLatestFearAndGreedFetched,
+      fetchFunction: fetchLatestFearAndGreed,
+    });
   }, [fetchLatestFearAndGreed]);
 
   const fetchFedBalanceData = useCallback(async () => {
@@ -459,13 +459,13 @@ export const DataProvider = ({ children }) => {
     }
     await fetchWithCache({
       cacheId: 'fearAndGreedData',
-      apiUrl: `${API_BASE_URL}/fear-and-greed/`,
+      apiUrl: `${API_BASE_URL}/fear-and-greed-binary-json/`,
       formatData: (data) =>
         data.map(item => ({
-          value: item.value,
-          value_classification: item.value_classification,
-          timestamp: item.timestamp, // Keep the original timestamp
-          time: new Date(item.timestamp * 1000).toISOString().split('T')[0], // Add time field
+          value: item.value.toString(), // Convert number to string
+          value_classification: item.category, // Map category to value_classification
+          timestamp: item.date.toString(), // Convert integer date to string
+          time: new Date(item.date * 1000).toISOString().split('T')[0], // Derive YYYY-MM-DD from date
         })),
       setData: setFearAndGreedData,
       setLastUpdated: setFearAndGreedLastUpdated,

@@ -50,7 +50,7 @@ import Subscription from "./scenes/Subscription";
 import { loadStripe } from '@stripe/stripe-js';
 import { SubscriptionProvider } from './contexts/SubscriptionContext';
 import FearAndGreedBinaryChart from "./components/FearAndGreedBinaryChart"; 
-import { FearAndGreedBinaryProvider } from "./DataContextfngBinary";
+import { FearAndGreedBinaryProvider } from "./FearAndGreedBinaryContext";
 
 // Stripe Context
 const StripeContext = createContext(null);

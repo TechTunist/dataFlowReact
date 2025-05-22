@@ -5,8 +5,8 @@ import { useTheme } from "@mui/material";
 import '../styling/bitcoinChart.css';
 import BitcoinFees from './BitcoinTransactionFees';
 import useIsMobile from '../hooks/useIsMobile';
-import { FearAndGreedBinaryContext } from '../DataContextfngBinary';
-import { DataContext } from '../DataContext'; // Still needed for btcData
+import { FearAndGreedBinaryContext } from '../FearAndGreedBinaryContext';
+import { DataContext } from '../DataContext';
 import Plotly from 'plotly.js-gl2d-dist';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 
@@ -14,11 +14,22 @@ const FearAndGreedBinaryChart = ({ isDashboard = false }) => {
   const theme = useTheme();
   const isMobile = useIsMobile();
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
-  const { btcData, fetchBtcData } = useContext(DataContext); // Only for Bitcoin data
-  const { fearAndGreedData, loading: fearAndGreedLoading, error: fearAndGreedError } = useContext(FearAndGreedBinaryContext);
+  const { btcData, fetchBtcData } = useContext(DataContext);
+  const { fearAndGreedBinaryData, loading: fearAndGreedLoading, error: fearAndGreedError, refetch } = useContext(FearAndGreedBinaryContext);
   const plotRef = useRef(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  // Log data for debugging
+  useEffect(() => {
+    console.log('fearAndGreedBinaryData:', fearAndGreedBinaryData);
+    console.log('BtcData:', btcData);
+    console.log('Loading:', fearAndGreedLoading, 'Error:', fearAndGreedError);
+    if (fearAndGreedBinaryData.length === 0 && !fearAndGreedLoading && !fearAndGreedError) {
+      console.log('fearAndGreedBinaryData is empty, attempting to refetch...');
+      refetch();
+    }
+  }, [fearAndGreedBinaryData, btcData, fearAndGreedLoading, fearAndGreedError, refetch]);
 
   // Memoized layout
   const [layout, setLayout] = useState({
@@ -55,15 +66,18 @@ const FearAndGreedBinaryChart = ({ isDashboard = false }) => {
 
   // Memoized datasets
   const datasets = useMemo(() => {
-    if (btcData.length === 0 || fearAndGreedData.length === 0) return [];
+    if (btcData.length === 0 || fearAndGreedBinaryData.length === 0) {
+      console.log('No datasets: btcData or fearAndGreedBinaryData empty');
+      return [];
+    }
 
     const startDate = new Date('2018-02-01');
     const btcFormattedData = btcData.filter(item => new Date(item.time) >= startDate);
 
     // Group Fear and Greed data for scatter points
     const fearGreedGroups = {};
-    fearAndGreedData.forEach(item => {
-      const date = item.date.toISOString().slice(0, 10); // Format as YYYY-MM-DD
+    fearAndGreedBinaryData.forEach(item => {
+      const date = item.date.toISOString().slice(0, 10);
       const classification = item.category;
       if (!fearGreedGroups[classification]) {
         fearGreedGroups[classification] = [];
@@ -105,7 +119,7 @@ const FearAndGreedBinaryChart = ({ isDashboard = false }) => {
 
     // Create a mapping of date to Fear and Greed data
     const fearGreedMap = {};
-    fearAndGreedData.forEach(item => {
+    fearAndGreedBinaryData.forEach(item => {
       const date = item.date.toISOString().slice(0, 10);
       fearGreedMap[date] = {
         value: item.value,
@@ -167,26 +181,25 @@ const FearAndGreedBinaryChart = ({ isDashboard = false }) => {
       }));
 
     return [btcPriceLine, ...btcPriceTooltipDatasets, ...fearGreedDataset];
-  }, [btcData, fearAndGreedData, colors]);
+  }, [btcData, fearAndGreedBinaryData, colors]);
 
   // Fetch data only when necessary
   useEffect(() => {
     const fetchData = async () => {
-      if (btcData.length > 0 && fearAndGreedData.length > 0) return;
+      if (btcData.length > 0 && fearAndGreedBinaryData.length > 0) return;
       setIsLoading(true);
       setError(null);
       try {
         if (btcData.length === 0) await fetchBtcData();
-        // FearAndGreedBinaryContext handles its own fetching
       } catch (err) {
         setError('Failed to fetch Bitcoin data. Please try again later.');
         console.error('Error fetching Bitcoin data:', err);
       } finally {
-        setIsLoading(true); // Wait for FearAndGreedBinaryContext
+        setIsLoading(fearAndGreedLoading);
       }
     };
     fetchData();
-  }, [fetchBtcData, btcData.length]);
+  }, [fetchBtcData, btcData.length, fearAndGreedLoading]);
 
   // Update isLoading based on FearAndGreedBinaryContext
   useEffect(() => {
@@ -232,14 +245,6 @@ const FearAndGreedBinaryChart = ({ isDashboard = false }) => {
     }
   }, []);
 
-  const toggleDataset = useCallback((index) => {
-    if (plotRef.current && plotRef.current.el) {
-      const visibility = datasets[index].visible ? 'legendonly' : true;
-      Plotly.restyle(plotRef.current.el, { visible: visibility }, [index]);
-      datasets[index].visible = !datasets[index].visible;
-    }
-  }, [datasets]);
-
   return (
     <div style={{ height: '100%' }}>
       {!isDashboard && (
@@ -247,11 +252,17 @@ const FearAndGreedBinaryChart = ({ isDashboard = false }) => {
           <div className="risk-filter">
             {isLoading && <span style={{ color: colors.grey[100] }}>Loading...</span>}
             {error && <span style={{ color: colors.redAccent[500] }}>{error}</span>}
+            {!isLoading && !error && fearAndGreedBinaryData.length === 0 && (
+              <span style={{ color: colors.redAccent[500] }}>No Fear and Greed data available</span>
+            )}
           </div>
           <div>{/* placeholder for styling */}</div>
           <div>
             <button onClick={resetChartView} className="button-reset">
               Reset Chart
+            </button>
+            <button onClick={refetch} className="button-refresh" style={{ marginLeft: '10px' }}>
+              Refresh Data
             </button>
           </div>
         </div>
