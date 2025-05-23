@@ -1,3 +1,4 @@
+// src/components/BitcoinRisk.js
 import React, { useRef, useEffect, useState, useContext } from 'react';
 import { createChart } from 'lightweight-charts';
 import { tokens } from "../theme";
@@ -8,12 +9,13 @@ import LastUpdated from '../hooks/LastUpdated';
 import BitcoinFees from './BitcoinTransactionFees';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
+import { saveBitcoinRisk } from '../utility/idbUtils';
 
 const BitcoinRisk = ({ isDashboard = false, riskData: propRiskData }) => {
   const chartContainerRef = useRef();
   const chartRef = useRef(null);
-  const riskSeriesRef = useRef(null); // Store risk series for future crosshair
-  const priceSeriesRef = useRef(null); // Store price series for future crosshair
+  const riskSeriesRef = useRef(null);
+  const priceSeriesRef = useRef(null);
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const [currentBtcPrice, setCurrentBtcPrice] = useState(0);
@@ -22,10 +24,10 @@ const BitcoinRisk = ({ isDashboard = false, riskData: propRiskData }) => {
   const isMobile = useIsMobile();
 
   // DCA risk-based accumulation simulation state variables
-  const [dcaAmount, setDcaAmount] = useState(100); // Default DCA amount in USD
+  const [dcaAmount, setDcaAmount] = useState(100);
   const [dcaFrequency, setDcaFrequency] = useState(7);
-  const [dcaStartDate, setDcaStartDate] = useState('2021-01-01'); // Default start date for DCA investments
-  const [dcaRiskThreshold, setDcaRiskThreshold] = useState(0.4); // Default risk threshold for making purchases
+  const [dcaStartDate, setDcaStartDate] = useState('2021-01-01');
+  const [dcaRiskThreshold, setDcaRiskThreshold] = useState(0.4);
   const [totalUsdFromSales, setTotalUsdFromSales] = useState(0);
   const [btcHeld, setBtcHeld] = useState(0);
   const [totalUsdRealized, setTotalUsdRealized] = useState(0);
@@ -45,8 +47,8 @@ const BitcoinRisk = ({ isDashboard = false, riskData: propRiskData }) => {
   ]);
 
   // Lump sum investment simulation state variables
-  const [lumpSumInvest, setLumpSumInvest] = useState(1000); // Default USD investment amount (fixed typo)
-  const [startDate, setStartDate] = useState("2021-01-01"); // Example start date
+  const [lumpSumInvest, setLumpSumInvest] = useState(1000);
+  const [startDate, setStartDate] = useState("2021-01-01");
   const [simulationResult, setSimulationResult] = useState({
     finalUsdHeld: 0,
     finalBtcHeld: 0,
@@ -54,63 +56,58 @@ const BitcoinRisk = ({ isDashboard = false, riskData: propRiskData }) => {
     transactionHistory: [],
   });
 
-  // Access DataContext
   const { btcData, fetchBtcData } = useContext(DataContext);
 
-// Function to calculate the risk metric
-const calculateRiskMetric = (data) => {
-    const diminishingFactor = 0.375; // Slightly increase sensitivity to later data points
-    const movingAverageDays = 380; // Shorter moving average for more sensitivity
-    const logScaleFactor = 1.05; // Amplify log differences slightly
+  // Function to calculate the risk metric
+  const calculateRiskMetric = (data) => {
+    const diminishingFactor = 0.375;
+    const movingAverageDays = 380;
+    const logScaleFactor = 1.05;
 
     const movingAverage = data.map((item, index) => {
-        const start = Math.max(0, index - (movingAverageDays - 1));
-        const subset = data.slice(start, index + 1);
-        const avg = subset.reduce((sum, entry) => sum + entry.value, 0) / subset.length;
-        return { ...item, MA: avg };
+      const start = Math.max(0, index - (movingAverageDays - 1));
+      const subset = data.slice(start, index + 1);
+      const avg = subset.reduce((sum, entry) => sum + entry.value, 0) / subset.length;
+      return { ...item, MA: avg };
     });
 
     movingAverage.forEach((item, index) => {
-        const valueLog = Math.log(item.value + 1e-3); // Small offset to prevent issues with small values
-        const maLog = Math.log(item.MA + 1e-3);
-        const preavg = (valueLog - maLog) * logScaleFactor * Math.pow(index + 1, diminishingFactor);
-        item.Preavg = preavg;
+      const valueLog = Math.log(item.value + 1e-3);
+      const maLog = Math.log(item.MA + 1e-3);
+      const preavg = (valueLog - maLog) * logScaleFactor * Math.pow(index + 1, diminishingFactor);
+      item.Preavg = preavg;
     });
 
     const preavgValues = movingAverage.map(item => item.Preavg);
     const preavgMin = Math.min(...preavgValues);
     const preavgMax = Math.max(...preavgValues);
 
-    const riskScaleFactor = 1.05; // Scale risk values by 10%
+    const riskScaleFactor = 1.05;
 
     const normalizedRisk = movingAverage.map(item => ({
-        ...item,
-        Risk: Math.min(1, Math.max(0, ((item.Preavg - preavgMin) / (preavgMax - preavgMin)) * riskScaleFactor)),
+      ...item,
+      Risk: Math.min(1, Math.max(0, ((item.Preavg - preavgMin) / (preavgMax - preavgMin)) * riskScaleFactor)),
     }));
 
     return normalizedRisk;
-    };
+  };
 
-  // Calculate risk data if not provided via prop
   const chartData = propRiskData || (btcData.length > 0 ? calculateRiskMetric(btcData) : []);
 
-  // Function to set chart interactivity
   const setInteractivity = () => {
     setIsInteractive(!isInteractive);
   };
 
-  // Function to format numbers to 'k', 'M', etc. for price scale labels
   function compactNumberFormatter(value) {
     if (value >= 1000000) {
-      return (value / 1000000).toFixed(0) + 'M'; // Millions
+      return (value / 1000000).toFixed(0) + 'M';
     } else if (value >= 1000) {
-      return (value / 1000).toFixed(0) + 'k'; // Thousands
+      return (value / 1000).toFixed(0) + 'k';
     } else {
-      return value.toFixed(0); // For values less than 1000, show the full number
+      return value.toFixed(0);
     }
   }
 
-  // Function to simulate lump sum investment
   const simulateInvestment = (data, lumpSumInvest, startDate) => {
     const filteredData = data.filter(item => new Date(item.time) >= new Date(startDate));
 
@@ -153,19 +150,16 @@ const calculateRiskMetric = (data) => {
     setSimulationResult(results);
   };
 
-  // Function to reset the chart view
   const resetChartView = () => {
     if (chartRef.current) {
       chartRef.current.timeScale().fitContent();
     }
   };
 
-  // Trigger lazy fetching when the component mounts
   useEffect(() => {
     fetchBtcData();
   }, [fetchBtcData]);
 
-  // Render chart
   useEffect(() => {
     if (chartData.length === 0) return;
 
@@ -200,7 +194,6 @@ const calculateRiskMetric = (data) => {
       },
     });
 
-    // Series for Risk Metric
     const riskSeries = chart.addLineSeries({
       color: '#ff0062',
       lastValueVisible: true,
@@ -210,7 +203,6 @@ const calculateRiskMetric = (data) => {
     riskSeriesRef.current = riskSeries;
     riskSeries.setData(chartData.map(data => ({ time: data.time, value: data.Risk })));
 
-    // Series for Bitcoin Price on Logarithmic Scale
     const priceSeries = chart.addLineSeries({
       color: 'gray',
       priceScaleId: 'left',
@@ -229,7 +221,7 @@ const calculateRiskMetric = (data) => {
     });
 
     chart.priceScale('left').applyOptions({
-      mode: 1, // Logarithmic scale
+      mode: 1,
       borderVisible: false,
       priceFormat: {
         type: 'custom',
@@ -253,6 +245,14 @@ const calculateRiskMetric = (data) => {
     try {
       const riskLevel = latestData.Risk.toFixed(2);
       setCurrentRiskLevel(riskLevel);
+      // Save the risk level to IndexedDB if supported
+      if (typeof indexedDB !== 'undefined') {
+        saveBitcoinRisk(parseFloat(riskLevel)).catch(error => {
+          console.error('Error saving Bitcoin risk level:', error);
+        });
+      } else {
+        console.warn('IndexedDB is not supported in this environment.');
+      }
     } catch (error) {
       console.error('Failed to set risk level:', error);
     }
@@ -471,7 +471,7 @@ const calculateRiskMetric = (data) => {
                   <input className='input-field .simulate-button' type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
                   <input className='input-field .simulate-button' type="number" placeholder="USD to Invest" value={lumpSumInvest} onChange={e => setLumpSumInvest(e.target.value)} />
                 </div>
-                <button className='simulate-button-dca' style={{ background: 'transparent', color: colors.greenAccent[500], borderRadius: '10px', margin: '20px' }} onClick={handleSimulation}>Simulate</button>
+                <button className=' consulting. simulate-button-dca' style={{ background: 'transparent', color: colors.greenAccent[500], borderRadius: '10px', margin: '20px' }} onClick={handleSimulation}>Simulate</button>
                 {simulationResult.investmentDate && (
                   <div className='results-display'>
                     Investing ${simulationResult.investedAmount.toFixed(0)} on {simulationResult.investmentDate} at a risk level of {simulationResult.initialRiskLevel.toFixed(2)} would have resulted in an investment return of ${simulationResult.currentValue.toFixed(2)} based on today's prices.
@@ -634,5 +634,4 @@ const calculateRiskMetric = (data) => {
   );
 };
 
-// export default BitcoinRisk;
 export default restrictToPaidSubscription(BitcoinRisk);

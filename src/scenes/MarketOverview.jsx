@@ -23,6 +23,7 @@ import { Box, Typography, useTheme } from '@mui/material';
 import { tokens } from '../theme';
 import { DataContext } from '../DataContext';
 import useIsMobile from '../hooks/useIsMobile';
+import { getBitcoinRisk } from '../utility/idbUtils'; // Import getBitcoinRisk
 
 // Wrap GridLayout with WidthProvider for responsiveness
 const ResponsiveGridLayout = WidthProvider(Responsive);
@@ -49,13 +50,13 @@ const MarketOverview = () => {
   const breakpoints = { lg: 1200, md: 996, sm: 768, xs: 480 };
   const cols = { lg: 12, md: 8, sm: 6, xs: 4 };
 
-  // Responsive layouts for different breakpoints (added BitcoinRiskWidget)
+  // Responsive layouts for different breakpoints
   const layouts = {
     lg: [
       { i: 'bitcoin', x: 0, y: 0, w: 4, h: 2, minW: 2, minH: 2 },
       { i: 'ethereum', x: 4, y: 0, w: 4, h: 2, minW: 2, minH: 2 },
       { i: 'fearAndGreed', x: 8, y: 0, w: 4, h: 2, minW: 2, minH: 2 },
-      { i: 'bitcoinRisk', x: 0, y: 2, w: 4, h: 2, minW: 2, minH: 2 }, // New widget
+      { i: 'bitcoinRisk', x: 0, y: 2, w: 4, h: 2, minW: 2, minH: 2 },
       { i: 'inflation', x: 4, y: 2, w: 4, h: 2, minW: 2, minH: 2 },
       { i: 'marketCap', x: 8, y: 2, w: 4, h: 2, minW: 2, minH: 2 },
     ],
@@ -63,7 +64,7 @@ const MarketOverview = () => {
       { i: 'bitcoin', x: 0, y: 0, w: 4, h: 2, minW: 2, minH: 2 },
       { i: 'ethereum', x: 4, y: 0, w: 4, h: 2, minW: 2, minH: 2 },
       { i: 'fearAndGreed', x: 0, y: 2, w: 4, h: 2, minW: 2, minH: 2 },
-      { i: 'bitcoinRisk', x: 4, y: 2, w: 4, h: 2, minW: 2, minH: 2 }, // New widget
+      { i: 'bitcoinRisk', x: 4, y: 2, w: 4, h: 2, minW: 2, minH: 2 },
       { i: 'inflation', x: 0, y: 4, w: 4, h: 2, minW: 2, minH: 2 },
       { i: 'marketCap', x: 4, y: 4, w: 4, h: 2, minW: 2, minH: 2 },
     ],
@@ -71,7 +72,7 @@ const MarketOverview = () => {
       { i: 'bitcoin', x: 0, y: 0, w: 6, h: 2, minW: 2, minH: 2 },
       { i: 'ethereum', x: 0, y: 2, w: 6, h: 2, minW: 2, minH: 2 },
       { i: 'fearAndGreed', x: 0, y: 4, w: 6, h: 2, minW: 2, minH: 2 },
-      { i: 'bitcoinRisk', x: 0, y: 6, w: 6, h: 2, minW: 2, minH: 2 }, // New widget
+      { i: 'bitcoinRisk', x: 0, y: 6, w: 6, h: 2, minW: 2, minH: 2 },
       { i: 'inflation', x: 0, y: 8, w: 6, h: 2, minW: 2, minH: 2 },
       { i: 'marketCap', x: 0, y: 10, w: 6, h: 2, minW: 2, minH: 2 },
     ],
@@ -79,7 +80,7 @@ const MarketOverview = () => {
       { i: 'bitcoin', x: 0, y: 0, w: 4, h: 2, minW: 2, minH: 2 },
       { i: 'ethereum', x: 0, y: 2, w: 4, h: 2, minW: 2, minH: 2 },
       { i: 'fearAndGreed', x: 0, y: 4, w: 4, h: 2, minW: 2, minH: 2 },
-      { i: 'bitcoinRisk', x: 0, y: 6, w: 4, h: 2, minW: 2, minH: 2 }, // New widget
+      { i: 'bitcoinRisk', x: 0, y: 6, w: 4, h: 2, minW: 2, minH: 2 },
       { i: 'inflation', x: 0, y: 8, w: 4, h: 2, minW: 2, minH: 2 },
       { i: 'marketCap', x: 0, y: 10, w: 4, h: 2, minW: 2, minH: 2 },
     ],
@@ -159,14 +160,30 @@ const MarketOverview = () => {
 
   // New Bitcoin Risk Widget
   const BitcoinRiskWidget = memo(() => {
-    // Get the latest risk level from btcData
-    const latestBtcData = btcData.slice(-1)[0] || { riskLevel: 0 }; // Adjust field name as needed
-    const riskLevel = latestBtcData.riskLevel || 0; // Replace 'riskLevel' with the actual field name
+    const [riskLevel, setRiskLevel] = useState(null);
 
-    // Determine the color based on the risk level
+    useEffect(() => {
+      const fetchRiskLevel = async () => {
+        try {
+          const riskData = await getBitcoinRisk();
+          if (riskData && riskData.riskLevel !== undefined) {
+            setRiskLevel(riskData.riskLevel);
+          } else {
+            setRiskLevel(0); // Fallback if no data
+          }
+        } catch (error) {
+          console.error('Error fetching Bitcoin risk level:', error);
+          setRiskLevel(0); // Fallback on error
+        }
+      };
+      fetchRiskLevel();
+    }, []);
+
+    // Determine the color based on the risk level (scaled to 0-100 for display)
+    const displayRisk = riskLevel !== null ? (riskLevel * 100).toFixed(0) : 0;
     const getRiskColor = (level) => {
       if (level <= 33) return colors.greenAccent[400]; // Low risk
-      if (level <= 66) return colors.warning.main; // Medium risk
+      if (level <= 66) return colors.redAccent[400]; // Medium risk (using yellowAccent for warning)
       return colors.redAccent[400]; // High risk
     };
 
@@ -184,19 +201,19 @@ const MarketOverview = () => {
           }}
         >
           <Typography
-            variant="h3"
-            color={getRiskColor(riskLevel)}
-            sx={{ fontWeight: 'bold' }}
+            variant="h1"
+            color={getRiskColor(displayRisk)}
+            sx={{ fontWeight: 'bold'}}
           >
-            {riskLevel}
+            {displayRisk}
           </Typography>
         </Box>
         <Typography
           variant="body2"
           color={colors.grey[300]}
-          sx={{ textAlign: 'center', mt: 1 }}
+          sx={{ textAlign: 'center', mt: 1}}
         >
-          {riskLevel <= 33 ? 'Low Risk' : riskLevel <= 66 ? 'Medium Risk' : 'High Risk'}
+          {displayRisk <= 33 ? 'Low Risk' : displayRisk <= 66 ? 'Medium Risk' : 'High Risk'}
         </Typography>
       </Box>
     );

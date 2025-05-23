@@ -263,7 +263,7 @@ const AppContent = memo(({ isSignedIn, user }) => {
                       }
                     />
                     <Route
-                      path="/market-overview"
+                      path="/"
                       element={
                         <ProtectedRoute>
                           <MarketOverview />
