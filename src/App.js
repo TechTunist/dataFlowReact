@@ -1,6 +1,7 @@
+// src/App.js
 import { useState, useEffect, createContext, memo } from "react";
 import { Routes, Route, useLocation, Navigate } from "react-router-dom";
-import { ClerkProvider, useAuth } from "@clerk/clerk-react";
+import { ClerkProvider, useAuth, useUser } from "@clerk/clerk-react";
 import Topbar from "./scenes/global/Topbar";
 import Sidebar from "./scenes/global/Sidebar";
 import BasicChart from "./scenes/ChartTemplates/BasicChart";
@@ -51,6 +52,9 @@ import { loadStripe } from '@stripe/stripe-js';
 import { SubscriptionProvider } from './contexts/SubscriptionContext';
 import FearAndGreedBinaryChart from "./components/FearAndGreedBinaryChart"; 
 import { FearAndGreedBinaryProvider } from "./FearAndGreedBinaryContext";
+import MarketOverview from "./scenes/MarketOverview";
+import { useMemo } from "react";
+import FearAndGreed3D from "./components/FearAndGreed3D";
 
 // Stripe Context
 const StripeContext = createContext(null);
@@ -65,15 +69,33 @@ if (!PUBLISHABLE_KEY) {
   throw new Error("Missing Clerk Publishable Key");
 }
 
-const AppContent = memo(() => {
+// New AuthWrapper to isolate useAuth and useUser
+const AuthWrapper = memo(() => {
+  const { isLoaded, isSignedIn } = useAuth();
+  const { user } = useUser();
+  const location = useLocation();
+
+  console.log('AuthWrapper rendered'); // Log to confirm rerenders
+
+  if (!isLoaded) {
+    return <div>Loading...</div>;
+  }
+
+  return <AppContent isSignedIn={isSignedIn} user={user} />;
+});
+
+const AppContent = memo(({ isSignedIn, user }) => {
   const [theme, colorMode] = useMode();
   const isMobile = useIsMobile();
   const [isSidebar, setIsSidebar] = useState(!isMobile);
   const location = useLocation();
-  const { isLoaded, isSignedIn } = useAuth();
   const isDashboardTopbar = location.pathname === "/dashboard";
   const isSplashPage = location.pathname === "/splash";
   const isLoginSignupPage = location.pathname === "/login-signup";
+
+  // Memoize theme and colorMode to prevent unnecessary updates
+  const memoizedTheme = useMemo(() => theme, [theme]);
+  const memoizedColorMode = useMemo(() => colorMode, [colorMode]);
 
   // Initialize stripePromise and handle loading/error states
   const [stripe, setStripe] = useState(null);
@@ -100,21 +122,18 @@ const AppContent = memo(() => {
   const isUserMenuPage = userMenuRoutes.includes(location.pathname);
   const shouldRenderTopbarAndSidebar = isSignedIn && !isSplashPage && !isLoginSignupPage && !isUserMenuPage;
 
-  // Wait for Clerk to load authentication state
-  if (!isLoaded) {
-    return <div>Loading...</div>;
-  }
-
   // Display Stripe initialization error if present
   if (stripeError) {
     return <div>Error loading Stripe: {stripeError}</div>;
   }
 
+  console.log('AppContent rendered'); // Log to confirm rerenders
+
   return (
     <StripeContext.Provider value={stripe}>
-      <ColorModeContext.Provider value={colorMode}>
-        <ThemeProvider theme={theme}>
-          <SubscriptionProvider>
+      <ColorModeContext.Provider value={memoizedColorMode}>
+        <ThemeProvider theme={memoizedTheme}>
+          <SubscriptionProvider user={user} isSignedIn={isSignedIn}>
             <CssBaseline />
             <div className="app" style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
               {/* Render Topbar or AccountNavBar */}
@@ -244,6 +263,14 @@ const AppContent = memo(() => {
                       }
                     />
                     <Route
+                      path="/market-overview"
+                      element={
+                        <ProtectedRoute>
+                          <MarketOverview />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
                       path="/bitcoin-roi"
                       element={
                         <ProtectedRoute>
@@ -296,6 +323,14 @@ const AppContent = memo(() => {
                       element={
                         <ProtectedRoute>
                           <BasicChart ChartComponent={FearAndGreed} />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/fear-and-greed-3d"
+                      element={
+                        <ProtectedRoute>
+                          <BasicChart ChartComponent={FearAndGreed3D} />
                         </ProtectedRoute>
                       }
                     />
@@ -885,7 +920,7 @@ const AppContent = memo(() => {
 const App = memo(() => {
   return (
     <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
-      <AppContent />
+      <AuthWrapper />
     </ClerkProvider>
   );
 });

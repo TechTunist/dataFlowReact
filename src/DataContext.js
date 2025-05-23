@@ -1,5 +1,5 @@
 // src/DataContext.js
-import React, { createContext, useState, useCallback, useContext, useEffect } from 'react';
+import React, { createContext, useState, useCallback, useContext, useEffect, useMemo } from 'react';
 import { initDB, cacheData, getCachedData, clearCache } from './utility/idbUtils';
 
 export const DataContext = createContext();
@@ -15,114 +15,127 @@ const fetchWithCache = async ({
   useDateCheck = true,
 }) => {
   if (typeof indexedDB === 'undefined') {
-      console.warn('IndexedDB is not supported in this environment.');
-      return false;
+    console.warn('IndexedDB is not supported in this environment.');
+    return false;
   }
 
   try {
-      setIsFetched(true);
-      const currentDate = new Date().toISOString().split('T')[0];
-      const currentTimestamp = Date.now();
+    setIsFetched(true);
+    const currentDate = new Date().toISOString().split('T')[0];
+    const currentTimestamp = Date.now();
 
-      console.log(`Checking IndexedDB for ${cacheId}...`);
-      const cachedStart = performance.now();
-      const cached = await getCachedData(cacheId);
-      console.log(`IndexedDB read for ${cacheId} took ${performance.now() - cachedStart}ms`);
+    // console.log(`Checking IndexedDB for ${cacheId}...`);
+    const cachedStart = performance.now();
+    const cached = await getCachedData(cacheId);
+    // console.log(`IndexedDB read for ${cacheId} took ${performance.now() - cachedStart}ms`);
 
-      if (cached && cached.data) {
-          let cachedData = Array.isArray(cached.data) ? cached.data : [cached.data]; // Handle single object or array
-          if (cachedData.length > 0) {
-              cachedData = [...cachedData].sort((a, b) => {
-                  const timestampA = parseInt(a.timestamp, 10);
-                  const timestampB = parseInt(b.timestamp, 10);
-                  return timestampB - timestampA;
-              });
+    if (cached && cached.data) {
+      let cachedData = Array.isArray(cached.data) ? cached.data : [cached.data]; // Handle single object or array
+      if (cachedData.length > 0) {
+        // Sort in ascending order by time to make cachedData[0] the earliest and cachedData[length - 1] the latest
+        cachedData = [...cachedData].sort((a, b) => {
+          const timeA = new Date(a.time).getTime();
+          const timeB = new Date(b.time).getTime();
+          return timeA - timeB; // Ascending order
+        });
 
-              const lastRecord = cachedData[0];
-              let latestCachedDate = lastRecord.time;
+        // Debug sorting
+        // console.log(`Sorted cachedData for ${cacheId}:`, cachedData.map(item => ({ time: item.time, timestamp: item.timestamp })));
 
-              if (!latestCachedDate && lastRecord.timestamp) {
-                  latestCachedDate = new Date(parseInt(lastRecord.timestamp, 10) * 1000).toISOString().split('T')[0];
-                  console.warn(`Missing time field in last record for ${cacheId}, computed from timestamp: ${latestCachedDate}`);
-              }
+        const firstRecord = cachedData[0]; // Earliest record
+        const lastRecord = cachedData[cachedData.length - 1]; // Latest record
+        let firstCachedDate = firstRecord.time; // Earliest date
+        let latestCachedDate = lastRecord.time; // Latest date
 
-              let shouldReuseCache = false;
-              if (useDateCheck) {
-                  console.log(`Using date check: latestCachedDate=${latestCachedDate}, currentDate=${currentDate}`);
-                  if (!latestCachedDate) {
-                      console.warn(`latestCachedDate is undefined for ${cacheId}, treating cache as stale`);
-                      shouldReuseCache = false;
-                  } else {
-                      shouldReuseCache = latestCachedDate >= currentDate;
-                  }
-              } else {
-                  const timeSinceLastFetch = currentTimestamp - cached.timestamp;
-                  console.log(`Using timestamp check: timeSinceLastFetch=${timeSinceLastFetch}ms, cacheDuration=${cacheDuration}ms`);
-                  shouldReuseCache = timeSinceLastFetch < cacheDuration;
-              }
+        if (!latestCachedDate && lastRecord.timestamp) {
+          latestCachedDate = new Date(parseInt(lastRecord.timestamp, 10) * 1000).toISOString().split('T')[0];
+          console.warn(`Missing time field in last record for ${cacheId}, computed from timestamp: ${latestCachedDate}`);
+        }
+        if (!firstCachedDate && firstRecord.timestamp) {
+          firstCachedDate = new Date(parseInt(firstRecord.timestamp, 10) * 1000).toISOString().split('T')[0];
+          console.warn(`Missing time field in first record for ${cacheId}, computed from timestamp: ${firstCachedDate}`);
+        }
 
-              if (shouldReuseCache) {
-                  console.log(`Reusing cached data for ${cacheId}`);
-                  setData(Array.isArray(cached.data) ? cachedData : cached.data); // Set single object or array
-                  if (setLastUpdated) {
-                      setLastUpdated(latestCachedDate);
-                  }
-                  return true;
-              }
+        let shouldReuseCache = false;
+        if (useDateCheck) {
+          // console.log(`Using date check: latestCachedDate=${latestCachedDate}, currentDate=${currentDate}`);
+          // console.log(`Using date check: firstCachedDate=${firstCachedDate}, currentDate=${currentDate}`);
+          if (!latestCachedDate) {
+            console.warn(`latestCachedDate is undefined for ${cacheId}, treating cache as stale`);
+            shouldReuseCache = false;
+          } else {
+            shouldReuseCache = latestCachedDate >= currentDate;
           }
-      }
+        } else {
+          const timeSinceLastFetch = currentTimestamp - cached.timestamp;
+          // console.log(`Using timestamp check: timeSinceLastFetch=${timeSinceLastFetch}ms, cacheDuration=${cacheDuration}ms`);
+          shouldReuseCache = timeSinceLastFetch < cacheDuration;
+        }
 
-      console.log(`No cached data or stale cache for ${cacheId}, fetching from API...`);
-      const maxRetries = 2;
-      let attempts = 0;
-      let response;
-      while (attempts < maxRetries) {
-          try {
-              const fetchStart = performance.now();
-              response = await fetch(apiUrl);
-              console.log(`Fetch for ${apiUrl} took ${performance.now() - fetchStart}ms`);
-              if (response.ok) break;
-              throw new Error(`HTTP error! Status: ${response.status}`);
-          } catch (err) {
-              attempts++;
-              console.warn(`Attempt ${attempts} failed for ${apiUrl}:`, err);
-              if (attempts === maxRetries) throw err;
-              await new Promise(resolve => setTimeout(resolve, 500));
+        if (shouldReuseCache) {
+          // console.log(`Reusing cached data for ${cacheId}`);
+          setData(Array.isArray(cached.data) ? cachedData : cached.data); // Set single object or array
+          if (setLastUpdated) {
+            setLastUpdated(latestCachedDate);
           }
+          return true;
+        }
       }
+    }
 
-      const data = await response.json();
-      const formattedData = formatData(data);
-      const isArray = Array.isArray(formattedData);
-      const latestFetchedDate = isArray && formattedData.length > 0 
-          ? formattedData[formattedData.length - 1].time 
-          : formattedData.time || null;
-
-      if (latestFetchedDate && cached && cached.data) {
-          const cachedData = Array.isArray(cached.data) ? cached.data : [cached.data];
-          const latestCachedDate = cachedData[cachedData.length - 1]?.time;
-          if (latestCachedDate && latestFetchedDate <= latestCachedDate) {
-              console.log(`Fetched data is not newer than cached data for ${cacheId}, reusing cache`);
-              setData(Array.isArray(cached.data) ? cachedData : cached.data);
-              if (setLastUpdated) {
-                  setLastUpdated(latestCachedDate);
-              }
-              await cacheData(cacheId, cached.data, currentTimestamp);
-              return true;
-          }
+    // console.log(`No cached data or stale cache for ${cacheId}, fetching from API...`);
+    const maxRetries = 2;
+    let attempts = 0;
+    let response;
+    while (attempts < maxRetries) {
+      try {
+        const fetchStart = performance.now();
+        response = await fetch(apiUrl);
+        // console.log(`Fetch for ${apiUrl} took ${performance.now() - fetchStart}ms`);
+        if (response.ok) break;
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      } catch (err) {
+        attempts++;
+        console.warn(`Attempt ${attempts} failed for ${apiUrl}:`, err);
+        if (attempts === maxRetries) throw err;
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
+    }
 
-      console.log(`Updating cache with new data for ${cacheId}`);
-      setData(formattedData);
-      if (latestFetchedDate && setLastUpdated) {
-          setLastUpdated(latestFetchedDate);
+    const data = await response.json();
+    const formattedData = formatData(data);
+    const isArray = Array.isArray(formattedData);
+    const latestFetchedDate = isArray && formattedData.length > 0 
+      ? formattedData[formattedData.length - 1].time 
+      : formattedData.time || null;
+
+    if (latestFetchedDate && cached && cached.data) {
+      const cachedData = Array.isArray(cached.data) ? cached.data : [cached.data];
+      // Sort cachedData in ascending order for consistency
+      const sortedCachedData = [...cachedData].sort((a, b) => new Date(a.time) - new Date(b.time));
+      const latestCachedDate = sortedCachedData[sortedCachedData.length - 1]?.time;
+      if (latestCachedDate && latestFetchedDate <= latestCachedDate) {
+        // console.log(`Fetched data is not newer than cached data for ${cacheId}, reusing cache`);
+        setData(Array.isArray(cached.data) ? cachedData : cached.data);
+        if (setLastUpdated) {
+          setLastUpdated(latestCachedDate);
+        }
+        await cacheData(cacheId, cached.data, currentTimestamp);
+        return true;
       }
-      await cacheData(cacheId, formattedData, currentTimestamp);
-      return true;
+    }
+
+    // console.log(`Updating cache with new data for ${cacheId}`);
+    setData(formattedData);
+    if (latestFetchedDate && setLastUpdated) {
+      setLastUpdated(latestFetchedDate);
+    }
+    await cacheData(cacheId, formattedData, currentTimestamp);
+    return true;
   } catch (error) {
-      console.error(`Error fetching or caching data for ${cacheId}:`, error);
-      setIsFetched(false);
-      return false;
+    console.error(`Error fetching or caching data*^C for ${cacheId}:`, error);
+    setIsFetched(false);
+    return false;
   }
 };
 
@@ -133,7 +146,7 @@ const refreshData = async ({
   fetchFunction,
 }) => {
   try {
-    console.log(`Refreshing data for ${cacheId}...`);
+    // console.log(`Refreshing data for ${cacheId}...`);
     await clearCache(cacheId);
     setIsFetched(false);
     setData([]);
@@ -231,7 +244,9 @@ export const DataProvider = ({ children }) => {
             const { data: cachedData, timestamp } = cached;
             const currentDate = new Date().toISOString().split('T')[0];
             const currentTimestamp = Date.now();
-            const latestCachedDate = cachedData[cachedData.length - 1].time;
+            // Sort in ascending order to match fetchWithCache
+            const sortedCachedData = [...cachedData].sort((a, b) => new Date(a.time) - new Date(b.time));
+            const latestCachedDate = sortedCachedData[sortedCachedData.length - 1].time;
 
             let shouldReuseCache = false;
             if (useDateCheck) {
@@ -242,7 +257,7 @@ export const DataProvider = ({ children }) => {
             }
 
             if (shouldReuseCache) {
-              setData(cachedData);
+              setData(sortedCachedData);
               if (setLastUpdated) {
                 setLastUpdated(latestCachedDate);
               }
@@ -450,10 +465,10 @@ export const DataProvider = ({ children }) => {
   const fetchFearAndGreedData = useCallback(async () => {
     if (isFearAndGreedDataFetched) return;
     if (!preloadComplete) {
-      console.log('Waiting for preload to complete before fetching Fear and Greed data...');
+      // console.log('Waiting for preload to complete before fetching Fear and Greed data...');
       await new Promise(resolve => setTimeout(resolve, 100));
       if (isFearAndGreedDataFetched) {
-        console.log('Fear and Greed data already fetched during preload, skipping fetch');
+        // console.log('Fear and Greed data already fetched during preload, skipping fetch');
         return;
       }
     }
@@ -967,85 +982,164 @@ export const DataProvider = ({ children }) => {
     }
   }, [fetchIndicatorData]);
 
+  // Memoize the context value to prevent unnecessary updates
+  const contextValue = useMemo(
+    () => ({
+      btcData,
+      fetchBtcData,
+      refreshBtcData,
+      btcLastUpdated,
+      fedBalanceData,
+      fetchFedBalanceData,
+      refreshFedBalanceData,
+      fedLastUpdated,
+      mvrvData,
+      fetchMvrvData,
+      refreshMvrvData,
+      mvrvLastUpdated,
+      dominanceData,
+      fetchDominanceData,
+      refreshDominanceData,
+      dominanceLastUpdated,
+      ethData,
+      fetchEthData,
+      refreshEthData,
+      ethLastUpdated,
+      fearAndGreedData,
+      fetchFearAndGreedData,
+      refreshFearAndGreedData,
+      fearAndGreedLastUpdated,
+      latestFearAndGreed,
+      fetchLatestFearAndGreed,
+      refreshLatestFearAndGreed,
+      latestFearAndGreedLastUpdated,
+      marketCapData,
+      fetchMarketCapData,
+      refreshMarketCapData,
+      marketCapLastUpdated,
+      macroData,
+      fetchMacroData,
+      refreshMacroData,
+      macroLastUpdated,
+      inflationData,
+      fetchInflationData,
+      refreshInflationData,
+      inflationLastUpdated,
+      initialClaimsData,
+      fetchInitialClaimsData,
+      refreshInitialClaimsData,
+      initialClaimsLastUpdated,
+      interestData,
+      fetchInterestData,
+      refreshInterestData,
+      interestLastUpdated,
+      unemploymentData,
+      fetchUnemploymentData,
+      refreshUnemploymentData,
+      unemploymentLastUpdated,
+      txCountData,
+      fetchTxCountData,
+      refreshTxCountData,
+      txCountLastUpdated,
+      txCountCombinedData,
+      fetchTxCountCombinedData,
+      refreshTxCountCombinedData,
+      txCountCombinedLastUpdated,
+      txMvrvData,
+      fetchTxMvrvData,
+      refreshTxMvrvData,
+      txMvrvLastUpdated,
+      altcoinData,
+      fetchAltcoinData,
+      refreshAltcoinData,
+      altcoinLastUpdated,
+      fredSeriesData,
+      fetchFredSeriesData,
+      refreshFredSeriesData,
+      indicatorData,
+      fetchIndicatorData,
+      refreshIndicatorData,
+    }),
+    [
+      btcData,
+      fetchBtcData,
+      refreshBtcData,
+      btcLastUpdated,
+      fedBalanceData,
+      fetchFedBalanceData,
+      refreshFedBalanceData,
+      fedLastUpdated,
+      mvrvData,
+      fetchMvrvData,
+      refreshMvrvData,
+      mvrvLastUpdated,
+      dominanceData,
+      fetchDominanceData,
+      refreshDominanceData,
+      dominanceLastUpdated,
+      ethData,
+      fetchEthData,
+      refreshEthData,
+      ethLastUpdated,
+      fearAndGreedData,
+      fetchFearAndGreedData,
+      refreshFearAndGreedData,
+      fearAndGreedLastUpdated,
+      latestFearAndGreed,
+      fetchLatestFearAndGreed,
+      refreshLatestFearAndGreed,
+      latestFearAndGreedLastUpdated,
+      marketCapData,
+      fetchMarketCapData,
+      refreshMarketCapData,
+      marketCapLastUpdated,
+      macroData,
+      fetchMacroData,
+      refreshMacroData,
+      macroLastUpdated,
+      inflationData,
+      fetchInflationData,
+      refreshInflationData,
+      inflationLastUpdated,
+      initialClaimsData,
+      fetchInitialClaimsData,
+      refreshInitialClaimsData,
+      initialClaimsLastUpdated,
+      interestData,
+      fetchInterestData,
+      refreshInterestData,
+      interestLastUpdated,
+      unemploymentData,
+      fetchUnemploymentData,
+      refreshUnemploymentData,
+      unemploymentLastUpdated,
+      txCountData,
+      fetchTxCountData,
+      refreshTxCountData,
+      txCountLastUpdated,
+      txCountCombinedData,
+      fetchTxCountCombinedData,
+      refreshTxCountCombinedData,
+      txCountCombinedLastUpdated,
+      txMvrvData,
+      fetchTxMvrvData,
+      refreshTxMvrvData,
+      txMvrvLastUpdated,
+      altcoinData,
+      fetchAltcoinData,
+      refreshAltcoinData,
+      altcoinLastUpdated,
+      fredSeriesData,
+      fetchFredSeriesData,
+      refreshFredSeriesData,
+      indicatorData,
+      fetchIndicatorData,
+      refreshIndicatorData,
+    ]
+  );
+
   return (
-    <DataContext.Provider
-      value={{
-        btcData,
-        fetchBtcData,
-        refreshBtcData,
-        btcLastUpdated,
-        fedBalanceData,
-        fetchFedBalanceData,
-        refreshFedBalanceData,
-        fedLastUpdated,
-        mvrvData,
-        fetchMvrvData,
-        refreshMvrvData,
-        mvrvLastUpdated,
-        dominanceData,
-        fetchDominanceData,
-        refreshDominanceData,
-        dominanceLastUpdated,
-        ethData,
-        fetchEthData,
-        refreshEthData,
-        ethLastUpdated,
-        fearAndGreedData,
-        fetchFearAndGreedData,
-        refreshFearAndGreedData,
-        fearAndGreedLastUpdated,
-        latestFearAndGreed,
-        fetchLatestFearAndGreed,
-        refreshLatestFearAndGreed,
-        latestFearAndGreedLastUpdated,
-        marketCapData,
-        fetchMarketCapData,
-        refreshMarketCapData,
-        marketCapLastUpdated,
-        macroData,
-        fetchMacroData,
-        refreshMacroData,
-        macroLastUpdated,
-        inflationData,
-        fetchInflationData,
-        refreshInflationData,
-        inflationLastUpdated,
-        initialClaimsData,
-        fetchInitialClaimsData,
-        refreshInitialClaimsData,
-        initialClaimsLastUpdated,
-        interestData,
-        fetchInterestData,
-        refreshInterestData,
-        interestLastUpdated,
-        unemploymentData,
-        fetchUnemploymentData,
-        refreshUnemploymentData,
-        unemploymentLastUpdated,
-        txCountData,
-        fetchTxCountData,
-        refreshTxCountData,
-        txCountLastUpdated,
-        txCountCombinedData,
-        fetchTxCountCombinedData,
-        refreshTxCountCombinedData,
-        txCountCombinedLastUpdated,
-        txMvrvData,
-        fetchTxMvrvData,
-        refreshTxMvrvData,
-        txMvrvLastUpdated,
-        altcoinData,
-        fetchAltcoinData,
-        refreshAltcoinData,
-        altcoinLastUpdated,
-        fredSeriesData,
-        fetchFredSeriesData,
-        refreshFredSeriesData,
-        indicatorData,
-        fetchIndicatorData,
-        refreshIndicatorData,
-      }}
-    >
+    <DataContext.Provider value={contextValue}>
       {children}
     </DataContext.Provider>
   );

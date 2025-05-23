@@ -1,5 +1,5 @@
 // src/contexts/SubscriptionContext.js
-import React, { createContext, useState, useEffect, useCallback, useContext } from 'react';
+import React, { createContext, useState, useEffect, useCallback, useContext, useMemo } from 'react';
 import { useUser, useAuth } from '@clerk/clerk-react';
 
 const SubscriptionContext = createContext();
@@ -10,9 +10,8 @@ const DEFAULT_FREE_FEATURES = {
   custom_indicators: false,
 };
 
-export const SubscriptionProvider = ({ children }) => {
-  const { user, isSignedIn } = useUser();
-  const { getToken } = useAuth();
+export const SubscriptionProvider = ({ children, user, isSignedIn }) => {
+  const { getToken } = useAuth(); // Restore useAuth to get getToken directly
   const [subscriptionStatus, setSubscriptionStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -74,8 +73,21 @@ export const SubscriptionProvider = ({ children }) => {
     }
   }, [isSignedIn, user, fetchSubscriptionStatus]);
 
+  // Memoize the context value to prevent unnecessary rerenders
+  const contextValue = useMemo(
+    () => ({
+      subscriptionStatus,
+      loading,
+      error,
+      fetchSubscriptionStatus,
+    }),
+    [subscriptionStatus, loading, error, fetchSubscriptionStatus]
+  );
+
+  console.log('SubscriptionProvider rendered'); // Log to confirm rerenders
+
   return (
-    <SubscriptionContext.Provider value={{ subscriptionStatus, loading, error, fetchSubscriptionStatus }}>
+    <SubscriptionContext.Provider value={contextValue}>
       {children}
     </SubscriptionContext.Provider>
   );
