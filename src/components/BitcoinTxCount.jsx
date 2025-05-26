@@ -71,6 +71,8 @@ const BitcoinTxCountChart = ({ isDashboard = false }) => {
             layout: { background: { type: 'solid', color: colors.primary[700] }, textColor: colors.primary[100] },
             grid: { vertLines: { color: colors.greenAccent[700] }, horzLines: { color: colors.greenAccent[700] } },
             timeScale: { minBarSpacing: 0.001 },
+            handleScroll: isInteractive, 
+            handleScale: isInteractive, 
         });
 
         // Option 1: Line Chart
