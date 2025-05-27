@@ -97,28 +97,32 @@ const MarketOverview = () => {
 
   const onChainLayouts = {
     lg: [
-      { i: 'bitcoinRisk', x: 0, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
-      { i: 'mvrvRatio', x: 3, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
-      { i: 'mayerMultiple', x: 6, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
-      { i: 'marketHeat', x: 9, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
+      { i: 'bitcoinRisk', x: 0, y: 0, w: 2.4, h: 2, minW: 2, minH: 2 },
+      { i: 'mvrv', x: 2.4, y: 0, w: 2.4, h: 2, minW: 2, minH: 2 },
+      { i: 'mayerMultiple', x: 4.8, y: 0, w: 2.4, h: 2, minW: 2, minH: 2 },
+      { i: 'marketHeat', x: 7.2, y: 0, w: 2.4, h: 2, minW: 2, minH: 2 },
+      { i: 'piCycleTop', x: 9.6, y: 0, w: 2.4, h: 2, minW: 2, minH: 2 },
     ],
     md: [
       { i: 'bitcoinRisk', x: 0, y: 0, w: 4, h: 2, minW: 2, minH: 2 },
-      { i: 'mvrvRatio', x: 4, y: 0, w: 4, h: 2, minW: 2, minH: 2 },
+      { i: 'mvrv', x: 4, y: 0, w: 4, h: 2, minW: 2, minH: 2 },
       { i: 'mayerMultiple', x: 0, y: 2, w: 4, h: 2, minW: 2, minH: 2 },
       { i: 'marketHeat', x: 4, y: 2, w: 4, h: 2, minW: 2, minH: 2 },
+      { i: 'piCycleTop', x: 0, y: 4, w: 4, h: 2, minW: 2, minH: 2 },
     ],
     sm: [
       { i: 'bitcoinRisk', x: 0, y: 0, w: 6, h: 2, minW: 2, minH: 2 },
-      { i: 'mvrvRatio', x: 0, y: 2, w: 6, h: 2, minW: 2, minH: 2 },
+      { i: 'mvrv', x: 0, y: 2, w: 6, h: 2, minW: 2, minH: 2 },
       { i: 'mayerMultiple', x: 0, y: 4, w: 6, h: 2, minW: 2, minH: 2 },
       { i: 'marketHeat', x: 0, y: 6, w: 6, h: 2, minW: 2, minH: 2 },
+      { i: 'piCycleTop', x: 0, y: 8, w: 6, h: 2, minW: 2, minH: 2 },
     ],
     xs: [
       { i: 'bitcoinRisk', x: 0, y: 0, w: 4, h: 2, minW: 2, minH: 2 },
-      { i: 'mvrvRatio', x: 0, y: 2, w: 4, h: 2, minW: 2, minH: 2 },
+      { i: 'mvrv', x: 0, y: 2, w: 4, h: 2, minW: 2, minH: 2 },
       { i: 'mayerMultiple', x: 0, y: 4, w: 4, h: 2, minW: 2, minH: 2 },
       { i: 'marketHeat', x: 0, y: 6, w: 4, h: 2, minW: 2, minH: 2 },
+      { i: 'piCycleTop', x: 0, y: 8, w: 4, h: 2, minW: 2, minH: 2 },
     ],
   };
 
@@ -132,8 +136,6 @@ const MarketOverview = () => {
     console.log('MarketOverview mounted');
     return () => console.log('MarketOverview unmounted');
   }, []);
-
-  console.log('MarketOverview rendered');
 
   // Fetch data on mount
   useEffect(() => {
@@ -149,16 +151,48 @@ const MarketOverview = () => {
   const rowHeight = isMobile ? 100 : 120;
   const margin = isMobile ? [8, 8] : [16, 16];
 
+  // Calculate SMA
+  const calculateSMA = (data, windowSize) => {
+    if (!data || data.length < windowSize) return [];
+    let sma = [];
+    for (let i = windowSize - 1; i < data.length; i++) {
+      let sum = 0;
+      for (let j = 0; j < windowSize; j++) {
+        sum += parseFloat(data[i - j].value) || 0;
+      }
+      sma.push({ time: data[i].time, value: sum / windowSize });
+    }
+    return sma;
+  };
+
+  // Calculate PiCycle Ratio
+  const calculateRatioSeries = (data) => {
+    if (!data || data.length < 350) return [];
+    const sma111 = calculateSMA(data, 111);
+    const sma350 = calculateSMA(data, 350);
+    let ratioData = [];
+    for (let i = 349; i < data.length; i++) {
+      if (i - 110 >= 0 && sma111[i - 110] && sma350[i - 349]) {
+        const sma350Value = sma350[i - 349].value;
+        const ratio = sma350Value > 0.001 ? sma111[i - 110].value / (sma350Value * 2) : 0;
+        ratioData.push({ time: data[i].time, value: ratio });
+      }
+    }
+    return ratioData;
+  };
+
   // Calculate MVRV peak projection
   const calculateMvrvPeakProjection = (mvrvData) => {
+    if (!mvrvData || mvrvData.length < 181) return { projectedPeak: null };
+    const sortedMvrvData = [...mvrvData].sort((a, b) => new Date(a.time) - new Date(b.time));
     const peaks = [];
     const window = 90;
-    for (let i = window; i < mvrvData.length - window; i++) {
-      const isPeak = mvrvData.slice(i - window, i + window + 1).every(
-        (item, idx) => item.value <= mvrvData[i].value || idx === window
+    for (let i = window; i < sortedMvrvData.length - window; i++) {
+      const isPeak = sortedMvrvData.slice(i - window, i + window + 1).every(
+        (item, idx) => item.value <= sortedMvrvData[i].value || idx === window
       );
-      if (isPeak && mvrvData[i].value > 2) {
-        peaks.push(mvrvData[i]);
+      if (isPeak && sortedMvrvData[i].value > 2) {
+        peaks.push(sortedMvrvData[i]);
       }
     }
 
@@ -168,13 +202,13 @@ const MarketOverview = () => {
       decreases.push(decrease);
     }
 
-    const avgDecrease = decreases.length > 0 
-      ? decreases.reduce((sum, val) => sum + val, 0) / decreases.length 
+    const avgDecrease = decreases.length > 0
+      ? decreases.reduce((sum, val) => sum + val, 0) / decreases.length
       : 0;
 
-    const latestPeak = peaks[0];
-    const projectedPeak = latestPeak 
-      ? latestPeak.value * (1 - avgDecrease) 
+    const latestPeak = peaks.length > 0 ? peaks[peaks.length - 1] : null;
+    const projectedPeak = latestPeak
+      ? latestPeak.value * (1 - avgDecrease)
       : null;
 
     return { projectedPeak };
@@ -182,12 +216,13 @@ const MarketOverview = () => {
 
   // Calculate Mayer Multiple
   const calculateMayerMultiple = (data) => {
+    if (!data || data.length < 200) return [];
     const period = 200;
     let mayerMultiples = [];
     for (let i = period - 1; i < data.length; i++) {
       let sum = 0;
       for (let j = 0; j < period; j++) {
-        sum += data[i - j].value;
+        sum += parseFloat(data[i - j].value) || 0;
       }
       const ma200 = sum / period;
       mayerMultiples.push({
@@ -198,7 +233,7 @@ const MarketOverview = () => {
     return mayerMultiples;
   };
 
-  // Gauge colors from CryptoFearAndGreedIndex
+  // Gauge colors
   const gaugeColors = [
     '#4BC0C8', '#33D1FF', '#66A3FF', '#9996FF', '#CC89FF',
     '#FF7DFF', '#FF61C3', '#FF4590', '#FF295D', '#FF0033', '#FF0033',
@@ -211,24 +246,21 @@ const MarketOverview = () => {
   };
 
   const getHeatDescription = (value) => {
-    if (value <= 20) return 'Cold';
-    if (value <= 40) return 'Cool';
-    if (value <= 60) return 'Neutral';
-    if (value <= 80) return 'Warm';
+    if (value <= 30) return 'Cold';
+    if (value <= 50) return 'Cool';
+    if (value <= 70) return 'Neutral';
+    if (value <= 85) return 'Warm';
     return 'Hot';
   };
 
   // Text color based on background luminance
   const getTextColor = (bgColor) => {
-    // Convert hex to RGB
     const hex = bgColor.replace('#', '');
     const r = parseInt(hex.substr(0, 2), 16) / 255;
     const g = parseInt(hex.substr(2, 2), 16) / 255;
     const b = parseInt(hex.substr(4, 2), 16) / 255;
-    // Calculate luminance
     const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-    // Use dark text for light backgrounds, light text for dark backgrounds
-    return luminance > 0.5 
+    return luminance > 0.5
       ? (theme.palette.mode === 'dark' ? colors.grey[900] : colors.grey[100])
       : (theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900]);
   };
@@ -242,27 +274,29 @@ const MarketOverview = () => {
 
     useEffect(() => {
       if (mvrvData && mvrvData.length > 0) {
-        const latestMvrv = mvrvData[mvrvData.length - 1].value;
+        const latestMvrvRaw = mvrvData[mvrvData.length - 1].value;
+        const latestMvrv = Math.max(0, Math.min(10000, latestMvrvRaw));
         const { projectedPeak } = calculateMvrvPeakProjection(mvrvData);
 
         if (latestMvrv && projectedPeak) {
+          const cappedProjectedPeak = Math.max(0, Math.min(10000, projectedPeak));
           setCurrentMvrv(latestMvrv);
-          setProjectedPeak(projectedPeak);
+          setProjectedPeak(cappedProjectedPeak);
 
-          // Calculate heat score (0-100)
-          const thresholds = [projectedPeak, 3.7];
+          const thresholds = [cappedProjectedPeak, 3.7];
           const distances = thresholds.map(t => ((latestMvrv - t) / t) * 100);
           const minDistance = Math.min(...distances.map(Math.abs));
           const heat = Math.max(0, Math.min(100, 100 - (minDistance / 20) * 100));
           setHeatScore(heat);
 
-          // Calculate z-score
-          const values = mvrvData.map(item => item.value);
+          const values = mvrvData.map(item => Math.max(0, Math.min(10000, item.value)));
           const mean = values.reduce((sum, val) => sum + val, 0) / values.length;
           const variance = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length;
           const stdDev = Math.sqrt(variance);
-          const z = (latestMvrv - projectedPeak) / stdDev;
+          const z = (latestMvrv - cappedProjectedPeak) / stdDev;
           setZScore(z);
+
+          console.log('MvrvRatioWidget Heat Score:', heat);
         }
       }
     }, [mvrvData]);
@@ -270,17 +304,18 @@ const MarketOverview = () => {
     const backgroundColor = getBackgroundColor(heatScore || 0);
     const textColor = getTextColor(backgroundColor);
     const heatDescription = getHeatDescription(heatScore || 0);
-    const isSignificant = heatScore !== null && heatScore >= 80 && zScore !== null && Math.abs(zScore) <= 1;
+    const isSignificant = heatScore !== null && heatScore >= 85 && zScore !== null && Math.abs(zScore) <= 1;
 
     return (
       <Box sx={{
         ...chartBoxStyle(colors, theme),
         backgroundColor: backgroundColor,
         transition: 'background-color 0.3s ease, transform 0.2s ease-in-out',
-        border: isSignificant ? `2px solid ${colors.redAccent[600]}` : 'none',
+        border: isSignificant ? `2px solid ${colors.redAccent[500]}` : 'none',
         padding: '24px',
+        textAlign: 'center',
       }}>
-        <Typography variant="h5" color={textColor} gutterBottom sx={{ fontWeight: 'bold' }}>
+        <Typography variant="h4" color={textColor} gutterBottom sx={{ fontWeight: 'bold' }}>
           MVRV Ratio
         </Typography>
         <Box
@@ -293,23 +328,23 @@ const MarketOverview = () => {
             gap: '8px',
           }}
         >
-          <Typography variant="h6" color={textColor} sx={{ fontWeight: 'bold' }}>
+          <Typography variant="h4" color={textColor} sx={{ fontWeight: 'bold' }}>
             Current: {currentMvrv !== null ? currentMvrv.toFixed(2) : 'N/A'}
           </Typography>
-          <Typography variant="h6" color={textColor} sx={{ fontWeight: 'bold' }}>
+          <Typography variant="h4" color={textColor} sx={{ fontWeight: 'bold' }}>
             Predicted Peak: {projectedPeak !== null ? projectedPeak.toFixed(2) : 'N/A'}
           </Typography>
-          <Typography variant="body2" color={textColor}>
+          <Typography variant="body1" color={textColor}>
             Heat: {heatDescription}
           </Typography>
-          <Typography variant="body2" color={textColor}>
+          <Typography variant="body1" color={textColor}>
             Z-Score: {zScore !== null ? zScore.toFixed(2) : 'N/A'}
           </Typography>
         </Box>
         {isSignificant && (
           <Typography
-            variant="body2"
-            color={colors.redAccent[200]}
+            variant="body1"
+            color={colors.redAccent[500]}
             sx={{ textAlign: 'center', mt: 2, fontWeight: 'bold' }}
           >
             Warning: Market is overheated.
@@ -328,25 +363,26 @@ const MarketOverview = () => {
     useEffect(() => {
       if (btcData && btcData.length > 200) {
         const mayerMultiples = calculateMayerMultiple(btcData);
-        const latestMayer = mayerMultiples[mayerMultiples.length - 1].value;
+        const latestMayerRaw = mayerMultiples[mayerMultiples.length - 1]?.value;
+        const latestMayer = latestMayerRaw ? Math.max(0, Math.min(100, latestMayerRaw)) : 0;
 
         if (latestMayer) {
           setCurrentMayer(latestMayer);
 
-          // Calculate heat score
           const thresholds = [2.4, 0.6];
           const distances = thresholds.map(t => ((latestMayer - t) / t) * 100);
           const minDistance = Math.min(...distances.map(Math.abs));
           const heat = Math.max(0, Math.min(100, 100 - (minDistance / 20) * 100));
           setHeatScore(heat);
 
-          // Calculate z-score
-          const values = mayerMultiples.map(item => item.value);
+          const values = mayerMultiples.map(item => Math.max(0, Math.min(100, item.value)));
           const mean = values.reduce((sum, val) => sum + val, 0) / values.length;
           const variance = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length;
           const stdDev = Math.sqrt(variance);
           const z = (latestMayer - thresholds[0]) / stdDev;
           setZScore(z);
+
+          console.log('MayerMultipleWidget Heat Score:', heat);
         }
       }
     }, [btcData]);
@@ -354,17 +390,18 @@ const MarketOverview = () => {
     const backgroundColor = getBackgroundColor(heatScore || 0);
     const textColor = getTextColor(backgroundColor);
     const heatDescription = getHeatDescription(heatScore || 0);
-    const isSignificant = heatScore !== null && heatScore >= 80 && (currentMayer >= 2.4 || currentMayer <= 0.6);
+    const isSignificant = heatScore !== null && heatScore >= 85 && (currentMayer >= 2.4 || currentMayer <= 0.6);
 
     return (
       <Box sx={{
         ...chartBoxStyle(colors, theme),
         backgroundColor: backgroundColor,
         transition: 'background-color 0.3s ease, transform 0.2s ease-in-out',
-        border: isSignificant ? `2px solid ${colors.redAccent[600]}` : 'none',
+        border: isSignificant ? `2px solid ${colors.redAccent[500]}` : 'none',
         padding: '24px',
+        textAlign: 'center',
       }}>
-        <Typography variant="h5" color={textColor} gutterBottom sx={{ fontWeight: 'bold' }}>
+        <Typography variant="h4" color={textColor} gutterBottom sx={{ fontWeight: 'bold' }}>
           Mayer Multiple
         </Typography>
         <Box
@@ -377,20 +414,20 @@ const MarketOverview = () => {
             gap: '8px',
           }}
         >
-          <Typography variant="h6" color={textColor} sx={{ fontWeight: 'bold' }}>
+          <Typography variant="h4" color={textColor} sx={{ fontWeight: 'bold' }}>
             Current: {currentMayer !== null ? currentMayer.toFixed(2) : 'N/A'}
           </Typography>
-          <Typography variant="body2" color={textColor}>
+          <Typography variant="body1" color={textColor}>
             Heat: {heatDescription}
           </Typography>
-          <Typography variant="body2" color={textColor}>
+          <Typography variant="body1" color={textColor}>
             Z-Score: {zScore !== null ? zScore.toFixed(2) : 'N/A'}
           </Typography>
         </Box>
         {isSignificant && (
           <Typography
-            variant="body2"
-            color={colors.redAccent[200]}
+            variant="body1"
+            color={colors.redAccent[500]}
             sx={{ textAlign: 'center', mt: 2, fontWeight: 'bold' }}
           >
             Warning: Market is overheating or severely undervalued.
@@ -417,22 +454,24 @@ const MarketOverview = () => {
       fetchRiskLevel();
     }, []);
 
-    const displayRisk = riskLevel !== null ? (riskLevel * 100).toFixed(2) : 0;
+    const displayRisk = riskLevel !== null ? Math.max(0, Math.min(100, riskLevel * 100)).toFixed(2) : 0;
     const backgroundColor = getBackgroundColor(displayRisk);
     const textColor = getTextColor(backgroundColor);
     const heatDescription = getHeatDescription(displayRisk);
-    const isSignificant = displayRisk > 80;
+    const isSignificant = parseFloat(displayRisk) >= 85;
+
+    console.log('BitcoinRiskWidget Heat Score (displayRisk):', displayRisk);
 
     return (
       <Box sx={{
         ...chartBoxStyle(colors, theme),
         backgroundColor: backgroundColor,
         transition: 'background-color 0.3s ease, transform 0.2s ease-in-out',
-        border: isSignificant ? `2px solid ${colors.redAccent[600]}` : 'none',
+        border: isSignificant ? `2px solid ${colors.redAccent[500]}` : 'none',
         padding: '24px',
         textAlign: 'center',
       }}>
-        <Typography variant="h5" color={textColor} gutterBottom sx={{ fontWeight: 'bold' }}>
+        <Typography variant="h4" color={textColor} gutterBottom sx={{ fontWeight: 'bold' }}>
           Bitcoin Risk Level
         </Typography>
         <Box
@@ -452,23 +491,23 @@ const MarketOverview = () => {
           </Typography>
         </Box>
         <Typography
-          variant="body2"
+          variant="body1"
           color={textColor}
           sx={{ textAlign: 'center', mt: 1 }}
         >
           Heat: {heatDescription}
         </Typography>
         <Typography
-          variant="body2"
+          variant="body1"
           color={textColor}
           sx={{ textAlign: 'center', mt: 1 }}
         >
-          {displayRisk <= 20 ? 'Low Risk' : displayRisk <= 60 ? 'Medium Risk' : 'High Risk'}
+          {parseFloat(displayRisk) <= 30 ? 'Low Risk' : parseFloat(displayRisk) <= 70 ? 'Medium Risk' : 'High Risk'}
         </Typography>
         {isSignificant && (
           <Typography
-            variant="body2"
-            color={colors.redAccent[200]}
+            variant="body1"
+            color={colors.redAccent[500]}
             sx={{ textAlign: 'center', mt: 2, fontWeight: 'bold' }}
           >
             Warning: High market risk.
@@ -480,33 +519,37 @@ const MarketOverview = () => {
 
   // Fear and Greed Gauge
   const FearAndGreedGauge = memo(() => {
-    const latestValue = fearAndGreedData && fearAndGreedData.length > 0 ? fearAndGreedData[fearAndGreedData.length - 1].value : 0;
+    const latestValueRaw = fearAndGreedData && fearAndGreedData.length > 0 ? fearAndGreedData[fearAndGreedData.length - 1].value : 0;
+    const latestValue = Math.max(0, Math.min(100, latestValueRaw));
     const backgroundColor = getBackgroundColor(latestValue);
     const textColor = getTextColor(backgroundColor);
     const heatDescription = getHeatDescription(latestValue);
-    const isSignificant = latestValue > 80;
+    const isSignificant = latestValue >= 85;
+
+    console.log('FearAndGreedGauge Heat Score (latestValue):', latestValue);
 
     return (
       <Box sx={{
         ...chartBoxStyle(colors, theme),
         backgroundColor: backgroundColor,
         transition: 'background-color 0.3s ease, transform 0.2s ease-in-out',
-        border: isSignificant ? `2px solid ${colors.redAccent[600]}` : 'none',
+        border: isSignificant ? `2px solid ${colors.redAccent[500]}` : 'none',
         padding: '24px',
+        textAlign: 'center',
       }}>
-        <Typography variant="h5" color={textColor} gutterBottom sx={{ fontWeight: 'bold' }}>
+        <Typography variant="h4" color={textColor} gutterBottom sx={{ fontWeight: 'bold' }}>
           Fear and Greed Index
         </Typography>
         <FearAndGreed3D backgroundColor={backgroundColor} />
         <Typography
-          variant="body2"
+          variant="body1"
           color={textColor}
           sx={{ textAlign: 'center', mt: 1 }}
         >
           Current: {latestValue}
         </Typography>
         <Typography
-          variant="body2"
+          variant="body1"
           color={textColor}
           sx={{ textAlign: 'center', mt: 1 }}
         >
@@ -514,8 +557,8 @@ const MarketOverview = () => {
         </Typography>
         {isSignificant && (
           <Typography
-            variant="body2"
-            color={colors.redAccent[200]}
+            variant="body1"
+            color={colors.redAccent[500]}
             sx={{ textAlign: 'center', mt: 2, fontWeight: 'bold' }}
           >
             Warning: Extreme market greed.
@@ -525,50 +568,191 @@ const MarketOverview = () => {
     );
   });
 
-  // Market Heat Gauge Widget
-  const MarketHeatGaugeWidget = memo(() => {
+  // PiCycle Top Widget
+  const PiCycleTopWidget = memo(() => {
+    const [currentRatio, setCurrentRatio] = useState(null);
+    const [predictedPeak, setPredictedPeak] = useState(null);
     const [heatScore, setHeatScore] = useState(null);
 
     useEffect(() => {
-      if (mvrvData && mvrvData.length > 0 && btcData && btcData.length > 200 && fearAndGreedData && fearAndGreedData.length > 0) {
+      if (btcData && btcData.length > 350) {
+        const ratioData = calculateRatioSeries(btcData);
+        const latestRatioRaw = ratioData[ratioData.length - 1]?.value;
+        const latestRatio = latestRatioRaw ? Math.max(0, Math.min(100, latestRatioRaw)) : 0;
+        setCurrentRatio(latestRatio);
+
+        const historicalPeaks = [
+          { date: '2017-12-17', ratio: 1.05, timestamp: Date.parse('2017-12-17') },
+          { date: '2021-04-12', ratio: 1.00, timestamp: Date.parse('2021-04-12') },
+        ];
+        const targetDate = Date.parse('2025-10-13');
+        const t1 = historicalPeaks[0].timestamp;
+        const t2 = historicalPeaks[1].timestamp;
+        const y1 = historicalPeaks[0].ratio;
+        const y2 = historicalPeaks[1].ratio;
+        const m = (y2 - y1) / (t2 - t1);
+        const b = y1 - m * t1;
+        const predictedRatio = m * targetDate + b;
+        setPredictedPeak(predictedRatio);
+
+        if (latestRatio && predictedRatio) {
+          const buffer = 1.0;
+          const minRatio = 0; // Adjusted to meet requirements
+          const heatOffset = 0.28; // Offset to achieve minimum heat of ~0.28
+          const heat = Math.max(0, Math.min(100, (((latestRatio - minRatio) / buffer) * 100) + heatOffset));
+          setHeatScore(heat);
+
+          console.log('PiCycleTopWidget Heat Score:', heat);
+        }
+      }
+    }, [btcData]);
+
+    const backgroundColor = getBackgroundColor(heatScore || 0);
+    const textColor = getTextColor(backgroundColor);
+    const heatDescription = getHeatDescription(heatScore || 0);
+    const isSignificant = heatScore !== null && heatScore >= 85;
+
+    return (
+      <Box sx={{
+        ...chartBoxStyle(colors, theme),
+        backgroundColor: backgroundColor,
+        transition: 'background-color 0.3s ease, transform 0.2s ease-in-out',
+        border: isSignificant ? `2px solid ${colors.redAccent[500]}` : 'none',
+        padding: '24px',
+        textAlign: 'center',
+      }}>
+        <Typography variant="h4" color={textColor} gutterBottom sx={{ fontWeight: 'bold' }}>
+          PiCycle Top Indicator
+        </Typography>
+        <Box
+          sx={{
+            flexGrow: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+          }}
+        >
+          <Typography variant="h4" color={textColor} sx={{ fontWeight: 'bold' }}>
+            Current Ratio: {currentRatio !== null ? currentRatio.toFixed(4) : 'N/A'}
+          </Typography>
+          <Typography variant="h4" color={textColor} sx={{ fontWeight: 'bold' }}>
+            Predicted Peak: {predictedPeak !== null ? predictedPeak.toFixed(4) : 'N/A'} {/* october 13 2025  */}
+          </Typography>
+          <Typography variant="body1" color={textColor}>
+            Heat: {heatDescription}
+          </Typography>
+        </Box>
+        {isSignificant && (
+          <Typography
+            variant="body1"
+            color={colors.redAccent[500]}
+            sx={{ textAlign: 'center', mt: 2, fontWeight: 'bold' }}
+          >
+            Warning: Market approaching cycle top.
+          </Typography>
+        )}
+      </Box>
+    );
+  });
+
+  // Market Heat Gauge Widget
+  const MarketHeatGaugeWidget = memo(() => {
+    const [heatScore, setHeatScore] = useState(null);
+    const [debugScores, setDebugScores] = useState({});
+    const [debugInputs, setDebugInputs] = useState({});
+
+    useEffect(() => {
+      if (mvrvData?.length > 0 && btcData?.length > 350 && fearAndGreedData?.length > 0) {
         // MVRV Heat
-        const latestMvrv = mvrvData[mvrvData.length - 1].value;
+        const latestMvrvRaw = mvrvData[mvrvData.length - 1].value;
+        const latestMvrv = Math.max(0, Math.min(10000, latestMvrvRaw));
         const { projectedPeak } = calculateMvrvPeakProjection(mvrvData);
         let mvrvHeat = 0;
         if (latestMvrv && projectedPeak) {
-          const thresholds = [projectedPeak, 3.7];
+          const cappedProjectedPeak = Math.max(0, Math.min(10000, projectedPeak));
+          const thresholds = [cappedProjectedPeak, 3.7];
           const distances = thresholds.map(t => ((latestMvrv - t) / t) * 100);
           const minDistance = Math.min(...distances.map(Math.abs));
-          mvrvHeat = Math.max(0, Math.min(100, 100 - (minDistance / 20) * 100));
+          mvrvHeat = Math.max(0, Math.min(100, 100 - (minDistance / 10) * 100));
         }
 
         // Mayer Multiple Heat
         const mayerMultiples = calculateMayerMultiple(btcData);
-        const latestMayer = mayerMultiples[mayerMultiples.length - 1].value;
+        const latestMayerRaw = mayerMultiples[mayerMultiples.length - 1]?.value;
+        const latestMayer = latestMayerRaw ? Math.max(0, Math.min(100, latestMayerRaw)) : 0;
         let mayerHeat = 0;
         if (latestMayer) {
           const thresholds = [2.4, 0.6];
           const distances = thresholds.map(t => ((latestMayer - t) / t) * 100);
           const minDistance = Math.min(...distances.map(Math.abs));
-          mayerHeat = Math.max(0, Math.min(100, 100 - (minDistance / 20) * 100));
+          mayerHeat = Math.max(0, Math.min(100, 100 - (minDistance / 10) * 100));
         }
 
         // Bitcoin Risk Heat
         let riskHeat = 0;
+        let riskData = null;
         const fetchRisk = async () => {
           try {
-            const riskData = await getBitcoinRisk();
-            riskHeat = riskData && riskData.riskLevel !== undefined ? riskData.riskLevel * 100 : 0;
-          } catch {
+            riskData = await getBitcoinRisk();
+            riskHeat = riskData && riskData.riskLevel !== undefined ? Math.min(100, riskData.riskLevel * 100) : 0;
+          } catch (error) {
+            console.error('Error fetching risk:', error);
             riskHeat = 0;
           }
-          // Fear and Greed Heat
-          const fearGreedValue = fearAndGreedData[fearAndGreedData.length - 1].value;
 
-          // Average heat score
-          const scores = [mvrvHeat, mayerHeat, riskHeat, fearGreedValue].filter(v => v !== null);
-          const avgHeat = scores.length > 0 ? scores.reduce((sum, val) => sum + val, 0) / scores.length : 0;
+          // Fear and Greed Heat
+          const fearGreedValueRaw = fearAndGreedData[fearAndGreedData.length - 1].value;
+          const fearGreedValue = Math.max(0, Math.min(100, fearGreedValueRaw));
+
+          // PiCycle Top Heat
+          const ratioData = calculateRatioSeries(btcData);
+          const latestRatioRaw = ratioData[ratioData.length - 1]?.value;
+          const latestRatio = latestRatioRaw ? Math.max(0, Math.min(100, latestRatioRaw)) : 0;
+          let piCycleHeat = 0;
+          if (latestRatio) {
+            const buffer = 1.0;
+            const minRatio = 0;
+            const heatOffset = 0.28;
+            piCycleHeat = Math.max(0, Math.min(100, (((latestRatio - minRatio) / buffer) * 100) + heatOffset));
+          }
+
+          const inputs = {
+            latestMvrv: latestMvrvRaw,
+            projectedPeak: projectedPeak,
+            latestMayer: latestMayerRaw,
+            riskLevel: riskData?.riskLevel,
+            fearGreedValue: fearGreedValueRaw,
+            latestRatio: latestRatioRaw,
+          };
+          setDebugInputs(inputs);
+          console.log('Raw Inputs:', inputs);
+
+          const scores = {
+            mvrv: mvrvHeat,
+            mayer: mayerHeat,
+            risk: riskHeat,
+            fearGreed: fearGreedValue,
+            piCycle: piCycleHeat,
+          };
+          const weights = {
+            mvrv: 0.25,
+            mayer: 0.25,
+            risk: 0.15,
+            fearGreed: 0.20,
+            piCycle: 0.15,
+          };
+          const weightedSum = Object.keys(scores).reduce((sum, key) => {
+            const score = scores[key] || 0;
+            return sum + score * weights[key];
+          }, 0);
+          const avgHeat = Math.max(0, Math.min(100, weightedSum));
+
+          setDebugScores(scores);
           setHeatScore(avgHeat);
+
+          console.log('MarketHeatGaugeWidget Heat Scores:', scores, 'Average:', avgHeat);
         };
         fetchRisk();
       }
@@ -577,17 +761,30 @@ const MarketOverview = () => {
     const backgroundColor = getBackgroundColor(heatScore || 0);
     const textColor = getTextColor(backgroundColor);
     const heatDescription = getHeatDescription(heatScore || 0);
-    const isSignificant = heatScore !== null && heatScore >= 80;
+    const isSignificant = heatScore !== null && heatScore >= 85;
+
+    const getGaugeColor = (value) => {
+      const startColor = { r: 255, g: 255, b: 255 }; // White
+      const endColor = { r: 128, g: 0, b: 128 }; // Purple
+      const ratio = (value || 0) / 100;
+      const r = Math.round(startColor.r + (endColor.r - startColor.r) * ratio);
+      const g = Math.round(startColor.g + (endColor.g - startColor.g) * ratio);
+      const b = Math.round(startColor.b + (endColor.b - startColor.b) * ratio);
+      return `rgb(${r}, ${g}, ${b})`;
+    };
+
+    const gaugeColor = getGaugeColor(heatScore);
 
     return (
       <Box sx={{
         ...chartBoxStyle(colors, theme),
         backgroundColor: backgroundColor,
         transition: 'background-color 0.3s ease, transform 0.2s ease-in-out',
-        border: isSignificant ? `2px solid ${colors.redAccent[600]}` : 'none',
+        border: isSignificant ? `2px solid ${colors.redAccent[500]}` : 'none',
         padding: '24px',
+        textAlign: 'center',
       }}>
-        <Typography variant="h5" color={textColor} gutterBottom sx={{ fontWeight: 'bold' }}>
+        <Typography variant="h4" color={textColor} gutterBottom sx={{ fontWeight: 'bold' }}>
           Market Heat Gauge
         </Typography>
         <Box sx={{ width: '100%', mt: 2 }}>
@@ -599,19 +796,19 @@ const MarketOverview = () => {
               borderRadius: 5,
               backgroundColor: colors.grey[theme.palette.mode === 'dark' ? 700 : 300],
               '& .MuiLinearProgress-bar': {
-                backgroundColor: backgroundColor,
+                backgroundColor: gaugeColor,
               },
             }}
           />
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
-            <Typography variant="body2" color={textColor}>0 (Cold)</Typography>
-            <Typography variant="body2" color={textColor}>
+            <Typography variant="body1" color={textColor}>0 (Cold)</Typography>
+            <Typography variant="body1" color={textColor}>
               {heatScore !== null ? heatScore.toFixed(0) : 'N/A'}
             </Typography>
-            <Typography variant="body2" color={textColor}>100 (Hot)</Typography>
+            <Typography variant="body1" color={textColor}>100 (Hot)</Typography>
           </Box>
           <Typography
-            variant="body2"
+            variant="body1"
             color={textColor}
             sx={{ textAlign: 'center', mt: 1 }}
           >
@@ -620,8 +817,8 @@ const MarketOverview = () => {
         </Box>
         {isSignificant && (
           <Typography
-            variant="body2"
-            color={colors.redAccent[200]}
+            variant="body1"
+            color={colors.redAccent[500]}
             sx={{ textAlign: 'center', mt: 2, fontWeight: 'bold' }}
           >
             Warning: Market is significantly overheated.
@@ -634,7 +831,7 @@ const MarketOverview = () => {
   // Chart components
   const BitcoinPriceChart = memo(() => (
     <Box sx={chartBoxStyle(colors, theme)}>
-      <Typography variant="h6" color={colors.grey[100]} gutterBottom>
+      <Typography variant="h4" color={colors.grey[100]} gutterBottom>
         Bitcoin Price
       </Typography>
       <ResponsiveContainer width="100%" height="100%">
@@ -655,7 +852,7 @@ const MarketOverview = () => {
 
   const EthereumPriceChart = memo(() => (
     <Box sx={chartBoxStyle(colors, theme)}>
-      <Typography variant="h6" color={colors.grey[100]} gutterBottom>
+      <Typography variant="h4" color={colors.grey[100]} gutterBottom>
         Ethereum Price
       </Typography>
       <ResponsiveContainer width="100%" height="100%">
@@ -676,7 +873,7 @@ const MarketOverview = () => {
 
   const InflationChart = memo(() => (
     <Box sx={chartBoxStyle(colors, theme)}>
-      <Typography variant="h6" color={colors.grey[100]} gutterBottom>
+      <Typography variant="h4" color={colors.grey[100]} gutterBottom>
         US Inflation
       </Typography>
       <ResponsiveContainer width="100%" height="100%">
@@ -709,7 +906,7 @@ const MarketOverview = () => {
 
   const MarketCapChart = memo(() => (
     <Box sx={chartBoxStyle(colors, theme)}>
-      <Typography variant="h6" color={colors.grey[100]} gutterBottom>
+      <Typography variant="h4" color={colors.grey[100]} gutterBottom>
         Total Market Cap
       </Typography>
       <ResponsiveContainer width="100%" height="100%">
@@ -765,6 +962,7 @@ const MarketOverview = () => {
         backgroundColor: colors.primary[500],
         minHeight: '100vh',
         width: '100%',
+        textAlign: 'center',
       }}
     >
       <Typography
@@ -775,7 +973,7 @@ const MarketOverview = () => {
       >
         Market Overview
       </Typography>
-      <Box sx={{ width: '100%', maxWidth: 1400, margin: '0 auto' }}>
+      <Box sx={{ width: '100%', maxWidth: 1440, margin: '0 auto' }}>
         {/* Price Section */}
         <Typography
           variant="h5"
@@ -863,13 +1061,13 @@ const MarketOverview = () => {
           </div>
         </ResponsiveGridLayout>
 
-        {/* On Chain Section */}
+        {/* Performance Section */}
         <Typography
           variant="h5"
           color={colors.grey[100]}
           sx={{ fontWeight: 'bold', margin: '24px 0 16px' }}
         >
-          On Chain
+          Performance
         </Typography>
         <ResponsiveGridLayout
           className="layout"
@@ -888,7 +1086,7 @@ const MarketOverview = () => {
           <div key="bitcoinRisk">
             <BitcoinRiskWidget />
           </div>
-          <div key="mvrvRatio">
+          <div key="mvrv">
             <MvrvRatioWidget />
           </div>
           <div key="mayerMultiple">
@@ -896,6 +1094,9 @@ const MarketOverview = () => {
           </div>
           <div key="marketHeat">
             <MarketHeatGaugeWidget />
+          </div>
+          <div key="piCycleTop">
+            <PiCycleTopWidget />
           </div>
         </ResponsiveGridLayout>
       </Box>
