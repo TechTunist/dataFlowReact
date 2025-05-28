@@ -43,6 +43,8 @@ const MarketOverview = () => {
     fetchMarketCapData,
     mvrvData,
     fetchMvrvData,
+    altcoinSeasonData,
+    fetchAltcoinSeasonData,
   } = useContext(DataContext);
 
   // Define breakpoints and columns for different screen sizes
@@ -126,11 +128,20 @@ const MarketOverview = () => {
     ],
   };
 
+  // Altcoin Season layout
+  const altcoinSeasonLayouts = {
+    lg: [{ i: 'altcoinSeason', x: 0, y: 0, w: 12, h: 2, minW: 4, minH: 2 }],
+    md: [{ i: 'altcoinSeason', x: 0, y: 0, w: 8, h: 2, minW: 4, minH: 2 }],
+    sm: [{ i: 'altcoinSeason', x: 0, y: 0, w: 6, h: 2, minW: 4, minH: 2 }],
+    xs: [{ i: 'altcoinSeason', x: 0, y: 0, w: 4, h: 2, minW: 4, minH: 2 }],
+  };
+
   // State for grid layouts
   const [priceLayout, setPriceLayout] = useState(priceLayouts);
   const [indicatorsLayout, setIndicatorsLayout] = useState(indicatorsLayouts);
   const [sentimentLayout, setSentimentLayout] = useState(sentimentLayouts);
   const [onChainLayout, setOnChainLayout] = useState(onChainLayouts);
+  const [altcoinSeasonLayout, setAltcoinSeasonLayout] = useState(altcoinSeasonLayouts);
 
   useEffect(() => {
     console.log('MarketOverview mounted');
@@ -145,7 +156,16 @@ const MarketOverview = () => {
     fetchInflationData();
     fetchMarketCapData();
     fetchMvrvData();
-  }, [fetchBtcData, fetchEthData, fetchFearAndGreedData, fetchInflationData, fetchMarketCapData, fetchMvrvData]);
+    fetchAltcoinSeasonData();
+  }, [
+    fetchBtcData,
+    fetchEthData,
+    fetchFearAndGreedData,
+    fetchInflationData,
+    fetchMarketCapData,
+    fetchMvrvData,
+    fetchAltcoinSeasonData,
+  ]);
 
   // Responsive row height and margin
   const rowHeight = isMobile ? 100 : 120;
@@ -264,6 +284,110 @@ const MarketOverview = () => {
       ? (theme.palette.mode === 'dark' ? colors.grey[900] : colors.grey[100])
       : (theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900]);
   };
+
+  // Altcoin Season Widget
+  const AltcoinSeasonWidget = memo(() => {
+    const [heatScore, setHeatScore] = useState(null);
+    const [currentIndex, setCurrentIndex] = useState(null);
+
+    useEffect(() => {
+      if (altcoinSeasonData && altcoinSeasonData.index !== undefined) {
+        const indexValue = Math.max(0, Math.min(100, altcoinSeasonData.index));
+        setCurrentIndex(indexValue);
+
+        // Heat score calculation: direct mapping of index (0-100) to heat score
+        const heat = indexValue;
+        setHeatScore(heat);
+
+        console.log('AltcoinSeasonWidget Heat Score:', heat);
+      }
+    }, [altcoinSeasonData]);
+
+    const backgroundColor = getBackgroundColor(heatScore || 0);
+    const textColor = getTextColor(backgroundColor);
+    const heatDescription = getHeatDescription(heatScore || 0);
+    const isSignificant = heatScore !== null && heatScore >= 85;
+
+    const getGaugeColor = (value) => {
+      const startColor = { r: 255, g: 255, b: 255 }; // White
+      const endColor = { r: 128, g: 0, b: 128 }; // Purple
+      const ratio = (value || 0) / 100;
+      const r = Math.round(startColor.r + (endColor.r - startColor.r) * ratio);
+      const g = Math.round(startColor.g + (endColor.g - startColor.g) * ratio);
+      const b = Math.round(startColor.b + (endColor.b - startColor.b) * ratio);
+      return `rgb(${r}, ${g}, ${b})`;
+    };
+
+    const gaugeColor = getGaugeColor(heatScore);
+
+    return (
+      <Box
+        sx={{
+          ...chartBoxStyle(colors, theme),
+          backgroundColor: backgroundColor,
+          transition: 'background-color 0.3s ease, transform 0.2s ease-in-out',
+          border: isSignificant ? `2px solid ${colors.redAccent[500]}` : 'none',
+          padding: '24px',
+          textAlign: 'center',
+        }}
+      >
+        <Typography variant="h4" color={textColor} gutterBottom sx={{ fontWeight: 'bold' }}>
+          Altcoin Season Index
+        </Typography>
+        <Box sx={{ width: '100%', mt: 2 }}>
+          <LinearProgress
+            variant="determinate"
+            value={heatScore || 0}
+            sx={{
+              height: 10,
+              borderRadius: 5,
+              backgroundColor: colors.grey[theme.palette.mode === 'dark' ? 700 : 300],
+              '& .MuiLinearProgress-bar': {
+                backgroundColor: gaugeColor,
+              },
+            }}
+          />
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
+            <Typography variant="body1" color={textColor}>0 (Bitcoin Season)</Typography>
+            <Typography variant="body1" color={textColor}>
+              {currentIndex !== null ? currentIndex.toFixed(0) : 'N/A'}
+            </Typography>
+            <Typography variant="body1" color={textColor}>100 (Altcoin Season)</Typography>
+          </Box>
+          <Typography
+            variant="body1"
+            color={textColor}
+            sx={{ textAlign: 'center', mt: 1 }}
+          >
+            Heat: {heatDescription}
+          </Typography>
+          <Typography
+            variant="body1"
+            color={textColor}
+            sx={{ textAlign: 'center', mt: 1 }}
+          >
+            Season: {altcoinSeasonData.season || 'N/A'}
+          </Typography>
+          <Typography
+            variant="body1"
+            color={textColor}
+            sx={{ textAlign: 'center', mt: 1 }}
+          >
+            Outperforming: {altcoinSeasonData.altcoins_outperforming || 0}/{altcoinSeasonData.altcoin_count || 0}
+          </Typography>
+        </Box>
+        {isSignificant && (
+          <Typography
+            variant="body1"
+            color={colors.redAccent[500]}
+            sx={{ textAlign: 'center', mt: 2, fontWeight: 'bold' }}
+          >
+            Warning: Strong Altcoin Season detected.
+          </Typography>
+        )}
+      </Box>
+    );
+  });
 
   // MVRV Ratio Widget
   const MvrvRatioWidget = memo(() => {
@@ -568,94 +692,94 @@ const MarketOverview = () => {
     );
   });
 
-  // PiCycle Top Widget
-  const PiCycleTopWidget = memo(() => {
-    const [currentRatio, setCurrentRatio] = useState(null);
-    const [predictedPeak, setPredictedPeak] = useState(null);
-    const [heatScore, setHeatScore] = useState(null);
-
-    useEffect(() => {
-      if (btcData && btcData.length > 350) {
-        const ratioData = calculateRatioSeries(btcData);
-        const latestRatioRaw = ratioData[ratioData.length - 1]?.value;
-        const latestRatio = latestRatioRaw ? Math.max(0, Math.min(100, latestRatioRaw)) : 0;
-        setCurrentRatio(latestRatio);
-
-        const historicalPeaks = [
-          { date: '2017-12-17', ratio: 1.05, timestamp: Date.parse('2017-12-17') },
-          { date: '2021-04-12', ratio: 1.00, timestamp: Date.parse('2021-04-12') },
-        ];
-        const targetDate = Date.parse('2025-10-13');
-        const t1 = historicalPeaks[0].timestamp;
-        const t2 = historicalPeaks[1].timestamp;
-        const y1 = historicalPeaks[0].ratio;
-        const y2 = historicalPeaks[1].ratio;
-        const m = (y2 - y1) / (t2 - t1);
-        const b = y1 - m * t1;
-        const predictedRatio = m * targetDate + b;
-        setPredictedPeak(predictedRatio);
-
-        if (latestRatio && predictedRatio) {
-          const buffer = 1.0;
-          const minRatio = 0; // Adjusted to meet requirements
-          const heatOffset = 0.28; // Offset to achieve minimum heat of ~0.28
-          const heat = Math.max(0, Math.min(100, (((latestRatio - minRatio) / buffer) * 100) + heatOffset));
-          setHeatScore(heat);
-
-          console.log('PiCycleTopWidget Heat Score:', heat);
+    // PiCycle Top Widget
+    const PiCycleTopWidget = memo(() => {
+      const [currentRatio, setCurrentRatio] = useState(null);
+      const [predictedPeak, setPredictedPeak] = useState(null);
+      const [heatScore, setHeatScore] = useState(null);
+  
+      useEffect(() => {
+        if (btcData && btcData.length > 350) {
+          const ratioData = calculateRatioSeries(btcData);
+          const latestRatioRaw = ratioData[ratioData.length - 1]?.value;
+          const latestRatio = latestRatioRaw ? Math.max(0, Math.min(100, latestRatioRaw)) : 0;
+          setCurrentRatio(latestRatio);
+  
+          const historicalPeaks = [
+            { date: '2017-12-17', ratio: 1.05, timestamp: Date.parse('2017-12-17') },
+            { date: '2021-04-12', ratio: 1.00, timestamp: Date.parse('2021-04-12') },
+          ];
+          const targetDate = Date.parse('2025-10-13');
+          const t1 = historicalPeaks[0].timestamp;
+          const t2 = historicalPeaks[1].timestamp;
+          const y1 = historicalPeaks[0].ratio;
+          const y2 = historicalPeaks[1].ratio;
+          const m = (y2 - y1) / (t2 - t1);
+          const b = y1 - m * t1;
+          const predictedRatio = m * targetDate + b;
+          setPredictedPeak(predictedRatio);
+  
+          if (latestRatio && predictedRatio) {
+            const buffer = 1.0;
+            const minRatio = 0; // Adjusted to meet requirements
+            const heatOffset = 0.28; // Offset to achieve minimum heat of ~0.28
+            const heat = Math.max(0, Math.min(100, (((latestRatio - minRatio) / buffer) * 100) + heatOffset));
+            setHeatScore(heat);
+  
+            console.log('PiCycleTopWidget Heat Score:', heat);
+          }
         }
-      }
-    }, [btcData]);
-
-    const backgroundColor = getBackgroundColor(heatScore || 0);
-    const textColor = getTextColor(backgroundColor);
-    const heatDescription = getHeatDescription(heatScore || 0);
-    const isSignificant = heatScore !== null && heatScore >= 85;
-
-    return (
-      <Box sx={{
-        ...chartBoxStyle(colors, theme),
-        backgroundColor: backgroundColor,
-        transition: 'background-color 0.3s ease, transform 0.2s ease-in-out',
-        border: isSignificant ? `2px solid ${colors.redAccent[500]}` : 'none',
-        padding: '24px',
-        textAlign: 'center',
-      }}>
-        <Typography variant="h4" color={textColor} gutterBottom sx={{ fontWeight: 'bold' }}>
-          PiCycle Top Indicator
-        </Typography>
-        <Box
-          sx={{
-            flexGrow: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px',
-          }}
-        >
-          <Typography variant="h4" color={textColor} sx={{ fontWeight: 'bold' }}>
-            Current Ratio: {currentRatio !== null ? currentRatio.toFixed(4) : 'N/A'}
+      }, [btcData]);
+  
+      const backgroundColor = getBackgroundColor(heatScore || 0);
+      const textColor = getTextColor(backgroundColor);
+      const heatDescription = getHeatDescription(heatScore || 0);
+      const isSignificant = heatScore !== null && heatScore >= 85;
+  
+      return (
+        <Box sx={{
+          ...chartBoxStyle(colors, theme),
+          backgroundColor: backgroundColor,
+          transition: 'background-color 0.3s ease, transform 0.2s ease-in-out',
+          border: isSignificant ? `2px solid ${colors.redAccent[500]}` : 'none',
+          padding: '24px',
+          textAlign: 'center',
+        }}>
+          <Typography variant="h4" color={textColor} gutterBottom sx={{ fontWeight: 'bold' }}>
+            PiCycle Top Indicator
           </Typography>
-          <Typography variant="h4" color={textColor} sx={{ fontWeight: 'bold' }}>
-            Predicted Peak: {predictedPeak !== null ? predictedPeak.toFixed(4) : 'N/A'} {/* october 13 2025  */}
-          </Typography>
-          <Typography variant="body1" color={textColor}>
-            Heat: {heatDescription}
-          </Typography>
-        </Box>
-        {isSignificant && (
-          <Typography
-            variant="body1"
-            color={colors.redAccent[500]}
-            sx={{ textAlign: 'center', mt: 2, fontWeight: 'bold' }}
+          <Box
+            sx={{
+              flexGrow: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+            }}
           >
-            Warning: Market approaching cycle top.
-          </Typography>
-        )}
-      </Box>
-    );
-  });
+            <Typography variant="h4" color={textColor} sx={{ fontWeight: 'bold' }}>
+              Current Ratio: {currentRatio !== null ? currentRatio.toFixed(4) : 'N/A'}
+            </Typography>
+            <Typography variant="h4" color={textColor} sx={{ fontWeight: 'bold' }}>
+              Predicted Peak: {predictedPeak !== null ? predictedPeak.toFixed(4) : 'N/A'} {/* october 13 2025  */}
+            </Typography>
+            <Typography variant="body1" color={textColor}>
+              Heat: {heatDescription}
+            </Typography>
+          </Box>
+          {isSignificant && (
+            <Typography
+              variant="body1"
+              color={colors.redAccent[500]}
+              sx={{ textAlign: 'center', mt: 2, fontWeight: 'bold' }}
+            >
+              Warning: Market approaching cycle top.
+            </Typography>
+          )}
+        </Box>
+      );
+    });
 
   // Market Heat Gauge Widget
   const MarketHeatGaugeWidget = memo(() => {
@@ -712,7 +836,7 @@ const MarketOverview = () => {
           const latestRatio = latestRatioRaw ? Math.max(0, Math.min(100, latestRatioRaw)) : 0;
           let piCycleHeat = 0;
           if (latestRatio) {
-            const buffer = 1.0;
+            const buffer = 0.5;
             const minRatio = 0;
             const heatOffset = 0.28;
             piCycleHeat = Math.max(0, Math.min(100, (((latestRatio - minRatio) / buffer) * 100) + heatOffset));
@@ -752,7 +876,7 @@ const MarketOverview = () => {
           setDebugScores(scores);
           setHeatScore(avgHeat);
 
-          console.log('MarketHeatGaugeWidget Heat Scores:', scores, 'Average:', avgHeat);
+          console.log('MarketHeatGaugeWidget Scores:', scores, 'Average:', avgHeat);
         };
         fetchRisk();
       }
@@ -1097,6 +1221,33 @@ const MarketOverview = () => {
           </div>
           <div key="piCycleTop">
             <PiCycleTopWidget />
+          </div>
+        </ResponsiveGridLayout>
+
+        {/* Altcoin Season Section */}
+        <Typography
+          variant="h5"
+          color={colors.grey[100]}
+          sx={{ fontWeight: 'bold', margin: '24px 0 16px' }}
+        >
+          Altcoin Season
+        </Typography>
+        <ResponsiveGridLayout
+          className="layout"
+          layouts={altcoinSeasonLayout}
+          breakpoints={breakpoints}
+          cols={cols}
+          rowHeight={rowHeight}
+          onLayoutChange={(layout, allLayouts) => setAltcoinSeasonLayout(allLayouts)}
+          isDraggable
+          isResizable
+          compactType="vertical"
+          margin={margin}
+          containerPadding={[0, 0]}
+          style={{ width: '100%' }}
+        >
+          <div key="altcoinSeason">
+            <AltcoinSeasonWidget />
           </div>
         </ResponsiveGridLayout>
       </Box>

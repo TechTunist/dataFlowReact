@@ -22,7 +22,7 @@ import TimerIcon from "@mui/icons-material/Timer";
 import MultilineChartIcon from "@mui/icons-material/MultilineChart";
 import RepeatIcon from "@mui/icons-material/Repeat";
 import BalanceIcon from "@mui/icons-material/Balance";
-import AddShoppingCartIcon from "@mui/icons-material/AddShoppingCart";
+import AddShoppingCart from "@mui/icons-material/AddShoppingCart";
 import FitbitIcon from "@mui/icons-material/Fitbit";
 import CategoryIcon from "@mui/icons-material/Category";
 import XIcon from "@mui/icons-material/X";
@@ -32,7 +32,7 @@ import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import useIsMobile from "../../hooks/useIsMobile";
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
-import CandlestickChartIcon from '@mui/icons-material/CandlestickChart';
+import CandlestickChart from '@mui/icons-material/CandlestickChart';
 import WarningIcon from '@mui/icons-material/Warning';
 import CurrencyExchangeIcon from '@mui/icons-material/CurrencyExchange';
 import OilBarrelIcon from '@mui/icons-material/OilBarrel';
@@ -45,14 +45,16 @@ import ReportIcon from '@mui/icons-material/Report';
 import ConstructionIcon from '@mui/icons-material/Construction';
 import HomeIcon from '@mui/icons-material/Home';
 
-
-const Item = ({ title, to, icon, selected, setSelected, isNested, onClick }) => {
+const Item = ({ title, to, icon, selected, setSelected, isNested, onClick, isProminent = false }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   return (
     <MenuItem
       active={selected === title}
-      style={{ color: colors.grey[100] }}
+      style={{
+        color: isProminent ? colors.greenAccent[500] : colors.grey[100],
+        padding: '5px 0px 5px 0px', // Reduced left/right padding, increased top/bottom for breathing room
+      }}
       onClick={() => {
         setSelected(title);
         if (onClick) onClick();
@@ -60,7 +62,31 @@ const Item = ({ title, to, icon, selected, setSelected, isNested, onClick }) => 
       icon={icon}
     >
       <Link to={to} style={{ textDecoration: "none", color: "inherit" }}>
-        <Typography variant={isNested ? "body1" : "h6"}>{title}</Typography>
+        <Typography
+          variant={isNested ? "body1" : "h6"}
+          sx={{
+            fontWeight: isProminent ? 'bold' : 'normal',
+            position: 'relative',
+            // Enable text wrapping
+            whiteSpace: 'normal', // Allow text to wrap
+            wordBreak: 'break-word', // Break long words if necessary
+            maxWidth: 'calc(100% - 40px)', // Account for icon and padding (270px sidebar - 35px left padding - 20px right padding - ~40px for icon)
+            overflow: 'hidden', // Prevent overflow
+            '&:after': isProminent
+              ? {
+                  content: '""',
+                  position: 'absolute',
+                  width: '50%',
+                  height: '2px',
+                  bottom: '-2px',
+                  left: 0,
+                  backgroundColor: colors.greenAccent[500],
+                }
+              : {},
+          }}
+        >
+          {title}
+        </Typography>
       </Link>
     </MenuItem>
   );
@@ -96,15 +122,15 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
     { title: "Market Cycles", to: "/market-cycles", category: "Bitcoin", icon: <RepeatIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
     { title: "Bitcoin ROI", to: "/bitcoin-roi", category: "Bitcoin", icon: <AttachMoneyIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
     { title: "Fear and Greed Chart", to: "/fear-and-greed-chart", category: "Indicators", icon: <BalanceIcon />, categoryIcon: <CategoryIcon /> },
-    { title: "US Inflation Chart", to: "/us-inflation", category: "MacroEconomics", icon: <AddShoppingCartIcon />, categoryIcon: <CategoryIcon /> },
+    { title: "US Inflation Chart", to: "/us-inflation", category: "MacroEconomics", icon: <AddShoppingCart />, categoryIcon: <CategoryIcon /> },
     { title: "US Unemployment Chart", to: "/us-unemployment", category: "MacroEconomics", icon: <SentimentVeryDissatisfiedIcon />, categoryIcon: <CategoryIcon /> },
     { title: "US Interest Rate Chart", to: "/us-interest", category: "MacroEconomics", icon: <BalanceIcon />, categoryIcon: <CategoryIcon /> },
     { title: "US Macro Information Chart", to: "/us-combined-macro", category: "MacroEconomics", icon: <MultilineChartIcon />, categoryIcon: <CategoryIcon /> },
     { title: "US Macro and BTC Tx Count", to: "/tx-combined", category: "MacroEconomics", icon: <BarChartIcon />, categoryIcon: <CategoryIcon /> },
     { title: "Federal Funds Rate", to: "/fred/fed-funds-rate", category: "MacroEconomics", icon: <AccountBalanceIcon />, categoryIcon: <ShowChartIcon /> },
-    { title: "S&P 500 Index", to: "/fred/sp500", category: "MacroEconomics", icon: <CandlestickChartIcon />, categoryIcon: <ShowChartIcon /> },
+    { title: "S&P 500 Index", to: "/fred/sp500", category: "MacroEconomics", icon: <CandlestickChart />, categoryIcon: <ShowChartIcon /> },
     { title: "US Recession Indicator", to: "/fred/recession-indicator", category: "MacroEconomics", icon: <WarningIcon />, categoryIcon: <ShowChartIcon /> },
-    { title: "Consumer Price Index (CPI)", to: "/fred/cpi", category: "MacroEconomics", icon: <AddShoppingCartIcon />, categoryIcon: <ShowChartIcon /> },
+    { title: "Consumer Price Index (CPI)", to: "/fred/cpi", category: "MacroEconomics", icon: <AddShoppingCart />, categoryIcon: <ShowChartIcon /> },
     { title: "Unemployment Rate", to: "/fred/unemployment-rate", category: "MacroEconomics", icon: <SentimentVeryDissatisfiedIcon />, categoryIcon: <ShowChartIcon /> },
     { title: "10-Year Treasury Yield", to: "/fred/10-year-treasury", category: "MacroEconomics", icon: <AccountBalanceIcon />, categoryIcon: <ShowChartIcon /> },
     { title: "10Y-2Y Treasury Spread", to: "/fred/10y-2y-spread", category: "MacroEconomics", icon: <AccountBalanceIcon />, categoryIcon: <ShowChartIcon /> },
@@ -127,9 +153,8 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
     { title: "Economic Policy Uncertainty", to: "/fred/economic-policy-uncertainty", category: "MacroEconomics", icon: <WarningIcon />, categoryIcon: <ShowChartIcon /> },
     { title: "Housing Starts", to: "/fred/housing-starts", category: "MacroEconomics", icon: <ConstructionIcon />, categoryIcon: <ShowChartIcon /> },
     { title: "Case-Shiller Home Price Index", to: "/fred/case-shiller", category: "MacroEconomics", icon: <HomeIcon />, categoryIcon: <ShowChartIcon /> },
-    { title: "Nikkei 225 Index", to: "/fred/nikkei-225", category: "MacroEconomics", icon: <CandlestickChartIcon />, categoryIcon: <ShowChartIcon /> },
+    { title: "Nikkei 225 Index", to: "/fred/nikkei-225", category: "MacroEconomics", icon: <CandlestickChart />, categoryIcon: <ShowChartIcon /> },
     { title: "German 10-Year Bond Yield", to: "/fred/german-bond-yield", category: "MacroEconomics", icon: <AccountBalanceIcon />, categoryIcon: <ShowChartIcon /> },
-    // { title: "Bitcoin to 10 Year Yield", to: "indicators/btc-yield-recession", category: "Indicators", icon: <MultilineChartIcon />, categoryIcon: <ShowChartIcon /> },
     { title: "Workbench", to: "/workbench", category: "Workbench", icon: <MultilineChartIcon />, categoryIcon: <ShowChartIcon /> },
   ];
 
@@ -137,7 +162,8 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
     itemsData.filter(item =>
       (item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (item.category && item.category.toLowerCase().includes(searchQuery.toLowerCase()))) &&
-      item.title !== "Dashboard"
+      item.title !== "Dashboard" &&
+      item.title !== "Overview"
     ), [searchQuery]
   );
 
@@ -156,7 +182,7 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
     }, {})
   );
 
-  const renderMenuItem = (item, index, isNested = false) => (
+  const renderMenuItem = (item, index, isNested = false, isProminent = false) => (
     <Item
       key={item.title}
       title={item.title}
@@ -165,6 +191,7 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
       selected={selected}
       setSelected={setSelected}
       isNested={isNested}
+      isProminent={isProminent}
       onClick={handleMenuClick}
     />
   );
@@ -208,7 +235,7 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
           },
           "& .pro-icon-wrapper": { backgroundColor: "transparent !important" },
           "& .pro-inner-item": {
-            padding: "5px 35px 5px 20px !important",
+            padding: "5px 35px 5px 5px !important",
             backgroundColor: "transparent !important",
           },
           "& .pro-inner-item:hover": { color: "#868dfb !important" },
@@ -255,20 +282,12 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
               <IconButton type="button" sx={{ p: 1 }}><SearchIcon /></IconButton>
             </Box>
 
-            {renderMenuItem(itemsData.find(item => item.title === "Dashboard"), 0)}
+            {renderMenuItem(itemsData.find(item => item.title === "Dashboard"), 0, false, true)}
+            {renderMenuItem(itemsData.find(item => item.title === "Overview"), 1, false, true)}
 
-            {searchQuery ? filteredItems.map(renderMenuItem) : renderSubMenus()}
+            {searchQuery ? filteredItems.map((item, index) => renderMenuItem(item, index)) : renderSubMenus()}
           </Menu>
           <Box sx={{ padding: theme.spacing(2) }}>
-            {/* <Box display="flex" justifyContent="center" alignItems="center">
-              <img alt="main-logo" width="100px" height="100px" src={`../../assets/bc1qnekceuntjc2ga3vm8r85l842umzh35xs6yxyvx.JPG`} style={{ cursor: "pointer", borderRadius: "10%", marginTop: "50px" }} />
-            </Box>
-            <Box textAlign="center" padding={theme.spacing(1)}>
-              <Typography variant="h3" color={colors.grey[100]} fontWeight="bold" sx={{ m: "10px 0 20px 0" }}>BTC Donations</Typography>
-              <Typography variant="h5" color={colors.greenAccent[500]}>
-                I'm a solo developer trying to create a free useful tool. If you found any value from this site, please consider donating some BTC by using the QR code. Thanks
-              </Typography>
-            </Box> */}
             <Box display="flex" justifyContent="center" alignItems="center">
               <Typography variant="h5" color={colors.greenAccent[500]}>
                 Contact me here:

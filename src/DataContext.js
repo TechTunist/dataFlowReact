@@ -212,6 +212,9 @@ export const DataProvider = ({ children }) => {
   const [latestFearAndGreed, setLatestFearAndGreed] = useState(null);
   const [isLatestFearAndGreedFetched, setIsLatestFearAndGreedFetched] = useState(false);
   const [latestFearAndGreedLastUpdated, setLatestFearAndGreedLastUpdated] = useState(null);
+  const [altcoinSeasonData, setAltcoinSeasonData] = useState({});
+  const [isAltcoinSeasonDataFetched, setIsAltcoinSeasonDataFetched] = useState(false);
+  const [altcoinSeasonLastUpdated, setAltcoinSeasonLastUpdated] = useState(null);
 
   const API_BASE_URL = 'https://vercel-dataflow.vercel.app/api';
   // const API_BASE_URL = 'http://127.0.0.1:8000/api';
@@ -235,6 +238,13 @@ export const DataProvider = ({ children }) => {
         { id: 'txCountCombinedData', setData: setTxCountCombinedData, setLastUpdated: setTxCountCombinedLastUpdated, setIsFetched: setIsTxCountCombinedDataFetched, useDateCheck: true },
         { id: 'txMvrvData', setData: setTxMvrvData, setLastUpdated: setTxMvrvLastUpdated, setIsFetched: setIsTxMvrvDataFetched, useDateCheck: true },
         { id: 'latestFearAndGreed', setData: setLatestFearAndGreed, setLastUpdated: setLatestFearAndGreedLastUpdated, setIsFetched: setIsLatestFearAndGreedFetched, useDateCheck: true },
+        {
+          id: 'altcoinSeasonData',
+          setData: setAltcoinSeasonData,
+          setLastUpdated: setAltcoinSeasonLastUpdated,
+          setIsFetched: setIsAltcoinSeasonDataFetched,
+          useDateCheck: true
+        },
       ];
 
       for (const { id, setData, setLastUpdated, setIsFetched, useDateCheck, cacheDuration } of cacheConfigs) {
@@ -823,6 +833,40 @@ export const DataProvider = ({ children }) => {
     });
   }, [fetchAltcoinData]);
 
+  const fetchAltcoinSeasonData = useCallback(async () => {
+    if (isAltcoinSeasonDataFetched) return;
+    if (!preloadComplete) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      if (isAltcoinSeasonDataFetched) return;
+    }
+    await fetchWithCache({
+      cacheId: 'altcoinSeasonData',
+      apiUrl: `${API_BASE_URL}/altcoin-season-index/`,
+      formatData: (data) => ({
+        index: parseFloat(data.index),
+        start_date: data.start_date,
+        end_date: data.end_date,
+        altcoin_count: parseInt(data.altcoin_count, 10),
+        altcoins_outperforming: parseInt(data.altcoins_outperforming, 10),
+        season: data.season,
+        time: data.end_date
+      }),
+      setData: setAltcoinSeasonData,
+      setLastUpdated: setAltcoinSeasonLastUpdated,
+      setIsFetched: setIsAltcoinSeasonDataFetched,
+      useDateCheck: true,
+    });
+  }, [isAltcoinSeasonDataFetched, preloadComplete]);
+
+  const refreshAltcoinSeasonData = useCallback(async () => {
+    await refreshData({
+      cacheId: 'altcoinSeasonData',
+      setData: setAltcoinSeasonData,
+      setIsFetched: setIsAltcoinSeasonDataFetched,
+      fetchFunction: fetchAltcoinSeasonData,
+    });
+  }, [fetchAltcoinSeasonData]);
+
   const fetchFredSeriesData = useCallback(async (seriesId) => {
     if (fredSeriesData[seriesId]?.length > 0) return;
     if (!preloadComplete) {
@@ -1059,6 +1103,10 @@ export const DataProvider = ({ children }) => {
       indicatorData,
       fetchIndicatorData,
       refreshIndicatorData,
+      altcoinSeasonData,
+      fetchAltcoinSeasonData,
+      refreshAltcoinSeasonData,
+      altcoinSeasonLastUpdated,
     }),
     [
       btcData,
@@ -1135,6 +1183,10 @@ export const DataProvider = ({ children }) => {
       indicatorData,
       fetchIndicatorData,
       refreshIndicatorData,
+      altcoinSeasonData,
+      fetchAltcoinSeasonData,
+      refreshAltcoinSeasonData,
+      altcoinSeasonLastUpdated,
     ]
   );
 
