@@ -185,7 +185,7 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
       case "/on-chain-historical-risk":
         return { title: "OnChain Risk", subtitle: isMobile ? "Historical Risk" : "Historical Risk Levels of OnChain Indicators" };
       case "/market-overview":
-        return { title: "General Market Conditions", subtitle: isMobile ? "Overview" : "Select features of t he current market conditions" };
+        return { title: "General Market Conditions", subtitle: isMobile ? "Overview" : "Select features of the current market conditions" };
       default:
         return { title: "CryptoLogical", subtitle: "" };
     }

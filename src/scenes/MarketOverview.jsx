@@ -97,38 +97,63 @@ const MarketOverview = () => {
     xs: [{ i: 'fearAndGreed', x: 0, y: 0, w: 4, h: 2, minW: 4, minH: 2 }],
   };
 
+  const sentimentIndexesLayouts = {
+    lg: [
+      { i: 'fearAndGreed', x: 0, y: 0, w: 4, h: 2, minW: 4, minH: 2 },
+      { i: 'marketHeat', x: 4, y: 0, w: 4, h: 2, minW: 4, minH: 2 },
+      { i: 'altcoinSeason', x: 8, y: 0, w: 4, h: 2, minW: 4, minH: 2 },
+    ],
+    md: [
+      { i: 'fearAndGreed', x: 0, y: 0, w: 4, h: 2, minW: 4, minH: 2 },
+      { i: 'marketHeat', x: 4, y: 0, w: 4, h: 2, minW: 4, minH: 2 },
+      { i: 'altcoinSeason', x: 0, y: 2, w: 4, h: 2, minW: 4, minH: 2 },
+    ],
+    sm: [
+      { i: 'fearAndGreed', x: 0, y: 0, w: 6, h: 2, minW: 4, minH: 2 },
+      { i: 'marketHeat', x: 0, y: 2, w: 6, h: 2, minW: 4, minH: 2 },
+      { i: 'altcoinSeason', x: 0, y: 4, w: 6, h: 2, minW: 4, minH: 2 },
+    ],
+    xs: [
+      { i: 'fearAndGreed', x: 0, y: 0, w: 4, h: 2, minW: 4, minH: 2 },
+      { i: 'marketHeat', x: 0, y: 2, w: 4, h: 2, minW: 4, minH: 2 },
+      { i: 'altcoinSeason', x: 0, y: 4, w: 4, h: 2, minW: 4, minH: 2 },
+    ],
+  };
+
   const onChainLayouts = {
     lg: [
-      { i: 'bitcoinRisk', x: 0, y: 0, w: 2.4, h: 2, minW: 2, minH: 2 },
-      { i: 'mvrv', x: 2.4, y: 0, w: 2.4, h: 2, minW: 2, minH: 2 },
-      { i: 'mayerMultiple', x: 4.8, y: 0, w: 2.4, h: 2, minW: 2, minH: 2 },
-      { i: 'marketHeat', x: 7.2, y: 0, w: 2.4, h: 2, minW: 2, minH: 2 },
-      { i: 'piCycleTop', x: 9.6, y: 0, w: 2.4, h: 2, minW: 2, minH: 2 },
+      { i: 'bitcoinRisk', x: 0, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
+      { i: 'mvrv', x: 3, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
+      { i: 'mayerMultiple', x: 6, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
+      { i: 'piCycleTop', x: 9, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
     ],
     md: [
       { i: 'bitcoinRisk', x: 0, y: 0, w: 4, h: 2, minW: 2, minH: 2 },
       { i: 'mvrv', x: 4, y: 0, w: 4, h: 2, minW: 2, minH: 2 },
       { i: 'mayerMultiple', x: 0, y: 2, w: 4, h: 2, minW: 2, minH: 2 },
-      { i: 'marketHeat', x: 4, y: 2, w: 4, h: 2, minW: 2, minH: 2 },
-      { i: 'piCycleTop', x: 0, y: 4, w: 4, h: 2, minW: 2, minH: 2 },
+      { i: 'piCycleTop', x: 4, y: 2, w: 4, h: 2, minW: 2, minH: 2 },
     ],
     sm: [
       { i: 'bitcoinRisk', x: 0, y: 0, w: 6, h: 2, minW: 2, minH: 2 },
       { i: 'mvrv', x: 0, y: 2, w: 6, h: 2, minW: 2, minH: 2 },
       { i: 'mayerMultiple', x: 0, y: 4, w: 6, h: 2, minW: 2, minH: 2 },
-      { i: 'marketHeat', x: 0, y: 6, w: 6, h: 2, minW: 2, minH: 2 },
-      { i: 'piCycleTop', x: 0, y: 8, w: 6, h: 2, minW: 2, minH: 2 },
+      { i: 'piCycleTop', x: 0, y: 6, w: 6, h: 2, minW: 2, minH: 2 },
     ],
     xs: [
       { i: 'bitcoinRisk', x: 0, y: 0, w: 4, h: 2, minW: 2, minH: 2 },
       { i: 'mvrv', x: 0, y: 2, w: 4, h: 2, minW: 2, minH: 2 },
       { i: 'mayerMultiple', x: 0, y: 4, w: 4, h: 2, minW: 2, minH: 2 },
-      { i: 'marketHeat', x: 0, y: 6, w: 4, h: 2, minW: 2, minH: 2 },
-      { i: 'piCycleTop', x: 0, y: 8, w: 4, h: 2, minW: 2, minH: 2 },
+      { i: 'piCycleTop', x: 0, y: 6, w: 4, h: 2, minW: 2, minH: 2 },
     ],
   };
 
-  // Altcoin Season layout
+  const overallConditionsLayouts = {
+    lg: [{ i: 'marketHeat', x: 0, y: 0, w: 12, h: 2, minW: 4, minH: 2 }],
+    md: [{ i: 'marketHeat', x: 0, y: 0, w: 8, h: 2, minW: 4, minH: 2 }],
+    sm: [{ i: 'marketHeat', x: 0, y: 0, w: 6, h: 2, minW: 4, minH: 2 }],
+    xs: [{ i: 'marketHeat', x: 0, y: 0, w: 4, h: 2, minW: 4, minH: 2 }],
+  };
+
   const altcoinSeasonLayouts = {
     lg: [{ i: 'altcoinSeason', x: 0, y: 0, w: 12, h: 2, minW: 4, minH: 2 }],
     md: [{ i: 'altcoinSeason', x: 0, y: 0, w: 8, h: 2, minW: 4, minH: 2 }],
@@ -141,7 +166,9 @@ const MarketOverview = () => {
   const [indicatorsLayout, setIndicatorsLayout] = useState(indicatorsLayouts);
   const [sentimentLayout, setSentimentLayout] = useState(sentimentLayouts);
   const [onChainLayout, setOnChainLayout] = useState(onChainLayouts);
+  const [overallConditionsLayout, setOverallConditionsLayout] = useState(overallConditionsLayouts);
   const [altcoinSeasonLayout, setAltcoinSeasonLayout] = useState(altcoinSeasonLayouts);
+  const [sentimentIndexesLayout, setSentimentIndexesLayout] = useState(sentimentIndexesLayouts);
 
   useEffect(() => {
     console.log('MarketOverview mounted');
@@ -692,94 +719,94 @@ const MarketOverview = () => {
     );
   });
 
-    // PiCycle Top Widget
-    const PiCycleTopWidget = memo(() => {
-      const [currentRatio, setCurrentRatio] = useState(null);
-      const [predictedPeak, setPredictedPeak] = useState(null);
-      const [heatScore, setHeatScore] = useState(null);
-  
-      useEffect(() => {
-        if (btcData && btcData.length > 350) {
-          const ratioData = calculateRatioSeries(btcData);
-          const latestRatioRaw = ratioData[ratioData.length - 1]?.value;
-          const latestRatio = latestRatioRaw ? Math.max(0, Math.min(100, latestRatioRaw)) : 0;
-          setCurrentRatio(latestRatio);
-  
-          const historicalPeaks = [
-            { date: '2017-12-17', ratio: 1.05, timestamp: Date.parse('2017-12-17') },
-            { date: '2021-04-12', ratio: 1.00, timestamp: Date.parse('2021-04-12') },
-          ];
-          const targetDate = Date.parse('2025-10-13');
-          const t1 = historicalPeaks[0].timestamp;
-          const t2 = historicalPeaks[1].timestamp;
-          const y1 = historicalPeaks[0].ratio;
-          const y2 = historicalPeaks[1].ratio;
-          const m = (y2 - y1) / (t2 - t1);
-          const b = y1 - m * t1;
-          const predictedRatio = m * targetDate + b;
-          setPredictedPeak(predictedRatio);
-  
-          if (latestRatio && predictedRatio) {
-            const buffer = 1.0;
-            const minRatio = 0; // Adjusted to meet requirements
-            const heatOffset = 0.28; // Offset to achieve minimum heat of ~0.28
-            const heat = Math.max(0, Math.min(100, (((latestRatio - minRatio) / buffer) * 100) + heatOffset));
-            setHeatScore(heat);
-  
-            console.log('PiCycleTopWidget Heat Score:', heat);
-          }
+  // PiCycle Top Widget
+  const PiCycleTopWidget = memo(() => {
+    const [currentRatio, setCurrentRatio] = useState(null);
+    const [predictedPeak, setPredictedPeak] = useState(null);
+    const [heatScore, setHeatScore] = useState(null);
+
+    useEffect(() => {
+      if (btcData && btcData.length > 350) {
+        const ratioData = calculateRatioSeries(btcData);
+        const latestRatioRaw = ratioData[ratioData.length - 1]?.value;
+        const latestRatio = latestRatioRaw ? Math.max(0, Math.min(100, latestRatioRaw)) : 0;
+        setCurrentRatio(latestRatio);
+
+        const historicalPeaks = [
+          { date: '2017-12-17', ratio: 1.05, timestamp: Date.parse('2017-12-17') },
+          { date: '2021-04-12', ratio: 1.00, timestamp: Date.parse('2021-04-12') },
+        ];
+        const targetDate = Date.parse('2025-10-13');
+        const t1 = historicalPeaks[0].timestamp;
+        const t2 = historicalPeaks[1].timestamp;
+        const y1 = historicalPeaks[0].ratio;
+        const y2 = historicalPeaks[1].ratio;
+        const m = (y2 - y1) / (t2 - t1);
+        const b = y1 - m * t1;
+        const predictedRatio = m * targetDate + b;
+        setPredictedPeak(predictedRatio);
+
+        if (latestRatio && predictedRatio) {
+          const buffer = 1.0;
+          const minRatio = 0;
+          const heatOffset = 0.28;
+          const heat = Math.max(0, Math.min(100, (((latestRatio - minRatio) / buffer) * 100) + heatOffset));
+          setHeatScore(heat);
+
+          console.log('PiCycleTopWidget Heat Score:', heat);
         }
-      }, [btcData]);
-  
-      const backgroundColor = getBackgroundColor(heatScore || 0);
-      const textColor = getTextColor(backgroundColor);
-      const heatDescription = getHeatDescription(heatScore || 0);
-      const isSignificant = heatScore !== null && heatScore >= 85;
-  
-      return (
-        <Box sx={{
-          ...chartBoxStyle(colors, theme),
-          backgroundColor: backgroundColor,
-          transition: 'background-color 0.3s ease, transform 0.2s ease-in-out',
-          border: isSignificant ? `2px solid ${colors.redAccent[500]}` : 'none',
-          padding: '24px',
-          textAlign: 'center',
-        }}>
-          <Typography variant="h4" color={textColor} gutterBottom sx={{ fontWeight: 'bold' }}>
-            PiCycle Top Indicator
+      }
+    }, [btcData]);
+
+    const backgroundColor = getBackgroundColor(heatScore || 0);
+    const textColor = getTextColor(backgroundColor);
+    const heatDescription = getHeatDescription(heatScore || 0);
+    const isSignificant = heatScore !== null && heatScore >= 85;
+
+    return (
+      <Box sx={{
+        ...chartBoxStyle(colors, theme),
+        backgroundColor: backgroundColor,
+        transition: 'background-color 0.3s ease, transform 0.2s ease-in-out',
+        border: isSignificant ? `2px solid ${colors.redAccent[500]}` : 'none',
+        padding: '24px',
+        textAlign: 'center',
+      }}>
+        <Typography variant="h4" color={textColor} gutterBottom sx={{ fontWeight: 'bold' }}>
+          PiCycle Top Indicator
+        </Typography>
+        <Box
+          sx={{
+            flexGrow: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+          }}
+        >
+          <Typography variant="h4" color={textColor} sx={{ fontWeight: 'bold' }}>
+            Current Ratio: {currentRatio !== null ? currentRatio.toFixed(4) : 'N/A'}
           </Typography>
-          <Box
-            sx={{
-              flexGrow: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-            }}
-          >
-            <Typography variant="h4" color={textColor} sx={{ fontWeight: 'bold' }}>
-              Current Ratio: {currentRatio !== null ? currentRatio.toFixed(4) : 'N/A'}
-            </Typography>
-            <Typography variant="h4" color={textColor} sx={{ fontWeight: 'bold' }}>
-              Predicted Peak: {predictedPeak !== null ? predictedPeak.toFixed(4) : 'N/A'} {/* october 13 2025  */}
-            </Typography>
-            <Typography variant="body1" color={textColor}>
-              Heat: {heatDescription}
-            </Typography>
-          </Box>
-          {isSignificant && (
-            <Typography
-              variant="body1"
-              color={colors.redAccent[500]}
-              sx={{ textAlign: 'center', mt: 2, fontWeight: 'bold' }}
-            >
-              Warning: Market approaching cycle top.
-            </Typography>
-          )}
+          <Typography variant="h4" color={textColor} sx={{ fontWeight: 'bold' }}>
+            Predicted Peak: {predictedPeak !== null ? predictedPeak.toFixed(4) : 'N/A'}
+          </Typography>
+          <Typography variant="body1" color={textColor}>
+            Heat: {heatDescription}
+          </Typography>
         </Box>
-      );
-    });
+        {isSignificant && (
+          <Typography
+            variant="body1"
+            color={colors.redAccent[500]}
+            sx={{ textAlign: 'center', mt: 2, fontWeight: 'bold' }}
+          >
+            Warning: Market approaching cycle top.
+          </Typography>
+        )}
+      </Box>
+    );
+  });
 
   // Market Heat Gauge Widget
   const MarketHeatGaugeWidget = memo(() => {
@@ -909,7 +936,7 @@ const MarketOverview = () => {
         textAlign: 'center',
       }}>
         <Typography variant="h4" color={textColor} gutterBottom sx={{ fontWeight: 'bold' }}>
-          Market Heat Gauge
+          Market Heat Index
         </Typography>
         <Box sx={{ width: '100%', mt: 2 }}>
           <LinearProgress
@@ -937,6 +964,13 @@ const MarketOverview = () => {
             sx={{ textAlign: 'center', mt: 1 }}
           >
             Heat: {heatDescription}
+          </Typography>
+          <Typography
+            variant="body1"
+            color={textColor}
+            sx={{ textAlign: 'center', mt: 1 }}
+          >
+            An aggregate of multiple indicators to assess market heat.
           </Typography>
         </Box>
         {isSignificant && (
@@ -1097,7 +1131,76 @@ const MarketOverview = () => {
       >
         Market Overview
       </Typography>
-      <Box sx={{ width: '100%', maxWidth: 1440, margin: '0 auto' }}>
+      <Box sx={{ width: '100%', maxWidth: 1440, margin: '0 auto' }}> {/* Wrapper for widgets - MOVE WIDGETS WITHIN HERE */}
+        
+      <Typography
+        variant="h5"
+        color={colors.grey[100]}
+        sx={{ fontWeight: 'bold', margin: '24px 0 16px' }}
+      >
+        Market Sentiment
+      </Typography>
+      <ResponsiveGridLayout
+        className="layout"
+        layouts={sentimentIndexesLayout}
+        breakpoints={breakpoints}
+        cols={cols}
+        rowHeight={rowHeight}
+        onLayoutChange={(layout, allLayouts) => setSentimentIndexesLayout(allLayouts)}
+        isDraggable
+        isResizable
+        compactType="vertical"
+        margin={margin}
+        containerPadding={[0, 0]}
+        style={{ width: '100%' }}
+      >
+        <div key="fearAndGreed">
+          <FearAndGreedGauge />
+        </div>
+        <div key="marketHeat">
+          <MarketHeatGaugeWidget />
+        </div>
+        <div key="altcoinSeason">
+          <AltcoinSeasonWidget />
+        </div>
+      </ResponsiveGridLayout>
+
+        {/* Performance Section */}
+        <Typography
+          variant="h5"
+          color={colors.grey[100]}
+          sx={{ fontWeight: 'bold', margin: '24px 0 16px' }}
+        >
+          Indicators
+        </Typography>
+        <ResponsiveGridLayout
+          className="layout"
+          layouts={onChainLayout}
+          breakpoints={breakpoints}
+          cols={cols}
+          rowHeight={rowHeight}
+          onLayoutChange={(layout, allLayouts) => setOnChainLayout(allLayouts)}
+          isDraggable
+          isResizable
+          compactType="vertical"
+          margin={margin}
+          containerPadding={[0, 0]}
+          style={{ width: '100%' }}
+        >
+          <div key="bitcoinRisk">
+            <BitcoinRiskWidget />
+          </div>
+          <div key="mvrv">
+            <MvrvRatioWidget />
+          </div>
+          <div key="mayerMultiple">
+            <MayerMultipleWidget />
+          </div>
+          <div key="piCycleTop">
+            <PiCycleTopWidget />
+          </div>
+        </ResponsiveGridLayout>
+
         {/* Price Section */}
         <Typography
           variant="h5"
@@ -1158,99 +1261,7 @@ const MarketOverview = () => {
           </div>
         </ResponsiveGridLayout>
 
-        {/* Sentiment Section */}
-        <Typography
-          variant="h5"
-          color={colors.grey[100]}
-          sx={{ fontWeight: 'bold', margin: '24px 0 16px' }}
-        >
-          Sentiment
-        </Typography>
-        <ResponsiveGridLayout
-          className="layout"
-          layouts={sentimentLayout}
-          breakpoints={breakpoints}
-          cols={cols}
-          rowHeight={rowHeight}
-          onLayoutChange={(layout, allLayouts) => setSentimentLayout(allLayouts)}
-          isDraggable
-          isResizable
-          compactType="vertical"
-          margin={margin}
-          containerPadding={[0, 0]}
-          style={{ width: '100%' }}
-        >
-          <div key="fearAndGreed">
-            <FearAndGreedGauge />
-          </div>
-        </ResponsiveGridLayout>
-
-        {/* Performance Section */}
-        <Typography
-          variant="h5"
-          color={colors.grey[100]}
-          sx={{ fontWeight: 'bold', margin: '24px 0 16px' }}
-        >
-          Performance
-        </Typography>
-        <ResponsiveGridLayout
-          className="layout"
-          layouts={onChainLayout}
-          breakpoints={breakpoints}
-          cols={cols}
-          rowHeight={rowHeight}
-          onLayoutChange={(layout, allLayouts) => setOnChainLayout(allLayouts)}
-          isDraggable
-          isResizable
-          compactType="vertical"
-          margin={margin}
-          containerPadding={[0, 0]}
-          style={{ width: '100%' }}
-        >
-          <div key="bitcoinRisk">
-            <BitcoinRiskWidget />
-          </div>
-          <div key="mvrv">
-            <MvrvRatioWidget />
-          </div>
-          <div key="mayerMultiple">
-            <MayerMultipleWidget />
-          </div>
-          <div key="marketHeat">
-            <MarketHeatGaugeWidget />
-          </div>
-          <div key="piCycleTop">
-            <PiCycleTopWidget />
-          </div>
-        </ResponsiveGridLayout>
-
-        {/* Altcoin Season Section */}
-        <Typography
-          variant="h5"
-          color={colors.grey[100]}
-          sx={{ fontWeight: 'bold', margin: '24px 0 16px' }}
-        >
-          Altcoin Season
-        </Typography>
-        <ResponsiveGridLayout
-          className="layout"
-          layouts={altcoinSeasonLayout}
-          breakpoints={breakpoints}
-          cols={cols}
-          rowHeight={rowHeight}
-          onLayoutChange={(layout, allLayouts) => setAltcoinSeasonLayout(allLayouts)}
-          isDraggable
-          isResizable
-          compactType="vertical"
-          margin={margin}
-          containerPadding={[0, 0]}
-          style={{ width: '100%' }}
-        >
-          <div key="altcoinSeason">
-            <AltcoinSeasonWidget />
-          </div>
-        </ResponsiveGridLayout>
-      </Box>
+      </Box> {/* End of widgets wrapper */}
     </Box>
   );
 };
