@@ -2,6 +2,7 @@ import React, { useEffect, useState, useContext, useMemo, useCallback } from 're
 import Plot from 'react-plotly.js';
 import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
+import { Select, MenuItem, FormControl, InputLabel, Box, Checkbox } from '@mui/material';
 import '../styling/bitcoinChart.css';
 import useIsMobile from '../hooks/useIsMobile';
 import BitcoinFees from './BitcoinTransactionFees';
@@ -17,8 +18,9 @@ const MarketCycles = ({ isDashboard = false }) => {
     const [startPoint, setStartPoint] = useState('bottom');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [selectedCycles, setSelectedCycles] = useState(['Cycle 2', 'Cycle 3']); // Default to excluding Cycle 1
 
-    // Memoized layout to prevent unnecessary re-renders
+    // Memoized layout
     const [layout, setLayout] = useState({
         title: isDashboard ? '' : 'Market Cycles RoI',
         margin: { l: 50, r: 50, b: 30, t: 50, pad: 4 },
@@ -45,7 +47,7 @@ const MarketCycles = ({ isDashboard = false }) => {
         } : {}
     });
 
-    // Fetch data only if not already present
+    // Fetch data
     useEffect(() => {
         const fetchData = async () => {
             if (btcData.length > 0) return;
@@ -63,7 +65,7 @@ const MarketCycles = ({ isDashboard = false }) => {
         fetchData();
     }, [fetchBtcData, btcData.length]);
 
-    // Process cycle data with useMemo to optimize performance
+    // Process cycle data and compute average
     const cycleDatasets = useMemo(() => {
         if (btcData.length === 0) return [];
 
@@ -113,7 +115,7 @@ const MarketCycles = ({ isDashboard = false }) => {
             peak: {
                 'Cycle 1': '2017-12-17',
                 'Cycle 2': '2021-11-10',
-                'Cycle 3': null // ongoing cycle
+                'Cycle 3': null
             }
         };
 
@@ -145,10 +147,47 @@ const MarketCycles = ({ isDashboard = false }) => {
             cycles.push(processCycle(cycleStarts[startPoint]['Cycle 4'], null, 'Cycle 4'));
         }
 
-        return cycles.filter(cycle => cycle !== null);
-    }, [btcData, startPoint]);
+        const validCycles = cycles.filter(cycle => cycle !== null);
 
-    // Update layout based on startPoint and theme
+        // Compute average ROI for selected cycles
+        let averageCycle = null;
+        if (selectedCycles.length > 0) {
+            const selectedCycleData = validCycles.filter(cycle => selectedCycles.includes(cycle.shortName));
+            if (selectedCycleData.length > 0) {
+                // Find the maximum number of days among selected cycles
+                const maxDays = Math.max(...selectedCycleData.map(cycle => cycle.data.length));
+                const averageData = [];
+
+                for (let day = 0; day < maxDays; day++) {
+                    const rois = selectedCycleData
+                        .filter(cycle => cycle.data[day]) // Ensure data exists for the day
+                        .map(cycle => cycle.data[day].roi);
+                    const avgRoi = rois.length > 0 ? rois.reduce((sum, roi) => sum + roi, 0) / rois.length : null;
+                    if (avgRoi !== null) {
+                        averageData.push({
+                            day,
+                            roi: avgRoi,
+                            date: selectedCycleData[0].data[day]?.date || btcData[day]?.time,
+                            cycle: 'Average'
+                        });
+                    }
+                }
+
+                if (averageData.length > 0) {
+                    averageCycle = {
+                        name: `Average (${selectedCycles.join(', ')})`,
+                        shortName: 'Average',
+                        data: averageData
+                    };
+                }
+            }
+        }
+
+        // Combine individual cycles and average
+        return [...validCycles, ...(averageCycle ? [averageCycle] : [])];
+    }, [btcData, startPoint, selectedCycles]);
+
+    // Update layout
     useEffect(() => {
         setLayout(prev => ({
             ...prev,
@@ -173,7 +212,6 @@ const MarketCycles = ({ isDashboard = false }) => {
         }));
     }, []);
 
-    // Handle zoom/pan updates
     const handleRelayout = useCallback((event) => {
         if (event['xaxis.range[0]'] || event['yaxis.range[0]']) {
             setLayout(prev => ({
@@ -192,38 +230,134 @@ const MarketCycles = ({ isDashboard = false }) => {
         }
     }, []);
 
+    // Handle cycle selection for averaging
+    const handleCycleSelection = (event) => {
+        setSelectedCycles(event.target.value);
+    };
+
+    // Available cycles for selection
+    const availableCycles = [
+        { value: 'Cycle 1', label: 'Cycle 1 (2011-2013)' },
+        { value: 'Cycle 2', label: 'Cycle 2 (2015-2017)' },
+        { value: 'Cycle 3', label: 'Cycle 3 (2018-2021)' }
+    ];
+
     return (
         <div style={{ height: '100%' }}>
             {!isDashboard && (
-                <div className='chart-top-div'>
-                    <div className="select-reset-wrapper">
-                        <select 
-                            className="button-reset" 
-                            value={startPoint} 
-                            onChange={(e) => setStartPoint(e.target.value)}
-                        >
-                            <option value="bottom">From Market Bottom</option>
-                            <option value="halving">From the Halving</option>
-                            <option value="peak">From Cycle Peak</option>
-                        </select>
-                        {isLoading && <span style={{ color: colors.grey[100], marginLeft: '10px' }}>Loading...</span>}
-                        {error && <span style={{ color: colors.redAccent[500], marginLeft: '10px' }}>{error}</span>}
-                    </div>
-                    <div>{/* placeholder for styling */}</div>
-                    <div>
-                        <button onClick={resetChartView} className="button-reset">
+                <>
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            flexDirection: { xs: 'column', sm: 'row' },
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '20px',
+                            marginBottom: '30px',
+                            marginTop: '50px',
+                        }}
+                    >
+                        <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '200px' } }}>
+                            <InputLabel
+                                id="start-point-label"
+                                shrink
+                                sx={{
+                                    color: colors.grey[100],
+                                    '&.Mui-focused': { color: colors.greenAccent[500] },
+                                    top: 0,
+                                    '&.MuiInputLabel-shrink': {
+                                        transform: 'translate(14px, -9px) scale(0.75)',
+                                    },
+                                }}
+                            >
+                                Start Point
+                            </InputLabel>
+                            <Select
+                                value={startPoint}
+                                onChange={(e) => setStartPoint(e.target.value)}
+                                label="Start Point"
+                                labelId="start-point-label"
+                                sx={{
+                                    color: colors.grey[100],
+                                    backgroundColor: colors.primary[500],
+                                    borderRadius: "8px",
+                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
+                                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                                    '& .MuiSelect-select': { py: 1.5, pl: 2 },
+                                    '& .MuiSelect-select:empty': { color: colors.grey[500] },
+                                }}
+                            >
+                                <MenuItem value="bottom">From Market Bottom</MenuItem>
+                                <MenuItem value="halving">From the Halving</MenuItem>
+                                <MenuItem value="peak">From Cycle Peak</MenuItem>
+                            </Select>
+                        </FormControl>
+                        <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '300px' } }}>
+                            <InputLabel
+                                id="cycles-label"
+                                shrink
+                                sx={{
+                                    color: colors.grey[100],
+                                    '&.Mui-focused': { color: colors.greenAccent[500] },
+                                    top: 0,
+                                    '&.MuiInputLabel-shrink': {
+                                        transform: 'translate(14px, -9px) scale(0.75)',
+                                    },
+                                }}
+                            >
+                                Cycles to Average
+                            </InputLabel>
+                            <Select
+                                multiple
+                                value={selectedCycles}
+                                onChange={handleCycleSelection}
+                                label="Cycles to Average"
+                                labelId="cycles-label"
+                                displayEmpty
+                                renderValue={(selected) =>
+                                    selected.length > 0
+                                        ? selected.map(cycle => `Cycle ${cycle.split(' ')[1]}`).join(', ')
+                                        : 'Select Cycles'
+                                }
+                                sx={{
+                                    color: colors.grey[100],
+                                    backgroundColor: colors.primary[500],
+                                    borderRadius: "8px",
+                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
+                                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                                    '& .MuiSelect-select': { py: 1.5, pl: 2 },
+                                    '& .MuiSelect-select:empty': { color: colors.grey[500] },
+                                }}
+                            >
+                                {availableCycles.map(({ value, label }) => (
+                                    <MenuItem key={value} value={value}>
+                                        <Checkbox
+                                            checked={selectedCycles.includes(value)}
+                                            sx={{ color: colors.grey[100], '&.Mui-checked': { color: colors.greenAccent[500] } }}
+                                        />
+                                        <span>{label}</span>
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    </Box>
+                    <div className="chart-top-div" style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginBottom: '10px' }}>
+                        <button onClick={resetChartView} className="button-reset extra-margin">
                             Reset Chart
                         </button>
                     </div>
-                </div>
+                </>
             )}
-            
-            <div className="chart-container"
-            style={{ 
-                height: isDashboard ? "100%" : 'calc(100% - 40px)',
-                width: '100%',
-                border: '2px solid #a9a9a9' 
-                }}>
+            <div
+                className="chart-container"
+                style={{ 
+                    height: isDashboard ? "100%" : 'calc(100% - 40px)',
+                    width: '100%',
+                    border: '2px solid #a9a9a9' 
+                }}
+            >
                 <Plot
                     data={cycleDataSets.map(cycle => ({
                         x: cycle.data.map(d => d.day),
@@ -231,6 +365,11 @@ const MarketCycles = ({ isDashboard = false }) => {
                         type: 'scatter',
                         mode: 'lines',
                         name: isMobile ? cycle.shortName : cycle.name,
+                        line: {
+                            color: cycle.shortName === 'Average' ? colors.greenAccent[500] : undefined,
+                            width: cycle.shortName === 'Average' ? 3 : 2,
+                            dash: cycle.shortName === 'Average' ? 'dash' : 'solid'
+                        },
                         text: cycle.data.map(d => `<b>${cycle.shortName}   ROI: ${d.roi.toFixed(2)}</b>  (${new Date(d.date).toLocaleDateString()})`),
                         hoverinfo: 'text',
                         hovertemplate: `%{text}<extra></extra>`
@@ -246,7 +385,6 @@ const MarketCycles = ({ isDashboard = false }) => {
                     onRelayout={handleRelayout}
                 />
             </div>
-
             <div className='under-chart'>
                 {!isDashboard && btcData.length > 0 && (
                     <div style={{ marginTop: '10px' }}>
@@ -257,16 +395,15 @@ const MarketCycles = ({ isDashboard = false }) => {
                 )}
                 {!isDashboard && <BitcoinFees />}
             </div>
-
             {!isDashboard && (
                 <p className='chart-info'>
                     The return on investment between market cycles has been normalized by taking the natural log of the price ratio,
                     which is useful when the starting prices of different cycles can differ by orders of magnitude.
+                    The average ROI line (if selected) represents the mean logarithmic ROI of the chosen historical cycles.
                 </p>
             )}
         </div>
     );
 };
 
-// export default MarketCycles;
 export default restrictToPaidSubscription(MarketCycles);

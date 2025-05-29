@@ -4,11 +4,12 @@ import { openDB } from 'idb';
 const DB_NAME = 'CryptoDataDB';
 const DATA_STORE_NAME = 'apiData';
 const RISK_STORE_NAME = 'bitcoinRisk';
+const ROI_STORE_NAME = 'roiData'; // New store for ROI data
 
 export async function initDB() {
   try {
-    return await openDB(DB_NAME, 2, { // Incremented version from 1 to 2
-      upgrade(db) {
+    return await openDB(DB_NAME, 3, { // Incremented version to 3 for new store
+      upgrade(db, oldVersion) {
         if (!db.objectStoreNames.contains(DATA_STORE_NAME)) {
           db.createObjectStore(DATA_STORE_NAME, { keyPath: 'id' });
           console.log(`Created object store: ${DATA_STORE_NAME}`);
@@ -16,6 +17,10 @@ export async function initDB() {
         if (!db.objectStoreNames.contains(RISK_STORE_NAME)) {
           db.createObjectStore(RISK_STORE_NAME, { keyPath: 'id' });
           console.log(`Created object store: ${RISK_STORE_NAME}`);
+        }
+        if (!db.objectStoreNames.contains(ROI_STORE_NAME) && oldVersion < 3) {
+          db.createObjectStore(ROI_STORE_NAME, { keyPath: 'id' });
+          console.log(`Created object store: ${ROI_STORE_NAME}`);
         }
       },
     });
@@ -76,6 +81,30 @@ export async function getBitcoinRisk() {
     return data;
   } catch (error) {
     console.error('Failed to get Bitcoin risk level:', error);
+    throw error;
+  }
+}
+
+// New function to save ROI data
+export async function saveRoiData(roiData) {
+  try {
+    const db = await initDB();
+    await db.put(ROI_STORE_NAME, { id: 'roiCycles', ...roiData, timestamp: Date.now() });
+    console.log('Saved ROI data');
+  } catch (error) {
+    console.error('Failed to save ROI data:', error);
+    throw error;
+  }
+}
+
+// New function to get ROI data
+export async function getRoiData() {
+  try {
+    const db = await initDB();
+    const data = await db.get(ROI_STORE_NAME, 'roiCycles');
+    return data;
+  } catch (error) {
+    console.error('Failed to get ROI data:', error);
     throw error;
   }
 }

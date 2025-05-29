@@ -20,7 +20,7 @@ import { Box, Typography, useTheme, LinearProgress } from '@mui/material';
 import { tokens } from '../theme';
 import { DataContext } from '../DataContext';
 import useIsMobile from '../hooks/useIsMobile';
-import { getBitcoinRisk } from '../utility/idbUtils';
+import { getBitcoinRisk, saveRoiData, getRoiData } from '../utility/idbUtils';
 
 // Wrap GridLayout with WidthProvider for responsiveness
 const ResponsiveGridLayout = WidthProvider(Responsive);
@@ -56,18 +56,26 @@ const MarketOverview = () => {
     lg: [
       { i: 'bitcoin', x: 0, y: 0, w: 6, h: 2, minW: 2, minH: 2 },
       { i: 'ethereum', x: 6, y: 0, w: 6, h: 2, minW: 2, minH: 2 },
+      { i: 'inflation', x: 0, y: 2, w: 6, h: 2, minW: 2, minH: 2 }, // Moved to second row (y: 2)
+      { i: 'marketCap', x: 6, y: 2, w: 6, h: 2, minW: 2, minH: 2 }, // Moved to second row (y: 2)
     ],
     md: [
       { i: 'bitcoin', x: 0, y: 0, w: 4, h: 2, minW: 2, minH: 2 },
       { i: 'ethereum', x: 4, y: 0, w: 4, h: 2, minW: 2, minH: 2 },
+      { i: 'inflation', x: 0, y: 2, w: 4, h: 2, minW: 2, minH: 2 }, // Moved to second row (y: 2)
+      { i: 'marketCap', x: 4, y: 2, w: 4, h: 2, minW: 2, minH: 2 }, // Moved to second row (y: 2)
     ],
     sm: [
       { i: 'bitcoin', x: 0, y: 0, w: 6, h: 2, minW: 2, minH: 2 },
       { i: 'ethereum', x: 0, y: 2, w: 6, h: 2, minW: 2, minH: 2 },
+      { i: 'inflation', x: 0, y: 4, w: 6, h: 2, minW: 2, minH: 2 }, // Moved to third row (y: 4)
+      { i: 'marketCap', x: 0, y: 6, w: 6, h: 2, minW: 2, minH: 2 }, // Moved to fourth row (y: 6)
     ],
     xs: [
       { i: 'bitcoin', x: 0, y: 0, w: 4, h: 2, minW: 2, minH: 2 },
       { i: 'ethereum', x: 0, y: 2, w: 4, h: 2, minW: 2, minH: 2 },
+      { i: 'inflation', x: 0, y: 4, w: 4, h: 2, minW: 2, minH: 2 }, // Moved to third row (y: 4)
+      { i: 'marketCap', x: 0, y: 6, w: 4, h: 2, minW: 2, minH: 2 }, // Moved to fourth row (y: 6)
     ],
   };
 
@@ -126,24 +134,28 @@ const MarketOverview = () => {
       { i: 'mvrv', x: 3, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
       { i: 'mayerMultiple', x: 6, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
       { i: 'piCycleTop', x: 9, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
+      { i: 'roiCycleComparison', x: 0, y: 2, w: 3, h: 2, minW: 2, minH: 2 },
     ],
     md: [
       { i: 'bitcoinRisk', x: 0, y: 0, w: 4, h: 2, minW: 2, minH: 2 },
       { i: 'mvrv', x: 4, y: 0, w: 4, h: 2, minW: 2, minH: 2 },
       { i: 'mayerMultiple', x: 0, y: 2, w: 4, h: 2, minW: 2, minH: 2 },
       { i: 'piCycleTop', x: 4, y: 2, w: 4, h: 2, minW: 2, minH: 2 },
+      { i: 'roiCycleComparison', x: 0, y: 4, w: 4, h: 2, minW: 2, minH: 2 },
     ],
     sm: [
       { i: 'bitcoinRisk', x: 0, y: 0, w: 6, h: 2, minW: 2, minH: 2 },
       { i: 'mvrv', x: 0, y: 2, w: 6, h: 2, minW: 2, minH: 2 },
       { i: 'mayerMultiple', x: 0, y: 4, w: 6, h: 2, minW: 2, minH: 2 },
       { i: 'piCycleTop', x: 0, y: 6, w: 6, h: 2, minW: 2, minH: 2 },
+      { i: 'roiCycleComparison', x: 0, y: 8, w: 6, h: 2, minW: 2, minH: 2 },
     ],
     xs: [
       { i: 'bitcoinRisk', x: 0, y: 0, w: 4, h: 2, minW: 2, minH: 2 },
       { i: 'mvrv', x: 0, y: 2, w: 4, h: 2, minW: 2, minH: 2 },
       { i: 'mayerMultiple', x: 0, y: 4, w: 4, h: 2, minW: 2, minH: 2 },
       { i: 'piCycleTop', x: 0, y: 6, w: 4, h: 2, minW: 2, minH: 2 },
+      { i: 'roiCycleComparison', x: 0, y: 8, w: 4, h: 2, minW: 2, minH: 2 },
     ],
   };
 
@@ -280,6 +292,8 @@ const MarketOverview = () => {
     return mayerMultiples;
   };
 
+  
+
   // Gauge colors
   const gaugeColors = [
     '#4BC0C8', '#33D1FF', '#66A3FF', '#9996FF', '#CC89FF',
@@ -415,6 +429,190 @@ const MarketOverview = () => {
       </Box>
     );
   });
+
+// New RoiCycleComparisonWidget
+const RoiCycleComparisonWidget = memo(() => {
+  const [currentRoi, setCurrentRoi] = useState(null);
+  const [avgRoi, setAvgRoi] = useState(null);
+  const [zScore, setZScore] = useState(null);
+  const [heatScore, setHeatScore] = useState(null);
+  const [currentDays, setCurrentDays] = useState(null);
+
+  useEffect(() => {
+    const calculateRoiData = async () => {
+      if (!btcData || btcData.length === 0) return;
+
+      const cycleStarts = {
+        'Cycle 2': '2015-01-15',
+        'Cycle 3': '2018-12-15',
+        'Cycle 4': '2022-11-21',
+      };
+      const cycleEnds = {
+        'Cycle 2': '2017-12-17',
+        'Cycle 3': '2021-11-08',
+        'Cycle 4': btcData[btcData.length - 1].time,
+      };
+
+      const processCycle = (start, end, cycleName) => {
+        const filteredData = btcData.filter(
+          d => new Date(d.time) >= new Date(start) && new Date(d.time) <= new Date(end)
+        );
+        if (filteredData.length === 0) return null;
+        const basePrice = filteredData[0].value;
+        return filteredData.map((item, index) => ({
+          day: index,
+          roi: Math.log(item.value / basePrice) / Math.LN10,
+          date: item.time,
+          cycle: cycleName,
+        }));
+      };
+
+      const cycle2 = processCycle(cycleStarts['Cycle 2'], cycleEnds['Cycle 2'], 'Cycle 2');
+      const cycle3 = processCycle(cycleStarts['Cycle 3'], cycleEnds['Cycle 3'], 'Cycle 3');
+      const cycle4 = processCycle(cycleStarts['Cycle 4'], cycleEnds['Cycle 4'], 'Cycle 4');
+
+      if (!cycle2 || !cycle3 || !cycle4) return;
+
+      // Cache ROI data
+      try {
+        await saveRoiData({ cycle2, cycle3, cycle4 });
+      } catch (error) {
+        console.error('Failed to cache ROI data:', error);
+      }
+
+      const days = cycle4.length;
+      const currentRoiValue = cycle4[cycle4.length - 1].roi;
+
+      const maxDays = Math.min(cycle2.length, cycle3.length, days);
+      const avgRois = [];
+      for (let day = 0; day < maxDays; day++) {
+        const rois = [cycle2[day]?.roi, cycle3[day]?.roi].filter(roi => roi !== undefined);
+        if (rois.length > 0) {
+          avgRois.push(rois.reduce((sum, roi) => sum + roi, 0) / rois.length);
+        }
+      }
+
+      if (avgRois.length > 0) {
+        const latestAvgRoi = avgRois[avgRois.length - 1];
+        setCurrentRoi(currentRoiValue);
+        setAvgRoi(latestAvgRoi);
+        setCurrentDays(days);
+
+        const mean = avgRois.reduce((sum, val) => sum + val, 0) / avgRois.length;
+        const variance = avgRois.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / avgRois.length;
+        const stdDev = Math.sqrt(variance);
+        const z = stdDev > 0 ? (currentRoiValue - latestAvgRoi) / stdDev : 0;
+        setZScore(z);
+
+        let heat = stdDev === 0 ? 60 : Math.max(0, Math.min(100, 60 + (z * 20)));
+        setHeatScore(heat);
+      }
+    };
+
+    const loadCachedData = async () => {
+      try {
+        const cachedRoiData = await getRoiData();
+        if (cachedRoiData && cachedRoiData.cycle4 && btcData && btcData.length > 0) {
+          const lastCachedDate = cachedRoiData.cycle4[cachedRoiData.cycle4.length - 1].date;
+          const lastBtcDate = btcData[btcData.length - 1].time;
+          if (lastCachedDate === lastBtcDate) {
+            const currentRoiValue = cachedRoiData.cycle4[cachedRoiData.cycle4.length - 1].roi;
+            const days = cachedRoiData.cycle4.length;
+            const avgRois = [];
+            const maxDays = Math.min(cachedRoiData.cycle2.length, cachedRoiData.cycle3.length, days);
+            for (let day = 0; day < maxDays; day++) {
+              const rois = [
+                cachedRoiData.cycle2[day]?.roi,
+                cachedRoiData.cycle3[day]?.roi,
+              ].filter(roi => roi !== undefined);
+              if (rois.length > 0) {
+                avgRois.push(rois.reduce((sum, roi) => sum + roi, 0) / rois.length);
+              }
+            }
+            if (avgRois.length > 0) {
+              const latestAvgRoi = avgRois[avgRois.length - 1];
+              setCurrentRoi(currentRoiValue);
+              setAvgRoi(latestAvgRoi);
+              setCurrentDays(days);
+              const mean = avgRois.reduce((sum, val) => sum + val, 0) / avgRois.length;
+              const variance = avgRois.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / avgRois.length;
+              const stdDev = Math.sqrt(variance);
+              const z = stdDev > 0 ? (currentRoiValue - latestAvgRoi) / stdDev : 0;
+              setZScore(z);
+              let heat = stdDev === 0 ? 60 : Math.max(0, Math.min(100, 60 + (z * 20)));
+              setHeatScore(heat);
+              return true;
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load cached ROI data:', error);
+      }
+      return false;
+    };
+
+    const initialize = async () => {
+      const usedCache = await loadCachedData();
+      if (!usedCache) {
+        await calculateRoiData();
+      }
+    };
+
+    initialize();
+  }, [btcData]);
+
+  const backgroundColor = getBackgroundColor(heatScore || 0);
+  const textColor = getTextColor(backgroundColor);
+  const isSignificant = heatScore !== null && heatScore >= 85;
+  const roiDifference = currentRoi !== null && avgRoi !== null ? currentRoi - avgRoi : null;
+
+  return (
+    <Box sx={{
+      ...chartBoxStyle(colors, theme),
+      backgroundColor: backgroundColor,
+      transition: 'background-color 0.3s ease, transform 0.2s ease-in-out',
+      border: isSignificant ? `2px solid ${colors.redAccent[500]}` : 'none',
+      padding: '24px',
+      textAlign: 'center',
+    }}>
+      <Typography variant="h4" color={textColor} gutterBottom sx={{ fontWeight: 'bold' }}>
+        ROI Cycle Comparison
+      </Typography>
+      <Box
+        sx={{
+          flexGrow: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '8px',
+        }}
+      >
+        <Typography variant="h3" color={textColor} sx={{ fontWeight: 'bold', mt: 1 }}>
+          Difference: {roiDifference !== null ? (roiDifference >= 0 ? '+' : '') + roiDifference.toFixed(2) : 'N/A'}
+        </Typography>
+        <Typography variant="h5" color={textColor} sx={{ fontWeight: 'bold' }}>
+          Current: {currentRoi !== null ? currentRoi.toFixed(2) : 'N/A'}
+        </Typography>
+        <Typography variant="h5" color={textColor} sx={{ fontWeight: 'bold' }}>
+          Avg (Cycles 2 & 3): {avgRoi !== null ? avgRoi.toFixed(2) : 'N/A'}
+        </Typography>
+        <Typography variant="body1" color={textColor} >
+          Days in Cycle: {currentDays !== null ? currentDays : 'N/A'}
+        </Typography>
+      </Box>
+      {isSignificant && (
+        <Typography
+          variant="body1"
+          color={colors.redAccent[500]}
+          sx={{ textAlign: 'center', mt: 2, fontWeight: 'bold' }}
+        >
+          Warning: Market significantly above historical ROI.
+        </Typography>
+      )}
+    </Box>
+  );
+});
 
   // MVRV Ratio Widget
   const MvrvRatioWidget = memo(() => {
@@ -996,7 +1194,12 @@ const MarketOverview = () => {
         <LineChart data={btcData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke={colors.grey[500]} />
           <XAxis dataKey="time" stroke={colors.grey[100]} tick={{ fontSize: 12 }} />
-          <YAxis stroke={colors.grey[100]} tick={{ fontSize: 12 }} />
+          <YAxis
+          scale="log"
+          domain={['auto', 'auto']} // Adjust domain to ensure positive values
+          stroke={colors.grey[100]}
+          tick={{ fontSize: 12 }}
+        />
           <Tooltip
             contentStyle={{ backgroundColor: colors.primary[500], border: `1px solid ${colors.grey[500]}` }}
             labelStyle={{ color: colors.grey[100] }}
@@ -1017,7 +1220,12 @@ const MarketOverview = () => {
         <LineChart data={ethData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke={colors.grey[500]} />
           <XAxis dataKey="time" stroke={colors.grey[100]} tick={{ fontSize: 12 }} />
-          <YAxis stroke={colors.grey[100]} tick={{ fontSize: 12 }} />
+          <YAxis
+          scale="log"
+          domain={['auto', 'auto']} // Adjust domain to ensure positive values
+          stroke={colors.grey[100]}
+          tick={{ fontSize: 12 }}
+        />
           <Tooltip
             contentStyle={{ backgroundColor: colors.primary[500], border: `1px solid ${colors.grey[500]}` }}
             labelStyle={{ color: colors.grey[100] }}
@@ -1077,7 +1285,12 @@ const MarketOverview = () => {
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke={colors.grey[500]} />
           <XAxis dataKey="time" stroke={colors.grey[100]} tick={{ fontSize: 12 }} />
-          <YAxis stroke={colors.grey[100]} tick={{ fontSize: 12 }} />
+          <YAxis
+          scale="log"
+          domain={['auto', 'auto']} // Adjust domain to ensure positive values
+          stroke={colors.grey[100]}
+          tick={{ fontSize: 12 }}
+        />
           <Tooltip
             contentStyle={{ backgroundColor: colors.primary[500], border: `1px solid ${colors.grey[500]}` }}
             labelStyle={{ color: colors.grey[100] }}
@@ -1123,20 +1336,14 @@ const MarketOverview = () => {
         textAlign: 'center',
       }}
     >
+
+      <Box sx={{ width: '100%', maxWidth: 1440, margin: '0 auto' }}> {/* Wrapper for widgets - MOVE WIDGETS WITHIN HERE */}
+        
       <Typography
         variant="h4"
         color={colors.grey[100]}
         gutterBottom
         sx={{ fontWeight: 'bold', marginBottom: '24px' }}
-      >
-        Market Overview
-      </Typography>
-      <Box sx={{ width: '100%', maxWidth: 1440, margin: '0 auto' }}> {/* Wrapper for widgets - MOVE WIDGETS WITHIN HERE */}
-        
-      <Typography
-        variant="h5"
-        color={colors.grey[100]}
-        sx={{ fontWeight: 'bold', margin: '24px 0 16px' }}
       >
         Market Sentiment
       </Typography>
@@ -1167,8 +1374,9 @@ const MarketOverview = () => {
 
         {/* Performance Section */}
         <Typography
-          variant="h5"
+          variant="h4"
           color={colors.grey[100]}
+          gutterBottom
           sx={{ fontWeight: 'bold', margin: '24px 0 16px' }}
         >
           Indicators
@@ -1187,27 +1395,21 @@ const MarketOverview = () => {
           containerPadding={[0, 0]}
           style={{ width: '100%' }}
         >
-          <div key="bitcoinRisk">
-            <BitcoinRiskWidget />
-          </div>
-          <div key="mvrv">
-            <MvrvRatioWidget />
-          </div>
-          <div key="mayerMultiple">
-            <MayerMultipleWidget />
-          </div>
-          <div key="piCycleTop">
-            <PiCycleTopWidget />
-          </div>
+          <div key="bitcoinRisk"><BitcoinRiskWidget /></div>
+          <div key="mvrv"><MvrvRatioWidget /></div>
+          <div key="mayerMultiple"><MayerMultipleWidget /></div>
+          <div key="piCycleTop"><PiCycleTopWidget /></div>
+          <div key="roiCycleComparison"><RoiCycleComparisonWidget /></div>
         </ResponsiveGridLayout>
 
         {/* Price Section */}
         <Typography
-          variant="h5"
+          variant="h4"
           color={colors.grey[100]}
+          gutterBottom
           sx={{ fontWeight: 'bold', margin: '24px 0 16px' }}
         >
-          Price
+          Charts
         </Typography>
         <ResponsiveGridLayout
           className="layout"
@@ -1229,30 +1431,6 @@ const MarketOverview = () => {
           <div key="ethereum">
             <EthereumPriceChart />
           </div>
-        </ResponsiveGridLayout>
-
-        {/* Indicators Section */}
-        <Typography
-          variant="h5"
-          color={colors.grey[100]}
-          sx={{ fontWeight: 'bold', margin: '24px 0 16px' }}
-        >
-          Indicators
-        </Typography>
-        <ResponsiveGridLayout
-          className="layout"
-          layouts={indicatorsLayout}
-          breakpoints={breakpoints}
-          cols={cols}
-          rowHeight={rowHeight}
-          onLayoutChange={(layout, allLayouts) => setIndicatorsLayout(allLayouts)}
-          isDraggable
-          isResizable
-          compactType="vertical"
-          margin={margin}
-          containerPadding={[0, 0]}
-          style={{ width: '100%' }}
-        >
           <div key="inflation">
             <InflationChart />
           </div>
