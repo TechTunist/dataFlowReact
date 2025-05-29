@@ -22,11 +22,11 @@ const FearAndGreedBinaryChart = ({ isDashboard = false }) => {
 
   // Log data for debugging
   useEffect(() => {
-    console.log('fearAndGreedBinaryData:', fearAndGreedBinaryData);
-    console.log('BtcData:', btcData);
-    console.log('Loading:', fearAndGreedLoading, 'Error:', fearAndGreedError);
+    // console.log('fearAndGreedBinaryData:', fearAndGreedBinaryData);
+    // console.log('BtcData:', btcData);
+    // console.log('Loading:', fearAndGreedLoading, 'Error:', fearAndGreedError);
     if (fearAndGreedBinaryData.length === 0 && !fearAndGreedLoading && !fearAndGreedError) {
-      console.log('fearAndGreedBinaryData is empty, attempting to refetch...');
+      // console.log('fearAndGreedBinaryData is empty, attempting to refetch...');
       refetch();
     }
   }, [fearAndGreedBinaryData, btcData, fearAndGreedLoading, fearAndGreedError, refetch]);
@@ -67,7 +67,7 @@ const FearAndGreedBinaryChart = ({ isDashboard = false }) => {
   // Memoized datasets
   const datasets = useMemo(() => {
     if (btcData.length === 0 || fearAndGreedBinaryData.length === 0) {
-      console.log('No datasets: btcData or fearAndGreedBinaryData empty');
+      // console.log('No datasets: btcData or fearAndGreedBinaryData empty');
       return [];
     }
 

@@ -75,7 +75,7 @@ const AuthWrapper = memo(() => {
   const { user } = useUser();
   const location = useLocation();
 
-  console.log('AuthWrapper rendered'); // Log to confirm rerenders
+  // console.log('AuthWrapper rendered'); // Log to confirm rerenders
 
   if (!isLoaded) {
     return <div>Loading...</div>;
@@ -127,7 +127,7 @@ const AppContent = memo(({ isSignedIn, user }) => {
     return <div>Error loading Stripe: {stripeError}</div>;
   }
 
-  console.log('AppContent rendered'); // Log to confirm rerenders
+  // console.log('AppContent rendered'); // Log to confirm rerenders
 
   return (
     <StripeContext.Provider value={stripe}>

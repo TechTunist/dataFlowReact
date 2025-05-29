@@ -143,7 +143,7 @@ const Subscription = memo(() => {
       if (!token) {
         throw new Error('Failed to obtain authentication token');
       }
-      console.log('Checkout token:', token);
+      // console.log('Checkout token:', token);
 
       const response = await fetch(`${API_BASE_URL}/api/create-checkout-session/`, {
         method: 'POST',

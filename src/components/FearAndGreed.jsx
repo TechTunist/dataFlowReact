@@ -18,7 +18,7 @@ function CryptoFearAndGreedIndex({ isDashboard }) {
 
         const fetchData = async () => {
             if (isLatestFearAndGreedFetched || latestFearAndGreed) {
-                console.log('Latest Fear and Greed data already fetched or available, skipping fetch');
+                // console.log('Latest Fear and Greed data already fetched or available, skipping fetch');
                 setIsLoading(false);
                 return;
             }
@@ -30,7 +30,7 @@ function CryptoFearAndGreedIndex({ isDashboard }) {
             } catch (err) {
                 if (isMounted) {
                     setError('Failed to fetch Fear and Greed data. Please try again later.');
-                    console.error('Error fetching Fear and Greed data:', err);
+                    // console.error('Error fetching Fear and Greed data:', err);
                 }
             } finally {
                 if (isMounted) {

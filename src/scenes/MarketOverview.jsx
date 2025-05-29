@@ -182,10 +182,10 @@ const MarketOverview = () => {
   const [altcoinSeasonLayout, setAltcoinSeasonLayout] = useState(altcoinSeasonLayouts);
   const [sentimentIndexesLayout, setSentimentIndexesLayout] = useState(sentimentIndexesLayouts);
 
-  useEffect(() => {
-    console.log('MarketOverview mounted');
-    return () => console.log('MarketOverview unmounted');
-  }, []);
+  // useEffect(() => {
+  //   console.log('MarketOverview mounted');
+  //   return () => console.log('MarketOverview unmounted');
+  // }, []);
 
   // Fetch data on mount
   useEffect(() => {
@@ -340,7 +340,7 @@ const MarketOverview = () => {
         const heat = indexValue;
         setHeatScore(heat);
 
-        console.log('AltcoinSeasonWidget Heat Score:', heat);
+        // console.log('AltcoinSeasonWidget Heat Score:', heat);
       }
     }, [altcoinSeasonData]);
 
@@ -645,7 +645,7 @@ const RoiCycleComparisonWidget = memo(() => {
           const z = (latestMvrv - cappedProjectedPeak) / stdDev;
           setZScore(z);
 
-          console.log('MvrvRatioWidget Heat Score:', heat);
+          // console.log('MvrvRatioWidget Heat Score:', heat);
         }
       }
     }, [mvrvData]);
@@ -731,7 +731,7 @@ const RoiCycleComparisonWidget = memo(() => {
           const z = (latestMayer - thresholds[0]) / stdDev;
           setZScore(z);
 
-          console.log('MayerMultipleWidget Heat Score:', heat);
+          // console.log('MayerMultipleWidget Heat Score:', heat);
         }
       }
     }, [btcData]);
@@ -809,7 +809,7 @@ const RoiCycleComparisonWidget = memo(() => {
     const heatDescription = getHeatDescription(displayRisk);
     const isSignificant = parseFloat(displayRisk) >= 85;
 
-    console.log('BitcoinRiskWidget Heat Score (displayRisk):', displayRisk);
+    // console.log('BitcoinRiskWidget Heat Score (displayRisk):', displayRisk);
 
     return (
       <Box sx={{
@@ -875,7 +875,7 @@ const RoiCycleComparisonWidget = memo(() => {
     const heatDescription = getHeatDescription(latestValue);
     const isSignificant = latestValue >= 85;
 
-    console.log('FearAndGreedGauge Heat Score (latestValue):', latestValue);
+    // console.log('FearAndGreedGauge Heat Score (latestValue):', latestValue);
 
     return (
       <Box sx={{
@@ -951,7 +951,7 @@ const RoiCycleComparisonWidget = memo(() => {
           const heat = Math.max(0, Math.min(100, (((latestRatio - minRatio) / buffer) * 100) + heatOffset));
           setHeatScore(heat);
 
-          console.log('PiCycleTopWidget Heat Score:', heat);
+          // console.log('PiCycleTopWidget Heat Score:', heat);
         }
       }
     }, [btcData]);
@@ -1076,7 +1076,7 @@ const RoiCycleComparisonWidget = memo(() => {
             latestRatio: latestRatioRaw,
           };
           setDebugInputs(inputs);
-          console.log('Raw Inputs:', inputs);
+          // console.log('Raw Inputs:', inputs);
 
           const scores = {
             mvrv: mvrvHeat,
@@ -1101,7 +1101,7 @@ const RoiCycleComparisonWidget = memo(() => {
           setDebugScores(scores);
           setHeatScore(avgHeat);
 
-          console.log('MarketHeatGaugeWidget Scores:', scores, 'Average:', avgHeat);
+          // console.log('MarketHeatGaugeWidget Scores:', scores, 'Average:', avgHeat);
         };
         fetchRisk();
       }

@@ -188,7 +188,7 @@ const OnChainHistoricalRisk = ({ isDashboard = false, mvrvData: propMvrvData, bt
   // Render chart
   useEffect(() => {
     if (chartData.length === 0) {
-      console.log('No chart data to render');
+      // console.log('No chart data to render');
       return;
     }
 

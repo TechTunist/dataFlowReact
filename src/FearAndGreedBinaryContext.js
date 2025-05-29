@@ -29,7 +29,7 @@ export const FearAndGreedBinaryProvider = ({ children }) => {
       });
 
       if (response.status === 304 && retryCount < 3) {
-        console.log('304 Not Modified, retrying...', retryCount + 1);
+        // console.log('304 Not Modified, retrying...', retryCount + 1);
         return fetchData(retryCount + 1); // Retry on 304
       }
 
@@ -38,14 +38,14 @@ export const FearAndGreedBinaryProvider = ({ children }) => {
       }
 
       const arrayBuffer = await response.arrayBuffer();
-      console.log('Raw Buffer Length:', arrayBuffer.byteLength);
+      // console.log('Raw Buffer Length:', arrayBuffer.byteLength);
       if (arrayBuffer.byteLength < 4) {
         throw new Error('Response too short to contain record count');
       }
 
       const view = new DataView(arrayBuffer);
       const numRecords = view.getUint32(0, false);
-      console.log('Number of Records:', numRecords);
+      // console.log('Number of Records:', numRecords);
 
       if (arrayBuffer.byteLength < 4 + numRecords * 6) {
         throw new Error('Incomplete data: buffer too short for records');
@@ -65,7 +65,7 @@ export const FearAndGreedBinaryProvider = ({ children }) => {
         });
       }
 
-      console.log('Parsed Records:', records.slice(0, 5));
+      // console.log('Parsed Records:', records.slice(0, 5));
       setFearAndGreedBinaryData(records);
       setLoading(false);
     } catch (err) {

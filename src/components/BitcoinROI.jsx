@@ -210,7 +210,7 @@ const BitcoinROI = ({ isDashboard = false }) => {
             xaxis: { ...prev.xaxis, autorange: true },
             yaxis: { ...prev.yaxis, autorange: true }
         }));
-        setSelectedYears(availableYears.map(y => y.value));
+        // setSelectedYears(availableYears.map(y => y.value));
         setVisibilityMap(prev => {
             const newMap = { ...prev };
             yearDataSets.forEach(dataset => {
