@@ -426,6 +426,32 @@ const MarketOverview = () => {
             Warning: Strong Altcoin Season detected.
           </Typography>
         )}
+        {/* Overlay */}
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'rgba(0, 0, 0, 0.8)', // Semi-transparent black
+            opacity: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'opacity 0.3s ease-in-out',
+            borderRadius: '12px',
+            padding: '16px',
+            textAlign: 'center',
+            '&:hover': {
+              opacity: 1,
+            },
+          }}
+        >
+          <Typography variant="body2" color="white" sx={{ fontSize: '14px' }}>
+            The Altcoin Season Index measures the performance of altcoins relative to Bitcoin. A higher value (closer to 100) indicates an altcoin season, where altcoins outperform Bitcoin. It’s calculated based on the percentage of altcoins outperforming Bitcoin over a specific period.
+          </Typography>
+        </Box>
       </Box>
     );
   });
@@ -610,9 +636,35 @@ const RoiCycleComparisonWidget = memo(() => {
           Warning: Market significantly above historical ROI.
         </Typography>
       )}
-    </Box>
-  );
-});
+    {/* Overlay */}
+    <Box
+          sx={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            opacity: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'opacity 0.3s ease-in-out',
+            borderRadius: '12px',
+            padding: '16px',
+            textAlign: 'center',
+            '&:hover': {
+              opacity: 1,
+            },
+          }}
+        >
+          <Typography variant="body2" color="white" sx={{ fontSize: '14px' }}>
+            The ROI Cycle Comparison widget shows the current ROI of Bitcoin compared to the average ROI of previous cycles (Cycle 2 and Cycle 3). It helps identify how the current market performance compares to historical trends, providing insights into potential market overheating or undervaluation.
+          </Typography>
+        </Box>
+      </Box>
+    );
+  });
 
   // MVRV Ratio Widget
   const MvrvRatioWidget = memo(() => {
@@ -699,6 +751,32 @@ const RoiCycleComparisonWidget = memo(() => {
             Warning: Market is overheated.
           </Typography>
         )}
+      {/* Overlay */}
+      <Box
+          sx={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            opacity: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'opacity 0.3s ease-in-out',
+            borderRadius: '12px',
+            padding: '16px',
+            textAlign: 'center',
+            '&:hover': {
+              opacity: 1,
+            },
+          }}
+        >
+          <Typography variant="body2" color="white" sx={{ fontSize: '14px' }}>
+            The MVRV Ratio (Market Value to Realized Value) compares the market value of Bitcoin to its realized value. A high MVRV indicates that the market is overvalued, while a low MVRV suggests it is undervalued. This widget helps identify potential market overheating or undervaluation.
+          </Typography>
+        </Box>
       </Box>
     );
   });
@@ -782,6 +860,32 @@ const RoiCycleComparisonWidget = memo(() => {
             Warning: Market is overheating or severely undervalued.
           </Typography>
         )}
+      {/* Overlay */}
+      <Box
+          sx={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            opacity: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'opacity 0.3s ease-in-out',
+            borderRadius: '12px',
+            padding: '16px',
+            textAlign: 'center',
+            '&:hover': {
+              opacity: 1,
+            },
+          }}
+        >
+          <Typography variant="body2" color="white" sx={{ fontSize: '14px' }}>
+            The Mayer Multiple is a ratio of Bitcoin's current price to its 200-day moving average. It helps identify whether Bitcoin is overbought or oversold. A high Mayer Multiple indicates that Bitcoin is significantly above its historical average, suggesting potential overvaluation, while a low value indicates undervaluation.
+          </Typography>
+        </Box>
       </Box>
     );
   });
@@ -862,6 +966,32 @@ const RoiCycleComparisonWidget = memo(() => {
             Warning: High market risk.
           </Typography>
         )}
+      {/* Overlay */}
+      <Box
+          sx={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            opacity: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'opacity 0.3s ease-in-out',
+            borderRadius: '12px',
+            padding: '16px',
+            textAlign: 'center',
+            '&:hover': {
+              opacity: 1,
+            },
+          }}
+        >
+          <Typography variant="body2" color="white" sx={{ fontSize: '14px' }}>
+            The Bitcoin Risk Level assesses the risk of investing in Bitcoin based on historical price patterns and volatility. A higher value indicates higher risk, derived from proprietary risk models.
+          </Typography>
+        </Box>
       </Box>
     );
   });
@@ -885,18 +1015,20 @@ const RoiCycleComparisonWidget = memo(() => {
         border: isSignificant ? `2px solid ${colors.redAccent[500]}` : 'none',
         padding: '24px',
         textAlign: 'center',
+        display: 'flex',
+        justifyContent: 'center',
       }}>
         <Typography variant="h4" color={textColor} gutterBottom sx={{ fontWeight: 'bold' }}>
           Fear and Greed Index
         </Typography>
         <FearAndGreed3D backgroundColor={backgroundColor} />
-        <Typography
+        {/* <Typography
           variant="body1"
           color={textColor}
           sx={{ textAlign: 'center', mt: 1 }}
         >
           Current: {latestValue}
-        </Typography>
+        </Typography> */}
         <Typography
           variant="body1"
           color={textColor}
@@ -913,6 +1045,32 @@ const RoiCycleComparisonWidget = memo(() => {
             Warning: Extreme market greed.
           </Typography>
         )}
+      {/* Overlay */}
+      <Box
+          sx={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            opacity: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'opacity 0.3s ease-in-out',
+            borderRadius: '12px',
+            padding: '16px',
+            textAlign: 'center',
+            '&:hover': {
+              opacity: 1,
+            },
+          }}
+        >
+          <Typography variant="body2" color="white" sx={{ fontSize: '14px' }}>
+            The Fear and Greed Index gauges market sentiment, ranging from 0 (Extreme Fear) to 100 (Extreme Greed). It’s calculated using factors like volatility, market momentum, and social media sentiment.
+          </Typography>
+        </Box>
       </Box>
     );
   });
@@ -1002,6 +1160,32 @@ const RoiCycleComparisonWidget = memo(() => {
             Warning: Market approaching cycle top.
           </Typography>
         )}
+      {/* Overlay */}
+      <Box
+          sx={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            opacity: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'opacity 0.3s ease-in-out',
+            borderRadius: '12px',
+            padding: '16px',
+            textAlign: 'center',
+            '&:hover': {
+              opacity: 1,
+            },
+          }}
+        >
+          <Typography variant="body2" color="white" sx={{ fontSize: '14px' }}>
+            The PiCycle Top Indicator (created by Phillip Swift) uses the 111-day and 350-day moving averages to predict potential market tops. The ratio of these moving averages shows decreasing peaks, suggesting a cycle top of under 1.0.
+          </Typography>
+        </Box>
       </Box>
     );
   });
@@ -1180,6 +1364,32 @@ const RoiCycleComparisonWidget = memo(() => {
             Warning: Market is significantly overheated.
           </Typography>
         )}
+      {/* Overlay */}
+      <Box
+          sx={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            opacity: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'opacity 0.3s ease-in-out',
+            borderRadius: '12px',
+            padding: '16px',
+            textAlign: 'center',
+            '&:hover': {
+              opacity: 1,
+            },
+          }}
+        >
+          <Typography variant="body2" color="white" sx={{ fontSize: '14px' }}>
+            The Market Heat Index combines multiple indicators (MVRV, Mayer Multiple, Fear and Greed, etc.) to assess overall market conditions. A higher score indicates an overheated market, calculated as a weighted average of individual indicator scores.
+          </Typography>
+        </Box>
       </Box>
     );
   });
@@ -1318,6 +1528,7 @@ const RoiCycleComparisonWidget = memo(() => {
     boxSizing: 'border-box',
     display: 'flex',
     flexDirection: 'column',
+    position: 'relative', // Added for overlay positioning
     boxShadow: `0 4px 12px ${theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.1)'}`,
     transition: 'transform 0.2s ease-in-out',
     '&:hover': {

@@ -1,4 +1,3 @@
-// src/components/FearAndGreed3DGauge.js
 import React, { useState, useEffect } from 'react';
 import { Box, Typography, useTheme } from '@mui/material';
 
@@ -33,20 +32,30 @@ const FearAndGreed3D = () => {
   const percentage = (fearAndGreedValue / 100) * 100;
 
   return (
-    <Box sx={{ textAlign: 'center', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-      <Typography variant="h6" gutterBottom>
+    <Box
+      sx={{
+        textAlign: 'center',
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center', // Added to ensure horizontal centering
+      }}
+    >
+      {/* <Typography variant="h6" gutterBottom>
         Fear and Greed Index
-      </Typography>
+      </Typography> */}
       <Box
         sx={{
           width: 200,
           height: 40,
-          background: `linear-gradient(90deg, ${theme.palette.error.main} 0%, ${theme.palette.warning.main} 50%, ${theme.palette.success.main} 100%)`,
+          background: `linear-gradient(90deg, #ff0000 0%, ${theme.palette.warning.main} 50%, #00cc00 100%)`, // Vivid red and green
           borderRadius: 2,
           position: 'relative',
           margin: '0 auto',
           boxShadow: '0 4px 10px rgba(0,0,0,0.3)',
           transform: 'perspective(500px) rotateX(20deg)',
+          marginTop: 4,
         }}
       >
         <Box
