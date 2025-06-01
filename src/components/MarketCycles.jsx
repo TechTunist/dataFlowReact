@@ -18,7 +18,7 @@ const MarketCycles = ({ isDashboard = false }) => {
     const [startPoint, setStartPoint] = useState('bottom');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [selectedCycles, setSelectedCycles] = useState(['Cycle 2', 'Cycle 3']); // Default to excluding Cycle 1
+    const [selectedCycles, setSelectedCycles] = useState([]); // Default to excluding Cycle 1
 
     // Memoized layout
     const [layout, setLayout] = useState({
@@ -29,7 +29,7 @@ const MarketCycles = ({ isDashboard = false }) => {
         font: { color: colors.primary[100] },
         xaxis: { 
             title: !isDashboard && !isMobile ? 'Days from Bear Market Bottom' : '',
-            autorange: true 
+            autorange: true
         },
         yaxis: { 
             title: 'Logarithmic ROI (Base-10)', 
