@@ -215,6 +215,10 @@ export const DataProvider = ({ children }) => {
   const [altcoinSeasonData, setAltcoinSeasonData] = useState({});
   const [isAltcoinSeasonDataFetched, setIsAltcoinSeasonDataFetched] = useState(false);
   const [altcoinSeasonLastUpdated, setAltcoinSeasonLastUpdated] = useState(null);
+  const [onchainMetricsData, setOnchainMetricsData] = useState([]);
+  const [isOnchainMetricsDataFetched, setIsOnchainMetricsDataFetched] = useState(false);
+  const [onchainMetricsLastUpdated, setOnchainMetricsLastUpdated] = useState(null);
+  const [onchainFetchError, setOnchainFetchError] = useState(null);
 
   const API_BASE_URL = 'https://vercel-dataflow.vercel.app/api';
   // const API_BASE_URL = 'http://127.0.0.1:8000/api';
@@ -245,16 +249,23 @@ export const DataProvider = ({ children }) => {
           setIsFetched: setIsAltcoinSeasonDataFetched,
           useDateCheck: true
         },
+        {
+          id: 'onchainMetricsData',
+          setData: setOnchainMetricsData,
+          setLastUpdated: setOnchainMetricsLastUpdated,
+          setIsFetched: setIsOnchainMetricsDataFetched,
+          useDateCheck: true,
+        },
       ];
 
-      for (const { id, setData, setLastUpdated, setIsFetched, useDateCheck, cacheDuration } of cacheConfigs) {
+      for (const { id, setData, setLastUpdated, setIsFetched, useDateCheck } of cacheConfigs) {
         try {
+          console.log(`Preloading data for ${id}`);
           const cached = await getCachedData(id);
           if (cached && cached.data.length > 0) {
             const { data: cachedData, timestamp } = cached;
             const currentDate = new Date().toISOString().split('T')[0];
             const currentTimestamp = Date.now();
-            // Sort in ascending order to match fetchWithCache
             const sortedCachedData = [...cachedData].sort((a, b) => new Date(a.time) - new Date(b.time));
             const latestCachedDate = sortedCachedData[sortedCachedData.length - 1].time;
 
@@ -263,22 +274,31 @@ export const DataProvider = ({ children }) => {
               shouldReuseCache = latestCachedDate >= currentDate;
             } else {
               const timeSinceLastFetch = currentTimestamp - timestamp;
-              shouldReuseCache = timeSinceLastFetch < (cacheDuration || 24 * 60 * 60 * 1000);
+              shouldReuseCache = timeSinceLastFetch < (24 * 60 * 60 * 1000);
             }
 
             if (shouldReuseCache) {
+              console.log(`Reusing cached data for ${id}: ${cachedData.length} records`);
               setData(sortedCachedData);
-              if (setLastUpdated) {
-                setLastUpdated(latestCachedDate);
-              }
+              setLastUpdated(latestCachedDate);
               setIsFetched(true);
+            } else if (id === 'onchainMetricsData') {
+              console.log(`Fetching address metrics during preload`);
+              await fetchOnchainMetricsData();
             }
+          } else if (id === 'onchainMetricsData') {
+            console.log(`No cache found, fetching address metrics`);
+            await fetchOnchainMetricsData();
           }
         } catch (error) {
           console.error(`Error preloading data for ${id}:`, error);
+          if (id === 'onchainMetricsData') {
+            setOnchainFetchError(error.message);
+          }
         }
       }
       setPreloadComplete(true);
+      console.log('Preload complete');
     };
 
     preloadData();
@@ -347,6 +367,102 @@ export const DataProvider = ({ children }) => {
       fetchFunction: fetchLatestFearAndGreed,
     });
   }, [fetchLatestFearAndGreed]);
+
+  const fetchOnchainMetricsData = useCallback(
+    async () => {
+      if (isOnchainMetricsDataFetched) {
+        console.log('Address metrics already fetched');
+        return;
+      }
+
+      const cacheId = 'onchainMetricsData';
+      const currentDate = new Date().toISOString().split('T')[0];
+      const currentTimestamp = Date.now();
+
+      try {
+        setIsOnchainMetricsDataFetched(true);
+        setOnchainFetchError(null);
+
+        const cached = await getCachedData(cacheId);
+        if (cached && cached.data.length > 0) {
+          const sortedCachedData = [...cached.data].sort((a, b) => new Date(a.time) - new Date(b.time));
+          const latestCachedDate = sortedCachedData[sortedCachedData.length - 1].time;
+          if (latestCachedDate >= currentDate) {
+            console.log(`Using cached data: ${sortedCachedData.length} records`);
+            setOnchainMetricsData(sortedCachedData);
+            setOnchainMetricsLastUpdated(latestCachedDate);
+            return;
+          }
+        }
+
+        const maxRetries = 2;
+        let attempts = 0;
+        let response;
+
+        while (attempts < maxRetries) {
+          try {
+            const apiUrl = `${API_BASE_URL}/onchain-address-metrics/?start_time=2018-01-01`;
+            response = await fetch(apiUrl, { signal: AbortSignal.timeout(8000) });
+            if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+            break;
+          } catch (err) {
+            attempts++;
+            console.warn(`Attempt ${attempts} failed:`, err);
+            if (attempts === maxRetries) throw err;
+            await new Promise((resolve) => setTimeout(resolve, 500));
+          }
+        }
+
+        const text = await response.text();
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch (err) {
+          console.error('JSON parse error:', err, 'Response:', text.substring(0, 350));
+          throw new Error(`Invalid JSON: ${err.message}`);
+        }
+
+        if (!data.results || data.results.length === 0) {
+          throw new Error('No address metrics data returned');
+        }
+
+        const formattedData = data.results.map((item) => ({
+          time: item.time,
+          ...Object.fromEntries(
+            Object.entries(item)
+              .filter(([key]) => key !== 'time')
+              .map(([key, value]) => [key, value !== null ? parseFloat(value) : null])
+          ),
+        }));
+
+        console.log(`Fetched ${formattedData.length} records`);
+        setOnchainMetricsData(formattedData);
+        setOnchainMetricsLastUpdated(formattedData[formattedData.length - 1].time);
+        await cacheData(cacheId, formattedData, currentTimestamp);
+      } catch (error) {
+        console.error('Error fetching metrics:', error);
+        setIsOnchainMetricsDataFetched(false);
+        setOnchainFetchError(error.message);
+      }
+    },
+    [isOnchainMetricsDataFetched, API_BASE_URL]
+  );
+
+  const refreshOnchainMetricsData = useCallback(
+    async () => {
+      console.log('Refreshing data');
+      try {
+        await clearCache('onchainMetricsData');
+        setOnchainMetricsData([]);
+        setIsOnchainMetricsDataFetched(false);
+        await fetchOnchainMetricsData();
+      } catch (error) {
+        console.error('Error refreshing:', error);
+        setOnchainFetchError(error.message);
+      }
+    },
+    [fetchOnchainMetricsData]
+  );
 
   const fetchFedBalanceData = useCallback(async () => {
     if (isFedBalanceDataFetched) return;
@@ -1107,6 +1223,11 @@ export const DataProvider = ({ children }) => {
       fetchAltcoinSeasonData,
       refreshAltcoinSeasonData,
       altcoinSeasonLastUpdated,
+      onchainMetricsData,
+      fetchOnchainMetricsData,
+      refreshOnchainMetricsData,
+      onchainMetricsLastUpdated,
+      onchainFetchError,
     }),
     [
       btcData,
@@ -1187,6 +1308,11 @@ export const DataProvider = ({ children }) => {
       fetchAltcoinSeasonData,
       refreshAltcoinSeasonData,
       altcoinSeasonLastUpdated,
+      onchainMetricsData,
+      fetchOnchainMetricsData,
+      refreshOnchainMetricsData,
+      onchainMetricsLastUpdated,
+      onchainFetchError,
     ]
   );
 

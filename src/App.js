@@ -55,6 +55,7 @@ import { FearAndGreedBinaryProvider } from "./FearAndGreedBinaryContext";
 import MarketOverview from "./scenes/MarketOverview";
 import { useMemo } from "react";
 import FearAndGreed3D from "./components/FearAndGreed3D";
+import BitcoinAddressBalancesChart from "./components/BitcoinAddressBalance";
 
 // Stripe Context
 const StripeContext = createContext(null);
@@ -283,6 +284,14 @@ const AppContent = memo(({ isSignedIn, user }) => {
                       element={
                         <ProtectedRoute>
                           <BasicChart ChartComponent={BitcoinTxCountChart} />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/btc-add-balance"
+                      element={
+                        <ProtectedRoute>
+                          <BasicChart ChartComponent={BitcoinAddressBalancesChart} />
                         </ProtectedRoute>
                       }
                     />
