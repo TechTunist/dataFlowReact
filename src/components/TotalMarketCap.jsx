@@ -1,4 +1,3 @@
-// TotalMarketCap.js
 import React, { useRef, useEffect, useState, useMemo, useCallback, useContext } from 'react';
 import { createChart } from 'lightweight-charts';
 import '../styling/bitcoinChart.css';
@@ -107,6 +106,34 @@ const TotalMarketCap = ({ isDashboard = false }) => {
     };
   }, [marketCapData, calculateLogarithmicRegression, extendDataForFuture]);
 
+  // Calculate the percentage difference between current market cap and fair value
+  const valuationDifference = useMemo(() => {
+    if (marketCapData.length === 0 || !regressionLines.logMid) return null;
+
+    // Get the latest market cap value and its date
+    const latestMarketCap = marketCapData[marketCapData.length - 1]?.value;
+    const latestMarketCapDate = marketCapData[marketCapData.length - 1]?.time;
+
+    if (!latestMarketCap || !latestMarketCapDate) return null;
+
+    // Find the fair value on the latest market cap date
+    const fairValueOnLatestDate = regressionLines.logMid.find(
+      (point) => point.time === latestMarketCapDate
+    )?.value;
+
+    if (!fairValueOnLatestDate) return null;
+
+    // Calculate percentage difference: ((current - fair) / fair) * 100
+    const difference = ((latestMarketCap - fairValueOnLatestDate) / fairValueOnLatestDate) * 100;
+    const isOvervalued = difference > 0;
+    const percentage = Math.abs(difference).toFixed(2);
+
+    return {
+      label: isOvervalued ? 'Overvaluation' : 'Undervaluation',
+      percentage: `${percentage}%`,
+    };
+  }, [marketCapData, regressionLines]);
+
   useEffect(() => {
     if (marketCapData.length === 0) return;
 
@@ -200,7 +227,7 @@ const TotalMarketCap = ({ isDashboard = false }) => {
           price: priceData?.value ? compactNumberFormatter(priceData.value) : undefined,
           logBase: logBaseData?.value ? compactNumberFormatter(logBaseData.value) : undefined,
           logBase2: logBase2Data?.value ? compactNumberFormatter(logBase2Data.value) : undefined,
-          logMid: logMidData?.value ? compactNumberFormatter(logMidData.value) : undefined,
+          fairValue: logMidData?.value ? compactNumberFormatter(logMidData.value) : undefined,
           logTop: logTopData?.value ? compactNumberFormatter(logTopData.value) : undefined,
           logTop2: logTop2Data?.value ? compactNumberFormatter(logTop2Data.value) : undefined,
           x: param.point.x,
@@ -288,9 +315,21 @@ const TotalMarketCap = ({ isDashboard = false }) => {
       <div className="under-chart">
         {!isDashboard && marketCapData.length > 0 && (
           <div style={{ marginTop: '10px' }}>
-            <span style={{ color: colors.greenAccent[500] }}>
+            <span style={{ color: colors.greenAccent[500], display: 'block' }}>
               Last Updated: {marketCapLastUpdated}
             </span>
+            {valuationDifference && (
+              <span
+                style={{
+                  fontSize: '1.3rem',
+                  color: valuationDifference.label === 'Overvaluation' ? colors.redAccent[500] : colors.blueAccent[500],
+                  display: 'block',
+                  marginTop: '5px',
+                }}
+              >
+                {valuationDifference.label}: {valuationDifference.percentage}
+              </span>
+            )}
           </div>
         )}
         {!isDashboard && <BitcoinFees />}
@@ -324,8 +363,8 @@ const TotalMarketCap = ({ isDashboard = false }) => {
             {tooltipData.logTop && (
               <div style={{ color: 'green' }}>Upper Band: ${tooltipData.logTop}</div>
             )}
-            {tooltipData.logMid && (
-              <div style={{ color: 'violet' }}>Mid Band: ${tooltipData.logMid}</div>
+            {tooltipData.fairValue && (
+              <div style={{ color: 'violet' }}>Fair Value: ${tooltipData.fairValue}</div>
             )}
             {tooltipData.logBase && (
               <div style={{ color: 'red' }}>Lower Band: ${tooltipData.logBase}</div>
@@ -340,8 +379,8 @@ const TotalMarketCap = ({ isDashboard = false }) => {
       {!isDashboard && (
         <div className="chart-info">
           The total market cap of every crypto asset combined. The regression bands have been fitted to
-          the absolute lows, highs and other significant levels over the total history of the asset
-          class. The bands are calculated using a logarithmic regression model.
+          the absolute lows, highs, and fair value levels over the total history of the asset class.
+          The bands are calculated using a logarithmic regression model.
           <br />
           <br />
           The core calculation involves determining the slope (m) and intercept (b) of the best-fit
