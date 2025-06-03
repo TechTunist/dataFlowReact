@@ -116,6 +116,7 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
     { title: "Bitcoin Time in Risk Bands", to: "/risk-bands", category: "Bitcoin", icon: <TimerIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
     { title: "Bitcoin Transaction Count", to: "/btc-tx-count", category: "On Chain Data", icon: <SwapHorizIcon />, categoryIcon: <SwapHorizIcon /> },
     { title: "Bitcoin On-chain Risk", to: "/on-chain-historical-risk", category: "On Chain Data", icon: <SwapHorizIcon />, categoryIcon: <WarningOutlinedIcon /> },
+    { title: "Bitcoin Address balance", to: "/btc-add-balance", category: "On Chain Data", icon: <AccountBalanceIcon />, categoryIcon: <WarningOutlinedIcon /> },
     { title: "Altcoin Chart", to: "/altcoin-price", category: "Altcoins", icon: <ShowChartIcon />, categoryIcon: <WarningOutlinedIcon /> },
     { title: "Altcoin Risk Metric", to: "/altcoin-risk", category: "Altcoins", icon: <AssessmentIcon />, categoryIcon: <WarningOutlinedIcon /> },
     { title: "US Initial Claims", to: "/us-initial-claims", category: "MacroEconomics", icon: <SentimentVeryDissatisfiedIcon />, categoryIcon: <CategoryIcon /> },

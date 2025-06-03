@@ -186,6 +186,8 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
         return { title: "OnChain Risk", subtitle: isMobile ? "Historical Risk" : "Historical Risk Levels of OnChain Indicators" };
       case "/market-overview":
         return { title: "General Market Conditions", subtitle: isMobile ? "Overview" : "Select features of the current market conditions" };
+      case "/btc-add-balance":
+        return { title: "BTC Account Balance", subtitle: isMobile ? "Discrete BTC Balances" : "Balances of Bitcoin in individual or grouped addresses" };
       default:
         return { title: "CryptoLogical", subtitle: "" };
     }

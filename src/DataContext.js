@@ -401,7 +401,7 @@ export const DataProvider = ({ children }) => {
 
         while (attempts < maxRetries) {
           try {
-            const apiUrl = `${API_BASE_URL}/onchain-address-metrics/?start_time=2018-01-01`;
+            const apiUrl = `${API_BASE_URL}/onchain-address-metrics/?start_time=2010-01-01`;
             response = await fetch(apiUrl, { signal: AbortSignal.timeout(8000) });
             if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
             break;
