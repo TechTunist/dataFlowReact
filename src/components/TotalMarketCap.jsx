@@ -15,7 +15,7 @@ const TotalMarketCap = ({ isDashboard = false }) => {
   const theme = useTheme();
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
   const isMobile = useIsMobile();
-  const { marketCapData, fetchMarketCapData, refreshMarketCapData, marketCapLastUpdated } =
+  const { marketCapData, fetchMarketCapData, marketCapLastUpdated } =
     useContext(DataContext);
 
   const [tooltipData, setTooltipData] = useState(null);
@@ -99,11 +99,11 @@ const TotalMarketCap = ({ isDashboard = false }) => {
     };
 
     return {
-      logBase2: calculateRegressionPoints(0.005, 'maroon', -255, 0.996),
-      logBase: calculateRegressionPoints(0.01, 'red', -310, 0.995),
-      logMid: calculateRegressionPoints(0.05, 'violet', -310, 0.9845),
-      logTop: calculateRegressionPoints(15, 'green', -300, 0.907),
-      logTop2: calculateRegressionPoints(20, 'lime', -320, 0.91),
+      logBase2: calculateRegressionPoints(0.0025, 'maroon', -275, 0.999),
+      logBase: calculateRegressionPoints(0.008, 'red', -315, 0.991),
+      logMid: calculateRegressionPoints(0.01, 'violet', -370, 0.993),
+      logTop: calculateRegressionPoints(0.05, 'green', -350, 0.993),
+      logTop2: calculateRegressionPoints(0.065, 'lime', -450, 0.995),
     };
   }, [marketCapData, calculateLogarithmicRegression, extendDataForFuture]);
 
@@ -263,9 +263,6 @@ const TotalMarketCap = ({ isDashboard = false }) => {
               }}
             >
               {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
-            </button>
-            <button onClick={refreshMarketCapData} className="button-reset">
-              Refresh Data
             </button>
             <button onClick={resetChartView} className="button-reset extra-margin">
               Reset Chart
