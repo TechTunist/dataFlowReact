@@ -108,9 +108,9 @@ const monthlyReturnsData = useMemo(() => {
         yearReturns.push(displayValue);
         yearColors.push(
           monthlyReturn > 0
-            ? colors.greenAccent[700]
+            ? '#28822d'
             : monthlyReturn < 0
-            ? colors.redAccent[500]
+            ? '#9c4f4f'
             : colors.primary[700]
         );
       }
@@ -146,32 +146,54 @@ const monthlyReturnsData = useMemo(() => {
     {
       type: 'table',
       header: {
-        values: ['Year', ...months],
+        values: [''],
         align: 'center',
-        line: { width: 1, color: colors.grey[300] },
-        fill: { color: colors.primary[500] },
-        font: { color: colors.primary[100], size: 14 },
+        line: { width: 0 }, // No outline for header
+        fill: { color: colors.primary[700] },
+        font: { color: colors.primary[100], size: 16 },
+        height: 40, // Consistent header height
       },
       cells: {
-        values: [years, ...monthColumns],
+        values: [years],
         align: 'center',
-        line: { width: 1, color: colors.grey[300] },
-        fill: { color: [colors.primary[500], ...monthColors] },
-        font: { color: colors.primary[100], size: 12 },
+        line: { width: 0 }, // No grid lines for year cells
+        fill: { color: colors.primary[700] },
+        font: { color: colors.primary[100], size: 14 },
+        height: 30, // Consistent cell height
       },
+      domain: { x: [0, 0.05], y: [0, 1] }, // Years take 15% of width
+    },
+    {
+      type: 'table',
+      header: {
+        values: months,
+        align: 'center',
+        line: { width: 0 }, // No outline for header
+        fill: { color: colors.primary[700] },
+        font: { color: colors.primary[100], size: 16 },
+        height: 40, // Consistent header height
+      },
+      cells: {
+        values: monthColumns,
+        align: 'center',
+        line: { width: 1, color: colors.grey[300] }, // Grid lines for monthly data
+        fill: { color: monthColors },
+        font: { color: colors.primary[100], size: 14 },
+        height: 30, // Consistent cell height
+      },
+      domain: { x: [0.05, 1], y: [0, 1] }, // Monthly data takes 85% of width
     },
   ];
 
   const layout = {
     title: isDashboard ? '' : {
-      text: 'Bitcoin Monthly Returns (%)',
-      font: { color: colors.primary[100], size: 18 },
+      font: { color: colors.primary[700], size: 18 },
       x: 0.5,
       xanchor: 'center',
       y: 0.95,
       yanchor: 'top',
     },
-    margin: { l: 10, r: 10, b: 10, t: isDashboard ? 10 : 50 },
+    margin: { l: 10, r: 20, b: 10, t: isDashboard ? 10 : 50 },
     plot_bgcolor: colors.primary[700],
     paper_bgcolor: colors.primary[700],
     font: { color: colors.primary[100] },
