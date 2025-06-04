@@ -60,7 +60,11 @@ const BitcoinRiskBandDuration = ({ isDashboard = false, riskData: propRiskData }
     paper_bgcolor: colors.primary[700],
     font: { color: colors.primary[100] },
     xaxis: { title: isDashboard || isMobile ? '' : 'Risk Bands', autorange: true },
-    yaxis: { title: 'Percentage of Time (%)', autorange: true },
+    yaxis: {
+      title: 'Percentage', // Updated title
+      autorange: true,
+      automargin: true, // Add to ensure title fits
+    },
     showlegend: false,
   });
 
@@ -107,6 +111,15 @@ const BitcoinRiskBandDuration = ({ isDashboard = false, riskData: propRiskData }
       paper_bgcolor: colors.primary[700],
       font: { color: colors.primary[100] },
       xaxis: { ...prevLayout.xaxis, title: isDashboard || isMobile ? '' : 'Risk Bands' },
+      yaxis: {
+        ...prevLayout.yaxis,
+        title: {
+          text: 'Percentage', // Preserve the new title
+          font: { color: colors.primary[100], size: 12 }, // Match BitcoinRiskColor styling
+          standoff: 5, // Match BitcoinRiskColor for consistency
+        },
+        automargin: true, // Ensure title fits
+      },
     }));
   }, [colors, isDashboard, isMobile]);
 
@@ -142,8 +155,8 @@ const BitcoinRiskBandDuration = ({ isDashboard = false, riskData: propRiskData }
 
   const getBandColor = (index, numBands) => {
     const midPoint = Math.floor(numBands / 2);
-    const redShades = [colors.redAccent[800], colors.redAccent[700], colors.redAccent[500], colors.redAccent[300], colors.redAccent[100]];
-    const blueShades = [colors.blueAccent[100], colors.blueAccent[300], colors.blueAccent[500], colors.blueAccent[700], colors.blueAccent[800]];
+    const blueShades = [colors.redAccent[100], colors.redAccent[300], colors.redAccent[500], colors.redAccent[700], colors.redAccent[800]];
+    const redShades = [colors.blueAccent[800], colors.blueAccent[700], colors.blueAccent[500], colors.blueAccent[300], colors.blueAccent[100]];
     const maxShades = Math.min(redShades.length, blueShades.length);
 
     if (index === midPoint && numBands % 2 === 1) {
@@ -259,17 +272,15 @@ const BitcoinRiskBandDuration = ({ isDashboard = false, riskData: propRiskData }
           onRelayout={handleRelayout}
         />
       </div>
-
-      {!isDashboard && (
-        <div style={{ display: 'inline-block', marginTop: '10px', fontSize: '1.2rem' }}>
-          Current Risk Level: <b>{currentRiskLevel !== null ? currentRiskLevel : 'Loading...'}</b>
-        </div>
-      )}
-
       <div className='under-chart'>
         {!isDashboard && <LastUpdated storageKey="btcData" />}
         {!isDashboard && <BitcoinFees />}
       </div>
+      {!isDashboard && (
+        <div style={{ display: 'inline-block', marginTop: '10px', fontSize: '1.2rem', color: colors.primary[100] }}>
+          Current Risk Level: <b>{currentRiskLevel !== null ? currentRiskLevel : 'Loading...'}</b>
+        </div>
+      )}
 
       {!isDashboard && (
         <div>

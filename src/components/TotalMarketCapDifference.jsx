@@ -143,14 +143,18 @@ const MarketCapDifference = ({ isDashboard = false }) => {
           className="chart-top-div"
           style={{
             display: 'flex',
-            justifyContent: 'flex-end',
+            justifyContent: 'space-between', // Changed from flex-end to space-between
             alignItems: 'center',
             padding: '5px 10px',
           }}
         >
-          <div style={{ display: 'flex', gap: '10px' }}>
+          {/* Left-aligned loading/error messages */}
+          <div style={{ display: 'flex', alignItems: 'center' }}>
             {isLoading && <span style={{ color: colors.grey[100] }}>Loading...</span>}
             {error && <span style={{ color: colors.redAccent[500] }}>{error}</span>}
+          </div>
+          {/* Right-aligned buttons */}
+          <div style={{ display: 'flex', gap: '10px' }}>
             <button
               onClick={setInteractivityHandler}
               className="button-reset"
@@ -168,6 +172,7 @@ const MarketCapDifference = ({ isDashboard = false }) => {
           </div>
         </div>
       )}
+      {/* Rest of your component remains unchanged */}
       <div
         className="chart-container"
         style={{

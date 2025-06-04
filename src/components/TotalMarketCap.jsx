@@ -322,7 +322,7 @@ const TotalMarketCap = ({ isDashboard = false }) => {
               <span
                 style={{
                   fontSize: '1.3rem',
-                  color: valuationDifference.label === 'Overvaluation' ? colors.redAccent[500] : colors.blueAccent[500],
+                  color: valuationDifference.label === 'Overvaluation' ? '#ff0062' : colors.blueAccent[500],
                   display: 'block',
                   marginTop: '5px',
                 }}

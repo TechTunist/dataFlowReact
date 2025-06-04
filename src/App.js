@@ -57,6 +57,8 @@ import MarketOverview from "./scenes/MarketOverview";
 import { useMemo } from "react";
 import FearAndGreed3D from "./components/FearAndGreed3D";
 import BitcoinAddressBalancesChart from "./components/BitcoinAddressBalance";
+import BitcoinRunningROI from "./components/BitcoinRunningROI";
+import BitcoinMonthlyReturnsTable from "./components/MonthlyReturnsTable";
 
 // Stripe Context
 const StripeContext = createContext(null);
@@ -285,6 +287,22 @@ const AppContent = memo(({ isSignedIn, user }) => {
                       element={
                         <ProtectedRoute>
                           <BasicChart ChartComponent={BitcoinROI} />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/bitcoin-running-roi"
+                      element={
+                        <ProtectedRoute>
+                          <BasicChart ChartComponent={BitcoinRunningROI} />
+                        </ProtectedRoute>
+                      }
+                    />
+                                        <Route
+                      path="/monthly-returns"
+                      element={
+                        <ProtectedRoute>
+                          <BasicChart ChartComponent={BitcoinMonthlyReturnsTable} />
                         </ProtectedRoute>
                       }
                     />

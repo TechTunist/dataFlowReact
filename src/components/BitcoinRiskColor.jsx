@@ -10,11 +10,10 @@ import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 
 const BitcoinRiskColor = ({ isDashboard = false, riskData: propRiskData }) => {
   const theme = useTheme();
-  const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]); // Memoize colors
+  const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
   const { btcData, fetchBtcData } = useContext(DataContext);
-  const plotRef = useRef(null); // Ref to access the Plotly instance
+  const plotRef = useRef(null);
 
-  // Calculate risk data if not provided via prop, memoized to prevent unnecessary recalculations
   const calculateRiskMetric = (data) => {
     const movingAverage = data.map((item, index) => {
       const start = Math.max(index - 373, 0);
@@ -40,20 +39,30 @@ const BitcoinRiskColor = ({ isDashboard = false, riskData: propRiskData }) => {
     return normalizedRisk;
   };
 
-  // Memoize chartData to prevent unnecessary recalculations
   const chartData = useMemo(() => {
     return propRiskData || (btcData.length > 0 ? calculateRiskMetric(btcData) : []);
   }, [propRiskData, btcData]);
 
+  const currentRisk = chartData.length > 0 ? chartData[chartData.length - 1].Risk : null;
+
   const [layout, setLayout] = useState({
     title: 'Bitcoin Price vs. Risk Level',
     autosize: true,
-    margin: { l: 50, r: 50, b: 30, t: 30, pad: 4 },
+    margin: { l: 60, r: 50, b: 30, t: 30, pad: 4 },
     plot_bgcolor: colors.primary[700],
     paper_bgcolor: colors.primary[700],
     font: { color: colors.primary[100] },
     xaxis: { title: '', autorange: true },
-    yaxis: { title: 'Price (USD)', type: 'log', autorange: true },
+    yaxis: {
+      title: {
+        text: 'Price ($)',
+        font: { color: colors.primary[100], size: 14 },
+        standoff: 5,
+      },
+      type: 'log',
+      autorange: true,
+      automargin: true,
+    },
     legend: {
       title: { text: 'Select Risk Bands' },
       orientation: 'h',
@@ -64,7 +73,6 @@ const BitcoinRiskColor = ({ isDashboard = false, riskData: propRiskData }) => {
     },
   });
 
-  // Adjusted initial datasets for 10 bins
   const [datasets, setDatasets] = useState(
     Array.from({ length: 10 }, (_, index) => ({
       data: [],
@@ -73,17 +81,15 @@ const BitcoinRiskColor = ({ isDashboard = false, riskData: propRiskData }) => {
     }))
   );
 
-  // Trigger lazy fetching when the component mounts
   useEffect(() => {
     fetchBtcData();
   }, [fetchBtcData]);
 
-  // Update datasets when chartData changes
   useEffect(() => {
     if (chartData.length === 0) return;
 
     const updateDatasets = (data) => {
-      const riskBands = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]; // Upper limits for 10 bins
+      const riskBands = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0];
       let newDatasets = riskBands.map((upperLimit, index) => {
         const lowerLimit = index === 0 ? 0.0 : riskBands[index - 1];
         const filteredData = data.filter(d => d.Risk > lowerLimit && d.Risk <= upperLimit);
@@ -109,7 +115,6 @@ const BitcoinRiskColor = ({ isDashboard = false, riskData: propRiskData }) => {
         };
       });
 
-      // Add the Bitcoin price line dataset
       newDatasets.push({
         x: data.map(d => d.time),
         y: data.map(d => d.value),
@@ -129,13 +134,22 @@ const BitcoinRiskColor = ({ isDashboard = false, riskData: propRiskData }) => {
     updateDatasets(chartData);
   }, [chartData, theme]);
 
-  // Update layout colors when theme changes
   useEffect(() => {
     setLayout(prevLayout => ({
       ...prevLayout,
       plot_bgcolor: colors.primary[700],
       paper_bgcolor: colors.primary[700],
       font: { color: colors.primary[100] },
+      margin: { l: 60, r: 50, b: 30, t: 30, pad: 4 },
+      yaxis: {
+        ...prevLayout.yaxis,
+        title: {
+          text: 'Price ($)',
+          font: { color: colors.primary[100], size: 14 },
+          standoff: 5,
+        },
+        automargin: true,
+      },
     }));
   }, [colors]);
 
@@ -145,9 +159,11 @@ const BitcoinRiskColor = ({ isDashboard = false, riskData: propRiskData }) => {
       xaxis: { ...prevLayout.xaxis, autorange: true },
       yaxis: { ...prevLayout.yaxis, autorange: true },
     }));
+    setDatasets(prevDatasets =>
+      prevDatasets.map(dataset => ({ ...dataset, visible: true }))
+    );
   };
 
-  // Handle zoom and pan updates
   const handleRelayout = (event) => {
     if (event['xaxis.range[0]'] || event['yaxis.range[0]']) {
       setLayout(prevLayout => ({
@@ -166,7 +182,30 @@ const BitcoinRiskColor = ({ isDashboard = false, riskData: propRiskData }) => {
     }
   };
 
-  // Toggle visibility of risk bands using Plotly restyle
+  const handleLegendDoubleClick = (event) => {
+    const curveNumber = event.curveNumber;
+    setDatasets(prevDatasets => {
+      const newDatasets = prevDatasets.map((dataset, index) => {
+        if (curveNumber >= 0 && curveNumber < 10) {
+          if (index === curveNumber || index === 10) {
+            return { ...dataset, visible: true };
+          } else {
+            return { ...dataset, visible: false };
+          }
+        } else if (curveNumber === 10) {
+          if (index === 10) {
+            return { ...dataset, visible: !dataset.visible };
+          } else {
+            return dataset;
+          }
+        }
+        return dataset;
+      });
+      return newDatasets;
+    });
+    return false;
+  };
+
   const toggleRiskBand = useCallback((index) => {
     if (plotRef.current && plotRef.current.el) {
       const visibility = datasets[index].visible ? 'legendonly' : true;
@@ -214,7 +253,7 @@ const BitcoinRiskColor = ({ isDashboard = false, riskData: propRiskData }) => {
             name: dataset.name,
             hoverinfo: 'text',
             hovertemplate: dataset.hovertemplate,
-            visible: dataset.visible ? true : 'legendonly', // Set initial visibility
+            visible: dataset.visible ? true : 'legendonly',
           }))}
           layout={{
             ...layout,
@@ -239,6 +278,7 @@ const BitcoinRiskColor = ({ isDashboard = false, riskData: propRiskData }) => {
           useResizeHandler={true}
           style={{ width: "100%", height: "100%" }}
           onRelayout={handleRelayout}
+          onLegendDoubleClick={handleLegendDoubleClick}
         />
       </div>
 
@@ -246,6 +286,18 @@ const BitcoinRiskColor = ({ isDashboard = false, riskData: propRiskData }) => {
         {!isDashboard && <LastUpdated storageKey="btcData" />}
         {!isDashboard && <BitcoinFees />}
       </div>
+      {!isDashboard && (
+          <p className='current-risk'
+          style={{
+            fontSize: '1.3rem',
+            color: colors.primary[100],
+            display: 'block',
+            marginTop: '5px',
+          }}
+          >
+            Current Risk: {currentRisk !== null ? currentRisk.toFixed(2) : 'Loading...'}
+          </p>
+        )}
 
       {!isDashboard && (
         <div>
@@ -262,5 +314,4 @@ const BitcoinRiskColor = ({ isDashboard = false, riskData: propRiskData }) => {
   );
 };
 
-// export default BitcoinRiskColor;
 export default restrictToPaidSubscription(BitcoinRiskColor);
