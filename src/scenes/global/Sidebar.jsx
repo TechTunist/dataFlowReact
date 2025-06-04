@@ -104,6 +104,7 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
     { title: "Overview", to: "/market-overview", icon: <DashboardIcon />, category: null },
     { title: "Bitcoin Chart", to: "/bitcoin", category: "Bitcoin", icon: <ShowChartIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
     { title: "Total Market Cap", to: "/total", category: "Indicators", icon: <ShowChartIcon />, categoryIcon: <ShowChartIcon /> },
+    { title: "Total Cap to Fair Value", to: "/total-difference", category: "Indicators", icon: <ShowChartIcon />, categoryIcon: <ShowChartIcon /> },
     { title: "Bitcoin Dominance", to: "/bitcoin-dominance", category: "Indicators", icon: <ShowChartIcon />, categoryIcon: <ShowChartIcon /> },
     { title: "Bitcoin Risk Metric", to: "/risk", category: "Bitcoin", icon: <AssessmentIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
     { title: "BTC Transactions to MVRV", to: "/tx-mvrv", category: "On Chain Data", icon: <AssessmentIcon />, categoryIcon: <SwapHorizIcon /> },

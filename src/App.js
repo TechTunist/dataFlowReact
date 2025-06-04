@@ -10,6 +10,7 @@ import { CssBaseline, ThemeProvider } from "@mui/material";
 import { ColorModeContext, useMode } from "./theme";
 import BitcoinPrice from "./components/BitcoinPrice";
 import TotalMarketCap from "./components/TotalMarketCap";
+import MarketCapDifference from "./components/TotalMarketCapDifference";
 import BitcoinTransactionFees from "./components/BitcoinTransactionFees";
 import BitcoinDominance from "./components/BitcoinDominance";
 import Risk from "./components/BitcoinRisk";
@@ -244,6 +245,14 @@ const AppContent = memo(({ isSignedIn, user }) => {
                       element={
                         <ProtectedRoute>
                           <BasicChart ChartComponent={TotalMarketCap} />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/total-difference"
+                      element={
+                        <ProtectedRoute>
+                          <BasicChart ChartComponent={MarketCapDifference} />
                         </ProtectedRoute>
                       }
                     />

@@ -188,6 +188,8 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
         return { title: "General Market Conditions", subtitle: isMobile ? "Overview" : "Select features of the current market conditions" };
       case "/btc-add-balance":
         return { title: "BTC Account Balance", subtitle: isMobile ? "Discrete BTC Balances" : "Balances of Bitcoin in individual or grouped addresses" };
+      case "/total-difference":
+        return { title: "Total Cap to Fair Value", subtitle: isMobile ? "Total Cap to Fair Value" : "Total Market Cap to Fair Value Difference" };
       default:
         return { title: "CryptoLogical", subtitle: "" };
     }
