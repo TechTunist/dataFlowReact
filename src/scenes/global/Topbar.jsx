@@ -102,6 +102,10 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
         return { title: "Bitcoin Cycles", subtitle: isMobile ? "Compare Market Cycles" : "Start from either the cycle bottom or from the halving" };
       case "/bitcoin-roi":
         return { title: "Bitcoin ROI", subtitle: isMobile ? "ROI" : "Annualised ROI for Bitcoin" };
+      case "/btc-20-ext":
+        return { title: "Bitcoin Bubble Indicator", subtitle: isMobile ? "20 Week Ext." : "Bubble Indicator Showing the Extension From the 20 Week Moving Average" };
+      case "/monthly-average-roi":
+        return { title: "Monthly Average ROI", subtitle: isMobile ? "Monthly ROI" : "Monthly Averaged ROI Over Selected Timeframes" };
       case "/monthly-returns":
         return { title: "Bitcoin Monthly Returns", subtitle: isMobile ? "Monthly Returns" : "The Monthly Returns for Bitcoin" };
       case "/bitcoin-running-roi":

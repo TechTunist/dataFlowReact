@@ -58,11 +58,17 @@ const BitcoinPrice = ({ isDashboard = false }) => {
   };
 
   const smaIndicators = {
-    '8w-sma': { period: 8 * 7, color: 'blue', label: '8 Week SMA' },
-    '20w-sma': { period: 20 * 7, color: 'limegreen', label: '20 Week SMA' },
-    '50w-sma': { period: 50 * 7, color: 'magenta', label: '50 Week SMA' },
-    '100w-sma': { period: 100 * 7, color: 'white', label: '100 Week SMA' },
-    '200w-sma': { period: 200 * 7, color: 'yellow', label: '200 Week SMA' },
+    '8w-sma': { period: 8 * 7, color: 'blue', label: '8 Week SMA', type: 'sma' },
+    '20w-sma': { period: 20 * 7, color: 'limegreen', label: '20 Week SMA', type: 'sma' },
+    '50w-sma': { period: 50 * 7, color: 'magenta', label: '50 Week SMA', type: 'sma' },
+    '100w-sma': { period: 100 * 7, color: 'white', label: '100 Week SMA', type: 'sma' },
+    '200w-sma': { period: 200 * 7, color: 'yellow', label: '200 Week SMA', type: 'sma' },
+    'bull-market-support': {
+      sma: { period: 20 * 7, color: 'red', label: '20 Week SMA (Bull Market Support)' },
+      ema: { period: 21 * 7, color: 'limegreen', label: '21 Week EMA (Bull Market Support)' },
+      label: 'Bull Market Support Band',
+      type: 'bull-market-support',
+    },
   };
 
   const setInteractivity = () => setIsInteractive(!isInteractive);
@@ -82,6 +88,25 @@ const BitcoinPrice = ({ isDashboard = false }) => {
       });
     }
     return movingAverages;
+  };
+
+  const calculateExponentialMovingAverage = (data, period) => {
+    const k = 2 / (period + 1);
+    let emaData = [];
+    
+    let sum = 0;
+    for (let i = 0; i < period; i++) {
+      sum += data[i].value;
+    }
+    let ema = sum / period;
+    emaData.push({ time: data[period - 1].time, value: ema });
+
+    for (let i = period; i < data.length; i++) {
+      ema = (data[i].value * k) + (ema * (1 - k));
+      emaData.push({ time: data[i].time, value: ema });
+    }
+
+    return emaData;
   };
 
   const calculateMayerMultiple = (data) => {
@@ -294,7 +319,6 @@ const BitcoinPrice = ({ isDashboard = false }) => {
     chartRef.current = chart;
 
     return () => {
-      // First, remove the price lines if the series still exist
       if (mayerMultipleSeriesRef.current) {
         mayerPriceLinesRef.current.forEach(priceLine => {
           try {
@@ -303,10 +327,10 @@ const BitcoinPrice = ({ isDashboard = false }) => {
             console.error('Error removing Mayer Multiple price line:', error);
           }
         });
-        mayerPriceLinesRef.current = []; // Clear the price lines ref
-        mayerMultipleSeriesRef.current = null; // Clear the series ref
+        mayerPriceLinesRef.current = [];
+        mayerMultipleSeriesRef.current = null;
       }
-    
+
       if (mvrvSeriesRef.current) {
         mvrvPriceLinesRef.current.forEach(priceLine => {
           try {
@@ -315,18 +339,16 @@ const BitcoinPrice = ({ isDashboard = false }) => {
             console.error('Error removing MVRV price line:', error);
           }
         });
-        mvrvPriceLinesRef.current = []; // Clear the price lines ref
-        mvrvSeriesRef.current = null; // Clear the series ref
+        mvrvPriceLinesRef.current = [];
+        mvrvSeriesRef.current = null;
       }
-    
-      // Remove the chart after cleaning up the price lines
+
       try {
         chart.remove();
       } catch (error) {
         console.error('Error removing chart:', error);
       }
-    
-      // Remove the resize event listener
+
       window.removeEventListener('resize', resizeChart);
     };
   }, []);
@@ -362,9 +384,13 @@ const BitcoinPrice = ({ isDashboard = false }) => {
     if (mvrvSeriesRef.current && btcData.length > 0 && mvrvData.length > 0) {
       const btcStartTime = new Date(btcData[0].time).getTime();
       const btcEndTime = new Date(btcData[btcData.length - 1].time).getTime();
+      // Define the cutoff date: October 8, 2010
+      const cutoffDate = new Date('2010-10-08').getTime();
+
       const filteredMvrvData = mvrvData.filter(item => {
         const itemTime = new Date(item.time).getTime();
-        return itemTime >= btcStartTime && itemTime <= btcEndTime;
+        // Only include data on or after October 8, 2010, and within the Bitcoin data range
+        return itemTime >= cutoffDate && itemTime >= btcStartTime && itemTime <= btcEndTime;
       });
 
       mvrvSeriesRef.current.setData(filteredMvrvData);
@@ -399,7 +425,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
           price: projectedPeak,
           color: 'cyan',
           lineWidth: 2,
-          lineStyle: 1, // Dotted line
+          lineStyle: 1,
           axisLabelVisible: true,
           title: 'Projected Peak',
         }) : null;
@@ -446,7 +472,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
           price: 0.6,
           color: 'darkred',
           lineWidth: 1,
-          lineStyle: 2, // Dashed line, consistent with other lines
+          lineStyle: 2,
           axisLabelVisible: true,
           title: 'Severely Undervalued',
         });
@@ -471,14 +497,35 @@ const BitcoinPrice = ({ isDashboard = false }) => {
 
     activeSMAs.forEach(key => {
       const indicator = smaIndicators[key];
-      const series = chartRef.current.addLineSeries({
-        color: indicator.color,
-        lineWidth: 2,
-        priceLineVisible: false,
-      });
-      smaSeriesRefs[key] = series;
-      const data = calculateMovingAverage(btcData, indicator.period);
-      series.setData(data);
+      
+      if (indicator.type === 'sma') {
+        const series = chartRef.current.addLineSeries({
+          color: indicator.color,
+          lineWidth: 2,
+          priceLineVisible: false,
+        });
+        smaSeriesRefs[key] = series;
+        const data = calculateMovingAverage(btcData, indicator.period);
+        series.setData(data);
+      } else if (indicator.type === 'bull-market-support') {
+        const smaSeries = chartRef.current.addLineSeries({
+          color: indicator.sma.color,
+          lineWidth: 2,
+          priceLineVisible: false,
+        });
+        smaSeriesRefs[`${key}-sma`] = smaSeries;
+        const smaData = calculateMovingAverage(btcData, indicator.sma.period);
+        smaSeries.setData(smaData);
+
+        const emaSeries = chartRef.current.addLineSeries({
+          color: indicator.ema.color,
+          lineWidth: 2,
+          priceLineVisible: false,
+        });
+        smaSeriesRefs[`${key}-ema`] = emaSeries;
+        const emaData = calculateExponentialMovingAverage(btcData, indicator.ema.period);
+        emaSeries.setData(emaData);
+      }
     });
   }, [activeSMAs, btcData]);
 
@@ -711,20 +758,53 @@ const BitcoinPrice = ({ isDashboard = false }) => {
               MVRV Peak Projection
             </div>
           )}
-          {activeSMAs.map(key => (
-            <div key={key} style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>
-              <span
-                style={{
-                  display: 'inline-block',
-                  width: '10px',
-                  height: '10px',
-                  backgroundColor: smaIndicators[key].color,
-                  marginRight: '5px',
-                }}
-              />
-              {smaIndicators[key].label}
-            </div>
-          ))}
+          {activeSMAs.map(key => {
+            const indicator = smaIndicators[key];
+            if (indicator.type === 'bull-market-support') {
+              return (
+                <React.Fragment key={key}>
+                  <div style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>
+                    <span
+                      style={{
+                        display: 'inline-block',
+                        width: '10px',
+                        height: '10px',
+                        backgroundColor: indicator.sma.color,
+                        marginRight: '5px',
+                      }}
+                    />
+                    {indicator.sma.label}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>
+                    <span
+                      style={{
+                        display: 'inline-block',
+                        width: '10px',
+                        height: '10px',
+                        backgroundColor: indicator.ema.color,
+                        marginRight: '5px',
+                      }}
+                    />
+                    {indicator.ema.label}
+                  </div>
+                </React.Fragment>
+              );
+            }
+            return (
+              <div key={key} style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>
+                <span
+                  style={{
+                    display: 'inline-block',
+                    width: '10px',
+                    height: '10px',
+                    backgroundColor: indicator.color,
+                    marginRight: '5px',
+                  }}
+                />
+                {indicator.label}
+              </div>
+            );
+          })}
         </div>
       </div>
       {!isDashboard && (
@@ -812,5 +892,4 @@ const BitcoinPrice = ({ isDashboard = false }) => {
   );
 };
 
-// export default BitcoinPrice;
 export default restrictToPaidSubscription(BitcoinPrice);

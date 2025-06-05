@@ -59,6 +59,8 @@ import FearAndGreed3D from "./components/FearAndGreed3D";
 import BitcoinAddressBalancesChart from "./components/BitcoinAddressBalance";
 import BitcoinRunningROI from "./components/BitcoinRunningROI";
 import BitcoinMonthlyReturnsTable from "./components/MonthlyReturnsTable";
+import MonthlyAverageROI from "./components/MonthlyAverageROI";
+import Bitcoin20WeekExtension from "./components/Bitcoin20WeekExtension";
 
 // Stripe Context
 const StripeContext = createContext(null);
@@ -227,6 +229,14 @@ const AppContent = memo(({ isSignedIn, user }) => {
                       }
                     />
                     <Route
+                      path="/btc-20-ext"
+                      element={
+                        <ProtectedRoute>
+                          <BasicChart ChartComponent={Bitcoin20WeekExtension} />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
                       path="/test"
                       element={
                         <ProtectedRoute>
@@ -298,11 +308,19 @@ const AppContent = memo(({ isSignedIn, user }) => {
                         </ProtectedRoute>
                       }
                     />
-                                        <Route
+                    <Route
                       path="/monthly-returns"
                       element={
                         <ProtectedRoute>
                           <BasicChart ChartComponent={BitcoinMonthlyReturnsTable} />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/monthly-average-roi"
+                      element={
+                        <ProtectedRoute>
+                          <BasicChart ChartComponent={MonthlyAverageROI} />
                         </ProtectedRoute>
                       }
                     />

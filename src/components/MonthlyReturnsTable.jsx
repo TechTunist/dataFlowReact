@@ -69,7 +69,10 @@ const monthlyReturnsData = useMemo(() => {
     }
     years.sort((a, b) => b - a);
   
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const months = isMobile
+      ? ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D']
+      : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    
     const returns = [];
     const cellColors = [];
     const currentYear = 2025;
@@ -158,7 +161,7 @@ const monthlyReturnsData = useMemo(() => {
         align: 'center',
         line: { width: 0 }, // No grid lines for year cells
         fill: { color: colors.primary[700] },
-        font: { color: colors.primary[100], size: 14 },
+        font: { color: colors.primary[100], size: isMobile ? 8 : 12 },
         height: 30, // Consistent cell height
       },
       domain: { x: [0, 0.05], y: [0, 1] }, // Years take 15% of width
@@ -170,7 +173,7 @@ const monthlyReturnsData = useMemo(() => {
         align: 'center',
         line: { width: 0 }, // No outline for header
         fill: { color: colors.primary[700] },
-        font: { color: colors.primary[100], size: 16 },
+        font: { color: colors.primary[100], size: 14 },
         height: 40, // Consistent header height
       },
       cells: {
@@ -178,7 +181,7 @@ const monthlyReturnsData = useMemo(() => {
         align: 'center',
         line: { width: 1, color: colors.grey[300] }, // Grid lines for monthly data
         fill: { color: monthColors },
-        font: { color: colors.primary[100], size: 14 },
+        font: { color: colors.primary[100], size: isMobile ? 10 : 13},
         height: 30, // Consistent cell height
       },
       domain: { x: [0.05, 1], y: [0, 1] }, // Monthly data takes 85% of width

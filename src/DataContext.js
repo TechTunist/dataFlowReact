@@ -1228,6 +1228,7 @@ export const DataProvider = ({ children }) => {
       refreshOnchainMetricsData,
       onchainMetricsLastUpdated,
       onchainFetchError,
+      isAltcoinDataFetched
     }),
     [
       btcData,
@@ -1313,6 +1314,7 @@ export const DataProvider = ({ children }) => {
       refreshOnchainMetricsData,
       onchainMetricsLastUpdated,
       onchainFetchError,
+      isAltcoinDataFetched,
     ]
   );
 
