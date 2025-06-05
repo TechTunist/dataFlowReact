@@ -5,6 +5,8 @@ import { useTheme } from "@mui/material";
 import '../styling/bitcoinChart.css';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
+import LastUpdated from '../hooks/LastUpdated';
+import BitcoinFees from './BitcoinTransactionFees';
 
 const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
   const theme = useTheme();
@@ -75,7 +77,11 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
     plot_bgcolor: colors.primary[700],
     paper_bgcolor: colors.primary[700],
     font: { color: colors.primary[100] },
-    xaxis: { title: '', autorange: true },
+    xaxis: {
+      title: '',
+      autorange: true,
+
+    },
     yaxis: {
       title: {
         text: 'Price ($)',
@@ -198,6 +204,10 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
       plot_bgcolor: colors.primary[700],
       paper_bgcolor: colors.primary[700],
       font: { color: colors.primary[100] },
+      xaxis: {
+        ...prevLayout.xaxis,
+        
+      },
       yaxis: {
         ...prevLayout.yaxis,
         title: {
@@ -205,6 +215,7 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
           font: { color: colors.primary[100], size: 14 },
           standoff: 5,
         },
+        
       },
       yaxis2: {
         ...prevLayout.yaxis2,
@@ -214,6 +225,7 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
           standoff: 5,
         },
         zerolinecolor: colors.primary[100],
+        
       },
     }));
   }, [colors]);
@@ -234,33 +246,12 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
     setAllVisible(true);
   };
 
-  const toggleAllVisibility = () => {
-    const newVisibility = !allVisible;
-    setDatasets(prevDatasets =>
-      prevDatasets.map(dataset => ({
-        ...dataset,
-        visible: newVisibility
-          ? dataset.name === '20-Week MA Extension' || dataset.name === 'Price' || !dataset.showlegend
-            ? true
-            : 'legendonly'
-          : dataset.name === '20-Week MA Extension' || dataset.name === 'Price'
-          ? 'legendonly'
-          : dataset.showlegend
-          ? 'legendonly'
-          : 'legendonly',
-      }))
-    );
-    setAllVisible(newVisibility);
-  };
 
   return (
     <div style={{ height: '100%' }}>
       {!isDashboard && (
         <div className='chart-top-div'>
           <div>
-            <button onClick={toggleAllVisibility} className="button-toggle">
-              {allVisible ? 'Hide all' : 'Show all'}
-            </button>
           </div>
           <div>
             <button onClick={resetChartView} className="button-reset">
@@ -291,6 +282,20 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
           style={{ width: "100%", height: "100%" }}
         />
       </div>
+      <div className='under-chart'>
+        {!isDashboard && <LastUpdated storageKey="btcData" />}
+        {!isDashboard && <BitcoinFees />}
+      </div>
+
+      {!isDashboard && (
+        <div>
+          <p className='chart-info'>
+            The Bitcoin 20-Week Extension chart shows the percentage difference between the current price and the 20-week moving average (MA),
+            which helps to identify if we are currently in a bubble or a bear market. The chart is color-coded to indicate different ranges of extension.
+            <br />
+          </p>
+        </div>
+      )}
     </div>
   );
 };

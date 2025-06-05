@@ -6,13 +6,7 @@
     height: 20px;
   }
 
-.chart-container {
-min-height: 600px; /* Increase container height */
-}
 
-.chart-container .plotly .main-svg .cartesianlayer .gridlayer .cell {
-    min-height: 40px; /* Adjust this value to increase cell height */
-  }
   
 /* Hide default HTML checkbox */
 .switch input {
