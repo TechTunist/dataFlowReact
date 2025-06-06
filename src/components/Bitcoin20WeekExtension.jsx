@@ -14,43 +14,40 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
   const { btcData, fetchBtcData } = useContext(DataContext);
   const plotRef = useRef(null);
 
-  // Define color ranges with more vivid colors
+  // Define extension ranges with vivid colors
   const extensionRanges = [
-    { range: [-Infinity, -50], color: 'rgb(0, 0, 153)', label: '<-50' }, // Vivid dark blue
-    { range: [-50, -25], color: 'rgb(0, 102, 255)', label: '-50 - -25' }, // Vivid blue
-    { range: [-25, 0], color: 'rgb(0, 255, 255)', label: '-25 - 0' }, // Vivid cyan
-    { range: [0, 25], color: 'rgb(0, 255, 0)', label: '0 - 25' }, // Vivid green
-    { range: [25, 50], color: 'rgb(255, 255, 51)', label: '25 - 50' }, // Vivid yellow
-    { range: [50, 75], color: 'rgb(255, 204, 51)', label: '50 - 75' }, // Vivid gold
-    { range: [75, 100], color: 'rgb(255, 153, 0)', label: '75 - 100' }, // Vivid orange
-    { range: [100, Infinity], color: 'rgb(255, 0, 0)', label: '>100' }, // Vivid red
+    { range: [-Infinity, -50], color: 'rgb(0, 0, 153)', label: '<-50' },
+    { range: [-50, -25], color: 'rgb(0, 102, 255)', label: '-50 - -25' },
+    { range: [-25, 0], color: 'rgb(0, 255, 255)', label: '-25 - 0' },
+    { range: [0, 25], color: 'rgb(0, 255, 0)', label: '0 - 25' },
+    { range: [25, 50], color: 'rgb(255, 255, 51)', label: '25 - 50' },
+    { range: [50, 75], color: 'rgb(255, 204, 51)', label: '50 - 75' },
+    { range: [75, 100], color: 'rgb(255, 153, 0)', label: '75 - 100' },
+    { range: [100, Infinity], color: 'rgb(255, 0, 0)', label: '>100' },
   ];
 
-  // Helper function to get color based on extension value
   const getColorForExtension = (extension) => {
     for (const range of extensionRanges) {
       if (extension >= range.range[0] && extension < range.range[1]) {
         return range.color;
       }
     }
-    return 'rgb(255, 255, 255)'; // Fallback color (white)
+    return 'rgb(255, 255, 255)'; // Fallback color
   };
 
-  // Calculate 20-week (140-day) moving average and extension
   const calculateExtension = (data) => {
     const windowSize = 140; // 20 weeks * 7 days
     return data.map((item, index) => {
       const start = Math.max(index - windowSize + 1, 0);
       const subset = data.slice(start, index + 1);
       const ma = subset.reduce((sum, curr) => sum + parseFloat(curr.value), 0) / subset.length;
-      const extension = ((item.value - ma) / ma) * 100; // Percentage difference
+      const extension = ((item.value - ma) / ma) * 100;
       return { ...item, MA: ma, Extension: extension };
     });
   };
 
-  // Downsample data to reduce the number of segments
   const downsampleData = (data, factor = 5) => {
-    if (data.length <= 200) return data; // No downsampling if data is small
+    if (data.length <= 200) return data;
     const downsampled = [];
     for (let i = 0; i < data.length; i += factor) {
       const slice = data.slice(i, i + factor);
@@ -67,7 +64,7 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
 
   const chartData = useMemo(() => {
     const fullData = btcData.length > 0 ? calculateExtension(btcData) : [];
-    return downsampleData(fullData, 5); // Downsample by a factor of 5
+    return downsampleData(fullData, 5);
   }, [btcData]);
 
   const [layout, setLayout] = useState({
@@ -77,27 +74,15 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
     plot_bgcolor: colors.primary[700],
     paper_bgcolor: colors.primary[700],
     font: { color: colors.primary[100] },
-    xaxis: {
-      title: '',
-      autorange: true,
-
-    },
+    xaxis: { autorange: true },
     yaxis: {
-      title: {
-        text: 'Price ($)',
-        font: { color: colors.primary[100], size: 14 },
-        standoff: 5,
-      },
+      title: { text: 'Price ($)', font: { color: colors.primary[100], size: 14 }, standoff: 5 },
       type: 'log',
       autorange: true,
       automargin: true,
     },
     yaxis2: {
-      title: {
-        text: 'Extension (%)',
-        font: { color: colors.primary[100], size: 14 },
-        standoff: 5,
-      },
+      title: { text: 'Extension (%)', font: { color: colors.primary[100], size: 14 }, standoff: 5 },
       overlaying: 'y',
       side: 'right',
       autorange: true,
@@ -113,10 +98,11 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
       y: -0.2,
       yanchor: 'top',
     },
+    hovermode: 'closest',
+    hoverdistance: 10,
   });
 
   const [datasets, setDatasets] = useState([]);
-  const [allVisible, setAllVisible] = useState(true);
 
   useEffect(() => {
     fetchBtcData();
@@ -125,8 +111,8 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
   useEffect(() => {
     if (chartData.length === 0) return;
 
-    // Bitcoin Price Trace
-    const priceTrace = {
+    // Price line
+    const priceLineTrace = {
       x: chartData.map(d => d.time),
       y: chartData.map(d => d.value),
       type: 'scatter',
@@ -134,38 +120,73 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
       line: { color: 'grey', width: 1.5 },
       name: 'Price',
       yaxis: 'y',
-      hovertemplate:
-        `<b>Price:</b> $%{y:,.0f}<br>` +
-        `<b>Date:</b> %{x|%B %d, %Y}<extra></extra>`,
+      hoverinfo: 'skip',
       visible: true,
+      showlegend: true,
     };
 
-    // Overlay Trace for Hover Info (Transparent)
-    const overlayTrace = {
+    // Optional colored points on price line
+    const coloredPointsTrace = {
       x: chartData.map(d => d.time),
-      y: chartData.map(d => d.Extension),
+      y: chartData.map(d => d.value),
       type: 'scatter',
-      mode: 'lines',
-      line: { width: 0 },
-      fill: 'tozeroy',
-      fillcolor: 'rgba(0,0,0,0)', // Transparent
-      name: '20-Week MA Extension',
-      yaxis: 'y2',
-      hovertemplate:
-        `<b>Extension:</b> %{y:.2f}%<br>` +
-        `<b>Date:</b> %{x|%B %d, %Y}<extra></extra>`,
-      visible: true,
-      showlegend: false,
+      mode: 'markers',
+      marker: { color: chartData.map(d => getColorForExtension(d.Extension)), size: 6 },
+      name: 'Extension Points',
+      yaxis: 'y',
+      hoverinfo: 'skip',
+      visible: 'legendonly',
     };
 
-    // Create a trace for each segment between consecutive points
+    // Hidden traces for price tooltips
+    const rangeTraces = extensionRanges.map(range => {
+      const filteredData = chartData.filter(d => d.Extension >= range.range[0] && d.Extension < range.range[1]);
+      return {
+        x: filteredData.map(d => d.time),
+        y: filteredData.map(d => d.value),
+        customdata: filteredData.map(d => [d.Extension]),
+        type: 'scatter',
+        mode: 'none',
+        name: range.label,
+        hovertemplate:
+          '<b>Price:</b> $%{y:,.0f}<br>' +
+          '<b>Extension:</b> %{customdata[0]:.2f}%<br>' +
+          '<b>Date:</b> %{x|%B %d, %Y}<extra></extra>',
+        hoverlabel: { bgcolor: range.color, font: { color: '#000' } },
+        visible: true,
+        showlegend: false,
+      };
+    });
+
+    // Hidden traces for extension tooltips
+    const extensionRangeTraces = extensionRanges.map(range => {
+      const filteredData = chartData.filter(d => d.Extension >= range.range[0] && d.Extension < range.range[1]);
+      return {
+        x: filteredData.map(d => d.time),
+        y: filteredData.map(d => d.Extension),
+        customdata: filteredData.map(d => [d.value]),
+        type: 'scatter',
+        mode: 'none',
+        name: range.label + ' Extension',
+        yaxis: 'y2',
+        hovertemplate:
+          '<b>Price:</b> $%{customdata[0]:,.0f}<br>' +
+          '<b>Extension:</b> %{y:.2f}%<br>' +
+          '<b>Date:</b> %{x|%B %d, %Y}<extra></extra>',
+        hoverlabel: { bgcolor: range.color, font: { color: '#000' } },
+        visible: true,
+        showlegend: false,
+      };
+    });
+
+    // Colored area segments
     const segmentTraces = [];
     for (let i = 0; i < chartData.length - 1; i++) {
       const dateToday = chartData[i].time;
       const dateTomorrow = chartData[i + 1].time;
       const extToday = chartData[i].Extension;
       const extTomorrow = chartData[i + 1].Extension;
-      const avgExtension = (extToday + extTomorrow) / 2; // Average extension for the segment
+      const avgExtension = (extToday + extTomorrow) / 2;
       const color = getColorForExtension(avgExtension);
 
       segmentTraces.push({
@@ -183,7 +204,7 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
       });
     }
 
-    // Dummy traces for the legend
+    // Legend entries for extension ranges
     const legendTraces = extensionRanges.map(range => ({
       x: [null],
       y: [null],
@@ -192,10 +213,10 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
       marker: { color: range.color, size: 10 },
       name: range.label,
       showlegend: true,
-      visible: 'legendonly',
+      visible: true,
     }));
 
-    setDatasets([priceTrace, overlayTrace, ...segmentTraces, ...legendTraces]);
+    setDatasets([priceLineTrace, coloredPointsTrace, ...rangeTraces, ...extensionRangeTraces, ...segmentTraces, ...legendTraces]);
   }, [chartData, theme]);
 
   useEffect(() => {
@@ -204,95 +225,57 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
       plot_bgcolor: colors.primary[700],
       paper_bgcolor: colors.primary[700],
       font: { color: colors.primary[100] },
-      xaxis: {
-        ...prevLayout.xaxis,
-        
-      },
-      yaxis: {
-        ...prevLayout.yaxis,
-        title: {
-          text: 'Price ($)',
-          font: { color: colors.primary[100], size: 14 },
-          standoff: 5,
-        },
-        
-      },
-      yaxis2: {
-        ...prevLayout.yaxis2,
-        title: {
-          text: 'Extension (%)',
-          font: { color: colors.primary[100], size: 14 },
-          standoff: 5,
-        },
-        zerolinecolor: colors.primary[100],
-        
-      },
+      yaxis: { ...prevLayout.yaxis, title: { text: 'Price ($)', font: { color: colors.primary[100], size: 14 }, standoff: 5 } },
+      yaxis2: { ...prevLayout.yaxis2, title: { text: 'Extension (%)', font: { color: colors.primary[100], size: 14 }, standoff: 5 }, zerolinecolor: colors.primary[100] },
     }));
   }, [colors]);
 
   const resetChartView = () => {
     setLayout(prevLayout => ({
       ...prevLayout,
-      xaxis: { ...prevLayout.xaxis, autorange: true },
-      yaxis: { ...prevLayout.yaxis, autorange: true },
-      yaxis2: { ...prevLayout.yaxis2, autorange: true },
+      xaxis: { autorange: true },
+      yaxis: { autorange: true },
+      yaxis2: { autorange: true },
     }));
-    setDatasets(prevDatasets =>
-      prevDatasets.map(dataset => ({
-        ...dataset,
-        visible: dataset.name === '20-Week MA Extension' || dataset.name === 'Price' ? true : dataset.showlegend ? 'legendonly' : true,
-      }))
-    );
-    setAllVisible(true);
+    setDatasets(prevDatasets => prevDatasets.map(dataset => ({ ...dataset, visible: true })));
   };
 
+  const latestExtension = chartData.length > 0 ? chartData[chartData.length - 1].Extension.toFixed(2) : 'N/A';
 
   return (
     <div style={{ height: '100%' }}>
       {!isDashboard && (
         <div className='chart-top-div'>
+          <div></div>
           <div>
-          </div>
-          <div>
-            <button onClick={resetChartView} className="button-reset">
-              Reset Chart
-            </button>
+            <button onClick={resetChartView} className="button-reset">Reset Chart</button>
           </div>
         </div>
       )}
-
-      <div
-        className="chart-container"
-        style={{
-          height: isDashboard ? '100%' : 'calc(100% - 40px)',
-          width: '100%',
-          border: '2px solid #a9a9a9',
-        }}
-      >
+      <div className="chart-container" style={{ height: isDashboard ? '100%' : 'calc(100% - 40px)', width: '100%', border: '2px solid #a9a9a9' }}>
         <Plot
           ref={plotRef}
           data={datasets}
           layout={layout}
-          config={{
-            staticPlot: isDashboard,
-            displayModeBar: false,
-            responsive: true,
-          }}
+          config={{ staticPlot: isDashboard, displayModeBar: false, responsive: true }}
           useResizeHandler={true}
           style={{ width: "100%", height: "100%" }}
         />
       </div>
       <div className='under-chart'>
-        {!isDashboard && <LastUpdated storageKey="btcData" />}
+        {!isDashboard && (
+          <div>
+            <LastUpdated storageKey="btcData" />
+            <p>Latest Extension: {latestExtension}%</p>
+          </div>
+        )}
         {!isDashboard && <BitcoinFees />}
       </div>
-
       {!isDashboard && (
         <div>
           <p className='chart-info'>
             The Bitcoin 20-Week Extension chart shows the percentage difference between the current price and the 20-week moving average (MA),
             which helps to identify if we are currently in a bubble or a bear market. The chart is color-coded to indicate different ranges of extension.
-            <br />
           </p>
         </div>
       )}

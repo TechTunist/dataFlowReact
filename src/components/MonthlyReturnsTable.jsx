@@ -226,6 +226,7 @@ const monthlyReturnsData = useMemo(() => {
           height: isDashboard ? '100%' : 'calc(100% - 40px)',
           width: '100%',
           border: '2px solid #a9a9a9',
+          minHeight: '600px',
         }}
       >
         <Plot
