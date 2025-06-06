@@ -198,6 +198,8 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
         return { title: "BTC Account Balance", subtitle: isMobile ? "Discrete BTC Balances" : "Balances of Bitcoin in individual or grouped addresses" };
       case "/total-difference":
         return { title: "Total Cap to Fair Value", subtitle: isMobile ? "Total Cap to Fair Value" : "Total Market Cap to Fair Value Difference" };
+      case "/historical-volatility":
+        return { title: "Volatility", subtitle: isMobile ? "Historical Volatility" : "Historical Volatility to Predict Changes of Momentum" };
       default:
         return { title: "CryptoLogical", subtitle: "" };
     }

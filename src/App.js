@@ -61,6 +61,7 @@ import BitcoinRunningROI from "./components/BitcoinRunningROI";
 import BitcoinMonthlyReturnsTable from "./components/MonthlyReturnsTable";
 import MonthlyAverageROI from "./components/MonthlyAverageROI";
 import Bitcoin20WeekExtension from "./components/Bitcoin20WeekExtension";
+import HistoricalVolatility from "./components/HistoricalVolatility";
 
 // Stripe Context
 const StripeContext = createContext(null);
@@ -305,6 +306,14 @@ const AppContent = memo(({ isSignedIn, user }) => {
                       element={
                         <ProtectedRoute>
                           <BasicChart ChartComponent={BitcoinRunningROI} />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/historical-volatility"
+                      element={
+                        <ProtectedRoute>
+                          <BasicChart ChartComponent={HistoricalVolatility} />
                         </ProtectedRoute>
                       }
                     />

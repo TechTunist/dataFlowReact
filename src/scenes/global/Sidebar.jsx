@@ -112,6 +112,7 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
     { title: "Ethereum Risk Metric", to: "/risk-eth", category: "Ethereum", icon: <AssessmentIcon />, categoryIcon: <FitbitIcon /> },
     { title: "PiCycleTop Indicator", to: "/pi-cycle", category: "Indicators", icon: <TimelineIcon />, categoryIcon: <CategoryIcon /> },
     { title: "Fear And Greed Indicator", to: "/fear-and-greed", category: "Indicators", icon: <NetworkCheckIcon />, categoryIcon: <CategoryIcon /> },
+    { title: "Historical Volatility", to: "/historical-volatility", category: "Indicators", icon: <NetworkCheckIcon />, categoryIcon: <CategoryIcon /> },
     { title: "Bitcoin Logarithmic Regression", to: "/logarithmic-regression", category: "Indicators", icon: <TrendingUpIcon />, categoryIcon: <CategoryIcon /> },
     { title: "Bitcoin Risk Colour Chart", to: "/risk-color", category: "Bitcoin", icon: <PaletteIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
     { title: "Bitcoin Time in Risk Bands", to: "/risk-bands", category: "Bitcoin", icon: <TimerIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
