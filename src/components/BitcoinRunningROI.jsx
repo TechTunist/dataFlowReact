@@ -23,6 +23,7 @@ const BitcoinRunningROI = ({ isDashboard = false }) => {
   const [currentBtcPrice, setCurrentBtcPrice] = useState(0);
   const [currentRoi, setCurrentRoi] = useState(null);
   const [timeframe, setTimeframe] = useState('1y'); // Default to 1 year
+  const [tooltipData, setTooltipData] = useState(null);
 
   const timeframes = [
     { value: '30d', label: '30 Days', days: 30 },
@@ -34,7 +35,7 @@ const BitcoinRunningROI = ({ isDashboard = false }) => {
     { value: '4y', label: '4 Years', days: 1460 },
   ];
 
-  // Function to calculate running ROI, starting only after the timeframe has passed
+  // Calculate running ROI
   const calculateRunningROI = useCallback((data, days) => {
     if (data.length === 0) return [];
 
@@ -46,10 +47,7 @@ const BitcoinRunningROI = ({ isDashboard = false }) => {
       const currentDate = new Date(item.time);
       const daysPassed = (currentDate - startDate) / (1000 * 60 * 60 * 24);
 
-      // Only calculate ROI if enough days have passed since the start of the data
-      if (daysPassed < days) {
-        continue; // Skip until the timeframe is fulfilled
-      }
+      if (daysPassed < days) continue;
 
       const startIndex = Math.max(0, index - days);
       const startPrice = data[startIndex]?.value || item.value;
@@ -65,23 +63,18 @@ const BitcoinRunningROI = ({ isDashboard = false }) => {
     return result;
   }, []);
 
-  // Separate ROI data (filtered) and price data (full dataset)
+  // Compute ROI data and max ROI
   const { roiData, maxRoi } = useMemo(() => {
     const selectedTimeframe = timeframes.find(tf => tf.value === timeframe);
     const days = selectedTimeframe ? selectedTimeframe.days : 365;
     const filteredData = calculateRunningROI(btcData, days);
-    
-    // Find the maximum ROI value to set the scale dynamically
     const maxRoi = filteredData.length > 0 ? Math.max(...filteredData.map(d => d.roi)) : 200;
-    // Ensure the maximum is at least 200, and add a 10% buffer to the top
     const adjustedMax = Math.max(200, maxRoi * 1.1);
 
     return { roiData: filteredData, maxRoi: adjustedMax };
   }, [btcData, timeframe, calculateRunningROI]);
 
-  const setInteractivity = () => {
-    setIsInteractive(!isInteractive);
-  };
+  const setInteractivity = () => setIsInteractive(!isInteractive);
 
   const compactNumberFormatter = (value) => {
     if (value >= 1000000) return (value / 1000000).toFixed(0) + 'M';
@@ -90,18 +83,16 @@ const BitcoinRunningROI = ({ isDashboard = false }) => {
   };
 
   const resetChartView = () => {
-    if (chartRef.current) {
-      chartRef.current.timeScale().fitContent();
-    }
+    if (chartRef.current) chartRef.current.timeScale().fitContent();
   };
 
+  // Fetch initial data
   useEffect(() => {
     fetchBtcData();
   }, [fetchBtcData]);
 
+  // Initialize chart once on mount
   useEffect(() => {
-    if (btcData.length === 0) return;
-
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
       height: chartContainerRef.current.clientHeight,
@@ -116,21 +107,15 @@ const BitcoinRunningROI = ({ isDashboard = false }) => {
       rightPriceScale: {
         scaleMargins: { top: 0.01, bottom: 0.01 },
         borderVisible: false,
-        title: `ROI (${timeframe})`,
-        mode: 1, // Logarithmic mode
-        minimum: 0.1,
-        maximum: maxRoi, // Dynamically set based on data
+        mode: 1, // Logarithmic for ROI
       },
       leftPriceScale: {
         visible: true,
         borderColor: 'rgba(197, 203, 206, 1)',
         scaleMargins: { top: 0.1, bottom: 0.1 },
-        title: 'Price',
-        mode: 1, // Logarithmic mode
+        mode: 1, // Logarithmic for price
       },
-      timeScale: {
-        minBarSpacing: 0.001,
-      },
+      timeScale: { minBarSpacing: 0.001 },
     });
 
     const roiSeries = chart.addLineSeries({
@@ -140,94 +125,106 @@ const BitcoinRunningROI = ({ isDashboard = false }) => {
       lineWidth: 2,
     });
     roiSeriesRef.current = roiSeries;
-    roiSeries.setData(roiData.map(data => ({
-      time: data.time,
-      value: data.roi,
-    })));
 
     const priceSeries = chart.addLineSeries({
       color: 'gray',
       priceScaleId: 'left',
       lineWidth: 0.7,
-      priceFormat: {
-        type: 'custom',
-        formatter: compactNumberFormatter,
-      },
+      priceFormat: { type: 'custom', formatter: compactNumberFormatter },
     });
     priceSeriesRef.current = priceSeries;
-    // Use the full btcData for the price series
-    priceSeries.setData(btcData.map(data => ({ time: data.time, value: data.value })));
 
-    chart.applyOptions({
-      handleScroll: isInteractive,
-      handleScale: isInteractive,
-    });
-
-    chart.priceScale('left').applyOptions({
-      mode: 1, // Fixed to logarithmic
-      borderVisible: false,
-      priceFormat: {
-        type: 'custom',
-        formatter: compactNumberFormatter,
-      },
-      title: 'Price',
-    });
-
-    chart.priceScale('right').applyOptions({
-      mode: 1, // Fixed to logarithmic
-      title: `ROI (${timeframe})`,
-      minimum: 0.1,
-      maximum: maxRoi,
+    // Subscribe to crosshair movement for tooltip
+    chart.subscribeCrosshairMove(param => {
+      if (!param.point || !param.time || param.point.x < 0 || param.point.x > chartContainerRef.current.clientWidth || param.point.y < 0 || param.point.y > chartContainerRef.current.clientHeight) {
+        setTooltipData(null);
+      } else {
+        const priceData = param.seriesData.get(priceSeriesRef.current);
+        const roiData = param.seriesData.get(roiSeriesRef.current);
+        setTooltipData({
+          date: param.time,
+          price: priceData?.value,
+          roi: roiData?.value,
+          x: param.point.x,
+          y: param.point.y,
+        });
+      }
     });
 
     const resizeChart = () => {
-      if (chart && chartContainerRef.current) {
-        chart.applyOptions({
-          width: chartContainerRef.current.clientWidth,
-          height: chartContainerRef.current.clientHeight,
-        });
-      }
+      chart.applyOptions({
+        width: chartContainerRef.current.clientWidth,
+        height: chartContainerRef.current.clientHeight,
+      });
     };
-
-    const latestPriceData = btcData[btcData.length - 1];
-    const latestRoiData = roiData[roiData.length - 1];
-    setCurrentBtcPrice(latestPriceData ? Math.floor(latestPriceData.value / 1000) : 0);
-    setCurrentRoi(latestRoiData && latestRoiData.roi ? latestRoiData.roi.toFixed(2) : null);
-
     window.addEventListener('resize', resizeChart);
-    window.addEventListener('resize', resetChartView);
-    resizeChart();
 
-    chart.timeScale().fitContent();
     chartRef.current = chart;
 
     return () => {
       chart.remove();
       window.removeEventListener('resize', resizeChart);
-      window.removeEventListener('resize', resetChartView);
     };
-  }, [btcData, roiData, maxRoi, theme.palette.mode, isDashboard, timeframe, colors]);
+  }, []); // Empty dependencies: run once on mount
 
+  // Update price series data
+  useEffect(() => {
+    if (priceSeriesRef.current && btcData.length > 0) {
+      priceSeriesRef.current.setData(btcData.map(data => ({ time: data.time, value: data.value })));
+      chartRef.current?.timeScale().fitContent();
+    }
+  }, [btcData]);
+
+  // Update ROI series data
+  useEffect(() => {
+    if (roiSeriesRef.current && roiData.length > 0) {
+      roiSeriesRef.current.setData(roiData.map(data => ({ time: data.time, value: data.roi })));
+      chartRef.current?.timeScale().fitContent();
+    }
+  }, [roiData]);
+
+  // Update chart options dynamically
   useEffect(() => {
     if (chartRef.current) {
       chartRef.current.applyOptions({
         handleScroll: isInteractive,
         handleScale: isInteractive,
       });
-      chartRef.current.priceScale('left').applyOptions({
-        mode: 1, // Fixed to logarithmic
-      });
+      chartRef.current.priceScale('left').applyOptions({ mode: 1 }); // Logarithmic for price
       chartRef.current.priceScale('right').applyOptions({
-        mode: 1, // Fixed to logarithmic
         title: `ROI (${timeframe})`,
+        mode: 1,
         minimum: 0.1,
         maximum: maxRoi,
       });
     }
   }, [isInteractive, timeframe, maxRoi]);
 
-  const handleTimeframeChange = (e) => {
-    setTimeframe(e.target.value);
+  // Update current price and ROI for display
+  useEffect(() => {
+    const latestPriceData = btcData[btcData.length - 1];
+    const latestRoiData = roiData[roiData.length - 1];
+    setCurrentBtcPrice(latestPriceData ? Math.floor(latestPriceData.value / 1000) : 0);
+    setCurrentRoi(latestRoiData && latestRoiData.roi ? latestRoiData.roi.toFixed(2) : null);
+  }, [btcData, roiData]);
+
+  const handleTimeframeChange = (e) => setTimeframe(e.target.value);
+
+  // Calculate tooltip left position
+  const calculateLeftPosition = () => {
+    if (!tooltipData) return '0px';
+    const chartWidth = chartContainerRef.current.clientWidth;
+    const tooltipWidth = 200; // Estimated tooltip width
+    const offset = 10; // Distance from cursor
+    const cursorX = tooltipData.x;
+
+    if (cursorX + offset + tooltipWidth <= chartWidth) {
+      return `${cursorX + offset}px`;
+    } else if (cursorX - offset - tooltipWidth >= 0) {
+      return `${cursorX - offset - tooltipWidth}px`;
+    } else {
+      return `${Math.max(0, Math.min(cursorX, chartWidth - tooltipWidth))}px`;
+    }
   };
 
   return (
@@ -238,7 +235,7 @@ const BitcoinRunningROI = ({ isDashboard = false }) => {
             display: 'flex',
             flexDirection: { xs: 'column', sm: 'row' },
             alignItems: 'center',
-            justifyContent: 'center', // Center the entire content
+            justifyContent: 'center',
             gap: '20px',
             marginBottom: '10px',
             marginTop: '50px',
@@ -252,9 +249,7 @@ const BitcoinRunningROI = ({ isDashboard = false }) => {
                 color: colors.grey[100],
                 '&.Mui-focused': { color: colors.greenAccent[500] },
                 top: 0,
-                '&.MuiInputLabel-shrink': {
-                  transform: 'translate(14px, -9px) scale(0.75)',
-                },
+                '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' },
               }}
             >
               Timeframe
@@ -266,7 +261,6 @@ const BitcoinRunningROI = ({ isDashboard = false }) => {
               labelId="timeframe-label"
               sx={{
                 color: colors.grey[100],
-                backgroundColor: colors.primary,
                 backgroundColor: colors.primary[500],
                 borderRadius: '8px',
                 '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
@@ -276,9 +270,7 @@ const BitcoinRunningROI = ({ isDashboard = false }) => {
               }}
             >
               {timeframes.map(({ value, label }) => (
-                <MenuItem key={value} value={value}>
-                  {label}
-                </MenuItem>
+                <MenuItem key={value} value={value}>{label}</MenuItem>
               ))}
             </Select>
           </FormControl>
@@ -335,11 +327,8 @@ const BitcoinRunningROI = ({ isDashboard = false }) => {
           ref={chartContainerRef}
           style={{ height: '100%', width: '100%', zIndex: 1 }}
           onDoubleClick={() => {
-            if (!isInteractive && !isDashboard) {
-              setInteractivity(true);
-            } else {
-              setInteractivity(false);
-            }
+            if (!isInteractive && !isDashboard) setInteractivity(true);
+            else setInteractivity(false);
           }}
         />
         {!isDashboard && (
@@ -352,6 +341,28 @@ const BitcoinRunningROI = ({ isDashboard = false }) => {
               <span style={{ backgroundColor: '#ff0062', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
               Running ROI
             </span>
+          </div>
+        )}
+        {!isDashboard && tooltipData && (
+          <div
+            className="tooltip"
+            style={{
+              position: 'absolute',
+              left: calculateLeftPosition(),
+              top: `${tooltipData.y + 10}px`,
+              zIndex: 1000,
+              backgroundColor: colors.primary[900],
+              padding: '5px 10px',
+              borderRadius: '4px',
+              color: colors.grey[100],
+              fontSize: '12px',
+              pointerEvents: 'none',
+            }}
+          >
+            <div style={{ fontSize: '15px' }}>Bitcoin</div>
+            {tooltipData.price && <div style={{ fontSize: '20px' }}>${tooltipData.price.toFixed(2)}</div>}
+            {tooltipData.roi && <div style={{ color: '#ff0062' }}>ROI: {tooltipData.roi.toFixed(2)}x</div>}
+            {tooltipData.date && <div>{tooltipData.date}</div>}
           </div>
         )}
       </div>
