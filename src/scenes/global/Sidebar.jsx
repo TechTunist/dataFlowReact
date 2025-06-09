@@ -8,22 +8,13 @@ import InputBase from "@mui/material/InputBase";
 import SearchIcon from "@mui/icons-material/Search";
 import CloseIcon from "@mui/icons-material/Close";
 import BarChartOutlinedIcon from "@mui/icons-material/BarChartOutlined";
-import WarningOutlinedIcon from "@mui/icons-material/WarningOutlined";
 import CurrencyBitcoinIcon from "@mui/icons-material/CurrencyBitcoin";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import ShowChartIcon from "@mui/icons-material/ShowChart";
-import AssessmentIcon from "@mui/icons-material/Assessment";
 import TimelineIcon from "@mui/icons-material/Timeline";
-import NetworkCheckIcon from "@mui/icons-material/NetworkCheck";
 import SentimentVeryDissatisfiedIcon from "@mui/icons-material/SentimentVeryDissatisfied";
-import TrendingUpIcon from "@mui/icons-material/TrendingUp";
-import PaletteIcon from "@mui/icons-material/Palette";
-import TimerIcon from "@mui/icons-material/Timer";
-import MultilineChartIcon from "@mui/icons-material/MultilineChart";
 import RepeatIcon from "@mui/icons-material/Repeat";
-import BalanceIcon from "@mui/icons-material/Balance";
 import AddShoppingCart from "@mui/icons-material/AddShoppingCart";
-import FitbitIcon from "@mui/icons-material/Fitbit";
 import CategoryIcon from "@mui/icons-material/Category";
 import XIcon from "@mui/icons-material/X";
 import EmailIcon from "@mui/icons-material/Email";
@@ -44,6 +35,26 @@ import MoodIcon from '@mui/icons-material/Mood';
 import ReportIcon from '@mui/icons-material/Report';
 import ConstructionIcon from '@mui/icons-material/Construction';
 import HomeIcon from '@mui/icons-material/Home';
+import { SiEthereum } from "react-icons/si"; // Ethereum icon
+import AnalyticsIcon from "@mui/icons-material/Analytics";
+import LinkIcon from "@mui/icons-material/Link";
+import AssessmentIcon from "@mui/icons-material/Assessment";
+import CompareArrowsIcon from "@mui/icons-material/CompareArrows";
+import PieChartIcon from "@mui/icons-material/PieChart";
+import WarningAmberIcon from "@mui/icons-material/WarningAmber";
+import FunctionsIcon from "@mui/icons-material/Functions";
+import PaletteIcon from "@mui/icons-material/Palette";
+import LayersIcon from "@mui/icons-material/Layers";
+import HistoryIcon from "@mui/icons-material/History";
+import AssignmentIcon from "@mui/icons-material/Assignment";
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
+import TableChartIcon from "@mui/icons-material/TableChart";
+import CalculateIcon from "@mui/icons-material/Calculate";
+import SentimentSatisfiedIcon from "@mui/icons-material/SentimentSatisfied";
+import PriceChangeIcon from "@mui/icons-material/PriceChange";
+import WorkOffIcon from "@mui/icons-material/WorkOff";
+import PercentIcon from "@mui/icons-material/Percent";
+import MultilineChartIcon from "@mui/icons-material/MultilineChart";
 
 const Item = ({ title, to, icon, selected, setSelected, isNested, onClick, isProminent = false }) => {
   const theme = useTheme();
@@ -53,7 +64,7 @@ const Item = ({ title, to, icon, selected, setSelected, isNested, onClick, isPro
       active={selected === title}
       style={{
         color: isProminent ? colors.greenAccent[500] : colors.grey[100],
-        padding: '5px 0px 5px 0px', // Reduced left/right padding, increased top/bottom for breathing room
+        padding: '5px 0px 5px 0px',
       }}
       onClick={() => {
         setSelected(title);
@@ -67,11 +78,10 @@ const Item = ({ title, to, icon, selected, setSelected, isNested, onClick, isPro
           sx={{
             fontWeight: isProminent ? 'bold' : 'normal',
             position: 'relative',
-            // Enable text wrapping
-            whiteSpace: 'normal', // Allow text to wrap
-            wordBreak: 'break-word', // Break long words if necessary
-            maxWidth: 'calc(100% - 40px)', // Account for icon and padding (270px sidebar - 35px left padding - 20px right padding - ~40px for icon)
-            overflow: 'hidden', // Prevent overflow
+            whiteSpace: 'normal',
+            wordBreak: 'break-word',
+            maxWidth: 'calc(100% - 40px)',
+            overflow: 'hidden',
             '&:after': isProminent
               ? {
                   content: '""',
@@ -102,66 +112,66 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
   const itemsData = [
     { title: "Dashboard", to: "/dashboard", icon: <DashboardIcon />, category: null },
     { title: "Overview", to: "/market-overview", icon: <DashboardIcon />, category: null },
-    { title: "Bitcoin Chart", to: "/bitcoin", category: "Bitcoin", icon: <ShowChartIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
-    { title: "Total Market Cap", to: "/total", category: "Indicators", icon: <ShowChartIcon />, categoryIcon: <ShowChartIcon /> },
-    { title: "Total Cap to Fair Value", to: "/total-difference", category: "Indicators", icon: <ShowChartIcon />, categoryIcon: <ShowChartIcon /> },
-    { title: "Bitcoin Dominance", to: "/bitcoin-dominance", category: "Indicators", icon: <ShowChartIcon />, categoryIcon: <ShowChartIcon /> },
-    { title: "Bitcoin Risk Metric", to: "/risk", category: "Bitcoin", icon: <AssessmentIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
-    { title: "BTC Transactions to MVRV", to: "/tx-mvrv", category: "On Chain Data", icon: <AssessmentIcon />, categoryIcon: <SwapHorizIcon /> },
-    { title: "Ethereum Chart", to: "/ethereum", category: "Ethereum", icon: <ShowChartIcon />, categoryIcon: <FitbitIcon /> },
-    { title: "Ethereum Risk Metric", to: "/risk-eth", category: "Ethereum", icon: <AssessmentIcon />, categoryIcon: <FitbitIcon /> },
-    { title: "PiCycleTop Indicator", to: "/pi-cycle", category: "Indicators", icon: <TimelineIcon />, categoryIcon: <CategoryIcon /> },
-    { title: "Fear And Greed Indicator", to: "/fear-and-greed", category: "Indicators", icon: <NetworkCheckIcon />, categoryIcon: <CategoryIcon /> },
-    { title: "Historical Volatility", to: "/historical-volatility", category: "Indicators", icon: <NetworkCheckIcon />, categoryIcon: <CategoryIcon /> },
-    { title: "Bitcoin Logarithmic Regression", to: "/logarithmic-regression", category: "Indicators", icon: <TrendingUpIcon />, categoryIcon: <CategoryIcon /> },
-    { title: "Bitcoin Risk Colour Chart", to: "/risk-color", category: "Bitcoin", icon: <PaletteIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
-    { title: "Bitcoin Time in Risk Bands", to: "/risk-bands", category: "Bitcoin", icon: <TimerIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
-    { title: "Bitcoin Transaction Count", to: "/btc-tx-count", category: "On Chain Data", icon: <SwapHorizIcon />, categoryIcon: <SwapHorizIcon /> },
-    { title: "Bitcoin On-chain Risk", to: "/on-chain-historical-risk", category: "On Chain Data", icon: <SwapHorizIcon />, categoryIcon: <WarningOutlinedIcon /> },
-    { title: "Bitcoin Address balance", to: "/btc-add-balance", category: "On Chain Data", icon: <AccountBalanceIcon />, categoryIcon: <WarningOutlinedIcon /> },
-    { title: "Altcoin Chart", to: "/altcoin-price", category: "Altcoins", icon: <ShowChartIcon />, categoryIcon: <WarningOutlinedIcon /> },
-    { title: "Altcoin Risk Metric", to: "/altcoin-risk", category: "Altcoins", icon: <AssessmentIcon />, categoryIcon: <WarningOutlinedIcon /> },
-    { title: "US Initial Claims", to: "/us-initial-claims", category: "MacroEconomics", icon: <SentimentVeryDissatisfiedIcon />, categoryIcon: <CategoryIcon /> },
+    { title: "Bitcoin Chart", to: "/bitcoin", category: "Bitcoin", icon: <CurrencyBitcoinIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
+    { title: "Bitcoin Transaction Count", to: "/btc-tx-count", category: "On Chain Data", icon: <SwapHorizIcon />, categoryIcon: <LinkIcon /> },
+    { title: "Bitcoin Address Balance", to: "/btc-add-balance", category: "On Chain Data", icon: <AccountBalanceIcon />, categoryIcon: <LinkIcon /> },
     { title: "Market Cycles", to: "/market-cycles", category: "Bitcoin", icon: <RepeatIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
-    { title: "Bitcoin ROI", to: "/bitcoin-roi", category: "Bitcoin", icon: <AttachMoneyIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
-    { title: "Bitcoin Monthly Returns", to: "/monthly-returns", category: "Bitcoin", icon: <AttachMoneyIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
-    { title: "Bitcoin Bubble Indicator", to: "/btc-20-ext", category: "Indicators", icon: <AttachMoneyIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
-    { title: "Bitcoin Running ROI", to: "/bitcoin-running-roi", category: "Bitcoin", icon: <AttachMoneyIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
-    { title: "Monthly Average ROI", to: "/monthly-average-roi", category: "Bitcoin", icon: <AttachMoneyIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
-    { title: "Fear and Greed Chart", to: "/fear-and-greed-chart", category: "Indicators", icon: <BalanceIcon />, categoryIcon: <CategoryIcon /> },
-    { title: "US Inflation Chart", to: "/us-inflation", category: "MacroEconomics", icon: <AddShoppingCart />, categoryIcon: <CategoryIcon /> },
-    { title: "US Unemployment Chart", to: "/us-unemployment", category: "MacroEconomics", icon: <SentimentVeryDissatisfiedIcon />, categoryIcon: <CategoryIcon /> },
-    { title: "US Interest Rate Chart", to: "/us-interest", category: "MacroEconomics", icon: <BalanceIcon />, categoryIcon: <CategoryIcon /> },
-    { title: "US Macro Information Chart", to: "/us-combined-macro", category: "MacroEconomics", icon: <MultilineChartIcon />, categoryIcon: <CategoryIcon /> },
-    { title: "US Macro and BTC Tx Count", to: "/tx-combined", category: "MacroEconomics", icon: <BarChartIcon />, categoryIcon: <CategoryIcon /> },
-    { title: "Federal Funds Rate", to: "/fred/fed-funds-rate", category: "MacroEconomics", icon: <AccountBalanceIcon />, categoryIcon: <ShowChartIcon /> },
-    { title: "S&P 500 Index", to: "/fred/sp500", category: "MacroEconomics", icon: <CandlestickChart />, categoryIcon: <ShowChartIcon /> },
-    { title: "US Recession Indicator", to: "/fred/recession-indicator", category: "MacroEconomics", icon: <WarningIcon />, categoryIcon: <ShowChartIcon /> },
-    { title: "Consumer Price Index (CPI)", to: "/fred/cpi", category: "MacroEconomics", icon: <AddShoppingCart />, categoryIcon: <ShowChartIcon /> },
-    { title: "Unemployment Rate", to: "/fred/unemployment-rate", category: "MacroEconomics", icon: <SentimentVeryDissatisfiedIcon />, categoryIcon: <ShowChartIcon /> },
-    { title: "10-Year Treasury Yield", to: "/fred/10-year-treasury", category: "MacroEconomics", icon: <AccountBalanceIcon />, categoryIcon: <ShowChartIcon /> },
-    { title: "10Y-2Y Treasury Spread", to: "/fred/10y-2y-spread", category: "MacroEconomics", icon: <AccountBalanceIcon />, categoryIcon: <ShowChartIcon /> },
-    { title: "5-Year Inflation Expectation", to: "/fred/5y-inflation-expectation", category: "MacroEconomics", icon: <TrendingUpIcon />, categoryIcon: <ShowChartIcon /> },
-    { title: "Euro to USD Exchange Rate", to: "/fred/euro-dollar", category: "MacroEconomics", icon: <CurrencyExchangeIcon />, categoryIcon: <ShowChartIcon /> },
-    { title: "WTI Crude Oil Price", to: "/fred/crude-oil", category: "MacroEconomics", icon: <OilBarrelIcon />, categoryIcon: <ShowChartIcon /> },
-    { title: "Producer Price Index", to: "/fred/producer-price", category: "MacroEconomics", icon: <FactoryIcon />, categoryIcon: <ShowChartIcon /> },
-    { title: "Nonfarm Payrolls", to: "/fred/nonfarm-payrolls", category: "MacroEconomics", icon: <WorkIcon />, categoryIcon: <ShowChartIcon /> },
-    { title: "Real GDP", to: "/fred/gdp", category: "MacroEconomics", icon: <ApartmentIcon />, categoryIcon: <ShowChartIcon /> },
-    { title: "Real GDP Growth Rate", to: "/fred/gdp-growth", category: "MacroEconomics", icon: <TrendingUpIcon />, categoryIcon: <ShowChartIcon /> },
-    { title: "M1 Money Supply", to: "/fred/m1-money-supply", category: "MacroEconomics", icon: <MonetizationOnIcon />, categoryIcon: <ShowChartIcon /> },
-    { title: "M2 Money Supply", to: "/fred/m2-money-supply", category: "MacroEconomics", icon: <MonetizationOnIcon />, categoryIcon: <ShowChartIcon /> },
-    { title: "Consumer Sentiment", to: "/fred/consumer-sentiment", category: "MacroEconomics", icon: <MoodIcon />, categoryIcon: <ShowChartIcon /> },
-    { title: "VIX Volatility Index", to: "/fred/vix", category: "MacroEconomics", icon: <ReportIcon />, categoryIcon: <ShowChartIcon /> },
-    { title: "TED Spread", to: "/fred/ted-spread", category: "MacroEconomics", icon: <AccountBalanceIcon />, categoryIcon: <ShowChartIcon /> },
-    { title: "Yen to USD Exchange Rate", to: "/fred/yen-dollar", category: "MacroEconomics", icon: <CurrencyExchangeIcon />, categoryIcon: <ShowChartIcon /> },
-    { title: "Pound to USD Exchange Rate", to: "/fred/pound-dollar", category: "MacroEconomics", icon: <CurrencyExchangeIcon />, categoryIcon: <ShowChartIcon /> },
-    { title: "CAD to USD Exchange Rate", to: "/fred/cad-dollar", category: "MacroEconomics", icon: <CurrencyExchangeIcon />, categoryIcon: <ShowChartIcon /> },
-    { title: "Chicago Fed Activity Index", to: "/fred/chicago-fed-index", category: "MacroEconomics", icon: <ApartmentIcon />, categoryIcon: <ShowChartIcon /> },
-    { title: "Economic Policy Uncertainty", to: "/fred/economic-policy-uncertainty", category: "MacroEconomics", icon: <WarningIcon />, categoryIcon: <ShowChartIcon /> },
-    { title: "Housing Starts", to: "/fred/housing-starts", category: "MacroEconomics", icon: <ConstructionIcon />, categoryIcon: <ShowChartIcon /> },
-    { title: "Case-Shiller Home Price Index", to: "/fred/case-shiller", category: "MacroEconomics", icon: <HomeIcon />, categoryIcon: <ShowChartIcon /> },
-    { title: "Nikkei 225 Index", to: "/fred/nikkei-225", category: "MacroEconomics", icon: <CandlestickChart />, categoryIcon: <ShowChartIcon /> },
-    { title: "German 10-Year Bond Yield", to: "/fred/german-bond-yield", category: "MacroEconomics", icon: <AccountBalanceIcon />, categoryIcon: <ShowChartIcon /> },
+    { title: "Bitcoin ROI", to: "/bitcoin-roi", category: "Bitcoin", icon: <TrendingUpIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
+    { title: "Bitcoin Monthly Returns", to: "/monthly-returns", category: "Bitcoin", icon: <TableChartIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
+    { title: "Bitcoin Bubble Indicator", to: "/btc-20-ext", category: "Bitcoin", icon: <WarningAmberIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
+    { title: "Bitcoin Running ROI", to: "/bitcoin-running-roi", category: "Bitcoin", icon: <ShowChartIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
+    { title: "Monthly Average ROI", to: "/monthly-average-roi", category: "Bitcoin", icon: <CalculateIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
+    { title: "Ethereum Chart", to: "/ethereum", category: "Ethereum", icon: <SiEthereum />, categoryIcon: <SiEthereum /> },
+    { title: "Altcoin Chart", to: "/altcoin-price", category: "Altcoins", icon: <MonetizationOnIcon />, categoryIcon: <MonetizationOnIcon /> },
+    { title: "Total Market Cap", to: "/total", category: "Indicators", icon: <MonetizationOnIcon />, categoryIcon: <AnalyticsIcon /> },
+    { title: "Total Cap to Fair Value", to: "/total-difference", category: "Indicators", icon: <CompareArrowsIcon />, categoryIcon: <AnalyticsIcon /> },
+    { title: "Bitcoin Dominance", to: "/bitcoin-dominance", category: "Indicators", icon: <PieChartIcon />, categoryIcon: <AnalyticsIcon /> },
+    { title: "PiCycleTop Indicator", to: "/pi-cycle", category: "Indicators", icon: <TimelineIcon />, categoryIcon: <AnalyticsIcon /> },
+    { title: "Fear And Greed Indicator", to: "/fear-and-greed", category: "Indicators", icon: <MoodIcon />, categoryIcon: <AnalyticsIcon /> },
+    { title: "Historical Volatility", to: "/historical-volatility", category: "Indicators", icon: <TimelineIcon />, categoryIcon: <AnalyticsIcon /> },
+    { title: "Bitcoin Logarithmic Regression", to: "/logarithmic-regression", category: "Indicators", icon: <FunctionsIcon />, categoryIcon: <AnalyticsIcon /> },
+    { title: "Fear and Greed Chart", to: "/fear-and-greed-chart", category: "Indicators", icon: <SentimentSatisfiedIcon />, categoryIcon: <AnalyticsIcon /> },
+    { title: "Bitcoin Risk Metric", to: "/risk", category: "Risk", icon: <WarningIcon />, categoryIcon: <WarningIcon /> },
+    { title: "Ethereum Risk Metric", to: "/risk-eth", category: "Risk", icon: <WarningIcon />, categoryIcon: <WarningIcon /> },
+    { title: "Altcoin Risk Metric", to: "/altcoin-risk", category: "Risk", icon: <WarningAmberIcon />, categoryIcon: <WarningIcon /> },
+    { title: "Bitcoin Risk Colour Chart", to: "/risk-color", category: "Risk", icon: <PaletteIcon />, categoryIcon: <WarningIcon /> },
+    { title: "Bitcoin Time in Risk Bands", to: "/risk-bands", category: "Risk", icon: <LayersIcon />, categoryIcon: <WarningIcon /> },
+    { title: "Bitcoin On-chain Risk", to: "/on-chain-historical-risk", category: "Risk", icon: <HistoryIcon />, categoryIcon: <WarningIcon /> },
+    { title: "BTC Transactions to MVRV", to: "/tx-mvrv", category: "On Chain Data", icon: <AssessmentIcon />, categoryIcon: <LinkIcon /> },
+    { title: "US Inflation Chart", to: "/us-inflation", category: "MacroEconomics", icon: <PriceChangeIcon />, categoryIcon: <AssessmentIcon /> },
+    { title: "US Unemployment Chart", to: "/us-unemployment", category: "MacroEconomics", icon: <WorkOffIcon />, categoryIcon: <AssessmentIcon /> },
+    { title: "US Interest Rate Chart", to: "/us-interest", category: "MacroEconomics", icon: <PercentIcon />, categoryIcon: <AssessmentIcon /> },
+    { title: "US Initial Claims", to: "/us-initial-claims", category: "MacroEconomics", icon: <AssignmentIcon />, categoryIcon: <AssessmentIcon /> },
+    { title: "US Macro Information Chart", to: "/us-combined-macro", category: "MacroEconomics", icon: <MultilineChartIcon />, categoryIcon: <AssessmentIcon /> },
+    { title: "US Macro and BTC Tx Count", to: "/tx-combined", category: "MacroEconomics", icon: <BarChartIcon />, categoryIcon: <AssessmentIcon /> },
+    { title: "Federal Funds Rate", to: "/fred/fed-funds-rate", category: "MacroEconomics", icon: <PercentIcon />, categoryIcon: <AssessmentIcon /> },
+    { title: "S&P 500 Index", to: "/fred/sp500", category: "MacroEconomics", icon: <CandlestickChart />, categoryIcon: <AssessmentIcon /> },
+    { title: "US Recession Indicator", to: "/fred/recession-indicator", category: "MacroEconomics", icon: <WarningIcon />, categoryIcon: <AssessmentIcon /> },
+    { title: "Consumer Price Index (CPI)", to: "/fred/cpi", category: "MacroEconomics", icon: <PriceChangeIcon />, categoryIcon: <AssessmentIcon /> },
+    { title: "Unemployment Rate", to: "/fred/unemployment-rate", category: "MacroEconomics", icon: <WorkOffIcon />, categoryIcon: <AssessmentIcon /> },
+    { title: "10-Year Treasury Yield", to: "/fred/10-year-treasury", category: "MacroEconomics", icon: <PercentIcon />, categoryIcon: <AssessmentIcon /> },
+    { title: "10Y-2Y Treasury Spread", to: "/fred/10y-2y-spread", category: "MacroEconomics", icon: <CompareArrowsIcon />, categoryIcon: <AssessmentIcon /> },
+    { title: "5-Year Inflation Expectation", to: "/fred/5y-inflation-expectation", category: "MacroEconomics", icon: <PriceChangeIcon />, categoryIcon: <AssessmentIcon /> },
+    { title: "Euro to USD Exchange Rate", to: "/fred/euro-dollar", category: "MacroEconomics", icon: <CurrencyExchangeIcon />, categoryIcon: <AssessmentIcon /> },
+    { title: "WTI Crude Oil Price", to: "/fred/crude-oil", category: "MacroEconomics", icon: <OilBarrelIcon />, categoryIcon: <AssessmentIcon /> },
+    { title: "Producer Price Index", to: "/fred/producer-price", category: "MacroEconomics", icon: <FactoryIcon />, categoryIcon: <AssessmentIcon /> },
+    { title: "Nonfarm Payrolls", to: "/fred/nonfarm-payrolls", category: "MacroEconomics", icon: <WorkIcon />, categoryIcon: <AssessmentIcon /> },
+    { title: "Real GDP", to: "/fred/gdp", category: "MacroEconomics", icon: <AssessmentIcon />, categoryIcon: <AssessmentIcon /> },
+    { title: "Real GDP Growth Rate", to: "/fred/gdp-growth", category: "MacroEconomics", icon: <TrendingUpIcon />, categoryIcon: <AssessmentIcon /> },
+    { title: "M1 Money Supply", to: "/fred/m1-money-supply", category: "MacroEconomics", icon: <MonetizationOnIcon />, categoryIcon: <AssessmentIcon /> },
+    { title: "M2 Money Supply", to: "/fred/m2-money-supply", category: "MacroEconomics", icon: <MonetizationOnIcon />, categoryIcon: <AssessmentIcon /> },
+    { title: "Consumer Sentiment", to: "/fred/consumer-sentiment", category: "MacroEconomics", icon: <MoodIcon />, categoryIcon: <AssessmentIcon /> },
+    { title: "VIX Volatility Index", to: "/fred/vix", category: "MacroEconomics", icon: <ReportIcon />, categoryIcon: <AssessmentIcon /> },
+    { title: "TED Spread", to: "/fred/ted-spread", category: "MacroEconomics", icon: <CompareArrowsIcon />, categoryIcon: <AssessmentIcon /> },
+    { title: "Yen to USD Exchange Rate", to: "/fred/yen-dollar", category: "MacroEconomics", icon: <CurrencyExchangeIcon />, categoryIcon: <AssessmentIcon /> },
+    { title: "Pound to USD Exchange Rate", to: "/fred/pound-dollar", category: "MacroEconomics", icon: <CurrencyExchangeIcon />, categoryIcon: <AssessmentIcon /> },
+    { title: "CAD to USD Exchange Rate", to: "/fred/cad-dollar", category: "MacroEconomics", icon: <CurrencyExchangeIcon />, categoryIcon: <AssessmentIcon /> },
+    { title: "Chicago Fed Activity Index", to: "/fred/chicago-fed-index", category: "MacroEconomics", icon: <AssessmentIcon />, categoryIcon: <AssessmentIcon /> },
+    { title: "Economic Policy Uncertainty", to: "/fred/economic-policy-uncertainty", category: "MacroEconomics", icon: <WarningIcon />, categoryIcon: <AssessmentIcon /> },
+    { title: "Housing Starts", to: "/fred/housing-starts", category: "MacroEconomics", icon: <ConstructionIcon />, categoryIcon: <AssessmentIcon /> },
+    { title: "Case-Shiller Home Price Index", to: "/fred/case-shiller", category: "MacroEconomics", icon: <HomeIcon />, categoryIcon: <AssessmentIcon /> },
+    { title: "Nikkei 225 Index", to: "/fred/nikkei-225", category: "MacroEconomics", icon: <CandlestickChart />, categoryIcon: <AssessmentIcon /> },
+    { title: "German 10-Year Bond Yield", to: "/fred/german-bond-yield", category: "MacroEconomics", icon: <PercentIcon />, categoryIcon: <AssessmentIcon /> },
     { title: "Workbench", to: "/workbench", category: "Workbench", icon: <MultilineChartIcon />, categoryIcon: <ShowChartIcon /> },
   ];
 
@@ -187,7 +197,7 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
       }
       return acc;
     }, {})
-  );
+  , [itemsData]);
 
   const renderMenuItem = (item, index, isNested = false, isProminent = false) => (
     <Item

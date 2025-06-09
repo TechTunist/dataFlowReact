@@ -2,17 +2,68 @@ import React, { useEffect, useState, useContext, useMemo, useCallback, useRef } 
 import Plot from 'react-plotly.js';
 import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
+import { Box, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import '../styling/bitcoinChart.css';
 import LastUpdated from '../hooks/LastUpdated';
 import BitcoinFees from './BitcoinTransactionFees';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 
+const altcoins = [
+  { label: 'Solana', value: 'SOL' },
+  { label: 'Ethereum', value: 'ETH' },
+  { label: 'Cardano', value: 'ADA' },
+  { label: 'Dogecoin', value: 'DOGE' },
+  { label: 'Chainlink', value: 'LINK' },
+  { label: 'XRP', value: 'XRP' },
+  { label: 'Avalanche', value: 'AVAX' },
+  { label: 'Toncoin', value: 'TON' },
+  { label: 'Binance-Coin', value: 'BNB' },
+  { label: 'Aave', value: 'AAVE' },
+  { label: 'Cronos', value: 'CRO' },
+  { label: 'Sui', value: 'SUI' },
+  { label: 'Hedera', value: 'HBAR' },
+  { label: 'Stellar', value: 'XLM' },
+  { label: 'Aptos', value: 'APT' },
+  { label: 'Polkadot', value: 'DOT' },
+  { label: 'VeChain', value: 'VET' },
+  { label: 'Uniswap', value: 'UNI' },
+  { label: 'Litecoin', value: 'LTC' },
+  { label: 'Leo Utility Token', value: 'LEO' },
+  { label: 'Hyperliquid', value: 'HYPE' },
+  { label: 'Near Protocol', value: 'NEAR' },
+  { label: 'Fetch.ai', value: 'FET' },
+  { label: 'Ondo Finance', value: 'ONDO' },
+  { label: 'Internet Computer', value: 'ICP' },
+  { label: 'Monero', value: 'XMR' },
+  { label: 'Polygon', value: 'POL' },
+  { label: 'Algorand', value: 'ALGO' },
+  { label: 'Render', value: 'RENDER' },
+  { label: 'Arbitrum', value: 'ARB' },
+  { label: 'Raydium', value: 'RAY' },
+  { label: 'Move', value: 'MOVE' },
+];
+
 const BitcoinRiskColor = ({ isDashboard = false, riskData: propRiskData }) => {
   const theme = useTheme();
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
-  const { btcData, fetchBtcData } = useContext(DataContext);
+  const { btcData, fetchBtcData, altcoinData, fetchAltcoinData } = useContext(DataContext);
   const plotRef = useRef(null);
+  const [selectedAsset, setSelectedAsset] = useState('BTC');
+
+  // Get the label for the selected asset
+  const selectedAssetLabel = useMemo(() => {
+    if (selectedAsset === 'BTC') return 'Bitcoin';
+    const altcoin = altcoins.find(coin => coin.value === selectedAsset);
+    return altcoin ? altcoin.label : 'Bitcoin';
+  }, [selectedAsset]);
+
+  // Determine the data to use based on the selected asset
+  const chartSourceData = useMemo(() => {
+    if (propRiskData) return propRiskData;
+    if (selectedAsset === 'BTC') return btcData;
+    return altcoinData[selectedAsset] || [];
+  }, [propRiskData, selectedAsset, btcData, altcoinData]);
 
   const calculateRiskMetric = (data) => {
     const movingAverage = data.map((item, index) => {
@@ -40,13 +91,13 @@ const BitcoinRiskColor = ({ isDashboard = false, riskData: propRiskData }) => {
   };
 
   const chartData = useMemo(() => {
-    return propRiskData || (btcData.length > 0 ? calculateRiskMetric(btcData) : []);
-  }, [propRiskData, btcData]);
+    return chartSourceData.length > 0 ? calculateRiskMetric(chartSourceData) : [];
+  }, [chartSourceData]);
 
   const currentRisk = chartData.length > 0 ? chartData[chartData.length - 1].Risk : null;
 
   const [layout, setLayout] = useState({
-    title: 'Bitcoin Price vs. Risk Level',
+    title: `${selectedAssetLabel} Price vs. Risk Level`,
     autosize: true,
     margin: { l: 60, r: 50, b: 30, t: 30, pad: 4 },
     plot_bgcolor: colors.primary[700],
@@ -82,8 +133,12 @@ const BitcoinRiskColor = ({ isDashboard = false, riskData: propRiskData }) => {
   );
 
   useEffect(() => {
-    fetchBtcData();
-  }, [fetchBtcData]);
+    if (selectedAsset === 'BTC') {
+      fetchBtcData();
+    } else {
+      fetchAltcoinData(selectedAsset);
+    }
+  }, [selectedAsset, fetchBtcData, fetchAltcoinData]);
 
   useEffect(() => {
     if (chartData.length === 0) return;
@@ -124,7 +179,7 @@ const BitcoinRiskColor = ({ isDashboard = false, riskData: propRiskData }) => {
           color: 'grey',
           width: 1.5,
         },
-        name: 'Bitcoin Price',
+        name: `${selectedAssetLabel} Price`,
         visible: true,
       });
 
@@ -132,7 +187,7 @@ const BitcoinRiskColor = ({ isDashboard = false, riskData: propRiskData }) => {
     };
 
     updateDatasets(chartData);
-  }, [chartData, theme]);
+  }, [chartData, theme, selectedAssetLabel]);
 
   useEffect(() => {
     setLayout(prevLayout => ({
@@ -141,6 +196,7 @@ const BitcoinRiskColor = ({ isDashboard = false, riskData: propRiskData }) => {
       paper_bgcolor: colors.primary[700],
       font: { color: colors.primary[100] },
       margin: { l: 60, r: 50, b: 30, t: 30, pad: 4 },
+      title: isDashboard ? '' : `${selectedAssetLabel} Price vs. Risk Level`,
       yaxis: {
         ...prevLayout.yaxis,
         title: {
@@ -151,7 +207,7 @@ const BitcoinRiskColor = ({ isDashboard = false, riskData: propRiskData }) => {
         automargin: true,
       },
     }));
-  }, [colors]);
+  }, [colors, selectedAssetLabel, isDashboard]);
 
   const resetChartView = () => {
     setLayout(prevLayout => ({
@@ -218,15 +274,88 @@ const BitcoinRiskColor = ({ isDashboard = false, riskData: propRiskData }) => {
     }
   }, [datasets]);
 
+  const handleAssetChange = (event) => {
+    setSelectedAsset(event.target.value);
+    setDatasets(
+      Array.from({ length: 10 }, (_, index) => ({
+        data: [],
+        visible: true,
+        label: `${(index * 0.1).toFixed(1)} - ${((index + 1) * 0.1).toFixed(1)}`,
+      }))
+    );
+    resetChartView(); // Reset the chart view when a new asset is selected
+  };
+
   return (
     <div style={{ height: '100%' }}>
       {!isDashboard && (
-        <div className='chart-top-div'>
-          <div>
-            {/* Placeholder for styling */}
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: { xs: 'column', sm: 'row' },
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '20px',
+            marginBottom: '30px',
+            marginTop: '50px',
+          }}
+        >
+          <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '200px' } }}>
+            <InputLabel
+              id="asset-label"
+              shrink
+              sx={{
+                color: colors.grey[100],
+                '&.Mui-focused': { color: colors.greenAccent[500] },
+                top: 0,
+                '&.MuiInputLabel-shrink': {
+                  transform: 'translate(14px, -9px) scale(0.75)',
+                },
+              }}
+            >
+              Asset
+            </InputLabel>
+            <Select
+              value={selectedAsset}
+              onChange={handleAssetChange}
+              label="Asset"
+              labelId="asset-label"
+              sx={{
+                color: colors.grey[100],
+                backgroundColor: colors.primary[500],
+                borderRadius: '8px',
+                '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
+                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                '& .MuiSelect-select': { py: 1.5, pl: 2 },
+                '& .MuiSelect-select:empty': { color: colors.grey[500] },
+              }}
+            >
+              <MenuItem value="BTC">Bitcoin</MenuItem>
+              {altcoins.map((coin) => (
+                <MenuItem key={coin.value} value={coin.value}>
+                  {coin.label}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Box>
+      )}
+      {!isDashboard && (
+        <div className="chart-top-div">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+            {/* Placeholder for potential additional controls */}
           </div>
-          <div>
-            <button onClick={resetChartView} className="button-reset">
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+            <button
+              onClick={resetChartView}
+              className="button-reset extra-margin"
+              style={{
+                backgroundColor: 'transparent',
+                color: '#31d6aa',
+                borderColor: '#70d8bd',
+              }}
+            >
               Reset Chart
             </button>
           </div>
@@ -257,7 +386,7 @@ const BitcoinRiskColor = ({ isDashboard = false, riskData: propRiskData }) => {
           }))}
           layout={{
             ...layout,
-            title: isDashboard ? '' : 'Bitcoin Price vs. Risk Level',
+            title: isDashboard ? '' : `${selectedAssetLabel} Price vs. Risk Level`,
             showlegend: !isDashboard,
             legend: isDashboard
               ? {}
@@ -283,29 +412,30 @@ const BitcoinRiskColor = ({ isDashboard = false, riskData: propRiskData }) => {
       </div>
 
       <div className='under-chart'>
-        {!isDashboard && <LastUpdated storageKey="btcData" />}
-        {!isDashboard && <BitcoinFees />}
+        {!isDashboard && <LastUpdated storageKey={`${selectedAsset.toLowerCase()}Data`} />}
+        {!isDashboard && selectedAsset === 'BTC' && <BitcoinFees />}
       </div>
       {!isDashboard && (
-          <p className='current-risk'
+        <p
+          className='current-risk'
           style={{
             fontSize: '1.3rem',
             color: colors.primary[100],
             display: 'block',
             marginTop: '5px',
           }}
-          >
-            Current Risk: {currentRisk !== null ? currentRisk.toFixed(2) : 'Loading...'}
-          </p>
-        )}
+        >
+          Current Risk: {currentRisk !== null ? currentRisk.toFixed(2) : 'Loading...'}
+        </p>
+      )}
 
       {!isDashboard && (
         <div>
           <p className='chart-info'>
-            The risk metric assesses Bitcoin's investment risk over time by comparing its daily prices to a 374-day moving average.
+            The risk metric assesses {selectedAssetLabel}'s investment risk over time by comparing its daily prices to a 374-day moving average.
             It does so by calculating the normalized logarithmic difference between the price and the moving average,
             producing a score between 0 and 1. A higher score indicates higher risk, and a lower score indicates lower risk.
-            This method provides a simplified view of when it might be riskier or safer to invest in Bitcoin based on historical price movements.
+            This method provides a simplified view of when it might be riskier or safer to invest in {selectedAssetLabel} based on historical price movements.
             <br />
           </p>
         </div>
