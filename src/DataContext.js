@@ -368,96 +368,88 @@ export const DataProvider = ({ children }) => {
     });
   }, [fetchLatestFearAndGreed]);
 
+  async function fetchAllPages(url) {
+    let results = [];
+    let nextUrl = url;
+    while (nextUrl) {
+      try {
+        const response = await fetch(nextUrl, { signal: AbortSignal.timeout(8000) });
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+        const data = await response.json();
+        results = results.concat(data.results);
+        nextUrl = data.next; // null if no more pages
+      } catch (err) {
+        console.error('Error fetching page:', err);
+        throw err;
+      }
+    }
+    return results;
+  };
+
   const fetchOnchainMetricsData = useCallback(
     async () => {
       if (isOnchainMetricsDataFetched) {
-        console.log('Address metrics already fetched');
+        console.log('Onchain metrics already fetched');
         return;
       }
-
+  
       const cacheId = 'onchainMetricsData';
       const currentDate = new Date().toISOString().split('T')[0];
       const currentTimestamp = Date.now();
-
+  
       try {
         setIsOnchainMetricsDataFetched(true);
         setOnchainFetchError(null);
-
+  
         const cached = await getCachedData(cacheId);
         if (cached && cached.data.length > 0) {
           const sortedCachedData = [...cached.data].sort((a, b) => new Date(a.time) - new Date(b.time));
           const latestCachedDate = sortedCachedData[sortedCachedData.length - 1].time;
           if (latestCachedDate >= currentDate) {
-            console.log(`Using cached data: ${sortedCachedData.length} records`);
             setOnchainMetricsData(sortedCachedData);
             setOnchainMetricsLastUpdated(latestCachedDate);
             return;
           }
         }
-
-        const maxRetries = 2;
-        let attempts = 0;
-        let response;
-
-        while (attempts < maxRetries) {
-          try {
-            const apiUrl = `${API_BASE_URL}/onchain-address-metrics/?start_time=2010-01-01`;
-            response = await fetch(apiUrl, { signal: AbortSignal.timeout(8000) });
-            if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-            break;
-          } catch (err) {
-            attempts++;
-            console.warn(`Attempt ${attempts} failed:`, err);
-            if (attempts === maxRetries) throw err;
-            await new Promise((resolve) => setTimeout(resolve, 500));
-          }
+  
+        console.log('Fetching all pages of onchain metrics...');
+        const apiUrl = `${API_BASE_URL}/onchain-metrics/?metric=PriceUSD&metric=IssContUSD&start_time=2010-01-01`;
+        const allData = await fetchAllPages(apiUrl);
+  
+        if (!allData || allData.length === 0) {
+          throw new Error('No onchain metrics data returned');
         }
-
-        const text = await response.text();
-        let data;
-        try {
-          data = JSON.parse(text);
-        } catch (err) {
-          console.error('JSON parse error:', err, 'Response:', text.substring(0, 350));
-          throw new Error(`Invalid JSON: ${err.message}`);
-        }
-
-        if (!data.results || data.results.length === 0) {
-          throw new Error('No address metrics data returned');
-        }
-
-        const formattedData = data.results.map((item) => ({
-          time: item.time,
-          ...Object.fromEntries(
-            Object.entries(item)
-              .filter(([key]) => key !== 'time')
-              .map(([key, value]) => [key, value !== null ? parseFloat(value) : null])
-          ),
+  
+        const formattedData = allData.map((item) => ({
+          time: item.time, // Expecting 'YYYY-MM-DD'
+          metric: item.metric,
+          value: item.value !== null ? parseFloat(item.value) : null,
+          asset: item.asset,
         }));
-
-        console.log(`Fetched ${formattedData.length} records`);
+  
+        console.log(`Fetched ${formattedData.length} records:`, formattedData.slice(0, 5));
         setOnchainMetricsData(formattedData);
         setOnchainMetricsLastUpdated(formattedData[formattedData.length - 1].time);
         await cacheData(cacheId, formattedData, currentTimestamp);
       } catch (error) {
-        console.error('Error fetching metrics:', error);
+        console.error('Error fetching onchain metrics:', error);
         setIsOnchainMetricsDataFetched(false);
         setOnchainFetchError(error.message);
       }
     },
     [isOnchainMetricsDataFetched, API_BASE_URL]
   );
-
+  
   const refreshOnchainMetricsData = useCallback(
     async () => {
-      console.log('Refreshing data');
+      console.log('Refreshing onchain metrics data');
       try {
         await clearCache('onchainMetricsData');
         setOnchainMetricsData([]);
         setIsOnchainMetricsDataFetched(false);
         await fetchOnchainMetricsData();
       } catch (error) {
-        console.error('Error refreshing:', error);
+        console.error('Error refreshing onchain metrics:', error);
         setOnchainFetchError(error.message);
       }
     },

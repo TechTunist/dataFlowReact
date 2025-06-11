@@ -128,6 +128,8 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
         return { title: "US Initial Claims", subtitle: "Jobless Claims" };
       case "/tx-combined":
         return { title: "US Macro and BTC Tx Count", subtitle: "Macro and On-Chain Data" };
+      case "/puell-multiple":
+        return { title: "Puell Multiple", subtitle: isMobile ? "Miner Revenue" : "Current Mined BTC Value to the 365 day Moving Average" };
       case "/tx-mvrv":
         return { title: "BTC Tx Count to MVRV", subtitle: "Transactions to MVRV Chart" };
       case "/fred/fed-funds-rate":

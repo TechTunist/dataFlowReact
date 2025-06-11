@@ -62,6 +62,7 @@ import BitcoinMonthlyReturnsTable from "./components/MonthlyReturnsTable";
 import MonthlyAverageROI from "./components/MonthlyAverageROI";
 import Bitcoin20WeekExtension from "./components/Bitcoin20WeekExtension";
 import HistoricalVolatility from "./components/HistoricalVolatility";
+import PuellMultiple from "./components/PuellMultiple";
 
 // Stripe Context
 const StripeContext = createContext(null);
@@ -354,6 +355,14 @@ const AppContent = memo(({ isSignedIn, user }) => {
                       element={
                         <ProtectedRoute>
                           <BasicChart ChartComponent={EthereumPrice} />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/puell-multiple"
+                      element={
+                        <ProtectedRoute>
+                          <BasicChart ChartComponent={PuellMultiple} />
                         </ProtectedRoute>
                       }
                     />
