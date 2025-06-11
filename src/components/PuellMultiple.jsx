@@ -2,7 +2,7 @@
 import React, { useRef, useEffect, useState, useContext, useMemo } from 'react';
 import { createChart } from 'lightweight-charts';
 import { tokens } from "../theme";
-import { useTheme, Button } from "@mui/material";
+import { useTheme, Button, Box, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
 import '../styling/bitcoinChart.css';
 import LastUpdated from '../hooks/LastUpdated';
 import BitcoinFees from './BitcoinTransactionFees';
@@ -21,6 +21,16 @@ const PuellMultiple = ({ isDashboard = false }) => {
   const [currentBtcPrice, setCurrentBtcPrice] = useState(0);
   const [currentPuellMultiple, setCurrentPuellMultiple] = useState(null);
   const [tooltipData, setTooltipData] = useState(null);
+  const [smoothingPeriod, setSmoothingPeriod] = useState(7); // Default to 7-day smoothing
+
+  // Smoothing period options
+  const smoothingOptions = [
+    { value: 7, label: '7 Days' },
+    { value: 28, label: '28 Days' },
+    { value: 90, label: '90 Days' },
+    { value: 180, label: '180 Days' },
+    { value: 365, label: '1 Year' },
+  ];
 
   // Calculate daily issuance based on block reward schedule
   const calculateDailyIssuance = (date) => {
@@ -67,7 +77,7 @@ const PuellMultiple = ({ isDashboard = false }) => {
     return { priceData, issuanceData };
   }, [btcData, onchainMetricsData]);
 
-  // Calculate Puell Multiple for all days
+  // Calculate Puell Multiple with smoothing
   const puellDataAll = useMemo(() => {
     const { issuanceData } = prepareData;
     const puellData = [];
@@ -85,8 +95,22 @@ const PuellMultiple = ({ isDashboard = false }) => {
       });
     }
 
-    return puellData;
-  }, [prepareData]);
+    // Apply smoothing based on selected period
+    const smoothedPuellData = [];
+    for (let i = 0; i < puellData.length; i++) {
+      const startIndex = Math.max(0, i - smoothingPeriod + 1);
+      const window = puellData.slice(startIndex, i + 1).filter(d => d.value !== null);
+      const smoothedValue = window.length > 0
+        ? window.reduce((sum, d) => sum + d.value, 0) / window.length
+        : null;
+      smoothedPuellData.push({
+        time: puellData[i].time,
+        value: smoothedValue !== null ? parseFloat(smoothedValue.toFixed(2)) : null,
+      });
+    }
+
+    return smoothedPuellData;
+  }, [prepareData, smoothingPeriod]);
 
   const maxPuell = useMemo(() => {
     if (puellDataAll.length > 0) {
@@ -218,13 +242,13 @@ const PuellMultiple = ({ isDashboard = false }) => {
         handleScale: isInteractive,
       });
       chartRef.current.priceScale('right').applyOptions({
-        title: `Puell Multiple`,
+        title: `Puell Multiple (${smoothingPeriod}-Day SMA)`,
         minimum: 0,
         maximum: maxPuell,
         mode: 1,
       });
     }
-  }, [isInteractive, maxPuell]);
+  }, [isInteractive, maxPuell, smoothingPeriod]);
 
   // Update current price and Puell Multiple
   useEffect(() => {
@@ -254,8 +278,60 @@ const PuellMultiple = ({ isDashboard = false }) => {
   return (
     <div style={{ height: '100%' }}>
       {!isDashboard && (
-        <div className="chart-top-div">
-          <div className="span-container">
+        <>
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: { xs: 'column', sm: 'row' },
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '20px',
+              marginBottom: '30px',
+              marginTop: '50px',
+            }}
+          >
+            <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '200px' } }}>
+              <InputLabel
+                id="smoothing-label"
+                shrink
+                sx={{
+                  color: colors.grey[100],
+                  '&.Mui-focused': { color: colors.greenAccent[500] },
+                  top: 0,
+                  '&.MuiInputLabel-shrink': {
+                    transform: 'translate(14px, -9px) scale(0.75)',
+                  },
+                }}
+              >
+                Smoothing Period
+              </InputLabel>
+              <Select
+                value={smoothingPeriod}
+                onChange={(e) => setSmoothingPeriod(e.target.value)}
+                label="Smoothing Period"
+                labelId="smoothing-label"
+                sx={{
+                  color: colors.grey[100],
+                  backgroundColor: colors.primary[500],
+                  borderRadius: "8px",
+                  '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
+                  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                  '& .MuiSelect-select': { py: 1.5, pl: 2 },
+                  '& .MuiSelect-select:empty': { color: colors.grey[500] },
+                }}
+              >
+                {smoothingOptions.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
+          {!isDashboard && (
+        <div className='chart-top-div'>
+          <div className='span-container'>
             <span style={{ marginRight: '20px', display: 'inline-block' }}>
               <span style={{ backgroundColor: 'gray', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
               Bitcoin Price
@@ -265,53 +341,32 @@ const PuellMultiple = ({ isDashboard = false }) => {
               Puell Multiple
             </span>
           </div>
+
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <Button
+            <button
               onClick={setInteractivity}
               className="button-reset"
-              sx={{
+              style={{
                 backgroundColor: isInteractive ? '#4cceac' : 'transparent',
                 color: isInteractive ? 'black' : '#31d6aa',
-                border: `1px solid ${isInteractive ? 'violet' : '#70d8bd'}`,
-                borderRadius: '4px',
-                padding: '8px 16px',
-                fontSize: '14px',
-                textTransform: 'none',
-                '&:hover': {
-                  backgroundColor: colors.greenAccent[400],
-                  color: theme.palette.mode === 'dark' ? colors.grey[900] : colors.grey[100],
-                },
+                borderColor: isInteractive ? 'violet' : '#70d8bd',
               }}
             >
               {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
-            </Button>
-            <Button
-              onClick={resetChart}
-              className="button-reset extra-margin"
-              sx={{
-                backgroundColor: 'transparent',
-                color: '#31d6aa',
-                border: `1px solid ${colors.greenAccent[400]}`,
-                borderRadius: '4px',
-                padding: '8px 16px',
-                fontSize: '14px',
-                textTransform: 'none',
-                '&:hover': {
-                  backgroundColor: colors.greenAccent[400],
-                  color: theme.palette.mode === 'dark' ? colors.grey[900] : colors.grey[100],
-                },
-              }}
-            >
+            </button>
+            <button onClick={resetChart} className="button-reset extra-margin">
               Reset Chart
-            </Button>
+            </button>
           </div>
         </div>
+      )}
+        </>
       )}
       <div
         className="chart-container"
         style={{
           position: 'relative',
-          height: isDashboard ? '100%' : 'calc(100% - 40px)',
+          height: isDashboard ? '100%' : 'calc(100% - 100px)',
           width: '100%',
           border: '2px solid #a9a9a9',
         }}

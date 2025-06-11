@@ -2,8 +2,7 @@
 import React, { useRef, useEffect, useState, useContext, useMemo } from 'react';
 import { createChart } from 'lightweight-charts';
 import { tokens } from '../theme';
-import { useTheme } from '@mui/material';
-import { Select, MenuItem, FormControl, InputLabel, Slider, Box, Button, Typography } from '@mui/material';
+import { useTheme, Select, MenuItem, FormControl, InputLabel, Box, Button, Typography } from '@mui/material';
 import '../styling/bitcoinChart.css';
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
@@ -22,44 +21,232 @@ const OnChainHistoricalRisk = ({ isDashboard = false, mvrvData: propMvrvData, bt
   const [isInteractive, setIsInteractive] = useState(false);
   const isMobile = useIsMobile();
   const [selectedMetric, setSelectedMetric] = useState('mvrv');
-  // const [weights, setWeights] = useState({
-  //   mvrv: 0.3,
-  //   puell: 0.25,
-  //   minerCap: 0.2,
-  //   feeRisk: 0.15,
-  //   // terminalPrice: 0.1,
-  // });
-  // const [showWeightControls, setShowWeightControls] = useState(false);
+  const [smoothingPeriod, setSmoothingPeriod] = useState(7); // Default to 7-day smoothing
 
   // Access DataContext
   const {
     btcData: contextBtcData,
     mvrvData: contextMvrvData,
-    // puellData,
-    // minerCapData,
-    // feeRiskData,
-    // terminalPriceData,
+    onchainMetricsData,
     fetchBtcData,
     fetchMvrvData,
-    // fetchPuellData,
-    // fetchMinerCapData,
-    // fetchFeeRiskData,
-    // fetchTerminalPriceData,
+    fetchOnchainMetricsData,
   } = useContext(DataContext);
   const btcData = propBtcData || contextBtcData;
   const mvrvData = propMvrvData || contextMvrvData;
 
+  // Smoothing period options
+  const allSmoothingOptions = [
+    { value: 7, label: '7 Days' },
+    { value: 28, label: '28 Days' },
+    { value: 90, label: '90 Days' },
+    { value: 180, label: '180 Days' },
+    { value: 365, label: '1 Year' },
+  ];
+
+  // Restrict Puell to 7 and 28 days
+  const puellSmoothingOptions = allSmoothingOptions.filter(option => [7, 28].includes(option.value));
+
   // Metric labels for UI
   const metricLabels = {
     mvrv: 'MVRV Z-Score',
-    // puell: 'Puell Multiple',
-    // minerCap: 'Miner Cap to Thermo Cap',
-    // feeRisk: 'Transaction Fee Risk',
-    // terminalPrice: 'Terminal Price Risk',
-    // weighted: 'Weighted Average',
+    puell: 'Puell Multiple',
   };
 
-  // Function to calculate MVRV-Z risk (unchanged)
+  // Calculate daily issuance based on block reward schedule (for fallback)
+  const calculateDailyIssuance = (date) => {
+    const halvingInterval = 210000; // Blocks per halving
+    const blocksPerDay = 144; // Approx. 144 blocks/day
+    const genesisDate = new Date('2009-01-03');
+    const daysSinceGenesis = Math.floor((new Date(date) - genesisDate) / (1000 * 60 * 60 * 24));
+    const blocksMined = daysSinceGenesis * blocksPerDay;
+    const halvingCount = Math.floor(blocksMined / halvingInterval);
+    const reward = 50 / Math.pow(2, halvingCount);
+    return reward * blocksPerDay; // Daily issuance in BTC
+  };
+
+  // Normalize time to 'YYYY-MM-DD'
+  const normalizeTime = (time) => new Date(time).toISOString().split('T')[0];
+
+  // Prepare price and issuance data with alignment
+  const prepareData = useMemo(() => {
+    const rawPriceData = btcData.map(d => ({
+      time: normalizeTime(d.time),
+      value: parseFloat(d.value) || 0,
+    })).sort((a, b) => a.time.localeCompare(b.time));
+
+    let issuanceData = onchainMetricsData
+      .filter(d => d.metric.toLowerCase() === 'isscontusd')
+      .map(d => ({
+        time: normalizeTime(d.time),
+        value: parseFloat(d.value) || 0,
+      }))
+      .sort((a, b) => a.time.localeCompare(b.time));
+
+    if (issuanceData.length === 0 && rawPriceData.length > 0) {
+      console.warn('IssContUSD data missing, calculating issuance using block reward');
+      issuanceData = rawPriceData.map(d => ({
+        time: d.time,
+        value: calculateDailyIssuance(d.time) * d.value, // Issuance in USD
+      }));
+    }
+
+    // Filter priceData to match issuanceData times
+    const issuanceTimes = new Set(issuanceData.map(d => d.time));
+    const priceData = rawPriceData.filter(d => issuanceTimes.has(d.time));
+
+    return { priceData, issuanceData };
+  }, [btcData, onchainMetricsData]);
+
+  // Calculate Puell Multiple
+  const puellDataRaw = useMemo(() => {
+    const { issuanceData } = prepareData;
+    const puellData = [];
+
+    for (let i = 0; i < issuanceData.length; i++) {
+      const startIndex = Math.max(0, i - 365);
+      const windowData = issuanceData.slice(startIndex, i + 1);
+      const movingAverage = windowData.length > 0
+        ? windowData.reduce((sum, d) => sum + d.value, 0) / windowData.length
+        : 0;
+      const puellMultiple = movingAverage !== 0 ? issuanceData[i].value / movingAverage : null;
+      puellData.push({
+        time: issuanceData[i].time,
+        value: puellMultiple !== null ? parseFloat(puellMultiple.toFixed(2)) : null,
+      });
+    }
+
+    return puellData;
+  }, [prepareData]);
+
+  // Apply smoothing to any data array
+  const applySmoothing = (data, period) => {
+    const smoothedData = [];
+    for (let i = 0; i < data.length; i++) {
+      const startIndex = Math.max(0, i - period + 1);
+      const window = data.slice(startIndex, i + 1).filter(d => d.value !== null);
+      const smoothedValue = window.length > 0
+        ? window.reduce((sum, d) => sum + d.value, 0) / window.length
+        : null;
+      smoothedData.push({
+        time: data[i].time,
+        value: smoothedValue !== null ? parseFloat(smoothedValue.toFixed(2)) : null,
+      });
+    }
+    return smoothedData;
+  };
+
+// Convert Puell Multiple to Risk Score
+const calculatePuellRisk = (puellData, btcData) => {
+  if (!puellData.length || !btcData.length) return [];
+
+  const cutoffDate = new Date('2010-09-05').getTime();
+  const allDates = new Set([...btcData.map(d => d.time), ...puellData.map(d => d.time)]);
+  const sortedDates = Array.from(allDates)
+    .filter((date) => new Date(date).getTime() >= cutoffDate)
+    .sort((a, b) => new Date(a) - new Date(b));
+
+  let lastBtcValue = null;
+  const alignedBtcData = sortedDates.map((date) => {
+    const btcItem = btcData.find((b) => b.time === date);
+    if (btcItem && btcItem.value != null) {
+      lastBtcValue = btcItem.value;
+      return { time: date, value: btcItem.value };
+    }
+    return lastBtcValue != null ? { time: date, value: lastBtcValue } : null;
+  }).filter((item) => item != null);
+
+  const btcStartTime = Math.max(new Date(btcData[0].time).getTime(), cutoffDate);
+  const btcEndTime = new Date(btcData[btcData.length - 1].time).getTime();
+  let lastPuellValue = null;
+  const alignedPuellData = sortedDates.map((date) => {
+    const itemTime = new Date(date).getTime();
+    if (itemTime < btcStartTime || itemTime > btcEndTime) return null;
+    const puellItem = puellData.find((p) => p.time === date);
+    if (puellItem && puellItem.value != null) {
+      lastPuellValue = puellItem.value;
+      return { time: date, value: puellItem.value };
+    }
+    return lastPuellValue != null ? { time: date, value: lastPuellValue } : null;
+  }).filter((item) => item != null);
+
+  const decayRate = 0.5; // Same as MVRV for recent data emphasis
+  const peakSensitivity = 0.6; // Slightly lower than MVRV to avoid extreme highs
+  const capitulationSensitivity = 0.02; // Higher than MVRV to emphasize low Puell
+  const earlySmoothingFactor = 0.0; // Same as MVRV
+  const shiftConstant = 0.2; // Slightly higher to narrow risk range
+  const extensionFactor = 0.25; // Slightly lower than MVRV for Puell
+  const multiplierScale = 0.6; // Same as MVRV
+  const multiplierRate = 0.001; // Same as MVRV
+
+  const weights = alignedPuellData.map((_, index) => Math.exp(decayRate * (index / (alignedPuellData.length - 1))));
+  const weightSum = weights.reduce((sum, w) => sum + w, 0);
+  const weightedMean = alignedPuellData.reduce((sum, item, index) => sum + item.value * weights[index], 0) / weightSum;
+  const weightedVariance = alignedPuellData.reduce(
+    (sum, item, index) => sum + weights[index] * Math.pow(item.value - weightedMean, 2),
+    0
+  ) / weightSum;
+  const weightedStdDev = Math.sqrt(weightedVariance) || 1;
+
+  const puellZScores = alignedPuellData.map((item, index) => ({
+    time: item.time,
+    value: item.value,
+    zScore: (item.value - weightedMean) / weightedStdDev,
+  }));
+
+  const zScoreMA = puellZScores.map((item, i) => {
+    const windowSize = 50; // Same as MVRV
+    const start = Math.max(0, i - windowSize + 1);
+    const window = puellZScores.slice(start, i + 1);
+    const ma = window.reduce((sum, val) => sum + val.zScore, 0) / window.length;
+    return { time: item.time, zScore: item.zScore, zScoreMA: ma };
+  });
+
+  const riskScores = zScoreMA.map((item) => {
+    const daysSinceStart = (new Date(item.time).getTime() - cutoffDate) / (1000 * 60 * 60 * 24);
+    const multiplier = 1 + multiplierScale * (1 - Math.exp(-multiplierRate * daysSinceStart));
+    const extension = item.zScore - item.zScoreMA;
+    return {
+      time: item.time,
+      value: item.value,
+      risk: 1 / (1 + Math.exp(
+        -peakSensitivity * item.zScore * multiplier -
+        capitulationSensitivity * Math.max(0, -item.zScore) * multiplier -
+        extensionFactor * extension * multiplier
+      )),
+    };
+  });
+
+  const smoothedRisk = riskScores.map((item, i) => {
+    const t = i / (riskScores.length - 1);
+    const windowSize = Math.round(5 + earlySmoothingFactor * (1 - t) * 25);
+    const start = Math.max(0, i - windowSize + 1);
+    const window = riskScores.slice(start, i + 1);
+    return {
+      ...item,
+      risk: window.reduce((sum, val) => sum + val.risk, 0) / window.length,
+    };
+  });
+
+  const normalizedRisk = smoothedRisk.map((item) => {
+    const btcItem = alignedBtcData.find((b) => b.time === item.time);
+    if (!btcItem) return null;
+    const adjustedRisk = Math.max(0, (item.risk - shiftConstant) / (1 - shiftConstant));
+    return { time: item.time, value: btcItem.value, Risk: adjustedRisk };
+  }).filter((item) => item != null);
+
+  // Apply user-selected smoothing to risk scores (assuming applySmoothing is defined in the component)
+  return applySmoothing(normalizedRisk.map(item => ({
+    time: item.time,
+    value: item.Risk,
+  })), smoothingPeriod).map((smoothed, i) => ({
+    time: smoothed.time,
+    value: normalizedRisk[i].value,
+    Risk: smoothed.value,
+  }));
+};
+
+  // Calculate MVRV-Z Risk with Smoothing
   const calculateMvrvZRisk = (mvrvData, btcData) => {
     if (!mvrvData.length || !btcData.length) return [];
 
@@ -158,97 +345,28 @@ const OnChainHistoricalRisk = ({ isDashboard = false, mvrvData: propMvrvData, bt
       return { time: item.time, value: btcItem.value, Risk: adjustedRisk };
     }).filter((item) => item != null);
 
-    return normalizedRisk;
+    // Apply user-selected smoothing to risk scores
+    return applySmoothing(normalizedRisk.map(item => ({
+      time: item.time,
+      value: item.Risk,
+    })), smoothingPeriod).map((smoothed, i) => ({
+      time: smoothed.time,
+      value: normalizedRisk[i].value,
+      Risk: smoothed.value,
+    }));
   };
-
-  // Calculate weighted average risk
-  // const calculateWeightedAverageRisk = useMemo(() => {
-  //   const datasets = [
-  //     { data: mvrvData.length && btcData.length ? calculateMvrvZRisk(mvrvData, btcData) : [], weight: weights.mvrv },
-  //     { data: puellData, weight: weights.puell },
-  //     { data: minerCapData, weight: weights.minerCap },
-  //     { data: feeRiskData, weight: weights.feeRisk },
-  //     { data: terminalPriceData, weight: weights.terminalPrice },
-  //   ];
-
-  //   if (datasets.some(ds => !ds.data.length)) return [];
-
-  //   const allDates = new Set(datasets.flatMap(ds => ds.data.map(d => d.time)));
-  //   return Array.from(allDates).sort().map(date => {
-  //     let weightedSum = 0;
-  //     let totalWeight = 0;
-  //     datasets.forEach(ds => {
-  //       const item = ds.data.find(d => d.time === date);
-  //       if (item) {
-  //         const riskValue = item.Risk !== undefined ? item.Risk : item.value; // MVRV uses Risk, others use value
-  //         weightedSum += riskValue * ds.weight;
-  //         totalWeight += ds.weight;
-  //       }
-  //     });
-  //     const btcItem = btcData.find(b => b.time === date);
-  //     return {
-  //       time: date,
-  //       value: btcItem?.value || 0,
-  //       Risk: totalWeight ? weightedSum / totalWeight : 0,
-  //     };
-  //   });
-  // }, [mvrvData, btcData, puellData, minerCapData, feeRiskData, weights]);
 
   // Calculate chart data based on selected metric
   const chartData = useMemo(() => {
     const metricDataMap = {
       mvrv: mvrvData.length && btcData.length ? calculateMvrvZRisk(mvrvData, btcData) : [],
-      // puell: puellData.map(item => ({
-      //   time: item.time,
-      //   value: btcData.find(b => b.time === item.time)?.value || 0,
-      //   Risk: item.value,
-      // })),
-      // minerCap: minerCapData.map(item => ({
-      //   time: item.time,
-      //   value: btcData.find(b => b.time === item.time)?.value || 0,
-      //   Risk: item.value,
-      // })),
-      // feeRisk: feeRiskData.map(item => ({
-      //   time: item.time,
-      //   value: btcData.find(b => b.time === item.time)?.value || 0,
-      //   Risk: item.value,
-      // })),
-      // terminalPrice: terminalPriceData.map(item => ({
-      //   time: item.time,
-      //   value: btcData.find(b => b.time === item.time)?.value || 0,
-      //   Risk: item.value,
-      // })),
-      // weighted: calculateWeightedAverageRisk,
+      puell: puellDataRaw.length && btcData.length ? calculatePuellRisk(
+        applySmoothing(puellDataRaw, smoothingPeriod),
+        btcData
+      ) : [],
     };
     return metricDataMap[selectedMetric] || [];
-  }, [
-    selectedMetric,
-    mvrvData,
-    btcData,
-    // puellData,
-    // minerCapData,
-    // feeRiskData,
-    // terminalPriceData,
-    // calculateWeightedAverageRisk,
-  ]);
-
-  // Handle weight changes
-  // const handleWeightChange = (metric, value) => {
-  //   setWeights(prev => ({ ...prev, [metric]: value / 100 }));
-  // };
-
-  // Normalize weights to sum to 1
-  // const normalizeWeights = () => {
-  //   const total = Object.values(weights).reduce((sum, w) => sum + w, 0);
-  //   if (total === 0) return;
-  //   setWeights(prev => {
-  //     const normalized = {};
-  //     Object.keys(prev).forEach(key => {
-  //       normalized[key] = prev[key] / total;
-  //     });
-  //     return normalized;
-  //   });
-  // };
+  }, [selectedMetric, mvrvData, btcData, puellDataRaw, smoothingPeriod]);
 
   // Toggle interactivity
   const setInteractivity = () => setIsInteractive(!isInteractive);
@@ -269,11 +387,15 @@ const OnChainHistoricalRisk = ({ isDashboard = false, mvrvData: propMvrvData, bt
   useEffect(() => {
     fetchBtcData();
     fetchMvrvData();
-    // fetchPuellData();
-    // fetchMinerCapData();
-    // fetchFeeRiskData();
-    // fetchTerminalPriceData();
-  }, [fetchBtcData, fetchMvrvData]);
+    fetchOnchainMetricsData();
+  }, [fetchBtcData, fetchMvrvData, fetchOnchainMetricsData]);
+
+  // Reset smoothing period when switching metrics
+  useEffect(() => {
+    if (selectedMetric === 'puell' && ![7, 28].includes(smoothingPeriod)) {
+      setSmoothingPeriod(7); // Default to 7 days for Puell
+    }
+  }, [selectedMetric, smoothingPeriod]);
 
   // Render chart
   useEffect(() => {
@@ -316,7 +438,11 @@ const OnChainHistoricalRisk = ({ isDashboard = false, mvrvData: propMvrvData, bt
 
     chart.applyOptions({ handleScroll: isInteractive, handleScale: isInteractive });
     chart.priceScale('left').applyOptions({ mode: 1, borderVisible: false, priceFormat: { type: 'custom', formatter: compactNumberFormatter } });
-    chart.priceScale('right').applyOptions({ mode: 0, borderVisible: false });
+    chart.priceScale('right').applyOptions({ 
+      mode: 0, 
+      borderVisible: false,
+      title: `${metricLabels[selectedMetric]} Risk (${smoothingPeriod}-Day SMA)`,
+    });
 
     const resizeChart = () => {
       if (chart && chartContainerRef.current) {
@@ -349,105 +475,140 @@ const OnChainHistoricalRisk = ({ isDashboard = false, mvrvData: propMvrvData, bt
       window.removeEventListener('resize', resizeChart);
       window.removeEventListener('resize', resetChartView);
     };
-  }, [chartData, theme.palette.mode, isDashboard, btcData, isInteractive, colors]);
+  }, [chartData, theme.palette.mode, isDashboard, btcData, isInteractive, colors, selectedMetric, smoothingPeriod]);
 
   return (
-    <div style={{ height: '100%', padding: isMobile ? '10px' : '20px' }}>
+    <div style={{ height: '100%' }}>
       {!isDashboard && (
-        <Box sx={{ mb: 2 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <FormControl sx={{ minWidth: 200 }}>
-              <InputLabel id="risk-metric-label">Risk Metric</InputLabel>
-              <Select
-                labelId="risk-metric-label"
-                value={selectedMetric}
-                label="Risk Metric"
-                onChange={e => setSelectedMetric(e.target.value)}
-                sx={{
-                  bgcolor: colors.primary[600],
-                  color: colors.primary[100],
-                  '& .MuiSvgIcon-root': { color: colors.primary[100] },
-                }}
-              >
-                {Object.keys(metricLabels).map(key => (
-                  <MenuItem key={key} value={key}>{metricLabels[key]}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <Box>
-              <Button
-                onClick={setInteractivity}
-                variant="outlined"
-                sx={{
-                  mr: 1,
-                  bgcolor: isInteractive ? colors.greenAccent[500] : 'transparent',
-                  color: isInteractive ? colors.grey[900] : colors.greenAccent[400],
-                  borderColor: isInteractive ? colors.greenAccent[500] : colors.greenAccent[400],
-                  '&:hover': { bgcolor: colors.greenAccent[600], borderColor: colors.greenAccent[600] },
-                }}
-              >
-                {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
-              </Button>
-              <Button
-                onClick={resetChartView}
-                variant="outlined"
-                sx={{
-                  bgcolor: 'transparent',
-                  color: colors.blueAccent[400],
-                  borderColor: colors.blueAccent[400],
-                  '&:hover': { bgcolor: colors.blueAccent[600], borderColor: colors.blueAccent[600] },
-                }}
-              >
-                Reset Chart
-              </Button>
-            </Box>
-          </Box>
-
-          <Box sx={{ mt: 1, display: 'flex', alignItems: 'center' }}>
-            <Typography sx={{ color: colors.primary[100], mr: 2 }}>
-              <span style={{ display: 'inline-block', width: 10, height: 10, bgcolor: 'gray', mr: 5 }} />
-              Bitcoin Price
-            </Typography>
-            <Typography sx={{ color: colors.primary[100] }}>
-              <span style={{ display: 'inline-block', width: 10, height: 10, bgcolor: '#ff0062', mr: 5 }} />
-              {metricLabels[selectedMetric]} Risk
-            </Typography>
-          </Box>
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: { xs: 'column', sm: 'row' },
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '20px',
+            marginBottom: '30px',
+            marginTop: '30px',
+          }}
+        >
+          <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '200px' } }}>
+            <InputLabel
+              id="risk-metric-label"
+              shrink
+              sx={{
+                color: colors.grey[100],
+                '&.Mui-focused': { color: colors.greenAccent[500] },
+                top: 0,
+                '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' },
+              }}
+            >
+              Risk Metric
+            </InputLabel>
+            <Select
+              value={selectedMetric}
+              onChange={e => setSelectedMetric(e.target.value)}
+              label="Risk Metric"
+              labelId="risk-metric-label"
+              sx={{
+                color: colors.grey[100],
+                backgroundColor: colors.primary[600],
+                borderRadius: '8px',
+                '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
+                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                '& .MuiSelect-select': { py: 1.5, pl: 2 },
+              }}
+            >
+              {Object.keys(metricLabels).map(key => (
+                <MenuItem key={key} value={key}>{metricLabels[key]}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '150px' } }}>
+            <InputLabel
+              id="smoothing-label"
+              shrink
+              sx={{
+                color: colors.grey[100],
+                '&.Mui-focused': { color: colors.greenAccent[500] },
+                top: 0,
+                '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' },
+              }}
+            >
+              Smoothing Period
+            </InputLabel>
+            <Select
+              value={smoothingPeriod}
+              onChange={e => setSmoothingPeriod(e.target.value)}
+              label="Smoothing Period"
+              labelId="smoothing-label"
+              sx={{
+                color: colors.grey[100],
+                backgroundColor: colors.primary[600],
+                borderRadius: '8px',
+                '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
+                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                '& .MuiSelect-select': { py: 1.5, pl: 2 },
+              }}
+            >
+              {(selectedMetric === 'puell' ? puellSmoothingOptions : allSmoothingOptions).map(option => (
+                <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
         </Box>
       )}
-
-      <Box
+      {!isDashboard && (
+        <div className="chart-top-div" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+          <div className="span-container">
+            <span style={{ marginRight: '20px', display: 'inline-block' }}>
+              <span style={{ backgroundColor: 'gray', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
+              Bitcoin Price
+            </span>
+            <span style={{ display: 'inline-block' }}>
+              <span style={{ backgroundColor: '#ff0062', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
+              {metricLabels[selectedMetric]} Risk
+            </span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            {!isDashboard && (
+              <button onClick={setInteractivity} className="button-reset" style={{ backgroundColor: isInteractive ? '#4cceac' : 'transparent', color: isInteractive ? 'black' : '#31d6aa', borderColor: isInteractive ? 'violet' : '#70d8bd' }}>
+                {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
+              </button>
+            )}
+            {!isDashboard && (
+              <button onClick={resetChartView} className="button-reset extra-margin">Reset Chart</button>
+            )}
+          </div>
+        </div>
+      )}
+      <div
         className="chart-container"
-        sx={{
+        style={{
           position: 'relative',
-          height: isDashboard ? '100%' : 'calc(100% - 100px)',
+          height: isDashboard ? '100%' : 'calc(100% - 40px)',
           width: '100%',
-          border: `2px solid ${colors.grey[500]}`,
+          border: '2px solid #a9a9a9',
+        }}
+        onDoubleClick={() => {
+          if (!isInteractive && !isDashboard) setInteractivity(true);
+          else setInteractivity(false);
         }}
       >
-        <div
-          ref={chartContainerRef}
-          style={{ height: '100%', width: '100%', zIndex: 1 }}
-          onDoubleClick={() => !isDashboard && setInteractivity(!isInteractive)}
-        />
-      </Box>
-
-      <Box className="under-chart">
-        {!isDashboard && <LastUpdated storageKey={selectedMetric === 'mvrv' ? 'mvrvData' : `${selectedMetric}Data`} />}
-      </Box>
-
+        <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
+      </div>
+      {!isDashboard && <LastUpdated storageKey={selectedMetric === 'mvrv' ? 'mvrvData' : selectedMetric === 'combined' ? 'combinedRisk' : 'onchainMetricsData'} />}
       {!isDashboard && (
-        <Box>
-          <Typography sx={{ display: 'inline-block', mt: 2, fontSize: '1.2rem', color: colors.primary[100] }}>
+        <Box sx={{ marginTop: '20px' }}>
+          <Typography sx={{ display: 'inline-block', fontSize: '1.2rem', color: colors.primary[100] }}>
             Current {metricLabels[selectedMetric]} Risk Level: <b>{currentRiskLevel}</b> (${currentBtcPrice.toFixed(0)}k)
           </Typography>
-          <Typography sx={{ mt: 2, color: colors.grey[100], fontSize: '0.9rem' }}>
+          <Typography sx={{ marginTop: '10px', color: colors.grey[100], fontSize: '0.9rem' }}>
             The On-Chain Historical Risk chart displays a selected risk metric alongside Bitcoin price (logarithmic scale). 
             MVRV Z-Score uses a weighted approach to emphasize recent data, smoothing early volatility. 
-            Puell Multiple measures miner revenue relative to its 365-day average. 
-            Miner Cap to Thermo Cap compares realized capitalization to all-time miner revenue. 
-            Transaction Fee Risk assesses network congestion via the fee-to-reward ratio. 
-            The Weighted Average combines these metrics with adjustable weights, normalized to sum to 1.
+            Puell Multiple measures miner revenue relative to its 365-day average, transformed into a risk score where low values (~0.5) indicate low risk and high values (~4) indicate high risk, with diminishing peaks over time. 
+            Combined Risk averages the MVRV and Puell risk scores for a balanced risk assessment.
           </Typography>
         </Box>
       )}
