@@ -639,7 +639,7 @@ const AltcoinPrice = ({ isDashboard = false }) => {
               Fed Balance: ${tooltipData.fedBalance.toFixed(2)}T
             </div>
           )}
-          {tooltipData.date && <div>{tooltipData.date.toString()}</div>}
+          <div>{tooltipData.date ? tooltipData.date.split('-').reverse().join('-') : ''}</div>
         </div>
       )}
       {!isDashboard && (

@@ -16,6 +16,7 @@ import useIsMobile from '../hooks/useIsMobile';
 import { DataContext } from '../DataContext';
 import Plotly from 'plotly.js-gl2d-dist';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
+import LastUpdated from '../hooks/LastUpdated';
 
 // Helper functions for moving averages
 const calculateSMA = (data, period) => {
@@ -495,12 +496,9 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
 
       <div className="under-chart">
         {!isDashboard && btcData.length > 0 && (
-          <div style={{ marginTop: '10px' }}>
-            <span style={{ color: colors.greenAccent[500] }}>
-              Last Updated: {btcData[btcData.length - 1].time}
-            </span>
-          </div>
+          <LastUpdated customDate={btcData[btcData.length - 1].time} />
         )}
+        
         {!isDashboard && <BitcoinFees />}
       </div>
 

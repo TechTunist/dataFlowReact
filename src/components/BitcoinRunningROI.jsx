@@ -362,7 +362,7 @@ const BitcoinRunningROI = ({ isDashboard = false }) => {
             <div style={{ fontSize: '15px' }}>Bitcoin</div>
             {tooltipData.price && <div style={{ fontSize: '20px' }}>${tooltipData.price.toFixed(2)}</div>}
             {tooltipData.roi && <div style={{ color: '#ff0062' }}>ROI: {tooltipData.roi.toFixed(2)}x</div>}
-            {tooltipData.date && <div>{tooltipData.date}</div>}
+            {tooltipData.date && <div>{tooltipData.date ? tooltipData.date.split('-').reverse().join('-') : ''}</div>}
           </div>
         )}
       </div>

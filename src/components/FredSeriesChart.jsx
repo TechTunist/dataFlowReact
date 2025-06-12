@@ -6,6 +6,7 @@ import { useTheme } from '@mui/material';
 import useIsMobile from '../hooks/useIsMobile';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
+import LastUpdated from '../hooks/LastUpdated';
 
 const FredSeriesChart = ({
   seriesId,
@@ -308,7 +309,9 @@ const FredSeriesChart = ({
       <div className='under-chart'>
         {!isDashboard && seriesData.length > 0 && (
           <div style={{ marginTop: '10px' }}>
-            <span style={{ color: colors.greenAccent[500] }}>Last Updated: {seriesData[seriesData.length - 1].time}</span>
+            {/* <span style={{ color: colors.greenAccent[500] }}>Last Updated: {seriesData[seriesData.length - 1].time}</span> */}
+            <LastUpdated customDate={seriesData[seriesData.length - 1].time} />
+            
           </div>
         )}
       </div>

@@ -4,6 +4,8 @@ import { tokens } from '../theme';
 import { useTheme } from '@mui/material';
 import useIsMobile from '../hooks/useIsMobile';
 import { DataContext } from '../DataContext';
+import LastUpdated from '../hooks/LastUpdated';
+import BitcoinFees from './BitcoinTransactionFees';
 
 function CryptoFearAndGreedIndex({ isDashboard }) {
     const theme = useTheme();
@@ -131,13 +133,13 @@ function CryptoFearAndGreedIndex({ isDashboard }) {
                 <h1 style={headerStyle}>{value_classification}</h1>
             </div>
 
-            {!isDashboard && latestFearAndGreed && (
-                <div style={{ marginTop: '10px' }}>
-                    <span style={{ color: colors.grey[100] }}>
-                        Last Updated: {latestFearAndGreedLastUpdated}
-                    </span>
-                </div>
-            )}
+            <div className="under-chart">
+        {!isDashboard && latestFearAndGreed && (
+          <LastUpdated customDate={latestFearAndGreed.time} />
+        )}
+        
+        {!isDashboard && <BitcoinFees />}
+      </div>
 
             {!isDashboard && (
                 <p className="chart-info" style={{ marginTop: '20px', textAlign: 'left', width: '100%' }}>

@@ -210,10 +210,10 @@ const MarketCapDifference = ({ isDashboard = false }) => {
               <span style={{ backgroundColor: colors.blueAccent[500], height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
               Fair Value Delta
             </span>
-            <span style={{ display: 'inline-block' }}>
-              <span style={{ backgroundColor: colors.greenAccent[500], height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
+            {/* <span style={{ display: 'inline-block' }}>
+              <span style={{ backgroundColor: colors.greenAccent[500], height: '10px', width: '10px', display: 'inline-block', marginLeft: '15px', marginRight: '5px' }}></span>
               Fair Value Boundary
-            </span>
+            </span> */}
           </div>
           <div style={{ display: 'flex', alignItems: 'center' }}>
             {isLoading && <span style={{ color: colors.grey[100] }}>Loading...</span>}
@@ -283,6 +283,9 @@ const MarketCapDifference = ({ isDashboard = false }) => {
             )}
             {tooltipData.difference && (
               <div style={{ fontSize: '15px', color: colors.blueAccent[500] }} >Percentage Difference: {tooltipData.difference}</div>
+            )}
+            {tooltipData.difference && (
+              <div style={{ fontSize: '15px', color: colors.greenAccent[500] }} >Fair Value Boundary: -----</div>
             )}
             {tooltipData.date && <div style={{ fontSize: '13px' }}>{tooltipData.date}</div>}
           </b>

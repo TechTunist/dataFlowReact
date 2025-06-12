@@ -876,7 +876,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
               Mayer Multiple: {tooltipData.mayerMultiple.toFixed(2)}
             </div>
           )}
-          <div>{tooltipData.date?.toString()}</div>
+          <div>{tooltipData.date ? tooltipData.date.split('-').reverse().join('-') : ''}</div>
         </div>
       )}
       {!isDashboard && (
