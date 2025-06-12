@@ -6,6 +6,7 @@ import { useTheme } from '@mui/material';
 import useIsMobile from '../hooks/useIsMobile';
 import { DataContext } from '../DataContext';
 import BitcoinFees from './BitcoinTransactionFees';
+import LastUpdated from '../hooks/LastUpdated';
 
 const TotalMarketCap = ({ isDashboard = false }) => {
   const chartContainerRef = useRef();
@@ -315,9 +316,7 @@ const TotalMarketCap = ({ isDashboard = false }) => {
       <div className="under-chart">
         {!isDashboard && marketCapData.length > 0 && (
           <div style={{ marginTop: '10px' }}>
-            <span style={{ color: colors.greenAccent[500], display: 'block' }}>
-              Last Updated: {marketCapLastUpdated}
-            </span>
+            {!isDashboard && <LastUpdated customDate={marketCapLastUpdated} />}
             {valuationDifference && (
               <span
                 style={{

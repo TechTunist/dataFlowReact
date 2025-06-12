@@ -6,6 +6,7 @@ import { useTheme } from "@mui/material";
 import useIsMobile from '../hooks/useIsMobile';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
+import LastUpdated from '../hooks/LastUpdated';
 
 const BitcoinTxCountChart = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();

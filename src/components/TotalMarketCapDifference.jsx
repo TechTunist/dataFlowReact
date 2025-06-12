@@ -1,17 +1,22 @@
-import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useRef, useEffect, useState, useCallback, useMemo, useContext } from 'react';
 import { createChart } from 'lightweight-charts';
 import '../styling/bitcoinChart.css';
 import { tokens } from '../theme';
 import { useTheme } from '@mui/material';
 import useIsMobile from '../hooks/useIsMobile';
+import LastUpdated from '../hooks/LastUpdated';
+import BitcoinFees from './BitcoinTransactionFees';
+import { DataContext } from '../DataContext';
 
 const MarketCapDifference = ({ isDashboard = false }) => {
   const chartContainerRef = useRef();
   const chartRef = useRef(null);
   const differenceSeriesRef = useRef(null);
+  const marketCapSeriesRef = useRef(null); // Ref for the new market cap series
   const theme = useTheme();
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
   const isMobile = useIsMobile();
+  const { marketCapData, fetchMarketCapData, marketCapLastUpdated } = useContext(DataContext);
 
   const [tooltipData, setTooltipData] = useState(null);
   const [isInteractive, setIsInteractive] = useState(false);
@@ -23,6 +28,14 @@ const MarketCapDifference = ({ isDashboard = false }) => {
     return `${value.toFixed(2)}%`;
   }, []);
 
+  const compactNumberFormatter = useCallback((value) => {
+    if (value >= 1e12) return `${(value / 1e12).toFixed(2)}T`;
+    if (value >= 1e9) return `${(value / 1e9).toFixed(0)}B`;
+    if (value >= 1e6) return `${(value / 1e6).toFixed(0)}M`;
+    if (value >= 1e3) return `${(value / 1e3).toFixed(0)}k`;
+    return value.toFixed(0);
+  }, []);
+
   const setInteractivityHandler = useCallback(() => setIsInteractive((prev) => !prev), []);
   const resetChartView = useCallback(() => chartRef.current?.timeScale().fitContent(), []);
 
@@ -32,7 +45,6 @@ const MarketCapDifference = ({ isDashboard = false }) => {
       setIsLoading(true);
       setError(null);
       try {
-        // const response = await fetch('http://127.0.0.1:8000/api/total/difference/');
         const response = await fetch('https://vercel-dataflow.vercel.app/api/total/difference/');
         if (!response.ok) {
           throw new Error('Failed to fetch difference data');
@@ -50,8 +62,26 @@ const MarketCapDifference = ({ isDashboard = false }) => {
     fetchDifferenceData();
   }, []);
 
+  // Fetch market cap data if not already present in context
   useEffect(() => {
-    if (differenceData.length === 0) return;
+    const fetchData = async () => {
+      if (marketCapData.length > 0) return;
+      setIsLoading(true);
+      setError(null);
+      try {
+        await fetchMarketCapData();
+      } catch (err) {
+        setError('Failed to fetch market cap data. Please try again later.');
+        console.error('Error fetching market cap data:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, [fetchMarketCapData, marketCapData.length]);
+
+  useEffect(() => {
+    if (differenceData.length === 0 || marketCapData.length === 0) return;
 
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
@@ -61,6 +91,19 @@ const MarketCapDifference = ({ isDashboard = false }) => {
       timeScale: { minBarSpacing: 0.001 },
     });
 
+    // Add market cap series in grey on the left scale
+    const marketCapSeries = chart.addLineSeries({
+      priceScaleId: 'left',
+      lineWidth: 2,
+      color: colors.primary[300],
+      lastValueVisible: false,
+      priceLineVisible: false,
+      priceFormat: { type: 'custom', formatter: compactNumberFormatter },
+    });
+    marketCapSeriesRef.current = marketCapSeries;
+    marketCapSeries.setData(marketCapData);
+
+    // Add difference series on the right scale
     const differenceSeries = chart.addLineSeries({
       priceScaleId: 'right',
       lineWidth: 2,
@@ -75,15 +118,23 @@ const MarketCapDifference = ({ isDashboard = false }) => {
     // Add a horizontal line at y=100 to represent the Fair Value (100%)
     chart.addLineSeries({
       priceScaleId: 'right',
-      color: colors.greenAccent[500], // Match the Fair Value color from TotalMarketCap.js
+      color: colors.greenAccent[500],
       lineWidth: 2,
       lineStyle: 1,
       lastValueVisible: false,
       priceLineVisible: false,
     }).setData(differenceData.map(({ time }) => ({ time, value: 100 })));
 
+    // Configure price scales
+    chart.priceScale('left').applyOptions({
+      mode: 1, // Logarithmic scale for market cap
+      borderVisible: false,
+      scaleMargins: { top: 0.1, bottom: 0.1 },
+      priceFormat: { type: 'custom', formatter: compactNumberFormatter },
+    });
+
     chart.priceScale('right').applyOptions({
-      mode: 0,
+      mode: 0, // Linear scale for percentage difference
       borderVisible: false,
       scaleMargins: { top: 0.1, bottom: 0.1 },
       priceFormat: { type: 'custom', formatter: percentageFormatter },
@@ -100,10 +151,12 @@ const MarketCapDifference = ({ isDashboard = false }) => {
         setTooltipData(null);
       } else {
         const dateStr = param.time;
+        const marketCapDataPoint = param.seriesData.get(marketCapSeriesRef.current);
         const differenceDataPoint = param.seriesData.get(differenceSeriesRef.current);
 
         setTooltipData({
           date: dateStr,
+          marketCap: marketCapDataPoint?.value ? compactNumberFormatter(marketCapDataPoint.value) : undefined,
           difference: differenceDataPoint?.value ? percentageFormatter(differenceDataPoint.value) : undefined,
           x: param.point.x,
           y: param.point.y,
@@ -128,7 +181,7 @@ const MarketCapDifference = ({ isDashboard = false }) => {
       chart.remove();
       window.removeEventListener('resize', resizeChart);
     };
-  }, [differenceData, colors, percentageFormatter, resetChartView]);
+  }, [differenceData, marketCapData, colors, percentageFormatter, compactNumberFormatter, resetChartView]);
 
   useEffect(() => {
     if (chartRef.current) {
@@ -143,17 +196,29 @@ const MarketCapDifference = ({ isDashboard = false }) => {
           className="chart-top-div"
           style={{
             display: 'flex',
-            justifyContent: 'space-between', // Changed from flex-end to space-between
+            justifyContent: 'space-between',
             alignItems: 'center',
             padding: '5px 10px',
           }}
         >
-          {/* Left-aligned loading/error messages */}
+          <div className="span-container">
+            <span style={{ marginRight: '20px', display: 'inline-block' }}>
+              <span style={{ backgroundColor: colors.primary[300], height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
+              Total Market Cap
+            </span>
+            <span style={{ display: 'inline-block' }}>
+              <span style={{ backgroundColor: colors.blueAccent[500], height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
+              Fair Value Delta
+            </span>
+            <span style={{ display: 'inline-block' }}>
+              <span style={{ backgroundColor: colors.greenAccent[500], height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
+              Fair Value Boundary
+            </span>
+          </div>
           <div style={{ display: 'flex', alignItems: 'center' }}>
             {isLoading && <span style={{ color: colors.grey[100] }}>Loading...</span>}
             {error && <span style={{ color: colors.redAccent[500] }}>{error}</span>}
           </div>
-          {/* Right-aligned buttons */}
           <div style={{ display: 'flex', gap: '10px' }}>
             <button
               onClick={setInteractivityHandler}
@@ -172,7 +237,6 @@ const MarketCapDifference = ({ isDashboard = false }) => {
           </div>
         </div>
       )}
-      {/* Rest of your component remains unchanged */}
       <div
         className="chart-container"
         style={{
@@ -187,6 +251,10 @@ const MarketCapDifference = ({ isDashboard = false }) => {
           style={{ height: '100%', width: '100%', zIndex: 1 }}
           onDoubleClick={setInteractivityHandler}
         />
+      </div>
+      <div className="under-chart">
+        {!isDashboard && <LastUpdated customDate={marketCapLastUpdated} />}
+        {!isDashboard && <BitcoinFees />}
       </div>
       {!isDashboard && tooltipData && (
         <div
@@ -210,8 +278,11 @@ const MarketCapDifference = ({ isDashboard = false }) => {
           }}
         >
           <b>
+            {tooltipData.marketCap && (
+              <div style={{ fontSize: '15px', color: colors.primary[300] }} >Market Cap: ${tooltipData.marketCap}</div>
+            )}
             {tooltipData.difference && (
-              <div>Percentage Difference: {tooltipData.difference}</div>
+              <div style={{ fontSize: '15px', color: colors.blueAccent[500] }} >Percentage Difference: {tooltipData.difference}</div>
             )}
             {tooltipData.date && <div style={{ fontSize: '13px' }}>{tooltipData.date}</div>}
           </b>

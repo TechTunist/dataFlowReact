@@ -139,6 +139,15 @@ const fetchWithCache = async ({
   }
 };
 
+const ADDRESS_METRICS = [
+  'AdrBal1in100KCnt', 'AdrBal1in10KCnt', 'AdrBal1in1KCnt',
+  'AdrBalNtv0.001Cnt', 'AdrBalNtv0.01Cnt', 'AdrBalNtv0.1Cnt',
+  'AdrBalNtv1Cnt', 'AdrBalNtv10Cnt', 'AdrBalNtv100Cnt',
+  'AdrBalUSD1Cnt', 'AdrBalUSD10Cnt', 'AdrBalUSD100Cnt',
+  'AdrBalUSD1KCnt', 'AdrBalUSD10KCnt', 'AdrBalUSD100KCnt',
+  'AdrBalUSD1MCnt',
+];
+
 const refreshData = async ({
   cacheId,
   setData,
@@ -260,7 +269,7 @@ export const DataProvider = ({ children }) => {
 
       for (const { id, setData, setLastUpdated, setIsFetched, useDateCheck } of cacheConfigs) {
         try {
-          console.log(`Preloading data for ${id}`);
+          // console.log(`Preloading data for ${id}`);
           const cached = await getCachedData(id);
           if (cached && cached.data.length > 0) {
             const { data: cachedData, timestamp } = cached;
@@ -278,27 +287,27 @@ export const DataProvider = ({ children }) => {
             }
 
             if (shouldReuseCache) {
-              console.log(`Reusing cached data for ${id}: ${cachedData.length} records`);
+              // console.log(`Reusing cached data for ${id}: ${cachedData.length} records`);
               setData(sortedCachedData);
               setLastUpdated(latestCachedDate);
               setIsFetched(true);
             } else if (id === 'onchainMetricsData') {
-              console.log(`Fetching address metrics during preload`);
+              // console.log(`Fetching address metrics during preload`);
               await fetchOnchainMetricsData();
             }
           } else if (id === 'onchainMetricsData') {
-            console.log(`No cache found, fetching address metrics`);
+            // console.log(`No cache found, fetching address metrics`);
             await fetchOnchainMetricsData();
           }
         } catch (error) {
-          console.error(`Error preloading data for ${id}:`, error);
+          // console.error(`Error preloading data for ${id}:`, error);
           if (id === 'onchainMetricsData') {
             setOnchainFetchError(error.message);
           }
         }
       }
       setPreloadComplete(true);
-      console.log('Preload complete');
+      // console.log('Preload complete');
     };
 
     preloadData();
@@ -389,7 +398,7 @@ export const DataProvider = ({ children }) => {
   const fetchOnchainMetricsData = useCallback(
     async () => {
       if (isOnchainMetricsDataFetched) {
-        console.log('Onchain metrics already fetched');
+        // console.log('Onchain metrics already fetched');
         return;
       }
   
@@ -412,7 +421,7 @@ export const DataProvider = ({ children }) => {
           }
         }
   
-        console.log('Fetching all pages of onchain metrics...');
+        // console.log('Fetching all pages of onchain metrics...');
         const apiUrl = `${API_BASE_URL}/onchain-metrics/?metric=PriceUSD&metric=IssContUSD&start_time=2010-01-01`;
         const allData = await fetchAllPages(apiUrl);
   
@@ -427,7 +436,7 @@ export const DataProvider = ({ children }) => {
           asset: item.asset,
         }));
   
-        console.log(`Fetched ${formattedData.length} records:`, formattedData.slice(0, 5));
+        // console.log(`Fetched ${formattedData.length} records:`, formattedData.slice(0, 5));
         setOnchainMetricsData(formattedData);
         setOnchainMetricsLastUpdated(formattedData[formattedData.length - 1].time);
         await cacheData(cacheId, formattedData, currentTimestamp);
@@ -442,7 +451,7 @@ export const DataProvider = ({ children }) => {
   
   const refreshOnchainMetricsData = useCallback(
     async () => {
-      console.log('Refreshing onchain metrics data');
+      // console.log('Refreshing onchain metrics data');
       try {
         await clearCache('onchainMetricsData');
         setOnchainMetricsData([]);
@@ -454,6 +463,58 @@ export const DataProvider = ({ children }) => {
       }
     },
     [fetchOnchainMetricsData]
+  );
+
+  const fetchAddressMetricsData = useCallback(
+    async () => {
+      const cacheId = 'addressMetricsData';
+      const currentDate = new Date().toISOString().split('T')[0];
+      const currentTimestamp = Date.now();
+  
+      try {
+        setIsOnchainMetricsDataFetched(true); // Reuse the existing fetched state for simplicity
+        setOnchainFetchError(null);
+  
+        const cached = await getCachedData(cacheId);
+        if (cached && cached.data.length > 0) {
+          const sortedCachedData = [...cached.data].sort((a, b) => new Date(a.time) - new Date(b.time));
+          const latestCachedDate = sortedCachedData[sortedCachedData.length - 1].time;
+          if (latestCachedDate >= currentDate) {
+            setOnchainMetricsData(sortedCachedData); // Reuse onchainMetricsData state for address data
+            setOnchainMetricsLastUpdated(latestCachedDate);
+            return;
+          }
+        }
+  
+        console.log('Fetching address metrics data...');
+        const apiUrl = `${API_BASE_URL}/onchain-address-metrics/?start_time=2010-01-01`;
+        const allData = await fetchAllPages(apiUrl);
+  
+        if (!allData || allData.length === 0) {
+          throw new Error('No address metrics data returned');
+        }
+  
+        // Filter and format only address metrics
+        const formattedData = allData.map((item) => ({
+          time: item.time,
+          ...Object.fromEntries(
+            Object.entries(item)
+              .filter(([key]) => ADDRESS_METRICS.includes(key)) // Use backend-defined ADDRESS_METRICS
+              .map(([key, value]) => [key, value !== null ? parseFloat(value) : null])
+          ),
+        }));
+  
+        console.log('Formatted addressMetricsData:', formattedData.slice(0, 5));
+        setOnchainMetricsData(formattedData); // Reuse onchainMetricsData state for address data
+        setOnchainMetricsLastUpdated(formattedData[formattedData.length - 1].time);
+        await cacheData(cacheId, formattedData, currentTimestamp);
+      } catch (error) {
+        console.error('Error fetching address metrics:', error);
+        setIsOnchainMetricsDataFetched(false);
+        setOnchainFetchError(error.message);
+      }
+    },
+    [API_BASE_URL] // No need for addressMetrics as a dependency since it's backend-defined
   );
 
   const fetchFedBalanceData = useCallback(async () => {
@@ -1220,7 +1281,8 @@ export const DataProvider = ({ children }) => {
       refreshOnchainMetricsData,
       onchainMetricsLastUpdated,
       onchainFetchError,
-      isAltcoinDataFetched
+      isAltcoinDataFetched,
+      fetchAddressMetricsData,
     }),
     [
       btcData,
@@ -1307,6 +1369,7 @@ export const DataProvider = ({ children }) => {
       onchainMetricsLastUpdated,
       onchainFetchError,
       isAltcoinDataFetched,
+      fetchAddressMetricsData
     ]
   );
 

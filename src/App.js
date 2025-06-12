@@ -334,14 +334,14 @@ const AppContent = memo(({ isSignedIn, user }) => {
                         </ProtectedRoute>
                       }
                     />
-                    <Route
+                    {/* <Route
                       path="/btc-tx-count"
                       element={
                         <ProtectedRoute>
                           <BasicChart ChartComponent={BitcoinTxCountChart} />
                         </ProtectedRoute>
                       }
-                    />
+                    /> */}
                     <Route
                       path="/btc-add-balance"
                       element={

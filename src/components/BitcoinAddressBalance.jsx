@@ -15,7 +15,7 @@ const BitcoinAddressBalancesChart = ({ isDashboard = false }) => {
   const theme = useTheme();
   const isMobile = useIsMobile();
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
-  const { fetchOnchainMetricsData, onchainMetricsData, onchainMetricsLastUpdated, onchainFetchError, btcData, fetchBtcData } = useContext(DataContext);
+  const { fetchAddressMetricsData, onchainMetricsData, onchainMetricsLastUpdated, onchainFetchError, btcData, fetchBtcData } = useContext(DataContext);
   const plotRef = useRef(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -25,12 +25,21 @@ const BitcoinAddressBalancesChart = ({ isDashboard = false }) => {
   const [rangeStart, setRangeStart] = useState(''); // Start of the address range
   const [rangeEnd, setRangeEnd] = useState(''); // End of the address range
 
+  // Fetch address metrics when the component mounts
   useEffect(() => {
-    if (btcData.length === 0) {
-      console.log('Fetching Bitcoin price data');
-      fetchBtcData();
-    }
-  }, [fetchBtcData, btcData]);
+    const fetchData = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        await fetchAddressMetricsData();
+      } catch (err) {
+        setError(`Failed to load address metrics: ${err.message}`);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, [fetchAddressMetricsData]);
 
   const addressMetrics = useMemo(
     () => ({
@@ -47,7 +56,6 @@ const BitcoinAddressBalancesChart = ({ isDashboard = false }) => {
     []
   );
 
-  // Ordered list of metric keys for range selection
   const orderedMetricKeys = useMemo(
     () => Object.keys(addressMetrics),
     [addressMetrics]
@@ -128,7 +136,6 @@ const BitcoinAddressBalancesChart = ({ isDashboard = false }) => {
 
     let metricTraces = [];
 
-    // If a single metric is selected, display that metric
     if (activeMetrics) {
       metricTraces = [{
         x: onchainMetricsData.map((d) => d.time),
@@ -139,40 +146,35 @@ const BitcoinAddressBalancesChart = ({ isDashboard = false }) => {
         name: addressMetrics[activeMetrics].label,
         visible: true,
         hovertemplate: `<b>${addressMetrics[activeMetrics].label}</b>: %{y:,.0f}<br><extra></extra>`,
-        yaxis: 'y',
+      }];
+    } else if (rangeStart && rangeEnd) {
+      const startIndex = orderedMetricKeys.indexOf(rangeStart);
+      const endIndex = orderedMetricKeys.indexOf(rangeEnd);
+      const selectedMetrics = orderedMetricKeys.slice(startIndex, endIndex + 1);
+
+      const combinedData = onchainMetricsData.map((dataPoint) => {
+        let totalAddresses = 0;
+        selectedMetrics.forEach((metric) => {
+          totalAddresses += dataPoint[metric] || 0;
+        });
+        return totalAddresses;
+      });
+
+      const startLabel = addressMetrics[rangeStart].label.replace('Addresses ', '');
+      const endLabel = addressMetrics[rangeEnd].label.replace('Addresses ', '');
+      const rangeLabel = `Addresses ${startLabel} to ${endLabel}`;
+
+      metricTraces = [{
+        x: onchainMetricsData.map((d) => d.time),
+        y: combinedData,
+        type: 'scattergl',
+        mode: 'lines',
+        line: { color: addressMetrics[rangeStart].color, width: 2 },
+        name: rangeLabel,
+        visible: true,
+        hovertemplate: `<b>${rangeLabel}</b>: %{y:,.0f}<br><extra></extra>`,
       }];
     }
-    // If a range is selected, display the combined series
-else if (rangeStart && rangeEnd) {
-  const startIndex = orderedMetricKeys.indexOf(rangeStart);
-  const endIndex = orderedMetricKeys.indexOf(rangeEnd);
-  const selectedMetrics = orderedMetricKeys.slice(startIndex, endIndex + 1);
-
-  const combinedData = onchainMetricsData.map((dataPoint) => {
-    let totalAddresses = 0;
-    selectedMetrics.forEach((metric) => {
-      totalAddresses += dataPoint[metric] || 0;
-    });
-    return totalAddresses;
-  });
-
-  // Extract the full threshold part of the labels (e.g., "≥ 0.1 BTC")
-  const startLabel = addressMetrics[rangeStart].label.replace('Addresses ', ''); // Remove "Addresses "
-  const endLabel = addressMetrics[rangeEnd].label.replace('Addresses ', ''); // Remove "Addresses "
-  const rangeLabel = `Addresses ${startLabel} to ${endLabel}`; // e.g., "Addresses ≥ 0.1 BTC to ≥ 1,000 BTC"
-
-  metricTraces = [{
-    x: onchainMetricsData.map((d) => d.time),
-    y: combinedData,
-    type: 'scattergl',
-    mode: 'lines',
-    line: { color: addressMetrics[rangeStart].color, width: 2 },
-    name: rangeLabel,
-    visible: true,
-    hovertemplate: `<b>${rangeLabel}</b>: %{y:,.0f}<br><extra></extra>`,
-    yaxis: 'y',
-  }];
-}
 
     const btcPriceTrace = btcData.length > 0 ? [{
       x: btcData.map((d) => d.time),
@@ -187,35 +189,7 @@ else if (rangeStart && rangeEnd) {
     }] : [];
 
     return [...metricTraces, ...btcPriceTrace];
-  }, [onchainMetricsData, btcData, activeMetrics, rangeStart, rangeEnd, addressMetrics, orderedMetricKeys, colors]);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      if (onchainMetricsData.length > 0) {
-        console.log(`Using cached data: ${onchainMetricsData.length} records`);
-        setIsLoading(false);
-        setError(null);
-        return;
-      }
-
-      setIsLoading(true);
-      setError(null);
-      try {
-        console.log('Fetching address metrics data');
-        await fetchOnchainMetricsData();
-        if (onchainFetchError) {
-          throw new Error(onchainFetchError);
-        }
-      } catch (err) {
-        console.error('Error fetching address metrics:', err);
-        setError(`Failed to load data: ${err.message}`);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [fetchOnchainMetricsData, onchainMetricsData, onchainFetchError]);
+  }, [onchainMetricsData, btcData, activeMetrics, rangeStart, rangeEnd, addressMetrics, orderedMetricKeys]);
 
   useEffect(() => {
     setLayout((prev) => ({
@@ -254,7 +228,7 @@ else if (rangeStart && rangeEnd) {
       yaxis2: {
         ...prev.yaxis2,
         title: 'BTC Price (USD)',
-        type: scaleMode === 1 ? 'log' : 'linear',
+        type: 'log',
         tickcolor: colors.grey[100],
         gridcolor: colors.grey[800],
         gridwidth: 1,

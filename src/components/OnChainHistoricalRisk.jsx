@@ -598,7 +598,7 @@ const calculatePuellRisk = (puellData, btcData) => {
       >
         <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
       </div>
-      {!isDashboard && <LastUpdated storageKey={selectedMetric === 'mvrv' ? 'mvrvData' : selectedMetric === 'combined' ? 'combinedRisk' : 'onchainMetricsData'} />}
+      {!isDashboard && <LastUpdated storageKey='btcData' />}
       {!isDashboard && (
         <Box sx={{ marginTop: '20px' }}>
           <Typography sx={{ display: 'inline-block', fontSize: '1.2rem', color: colors.primary[100] }}>

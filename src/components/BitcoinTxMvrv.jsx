@@ -29,6 +29,7 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
   const txMvrvData = propTxMvrvData || contextTxMvrvData;
   const { txMvrvLastUpdated } = useContext(DataContext);
 
+
   // Min-max normalization
   const normalizeData = (data, key) => {
     const values = data.map(item => item[key]);
@@ -169,13 +170,21 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
 
   useEffect(() => {
     if (txMvrvData.length === 0 || btcData.length === 0) return;
-
+  
     const cutoffDate = new Date('2014-10-21');
-    const filteredTxMvrvData = txMvrvData.filter(item => new Date(item.time) >= cutoffDate);
+    // Filter for complete data points only
+    const filteredTxMvrvData = txMvrvData.filter(
+      item => {
+        const timeValid = new Date(item.time) >= cutoffDate;
+        const txValid = typeof item.tx_count === 'number' && !isNaN(item.tx_count);
+        const mvrvValid = typeof item.mvrv === 'number' && !isNaN(item.mvrv);
+        return timeValid && txValid && mvrvValid;
+      }
+    );
     const filteredBtcData = btcData.filter(item => new Date(item.time) >= cutoffDate);
-
+  
     if (filteredTxMvrvData.length === 0 || filteredBtcData.length === 0) return;
-
+  
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
       height: chartContainerRef.current.clientHeight,
@@ -193,17 +202,10 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
       handleScroll: isInteractive && !isDashboard,
       handleScale: isInteractive && !isDashboard,
     });
-
-    chart.priceScale('left').applyOptions({
-      mode: 0,
-      borderVisible: false,
-    });
-
-    chart.priceScale('right').applyOptions({
-      mode: 1,
-      borderVisible: false,
-    });
-
+  
+    chart.priceScale('left').applyOptions({ mode: 0, borderVisible: false });
+    chart.priceScale('right').applyOptions({ mode: 1, borderVisible: false });
+  
     chart.subscribeCrosshairMove(param => {
       if (
         !param.point ||
@@ -231,7 +233,7 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
         });
       }
     });
-
+  
     const resizeChart = () => {
       if (chart && chartContainerRef.current) {
         chart.applyOptions({
@@ -240,36 +242,29 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
         });
       }
     };
-
     window.addEventListener('resize', resizeChart);
-
+  
     const lightThemeColors = {
       txCount: { lineColor: 'rgba(255, 140, 0, 0.8)' },
       mvrv: { lineColor: 'rgba(0, 128, 0, 1)' },
       price: { lineColor: 'gray' },
       ratio: { lineColor: 'rgba(128, 0, 128, 1)' },
     };
-
     const darkThemeColors = {
       txCount: { lineColor: 'rgba(38, 198, 218, 1)' },
       mvrv: { lineColor: 'rgba(255, 99, 71, 1)' },
       price: { lineColor: 'gray' },
       ratio: { lineColor: 'rgba(147, 112, 219, 1)' },
     };
-
     const { txCount: txCountColors, mvrv: mvrvColors, price: priceColors, ratio: ratioColors } =
       theme.palette.mode === 'dark' ? darkThemeColors : lightThemeColors;
-
+  
     // Transaction Count Series
     const txCountSeries = chart.addLineSeries({
       priceScaleId: 'left',
       color: txCountColors.lineColor,
       lineWidth: 2,
-      priceFormat: {
-        type: 'custom',
-        minMove: 1,
-        formatter: value => value.toFixed(0),
-      },
+      priceFormat: { type: 'custom', minMove: 1, formatter: value => value.toFixed(0) },
       visible: displayMode === 'tx-mvrv',
     });
     txCountSeriesRef.current = txCountSeries;
@@ -284,7 +279,7 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
       txCountData = calculateSMA(txCountData, 28);
     }
     txCountSeries.setData(txCountData);
-
+  
     // Bitcoin Price Series
     const priceSeries = chart.addLineSeries({
       priceScaleId: 'right',
@@ -297,47 +292,36 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
     });
     priceSeriesRef.current = priceSeries;
     priceSeries.setData(filteredBtcData.map(data => ({ time: data.time, value: data.value })));
-
+  
     // MVRV Series
     const mvrvSeries = chart.addLineSeries({
       priceScaleId: 'left',
       color: mvrvColors.lineColor,
       lineWidth: 2,
-      priceFormat: {
-        type: 'price',
-        precision: 2,
-        minMove: 0.01,
-      },
+      priceFormat: { type: 'price', precision: 2, minMove: 0.01 },
       visible: displayMode === 'tx-mvrv',
     });
     mvrvSeriesRef.current = mvrvSeries;
     mvrvSeries.setData(
       filteredTxMvrvData.map(item => ({ time: item.time, value: item.mvrv * 100000 }))
     );
-
+  
     // MVRV/Tx Ratio Series
     const ratioSeries = chart.addLineSeries({
       priceScaleId: 'left',
       color: ratioColors.lineColor,
       lineWidth: 2,
-      priceFormat: {
-        type: 'price',
-        precision: 2,
-        minMove: 0.01,
-      },
+      priceFormat: { type: 'price', precision: 2, minMove: 0.01 },
       visible: displayMode === 'ratio',
     });
     ratioSeriesRef.current = ratioSeries;
-    const ratioData = calculateRatio(
-      filteredTxMvrvData.map(item => ({ time: item.time, mvrv: item.mvrv })),
-      txCountData,
-      smoothingMode
-    );
+    const mvrvDataForRatio = filteredTxMvrvData.map(item => ({ time: item.time, mvrv: item.mvrv }));
+    const ratioData = calculateRatio(mvrvDataForRatio, txCountData, smoothingMode);
     ratioSeries.setData(ratioData);
-
+  
     chart.timeScale().fitContent();
     chartRef.current = chart;
-
+  
     return () => {
       chart.remove();
       window.removeEventListener('resize', resizeChart);
@@ -534,7 +518,9 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
       </div>
 
       <div className='under-chart'>
-        <span style={{ color: colors.greenAccent[500] }}>Last Updated: {txMvrvLastUpdated}</span>
+      {!isDashboard && (
+                <LastUpdated customDate={txMvrvLastUpdated} />
+            )}
         {!isDashboard && <BitcoinFees />}
       </div>
 

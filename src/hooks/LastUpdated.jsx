@@ -5,7 +5,7 @@ import { tokens } from "../theme";
 import '../styling/LastUpdated.css';
 import { DataContext } from '../DataContext';
 
-const LastUpdated = ({ storageKey }) => {
+const LastUpdated = ({ storageKey, customDate }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const [lastUpdated, setLastUpdated] = useState('');
@@ -44,23 +44,38 @@ const LastUpdated = ({ storageKey }) => {
     ethData: fetchEthData,
   };
 
+  // Format date to dd-mm-yyyy
+  const formatDate = (date) => {
+    if (!date) return '';
+    const d = new Date(date);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0'); // Months are 0-based
+    const year = d.getFullYear();
+    return `${day}-${month}-${year}`;
+  };
+
   // Get the last updated date
   useEffect(() => {
-    // Check if storageKey is for an altcoin (e.g., solData, ethData)
-    const coin = Object.keys(altcoinLastUpdated).find(
-      key => `${key.toLowerCase()}Data` === storageKey
-    );
-    if (coin && altcoinLastUpdated[coin]) {
-      setLastUpdated(new Date(altcoinLastUpdated[coin]).toLocaleDateString());
+    // Use customDate if provided, otherwise fall back to context-derived date
+    if (customDate) {
+      setLastUpdated(formatDate(customDate));
     } else {
-      const lastUpdatedDate = lastUpdatedMap[storageKey];
-      if (lastUpdatedDate) {
-        setLastUpdated(new Date(lastUpdatedDate).toLocaleDateString());
+      // Check if storageKey is for an altcoin (e.g., solData, ethData)
+      const coin = Object.keys(altcoinLastUpdated).find(
+        key => `${key.toLowerCase()}Data` === storageKey
+      );
+      if (coin && altcoinLastUpdated[coin]) {
+        setLastUpdated(formatDate(altcoinLastUpdated[coin]));
       } else {
-        setLastUpdated('');
+        const lastUpdatedDate = lastUpdatedMap[storageKey];
+        if (lastUpdatedDate) {
+          setLastUpdated(formatDate(lastUpdatedDate));
+        } else {
+          setLastUpdated('');
+        }
       }
     }
-  }, [storageKey, refresh, btcLastUpdated, fedLastUpdated, mvrvLastUpdated, ethLastUpdated, dominanceLastUpdated, altcoinLastUpdated]);
+  }, [storageKey, customDate, refresh, btcLastUpdated, fedLastUpdated, mvrvLastUpdated, ethLastUpdated, dominanceLastUpdated, altcoinLastUpdated]);
 
   // Refresh handler
   const refreshComponent = () => {

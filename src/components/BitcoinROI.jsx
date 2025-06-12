@@ -7,6 +7,7 @@ import useIsMobile from '../hooks/useIsMobile';
 import BitcoinFees from './BitcoinTransactionFees';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
+import LastUpdated from '../hooks/LastUpdated';
 
 const BitcoinROI = ({ isDashboard = false }) => {
     const theme = useTheme();
@@ -389,12 +390,8 @@ const BitcoinROI = ({ isDashboard = false }) => {
                 />
             </div>
             <div className='under-chart'>
-                {!isDashboard && btcData.length > 0 && (
-                    <div style={{ marginTop: '10px' }}>
-                        <span style={{ color: colors.greenAccent[500] }}>
-                            Last Updated: {btcData[btcData.length - 1].time}
-                        </span>
-                    </div>
+            {!isDashboard && btcData.length > 0 && (
+                    <LastUpdated storageKey="btcData" />
                 )}
                 {!isDashboard && <BitcoinFees />}
             </div>
