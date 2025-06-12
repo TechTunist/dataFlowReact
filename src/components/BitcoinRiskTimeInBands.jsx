@@ -9,15 +9,64 @@ import useIsMobile from '../hooks/useIsMobile';
 import { DataContext } from '../DataContext';
 import { Box, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 
-const BitcoinRiskBandDuration = ({ isDashboard = false, riskData: propRiskData }) => {
+const altcoins = [
+  { label: 'Solana', value: 'SOL' },
+  { label: 'Ethereum', value: 'ETH' },
+  { label: 'Cardano', value: 'ADA' },
+  { label: 'Dogecoin', value: 'DOGE' },
+  { label: 'Chainlink', value: 'LINK' },
+  { label: 'XRP', value: 'XRP' },
+  { label: 'Avalanche', value: 'AVAX' },
+  { label: 'Toncoin', value: 'TON' },
+  { label: 'Binance-Coin', value: 'BNB' },
+  { label: 'Aave', value: 'AAVE' },
+  { label: 'Cronos', value: 'CRO' },
+  { label: 'Sui', value: 'SUI' },
+  { label: 'Hedera', value: 'HBAR' },
+  { label: 'Stellar', value: 'XLM' },
+  { label: 'Aptos', value: 'APT' },
+  { label: 'Polkadot', value: 'DOT' },
+  { label: 'VeChain', value: 'VET' },
+  { label: 'Uniswap', value: 'UNI' },
+  { label: 'Litecoin', value: 'LTC' },
+  { label: 'Leo Utility Token', value: 'LEO' },
+  { label: 'Hyperliquid', value: 'HYPE' },
+  { label: 'Near Protocol', value: 'NEAR' },
+  { label: 'Fetch.ai', value: 'FET' },
+  { label: 'Ondo Finance', value: 'ONDO' },
+  { label: 'Internet Computer', value: 'ICP' },
+  { label: 'Monero', value: 'XMR' },
+  { label: 'Polygon', value: 'POL' },
+  { label: 'Algorand', value: 'ALGO' },
+  { label: 'Render', value: 'RENDER' },
+  { label: 'Arbitrum', value: 'ARB' },
+  { label: 'Raydium', value: 'RAY' },
+  { label: 'Move', value: 'MOVE' },
+];
+
+const AssetRiskBandDuration = ({ isDashboard = false, riskData: propRiskData }) => {
   const theme = useTheme();
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
   const isMobile = useIsMobile();
-  const { btcData, fetchBtcData } = useContext(DataContext);
-
+  const { btcData, fetchBtcData, altcoinData, fetchAltcoinData } = useContext(DataContext);
+  const [selectedAsset, setSelectedAsset] = useState('BTC');
   const [riskBandDurations, setRiskBandDurations] = useState([]);
   const [currentRiskLevel, setCurrentRiskLevel] = useState(null);
   const [riskBandMode, setRiskBandMode] = useState('0.1'); // Default to 0.1 increments
+
+  // Get the label for the selected asset
+  const selectedAssetLabel = useMemo(() => {
+    if (selectedAsset === 'BTC') return 'Bitcoin';
+    const altcoin = altcoins.find(coin => coin.value === selectedAsset);
+    return altcoin ? altcoin.label : 'Bitcoin';
+  }, [selectedAsset]);
+
+  // Determine the data to use based on the selected asset
+  const chartSourceData = useMemo(() => {
+    if (propRiskData) return propRiskData;
+    if (selectedAsset === 'BTC') return btcData;
+    return altcoinData[selectedAsset] || [];
+  }, [propRiskData, selectedAsset, btcData, altcoinData]);
 
   const calculateRiskMetric = (data) => {
     const movingAverage = data.map((item, index) => {
@@ -45,15 +94,15 @@ const BitcoinRiskBandDuration = ({ isDashboard = false, riskData: propRiskData }
   };
 
   const chartData = useMemo(() => {
-    const formattedData = btcData.map(item => ({
+    const formattedData = chartSourceData.map(item => ({
       time: new Date(item.time),
       value: parseFloat(item.value),
     }));
     return propRiskData || (formattedData.length > 0 ? calculateRiskMetric(formattedData) : []);
-  }, [propRiskData, btcData]);
+  }, [propRiskData, chartSourceData]);
 
   const [layout, setLayout] = useState({
-    title: isDashboard ? '' : 'Bitcoin Price Risk Band Durations',
+    title: isDashboard ? '' : `${selectedAssetLabel} Price Risk Band Durations`,
     autosize: true,
     margin: { l: 50, r: 50, b: 50, t: 50, pad: 4 },
     plot_bgcolor: colors.primary[700],
@@ -61,9 +110,9 @@ const BitcoinRiskBandDuration = ({ isDashboard = false, riskData: propRiskData }
     font: { color: colors.primary[100] },
     xaxis: { title: isDashboard || isMobile ? '' : 'Risk Bands', autorange: true },
     yaxis: {
-      title: 'Percentage', // Updated title
+      title: 'Percentage',
       autorange: true,
-      automargin: true, // Add to ensure title fits
+      automargin: true,
     },
     showlegend: false,
   });
@@ -91,8 +140,12 @@ const BitcoinRiskBandDuration = ({ isDashboard = false, riskData: propRiskData }
   };
 
   useEffect(() => {
-    fetchBtcData();
-  }, [fetchBtcData]);
+    if (selectedAsset === 'BTC') {
+      fetchBtcData();
+    } else {
+      fetchAltcoinData(selectedAsset);
+    }
+  }, [selectedAsset, fetchBtcData, fetchAltcoinData]);
 
   useEffect(() => {
     if (chartData.length === 0) return;
@@ -106,7 +159,7 @@ const BitcoinRiskBandDuration = ({ isDashboard = false, riskData: propRiskData }
   useEffect(() => {
     setLayout(prevLayout => ({
       ...prevLayout,
-      title: isDashboard ? '' : 'Bitcoin Price Risk Band Durations',
+      title: isDashboard ? '' : `${selectedAssetLabel} Price Risk Band Durations`,
       plot_bgcolor: colors.primary[700],
       paper_bgcolor: colors.primary[700],
       font: { color: colors.primary[100] },
@@ -114,14 +167,14 @@ const BitcoinRiskBandDuration = ({ isDashboard = false, riskData: propRiskData }
       yaxis: {
         ...prevLayout.yaxis,
         title: {
-          text: 'Percentage', // Preserve the new title
-          font: { color: colors.primary[100], size: 12 }, // Match BitcoinRiskColor styling
-          standoff: 5, // Match BitcoinRiskColor for consistency
+          text: 'Percentage',
+          font: { color: colors.primary[100], size: 12 },
+          standoff: 5,
         },
-        automargin: true, // Ensure title fits
+        automargin: true,
       },
     }));
-  }, [colors, isDashboard, isMobile]);
+  }, [colors, isDashboard, isMobile, selectedAssetLabel]);
 
   const resetChartView = () => {
     setLayout(prevLayout => ({
@@ -153,6 +206,11 @@ const BitcoinRiskBandDuration = ({ isDashboard = false, riskData: propRiskData }
     setRiskBandMode(event.target.value);
   };
 
+  const handleAssetChange = (event) => {
+    setSelectedAsset(event.target.value);
+    resetChartView(); // Reset chart view when asset changes
+  };
+
   const getBandColor = (index, numBands) => {
     const midPoint = Math.floor(numBands / 2);
     const blueShades = [colors.redAccent[100], colors.redAccent[300], colors.redAccent[500], colors.redAccent[700], colors.redAccent[800]];
@@ -181,11 +239,49 @@ const BitcoinRiskBandDuration = ({ isDashboard = false, riskData: propRiskData }
         <Box
           sx={{
             display: 'flex',
+            flexDirection: { xs: 'column', sm: 'row' },
             justifyContent: 'center',
+            gap: '20px',
             marginBottom: '20px',
             marginTop: '20px',
           }}
         >
+          <FormControl sx={{ minWidth: '200px' }}>
+            <InputLabel
+              id="asset-label"
+              shrink
+              sx={{
+                color: colors.grey[100],
+                '&.Mui-focused': { color: colors.greenAccent[500] },
+                top: 0,
+                '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' },
+              }}
+            >
+              Asset
+            </InputLabel>
+            <Select
+              value={selectedAsset}
+              onChange={handleAssetChange}
+              label="Asset"
+              labelId="asset-label"
+              sx={{
+                color: colors.grey[100],
+                backgroundColor: colors.primary[500],
+                borderRadius: '8px',
+                '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
+                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                '& .MuiSelect-select': { py: 1.5, pl: 2 },
+              }}
+            >
+              <MenuItem value="BTC">Bitcoin</MenuItem>
+              {altcoins.map((coin) => (
+                <MenuItem key={coin.value} value={coin.value}>
+                  {coin.label}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
           <FormControl sx={{ minWidth: '200px' }}>
             <InputLabel
               id="risk-band-mode-label"
@@ -226,9 +322,6 @@ const BitcoinRiskBandDuration = ({ isDashboard = false, riskData: propRiskData }
         <div className='chart-top-div'>
           <div className="risk-filter">
             {/* Placeholder for future interactivity toggles */}
-          </div>
-          <div>
-            {/* Placeholder for styling */}
           </div>
           <div>
             <button onClick={resetChartView} className="button-reset">
@@ -273,8 +366,8 @@ const BitcoinRiskBandDuration = ({ isDashboard = false, riskData: propRiskData }
         />
       </div>
       <div className='under-chart'>
-        {!isDashboard && <LastUpdated storageKey="btcData" />}
-        {!isDashboard && <BitcoinFees />}
+        {!isDashboard && <LastUpdated storageKey={`${selectedAsset.toLowerCase()}Data`} />}
+        {!isDashboard && selectedAsset === 'BTC' && <BitcoinFees />}
       </div>
       {!isDashboard && (
         <div style={{ display: 'inline-block', marginTop: '10px', fontSize: '1.2rem', color: colors.primary[100] }}>
@@ -285,9 +378,9 @@ const BitcoinRiskBandDuration = ({ isDashboard = false, riskData: propRiskData }
       {!isDashboard && (
         <div>
           <p className='chart-info'>
-            This chart shows the total amount of time Bitcoin has spent in each risk band over its entire existence, 
+            This chart shows the total amount of time {selectedAssetLabel} has spent in each risk band over its entire existence, 
             adjustable by risk band size (0.05, 0.1, or 0.2 increments). This helps to understand the distribution 
-            of time spent across different risk levels. The risk metric assesses Bitcoin's investment risk over time 
+            of time spent across different risk levels. The risk metric assesses {selectedAssetLabel}'s investment risk over time 
             by comparing its daily prices to a 374-day moving average, calculating the normalized logarithmic difference.
           </p>
         </div>
@@ -296,4 +389,4 @@ const BitcoinRiskBandDuration = ({ isDashboard = false, riskData: propRiskData }
   );
 };
 
-export default BitcoinRiskBandDuration;
+export default AssetRiskBandDuration;

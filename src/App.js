@@ -21,6 +21,7 @@ import FearAndGreed from "./components/FearAndGreed";
 import BitcoinLogRegression from "./components/BitcoinLogRegression";
 import BitcoinRiskColor from "./components/BitcoinRiskColor";
 import BitcoinRiskTimeInBands from "./components/BitcoinRiskTimeInBands";
+import AssetRiskBandDuration from "./components/BitcoinRiskTimeInBands";
 import AltcoinPrice from "./components/AltcoinPrice";
 import AltcoinRisk from "./components/AltcoinRisk";
 import MarketCycles from "./components/MarketCycles";
@@ -426,7 +427,7 @@ const AppContent = memo(({ isSignedIn, user }) => {
                       path="/risk-bands"
                       element={
                         <ProtectedRoute>
-                          <BasicChart ChartComponent={BitcoinRiskTimeInBands} />
+                          <BasicChart ChartComponent={AssetRiskBandDuration} />
                         </ProtectedRoute>
                       }
                     />
