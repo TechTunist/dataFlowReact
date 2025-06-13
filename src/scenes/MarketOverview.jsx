@@ -16,7 +16,7 @@ import {
 import { Responsive, WidthProvider } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
-import { Box, Typography, useTheme, LinearProgress } from '@mui/material';
+import { Box, Typography, useTheme, LinearProgress, CircularProgress } from '@mui/material';
 import { tokens } from '../theme';
 import { DataContext } from '../DataContext';
 import useIsMobile from '../hooks/useIsMobile';
@@ -46,6 +46,43 @@ const MarketOverview = () => {
     altcoinSeasonData,
     fetchAltcoinSeasonData,
   } = useContext(DataContext);
+
+  // State for loading
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch all data and manage loading state
+  useEffect(() => {
+    const fetchAllData = async () => {
+      try {
+        setIsLoading(true);
+        // Fetch all data in parallel
+        await Promise.all([
+          fetchBtcData(),
+          fetchEthData(),
+          fetchFearAndGreedData(),
+          fetchInflationData(),
+          fetchMarketCapData(),
+          fetchMvrvData(),
+          fetchAltcoinSeasonData(),
+        ]);
+        setIsLoading(false);
+      } catch (err) {
+        console.error('Error fetching data:', err);
+        setError('Failed to load market data. Please try again later.');
+        setIsLoading(false);
+      }
+    };
+    fetchAllData();
+  }, [
+    fetchBtcData,
+    fetchEthData,
+    fetchFearAndGreedData,
+    fetchInflationData,
+    fetchMarketCapData,
+    fetchMvrvData,
+    fetchAltcoinSeasonData,
+  ]);
 
   // Define breakpoints and columns for different screen sizes
   const breakpoints = { lg: 1200, md: 996, sm: 768, xs: 480 };
@@ -455,6 +492,47 @@ const MarketOverview = () => {
       </Box>
     );
   });
+
+  // Loading UI
+  if (isLoading) {
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '100vh',
+          backgroundColor: colors.primary[500],
+        }}
+      >
+        <CircularProgress size={60} sx={{ color: colors.blueAccent[400] }} />
+        <Typography variant="h5" color={colors.grey[100]} sx={{ mt: 2 }}>
+          Loading Market Overview...
+        </Typography>
+      </Box>
+    );
+  }
+
+  // Error UI
+  if (error) {
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '100vh',
+          backgroundColor: colors.primary[500],
+        }}
+      >
+        <Typography variant="h5" color={colors.redAccent[400]}>
+          {error}
+        </Typography>
+      </Box>
+    );
+  }
 
 // New RoiCycleComparisonWidget
 const RoiCycleComparisonWidget = memo(() => {
