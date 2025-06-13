@@ -84,7 +84,8 @@ export const SubscriptionProvider = ({ children, user, isSignedIn }) => {
     [subscriptionStatus, loading, error, fetchSubscriptionStatus]
   );
 
-  console.log('SubscriptionProvider rendered'); // Log to confirm rerenders
+  // Log to confirm rerenders
+  // console.log('SubscriptionProvider rendered'); 
 
   return (
     <SubscriptionContext.Provider value={contextValue}>

@@ -136,11 +136,11 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
       label: `MVRV/Tx Ratio${smoothing === 'none' ? '' : ` (${smoothing === 'ema-7' ? '7-day EMA' : smoothing === 'ema-28' ? '28-day EMA' : smoothing === 'sma-7' ? '7-day SMA' : '28-day SMA'})`}`,
       description: `The ratio of normalized MVRV to normalized transaction count${smoothing === 'none' ? '' : `, smoothed with a ${smoothing === 'ema-7' || smoothing === 'ema-28' ? 'exponential' : 'simple'} moving average,`}, dynamically normalized to a rolling maximum. High values may indicate overvaluation (market tops), low values may suggest undervaluation (market bottoms).`,
     },
-    'price': {
-      color: 'gray',
-      label: 'Bitcoin Price',
-      description: 'The market price of Bitcoin in USD, plotted on a logarithmic scale to highlight long-term trends.',
-    },
+    // 'price': {
+    //   color: 'gray',
+    //   label: 'Bitcoin Price',
+    //   description: 'The market price of Bitcoin in USD, plotted on a logarithmic scale to highlight long-term trends.',
+    // },
   });
 
   const setInteractivity = () => {
@@ -456,7 +456,7 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
               padding: '5px 10px',
               borderRadius: '4px',
               color: colors.grey[100],
-              fontSize: '12px',
+              fontSize: isMobile ? '8px' : '12px',
             }}
           >
             {displayMode === 'tx-mvrv' && (
@@ -501,7 +501,7 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
                 {indicatorsForMode['ratio'].label}
               </div>
             )}
-            <div style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>
+            {/* <div style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>
               <span
                 style={{
                   display: 'inline-block',
@@ -512,7 +512,7 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
                 }}
               />
               {indicatorsForMode['price'].label}
-            </div>
+            </div> */}
           </div>
         )}
       </div>
@@ -559,7 +559,7 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
             zIndex: 1000,
           }}
         >
-          <div style={{ fontSize: '15px', color: indicatorsForMode['price'].color }}>
+          <div style={{ fontSize: '15px', color: 'gray' }}>
             BTC price: ${tooltipData.price ? (tooltipData.price / 1000).toFixed(1) + 'k' : 'N/A'}
           </div>
           {displayMode === 'tx-mvrv' && (

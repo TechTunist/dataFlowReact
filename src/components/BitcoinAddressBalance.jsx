@@ -130,7 +130,7 @@ const BitcoinAddressBalancesChart = ({ isDashboard = false }) => {
 
   const datasets = useMemo(() => {
     if (!onchainMetricsData || onchainMetricsData.length === 0) {
-      console.log('No onchainMetricsData available for datasets');
+      // console.log('No onchainMetricsData available for datasets');
       return [];
     }
 
@@ -245,7 +245,7 @@ const BitcoinAddressBalancesChart = ({ isDashboard = false }) => {
 
   const handleMetricChange = (event) => {
     const selected = event.target.value;
-    console.log(`Metric selection changed to: ${selected}`);
+    // console.log(`Metric selection changed to: ${selected}`);
     setActiveMetrics(selected);
     // Clear the range selectors when a single metric is selected
     setRangeStart('');
@@ -272,13 +272,13 @@ const BitcoinAddressBalancesChart = ({ isDashboard = false }) => {
 
   const toggleScaleMode = () => {
     setScaleMode((prev) => {
-      console.log(`Scale mode toggled to: ${prev === 1 ? 'Linear' : 'Logarithmic'}`);
+      // console.log(`Scale mode toggled to: ${prev === 1 ? 'Linear' : 'Logarithmic'}`);
       return prev === 1 ? 0 : 1;
     });
   };
 
   const resetChartView = () => {
-    console.log('Resetting chart view');
+    // console.log('Resetting chart view');
     setLayout((prev) => ({
       ...prev,
       xaxis: { ...prev.xaxis, autorange: true },
@@ -289,7 +289,7 @@ const BitcoinAddressBalancesChart = ({ isDashboard = false }) => {
 
   const handleRelayout = (event) => {
     if (event['xaxis.range[0]'] || event['yaxis.range[0]'] || event['yaxis2.range[0]']) {
-      console.log('Chart relayout:', event);
+      // console.log('Chart relayout:', event);
       setLayout((prev) => ({
         ...prev,
         xaxis: {
