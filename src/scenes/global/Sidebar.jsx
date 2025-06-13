@@ -119,7 +119,7 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
     { title: "Bitcoin ROI", to: "/bitcoin-roi", category: "Bitcoin", icon: <TrendingUpIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
     { title: "Bitcoin Monthly Returns", to: "/monthly-returns", category: "Bitcoin", icon: <TableChartIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
     { title: "Bitcoin Bubble Indicator", to: "/btc-20-ext", category: "Bitcoin", icon: <WarningAmberIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
-    { title: "Bitcoin Running ROI", to: "/bitcoin-running-roi", category: "Bitcoin", icon: <ShowChartIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
+    { title: "Running ROI", to: "/running-roi", category: "Indicators", icon: <ShowChartIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
     { title: "Monthly Average ROI", to: "/monthly-average-roi", category: "Bitcoin", icon: <CalculateIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
     { title: "Ethereum Chart", to: "/ethereum", category: "Ethereum", icon: <SiEthereum />, categoryIcon: <SiEthereum /> },
     { title: "Altcoin Chart", to: "/altcoin-price", category: "Altcoins", icon: <MonetizationOnIcon />, categoryIcon: <MonetizationOnIcon /> },

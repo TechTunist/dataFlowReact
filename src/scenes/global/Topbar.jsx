@@ -108,8 +108,8 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
         return { title: "Monthly Average ROI", subtitle: isMobile ? "Monthly ROI" : "Monthly Averaged ROI Over Selected Timeframes" };
       case "/monthly-returns":
         return { title: "Bitcoin Monthly Returns", subtitle: isMobile ? "Monthly Returns" : "The Monthly Returns for Bitcoin" };
-      case "/bitcoin-running-roi":
-        return { title: "Bitcoin Running ROI", subtitle: isMobile ? "Running ROI v Price" : "The Running ROI for Bitcoin plotted Against Price" };
+      case "/running-roi":
+        return { title: "Running ROI", subtitle: isMobile ? "Running ROI v Price" : "The Running ROI plotted Against Price" };
       // case "/btc-tx-count":
       //   return { title: "Bitcoin Transaction Count", subtitle: isMobile ? "Transaction Count" : "Daily Transaction Count for Bitcoin" };
       case "/fear-and-greed-chart":

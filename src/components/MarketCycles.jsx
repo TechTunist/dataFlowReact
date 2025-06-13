@@ -254,7 +254,7 @@ const MarketCycles = ({ isDashboard = false }) => {
                             alignItems: 'center',
                             justifyContent: 'center',
                             gap: '20px',
-                            marginBottom: '30px',
+                            marginBottom: '10px',
                             marginTop: '50px',
                         }}
                     >

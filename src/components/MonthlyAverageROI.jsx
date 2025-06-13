@@ -377,6 +377,7 @@ const MonthlyAverageROI = ({ isDashboard = false }) => {
               responsive: true,
               scrollZoom: false,
               doubleClick: false,
+              staticPlot: true,
             }}
             useResizeHandler={true}
             style={{ width: '100%', height: '100%' }}

@@ -58,7 +58,7 @@ import MarketOverview from "./scenes/MarketOverview";
 import { useMemo } from "react";
 import FearAndGreed3D from "./components/FearAndGreed3D";
 import BitcoinAddressBalancesChart from "./components/BitcoinAddressBalance";
-import BitcoinRunningROI from "./components/BitcoinRunningROI";
+import RunningROI from "./components/RunningROI";
 import BitcoinMonthlyReturnsTable from "./components/MonthlyReturnsTable";
 import MonthlyAverageROI from "./components/MonthlyAverageROI";
 import Bitcoin20WeekExtension from "./components/Bitcoin20WeekExtension";
@@ -304,10 +304,10 @@ const AppContent = memo(({ isSignedIn, user }) => {
                       }
                     />
                     <Route
-                      path="/bitcoin-running-roi"
+                      path="/running-roi"
                       element={
                         <ProtectedRoute>
-                          <BasicChart ChartComponent={BitcoinRunningROI} />
+                          <BasicChart ChartComponent={RunningROI} />
                         </ProtectedRoute>
                       }
                     />

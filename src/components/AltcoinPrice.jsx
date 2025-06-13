@@ -617,14 +617,14 @@ const AltcoinPrice = ({ isDashboard = false }) => {
               const cursorX = tooltipData.x - sidebarWidth;
               const chartWidth = chartContainerRef.current.clientWidth - sidebarWidth;
               const tooltipWidth = 200;
-              const offset = 10000 / (chartWidth + 300);
+              const offset = 1000 / (chartWidth + 300);
               const rightPosition = cursorX + offset;
               const leftPosition = cursorX - tooltipWidth - offset;
               if (rightPosition + tooltipWidth <= chartWidth) return `${rightPosition}px`;
               if (leftPosition >= 0) return `${leftPosition}px`;
               return `${Math.max(0, Math.min(rightPosition, chartWidth - tooltipWidth))}px`;
             })(),
-            top: `${tooltipData.y + 100}px`,
+            top: `${tooltipData.y + 150}px`,
           }}
         >
           <div style={{ fontSize: '15px' }}>{selectedCoin}</div>
