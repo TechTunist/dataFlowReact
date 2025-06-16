@@ -1,4 +1,3 @@
-// src/components/OnChainHistoricalRisk.js
 import React, { useRef, useEffect, useState, useContext, useMemo } from 'react';
 import { createChart } from 'lightweight-charts';
 import { tokens } from '../theme';
@@ -21,16 +20,20 @@ const OnChainHistoricalRisk = ({ isDashboard = false, mvrvData: propMvrvData, bt
   const [isInteractive, setIsInteractive] = useState(false);
   const isMobile = useIsMobile();
   const [selectedMetric, setSelectedMetric] = useState('mvrv');
-  const [smoothingPeriod, setSmoothingPeriod] = useState(7); // Default to 7-day smoothing
+  const [smoothingPeriod, setSmoothingPeriod] = useState(7);
+  const [dataError, setDataError] = useState(null);
 
   // Access DataContext
   const {
     btcData: contextBtcData,
     mvrvData: contextMvrvData,
     onchainMetricsData,
+    capRealData,
+    revAllTimeData,
     fetchBtcData,
     fetchMvrvData,
     fetchOnchainMetricsData,
+    fetchMetricsForRisk,
   } = useContext(DataContext);
   const btcData = propBtcData || contextBtcData;
   const mvrvData = propMvrvData || contextMvrvData;
@@ -43,33 +46,32 @@ const OnChainHistoricalRisk = ({ isDashboard = false, mvrvData: propMvrvData, bt
     { value: 180, label: '180 Days' },
     { value: 365, label: '1 Year' },
   ];
-
-  // Restrict Puell to 7 and 28 days
   const puellSmoothingOptions = allSmoothingOptions.filter(option => [7, 28].includes(option.value));
 
   // Metric labels for UI
   const metricLabels = {
     mvrv: 'MVRV Z-Score',
     puell: 'Puell Multiple',
+    minerCapThermoCap: 'Miner Cap to Thermo Cap',
   };
 
-  // Calculate daily issuance based on block reward schedule (for fallback)
+  // Calculate daily issuance based on block reward schedule (for Puell Multiple fallback)
   const calculateDailyIssuance = (date) => {
-    const halvingInterval = 210000; // Blocks per halving
-    const blocksPerDay = 144; // Approx. 144 blocks/day
+    const halvingInterval = 210000;
+    const blocksPerDay = 144;
     const genesisDate = new Date('2009-01-03');
     const daysSinceGenesis = Math.floor((new Date(date) - genesisDate) / (1000 * 60 * 60 * 24));
     const blocksMined = daysSinceGenesis * blocksPerDay;
     const halvingCount = Math.floor(blocksMined / halvingInterval);
     const reward = 50 / Math.pow(2, halvingCount);
-    return reward * blocksPerDay; // Daily issuance in BTC
+    return reward * blocksPerDay;
   };
 
   // Normalize time to 'YYYY-MM-DD'
   const normalizeTime = (time) => new Date(time).toISOString().split('T')[0];
 
-  // Prepare price and issuance data with alignment
-  const prepareData = useMemo(() => {
+  // Prepare data for Puell Multiple
+  const preparePuellData = useMemo(() => {
     const rawPriceData = btcData.map(d => ({
       time: normalizeTime(d.time),
       value: parseFloat(d.value) || 0,
@@ -87,20 +89,16 @@ const OnChainHistoricalRisk = ({ isDashboard = false, mvrvData: propMvrvData, bt
       console.warn('IssContUSD data missing, calculating issuance using block reward');
       issuanceData = rawPriceData.map(d => ({
         time: d.time,
-        value: calculateDailyIssuance(d.time) * d.value, // Issuance in USD
+        value: calculateDailyIssuance(d.time) * d.value,
       }));
     }
 
-    // Filter priceData to match issuanceData times
-    const issuanceTimes = new Set(issuanceData.map(d => d.time));
-    const priceData = rawPriceData.filter(d => issuanceTimes.has(d.time));
-
-    return { priceData, issuanceData };
+    return { issuanceData };
   }, [btcData, onchainMetricsData]);
 
   // Calculate Puell Multiple
   const puellDataRaw = useMemo(() => {
-    const { issuanceData } = prepareData;
+    const { issuanceData } = preparePuellData;
     const puellData = [];
 
     for (let i = 0; i < issuanceData.length; i++) {
@@ -117,7 +115,65 @@ const OnChainHistoricalRisk = ({ isDashboard = false, mvrvData: propMvrvData, bt
     }
 
     return puellData;
-  }, [prepareData]);
+  }, [preparePuellData]);
+
+  // Calculate Miner Cap to Thermo Cap Ratio
+  const minerCapThermoCapDataRaw = useMemo(() => {
+    if (!capRealData.length || !revAllTimeData.length) {
+      console.warn('Missing CapRealUSD or RevAllTimeUSD data for Miner Cap to Thermo Cap ratio');
+      setDataError('Missing CapRealUSD or RevAllTimeUSD data');
+      return [];
+    }
+
+    const capRealFormatted = capRealData
+      .map(d => ({
+        time: normalizeTime(d.time),
+        value: parseFloat(d.value) || 0,
+      }))
+      .sort((a, b) => a.time.localeCompare(b.time));
+
+    const thermoCapFormatted = revAllTimeData
+      .map(d => ({
+        time: normalizeTime(d.time),
+        value: parseFloat(d.value) || 0,
+      }))
+      .sort((a, b) => a.time.localeCompare(b.time));
+
+    const allTimes = new Set([...capRealFormatted.map(d => d.time), ...thermoCapFormatted.map(d => d.time)]);
+    const sortedTimes = Array.from(allTimes).sort((a, b) => a.localeCompare(b));
+
+    const minerCapThermoCapData = [];
+    let lastCapRealValue = null;
+    let lastThermoCapValue = null;
+
+    for (const time of sortedTimes) {
+      const capRealItem = capRealFormatted.find(d => d.time === time);
+      const thermoCapItem = thermoCapFormatted.find(d => d.time === time);
+
+      if (capRealItem && capRealItem.value != null) {
+        lastCapRealValue = capRealItem.value;
+      }
+      if (thermoCapItem && thermoCapItem.value != null) {
+        lastThermoCapValue = thermoCapItem.value;
+      }
+
+      if (lastCapRealValue != null && lastThermoCapValue != null && lastThermoCapValue !== 0) {
+        const ratio = lastCapRealValue / lastThermoCapValue;
+        minerCapThermoCapData.push({
+          time,
+          value: parseFloat(ratio.toFixed(2)),
+        });
+      }
+    }
+
+    // console.log('minerCapThermoCapDataRaw:', minerCapThermoCapData.length, minerCapThermoCapData.slice(0, 5));
+    if (minerCapThermoCapData.length === 0) {
+      setDataError('Unable to calculate Miner Cap to Thermo Cap ratio');
+    } else {
+      setDataError(null);
+    }
+    return minerCapThermoCapData;
+  }, [capRealData, revAllTimeData]);
 
   // Apply smoothing to any data array
   const applySmoothing = (data, period) => {
@@ -136,115 +192,226 @@ const OnChainHistoricalRisk = ({ isDashboard = false, mvrvData: propMvrvData, bt
     return smoothedData;
   };
 
-// Convert Puell Multiple to Risk Score
-const calculatePuellRisk = (puellData, btcData) => {
-  if (!puellData.length || !btcData.length) return [];
-
-  const cutoffDate = new Date('2010-09-05').getTime();
-  const allDates = new Set([...btcData.map(d => d.time), ...puellData.map(d => d.time)]);
-  const sortedDates = Array.from(allDates)
-    .filter((date) => new Date(date).getTime() >= cutoffDate)
-    .sort((a, b) => new Date(a) - new Date(b));
-
-  let lastBtcValue = null;
-  const alignedBtcData = sortedDates.map((date) => {
-    const btcItem = btcData.find((b) => b.time === date);
-    if (btcItem && btcItem.value != null) {
-      lastBtcValue = btcItem.value;
-      return { time: date, value: btcItem.value };
+  // Convert Miner Cap to Thermo Cap Ratio to Risk Score
+  const calculateMinerCapThermoCapRisk = (minerCapThermoCapData, btcData) => {
+    if (!minerCapThermoCapData.length || !btcData.length) {
+      console.warn('No data for Miner Cap to Thermo Cap risk calculation');
+      return [];
     }
-    return lastBtcValue != null ? { time: date, value: lastBtcValue } : null;
-  }).filter((item) => item != null);
 
-  const btcStartTime = Math.max(new Date(btcData[0].time).getTime(), cutoffDate);
-  const btcEndTime = new Date(btcData[btcData.length - 1].time).getTime();
-  let lastPuellValue = null;
-  const alignedPuellData = sortedDates.map((date) => {
-    const itemTime = new Date(date).getTime();
-    if (itemTime < btcStartTime || itemTime > btcEndTime) return null;
-    const puellItem = puellData.find((p) => p.time === date);
-    if (puellItem && puellItem.value != null) {
-      lastPuellValue = puellItem.value;
-      return { time: date, value: puellItem.value };
-    }
-    return lastPuellValue != null ? { time: date, value: lastPuellValue } : null;
-  }).filter((item) => item != null);
+    const cutoffDate = new Date('2010-09-05').getTime();
+    const allDates = new Set([...btcData.map(d => d.time), ...minerCapThermoCapData.map(d => d.time)]);
+    const sortedDates = Array.from(allDates)
+      .filter((date) => new Date(date).getTime() >= cutoffDate)
+      .sort((a, b) => new Date(a) - new Date(b));
 
-  const decayRate = 0.5; // Same as MVRV for recent data emphasis
-  const peakSensitivity = 0.6; // Slightly lower than MVRV to avoid extreme highs
-  const capitulationSensitivity = 0.02; // Higher than MVRV to emphasize low Puell
-  const earlySmoothingFactor = 0.0; // Same as MVRV
-  const shiftConstant = 0.2; // Slightly higher to narrow risk range
-  const extensionFactor = 0.25; // Slightly lower than MVRV for Puell
-  const multiplierScale = 0.6; // Same as MVRV
-  const multiplierRate = 0.001; // Same as MVRV
+    let lastBtcValue = null;
+    const alignedBtcData = sortedDates.map((date) => {
+      const btcItem = btcData.find((b) => b.time === date);
+      if (btcItem && btcItem.value != null) {
+        lastBtcValue = btcItem.value;
+        return { time: date, value: btcItem.value };
+      }
+      return lastBtcValue != null ? { time: date, value: lastBtcValue } : null;
+    }).filter((item) => item != null);
 
-  const weights = alignedPuellData.map((_, index) => Math.exp(decayRate * (index / (alignedPuellData.length - 1))));
-  const weightSum = weights.reduce((sum, w) => sum + w, 0);
-  const weightedMean = alignedPuellData.reduce((sum, item, index) => sum + item.value * weights[index], 0) / weightSum;
-  const weightedVariance = alignedPuellData.reduce(
-    (sum, item, index) => sum + weights[index] * Math.pow(item.value - weightedMean, 2),
-    0
-  ) / weightSum;
-  const weightedStdDev = Math.sqrt(weightedVariance) || 1;
+    const btcStartTime = Math.max(new Date(btcData[0].time).getTime(), cutoffDate);
+    const btcEndTime = new Date(btcData[btcData.length - 1].time).getTime();
+    let lastRatioValue = null;
+    const alignedRatioData = sortedDates.map((date) => {
+      const itemTime = new Date(date).getTime();
+      if (itemTime < btcStartTime || itemTime > btcEndTime) return null;
+      const ratioItem = minerCapThermoCapData.find((p) => p.time === date);
+      if (ratioItem && ratioItem.value != null) {
+        lastRatioValue = ratioItem.value;
+        return { time: date, value: ratioItem.value };
+      }
+      return lastRatioValue != null ? { time: date, value: lastRatioValue } : null;
+    }).filter((item) => item != null);
 
-  const puellZScores = alignedPuellData.map((item, index) => ({
-    time: item.time,
-    value: item.value,
-    zScore: (item.value - weightedMean) / weightedStdDev,
-  }));
+    const decayRate = 0.5;
+    const peakSensitivity = 0.4;
+    const capitulationSensitivity = 0.01;
+    const earlySmoothingFactor = 0.0;
+    const shiftConstant = 0.2;
+    const extensionFactor = 0.2;
+    const multiplierScale = 0.5;
+    const multiplierRate = 0.001;
 
-  const zScoreMA = puellZScores.map((item, i) => {
-    const windowSize = 50; // Same as MVRV
-    const start = Math.max(0, i - windowSize + 1);
-    const window = puellZScores.slice(start, i + 1);
-    const ma = window.reduce((sum, val) => sum + val.zScore, 0) / window.length;
-    return { time: item.time, zScore: item.zScore, zScoreMA: ma };
-  });
+    const weights = alignedRatioData.map((_, index) => Math.exp(decayRate * (index / (alignedRatioData.length - 1))));
+    const weightSum = weights.reduce((sum, w) => sum + w, 0);
+    const weightedMean = alignedRatioData.reduce((sum, item, index) => sum + item.value * weights[index], 0) / weightSum;
+    const weightedVariance = alignedRatioData.reduce(
+      (sum, item, index) => sum + weights[index] * Math.pow(item.value - weightedMean, 2),
+      0
+    ) / weightSum;
+    const weightedStdDev = Math.sqrt(weightedVariance) || 1;
 
-  const riskScores = zScoreMA.map((item) => {
-    const daysSinceStart = (new Date(item.time).getTime() - cutoffDate) / (1000 * 60 * 60 * 24);
-    const multiplier = 1 + multiplierScale * (1 - Math.exp(-multiplierRate * daysSinceStart));
-    const extension = item.zScore - item.zScoreMA;
-    return {
+    const ratioZScores = alignedRatioData.map((item, index) => ({
       time: item.time,
       value: item.value,
-      risk: 1 / (1 + Math.exp(
-        -peakSensitivity * item.zScore * multiplier -
-        capitulationSensitivity * Math.max(0, -item.zScore) * multiplier -
-        extensionFactor * extension * multiplier
-      )),
-    };
-  });
+      zScore: (item.value - weightedMean) / weightedStdDev,
+    }));
 
-  const smoothedRisk = riskScores.map((item, i) => {
-    const t = i / (riskScores.length - 1);
-    const windowSize = Math.round(5 + earlySmoothingFactor * (1 - t) * 25);
-    const start = Math.max(0, i - windowSize + 1);
-    const window = riskScores.slice(start, i + 1);
-    return {
-      ...item,
-      risk: window.reduce((sum, val) => sum + val.risk, 0) / window.length,
-    };
-  });
+    const zScoreMA = ratioZScores.map((item, i) => {
+      const windowSize = 50;
+      const start = Math.max(0, i - windowSize + 1);
+      const window = ratioZScores.slice(start, i + 1);
+      const ma = window.reduce((sum, val) => sum + val.zScore, 0) / window.length;
+      return { time: item.time, zScore: item.zScore, zScoreMA: ma };
+    });
 
-  const normalizedRisk = smoothedRisk.map((item) => {
-    const btcItem = alignedBtcData.find((b) => b.time === item.time);
-    if (!btcItem) return null;
-    const adjustedRisk = Math.max(0, (item.risk - shiftConstant) / (1 - shiftConstant));
-    return { time: item.time, value: btcItem.value, Risk: adjustedRisk };
-  }).filter((item) => item != null);
+    const riskScores = zScoreMA.map((item) => {
+      const daysSinceStart = (new Date(item.time).getTime() - cutoffDate) / (1000 * 60 * 60 * 24);
+      const multiplier = 1 + multiplierScale * (1 - Math.exp(-multiplierRate * daysSinceStart));
+      const extension = item.zScore - item.zScoreMA;
+      return {
+        time: item.time,
+        value: item.value,
+        risk: 1 / (1 + Math.exp(
+          -peakSensitivity * item.zScore * multiplier -
+          capitulationSensitivity * Math.max(0, -item.zScore) * multiplier -
+          extensionFactor * extension * multiplier
+        )),
+      };
+    });
 
-  // Apply user-selected smoothing to risk scores (assuming applySmoothing is defined in the component)
-  return applySmoothing(normalizedRisk.map(item => ({
-    time: item.time,
-    value: item.Risk,
-  })), smoothingPeriod).map((smoothed, i) => ({
-    time: smoothed.time,
-    value: normalizedRisk[i].value,
-    Risk: smoothed.value,
-  }));
-};
+    const smoothedRisk = riskScores.map((item, i) => {
+      const t = i / (riskScores.length - 1);
+      const windowSize = Math.round(5 + earlySmoothingFactor * (1 - t) * 25);
+      const start = Math.max(0, i - windowSize + 1);
+      const window = riskScores.slice(start, i + 1);
+      return {
+        ...item,
+        risk: window.reduce((sum, val) => sum + val.risk, 0) / window.length,
+      };
+    });
+
+    const normalizedRisk = smoothedRisk.map((item) => {
+      const btcItem = alignedBtcData.find((b) => b.time === item.time);
+      if (!btcItem) return null;
+      const adjustedRisk = Math.max(0, (item.risk - shiftConstant) / (1 - shiftConstant));
+      return { time: item.time, value: btcItem.value, Risk: adjustedRisk };
+    }).filter((item) => item != null);
+
+    return applySmoothing(normalizedRisk.map(item => ({
+      time: item.time,
+      value: item.Risk,
+    })), smoothingPeriod).map((smoothed, i) => ({
+      time: smoothed.time,
+      value: normalizedRisk[i].value,
+      Risk: smoothed.value,
+    }));
+  };
+
+  // Convert Puell Multiple to Risk Score
+  const calculatePuellRisk = (puellData, btcData) => {
+    if (!puellData.length || !btcData.length) return [];
+
+    const cutoffDate = new Date('2010-09-05').getTime();
+    const allDates = new Set([...btcData.map(d => d.time), ...puellData.map(d => d.time)]);
+    const sortedDates = Array.from(allDates)
+      .filter((date) => new Date(date).getTime() >= cutoffDate)
+      .sort((a, b) => new Date(a) - new Date(b));
+
+    let lastBtcValue = null;
+    const alignedBtcData = sortedDates.map((date) => {
+      const btcItem = btcData.find((b) => b.time === date);
+      if (btcItem && btcItem.value != null) {
+        lastBtcValue = btcItem.value;
+        return { time: date, value: btcItem.value };
+      }
+      return lastBtcValue != null ? { time: date, value: lastBtcValue } : null;
+    }).filter((item) => item != null);
+
+    const btcStartTime = Math.max(new Date(btcData[0].time).getTime(), cutoffDate);
+    const btcEndTime = new Date(btcData[btcData.length - 1].time).getTime();
+    let lastPuellValue = null;
+    const alignedPuellData = sortedDates.map((date) => {
+      const itemTime = new Date(date).getTime();
+      if (itemTime < btcStartTime || itemTime > btcEndTime) return null;
+      const puellItem = puellData.find((p) => p.time === date);
+      if (puellItem && puellItem.value != null) {
+        lastPuellValue = puellItem.value;
+        return { time: date, value: puellItem.value };
+      }
+      return lastPuellValue != null ? { time: date, value: lastPuellValue } : null;
+    }).filter((item) => item != null);
+
+    const decayRate = 0.5;
+    const peakSensitivity = 0.6;
+    const capitulationSensitivity = 0.02;
+    const earlySmoothingFactor = 0.0;
+    const shiftConstant = 0.2;
+    const extensionFactor = 0.25;
+    const multiplierScale = 0.6;
+    const multiplierRate = 0.001;
+
+    const weights = alignedPuellData.map((_, index) => Math.exp(decayRate * (index / (alignedPuellData.length - 1))));
+    const weightSum = weights.reduce((sum, w) => sum + w, 0);
+    const weightedMean = alignedPuellData.reduce((sum, item, index) => sum + item.value * weights[index], 0) / weightSum;
+    const weightedVariance = alignedPuellData.reduce(
+      (sum, item, index) => sum + weights[index] * Math.pow(item.value - weightedMean, 2),
+      0
+    ) / weightSum;
+    const weightedStdDev = Math.sqrt(weightedVariance) || 1;
+
+    const puellZScores = alignedPuellData.map((item, index) => ({
+      time: item.time,
+      value: item.value,
+      zScore: (item.value - weightedMean) / weightedStdDev,
+    }));
+
+    const zScoreMA = puellZScores.map((item, i) => {
+      const windowSize = 50;
+      const start = Math.max(0, i - windowSize + 1);
+      const window = puellZScores.slice(start, i + 1);
+      const ma = window.reduce((sum, val) => sum + val.zScore, 0) / window.length;
+      return { time: item.time, zScore: item.zScore, zScoreMA: ma };
+    });
+
+    const riskScores = zScoreMA.map((item) => {
+      const daysSinceStart = (new Date(item.time).getTime() - cutoffDate) / (1000 * 60 * 60 * 24);
+      const multiplier = 1 + multiplierScale * (1 - Math.exp(-multiplierRate * daysSinceStart));
+      const extension = item.zScore - item.zScoreMA;
+      return {
+        time: item.time,
+        value: item.value,
+        risk: 1 / (1 + Math.exp(
+          -peakSensitivity * item.zScore * multiplier -
+          capitulationSensitivity * Math.max(0, -item.zScore) * multiplier -
+          extensionFactor * extension * multiplier
+        )),
+      };
+    });
+
+    const smoothedRisk = riskScores.map((item, i) => {
+      const t = i / (riskScores.length - 1);
+      const windowSize = Math.round(5 + earlySmoothingFactor * (1 - t) * 25);
+      const start = Math.max(0, i - windowSize + 1);
+      const window = riskScores.slice(start, i + 1);
+      return {
+        ...item,
+        risk: window.reduce((sum, val) => sum + val.risk, 0) / window.length,
+      };
+    });
+
+    const normalizedRisk = smoothedRisk.map((item) => {
+      const btcItem = alignedBtcData.find((b) => b.time === item.time);
+      if (!btcItem) return null;
+      const adjustedRisk = Math.max(0, (item.risk - shiftConstant) / (1 - shiftConstant));
+      return { time: item.time, value: btcItem.value, Risk: adjustedRisk };
+    }).filter((item) => item != null);
+
+    return applySmoothing(normalizedRisk.map(item => ({
+      time: item.time,
+      value: item.Risk,
+    })), smoothingPeriod).map((smoothed, i) => ({
+      time: smoothed.time,
+      value: normalizedRisk[i].value,
+      Risk: smoothed.value,
+    }));
+  };
 
   // Calculate MVRV-Z Risk with Smoothing
   const calculateMvrvZRisk = (mvrvData, btcData) => {
@@ -345,7 +512,6 @@ const calculatePuellRisk = (puellData, btcData) => {
       return { time: item.time, value: btcItem.value, Risk: adjustedRisk };
     }).filter((item) => item != null);
 
-    // Apply user-selected smoothing to risk scores
     return applySmoothing(normalizedRisk.map(item => ({
       time: item.time,
       value: item.Risk,
@@ -364,9 +530,14 @@ const calculatePuellRisk = (puellData, btcData) => {
         applySmoothing(puellDataRaw, smoothingPeriod),
         btcData
       ) : [],
+      minerCapThermoCap: minerCapThermoCapDataRaw.length && btcData.length ? calculateMinerCapThermoCapRisk(
+        applySmoothing(minerCapThermoCapDataRaw, smoothingPeriod),
+        btcData
+      ) : [],
     };
+    // console.log('chartData for', selectedMetric, ':', metricDataMap[selectedMetric]);
     return metricDataMap[selectedMetric] || [];
-  }, [selectedMetric, mvrvData, btcData, puellDataRaw, smoothingPeriod]);
+  }, [selectedMetric, mvrvData, btcData, puellDataRaw, minerCapThermoCapDataRaw, smoothingPeriod]);
 
   // Toggle interactivity
   const setInteractivity = () => setIsInteractive(!isInteractive);
@@ -388,18 +559,25 @@ const calculatePuellRisk = (puellData, btcData) => {
     fetchBtcData();
     fetchMvrvData();
     fetchOnchainMetricsData();
-  }, [fetchBtcData, fetchMvrvData, fetchOnchainMetricsData]);
+    fetchMetricsForRisk();
+  }, [fetchBtcData, fetchMvrvData, fetchOnchainMetricsData, fetchMetricsForRisk]);
 
   // Reset smoothing period when switching metrics
   useEffect(() => {
     if (selectedMetric === 'puell' && ![7, 28].includes(smoothingPeriod)) {
-      setSmoothingPeriod(7); // Default to 7 days for Puell
+      setSmoothingPeriod(7);
+    } else if (selectedMetric === 'minerCapThermoCap' && ![7, 28, 90, 180, 365].includes(smoothingPeriod)) {
+      setSmoothingPeriod(7);
     }
   }, [selectedMetric, smoothingPeriod]);
 
   // Render chart
   useEffect(() => {
-    if (chartData.length === 0) return;
+    if (!btcData.length) {
+      console.warn('No Bitcoin price data available');
+      setDataError('No Bitcoin price data available');
+      return;
+    }
 
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
@@ -423,7 +601,7 @@ const calculatePuellRisk = (puellData, btcData) => {
       priceFormat: { type: 'custom', formatter: value => value.toFixed(2) },
     });
     riskSeriesRef.current = riskSeries;
-    const riskSeriesData = chartData.map(data => ({ time: data.time, value: data.Risk }));
+    const riskSeriesData = chartData.length > 0 ? chartData.map(data => ({ time: data.time, value: data.Risk })) : [];
     riskSeries.setData(riskSeriesData);
 
     const priceSeries = chart.addLineSeries({
@@ -441,7 +619,7 @@ const calculatePuellRisk = (puellData, btcData) => {
     chart.priceScale('right').applyOptions({ 
       mode: 0, 
       borderVisible: false,
-      title: `${metricLabels[selectedMetric]} Risk (${smoothingPeriod}-Day SMA)`,
+      title: chartData.length > 0 ? `${metricLabels[selectedMetric]} Risk (${smoothingPeriod}-Day SMA)` : 'No Data',
     });
 
     const resizeChart = () => {
@@ -462,6 +640,8 @@ const calculatePuellRisk = (puellData, btcData) => {
       } catch (error) {
         console.error('Failed to set risk level:', error);
       }
+    } else {
+      setCurrentRiskLevel('N/A');
     }
 
     window.addEventListener('resize', resizeChart);
@@ -597,6 +777,23 @@ const calculatePuellRisk = (puellData, btcData) => {
         }}
       >
         <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
+        {dataError && (
+          <Box
+            sx={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              backgroundColor: colors.redAccent[700],
+              color: colors.grey[100],
+              padding: '10px',
+              borderRadius: '4px',
+              zIndex: 2,
+            }}
+          >
+            <Typography>{dataError}</Typography>
+          </Box>
+        )}
       </div>
       {!isDashboard && <LastUpdated storageKey='btcData' />}
       {!isDashboard && (
@@ -604,11 +801,11 @@ const calculatePuellRisk = (puellData, btcData) => {
           <Typography sx={{ display: 'inline-block', fontSize: '1.2rem', color: colors.primary[100] }}>
             Current {metricLabels[selectedMetric]} Risk Level: <b>{currentRiskLevel}</b> (${currentBtcPrice.toFixed(0)}k)
           </Typography>
-          <Typography sx={{ marginTop: '10px', color: colors.grey[100], fontSize: '0.9rem' }}>
+          <Typography sx={{ marginTop: '10px', marginBotton: '20px', color: colors.grey[100], fontSize: '1.1rem' }}>
             The On-Chain Historical Risk chart displays a selected risk metric alongside Bitcoin price (logarithmic scale). 
             MVRV Z-Score uses a weighted approach to emphasize recent data, smoothing early volatility. 
             Puell Multiple measures miner revenue relative to its 365-day average, transformed into a risk score where low values (~0.5) indicate low risk and high values (~4) indicate high risk, with diminishing peaks over time. 
-            Combined Risk averages the MVRV and Puell risk scores for a balanced risk assessment.
+            Miner Cap to Thermo Cap compares Realized Capitalization to cumulative miner revenue (Thermo Cap), with high ratios (e.g., above 20) indicating potential overvaluation, transformed into a risk score. 
           </Typography>
         </Box>
       )}

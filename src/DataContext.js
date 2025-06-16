@@ -229,6 +229,28 @@ export const DataProvider = ({ children }) => {
   const [onchainMetricsLastUpdated, setOnchainMetricsLastUpdated] = useState(null);
   const [onchainFetchError, setOnchainFetchError] = useState(null);
 
+  const [capRealData, setCapRealData] = useState([]);
+  const [revAllTimeData, setRevAllTimeData] = useState([]);
+
+  const [riskCache, setRiskCache] = useState({
+    mvrv: [],
+    puell: [],
+    minerCapThermoCap: [],
+  });
+
+  const fetchMetricsForRisk = useCallback(async () => {
+    try {
+      const [capReal, revAllTime] = await Promise.all([
+        fetchMetricData('CapRealUSD', '2020-01-01'),
+        fetchMetricData('RevAllTimeUSD', '2020-01-01'),
+      ]);
+      setCapRealData(capReal);
+      setRevAllTimeData(revAllTime);
+    } catch (error) {
+      console.error('Error fetching metrics for risk:', error);
+    }
+  }, []);
+
   const API_BASE_URL = 'https://vercel-dataflow.vercel.app/api';
   // const API_BASE_URL = 'http://127.0.0.1:8000/api';
 
@@ -1195,6 +1217,52 @@ export const DataProvider = ({ children }) => {
     }
   }, [fetchIndicatorData]);
 
+  const fetchMetricData = async (metric, startTime = '2020-01-01') => {
+    const cacheId = `metricData_${metric}`;
+    const currentTimestamp = Date.now();
+  
+    try {
+      // Check if cached data exists and is up-to-date
+      const cached = await getCachedData(cacheId);
+      if (cached && cached.data.length > 0) {
+        const sortedCachedData = [...cached.data].sort((a, b) => new Date(a.time) - new Date(b.time));
+        const latestCachedDate = sortedCachedData[sortedCachedData.length - 1].time;
+        const currentDate = new Date().toISOString().split('T')[0];
+        if (latestCachedDate >= currentDate) {
+          return sortedCachedData;
+        }
+      }
+  
+      // Fetch data with pagination
+      let allData = [];
+      let page = 1;
+      let hasNext = true;
+      while (hasNext) {
+        const apiUrl = `${API_BASE_URL}/onchain-metrics/?metric=${metric}&time__gte=${startTime}&page=${page}`;
+        const response = await fetch(apiUrl);
+        const data = await response.json();
+        allData = allData.concat(data.results);
+        hasNext = !!data.next;
+        page += 1;
+      }
+  
+      // Format the data
+      const formattedData = allData.map(item => ({
+        time: item.time,
+        metric: item.metric,
+        value: parseFloat(item.value),
+        asset: item.asset,
+      }));
+  
+      // Cache the data
+      await cacheData(cacheId, formattedData, currentTimestamp);
+      return formattedData;
+    } catch (error) {
+      console.error(`Error fetching data for ${metric}:`, error);
+      return [];
+    }
+  };
+
   // Memoize the context value to prevent unnecessary updates
   const contextValue = useMemo(
     () => ({
@@ -1283,6 +1351,9 @@ export const DataProvider = ({ children }) => {
       onchainFetchError,
       isAltcoinDataFetched,
       fetchAddressMetricsData,
+      capRealData,
+      revAllTimeData,
+      fetchMetricsForRisk,
     }),
     [
       btcData,
@@ -1369,7 +1440,10 @@ export const DataProvider = ({ children }) => {
       onchainMetricsLastUpdated,
       onchainFetchError,
       isAltcoinDataFetched,
-      fetchAddressMetricsData
+      fetchAddressMetricsData,
+      capRealData,
+      revAllTimeData,
+      fetchMetricsForRisk,
     ]
   );
 
