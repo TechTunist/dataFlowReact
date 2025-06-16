@@ -84,10 +84,13 @@ const AuthWrapper = memo(() => {
   const { user } = useUser();
   const location = useLocation();
 
-  // console.log('AuthWrapper rendered'); // Log to confirm rerenders
-
   if (!isLoaded) {
     return <div>Loading...</div>;
+  }
+
+  // Redirect to splash if not signed in and trying to access a protected route
+  if (!isSignedIn && location.pathname !== "/splash" && location.pathname !== "/login-signup") {
+    return <Navigate to="/splash" replace state={{ from: location }} />;
   }
 
   return <AppContent isSignedIn={isSignedIn} user={user} />;
@@ -136,8 +139,6 @@ const AppContent = memo(({ isSignedIn, user }) => {
     return <div>Error loading Stripe: {stripeError}</div>;
   }
 
-  // console.log('AppContent rendered'); // Log to confirm rerenders
-
   return (
     <StripeContext.Provider value={stripe}>
       <ColorModeContext.Provider value={memoizedColorMode}>
@@ -145,7 +146,7 @@ const AppContent = memo(({ isSignedIn, user }) => {
           <SubscriptionProvider user={user} isSignedIn={isSignedIn}>
             <CssBaseline />
             <div className="app" style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-              {/* Render Topbar or AccountNavBar */}
+              {/* Render Topbar or AccountNavBar only if signed in */}
               {shouldRenderTopbarAndSidebar && (
                 <Topbar
                   setIsSidebar={setIsSidebar}
@@ -156,7 +157,7 @@ const AppContent = memo(({ isSignedIn, user }) => {
               {isSignedIn && isUserMenuPage && <AccountNavBar />}
 
               <div style={{ display: "flex", flex: 1 }}>
-                {/* Render Sidebar */}
+                {/* Render Sidebar only if signed in */}
                 {shouldRenderTopbarAndSidebar && (
                   <div
                     className="sidebar"
@@ -335,14 +336,6 @@ const AppContent = memo(({ isSignedIn, user }) => {
                         </ProtectedRoute>
                       }
                     />
-                    {/* <Route
-                      path="/btc-tx-count"
-                      element={
-                        <ProtectedRoute>
-                          <BasicChart ChartComponent={BitcoinTxCountChart} />
-                        </ProtectedRoute>
-                      }
-                    /> */}
                     <Route
                       path="/btc-add-balance"
                       element={
