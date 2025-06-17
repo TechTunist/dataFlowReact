@@ -254,6 +254,13 @@ export const DataProvider = ({ children }) => {
   const [capRealData, setCapRealData] = useState([]);
   const [revAllTimeData, setRevAllTimeData] = useState([]);
 
+  const [feeRiskData, setFeeRiskData] = useState([]); // New state for fee_risk
+  const [soplRiskData, setSoplRiskData] = useState([]); // New state for sopl_risk
+  const [isFeeRiskDataFetched, setIsFeeRiskDataFetched] = useState(false); // New fetch status
+  const [isSoplRiskDataFetched, setIsSoplRiskDataFetched] = useState(false); // New fetch status
+  const [feeRiskLastUpdated, setFeeRiskLastUpdated] = useState(null); // New last updated
+  const [soplRiskLastUpdated, setSoplRiskLastUpdated] = useState(null); // New last updated
+
   const API_BASE_URL = 'https://vercel-dataflow.vercel.app/api';
   // const API_BASE_URL = 'http://127.0.0.1:8000/api';
 
@@ -281,6 +288,8 @@ export const DataProvider = ({ children }) => {
         { id: 'mvrvRiskData', setData: setMvrvRiskData, setLastUpdated: setMvrvRiskLastUpdated, setIsFetched: setIsMvrvRiskDataFetched, useDateCheck: true },
         { id: 'puellRiskData', setData: setPuellRiskData, setLastUpdated: setPuellRiskLastUpdated, setIsFetched: setIsPuellRiskDataFetched, useDateCheck: true },
         { id: 'minerCapThermoCapRiskData', setData: setMinerCapThermoCapRiskData, setLastUpdated: setMinerCapThermoCapRiskLastUpdated, setIsFetched: setIsMinerCapThermoCapRiskDataFetched, useDateCheck: true },
+        { id: 'feeRiskData', setData: setFeeRiskData, setLastUpdated: setFeeRiskLastUpdated, setIsFetched: setIsFeeRiskDataFetched, useDateCheck: true }, // New
+        { id: 'soplRiskData', setData: setSoplRiskData, setLastUpdated: setSoplRiskLastUpdated, setIsFetched: setIsSoplRiskDataFetched, useDateCheck: true }, // New
       ];
 
       for (const { id, setData, setLastUpdated, setIsFetched, useDateCheck } of cacheConfigs) {
@@ -324,7 +333,12 @@ export const DataProvider = ({ children }) => {
     };
 
     preloadData();
-  }, []);
+  }, [    isMvrvRiskDataFetched,
+    isPuellRiskDataFetched,
+    isMinerCapThermoCapRiskDataFetched,
+    isFeeRiskDataFetched, // New
+    isSoplRiskDataFetched, // New
+    ]);
 
   const fetchBtcData = useCallback(async () => {
     if (isBtcDataFetched) return;
@@ -1167,11 +1181,11 @@ export const DataProvider = ({ children }) => {
   }, [fetchIndicatorData]);
 
   const fetchRiskMetricsData = useCallback(async () => {
-    if (isMvrvRiskDataFetched && isPuellRiskDataFetched && isMinerCapThermoCapRiskDataFetched) return;
-  
+    if (isMvrvRiskDataFetched && isPuellRiskDataFetched && isMinerCapThermoCapRiskDataFetched && isFeeRiskDataFetched && isSoplRiskDataFetched) return;
+
     const currentDate = new Date().toISOString().split('T')[0];
     const currentTimestamp = Date.now();
-  
+
     const processRiskMetric = async (metric, cacheId, setData, setIsFetched, setLastUpdated) => {
       try {
         const cached = await getCachedData(cacheId);
@@ -1185,22 +1199,18 @@ export const DataProvider = ({ children }) => {
             return true;
           }
         }
-  
+
         const apiUrl = `${API_BASE_URL}/risk-metrics/?metric=${metric}&time__gte=2010-09-05`;
         const allData = await fetchAllPages(apiUrl);
-  
+
         if (!allData || allData.length === 0) {
           throw new Error(`No data returned for ${metric}`);
         }
-  
-        // Log allData for debugging
-        // console.debug(`Risk metric ${metric} raw data:`, allData);
-  
+
         const formattedData = allData
           .map((item) => {
-            // Validate item
             if (!item || !item.time || item.value == null) {
-              // console.warn(`Invalid item in ${metric} data:`, item);
+              console.warn(`Invalid item in ${metric} data:`, item);
               return null;
             }
             return {
@@ -1210,32 +1220,36 @@ export const DataProvider = ({ children }) => {
           })
           .filter((item) => item !== null)
           .sort((a, b) => new Date(a.time) - new Date(b.time));
-  
+
         if (formattedData.length === 0) {
           throw new Error(`No valid formatted data for ${metric} after processing`);
         }
-  
+
         setData(formattedData);
         setLastUpdated(formattedData[formattedData.length - 1].time);
         await cacheData(cacheId, formattedData, currentTimestamp);
         setIsFetched(true);
         return true;
       } catch (error) {
-        // console.error(`Error fetching ${metric} risk metric:`, error);
+        console.error(`Error fetching ${metric} risk metric:`, error);
         setIsFetched(false);
         return false;
       }
     };
-  
+
     await Promise.all([
       processRiskMetric('mvrv_zscore', 'mvrvRiskData', setMvrvRiskData, setIsMvrvRiskDataFetched, setMvrvRiskLastUpdated),
       processRiskMetric('puell_multiple', 'puellRiskData', setPuellRiskData, setIsPuellRiskDataFetched, setPuellRiskLastUpdated),
       processRiskMetric('miner_cap_thermo', 'minerCapThermoCapRiskData', setMinerCapThermoCapRiskData, setIsMinerCapThermoCapRiskDataFetched, setMinerCapThermoCapRiskLastUpdated),
+      processRiskMetric('fee_risk', 'feeRiskData', setFeeRiskData, setIsFeeRiskDataFetched, setFeeRiskLastUpdated), // New
+      processRiskMetric('sopl_risk', 'soplRiskData', setSoplRiskData, setIsSoplRiskDataFetched, setSoplRiskLastUpdated), // New
     ]);
   }, [
     isMvrvRiskDataFetched,
     isPuellRiskDataFetched,
     isMinerCapThermoCapRiskDataFetched,
+    isFeeRiskDataFetched, // New
+    isSoplRiskDataFetched, // New
   ]);
 
   const refreshRiskMetricsData = useCallback(async () => {
@@ -1244,16 +1258,22 @@ export const DataProvider = ({ children }) => {
         clearCache('mvrvRiskData'),
         clearCache('puellRiskData'),
         clearCache('minerCapThermoCapRiskData'),
+        clearCache('feeRiskData'), // New
+        clearCache('soplRiskData'), // New
       ]);
       setMvrvRiskData([]);
       setPuellRiskData([]);
       setMinerCapThermoCapRiskData([]);
+      setFeeRiskData([]); // New
+      setSoplRiskData([]); // New
       setIsMvrvRiskDataFetched(false);
       setIsPuellRiskDataFetched(false);
       setIsMinerCapThermoCapRiskDataFetched(false);
+      setIsFeeRiskDataFetched(false); // New
+      setIsSoplRiskDataFetched(false); // New
       await fetchRiskMetricsData();
     } catch (error) {
-      // console.error('Error refreshing risk metrics:', error);
+      console.error('Error refreshing risk metrics:', error);
     }
   }, [fetchRiskMetricsData]);
 
@@ -1354,6 +1374,12 @@ export const DataProvider = ({ children }) => {
       mvrvRiskLastUpdated,
       puellRiskLastUpdated,
       minerCapThermoCapRiskLastUpdated,
+      feeRiskData, // New
+      soplRiskData, // New
+      feeRiskLastUpdated, // New
+      soplRiskLastUpdated, // New
+      isFeeRiskDataFetched, // New
+      isSoplRiskDataFetched, // New
     }),
     [
       btcData,
@@ -1451,6 +1477,12 @@ export const DataProvider = ({ children }) => {
       mvrvRiskLastUpdated,
       puellRiskLastUpdated,
       minerCapThermoCapRiskLastUpdated,
+      feeRiskData, // New
+      soplRiskData, // New
+      feeRiskLastUpdated, // New
+      soplRiskLastUpdated, // New
+      isFeeRiskDataFetched, // New
+      isSoplRiskDataFetched, // New
     ]
   );
 

@@ -103,6 +103,8 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
   });
 
   const [datasets, setDatasets] = useState([]);
+  // Add a render key to force re-render of the Plot component
+  const [renderKey, setRenderKey] = useState(0);
 
   useEffect(() => {
     fetchBtcData();
@@ -231,13 +233,15 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
   }, [colors]);
 
   const resetChartView = () => {
+    // Update layout to reset axes
     setLayout(prevLayout => ({
       ...prevLayout,
-      xaxis: { autorange: true },
-      yaxis: { autorange: true },
-      yaxis2: { autorange: true },
+      xaxis: { ...prevLayout.xaxis, autorange: true },
+      yaxis: { ...prevLayout.yaxis, autorange: true },
+      yaxis2: { ...prevLayout.yaxis2, autorange: true },
     }));
-    setDatasets(prevDatasets => prevDatasets.map(dataset => ({ ...dataset, visible: true })));
+    // Force re-render by updating renderKey
+    setRenderKey(prevKey => prevKey + 1);
   };
 
   const latestExtension = chartData.length > 0 ? chartData[chartData.length - 1].Extension.toFixed(2) : 'N/A';
@@ -254,6 +258,7 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
       )}
       <div className="chart-container" style={{ height: isDashboard ? '100%' : 'calc(100% - 40px)', width: '100%', border: '2px solid #a9a9a9' }}>
         <Plot
+          key={renderKey} // Force re-render when renderKey changes
           ref={plotRef}
           data={datasets}
           layout={layout}
