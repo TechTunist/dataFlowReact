@@ -15,7 +15,7 @@ const fetchWithCache = async ({
   useDateCheck = true,
 }) => {
   if (typeof indexedDB === 'undefined') {
-    console.warn('IndexedDB is not supported in this environment.');
+    // console.warn('IndexedDB is not supported in this environment.');
     return false;
   }
 
@@ -24,57 +24,46 @@ const fetchWithCache = async ({
     const currentDate = new Date().toISOString().split('T')[0];
     const currentTimestamp = Date.now();
 
-    // console.log(`Checking IndexedDB for ${cacheId}...`);
-    const cachedStart = performance.now();
     const cached = await getCachedData(cacheId);
-    // console.log(`IndexedDB read for ${cacheId} took ${performance.now() - cachedStart}ms`);
 
     if (cached && cached.data) {
-      let cachedData = Array.isArray(cached.data) ? cached.data : [cached.data]; // Handle single object or array
+      let cachedData = Array.isArray(cached.data) ? cached.data : [cached.data];
       if (cachedData.length > 0) {
-        // Sort in ascending order by time to make cachedData[0] the earliest and cachedData[length - 1] the latest
         cachedData = [...cachedData].sort((a, b) => {
           const timeA = new Date(a.time).getTime();
           const timeB = new Date(b.time).getTime();
-          return timeA - timeB; // Ascending order
+          return timeA - timeB;
         });
 
-        // Debug sorting
-        // console.log(`Sorted cachedData for ${cacheId}:`, cachedData.map(item => ({ time: item.time, timestamp: item.timestamp })));
-
-        const firstRecord = cachedData[0]; // Earliest record
-        const lastRecord = cachedData[cachedData.length - 1]; // Latest record
-        let firstCachedDate = firstRecord.time; // Earliest date
-        let latestCachedDate = lastRecord.time; // Latest date
+        const firstRecord = cachedData[0];
+        const lastRecord = cachedData[cachedData.length - 1];
+        let firstCachedDate = firstRecord.time;
+        let latestCachedDate = lastRecord.time;
 
         if (!latestCachedDate && lastRecord.timestamp) {
           latestCachedDate = new Date(parseInt(lastRecord.timestamp, 10) * 1000).toISOString().split('T')[0];
-          console.warn(`Missing time field in last record for ${cacheId}, computed from timestamp: ${latestCachedDate}`);
+          // console.warn(`Missing time field in last record for ${cacheId}, computed from timestamp: ${latestCachedDate}`);
         }
         if (!firstCachedDate && firstRecord.timestamp) {
           firstCachedDate = new Date(parseInt(firstRecord.timestamp, 10) * 1000).toISOString().split('T')[0];
-          console.warn(`Missing time field in first record for ${cacheId}, computed from timestamp: ${firstCachedDate}`);
+          // console.warn(`Missing time field in first record for ${cacheId}, computed from timestamp: ${firstCachedDate}`);
         }
 
         let shouldReuseCache = false;
         if (useDateCheck) {
-          // console.log(`Using date check: latestCachedDate=${latestCachedDate}, currentDate=${currentDate}`);
-          // console.log(`Using date check: firstCachedDate=${firstCachedDate}, currentDate=${currentDate}`);
           if (!latestCachedDate) {
-            console.warn(`latestCachedDate is undefined for ${cacheId}, treating cache as stale`);
+            // console.warn(`latestCachedDate is undefined for ${cacheId}, treating cache as stale`);
             shouldReuseCache = false;
           } else {
             shouldReuseCache = latestCachedDate >= currentDate;
           }
         } else {
           const timeSinceLastFetch = currentTimestamp - cached.timestamp;
-          // console.log(`Using timestamp check: timeSinceLastFetch=${timeSinceLastFetch}ms, cacheDuration=${cacheDuration}ms`);
           shouldReuseCache = timeSinceLastFetch < cacheDuration;
         }
 
         if (shouldReuseCache) {
-          // console.log(`Reusing cached data for ${cacheId}`);
-          setData(Array.isArray(cached.data) ? cachedData : cached.data); // Set single object or array
+          setData(Array.isArray(cached.data) ? cachedData : cached.data);
           if (setLastUpdated) {
             setLastUpdated(latestCachedDate);
           }
@@ -83,20 +72,17 @@ const fetchWithCache = async ({
       }
     }
 
-    // console.log(`No cached data or stale cache for ${cacheId}, fetching from API...`);
     const maxRetries = 2;
     let attempts = 0;
     let response;
     while (attempts < maxRetries) {
       try {
-        const fetchStart = performance.now();
         response = await fetch(apiUrl);
-        // console.log(`Fetch for ${apiUrl} took ${performance.now() - fetchStart}ms`);
         if (response.ok) break;
         throw new Error(`HTTP error! Status: ${response.status}`);
       } catch (err) {
         attempts++;
-        console.warn(`Attempt ${attempts} failed for ${apiUrl}:`, err);
+        // console.warn(`Attempt ${attempts} failed for ${apiUrl}:`, err);
         if (attempts === maxRetries) throw err;
         await new Promise(resolve => setTimeout(resolve, 500));
       }
@@ -111,11 +97,9 @@ const fetchWithCache = async ({
 
     if (latestFetchedDate && cached && cached.data) {
       const cachedData = Array.isArray(cached.data) ? cached.data : [cached.data];
-      // Sort cachedData in ascending order for consistency
       const sortedCachedData = [...cachedData].sort((a, b) => new Date(a.time) - new Date(b.time));
       const latestCachedDate = sortedCachedData[sortedCachedData.length - 1]?.time;
       if (latestCachedDate && latestFetchedDate <= latestCachedDate) {
-        // console.log(`Fetched data is not newer than cached data for ${cacheId}, reusing cache`);
         setData(Array.isArray(cached.data) ? cachedData : cached.data);
         if (setLastUpdated) {
           setLastUpdated(latestCachedDate);
@@ -125,7 +109,6 @@ const fetchWithCache = async ({
       }
     }
 
-    // console.log(`Updating cache with new data for ${cacheId}`);
     setData(formattedData);
     if (latestFetchedDate && setLastUpdated) {
       setLastUpdated(latestFetchedDate);
@@ -133,7 +116,7 @@ const fetchWithCache = async ({
     await cacheData(cacheId, formattedData, currentTimestamp);
     return true;
   } catch (error) {
-    console.error(`Error fetching or caching data*^C for ${cacheId}:`, error);
+    // console.error(`Error fetching or caching data for ${cacheId}:`, error);
     setIsFetched(false);
     return false;
   }
@@ -155,15 +138,46 @@ const refreshData = async ({
   fetchFunction,
 }) => {
   try {
-    // console.log(`Refreshing data for ${cacheId}...`);
     await clearCache(cacheId);
     setIsFetched(false);
     setData([]);
     await fetchFunction();
   } catch (error) {
-    console.error(`Error refreshing data for ${cacheId}:`, error);
+    // console.error(`Error refreshing data for ${cacheId}:`, error);
   }
 };
+
+async function fetchAllPages(url) {
+  let results = [];
+  let nextUrl = url;
+  while (nextUrl) {
+    try {
+      const response = await fetch(nextUrl, { signal: AbortSignal.timeout(8000) });
+      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+      const data = await response.json();
+      // Handle both flat array and paginated responses
+      if (Array.isArray(data)) {
+        // Flat array response (e.g., /risk-metrics/)
+        results = results.concat(data);
+        nextUrl = null; // No pagination for flat arrays
+      } else if (data.results && Array.isArray(data.results)) {
+        // Paginated response (e.g., /onchain-metrics/)
+        const validResults = data.results.filter(item => item && typeof item === 'object');
+        results = results.concat(validResults);
+        nextUrl = data.next;
+      } else {
+        // console.error(`Invalid API response: unexpected structure for ${nextUrl}`, data);
+        throw new Error('Invalid API response structure');
+      }
+      // Log the final results for debugging
+      // console.debug(`Fetched ${results.length} items from ${url}`);
+    } catch (err) {
+      // console.error(`Error fetching page ${nextUrl}:`, err);
+      throw err;
+    }
+  }
+  return results;
+}
 
 export const DataProvider = ({ children }) => {
   const [preloadComplete, setPreloadComplete] = useState(false);
@@ -228,28 +242,17 @@ export const DataProvider = ({ children }) => {
   const [isOnchainMetricsDataFetched, setIsOnchainMetricsDataFetched] = useState(false);
   const [onchainMetricsLastUpdated, setOnchainMetricsLastUpdated] = useState(null);
   const [onchainFetchError, setOnchainFetchError] = useState(null);
-
+  const [mvrvRiskData, setMvrvRiskData] = useState([]);
+  const [puellRiskData, setPuellRiskData] = useState([]);
+  const [minerCapThermoCapRiskData, setMinerCapThermoCapRiskData] = useState([]);
+  const [isMvrvRiskDataFetched, setIsMvrvRiskDataFetched] = useState(false);
+  const [isPuellRiskDataFetched, setIsPuellRiskDataFetched] = useState(false);
+  const [isMinerCapThermoCapRiskDataFetched, setIsMinerCapThermoCapRiskDataFetched] = useState(false);
+  const [mvrvRiskLastUpdated, setMvrvRiskLastUpdated] = useState(null);
+  const [puellRiskLastUpdated, setPuellRiskLastUpdated] = useState(null);
+  const [minerCapThermoCapRiskLastUpdated, setMinerCapThermoCapRiskLastUpdated] = useState(null);
   const [capRealData, setCapRealData] = useState([]);
   const [revAllTimeData, setRevAllTimeData] = useState([]);
-
-  const [riskCache, setRiskCache] = useState({
-    mvrv: [],
-    puell: [],
-    minerCapThermoCap: [],
-  });
-
-  const fetchMetricsForRisk = useCallback(async () => {
-    try {
-      const [capReal, revAllTime] = await Promise.all([
-        fetchMetricData('CapRealUSD', '2020-01-01'),
-        fetchMetricData('RevAllTimeUSD', '2020-01-01'),
-      ]);
-      setCapRealData(capReal);
-      setRevAllTimeData(revAllTime);
-    } catch (error) {
-      console.error('Error fetching metrics for risk:', error);
-    }
-  }, []);
 
   const API_BASE_URL = 'https://vercel-dataflow.vercel.app/api';
   // const API_BASE_URL = 'http://127.0.0.1:8000/api';
@@ -273,25 +276,15 @@ export const DataProvider = ({ children }) => {
         { id: 'txCountCombinedData', setData: setTxCountCombinedData, setLastUpdated: setTxCountCombinedLastUpdated, setIsFetched: setIsTxCountCombinedDataFetched, useDateCheck: true },
         { id: 'txMvrvData', setData: setTxMvrvData, setLastUpdated: setTxMvrvLastUpdated, setIsFetched: setIsTxMvrvDataFetched, useDateCheck: true },
         { id: 'latestFearAndGreed', setData: setLatestFearAndGreed, setLastUpdated: setLatestFearAndGreedLastUpdated, setIsFetched: setIsLatestFearAndGreedFetched, useDateCheck: true },
-        {
-          id: 'altcoinSeasonData',
-          setData: setAltcoinSeasonData,
-          setLastUpdated: setAltcoinSeasonLastUpdated,
-          setIsFetched: setIsAltcoinSeasonDataFetched,
-          useDateCheck: true
-        },
-        {
-          id: 'onchainMetricsData',
-          setData: setOnchainMetricsData,
-          setLastUpdated: setOnchainMetricsLastUpdated,
-          setIsFetched: setIsOnchainMetricsDataFetched,
-          useDateCheck: true,
-        },
+        { id: 'altcoinSeasonData', setData: setAltcoinSeasonData, setLastUpdated: setAltcoinSeasonLastUpdated, setIsFetched: setIsAltcoinSeasonDataFetched, useDateCheck: true },
+        { id: 'onchainMetricsData', setData: setOnchainMetricsData, setLastUpdated: setOnchainMetricsLastUpdated, setIsFetched: setIsOnchainMetricsDataFetched, useDateCheck: true },
+        { id: 'mvrvRiskData', setData: setMvrvRiskData, setLastUpdated: setMvrvRiskLastUpdated, setIsFetched: setIsMvrvRiskDataFetched, useDateCheck: true },
+        { id: 'puellRiskData', setData: setPuellRiskData, setLastUpdated: setPuellRiskLastUpdated, setIsFetched: setIsPuellRiskDataFetched, useDateCheck: true },
+        { id: 'minerCapThermoCapRiskData', setData: setMinerCapThermoCapRiskData, setLastUpdated: setMinerCapThermoCapRiskLastUpdated, setIsFetched: setIsMinerCapThermoCapRiskDataFetched, useDateCheck: true },
       ];
 
       for (const { id, setData, setLastUpdated, setIsFetched, useDateCheck } of cacheConfigs) {
         try {
-          // console.log(`Preloading data for ${id}`);
           const cached = await getCachedData(id);
           if (cached && cached.data.length > 0) {
             const { data: cachedData, timestamp } = cached;
@@ -309,27 +302,25 @@ export const DataProvider = ({ children }) => {
             }
 
             if (shouldReuseCache) {
-              // console.log(`Reusing cached data for ${id}: ${cachedData.length} records`);
               setData(sortedCachedData);
               setLastUpdated(latestCachedDate);
               setIsFetched(true);
             } else if (id === 'onchainMetricsData') {
-              // console.log(`Fetching address metrics during preload`);
               await fetchOnchainMetricsData();
             }
           } else if (id === 'onchainMetricsData') {
-            // console.log(`No cache found, fetching address metrics`);
             await fetchOnchainMetricsData();
           }
         } catch (error) {
-          // console.error(`Error preloading data for ${id}:`, error);
           if (id === 'onchainMetricsData') {
             setOnchainFetchError(error.message);
           }
         }
       }
       setPreloadComplete(true);
-      // console.log('Preload complete');
+      if (!isMvrvRiskDataFetched && !isPuellRiskDataFetched && !isMinerCapThermoCapRiskDataFetched) {
+        await fetchRiskMetricsData();
+      }
     };
 
     preloadData();
@@ -375,9 +366,9 @@ export const DataProvider = ({ children }) => {
     }
     await fetchWithCache({
       cacheId: 'latestFearAndGreed',
-      apiUrl: `${API_BASE_URL}/fear-and-greed-binary-latest/`, // Updated endpoint
+      apiUrl: `${API_BASE_URL}/fear-and-greed-binary-latest/`,
       formatData: (data) => ({
-        value: parseInt(data.value), // Parse string to number
+        value: parseInt(data.value),
         value_classification: data.value_classification,
         timestamp: data.timestamp,
         time: new Date(data.timestamp * 1000).toISOString().split('T')[0],
@@ -388,8 +379,7 @@ export const DataProvider = ({ children }) => {
       useDateCheck: true,
     });
   }, [isLatestFearAndGreedFetched, preloadComplete]);
-  
-  // Add refresh function
+
   const refreshLatestFearAndGreed = useCallback(async () => {
     await refreshData({
       cacheId: 'latestFearAndGreed',
@@ -399,145 +389,108 @@ export const DataProvider = ({ children }) => {
     });
   }, [fetchLatestFearAndGreed]);
 
-  async function fetchAllPages(url) {
-    let results = [];
-    let nextUrl = url;
-    while (nextUrl) {
-      try {
-        const response = await fetch(nextUrl, { signal: AbortSignal.timeout(8000) });
-        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-        const data = await response.json();
-        results = results.concat(data.results);
-        nextUrl = data.next; // null if no more pages
-      } catch (err) {
-        console.error('Error fetching page:', err);
-        throw err;
+  const fetchOnchainMetricsData = useCallback(async () => {
+    if (isOnchainMetricsDataFetched) return;
+    const cacheId = 'onchainMetricsData';
+    const currentDate = new Date().toISOString().split('T')[0];
+    const currentTimestamp = Date.now();
+
+    try {
+      setIsOnchainMetricsDataFetched(true);
+      setOnchainFetchError(null);
+
+      const cached = await getCachedData(cacheId);
+      if (cached && cached.data.length > 0) {
+        const sortedCachedData = [...cached.data].sort((a, b) => new Date(a.time) - new Date(b.time));
+        const latestCachedDate = sortedCachedData[sortedCachedData.length - 1].time;
+        if (latestCachedDate >= currentDate) {
+          setOnchainMetricsData(sortedCachedData);
+          setOnchainMetricsLastUpdated(latestCachedDate);
+          return;
+        }
       }
+
+      const apiUrl = `${API_BASE_URL}/onchain-metrics/?metric=PriceUSD&metric=IssContUSD&start_time=2010-01-01`;
+      const allData = await fetchAllPages(apiUrl);
+
+      if (!allData || allData.length === 0) {
+        throw new Error('No onchain metrics data returned');
+      }
+
+      const formattedData = allData.map((item) => ({
+        time: item.time,
+        metric: item.metric,
+        value: item.value !== null ? parseFloat(item.value) : null,
+        asset: item.asset,
+      }));
+
+      setOnchainMetricsData(formattedData);
+      setOnchainMetricsLastUpdated(formattedData[formattedData.length - 1].time);
+      await cacheData(cacheId, formattedData, currentTimestamp);
+    } catch (error) {
+      // console.error('Error fetching onchain metrics:', error);
+      setIsOnchainMetricsDataFetched(false);
+      setOnchainFetchError(error.message);
     }
-    return results;
-  };
+  }, [isOnchainMetricsDataFetched]);
 
-  const fetchOnchainMetricsData = useCallback(
-    async () => {
-      if (isOnchainMetricsDataFetched) {
-        // console.log('Onchain metrics already fetched');
-        return;
-      }
-  
-      const cacheId = 'onchainMetricsData';
-      const currentDate = new Date().toISOString().split('T')[0];
-      const currentTimestamp = Date.now();
-  
-      try {
-        setIsOnchainMetricsDataFetched(true);
-        setOnchainFetchError(null);
-  
-        const cached = await getCachedData(cacheId);
-        if (cached && cached.data.length > 0) {
-          const sortedCachedData = [...cached.data].sort((a, b) => new Date(a.time) - new Date(b.time));
-          const latestCachedDate = sortedCachedData[sortedCachedData.length - 1].time;
-          if (latestCachedDate >= currentDate) {
-            setOnchainMetricsData(sortedCachedData);
-            setOnchainMetricsLastUpdated(latestCachedDate);
-            return;
-          }
-        }
-  
-        // console.log('Fetching all pages of onchain metrics...');
-        const apiUrl = `${API_BASE_URL}/onchain-metrics/?metric=PriceUSD&metric=IssContUSD&start_time=2010-01-01`;
-        const allData = await fetchAllPages(apiUrl);
-  
-        if (!allData || allData.length === 0) {
-          throw new Error('No onchain metrics data returned');
-        }
-  
-        const formattedData = allData.map((item) => ({
-          time: item.time, // Expecting 'YYYY-MM-DD'
-          metric: item.metric,
-          value: item.value !== null ? parseFloat(item.value) : null,
-          asset: item.asset,
-        }));
-  
-        // console.log(`Fetched ${formattedData.length} records:`, formattedData.slice(0, 5));
-        setOnchainMetricsData(formattedData);
-        setOnchainMetricsLastUpdated(formattedData[formattedData.length - 1].time);
-        await cacheData(cacheId, formattedData, currentTimestamp);
-      } catch (error) {
-        console.error('Error fetching onchain metrics:', error);
-        setIsOnchainMetricsDataFetched(false);
-        setOnchainFetchError(error.message);
-      }
-    },
-    [isOnchainMetricsDataFetched, API_BASE_URL]
-  );
-  
-  const refreshOnchainMetricsData = useCallback(
-    async () => {
-      // console.log('Refreshing onchain metrics data');
-      try {
-        await clearCache('onchainMetricsData');
-        setOnchainMetricsData([]);
-        setIsOnchainMetricsDataFetched(false);
-        await fetchOnchainMetricsData();
-      } catch (error) {
-        console.error('Error refreshing onchain metrics:', error);
-        setOnchainFetchError(error.message);
-      }
-    },
-    [fetchOnchainMetricsData]
-  );
+  const refreshOnchainMetricsData = useCallback(async () => {
+    try {
+      await clearCache('onchainMetricsData');
+      setOnchainMetricsData([]);
+      setIsOnchainMetricsDataFetched(false);
+      await fetchOnchainMetricsData();
+    } catch (error) {
+      // console.error('Error refreshing onchain metrics:', error);
+      setOnchainFetchError(error.message);
+    }
+  }, [fetchOnchainMetricsData]);
 
-  const fetchAddressMetricsData = useCallback(
-    async () => {
-      const cacheId = 'addressMetricsData';
-      const currentDate = new Date().toISOString().split('T')[0];
-      const currentTimestamp = Date.now();
-  
-      try {
-        setIsOnchainMetricsDataFetched(true); // Reuse the existing fetched state for simplicity
-        setOnchainFetchError(null);
-  
-        const cached = await getCachedData(cacheId);
-        if (cached && cached.data.length > 0) {
-          const sortedCachedData = [...cached.data].sort((a, b) => new Date(a.time) - new Date(b.time));
-          const latestCachedDate = sortedCachedData[sortedCachedData.length - 1].time;
-          if (latestCachedDate >= currentDate) {
-            setOnchainMetricsData(sortedCachedData); // Reuse onchainMetricsData state for address data
-            setOnchainMetricsLastUpdated(latestCachedDate);
-            return;
-          }
+  const fetchAddressMetricsData = useCallback(async () => {
+    const cacheId = 'addressMetricsData';
+    const currentDate = new Date().toISOString().split('T')[0];
+    const currentTimestamp = Date.now();
+
+    try {
+      setIsOnchainMetricsDataFetched(true);
+      setOnchainFetchError(null);
+
+      const cached = await getCachedData(cacheId);
+      if (cached && cached.data.length > 0) {
+        const sortedCachedData = [...cached.data].sort((a, b) => new Date(a.time) - new Date(b.time));
+        const latestCachedDate = sortedCachedData[sortedCachedData.length - 1].time;
+        if (latestCachedDate >= currentDate) {
+          setOnchainMetricsData(sortedCachedData);
+          setOnchainMetricsLastUpdated(latestCachedDate);
+          return;
         }
-  
-        console.log('Fetching address metrics data...');
-        const apiUrl = `${API_BASE_URL}/onchain-address-metrics/?start_time=2010-01-01`;
-        const allData = await fetchAllPages(apiUrl);
-  
-        if (!allData || allData.length === 0) {
-          throw new Error('No address metrics data returned');
-        }
-  
-        // Filter and format only address metrics
-        const formattedData = allData.map((item) => ({
-          time: item.time,
-          ...Object.fromEntries(
-            Object.entries(item)
-              .filter(([key]) => ADDRESS_METRICS.includes(key)) // Use backend-defined ADDRESS_METRICS
-              .map(([key, value]) => [key, value !== null ? parseFloat(value) : null])
-          ),
-        }));
-  
-        console.log('Formatted addressMetricsData:', formattedData.slice(0, 5));
-        setOnchainMetricsData(formattedData); // Reuse onchainMetricsData state for address data
-        setOnchainMetricsLastUpdated(formattedData[formattedData.length - 1].time);
-        await cacheData(cacheId, formattedData, currentTimestamp);
-      } catch (error) {
-        console.error('Error fetching address metrics:', error);
-        setIsOnchainMetricsDataFetched(false);
-        setOnchainFetchError(error.message);
       }
-    },
-    [API_BASE_URL] // No need for addressMetrics as a dependency since it's backend-defined
-  );
+
+      const apiUrl = `${API_BASE_URL}/onchain-address-metrics/?start_time=2010-01-01`;
+      const allData = await fetchAllPages(apiUrl);
+
+      if (!allData || allData.length === 0) {
+        throw new Error('No address metrics data returned');
+      }
+
+      const formattedData = allData.map((item) => ({
+        time: item.time,
+        ...Object.fromEntries(
+          Object.entries(item)
+            .filter(([key]) => ADDRESS_METRICS.includes(key))
+            .map(([key, value]) => [key, value !== null ? parseFloat(value) : null])
+        ),
+      }));
+
+      setOnchainMetricsData(formattedData);
+      setOnchainMetricsLastUpdated(formattedData[formattedData.length - 1].time);
+      await cacheData(cacheId, formattedData, currentTimestamp);
+    } catch (error) {
+      // console.error('Error fetching address metrics:', error);
+      setIsOnchainMetricsDataFetched(false);
+      setOnchainFetchError(error.message);
+    }
+  }, []);
 
   const fetchFedBalanceData = useCallback(async () => {
     if (isFedBalanceDataFetched) return;
@@ -666,22 +619,18 @@ export const DataProvider = ({ children }) => {
   const fetchFearAndGreedData = useCallback(async () => {
     if (isFearAndGreedDataFetched) return;
     if (!preloadComplete) {
-      // console.log('Waiting for preload to complete before fetching Fear and Greed data...');
       await new Promise(resolve => setTimeout(resolve, 100));
-      if (isFearAndGreedDataFetched) {
-        // console.log('Fear and Greed data already fetched during preload, skipping fetch');
-        return;
-      }
+      if (isFearAndGreedDataFetched) return;
     }
     await fetchWithCache({
       cacheId: 'fearAndGreedData',
       apiUrl: `${API_BASE_URL}/fear-and-greed-binary-json/`,
       formatData: (data) =>
         data.map(item => ({
-          value: item.value.toString(), // Convert number to string
-          value_classification: item.category, // Map category to value_classification
-          timestamp: item.date.toString(), // Convert integer date to string
-          time: new Date(item.date * 1000).toISOString().split('T')[0], // Derive YYYY-MM-DD from date
+          value: item.value.toString(),
+          value_classification: item.category,
+          timestamp: item.date.toString(),
+          time: new Date(item.date * 1000).toISOString().split('T')[0],
         })),
       setData: setFearAndGreedData,
       setLastUpdated: setFearAndGreedLastUpdated,
@@ -1040,7 +989,7 @@ export const DataProvider = ({ children }) => {
         altcoin_count: parseInt(data.altcoin_count, 10),
         altcoins_outperforming: parseInt(data.altcoins_outperforming, 10),
         season: data.season,
-        time: data.end_date
+        time: data.end_date,
       }),
       setData: setAltcoinSeasonData,
       setLastUpdated: setAltcoinSeasonLastUpdated,
@@ -1092,7 +1041,7 @@ export const DataProvider = ({ children }) => {
       cacheDuration: 7 * 24 * 60 * 60 * 1000,
     });
     if (!success) {
-      console.error(`Failed to fetch series ${seriesId}`);
+      // console.error(`Failed to fetch series ${seriesId}`);
     }
   }, [fredSeriesData, preloadComplete]);
 
@@ -1131,7 +1080,7 @@ export const DataProvider = ({ children }) => {
           }
         }
       } catch (error) {
-        console.error('Error accessing IndexedDB for indicator data:', error);
+        // console.error('Error accessing IndexedDB for indicator data:', error);
       }
     }
 
@@ -1200,7 +1149,7 @@ export const DataProvider = ({ children }) => {
         await cacheData(cacheId, combinedData, Date.now());
       }
     } catch (error) {
-      console.error('Error fetching indicator data:', error);
+      // console.error('Error fetching indicator data:', error);
       setIsIndicatorDataFetched((prev) => ({ ...prev, [indicatorId]: false }));
     }
   }, [isIndicatorDataFetched, preloadComplete]);
@@ -1213,57 +1162,101 @@ export const DataProvider = ({ children }) => {
       setIsIndicatorDataFetched((prev) => ({ ...prev, [indicatorId]: false }));
       await fetchIndicatorData(indicatorId);
     } catch (error) {
-      console.error('Error refreshing indicator data:', error);
+      // console.error('Error refreshing indicator data:', error);
     }
   }, [fetchIndicatorData]);
 
-  const fetchMetricData = async (metric, startTime = '2020-01-01') => {
-    const cacheId = `metricData_${metric}`;
+  const fetchRiskMetricsData = useCallback(async () => {
+    if (isMvrvRiskDataFetched && isPuellRiskDataFetched && isMinerCapThermoCapRiskDataFetched) return;
+  
+    const currentDate = new Date().toISOString().split('T')[0];
     const currentTimestamp = Date.now();
   
-    try {
-      // Check if cached data exists and is up-to-date
-      const cached = await getCachedData(cacheId);
-      if (cached && cached.data.length > 0) {
-        const sortedCachedData = [...cached.data].sort((a, b) => new Date(a.time) - new Date(b.time));
-        const latestCachedDate = sortedCachedData[sortedCachedData.length - 1].time;
-        const currentDate = new Date().toISOString().split('T')[0];
-        if (latestCachedDate >= currentDate) {
-          return sortedCachedData;
+    const processRiskMetric = async (metric, cacheId, setData, setIsFetched, setLastUpdated) => {
+      try {
+        const cached = await getCachedData(cacheId);
+        if (cached && cached.data.length > 0) {
+          const sortedCachedData = [...cached.data].sort((a, b) => new Date(a.time) - new Date(b.time));
+          const latestCachedDate = sortedCachedData[sortedCachedData.length - 1].time;
+          if (latestCachedDate >= currentDate) {
+            setData(sortedCachedData);
+            setLastUpdated(latestCachedDate);
+            setIsFetched(true);
+            return true;
+          }
         }
+  
+        const apiUrl = `${API_BASE_URL}/risk-metrics/?metric=${metric}&time__gte=2010-09-05`;
+        const allData = await fetchAllPages(apiUrl);
+  
+        if (!allData || allData.length === 0) {
+          throw new Error(`No data returned for ${metric}`);
+        }
+  
+        // Log allData for debugging
+        // console.debug(`Risk metric ${metric} raw data:`, allData);
+  
+        const formattedData = allData
+          .map((item) => {
+            // Validate item
+            if (!item || !item.time || item.value == null) {
+              // console.warn(`Invalid item in ${metric} data:`, item);
+              return null;
+            }
+            return {
+              time: item.time,
+              Risk: parseFloat(item.value),
+            };
+          })
+          .filter((item) => item !== null)
+          .sort((a, b) => new Date(a.time) - new Date(b.time));
+  
+        if (formattedData.length === 0) {
+          throw new Error(`No valid formatted data for ${metric} after processing`);
+        }
+  
+        setData(formattedData);
+        setLastUpdated(formattedData[formattedData.length - 1].time);
+        await cacheData(cacheId, formattedData, currentTimestamp);
+        setIsFetched(true);
+        return true;
+      } catch (error) {
+        // console.error(`Error fetching ${metric} risk metric:`, error);
+        setIsFetched(false);
+        return false;
       }
+    };
   
-      // Fetch data with pagination
-      let allData = [];
-      let page = 1;
-      let hasNext = true;
-      while (hasNext) {
-        const apiUrl = `${API_BASE_URL}/onchain-metrics/?metric=${metric}&time__gte=${startTime}&page=${page}`;
-        const response = await fetch(apiUrl);
-        const data = await response.json();
-        allData = allData.concat(data.results);
-        hasNext = !!data.next;
-        page += 1;
-      }
-  
-      // Format the data
-      const formattedData = allData.map(item => ({
-        time: item.time,
-        metric: item.metric,
-        value: parseFloat(item.value),
-        asset: item.asset,
-      }));
-  
-      // Cache the data
-      await cacheData(cacheId, formattedData, currentTimestamp);
-      return formattedData;
-    } catch (error) {
-      console.error(`Error fetching data for ${metric}:`, error);
-      return [];
-    }
-  };
+    await Promise.all([
+      processRiskMetric('mvrv_zscore', 'mvrvRiskData', setMvrvRiskData, setIsMvrvRiskDataFetched, setMvrvRiskLastUpdated),
+      processRiskMetric('puell_multiple', 'puellRiskData', setPuellRiskData, setIsPuellRiskDataFetched, setPuellRiskLastUpdated),
+      processRiskMetric('miner_cap_thermo', 'minerCapThermoCapRiskData', setMinerCapThermoCapRiskData, setIsMinerCapThermoCapRiskDataFetched, setMinerCapThermoCapRiskLastUpdated),
+    ]);
+  }, [
+    isMvrvRiskDataFetched,
+    isPuellRiskDataFetched,
+    isMinerCapThermoCapRiskDataFetched,
+  ]);
 
-  // Memoize the context value to prevent unnecessary updates
+  const refreshRiskMetricsData = useCallback(async () => {
+    try {
+      await Promise.all([
+        clearCache('mvrvRiskData'),
+        clearCache('puellRiskData'),
+        clearCache('minerCapThermoCapRiskData'),
+      ]);
+      setMvrvRiskData([]);
+      setPuellRiskData([]);
+      setMinerCapThermoCapRiskData([]);
+      setIsMvrvRiskDataFetched(false);
+      setIsPuellRiskDataFetched(false);
+      setIsMinerCapThermoCapRiskDataFetched(false);
+      await fetchRiskMetricsData();
+    } catch (error) {
+      // console.error('Error refreshing risk metrics:', error);
+    }
+  }, [fetchRiskMetricsData]);
+
   const contextValue = useMemo(
     () => ({
       btcData,
@@ -1353,7 +1346,14 @@ export const DataProvider = ({ children }) => {
       fetchAddressMetricsData,
       capRealData,
       revAllTimeData,
-      fetchMetricsForRisk,
+      mvrvRiskData,
+      puellRiskData,
+      minerCapThermoCapRiskData,
+      fetchRiskMetricsData,
+      refreshRiskMetricsData,
+      mvrvRiskLastUpdated,
+      puellRiskLastUpdated,
+      minerCapThermoCapRiskLastUpdated,
     }),
     [
       btcData,
@@ -1443,7 +1443,14 @@ export const DataProvider = ({ children }) => {
       fetchAddressMetricsData,
       capRealData,
       revAllTimeData,
-      fetchMetricsForRisk,
+      mvrvRiskData,
+      puellRiskData,
+      minerCapThermoCapRiskData,
+      fetchRiskMetricsData,
+      refreshRiskMetricsData,
+      mvrvRiskLastUpdated,
+      puellRiskLastUpdated,
+      minerCapThermoCapRiskLastUpdated,
     ]
   );
 

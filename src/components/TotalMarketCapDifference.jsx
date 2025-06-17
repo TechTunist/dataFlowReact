@@ -123,7 +123,7 @@ const MarketCapDifference = ({ isDashboard = false }) => {
       lineStyle: 1,
       lastValueVisible: false,
       priceLineVisible: false,
-    }).setData(differenceData.map(({ time }) => ({ time, value: 100 })));
+    }).setData(differenceData.map(({ time }) => ({ time, value: 0 })));
 
     // Configure price scales
     chart.priceScale('left').applyOptions({
