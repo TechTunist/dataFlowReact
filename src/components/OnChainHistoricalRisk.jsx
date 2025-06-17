@@ -1,5 +1,4 @@
-// src/components/OnChainHistoricalRisk.js
-import React, { useRef, useEffect, useState, useContext } from 'react';
+import React, { useRef, useEffect, useState, useContext, useMemo } from 'react';
 import { createChart } from 'lightweight-charts';
 import { tokens } from '../theme';
 import { useTheme, Select, MenuItem, FormControl, InputLabel, Box, Typography } from '@mui/material';
@@ -24,9 +23,8 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
   const [selectedSmoothing, setSelectedSmoothing] = useState('none');
   const [dataError, setDataError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [tooltipData, setTooltipData] = useState(null); // New state for tooltip
+  const [tooltipData, setTooltipData] = useState(null);
 
-  // Access DataContext
   const {
     btcData,
     mvrvRiskData,
@@ -48,7 +46,6 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
     fetchBtcData,
   } = useContext(DataContext);
 
-  // Metric labels and descriptions for UI
   const metricLabels = {
     mvrv: 'MVRV Z-Score',
     puell: 'Puell Multiple',
@@ -65,7 +62,6 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
     sopl: 'The SOPL (Spent Output Profit/Loss) Risk measures the profit or loss of spent outputs. High positive values indicate profit-taking (high risk), while negative values suggest capitulation (low risk).',
   };
 
-  // Map selected metric to last updated time and fetch status
   const lastUpdatedMap = {
     mvrv: mvrvRiskLastUpdated,
     puell: puellRiskLastUpdated,
@@ -83,8 +79,11 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
   const lastUpdatedTime = lastUpdatedMap[selectedMetric];
   const isMetricFetched = isFetchedMap[selectedMetric];
 
-  // Calculate chart data with optional smoothing
-  const chartData = (() => {
+  // Normalize time to 'YYYY-MM-DD'
+  const normalizeTime = (time) => new Date(time).toISOString().split('T')[0];
+
+  // Prepare price and risk data with alignment
+  const prepareData = useMemo(() => {
     const metricDataMap = {
       mvrv: mvrvRiskData,
       puell: puellRiskData,
@@ -92,63 +91,67 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
       fee: feeRiskData,
       sopl: soplRiskData,
     };
-    let rawData = metricDataMap[selectedMetric] || [];
+    const rawRiskData = metricDataMap[selectedMetric] || [];
 
-    // Apply moving average based on selected smoothing
-    if (selectedSmoothing !== 'none' && rawData.length > 0) {
-      const windowSize = selectedSmoothing === '7day' ? 7 : 28;
-      const smoothedData = [];
-      let window = [];
+    // Normalize and sort price and risk data
+    const priceData = btcData
+      .map((d) => ({
+        time: normalizeTime(d.time),
+        value: parseFloat(d.value) || 0,
+      }))
+      .sort((a, b) => a.time.localeCompare(b.time));
 
-      rawData.forEach((item, index) => {
-        window.push(item.Risk);
-        if (index >= windowSize - 1 && window.length === windowSize) {
-          const avg = window.reduce((sum, val) => sum + val, 0) / windowSize;
-          smoothedData.push({ time: item.time, Risk: avg });
-          window.shift(); // Remove the oldest value
-        } else if (index < windowSize - 1) {
-          // For initial points, use available data
-          if (index === rawData.length - 1) {
-            const avg = window.reduce((sum, val) => sum + val, 0) / window.length;
-            smoothedData.push({ time: item.time, Risk: avg });
-          }
-        }
-      });
+    let riskData = rawRiskData
+      .map((d) => ({
+        time: normalizeTime(d.time),
+        value: parseFloat(d.Risk) || 0,
+      }))
+      .sort((a, b) => a.time.localeCompare(b.time));
 
-      // Handle remaining data if less than window size at the end
-      if (window.length > 0 && rawData.length > smoothedData.length) {
-        const avg = window.reduce((sum, val) => sum + val, 0) / window.length;
-        const lastTime = rawData[rawData.length - 1].time;
-        if (!smoothedData.some(d => d.time === lastTime)) {
-          smoothedData.push({ time: lastTime, Risk: avg });
-        }
-      }
+    // Align priceData to riskData timestamps
+    const riskTimes = new Set(riskData.map((d) => d.time));
+    const alignedPriceData = priceData.filter((d) => riskTimes.has(d.time));
 
-      // Sort and remove duplicates by time
-      return smoothedData
-        .sort((a, b) => new Date(a.time) - new Date(b.time))
-        .filter((item, index, self) => index === 0 || item.time !== self[index - 1].time);
+    return { priceData: alignedPriceData, riskData };
+  }, [btcData, mvrvRiskData, puellRiskData, minerCapThermoCapRiskData, feeRiskData, soplRiskData, selectedMetric]);
+
+  // Calculate smoothed risk data
+  const chartData = useMemo(() => {
+    const { riskData } = prepareData;
+    if (selectedSmoothing === 'none') {
+      return riskData.map((d) => ({ time: d.time, value: parseFloat(d.value.toFixed(2)) }));
     }
 
-    return rawData;
-  })();
+    const windowSize = selectedSmoothing === '7day' ? 7 : 28;
+    const smoothedData = [];
 
-  // Format numbers for price scale
+    for (let i = 0; i < riskData.length; i++) {
+      const startIndex = Math.max(0, i - windowSize + 1);
+      const window = riskData.slice(startIndex, i + 1).filter((d) => d.value !== null);
+      const smoothedValue = window.length > 0
+        ? window.reduce((sum, d) => sum + d.value, 0) / window.length
+        : null;
+      smoothedData.push({
+        time: riskData[i].time,
+        value: smoothedValue !== null ? parseFloat(smoothedValue.toFixed(2)) : null,
+      });
+    }
+
+    return smoothedData.filter((d) => d.value !== null);
+  }, [prepareData, selectedSmoothing]);
+
   const compactNumberFormatter = (value) => {
     if (value >= 1000000) return (value / 1000000).toFixed(0) + 'M';
     if (value >= 1000) return (value / 1000).toFixed(0) + 'k';
     return value.toFixed(0);
   };
 
-  // Toggle interactivity
   const setInteractivity = () => setIsInteractive(!isInteractive);
 
-  // Reset chart view
   const resetChartView = () => {
     if (chartRef.current) chartRef.current.timeScale().fitContent();
   };
 
-  // Calculate left position for tooltip
   const calculateLeftPosition = () => {
     if (!tooltipData || !chartContainerRef.current) return '0px';
     const chartWidth = chartContainerRef.current.clientWidth;
@@ -198,9 +201,10 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
         visible: true,
         borderColor: 'rgba(197, 203, 206, 1)',
         scaleMargins: { top: 0.1, bottom: 0.1 },
-        mode: 1, // Logarithmic for price
+        mode: 1,
       },
       timeScale: { minBarSpacing: 0.001 },
+      crosshair: { mode: 0 },
     });
 
     const riskSeries = chart.addLineSeries({
@@ -220,7 +224,6 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
     });
     priceSeriesRef.current = priceSeries;
 
-    // Subscribe to crosshair move for tooltip
     chart.subscribeCrosshairMove((param) => {
       if (
         !param.point ||
@@ -251,10 +254,10 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
         width: chartContainerRef.current.clientWidth,
         height: chartContainerRef.current.clientHeight,
       });
+      chart.timeScale().fitContent();
     };
     window.addEventListener('resize', resizeChart);
     resizeChart();
-    chart.timeScale().fitContent();
 
     chartRef.current = chart;
 
@@ -262,47 +265,48 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
       chart.remove();
       window.removeEventListener('resize', resizeChart);
     };
-  }, []); // Empty dependency array for single initialization
+  }, []);
 
   // Update price series data
   useEffect(() => {
-    if (priceSeriesRef.current && btcData.length > 0) {
-      const priceSeriesData = btcData.map((d) => ({ time: d.time, value: d.value }));
-      priceSeriesRef.current.setData(priceSeriesData);
+    if (priceSeriesRef.current && prepareData.priceData.length > 0) {
+      priceSeriesRef.current.setData(prepareData.priceData);
       if (chartData.length > 0) chartRef.current?.timeScale().fitContent();
     }
-  }, [btcData, chartData]);
+  }, [prepareData.priceData, chartData]);
 
   // Update risk series data
   useEffect(() => {
     if (riskSeriesRef.current && chartData.length > 0) {
-      const riskSeriesData = chartData.map((d) => ({ time: d.time, value: d.Risk }));
-      console.log('Risk Series Data:', riskSeriesData); // Debug log
+      const riskSeriesData = chartData.map((d) => ({ time: d.time, value: d.value }));
       riskSeriesRef.current.setData(riskSeriesData);
     }
-  }, [chartData, btcData]);
+  }, [chartData]);
 
-  // Update interactivity
+  // Update interactivity and price scale title
   useEffect(() => {
     if (chartRef.current) {
       chartRef.current.applyOptions({
         handleScroll: isInteractive,
         handleScale: isInteractive,
+        rightPriceScale: {
+          title: `${metricLabels[selectedMetric]}${selectedSmoothing !== 'none' ? ` (${selectedSmoothing} SMA)` : ''}`,
+        },
       });
     }
-  }, [isInteractive]);
+  }, [isInteractive, selectedMetric, selectedSmoothing]);
 
   // Update current price and risk level
   useEffect(() => {
-    if (btcData.length > 0) {
-      const latestBtc = btcData[btcData.length - 1];
-      setCurrentBtcPrice(Math.floor(latestBtc.value / 1000));
+    if (prepareData.priceData.length > 0) {
+      const latestPrice = prepareData.priceData[prepareData.priceData.length - 1];
+      setCurrentBtcPrice(Math.floor(latestPrice.value / 1000));
     }
     if (chartData.length > 0) {
       const latestRisk = chartData[chartData.length - 1];
-      setCurrentRiskLevel(latestRisk.Risk.toFixed(2));
+      setCurrentRiskLevel(latestRisk.value.toFixed(2));
     }
-  }, [btcData, chartData]);
+  }, [prepareData.priceData, chartData]);
 
   return (
     <div style={{ height: '100%' }}>
@@ -397,7 +401,7 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
             </span>
             <span style={{ display: 'inline-block' }}>
               <span style={{ backgroundColor: '#ff0062', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
-              {metricLabels[selectedMetric]} 
+              {metricLabels[selectedMetric]}
             </span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
@@ -450,8 +454,12 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
           >
             <div style={{ fontSize: '15px' }}>Bitcoin</div>
             {tooltipData.price && <div style={{ fontSize: '20px' }}>${tooltipData.price.toFixed(2)}</div>}
-            {tooltipData.risk && <div style={{ color: '#ff0062', fontSize: '20px' }}>Risk: {tooltipData.risk.toFixed(2)}</div>}
-            {tooltipData.date && <div>{tooltipData.date ? tooltipData.date.split('-').reverse().join('-') : ''}</div>}
+            {tooltipData.risk && (
+              <div style={{ color: '#ff0062', fontSize: '20px' }}>
+                {metricLabels[selectedMetric]}: {tooltipData.risk.toFixed(2)}
+              </div>
+            )}
+            {tooltipData.date && <div>{tooltipData.date}</div>}
           </div>
         )}
       </div>
