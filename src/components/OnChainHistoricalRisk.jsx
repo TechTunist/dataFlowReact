@@ -469,7 +469,7 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
         </div>
       )}
       {!isDashboard && (
-        <div>
+        <div style={{ paddingBottom: '20px' }}>
           <div style={{ display: 'inline-block', marginTop: '10px', fontSize: '1.2rem', color: colors.primary[100] }}>
             Current {metricLabels[selectedMetric]}: <b>{currentRiskLevel}</b> (${currentBtcPrice}k)
           </div>
@@ -477,7 +477,8 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
             className="chart-info"
             style={{
               marginTop: '20px',
-              fontSize: '1.1rem',
+              paddingBottom: '20px',
+              fontSize: '1.2rem',
               color: colors.primary[100],
               maxWidth: '800px',
             }}
