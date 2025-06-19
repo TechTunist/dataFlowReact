@@ -224,7 +224,12 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
         </Link>
       </Box>
       <div style={{ flexGrow: 1, textAlign: "center" }}>
-        <Header title={title} subtitle={subtitle} />
+        <Header
+          title={title}
+          subtitle={subtitle}
+          titleFontSize={isMobile ? "0.8rem" : "1.6rem"} // Smaller on mobile
+          subtitleFontSize={isMobile ? "0.5rem" : "1rem"} // Smaller on mobile
+        />
       </div>
       <Box display="flex" alignItems="center">
         {isMobile && (

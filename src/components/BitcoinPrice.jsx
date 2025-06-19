@@ -57,11 +57,6 @@ const BitcoinPrice = ({ isDashboard = false }) => {
       label: 'Mayer Multiple',
       description: 'The ratio of Bitcoin\'s current price to its 200-day moving average. Above 2.4 often signals overbought conditions; below 1 may indicate undervaluation.',
     },
-    'rsi': {
-      color: 'green', // Changed to green to avoid conflict with MVRV
-      label: 'RSI',
-      description: 'Relative Strength Index measures momentum. Values above 70 suggest overbought conditions; below 30 indicate oversold conditions.',
-    },
   };
 
   const smaIndicators = {
@@ -297,7 +292,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
 
     const rsiSeries = chart.addLineSeries({
       priceScaleId: 'rsi-scale',
-      color: indicators['rsi'].color,
+      color: 'green',
       lineWidth: 2,
       priceLineVisible: false,
       visible: false,
@@ -567,7 +562,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
 
   // Update RSI data
   useEffect(() => {
-    if (rsiSeriesRef.current && btcData.length > 0 && activeIndicators.includes('rsi') && activeRsiPeriod) {
+    if (rsiSeriesRef.current && btcData.length > 0 && activeRsiPeriod) {
       try {
         const period = rsiPeriods[activeRsiPeriod].days;
         const rsiData = calculateRSI(btcData, period);
@@ -582,7 +577,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
         rsiPriceLinesRef.current = [];
         const overboughtLine = rsiSeriesRef.current.createPriceLine({
           price: 70,
-          color: indicators['rsi'].color,
+          color: 'green', // Hardcode color since 'rsi' is removed from indicators
           lineWidth: 1,
           lineStyle: 2,
           axisLabelVisible: true,
@@ -590,7 +585,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
         });
         const oversoldLine = rsiSeriesRef.current.createPriceLine({
           price: 30,
-          color: indicators['rsi'].color,
+          color: 'green', // Hardcode color
           lineWidth: 1,
           lineStyle: 2,
           axisLabelVisible: true,
@@ -616,7 +611,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
         console.error('Error hiding RSI series:', error);
       }
     }
-  }, [btcData, activeIndicators, activeRsiPeriod, calculateRSI, rsiPeriods]);
+  }, [btcData, activeRsiPeriod, calculateRSI, rsiPeriods]);
 
   // Update SMA data
   useEffect(() => {
@@ -913,9 +908,23 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                   marginRight: '5px',
                 }}
               />
-              {key === 'rsi' && activeRsiPeriod ? rsiPeriods[activeRsiPeriod].label : indicators[key].label}
+              {indicators[key].label}
             </div>
           ))}
+          {activeRsiPeriod && (
+            <div style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>
+              <span
+                style={{
+                  display: 'inline-block',
+                  width: '10px',
+                  height: '10px',
+                  backgroundColor: 'green', // Hardcode RSI color
+                  marginRight: '5px',
+                }}
+              />
+              {rsiPeriods[activeRsiPeriod].label}
+            </div>
+          )}
           {activeIndicators.includes('mvrv') && (
             <div style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>
               <span
@@ -994,15 +1003,22 @@ const BitcoinPrice = ({ isDashboard = false }) => {
           </Box>
         </div>
       )}
-      {!isDashboard && activeIndicators.length > 0 && (
+      {!isDashboard && (activeIndicators.length > 0 || activeRsiPeriod) && (
         <Box sx={{ margin: '10px 0', color: colors.grey[100] }}>
           {activeIndicators.map(key => (
             <p key={key} style={{ margin: '5px 0' }}>
               <strong style={{ color: indicators[key].color }}>
-                {key === 'rsi' && activeRsiPeriod ? rsiPeriods[activeRsiPeriod].label : indicators[key].label}:
+                {indicators[key].label}:
               </strong> {indicators[key].description}
             </p>
           ))}
+          {activeRsiPeriod && (
+            <p style={{ margin: '5px 0' }}>
+              <strong style={{ color: 'green' }}>
+                {rsiPeriods[activeRsiPeriod].label}:
+              </strong> Relative Strength Index measures momentum. Values above 70 suggest overbought conditions; below 30 indicate oversold conditions.
+            </p>
+          )}
         </Box>
       )}
       {!isDashboard && tooltipData && (
@@ -1048,8 +1064,8 @@ const BitcoinPrice = ({ isDashboard = false }) => {
               Mayer Multiple: {tooltipData.mayerMultiple.toFixed(2)}
             </div>
           )}
-          {activeIndicators.includes('rsi') && tooltipData.rsi !== null && activeRsiPeriod && (
-            <div style={{ color: indicators['rsi'].color }}>
+          {activeRsiPeriod && tooltipData.rsi !== null && (
+            <div style={{ color: 'green' }}>
               {rsiPeriods[activeRsiPeriod].label}: {tooltipData.rsi.toFixed(2)}
             </div>
           )}

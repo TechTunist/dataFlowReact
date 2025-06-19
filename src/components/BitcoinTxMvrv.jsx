@@ -201,6 +201,25 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
       },
       handleScroll: isInteractive && !isDashboard,
       handleScale: isInteractive && !isDashboard,
+      leftPriceScale: {
+        mode: 0,
+        borderVisible: false,
+        // Remove scaleMargins to span full height
+      },
+      rightPriceScale: {
+        mode: 1,
+        borderVisible: false,
+        // Remove scaleMargins to span full height
+      },
+      additionalPriceScales: {
+        ratio: {
+          mode: 0,
+          borderVisible: false,
+          position: 'left',
+          scaleMargins: { top: 0.66, bottom: 0.05 }, // Bottom third
+          priceFormat: { type: 'price', precision: 2, minMove: 0.01 },
+        },
+      },
     });
   
     chart.priceScale('left').applyOptions({ mode: 0, borderVisible: false });
@@ -308,12 +327,13 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
   
     // MVRV/Tx Ratio Series
     const ratioSeries = chart.addLineSeries({
-      priceScaleId: 'left',
+      priceScaleId: 'ratio',
       color: ratioColors.lineColor,
       lineWidth: 2,
       priceFormat: { type: 'price', precision: 2, minMove: 0.01 },
       visible: displayMode === 'ratio',
     });
+
     ratioSeriesRef.current = ratioSeries;
     const mvrvDataForRatio = filteredTxMvrvData.map(item => ({ time: item.time, mvrv: item.mvrv }));
     const ratioData = calculateRatio(mvrvDataForRatio, txCountData, smoothingMode);
