@@ -9,14 +9,14 @@ const Header = ({ title, subtitle }) => {
   return (
     <Box mb="17px" >
       <Typography
-        variant={isMobile ? 'h3' : 'h2'} // Smaller size for mobile
+        variant={isMobile ? 'h4' : 'h3'} // Smaller size for mobile
         color={colors.grey[100]}
         sx={{ m: "15px 0 5px 0" }}
       >
         {title}
       </Typography>
       <Typography
-        variant={isMobile ? 'h6' : 'h5'} // Smaller size for mobile
+        variant={isMobile ? 'h7' : 'h6'} // Smaller size for mobile
         color={colors.greenAccent[500]}>
         {subtitle}
       </Typography>
