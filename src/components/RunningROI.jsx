@@ -423,42 +423,22 @@ const RunningROI = ({ isDashboard = false }) => {
             </Select>
           </FormControl>
           <Box sx={{ display: 'flex', gap: '10px', marginLeft: 'auto' }}>
-            <Button
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+            <button
               onClick={setInteractivity}
-              sx={{
+              className="button-reset"
+              style={{
                 backgroundColor: isInteractive ? '#4cceac' : 'transparent',
                 color: isInteractive ? 'black' : '#31d6aa',
-                border: `1px solid ${isInteractive ? 'violet' : '#70d8bd'}`,
-                borderRadius: '4px',
-                padding: '8px 16px',
-                fontSize: '14px',
-                textTransform: 'none',
-                '&:hover': {
-                  backgroundColor: colors.greenAccent[400],
-                  color: theme.palette.mode === 'dark' ? colors.grey[900] : colors.grey[100],
-                },
+                borderColor: isInteractive ? 'violet' : '#70d8bd',
               }}
             >
               {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
-            </Button>
-            <Button
-              onClick={resetChartView}
-              sx={{
-                backgroundColor: 'transparent',
-                color: '#31d6aa',
-                border: `1px solid ${colors.greenAccent[400]}`,
-                borderRadius: '4px',
-                padding: '8px 16px',
-                fontSize: '14px',
-                textTransform: 'none',
-                '&:hover': {
-                  backgroundColor: colors.greenAccent[400],
-                  color: theme.palette.mode === 'dark' ? colors.grey[900] : colors.grey[100],
-                },
-              }}
-            >
+            </button>
+            <button onClick={resetChartView} className="button-reset extra-margin">
               Reset Chart
-            </Button>
+            </button>
+          </div>
           </Box>
         </Box>
       )}

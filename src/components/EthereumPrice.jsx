@@ -17,7 +17,7 @@ const EthereumPrice = ({ isDashboard = false }) => {
   const fedBalanceSeriesRef = useRef(null);
   const mayerMultipleSeriesRef = useRef(null);
   const rsiSeriesRef = useRef(null);
-  const rsiPriceLinesRef = useRef([]); // Store RSI price lines
+  const rsiPriceLinesRef = useRef([]);
   const theme = useTheme();
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
   const isMobile = useIsMobile();
@@ -42,11 +42,6 @@ const EthereumPrice = ({ isDashboard = false }) => {
       color: 'red',
       label: 'Mayer Multiple',
       description: 'The ratio of Ethereum\'s current price to its 200-day moving average. Above 2.4 often signals overbought conditions; below 1 may indicate undervaluation.',
-    },
-    'rsi': {
-      color: 'orange',
-      label: 'RSI',
-      description: 'Relative Strength Index measures momentum. Values above 70 suggest overbought conditions; below 30 indicate oversold conditions.',
     },
   }), []);
 
@@ -258,7 +253,7 @@ const EthereumPrice = ({ isDashboard = false }) => {
 
     const rsiSeries = chart.addLineSeries({
       priceScaleId: 'rsi-scale',
-      color: indicators['rsi'].color,
+      color: 'orange', // Hardcode RSI color to match original
       lineWidth: 2,
       priceLineVisible: false,
       visible: false,
@@ -314,7 +309,6 @@ const EthereumPrice = ({ isDashboard = false }) => {
     chartRef.current = chart;
 
     return () => {
-      // Clean up price lines on unmount
       rsiPriceLinesRef.current.forEach(priceLine => {
         try {
           rsiSeriesRef.current?.removePriceLine(priceLine);
@@ -358,13 +352,10 @@ const EthereumPrice = ({ isDashboard = false }) => {
   }, [ethData, activeIndicators, calculateMayerMultiple]);
 
   useEffect(() => {
-    if (rsiSeriesRef.current && ethData.length > 0 && activeIndicators.includes('rsi') && activeRsiPeriod) {
+    if (rsiSeriesRef.current && ethData.length > 0 && activeRsiPeriod) {
       const period = rsiPeriods[activeRsiPeriod].days;
       const rsiData = calculateRSI(ethData, period);
       rsiSeriesRef.current.setData(rsiData);
-      rsiSeriesRef.current.applyOptions({ visible: true });
-
-      // Remove existing price lines
       rsiPriceLinesRef.current.forEach(priceLine => {
         try {
           rsiSeriesRef.current.removePriceLine(priceLine);
@@ -373,11 +364,9 @@ const EthereumPrice = ({ isDashboard = false }) => {
         }
       });
       rsiPriceLinesRef.current = [];
-
-      // Add overbought/oversold lines for RSI
       const overboughtLine = rsiSeriesRef.current.createPriceLine({
         price: 70,
-        color: indicators['rsi'].color,
+        color: 'orange', // Hardcode RSI color
         lineWidth: 1,
         lineStyle: 2,
         axisLabelVisible: true,
@@ -385,13 +374,14 @@ const EthereumPrice = ({ isDashboard = false }) => {
       });
       const oversoldLine = rsiSeriesRef.current.createPriceLine({
         price: 30,
-        color: indicators['rsi'].color,
+        color: 'orange', // Hardcode RSI color
         lineWidth: 1,
         lineStyle: 2,
         axisLabelVisible: true,
         title: 'Oversold',
       });
       rsiPriceLinesRef.current = [overboughtLine, oversoldLine];
+      rsiSeriesRef.current.applyOptions({ visible: true });
     } else if (rsiSeriesRef.current) {
       rsiSeriesRef.current.applyOptions({ visible: false });
       rsiPriceLinesRef.current.forEach(priceLine => {
@@ -403,7 +393,7 @@ const EthereumPrice = ({ isDashboard = false }) => {
       });
       rsiPriceLinesRef.current = [];
     }
-  }, [ethData, activeIndicators, activeRsiPeriod, calculateRSI, rsiPeriods]);
+  }, [ethData, activeRsiPeriod, calculateRSI, rsiPeriods]);
 
   // Update SMA indicators
   useEffect(() => {
@@ -706,9 +696,23 @@ const EthereumPrice = ({ isDashboard = false }) => {
                   marginRight: '5px',
                 }}
               />
-              {key === 'rsi' && activeRsiPeriod ? rsiPeriods[activeRsiPeriod].label : indicators[key].label}
+              {indicators[key].label}
             </div>
           ))}
+          {activeRsiPeriod && (
+            <div style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>
+              <span
+                style={{
+                  display: 'inline-block',
+                  width: '10px',
+                  height: '10px',
+                  backgroundColor: 'orange',
+                  marginRight: '5px',
+                }}
+              />
+              {rsiPeriods[activeRsiPeriod].label}
+            </div>
+          )}
           {activeSMAs.map(key => {
             const indicator = smaIndicators[key];
             if (indicator.type === 'bull-market-support') {
@@ -772,16 +776,23 @@ const EthereumPrice = ({ isDashboard = false }) => {
           </Box>
         </div>
       )}
-      {!isDashboard && activeIndicators.length > 0 && (
+      {!isDashboard && (activeIndicators.length > 0 || activeRsiPeriod) && (
         <Box sx={{ margin: '10px 0', color: colors.grey[100] }}>
           {activeIndicators.map(key => (
             <p key={key} style={{ margin: '5px 0' }}>
               <strong style={{ color: indicators[key].color }}>
-                {key === 'rsi' && activeRsiPeriod ? rsiPeriods[activeRsiPeriod].label : indicators[key].label}:
+                {indicators[key].label}:
               </strong>{' '}
               {indicators[key].description}
             </p>
           ))}
+          {activeRsiPeriod && (
+            <p style={{ margin: '5px 0' }}>
+              <strong style={{ color: 'orange' }}>
+                {rsiPeriods[activeRsiPeriod].label}:
+              </strong> Relative Strength Index measures momentum. Values above 70 suggest overbought conditions; below 30 indicate oversold conditions.
+            </p>
+          )}
         </Box>
       )}
       {!isDashboard && tooltipData && (
@@ -817,8 +828,8 @@ const EthereumPrice = ({ isDashboard = false }) => {
               Mayer Multiple: {tooltipData.mayerMultiple.toFixed(2)}
             </div>
           )}
-          {activeIndicators.includes('rsi') && tooltipData.rsi && activeRsiPeriod && (
-            <div style={{ color: indicators['rsi'].color }}>
+          {activeRsiPeriod && tooltipData.rsi && (
+            <div style={{ color: 'orange' }}>
               {rsiPeriods[activeRsiPeriod].label}: {tooltipData.rsi.toFixed(2)}
             </div>
           )}
@@ -831,7 +842,7 @@ const EthereumPrice = ({ isDashboard = false }) => {
           It’s a decentralized blockchain platform that goes beyond simple transactions, enabling smart contracts—self-executing
           agreements coded on the blockchain—and decentralized applications (dApps). Powered by its native currency, Ether (ETH),
           Ethereum supports a vast ecosystem of developers and projects, making it the most actively used blockchain for innovation
-          in finance, NFTs, gaming, and more.
+          in finance, NFTs, and more.
         </p>
       )}
     </div>

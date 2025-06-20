@@ -28,8 +28,8 @@ const calculateSMA = (data, period) => {
       result[i] = avg;
     }
   }
-  console.log('SMA Input:', data);
-  console.log('SMA Values:', result);
+  // console.log('SMA Input:', data);
+  // console.log('SMA Values:', result);
   return result;
 };
 
@@ -342,7 +342,7 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
             alignItems: 'center',
             justifyContent: 'center',
             gap: '20px',
-            marginBottom: '30px',
+            marginBottom: '10px',
             marginTop: '50px',
           }}
         >
