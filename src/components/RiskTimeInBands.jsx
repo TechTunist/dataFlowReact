@@ -240,101 +240,117 @@ const AssetRiskBandDuration = ({ isDashboard = false, riskData: propRiskData }) 
           sx={{
             display: 'flex',
             flexDirection: { xs: 'column', sm: 'row' },
-            justifyContent: 'center',
+            alignItems: 'center',
+            justifyContent: 'space-between',
             gap: '20px',
-            marginBottom: '20px',
-            marginTop: '20px',
+            marginTop: '30px', // Larger buffer above
+            marginBottom: '20px', // Smaller buffer below
+            padding: '0 20px',
+            width: '100%',
           }}
         >
-          <FormControl sx={{ minWidth: '200px' }}>
-            <InputLabel
-              id="asset-label"
-              shrink
-              sx={{
-                color: colors.grey[100],
-                '&.Mui-focused': { color: colors.greenAccent[500] },
-                top: 0,
-                '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' },
-              }}
-            >
-              Asset
-            </InputLabel>
-            <Select
-              value={selectedAsset}
-              onChange={handleAssetChange}
-              label="Asset"
-              labelId="asset-label"
-              sx={{
-                color: colors.grey[100],
-                backgroundColor: colors.primary[500],
-                borderRadius: '8px',
-                '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
-                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                '& .MuiSelect-select': { py: 1.5, pl: 2 },
-              }}
-            >
-              <MenuItem value="BTC">Bitcoin</MenuItem>
-              {altcoins.map((coin) => (
-                <MenuItem key={coin.value} value={coin.value}>
-                  {coin.label}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <FormControl sx={{ minWidth: '200px' }}>
-            <InputLabel
-              id="risk-band-mode-label"
-              shrink
-              sx={{
-                color: colors.grey[100],
-                '&.Mui-focused': { color: colors.greenAccent[500] },
-                top: 0,
-                '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' },
-              }}
-            >
-              Risk Band Size
-            </InputLabel>
-            <Select
-              value={riskBandMode}
-              onChange={handleRiskBandModeChange}
-              labelId="risk-band-mode-label"
-              label="Risk Band Size"
-              sx={{
-                color: colors.grey[100],
-                backgroundColor: colors.primary[500],
-                borderRadius: "8px",
-                '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
-                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                '& .MuiSelect-select': { py: 1.5, pl: 2 },
-              }}
-            >
-              <MenuItem value="0.05">0.05 (Half Bands)</MenuItem>
-              <MenuItem value="0.1">0.1 (Single Bands)</MenuItem>
-              <MenuItem value="0.2">0.2 (Double Bands)</MenuItem>
-            </Select>
-          </FormControl>
+          {/* Nested Box to group dropdowns on the left */}
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: { xs: 'column', sm: 'row' },
+              gap: '20px',
+              flexShrink: 0, // Prevent dropdowns from shrinking
+            }}
+          >
+            <FormControl sx={{ minWidth: '200px', width: { xs: '100%', sm: '200px' } }}>
+              <InputLabel
+                id="asset-label"
+                shrink
+                sx={{
+                  color: colors.grey[100],
+                  '&.Mui-focused': { color: colors.greenAccent[500] },
+                  top: 0,
+                  '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' },
+                }}
+              >
+                Asset
+              </InputLabel>
+              <Select
+                value={selectedAsset}
+                onChange={handleAssetChange}
+                label="Asset"
+                labelId="asset-label"
+                sx={{
+                  color: colors.grey[100],
+                  backgroundColor: colors.primary[500],
+                  borderRadius: '8px',
+                  '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
+                  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                  '& .MuiSelect-select': { py: 1.5, pl: 2 },
+                }}
+              >
+                <MenuItem value="BTC">Bitcoin</MenuItem>
+                {altcoins.map((coin) => (
+                  <MenuItem key={coin.value} value={coin.value}>
+                    {coin.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <FormControl sx={{ minWidth: '200px', width: { xs: '100%', sm: '200px' } }}>
+              <InputLabel
+                id="risk-band-mode-label"
+                shrink
+                sx={{
+                  color: colors.grey[100],
+                  '&.Mui-focused': { color: colors.greenAccent[500] },
+                  top: 0,
+                  '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' },
+                }}
+              >
+                Risk Band Size
+              </InputLabel>
+              <Select
+                value={riskBandMode}
+                onChange={handleRiskBandModeChange}
+                labelId="risk-band-mode-label"
+                label="Risk Band Size"
+                sx={{
+                  color: colors.grey[100],
+                  backgroundColor: colors.primary[500],
+                  borderRadius: '8px',
+                  '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
+                  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                  '& .MuiSelect-select': { py: 1.5, pl: 2 },
+                }}
+              >
+                <MenuItem value="0.05">0.05 (Half Bands)</MenuItem>
+                <MenuItem value="0.1">0.1 (Single Bands)</MenuItem>
+                <MenuItem value="0.2">0.2 (Double Bands)</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
+          {/* Reset button on the right */}
+          <button
+            onClick={resetChartView}
+            className="button-reset"
+            style={{
+              backgroundColor: 'transparent',
+              color: '#31d6aa',
+              border: '1px solid #70d8bd',
+              padding: '8px 16px',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              flexShrink: 0, // Prevent button from shrinking
+            }}
+          >
+            Reset Chart
+          </button>
         </Box>
       )}
-
-      {!isDashboard && (
-        <div className='chart-top-div'>
-          <div className="risk-filter">
-            {/* Placeholder for future interactivity toggles */}
-          </div>
-          <div>
-            <button onClick={resetChartView} className="button-reset">
-              Reset Chart
-            </button>
-          </div>
-        </div>
-      )}
-
+  
       <div
         className="chart-container"
         style={{
-          height: isDashboard ? "100%" : 'calc(100% - 40px)',
+          height: isDashboard ? '100%' : 'calc(100% - 40px)',
           width: '100%',
           border: '2px solid #a9a9a9',
         }}
@@ -361,7 +377,7 @@ const AssetRiskBandDuration = ({ isDashboard = false, riskData: propRiskData }) 
             responsive: true,
           }}
           useResizeHandler={true}
-          style={{ width: "100%", height: "100%" }}
+          style={{ width: '100%', height: '100%' }}
           onRelayout={handleRelayout}
         />
       </div>
@@ -374,7 +390,7 @@ const AssetRiskBandDuration = ({ isDashboard = false, riskData: propRiskData }) 
           Current Risk Level: <b>{currentRiskLevel !== null ? currentRiskLevel : 'Loading...'}</b>
         </div>
       )}
-
+  
       {!isDashboard && (
         <div>
           <p className='chart-info'>

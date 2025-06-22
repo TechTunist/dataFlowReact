@@ -191,7 +191,7 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
       case "/indicators/btc-yield-recession":
         return { title: "Bitcoin to 10 Year Yield", subtitle: isMobile ? "BTC vs 10 Year" : "Bitcoin Vs 10 year Bond Yield with Recesion Indicator" };
       case "/workbench":
-        return { title: "Workbench", subtitle: isMobile ? "Create your own indicator" : "Create your own indicator from a selection of data" };
+        return { title: "Workbench (beta)", subtitle: isMobile ? "Create your own indicator" : "Create your own indicator from a selection of data" };
       case "/on-chain-historical-risk":
         return { title: "OnChain Risk", subtitle: isMobile ? "Historical Risk" : "Historical Risk Levels of OnChain Indicators" };
       case "/market-overview":

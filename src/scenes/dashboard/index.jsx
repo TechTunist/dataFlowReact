@@ -13,7 +13,7 @@ import PiCycleTop from "../../components/PiCycleTop";
 import FearandGreed from "../../components/FearAndGreed";
 import BitcoinLogRegression from "../../components/BitcoinLogRegression";
 import BitcoinRiskColor from "../../components/BitcoinRiskColor";
-import BitcoinRiskTimeInBands from "../../components/BitcoinRiskTimeInBands";
+import AssetRiskTimeInBands from "../../components/RiskTimeInBands";
 import "../../styling/bitcoinChart.css";
 import { tokens } from "../../theme";
 import { Link } from "react-router-dom";
@@ -255,7 +255,7 @@ const Dashboard = memo(({ isMobile, isSidebar }) => {
         {/* Bitcoin Risk Time In Bands */}
         <DashboardCard
           title="Time Spent in Bitcoin Risk Bands"
-          component={<BitcoinRiskTimeInBands isDashboard={true} riskData={riskData} />}
+          component={<AssetRiskTimeInBands isDashboard={true} riskData={riskData} />}
           description="Time Spent as a percentage in each defined Bitcoin risk band."
           linkTo="/risk-bands"
           isMobile={isMobile}

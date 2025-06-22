@@ -354,6 +354,7 @@ const RunningROI = ({ isDashboard = false }) => {
             marginTop: '50px',
           }}
         >
+
           <FormControl sx={{ minWidth: '150px', width: { xs: '100%', sm: '200px' } }}>
             <InputLabel
               id="asset-label"
@@ -422,25 +423,31 @@ const RunningROI = ({ isDashboard = false }) => {
               ))}
             </Select>
           </FormControl>
-          <Box sx={{ display: 'flex', gap: '10px', marginLeft: 'auto' }}>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-            <button
-              onClick={setInteractivity}
-              className="button-reset"
-              style={{
-                backgroundColor: isInteractive ? '#4cceac' : 'transparent',
-                color: isInteractive ? 'black' : '#31d6aa',
-                borderColor: isInteractive ? 'violet' : '#70d8bd',
-              }}
-            >
-              {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
-            </button>
-            <button onClick={resetChartView} className="button-reset extra-margin">
-              Reset Chart
-            </button>
-          </div>
-          </Box>
         </Box>
+      )}
+      {!isDashboard && (
+        <div className='chart-top-div' style={{ marginBottom: '10px' }}>
+          <div className="span-container" style={{ position: 'relative', top: 10, left: 0, zIndex: 2 }}>
+            <span style={{ marginRight: '20px', display: 'inline-block' }}>
+              <span style={{ backgroundColor: 'gray', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
+              {altcoins.find(asset => asset.value === selectedAsset)?.label} {isMobile ? '' : 'Price'}
+            </span>
+            <span style={{ display: 'inline-block' }}>
+              <span style={{ backgroundColor: '#ff0062', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
+              {isMobile ? 'ROI' : 'Running ROI'}
+            </span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            {!isDashboard && (
+              <button onClick={setInteractivity} className="button-reset" style={{ backgroundColor: isInteractive ? '#4cceac' : 'transparent', color: isInteractive ? 'black' : '#31d6aa', borderColor: isInteractive ? 'violet' : '#70d8bd' }}>
+                {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
+              </button>
+            )}
+            {!isDashboard && (
+              <button onClick={resetChartView} className="button-reset extra-margin">Reset Chart</button>
+            )}
+          </div>
+        </div>
       )}
       <div
         className="chart-container"
@@ -489,16 +496,7 @@ const RunningROI = ({ isDashboard = false }) => {
         )}
         {!isDashboard && chartData.length > 0 && (
           <>
-            <div className="span-container" style={{ position: 'absolute', top: 10, left: 10, zIndex: 2 }}>
-              <span style={{ marginRight: '20px', display: 'inline-block' }}>
-                <span style={{ backgroundColor: 'gray', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
-                {altcoins.find(asset => asset.value === selectedAsset)?.label} Price
-              </span>
-              <span style={{ display: 'inline-block' }}>
-                <span style={{ backgroundColor: '#ff0062', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
-                Running ROI
-              </span>
-            </div>
+
             {tooltipData && (
               <div
                 className="tooltip"

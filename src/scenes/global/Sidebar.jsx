@@ -173,7 +173,7 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
     { title: "Case-Shiller Home Price Index", to: "/fred/case-shiller", category: "MacroEconomics", icon: <HomeIcon />, categoryIcon: <AssessmentIcon /> },
     { title: "Nikkei 225 Index", to: "/fred/nikkei-225", category: "MacroEconomics", icon: <CandlestickChart />, categoryIcon: <AssessmentIcon /> },
     { title: "German 10-Year Bond Yield", to: "/fred/german-bond-yield", category: "MacroEconomics", icon: <PercentIcon />, categoryIcon: <AssessmentIcon /> },
-    { title: "Workbench", to: "/workbench", category: "Workbench", icon: <MultilineChartIcon />, categoryIcon: <ShowChartIcon /> },
+    { title: "Workbench (beta)", to: "/workbench", category: "Workbench", icon: <MultilineChartIcon />, categoryIcon: <ShowChartIcon /> },
   ];
 
   const filteredItems = useMemo(() =>

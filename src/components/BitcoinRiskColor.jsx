@@ -287,22 +287,28 @@ const BitcoinRiskColor = ({ isDashboard = false, riskData: propRiskData }) => {
   };
 
   return (
-    <div style={{ height: '100%' }}>
-      {!isDashboard && (
-        <div className="chart-top-div">
-          <Box
-            sx={{
-              display: 'flex',
-              flexDirection: { xs: 'column', sm: 'row' },
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '20px',
-              marginBottom: '30px',
-              marginTop: '20px',
-            }}
-          >
-            <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '200px' } }}>
-              <InputLabel
+  <div style={{ height: '100%' }}>
+    {!isDashboard && (
+      <div className="chart-top-div"
+          style={{
+            paddingTop: '30px',
+            paddingBottom: '30px'
+          }}>
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: { xs: 'column', sm: 'row' },
+            alignItems: 'center',
+            justifyContent: { xs: 'center', sm: 'space-between' },
+            gap: '20px',
+            marginTop: '30px', // Buffer above the dropdown
+            marginBottom: '20px', // Buffer below the dropdown
+            width: '100%',
+            padding: '0 0px',
+          }}
+        >
+          <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '200px' } }}>
+          <InputLabel
                 id="asset-label"
                 shrink
                 sx={{
@@ -322,8 +328,8 @@ const BitcoinRiskColor = ({ isDashboard = false, riskData: propRiskData }) => {
                 label="Asset"
                 labelId="asset-label"
                 sx={{
-                  color: colors.grey[100],
-                  backgroundColor: colors.primary[500],
+                  color: '#selectedColor: colors.grey[100]',
+                  backgroundColor: '#bcolors.primary[500]',
                   borderRadius: '8px',
                   '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
                   '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
@@ -340,23 +346,21 @@ const BitcoinRiskColor = ({ isDashboard = false, riskData: propRiskData }) => {
                 ))}
               </Select>
             </FormControl>
-          </Box>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-            {/* Placeholder for potential additional controls */}
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
             <button
               onClick={resetChartView}
-              className="button-reset extra-margin"
+              className="button-reset"
               style={{
                 backgroundColor: 'transparent',
                 color: '#31d6aa',
                 borderColor: '#70d8bd',
+                padding: '8px 16px',
+                borderRadius: '8px',
+                cursor: 'pointer',
               }}
             >
               Reset Chart
             </button>
-          </div>
+          </Box>
         </div>
       )}
 
