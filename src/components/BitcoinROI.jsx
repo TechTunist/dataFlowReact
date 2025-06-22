@@ -178,24 +178,13 @@ const BitcoinROI = ({ isDashboard = false }) => {
         setSelectedYears([]);
     }, []);
 
-    // Update datasets with preserved visibility
     useEffect(() => {
-        const datasets = [...yearlyDatasets];
-        if (averageDataset) {
-            datasets.push(averageDataset);
-        }
-
-        // Apply visibility from visibilityMap
-        const updatedDatasets = datasets.map(dataset => ({
-            ...dataset,
-            visible: visibilityMap[dataset.name] !== undefined ? visibilityMap[dataset.name] : true
-        }));
-
-        setYearDataSets(updatedDatasets);
-
-        // Initialize visibilityMap for new datasets
         setVisibilityMap(prev => {
             const newMap = { ...prev };
+            const datasets = [...yearlyDatasets];
+            if (averageDataset) {
+                datasets.push(averageDataset);
+            }
             datasets.forEach(dataset => {
                 if (newMap[dataset.name] === undefined) {
                     newMap[dataset.name] = true;
@@ -203,6 +192,20 @@ const BitcoinROI = ({ isDashboard = false }) => {
             });
             return newMap;
         });
+    }, [yearlyDatasets, averageDataset]);
+    
+    useEffect(() => {
+        const datasets = [...yearlyDatasets];
+        if (averageDataset) {
+            datasets.push(averageDataset);
+        }
+    
+        const updatedDatasets = datasets.map(dataset => ({
+            ...dataset,
+            visible: visibilityMap[dataset.name] !== undefined ? visibilityMap[dataset.name] : true
+        }));
+    
+        setYearDataSets(updatedDatasets);
     }, [yearlyDatasets, averageDataset, visibilityMap]);
 
     const resetChartView = useCallback(() => {

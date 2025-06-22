@@ -152,7 +152,7 @@ async function fetchAllPages(url) {
   let nextUrl = url;
   while (nextUrl) {
     try {
-      const response = await fetch(nextUrl, { signal: AbortSignal.timeout(8000) });
+      const response = await fetch(nextUrl, { signal: AbortSignal.timeout(15000) });
       if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
       const data = await response.json();
       // Handle both flat array and paginated responses
