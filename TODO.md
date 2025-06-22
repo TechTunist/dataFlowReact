@@ -14,6 +14,7 @@
     - Create a "bleed factor" for altcoins when comparing their performance against bitcoin over time
 - Increase the number of altcoins available
 - Add other financial information than crypto (inflation, interests, liquidity, monetary policy etc)
+- add historical dominance data from kaggle
 
 ## TOOLS
 - The "Bleed Factor" can be constructed by integrating the above metrics into a formula. Here’s a simple version to start with:
