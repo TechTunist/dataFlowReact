@@ -289,60 +289,58 @@ const BitcoinRiskColor = ({ isDashboard = false, riskData: propRiskData }) => {
   return (
     <div style={{ height: '100%' }}>
       {!isDashboard && (
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: { xs: 'column', sm: 'row' },
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '20px',
-            marginBottom: '30px',
-            marginTop: '50px',
-          }}
-        >
-          <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '200px' } }}>
-            <InputLabel
-              id="asset-label"
-              shrink
-              sx={{
-                color: colors.grey[100],
-                '&.Mui-focused': { color: colors.greenAccent[500] },
-                top: 0,
-                '&.MuiInputLabel-shrink': {
-                  transform: 'translate(14px, -9px) scale(0.75)',
-                },
-              }}
-            >
-              Asset
-            </InputLabel>
-            <Select
-              value={selectedAsset}
-              onChange={handleAssetChange}
-              label="Asset"
-              labelId="asset-label"
-              sx={{
-                color: colors.grey[100],
-                backgroundColor: colors.primary[500],
-                borderRadius: '8px',
-                '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
-                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                '& .MuiSelect-select': { py: 1.5, pl: 2 },
-                '& .MuiSelect-select:empty': { color: colors.grey[500] },
-              }}
-            >
-              <MenuItem value="BTC">Bitcoin</MenuItem>
-              {altcoins.map((coin) => (
-                <MenuItem key={coin.value} value={coin.value}>
-                  {coin.label}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Box>
-      )}
-      {!isDashboard && (
         <div className="chart-top-div">
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: { xs: 'column', sm: 'row' },
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '20px',
+              marginBottom: '30px',
+              marginTop: '20px',
+            }}
+          >
+            <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '200px' } }}>
+              <InputLabel
+                id="asset-label"
+                shrink
+                sx={{
+                  color: colors.grey[100],
+                  '&.Mui-focused': { color: colors.greenAccent[500] },
+                  top: 0,
+                  '&.MuiInputLabel-shrink': {
+                    transform: 'translate(14px, -9px) scale(0.75)',
+                  },
+                }}
+              >
+                Asset
+              </InputLabel>
+              <Select
+                value={selectedAsset}
+                onChange={handleAssetChange}
+                label="Asset"
+                labelId="asset-label"
+                sx={{
+                  color: colors.grey[100],
+                  backgroundColor: colors.primary[500],
+                  borderRadius: '8px',
+                  '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
+                  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                  '& .MuiSelect-select': { py: 1.5, pl: 2 },
+                  '& .MuiSelect-select:empty': { color: colors.grey[500] },
+                }}
+              >
+                <MenuItem value="BTC">Bitcoin</MenuItem>
+                {altcoins.map((coin) => (
+                  <MenuItem key={coin.value} value={coin.value}>
+                    {coin.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
             {/* Placeholder for potential additional controls */}
           </div>

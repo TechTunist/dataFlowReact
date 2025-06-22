@@ -65,7 +65,7 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
         const sma111 = calculateSMA(data, 111);
         const sma350 = calculateSMA(data, 350);
         let ratioData = [];
-
+    
         if (normalize) {
             const peaks = [
                 { time: "2013-06-10", value: 1.2315 },
@@ -74,24 +74,42 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
                 { time: "2021-04-17", value: 1.0034 },
             ];
             const sValues = peaks.map(p => ({ time: p.time, s: 1 / p.value }));
-
+    
+            // Calculate the rate of change from the last two peaks for extrapolation
+            let rate = 0;
+            if (sValues.length >= 2) {
+                const lastPeak = sValues[sValues.length - 1];
+                const secondLastPeak = sValues[sValues.length - 2];
+                const tLast = new Date(lastPeak.time).getTime();
+                const tSecondLast = new Date(secondLastPeak.time).getTime();
+                const deltaT = tLast - tSecondLast;
+                if (deltaT > 0) {
+                    const deltaS = lastPeak.s - secondLastPeak.s;
+                    rate = deltaS / deltaT;
+                }
+            }
+    
             for (let i = 349; i < data.length; i++) {
                 if (i - 110 >= 0) {
                     const ratio = sma111[i - 110].value / (sma350[i - 349].value * 2);
                     const currentTime = data[i].time;
-
+                    const tCurrent = new Date(currentTime).getTime();
+    
                     let s;
                     if (currentTime <= sValues[0].time) {
+                        // Before first peak: use first peak's scaling factor
                         s = sValues[0].s;
                     } else if (currentTime >= sValues[sValues.length - 1].time) {
-                        s = sValues[sValues.length - 1].s;
+                        // After last peak: extrapolate using the rate
+                        const tLast = new Date(sValues[sValues.length - 1].time).getTime();
+                        s = sValues[sValues.length - 1].s + rate * (tCurrent - tLast);
                     } else {
+                        // Between peaks: linear interpolation
                         for (let j = 0; j < sValues.length - 1; j++) {
                             if (currentTime >= sValues[j].time && currentTime < sValues[j + 1].time) {
                                 const t0 = new Date(sValues[j].time).getTime();
                                 const t1 = new Date(sValues[j + 1].time).getTime();
-                                const t = new Date(currentTime).getTime();
-                                const fraction = (t - t0) / (t1 - t0);
+                                const fraction = (tCurrent - t0) / (t1 - t0);
                                 s = sValues[j].s + fraction * (sValues[j + 1].s - sValues[j].s);
                                 break;
                             }
@@ -101,6 +119,7 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
                 }
             }
         } else {
+            // Unnormalized ratio
             for (let i = 349; i < data.length; i++) {
                 if (i - 110 >= 0) {
                     const ratio = sma111[i - 110].value / (sma350[i - 349].value * 2);
