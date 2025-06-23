@@ -63,6 +63,7 @@ import MonthlyAverageROI from "./components/MonthlyAverageROI";
 import Bitcoin20WeekExtension from "./components/Bitcoin20WeekExtension";
 import HistoricalVolatility from "./components/HistoricalVolatility";
 import PuellMultiple from "./components/PuellMultiple";
+import AltcoinSeasonIndexChart from "./components/AltcoinSeasonIndexChart";
 
 // Stripe Context
 const StripeContext = createContext(null);
@@ -526,6 +527,14 @@ const AppContent = memo(({ isSignedIn, user }) => {
                       element={
                         <ProtectedRoute>
                           <BasicChart ChartComponent={OnChainHistoricalRisk} />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/altcoin-season-index"
+                      element={
+                        <ProtectedRoute>
+                          <BasicChart ChartComponent={AltcoinSeasonIndexChart} />
                         </ProtectedRoute>
                       }
                     />

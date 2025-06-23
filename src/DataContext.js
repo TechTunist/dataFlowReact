@@ -261,6 +261,10 @@ export const DataProvider = ({ children }) => {
   const [feeRiskLastUpdated, setFeeRiskLastUpdated] = useState(null); // New last updated
   const [soplRiskLastUpdated, setSoplRiskLastUpdated] = useState(null); // New last updated
 
+  const [altcoinSeasonTimeseriesData, setAltcoinSeasonTimeseriesData] = useState([]);
+  const [isAltcoinSeasonTimeseriesDataFetched, setIsAltcoinSeasonTimeseriesDataFetched] = useState(false);
+  const [altcoinSeasonTimeseriesLastUpdated, setAltcoinSeasonTimeseriesLastUpdated] = useState(null);
+
   const API_BASE_URL = 'https://vercel-dataflow.vercel.app/api';
   // const API_BASE_URL = 'http://127.0.0.1:8000/api';
 
@@ -290,6 +294,7 @@ export const DataProvider = ({ children }) => {
         { id: 'minerCapThermoCapRiskData', setData: setMinerCapThermoCapRiskData, setLastUpdated: setMinerCapThermoCapRiskLastUpdated, setIsFetched: setIsMinerCapThermoCapRiskDataFetched, useDateCheck: true },
         { id: 'feeRiskData', setData: setFeeRiskData, setLastUpdated: setFeeRiskLastUpdated, setIsFetched: setIsFeeRiskDataFetched, useDateCheck: true }, // New
         { id: 'soplRiskData', setData: setSoplRiskData, setLastUpdated: setSoplRiskLastUpdated, setIsFetched: setIsSoplRiskDataFetched, useDateCheck: true }, // New
+        { id: 'altcoinSeasonTimeseriesData', setData: setAltcoinSeasonTimeseriesData, setLastUpdated: setAltcoinSeasonTimeseriesLastUpdated, setIsFetched: setIsAltcoinSeasonTimeseriesDataFetched, useDateCheck: true },
       ];
 
       for (const { id, setData, setLastUpdated, setIsFetched, useDateCheck } of cacheConfigs) {
@@ -338,7 +343,42 @@ export const DataProvider = ({ children }) => {
     isMinerCapThermoCapRiskDataFetched,
     isFeeRiskDataFetched, // New
     isSoplRiskDataFetched, // New
+    isAltcoinSeasonTimeseriesDataFetched,
     ]);
+
+    const fetchAltcoinSeasonTimeseriesData = useCallback(async () => {
+      if (isAltcoinSeasonTimeseriesDataFetched) return;
+      if (!preloadComplete) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        if (isAltcoinSeasonTimeseriesDataFetched) return;
+      }
+      await fetchWithCache({
+        cacheId: 'altcoinSeasonTimeseriesData',
+        apiUrl: `${API_BASE_URL}/altcoin-season-index-timeseries/`,
+        formatData: (data) => data.map(item => ({
+          index: parseFloat(item.index),
+          start_date: item.start_date,
+          end_date: item.end_date,
+          altcoin_count: parseInt(item.altcoin_count, 10),
+          altcoins_outperforming: parseInt(item.altcoins_outperforming, 10),
+          season: item.season,
+          time: item.end_date,
+        })).sort((a, b) => new Date(a.time) - new Date(b.time)),
+        setData: setAltcoinSeasonTimeseriesData,
+        setLastUpdated: setAltcoinSeasonTimeseriesLastUpdated,
+        setIsFetched: setIsAltcoinSeasonTimeseriesDataFetched,
+        useDateCheck: true,
+      });
+    }, [isAltcoinSeasonTimeseriesDataFetched, preloadComplete]);
+  
+    const refreshAltcoinSeasonTimeseriesData = useCallback(async () => {
+      await refreshData({
+        cacheId: 'altcoinSeasonTimeseriesData',
+        setData: setAltcoinSeasonTimeseriesData,
+        setIsFetched: setIsAltcoinSeasonTimeseriesDataFetched,
+        fetchFunction: fetchAltcoinSeasonTimeseriesData,
+      });
+    }, [fetchAltcoinSeasonTimeseriesData]);
 
   const fetchBtcData = useCallback(async () => {
     if (isBtcDataFetched) return;
@@ -1380,6 +1420,10 @@ export const DataProvider = ({ children }) => {
       soplRiskLastUpdated, // New
       isFeeRiskDataFetched, // New
       isSoplRiskDataFetched, // New
+      altcoinSeasonTimeseriesData,
+      fetchAltcoinSeasonTimeseriesData,
+      refreshAltcoinSeasonTimeseriesData,
+      altcoinSeasonTimeseriesLastUpdated,
     }),
     [
       btcData,
@@ -1483,6 +1527,10 @@ export const DataProvider = ({ children }) => {
       soplRiskLastUpdated, // New
       isFeeRiskDataFetched, // New
       isSoplRiskDataFetched, // New
+      altcoinSeasonTimeseriesData,
+      fetchAltcoinSeasonTimeseriesData,
+      refreshAltcoinSeasonTimeseriesData,
+      altcoinSeasonTimeseriesLastUpdated,
     ]
   );
 

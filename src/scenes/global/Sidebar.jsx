@@ -125,6 +125,7 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
     { title: "Altcoin Chart", to: "/altcoin-price", category: "Altcoins", icon: <MonetizationOnIcon />, categoryIcon: <MonetizationOnIcon /> },
     { title: "Total Market Cap", to: "/total", category: "Indicators", icon: <MonetizationOnIcon />, categoryIcon: <AnalyticsIcon /> },
     { title: "Total Cap to Fair Value", to: "/total-difference", category: "Indicators", icon: <CompareArrowsIcon />, categoryIcon: <AnalyticsIcon /> },
+    { title: "Altcoin Season Index", to: "/altcoin-season-index", category: "Indicators", icon: <CompareArrowsIcon />, categoryIcon: <AnalyticsIcon /> },
     { title: "Bitcoin Dominance", to: "/bitcoin-dominance", category: "Indicators", icon: <PieChartIcon />, categoryIcon: <AnalyticsIcon /> },
     { title: "PiCycleTop Indicator", to: "/pi-cycle", category: "Indicators", icon: <TimelineIcon />, categoryIcon: <AnalyticsIcon /> },
     { title: "Fear And Greed Indicator", to: "/fear-and-greed", category: "Indicators", icon: <MoodIcon />, categoryIcon: <AnalyticsIcon /> },
