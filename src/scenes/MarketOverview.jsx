@@ -21,9 +21,46 @@ import { tokens } from '../theme';
 import { DataContext } from '../DataContext';
 import useIsMobile from '../hooks/useIsMobile';
 import { getBitcoinRisk, saveRoiData, getRoiData } from '../utility/idbUtils';
+import InfoIcon from '@mui/icons-material/Info'; 
+import ShowChartIcon from '@mui/icons-material/ShowChart';
 
 // Wrap GridLayout with WidthProvider for responsiveness
 const ResponsiveGridLayout = WidthProvider(Responsive);
+
+const InfoOverlay = ({ explanation, isVisible }) => (
+  <Box
+    sx={{
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      width: '100%',
+      height: '100%',
+      backgroundColor: 'rgba(0, 0, 0, 0.85)', // Slightly darker for better contrast
+      opacity: isVisible ? 1 : 0, // Explicit opacity
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      transition: 'opacity 0.3s ease', // Smooth transition
+      borderRadius: '12px',
+      padding: '16px',
+      textAlign: 'center',
+      zIndex: 1000, // High z-index to ensure overlay is on top
+      pointerEvents: isVisible ? 'auto' : 'none', // Prevent interaction when hidden
+    }}
+  >
+    <Typography
+      variant="body2"
+      color="white"
+      sx={{
+        fontSize: '14px',
+        opacity: isVisible ? 1 : 0, // Ensure text is fully opaque when visible
+        transition: 'opacity 0.3s ease', // Sync text transition with overlay
+      }}
+    >
+      {explanation}
+    </Typography>
+  </Box>
+);
 
 // Define MarketOverview component
 const MarketOverview = () => {
@@ -367,37 +404,38 @@ const MarketOverview = () => {
   const AltcoinSeasonWidget = memo(() => {
     const [heatScore, setHeatScore] = useState(null);
     const [currentIndex, setCurrentIndex] = useState(null);
-
+    const [isInfoVisible, setIsInfoVisible] = useState(false);
+  
     useEffect(() => {
       if (altcoinSeasonData && altcoinSeasonData.index !== undefined) {
         const indexValue = Math.max(0, Math.min(100, altcoinSeasonData.index));
         setCurrentIndex(indexValue);
-
-        // Heat score calculation: direct mapping of index (0-100) to heat score
         const heat = indexValue;
         setHeatScore(heat);
-
-        // console.log('AltcoinSeasonWidget Heat Score:', heat);
       }
     }, [altcoinSeasonData]);
-
+  
     const backgroundColor = getBackgroundColor(heatScore || 0);
     const textColor = getTextColor(backgroundColor);
     const heatDescription = getHeatDescription(heatScore || 0);
     const isSignificant = heatScore !== null && heatScore >= 85;
-
+  
     const getGaugeColor = (value) => {
-      const startColor = { r: 255, g: 255, b: 255 }; // White
-      const endColor = { r: 128, g: 0, b: 128 }; // Purple
+      const startColor = { r: 255, g: 255, b: 255 };
+      const endColor = { r: 128, g: 0, b: 128 };
       const ratio = (value || 0) / 100;
       const r = Math.round(startColor.r + (endColor.r - startColor.r) * ratio);
       const g = Math.round(startColor.g + (endColor.g - startColor.g) * ratio);
       const b = Math.round(startColor.b + (endColor.b - startColor.b) * ratio);
       return `rgb(${r}, ${g}, ${b})`;
     };
-
+  
     const gaugeColor = getGaugeColor(heatScore);
-
+  
+    const handleChartRedirect = () => {
+      window.location.href = 'https://www.cryptological.app/altcoin-season-index';
+    };
+  
     return (
       <Box
         sx={{
@@ -407,8 +445,48 @@ const MarketOverview = () => {
           border: isSignificant ? `2px solid ${colors.redAccent[500]}` : 'none',
           padding: '24px',
           textAlign: 'center',
+          position: 'relative',
         }}
       >
+        {/* Chart Redirect Icon */}
+        <ShowChartIcon
+          sx={{
+            position: 'absolute',
+            top: '12px',
+            left: '12px', // Opposite side of InfoIcon
+            color: textColor,
+            cursor: 'pointer',
+            fontSize: '30px',
+            zIndex: 1001,
+            padding: '4px',
+            borderRadius: '50%',
+            '&:hover': {
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+            },
+          }}
+          onClick={handleChartRedirect}
+          aria-label="View chart"
+        />
+        {/* Info Icon */}
+        <InfoIcon
+          sx={{
+            position: 'absolute',
+            top: '12px',
+            right: '12px',
+            color: textColor,
+            cursor: 'pointer',
+            fontSize: '30px',
+            zIndex: 1001,
+            padding: '4px',
+            borderRadius: '50%',
+            '&:hover': {
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+            },
+          }}
+          onMouseEnter={() => setIsInfoVisible(true)}
+          onMouseLeave={() => setIsInfoVisible(false)}
+          aria-label="Information"
+        />
         <Typography variant="h4" color={textColor} gutterBottom sx={{ fontWeight: 'bold' }}>
           Altcoin Season Index
         </Typography>
@@ -432,25 +510,13 @@ const MarketOverview = () => {
             </Typography>
             <Typography variant="body1" color={textColor}>100 (Altcoin Season)</Typography>
           </Box>
-          <Typography
-            variant="body1"
-            color={textColor}
-            sx={{ textAlign: 'center', mt: 1 }}
-          >
+          <Typography variant="body1" color={textColor} sx={{ textAlign: 'center', mt: 1 }}>
             Heat: {heatDescription}
           </Typography>
-          <Typography
-            variant="body1"
-            color={textColor}
-            sx={{ textAlign: 'center', mt: 1 }}
-          >
+          <Typography variant="body1" color={textColor} sx={{ textAlign: 'center', mt: 1 }}>
             Season: {altcoinSeasonData.season || 'N/A'}
           </Typography>
-          <Typography
-            variant="body1"
-            color={textColor}
-            sx={{ textAlign: 'center', mt: 1 }}
-          >
+          <Typography variant="body1" color={textColor} sx={{ textAlign: 'center', mt: 1 }}>
             Outperforming: {altcoinSeasonData.altcoins_outperforming || 0}/{altcoinSeasonData.altcoin_count || 0}
           </Typography>
         </Box>
@@ -463,32 +529,10 @@ const MarketOverview = () => {
             Warning: Strong Altcoin Season detected.
           </Typography>
         )}
-        {/* Overlay */}
-        <Box
-          sx={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            backgroundColor: 'rgba(0, 0, 0, 0.8)', // Semi-transparent black
-            opacity: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            transition: 'opacity 0.3s ease-in-out',
-            borderRadius: '12px',
-            padding: '16px',
-            textAlign: 'center',
-            '&:hover': {
-              opacity: 1,
-            },
-          }}
-        >
-          <Typography variant="body2" color="white" sx={{ fontSize: '14px' }}>
-            The Altcoin Season Index measures the performance of altcoins relative to Bitcoin. A higher value (closer to 100) indicates an altcoin season, where altcoins outperform Bitcoin. It’s calculated based on the percentage of altcoins outperforming Bitcoin over a specific period.
-          </Typography>
-        </Box>
+        <InfoOverlay
+          isVisible={isInfoVisible}
+          explanation="The Altcoin Season Index measures the performance of altcoins relative to Bitcoin. A higher value (closer to 100) indicates an altcoin season, where altcoins outperform Bitcoin. It’s calculated based on the percentage of altcoins outperforming Bitcoin over a specific period."
+        />
       </Box>
     );
   });
@@ -1606,7 +1650,7 @@ const RoiCycleComparisonWidget = memo(() => {
     boxSizing: 'border-box',
     display: 'flex',
     flexDirection: 'column',
-    position: 'relative', // Added for overlay positioning
+    position: 'relative', // Ensure relative positioning for absolute children
     boxShadow: `0 4px 12px ${theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.1)'}`,
     transition: 'transform 0.2s ease-in-out',
     '&:hover': {
