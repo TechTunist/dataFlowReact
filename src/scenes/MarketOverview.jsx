@@ -24,6 +24,7 @@ import { getBitcoinRisk, saveRoiData, getRoiData } from '../utility/idbUtils';
 import InfoIcon from '@mui/icons-material/Info'; 
 import ShowChartIcon from '@mui/icons-material/ShowChart';
 
+
 // Wrap GridLayout with WidthProvider for responsiveness
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
@@ -90,6 +91,8 @@ const MarketOverview = () => {
 
   // Fetch all data and manage loading state
   useEffect(() => {
+    let isMounted = true; // Flag to prevent state updates after unmount
+  
     const fetchAllData = async () => {
       try {
         setIsLoading(true);
@@ -103,14 +106,22 @@ const MarketOverview = () => {
           fetchMvrvData(),
           fetchAltcoinSeasonData(),
         ]);
-        setIsLoading(false);
+        if (isMounted) setIsLoading(false); // Only update if mounted
       } catch (err) {
         console.error('Error fetching data:', err);
-        setError('Failed to load market data. Please try again later.');
-        setIsLoading(false);
+        if (isMounted) {
+          setError('Failed to load market data. Please try again later.');
+          setIsLoading(false);
+        }
       }
     };
+  
     fetchAllData();
+  
+    // Cleanup function
+    return () => {
+      isMounted = false; // Prevent state updates after unmount
+    };
   }, [
     fetchBtcData,
     fetchEthData,
@@ -119,7 +130,7 @@ const MarketOverview = () => {
     fetchMarketCapData,
     fetchMvrvData,
     fetchAltcoinSeasonData,
-  ]);
+  ]); // Dependency array includes only the fetch functions
 
   // Define breakpoints and columns for different screen sizes
   const breakpoints = { lg: 1200, md: 996, sm: 768, xs: 480 };
@@ -262,23 +273,23 @@ const MarketOverview = () => {
   // }, []);
 
   // Fetch data on mount
-  useEffect(() => {
-    fetchBtcData();
-    fetchEthData();
-    fetchFearAndGreedData();
-    fetchInflationData();
-    fetchMarketCapData();
-    fetchMvrvData();
-    fetchAltcoinSeasonData();
-  }, [
-    fetchBtcData,
-    fetchEthData,
-    fetchFearAndGreedData,
-    fetchInflationData,
-    fetchMarketCapData,
-    fetchMvrvData,
-    fetchAltcoinSeasonData,
-  ]);
+  // useEffect(() => {
+  //   fetchBtcData();
+  //   fetchEthData();
+  //   fetchFearAndGreedData();
+  //   fetchInflationData();
+  //   fetchMarketCapData();
+  //   fetchMvrvData();
+  //   fetchAltcoinSeasonData();
+  // }, [
+  //   fetchBtcData,
+  //   fetchEthData,
+  //   fetchFearAndGreedData,
+  //   fetchInflationData,
+  //   fetchMarketCapData,
+  //   fetchMvrvData,
+  //   fetchAltcoinSeasonData,
+  // ]);
 
   // Responsive row height and margin
   const rowHeight = isMobile ? 100 : 120;
@@ -432,7 +443,8 @@ const MarketOverview = () => {
   
     const gaugeColor = getGaugeColor(heatScore);
   
-    const handleChartRedirect = () => {
+    const handleChartRedirect = (event) => {
+      event.stopPropagation(); // Prevent event from reaching react-grid-layout
       window.location.href = 'https://www.cryptological.app/altcoin-season-index';
     };
   
@@ -453,18 +465,19 @@ const MarketOverview = () => {
           sx={{
             position: 'absolute',
             top: '12px',
-            left: '12px', // Opposite side of InfoIcon
+            left: '12px',
             color: textColor,
             cursor: 'pointer',
-            fontSize: '30px',
+            fontSize: '35px',
             zIndex: 1001,
             padding: '4px',
             borderRadius: '50%',
+            pointerEvents: 'auto', // Ensure clickability
             '&:hover': {
               backgroundColor: 'rgba(255, 255, 255, 0.1)',
             },
           }}
-          onClick={handleChartRedirect}
+          onMouseDown={handleChartRedirect}
           aria-label="View chart"
         />
         {/* Info Icon */}
@@ -475,7 +488,7 @@ const MarketOverview = () => {
             right: '12px',
             color: textColor,
             cursor: 'pointer',
-            fontSize: '30px',
+            fontSize: '35px',
             zIndex: 1001,
             padding: '4px',
             borderRadius: '50%',
@@ -621,7 +634,6 @@ const RoiCycleComparisonWidget = memo(() => {
 
       if (!cycle2 || !cycle3 || !cycle4) return;
 
-      // Cache ROI data
       try {
         await saveRoiData({ cycle2, cycle3, cycle4 });
       } catch (error) {
@@ -714,15 +726,57 @@ const RoiCycleComparisonWidget = memo(() => {
   const isSignificant = heatScore !== null && heatScore >= 85;
   const roiDifference = currentRoi !== null && avgRoi !== null ? currentRoi - avgRoi : null;
 
+  const [isInfoVisible, setIsInfoVisible] = useState(false);
+  const handleChartRedirect = (event) => {
+    event.stopPropagation();
+    window.location.href = 'https://www.cryptological.app/market-cycles';
+  };
+
   return (
-    <Box sx={{
-      ...chartBoxStyle(colors, theme),
-      backgroundColor: backgroundColor,
-      transition: 'background-color 0.3s ease, transform 0.2s ease-in-out',
-      border: isSignificant ? `2px solid ${colors.redAccent[500]}` : 'none',
-      padding: '24px',
-      textAlign: 'center',
-    }}>
+    <Box
+      sx={{
+        ...chartBoxStyle(colors, theme),
+        backgroundColor: backgroundColor,
+        transition: 'background-color 0.3s ease, transform 0.2s ease-in-out',
+        border: isSignificant ? `2px solid ${colors.redAccent[500]}` : 'none',
+        padding: '24px',
+        textAlign: 'center',
+        position: 'relative',
+      }}
+    >
+      <InfoIcon
+        sx={{
+          position: 'absolute',
+          top: '12px',
+          right: '12px',
+          color: textColor,
+          cursor: 'pointer',
+          fontSize: '35px',
+          zIndex: 1001,
+          padding: '4px',
+          borderRadius: '50%',
+          '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+        }}
+        onMouseEnter={() => setIsInfoVisible(true)}
+        onMouseLeave={() => setIsInfoVisible(false)}
+        aria-label="Information"
+      />
+      <ShowChartIcon
+        sx={{
+          position: 'absolute',
+          top: '12px',
+          left: '12px',
+          color: textColor,
+          cursor: 'pointer',
+          fontSize: '35px',
+          zIndex: 1001,
+          padding: '4px',
+          borderRadius: '50%',
+          '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+        }}
+        onMouseDown={handleChartRedirect}
+        aria-label="View chart"
+      />
       <Typography variant="h4" color={textColor} gutterBottom sx={{ fontWeight: 'bold' }}>
         ROI Cycle Comparison
       </Typography>
@@ -745,7 +799,7 @@ const RoiCycleComparisonWidget = memo(() => {
         <Typography variant="h5" color={textColor} sx={{ fontWeight: 'bold' }}>
           Avg (Cycles 2 & 3): {avgRoi !== null ? avgRoi.toFixed(2) : 'N/A'}
         </Typography>
-        <Typography variant="body1" color={textColor} >
+        <Typography variant="body1" color={textColor}>
           Days in Cycle: {currentDays !== null ? currentDays : 'N/A'}
         </Typography>
       </Box>
@@ -758,35 +812,13 @@ const RoiCycleComparisonWidget = memo(() => {
           Warning: Market significantly above historical ROI.
         </Typography>
       )}
-    {/* Overlay */}
-    <Box
-          sx={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-            opacity: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            transition: 'opacity 0.3s ease-in-out',
-            borderRadius: '12px',
-            padding: '16px',
-            textAlign: 'center',
-            '&:hover': {
-              opacity: 1,
-            },
-          }}
-        >
-          <Typography variant="body2" color="white" sx={{ fontSize: '14px' }}>
-            The ROI Cycle Comparison widget shows the current ROI of Bitcoin compared to the average ROI of previous cycles (Cycle 2 and Cycle 3). It helps identify how the current market performance compares to historical trends, providing insights into potential market overheating or undervaluation.
-          </Typography>
-        </Box>
-      </Box>
-    );
-  });
+      <InfoOverlay
+        isVisible={isInfoVisible}
+        explanation="The ROI Cycle Comparison widget shows the current ROI of Bitcoin compared to the average ROI of previous cycles (Cycle 2 and Cycle 3). It helps identify how the current market performance compares to historical trends, providing insights into potential market overheating or undervaluation."
+      />
+    </Box>
+  );
+});
 
   // MVRV Ratio Widget
   const MvrvRatioWidget = memo(() => {
@@ -794,41 +826,45 @@ const RoiCycleComparisonWidget = memo(() => {
     const [projectedPeak, setProjectedPeak] = useState(null);
     const [heatScore, setHeatScore] = useState(null);
     const [zScore, setZScore] = useState(null);
-
+  
     useEffect(() => {
       if (mvrvData && mvrvData.length > 0) {
         const latestMvrvRaw = mvrvData[mvrvData.length - 1].value;
         const latestMvrv = Math.max(0, Math.min(10000, latestMvrvRaw));
         const { projectedPeak } = calculateMvrvPeakProjection(mvrvData);
-
+  
         if (latestMvrv && projectedPeak) {
           const cappedProjectedPeak = Math.max(0, Math.min(10000, projectedPeak));
           setCurrentMvrv(latestMvrv);
           setProjectedPeak(cappedProjectedPeak);
-
+  
           const thresholds = [cappedProjectedPeak, 3.7];
           const distances = thresholds.map(t => ((latestMvrv - t) / t) * 100);
           const minDistance = Math.min(...distances.map(Math.abs));
           const heat = Math.max(0, Math.min(100, 100 - (minDistance / 20) * 100));
           setHeatScore(heat);
-
+  
           const values = mvrvData.map(item => Math.max(0, Math.min(10000, item.value)));
           const mean = values.reduce((sum, val) => sum + val, 0) / values.length;
           const variance = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length;
           const stdDev = Math.sqrt(variance);
-          const z = (latestMvrv - cappedProjectedPeak) / stdDev;
+          const z = stdDev > 0 ? (latestMvrv - cappedProjectedPeak) / stdDev : 0;
           setZScore(z);
-
-          // console.log('MvrvRatioWidget Heat Score:', heat);
         }
       }
     }, [mvrvData]);
-
+  
     const backgroundColor = getBackgroundColor(heatScore || 0);
     const textColor = getTextColor(backgroundColor);
     const heatDescription = getHeatDescription(heatScore || 0);
     const isSignificant = heatScore !== null && heatScore >= 85 && zScore !== null && Math.abs(zScore) <= 1;
-
+  
+    const [isInfoVisible, setIsInfoVisible] = useState(false);
+    const handleChartRedirect = (event) => {
+      event.stopPropagation();
+      window.location.href = 'https://www.cryptological.app/tx-mvrv';
+    };
+  
     return (
       <Box sx={{
         ...chartBoxStyle(colors, theme),
@@ -837,7 +873,41 @@ const RoiCycleComparisonWidget = memo(() => {
         border: isSignificant ? `2px solid ${colors.redAccent[500]}` : 'none',
         padding: '24px',
         textAlign: 'center',
+        position: 'relative',
       }}>
+        <InfoIcon
+          sx={{
+            position: 'absolute',
+            top: '12px',
+            right: '12px',
+            color: textColor,
+            cursor: 'pointer',
+            fontSize: '35px',
+            zIndex: 1001,
+            padding: '4px',
+            borderRadius: '50%',
+            '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+          }}
+          onMouseEnter={() => setIsInfoVisible(true)}
+          onMouseLeave={() => setIsInfoVisible(false)}
+          aria-label="Information"
+        />
+        <ShowChartIcon
+          sx={{
+            position: 'absolute',
+            top: '12px',
+            left: '12px',
+            color: textColor,
+            cursor: 'pointer',
+            fontSize: '35px',
+            zIndex: 1001,
+            padding: '4px',
+            borderRadius: '50%',
+            '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+          }}
+          onMouseDown={handleChartRedirect}
+          aria-label="View chart"
+        />
         <Typography variant="h4" color={textColor} gutterBottom sx={{ fontWeight: 'bold' }}>
           MVRV Ratio
         </Typography>
@@ -873,32 +943,10 @@ const RoiCycleComparisonWidget = memo(() => {
             Warning: Market is overheated.
           </Typography>
         )}
-      {/* Overlay */}
-      <Box
-          sx={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-            opacity: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            transition: 'opacity 0.3s ease-in-out',
-            borderRadius: '12px',
-            padding: '16px',
-            textAlign: 'center',
-            '&:hover': {
-              opacity: 1,
-            },
-          }}
-        >
-          <Typography variant="body2" color="white" sx={{ fontSize: '14px' }}>
-            The MVRV Ratio (Market Value to Realized Value) compares the market value of Bitcoin to its realized value. A high MVRV indicates that the market is overvalued, while a low MVRV suggests it is undervalued. This widget helps identify potential market overheating or undervaluation.
-          </Typography>
-        </Box>
+        <InfoOverlay
+          isVisible={isInfoVisible}
+          explanation="The MVRV Ratio (Market Value to Realized Value) compares the market value of Bitcoin to its realized value. A high MVRV indicates that the market is overvalued, while a low MVRV suggests it is undervalued. This widget helps identify potential market overheating or undervaluation."
+        />
       </Box>
     );
   });
@@ -908,39 +956,43 @@ const RoiCycleComparisonWidget = memo(() => {
     const [currentMayer, setCurrentMayer] = useState(null);
     const [heatScore, setHeatScore] = useState(null);
     const [zScore, setZScore] = useState(null);
-
+  
     useEffect(() => {
       if (btcData && btcData.length > 200) {
         const mayerMultiples = calculateMayerMultiple(btcData);
         const latestMayerRaw = mayerMultiples[mayerMultiples.length - 1]?.value;
         const latestMayer = latestMayerRaw ? Math.max(0, Math.min(100, latestMayerRaw)) : 0;
-
+  
         if (latestMayer) {
           setCurrentMayer(latestMayer);
-
+  
           const thresholds = [2.4, 0.6];
           const distances = thresholds.map(t => ((latestMayer - t) / t) * 100);
           const minDistance = Math.min(...distances.map(Math.abs));
           const heat = Math.max(0, Math.min(100, 100 - (minDistance / 20) * 100));
           setHeatScore(heat);
-
+  
           const values = mayerMultiples.map(item => Math.max(0, Math.min(100, item.value)));
           const mean = values.reduce((sum, val) => sum + val, 0) / values.length;
           const variance = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length;
           const stdDev = Math.sqrt(variance);
           const z = (latestMayer - thresholds[0]) / stdDev;
           setZScore(z);
-
-          // console.log('MayerMultipleWidget Heat Score:', heat);
         }
       }
     }, [btcData]);
-
+  
     const backgroundColor = getBackgroundColor(heatScore || 0);
     const textColor = getTextColor(backgroundColor);
     const heatDescription = getHeatDescription(heatScore || 0);
     const isSignificant = heatScore !== null && heatScore >= 85 && (currentMayer >= 2.4 || currentMayer <= 0.6);
-
+  
+    const [isInfoVisible, setIsInfoVisible] = useState(false);
+    const handleChartRedirect = (event) => {
+      event.stopPropagation();
+      window.location.href = 'https://www.cryptological.app/bitcoin';
+    };
+  
     return (
       <Box sx={{
         ...chartBoxStyle(colors, theme),
@@ -949,7 +1001,41 @@ const RoiCycleComparisonWidget = memo(() => {
         border: isSignificant ? `2px solid ${colors.redAccent[500]}` : 'none',
         padding: '24px',
         textAlign: 'center',
+        position: 'relative',
       }}>
+        <InfoIcon
+          sx={{
+            position: 'absolute',
+            top: '12px',
+            right: '12px',
+            color: textColor,
+            cursor: 'pointer',
+            fontSize: '35px',
+            zIndex: 1001,
+            padding: '4px',
+            borderRadius: '50%',
+            '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+          }}
+          onMouseEnter={() => setIsInfoVisible(true)}
+          onMouseLeave={() => setIsInfoVisible(false)}
+          aria-label="Information"
+        />
+        <ShowChartIcon
+          sx={{
+            position: 'absolute',
+            top: '12px',
+            left: '12px',
+            color: textColor,
+            cursor: 'pointer',
+            fontSize: '35px',
+            zIndex: 1001,
+            padding: '4px',
+            borderRadius: '50%',
+            '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+          }}
+          onMouseDown={handleChartRedirect}
+          aria-label="View chart"
+        />
         <Typography variant="h4" color={textColor} gutterBottom sx={{ fontWeight: 'bold' }}>
           Mayer Multiple
         </Typography>
@@ -982,32 +1068,10 @@ const RoiCycleComparisonWidget = memo(() => {
             Warning: Market is overheating or severely undervalued.
           </Typography>
         )}
-      {/* Overlay */}
-      <Box
-          sx={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-            opacity: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            transition: 'opacity 0.3s ease-in-out',
-            borderRadius: '12px',
-            padding: '16px',
-            textAlign: 'center',
-            '&:hover': {
-              opacity: 1,
-            },
-          }}
-        >
-          <Typography variant="body2" color="white" sx={{ fontSize: '14px' }}>
-            The Mayer Multiple is a ratio of Bitcoin's current price to its 200-day moving average. It helps identify whether Bitcoin is overbought or oversold. A high Mayer Multiple indicates that Bitcoin is significantly above its historical average, suggesting potential overvaluation, while a low value indicates undervaluation.
-          </Typography>
-        </Box>
+        <InfoOverlay
+          isVisible={isInfoVisible}
+          explanation="The Mayer Multiple is a ratio of Bitcoin's current price to its 200-day moving average. It helps identify whether Bitcoin is overbought or oversold. A high Mayer Multiple indicates that Bitcoin is significantly above its historical average, suggesting potential overvaluation, while a low value indicates undervaluation."
+        />
       </Box>
     );
   });
@@ -1015,7 +1079,7 @@ const RoiCycleComparisonWidget = memo(() => {
   // Bitcoin Risk Widget
   const BitcoinRiskWidget = memo(() => {
     const [riskLevel, setRiskLevel] = useState(null);
-
+  
     useEffect(() => {
       const fetchRiskLevel = async () => {
         try {
@@ -1028,15 +1092,19 @@ const RoiCycleComparisonWidget = memo(() => {
       };
       fetchRiskLevel();
     }, []);
-
+  
     const displayRisk = riskLevel !== null ? Math.max(0, Math.min(100, riskLevel * 100)).toFixed(2) : 0;
     const backgroundColor = getBackgroundColor(displayRisk);
     const textColor = getTextColor(backgroundColor);
     const heatDescription = getHeatDescription(displayRisk);
     const isSignificant = parseFloat(displayRisk) >= 85;
-
-    // console.log('BitcoinRiskWidget Heat Score (displayRisk):', displayRisk);
-
+  
+    const [isInfoVisible, setIsInfoVisible] = useState(false);
+    const handleChartRedirect = (event) => {
+      event.stopPropagation();
+      window.location.href = 'https://www.cryptological.app/risk';
+    };
+  
     return (
       <Box sx={{
         ...chartBoxStyle(colors, theme),
@@ -1045,38 +1113,53 @@ const RoiCycleComparisonWidget = memo(() => {
         border: isSignificant ? `2px solid ${colors.redAccent[500]}` : 'none',
         padding: '24px',
         textAlign: 'center',
+        position: 'relative',
       }}>
+        <InfoIcon
+          sx={{
+            position: 'absolute',
+            top: '12px',
+            right: '12px',
+            color: textColor,
+            cursor: 'pointer',
+            fontSize: '35px',
+            zIndex: 1001,
+            padding: '4px',
+            borderRadius: '50%',
+            '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+          }}
+          onMouseEnter={() => setIsInfoVisible(true)}
+          onMouseLeave={() => setIsInfoVisible(false)}
+          aria-label="Information"
+        />
+        <ShowChartIcon
+          sx={{
+            position: 'absolute',
+            top: '12px',
+            left: '12px',
+            color: textColor,
+            cursor: 'pointer',
+            fontSize: '35px',
+            zIndex: 1001,
+            padding: '4px',
+            borderRadius: '50%',
+            '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+          }}
+          onMouseDown={handleChartRedirect}
+          aria-label="View chart"
+        />
         <Typography variant="h4" color={textColor} gutterBottom sx={{ fontWeight: 'bold' }}>
           Bitcoin Risk Level
         </Typography>
-        <Box
-          sx={{
-            flexGrow: 1,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Typography
-            variant="h1"
-            color={textColor}
-            sx={{ fontWeight: 'bold' }}
-          >
+        <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Typography variant="h1" color={textColor} sx={{ fontWeight: 'bold' }}>
             {displayRisk}
           </Typography>
         </Box>
-        <Typography
-          variant="body1"
-          color={textColor}
-          sx={{ textAlign: 'center', mt: 1 }}
-        >
+        <Typography variant="body1" color={textColor} sx={{ textAlign: 'center', mt: 1 }}>
           Heat: {heatDescription}
         </Typography>
-        <Typography
-          variant="body1"
-          color={textColor}
-          sx={{ textAlign: 'center', mt: 1 }}
-        >
+        <Typography variant="body1" color={textColor} sx={{ textAlign: 'center', mt: 1 }}>
           {parseFloat(displayRisk) <= 30 ? 'Low Risk' : parseFloat(displayRisk) <= 70 ? 'Medium Risk' : 'High Risk'}
         </Typography>
         {isSignificant && (
@@ -1088,47 +1171,28 @@ const RoiCycleComparisonWidget = memo(() => {
             Warning: High market risk.
           </Typography>
         )}
-      {/* Overlay */}
-      <Box
-          sx={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-            opacity: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            transition: 'opacity 0.3s ease-in-out',
-            borderRadius: '12px',
-            padding: '16px',
-            textAlign: 'center',
-            '&:hover': {
-              opacity: 1,
-            },
-          }}
-        >
-          <Typography variant="body2" color="white" sx={{ fontSize: '14px' }}>
-            The Bitcoin Risk Level assesses the risk of investing in Bitcoin based on historical price patterns and volatility. A higher value indicates higher risk, derived from proprietary risk models.
-          </Typography>
-        </Box>
+        <InfoOverlay
+          isVisible={isInfoVisible}
+          explanation="The Bitcoin Risk Level assesses the risk of investing in Bitcoin based on historical price patterns and volatility. A higher value indicates higher risk, derived from proprietary risk models."
+        />
       </Box>
     );
   });
 
   // Fear and Greed Gauge
   const FearAndGreedGauge = memo(() => {
-    const latestValueRaw = fearAndGreedData && fearAndGreedData.length > 0 ? fearAndGreedData[fearAndGreedData.length - 1].value : 0;
-    const latestValue = Math.max(0, Math.min(100, latestValueRaw));
+    const latestValue = fearAndGreedData && fearAndGreedData.length > 0 ? Math.max(0, Math.min(100, fearAndGreedData[fearAndGreedData.length - 1].value)) : 0;
     const backgroundColor = getBackgroundColor(latestValue);
     const textColor = getTextColor(backgroundColor);
     const heatDescription = getHeatDescription(latestValue);
     const isSignificant = latestValue >= 85;
-
-    // console.log('FearAndGreedGauge Heat Score (latestValue):', latestValue);
-
+  
+    const [isInfoVisible, setIsInfoVisible] = useState(false);
+    const handleChartRedirect = (event) => {
+      event.stopPropagation();
+      window.location.href = 'https://www.cryptological.app/fear-and-greed-chart';
+    };
+  
     return (
       <Box sx={{
         ...chartBoxStyle(colors, theme),
@@ -1139,23 +1203,46 @@ const RoiCycleComparisonWidget = memo(() => {
         textAlign: 'center',
         display: 'flex',
         justifyContent: 'center',
+        position: 'relative',
       }}>
+        <InfoIcon
+          sx={{
+            position: 'absolute',
+            top: '12px',
+            right: '12px',
+            color: textColor,
+            cursor: 'pointer',
+            fontSize: '35px',
+            zIndex: 1001,
+            padding: '4px',
+            borderRadius: '50%',
+            '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+          }}
+          onMouseEnter={() => setIsInfoVisible(true)}
+          onMouseLeave={() => setIsInfoVisible(false)}
+          aria-label="Information"
+        />
+        <ShowChartIcon
+          sx={{
+            position: 'absolute',
+            top: '12px',
+            left: '12px',
+            color: textColor,
+            cursor: 'pointer',
+            fontSize: '35px',
+            zIndex: 1001,
+            padding: '4px',
+            borderRadius: '50%',
+            '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+          }}
+          onMouseDown={handleChartRedirect}
+          aria-label="View chart"
+        />
         <Typography variant="h4" color={textColor} gutterBottom sx={{ fontWeight: 'bold' }}>
           Fear and Greed Index
         </Typography>
         <FearAndGreed3D backgroundColor={backgroundColor} />
-        {/* <Typography
-          variant="body1"
-          color={textColor}
-          sx={{ textAlign: 'center', mt: 1 }}
-        >
-          Current: {latestValue}
-        </Typography> */}
-        <Typography
-          variant="body1"
-          color={textColor}
-          sx={{ textAlign: 'center', mt: 1 }}
-        >
+        <Typography variant="body1" color={textColor} sx={{ textAlign: 'center', mt: 1 }}>
           Heat: {heatDescription}
         </Typography>
         {isSignificant && (
@@ -1167,32 +1254,10 @@ const RoiCycleComparisonWidget = memo(() => {
             Warning: Extreme market greed.
           </Typography>
         )}
-      {/* Overlay */}
-      <Box
-          sx={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-            opacity: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            transition: 'opacity 0.3s ease-in-out',
-            borderRadius: '12px',
-            padding: '16px',
-            textAlign: 'center',
-            '&:hover': {
-              opacity: 1,
-            },
-          }}
-        >
-          <Typography variant="body2" color="white" sx={{ fontSize: '14px' }}>
-            The Fear and Greed Index gauges market sentiment, ranging from 0 (Extreme Fear) to 100 (Extreme Greed). It’s calculated using factors like volatility, market momentum, and social media sentiment.
-          </Typography>
-        </Box>
+        <InfoOverlay
+          isVisible={isInfoVisible}
+          explanation="The Fear and Greed Index gauges market sentiment, ranging from 0 (Extreme Fear) to 100 (Extreme Greed). It’s calculated using factors like volatility, market momentum, and social media sentiment."
+        />
       </Box>
     );
   });
@@ -1202,14 +1267,14 @@ const RoiCycleComparisonWidget = memo(() => {
     const [currentRatio, setCurrentRatio] = useState(null);
     const [predictedPeak, setPredictedPeak] = useState(null);
     const [heatScore, setHeatScore] = useState(null);
-
+  
     useEffect(() => {
       if (btcData && btcData.length > 350) {
         const ratioData = calculateRatioSeries(btcData);
         const latestRatioRaw = ratioData[ratioData.length - 1]?.value;
         const latestRatio = latestRatioRaw ? Math.max(0, Math.min(100, latestRatioRaw)) : 0;
         setCurrentRatio(latestRatio);
-
+  
         const historicalPeaks = [
           { date: '2017-12-17', ratio: 1.05, timestamp: Date.parse('2017-12-17') },
           { date: '2021-04-12', ratio: 1.00, timestamp: Date.parse('2021-04-12') },
@@ -1223,24 +1288,28 @@ const RoiCycleComparisonWidget = memo(() => {
         const b = y1 - m * t1;
         const predictedRatio = m * targetDate + b;
         setPredictedPeak(predictedRatio);
-
+  
         if (latestRatio && predictedRatio) {
           const buffer = 1.0;
           const minRatio = 0;
           const heatOffset = 0.28;
           const heat = Math.max(0, Math.min(100, (((latestRatio - minRatio) / buffer) * 100) + heatOffset));
           setHeatScore(heat);
-
-          // console.log('PiCycleTopWidget Heat Score:', heat);
         }
       }
     }, [btcData]);
-
+  
     const backgroundColor = getBackgroundColor(heatScore || 0);
     const textColor = getTextColor(backgroundColor);
     const heatDescription = getHeatDescription(heatScore || 0);
     const isSignificant = heatScore !== null && heatScore >= 85;
-
+  
+    const [isInfoVisible, setIsInfoVisible] = useState(false);
+    const handleChartRedirect = (event) => {
+      event.stopPropagation();
+      window.location.href = 'https://www.cryptological.app/pi-cycle';
+    };
+  
     return (
       <Box sx={{
         ...chartBoxStyle(colors, theme),
@@ -1249,7 +1318,41 @@ const RoiCycleComparisonWidget = memo(() => {
         border: isSignificant ? `2px solid ${colors.redAccent[500]}` : 'none',
         padding: '24px',
         textAlign: 'center',
+        position: 'relative',
       }}>
+        <InfoIcon
+          sx={{
+            position: 'absolute',
+            top: '12px',
+            right: '12px',
+            color: textColor,
+            cursor: 'pointer',
+            fontSize: '35px',
+            zIndex: 1001,
+            padding: '4px',
+            borderRadius: '50%',
+            '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+          }}
+          onMouseEnter={() => setIsInfoVisible(true)}
+          onMouseLeave={() => setIsInfoVisible(false)}
+          aria-label="Information"
+        />
+        <ShowChartIcon
+          sx={{
+            position: 'absolute',
+            top: '12px',
+            left: '12px',
+            color: textColor,
+            cursor: 'pointer',
+            fontSize: '35px',
+            zIndex: 1001,
+            padding: '4px',
+            borderRadius: '50%',
+            '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+          }}
+          onMouseDown={handleChartRedirect}
+          aria-label="View chart"
+        />
         <Typography variant="h4" color={textColor} gutterBottom sx={{ fontWeight: 'bold' }}>
           PiCycle Top Indicator
         </Typography>
@@ -1282,32 +1385,10 @@ const RoiCycleComparisonWidget = memo(() => {
             Warning: Market approaching cycle top.
           </Typography>
         )}
-      {/* Overlay */}
-      <Box
-          sx={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-            opacity: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            transition: 'opacity 0.3s ease-in-out',
-            borderRadius: '12px',
-            padding: '16px',
-            textAlign: 'center',
-            '&:hover': {
-              opacity: 1,
-            },
-          }}
-        >
-          <Typography variant="body2" color="white" sx={{ fontSize: '14px' }}>
-            The PiCycle Top Indicator (created by Phillip Swift) uses the 111-day and 350-day moving averages to predict potential market tops. The ratio of these moving averages shows decreasing peaks, suggesting a cycle top of under 1.0.
-          </Typography>
-        </Box>
+        <InfoOverlay
+          isVisible={isInfoVisible}
+          explanation="The PiCycle Top Indicator (created by Phillip Swift) uses the 111-day and 350-day moving averages to predict potential market tops. The ratio of these moving averages shows decreasing peaks, suggesting a cycle top of under 1.0."
+        />
       </Box>
     );
   });
@@ -1317,7 +1398,7 @@ const RoiCycleComparisonWidget = memo(() => {
     const [heatScore, setHeatScore] = useState(null);
     const [debugScores, setDebugScores] = useState({});
     const [debugInputs, setDebugInputs] = useState({});
-
+  
     useEffect(() => {
       if (mvrvData?.length > 0 && btcData?.length > 350 && fearAndGreedData?.length > 0) {
         // MVRV Heat
@@ -1332,7 +1413,7 @@ const RoiCycleComparisonWidget = memo(() => {
           const minDistance = Math.min(...distances.map(Math.abs));
           mvrvHeat = Math.max(0, Math.min(100, 100 - (minDistance / 10) * 100));
         }
-
+  
         // Mayer Multiple Heat
         const mayerMultiples = calculateMayerMultiple(btcData);
         const latestMayerRaw = mayerMultiples[mayerMultiples.length - 1]?.value;
@@ -1344,7 +1425,7 @@ const RoiCycleComparisonWidget = memo(() => {
           const minDistance = Math.min(...distances.map(Math.abs));
           mayerHeat = Math.max(0, Math.min(100, 100 - (minDistance / 10) * 100));
         }
-
+  
         // Bitcoin Risk Heat
         let riskHeat = 0;
         let riskData = null;
@@ -1356,11 +1437,11 @@ const RoiCycleComparisonWidget = memo(() => {
             console.error('Error fetching risk:', error);
             riskHeat = 0;
           }
-
+  
           // Fear and Greed Heat
           const fearGreedValueRaw = fearAndGreedData[fearAndGreedData.length - 1].value;
           const fearGreedValue = Math.max(0, Math.min(100, fearGreedValueRaw));
-
+  
           // PiCycle Top Heat
           const ratioData = calculateRatioSeries(btcData);
           const latestRatioRaw = ratioData[ratioData.length - 1]?.value;
@@ -1372,7 +1453,7 @@ const RoiCycleComparisonWidget = memo(() => {
             const heatOffset = 0.28;
             piCycleHeat = Math.max(0, Math.min(100, (((latestRatio - minRatio) / buffer) * 100) + heatOffset));
           }
-
+  
           const inputs = {
             latestMvrv: latestMvrvRaw,
             projectedPeak: projectedPeak,
@@ -1382,8 +1463,7 @@ const RoiCycleComparisonWidget = memo(() => {
             latestRatio: latestRatioRaw,
           };
           setDebugInputs(inputs);
-          // console.log('Raw Inputs:', inputs);
-
+  
           const scores = {
             mvrv: mvrvHeat,
             mayer: mayerHeat,
@@ -1403,33 +1483,36 @@ const RoiCycleComparisonWidget = memo(() => {
             return sum + score * weights[key];
           }, 0);
           const avgHeat = Math.max(0, Math.min(100, weightedSum));
-
+  
           setDebugScores(scores);
           setHeatScore(avgHeat);
-
-          // console.log('MarketHeatGaugeWidget Scores:', scores, 'Average:', avgHeat);
         };
         fetchRisk();
       }
     }, [mvrvData, btcData, fearAndGreedData]);
-
+  
     const backgroundColor = getBackgroundColor(heatScore || 0);
     const textColor = getTextColor(backgroundColor);
     const heatDescription = getHeatDescription(heatScore || 0);
     const isSignificant = heatScore !== null && heatScore >= 85;
-
+  
     const getGaugeColor = (value) => {
-      const startColor = { r: 255, g: 255, b: 255 }; // White
-      const endColor = { r: 128, g: 0, b: 128 }; // Purple
+      const startColor = { r: 255, g: 255, b: 255 };
+      const endColor = { r: 128, g: 0, b: 128 };
       const ratio = (value || 0) / 100;
       const r = Math.round(startColor.r + (endColor.r - startColor.r) * ratio);
       const g = Math.round(startColor.g + (endColor.g - startColor.g) * ratio);
       const b = Math.round(startColor.b + (endColor.b - startColor.b) * ratio);
       return `rgb(${r}, ${g}, ${b})`;
     };
-
+  
     const gaugeColor = getGaugeColor(heatScore);
-
+    const [isInfoVisible, setIsInfoVisible] = useState(false);
+    const handleChartRedirect = (event) => {
+      event.stopPropagation();
+      window.location.href = '#';
+    };
+  
     return (
       <Box sx={{
         ...chartBoxStyle(colors, theme),
@@ -1438,7 +1521,41 @@ const RoiCycleComparisonWidget = memo(() => {
         border: isSignificant ? `2px solid ${colors.redAccent[500]}` : 'none',
         padding: '24px',
         textAlign: 'center',
+        position: 'relative',
       }}>
+        <InfoIcon
+          sx={{
+            position: 'absolute',
+            top: '12px',
+            right: '12px',
+            color: textColor,
+            cursor: 'pointer',
+            fontSize: '35px',
+            zIndex: 1001,
+            padding: '4px',
+            borderRadius: '50%',
+            '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+          }}
+          onMouseEnter={() => setIsInfoVisible(true)}
+          onMouseLeave={() => setIsInfoVisible(false)}
+          aria-label="Information"
+        />
+        <ShowChartIcon
+          sx={{
+            position: 'absolute',
+            top: '12px',
+            left: '12px',
+            color: textColor,
+            cursor: 'pointer',
+            fontSize: '35px',
+            zIndex: 1001,
+            padding: '4px',
+            borderRadius: '50%',
+            '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+          }}
+          onMouseDown={handleChartRedirect}
+          aria-label="View chart"
+        />
         <Typography variant="h4" color={textColor} gutterBottom sx={{ fontWeight: 'bold' }}>
           Market Heat Index
         </Typography>
@@ -1450,16 +1567,12 @@ const RoiCycleComparisonWidget = memo(() => {
               height: 10,
               borderRadius: 5,
               backgroundColor: colors.grey[theme.palette.mode === 'dark' ? 700 : 300],
-              '& .MuiLinearProgress-bar': {
-                backgroundColor: gaugeColor,
-              },
+              '& .MuiLinearProgress-bar': { backgroundColor: gaugeColor },
             }}
           />
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
             <Typography variant="body1" color={textColor}>0 (Cold)</Typography>
-            <Typography variant="body1" color={textColor}>
-              {heatScore !== null ? heatScore.toFixed(0) : 'N/A'}
-            </Typography>
+            <Typography variant="body1" color={textColor}>{heatScore !== null ? heatScore.toFixed(0) : 'N/A'}</Typography>
             <Typography variant="body1" color={textColor}>100 (Hot)</Typography>
           </Box>
           <Typography
@@ -1486,32 +1599,10 @@ const RoiCycleComparisonWidget = memo(() => {
             Warning: Market is significantly overheated.
           </Typography>
         )}
-      {/* Overlay */}
-      <Box
-          sx={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-            opacity: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            transition: 'opacity 0.3s ease-in-out',
-            borderRadius: '12px',
-            padding: '16px',
-            textAlign: 'center',
-            '&:hover': {
-              opacity: 1,
-            },
-          }}
-        >
-          <Typography variant="body2" color="white" sx={{ fontSize: '14px' }}>
-            The Market Heat Index combines multiple indicators (MVRV, Mayer Multiple, Fear and Greed, etc.) to assess overall market conditions. A higher score indicates an overheated market, calculated as a weighted average of individual indicator scores.
-          </Typography>
-        </Box>
+        <InfoOverlay
+          isVisible={isInfoVisible}
+          explanation="The Market Heat Index combines multiple indicators (MVRV, Mayer Multiple, Fear and Greed, etc.) to assess overall market conditions. A higher score indicates an overheated market, calculated as a weighted average of individual indicator scores."
+        />
       </Box>
     );
   });

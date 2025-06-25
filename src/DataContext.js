@@ -269,7 +269,12 @@ export const DataProvider = ({ children }) => {
   // const API_BASE_URL = 'http://127.0.0.1:8000/api';
 
   useEffect(() => {
+
+    let isMounted = true;
+
     const preloadData = async () => {
+      await initDB();
+
       const cacheConfigs = [
         { id: 'btcData', setData: setBtcData, setLastUpdated: setBtcLastUpdated, setIsFetched: setIsBtcDataFetched, useDateCheck: true },
         { id: 'fedBalanceData', setData: setFedBalanceData, setLastUpdated: setFedLastUpdated, setIsFetched: setIsFedBalanceDataFetched, useDateCheck: false, cacheDuration: 7 * 24 * 60 * 60 * 1000 },
@@ -297,54 +302,53 @@ export const DataProvider = ({ children }) => {
         { id: 'altcoinSeasonTimeseriesData', setData: setAltcoinSeasonTimeseriesData, setLastUpdated: setAltcoinSeasonTimeseriesLastUpdated, setIsFetched: setIsAltcoinSeasonTimeseriesDataFetched, useDateCheck: true },
       ];
 
-      for (const { id, setData, setLastUpdated, setIsFetched, useDateCheck } of cacheConfigs) {
+      // Fetch all data in parallel
+      const fetchPromises = cacheConfigs.map(async ({ id, setData, setLastUpdated, setIsFetched, useDateCheck }) => {
         try {
           const cached = await getCachedData(id);
           if (cached && cached.data.length > 0) {
-            const { data: cachedData, timestamp } = cached;
+            const sortedCachedData = [...cached.data].sort((a, b) => new Date(a.time) - new Date(b.time));
+            const latestCachedDate = sortedCachedData[sortedCachedData.length - 1].time;
             const currentDate = new Date().toISOString().split('T')[0];
             const currentTimestamp = Date.now();
-            const sortedCachedData = [...cachedData].sort((a, b) => new Date(a.time) - new Date(b.time));
-            const latestCachedDate = sortedCachedData[sortedCachedData.length - 1].time;
-
-            let shouldReuseCache = false;
-            if (useDateCheck) {
-              shouldReuseCache = latestCachedDate >= currentDate;
-            } else {
-              const timeSinceLastFetch = currentTimestamp - timestamp;
-              shouldReuseCache = timeSinceLastFetch < (24 * 60 * 60 * 1000);
-            }
+            const shouldReuseCache = useDateCheck
+              ? latestCachedDate >= currentDate
+              : currentTimestamp - cached.timestamp < (useDateCheck ? 24 : 7) * 24 * 60 * 60 * 1000;
 
             if (shouldReuseCache) {
-              setData(sortedCachedData);
-              setLastUpdated(latestCachedDate);
-              setIsFetched(true);
-            } else if (id === 'onchainMetricsData') {
-              await fetchOnchainMetricsData();
+              if (isMounted) {
+                setData(sortedCachedData);
+                setLastUpdated(latestCachedDate);
+                setIsFetched(true);
+              }
+              return;
             }
-          } else if (id === 'onchainMetricsData') {
-            await fetchOnchainMetricsData();
           }
+          // Trigger fetch for non-cached or stale data
+          const fetchFunc = {
+            onchainMetricsData: fetchOnchainMetricsData,
+            // Map other ids to their fetch functions (e.g., 'btcData': fetchBtcData)
+            // Add mappings for all cacheIds
+          }[id];
+          if (fetchFunc && isMounted) await fetchFunc();
         } catch (error) {
-          if (id === 'onchainMetricsData') {
-            setOnchainFetchError(error.message);
-          }
+          if (id === 'onchainMetricsData' && isMounted) setOnchainFetchError(error.message);
         }
-      }
-      setPreloadComplete(true);
-      if (!isMvrvRiskDataFetched && !isPuellRiskDataFetched && !isMinerCapThermoCapRiskDataFetched) {
+      });
+
+      await Promise.all(fetchPromises);
+      if (isMounted && !isMvrvRiskDataFetched && !isPuellRiskDataFetched && !isMinerCapThermoCapRiskDataFetched) {
         await fetchRiskMetricsData();
       }
+      if (isMounted) setPreloadComplete(true);
     };
 
     preloadData();
-  }, [    isMvrvRiskDataFetched,
-    isPuellRiskDataFetched,
-    isMinerCapThermoCapRiskDataFetched,
-    isFeeRiskDataFetched, // New
-    isSoplRiskDataFetched, // New
-    isAltcoinSeasonTimeseriesDataFetched,
-    ]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
     const fetchAltcoinSeasonTimeseriesData = useCallback(async () => {
       if (isAltcoinSeasonTimeseriesDataFetched) return;
