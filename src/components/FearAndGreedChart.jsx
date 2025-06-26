@@ -43,8 +43,8 @@ const calculateEMA = (data, period) => {
       result[i] = data[i] * k + result[i - 1] * (1 - k);
     }
   }
-  console.log('EMA Input:', data);
-  console.log('EMA Values:', result);
+  // console.log('EMA Input:', data);
+  // console.log('EMA Values:', result);
   return result;
 };
 
@@ -231,7 +231,7 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
         }))
         .filter(d => d.value != null && !isNaN(d.value));
 
-      console.log('fgData:', fgData);
+      // console.log('fgData:', fgData);
 
       let fgValues = fgData.map(d => d.value);
       let traceName = 'Fear and Greed Index';
@@ -300,7 +300,7 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
   }, [baseLayout, viewMode]);
 
   const handleRelayout = useCallback((event) => {
-    console.log('Relayout Event:', event);
+    // console.log('Relayout Event:', event);
     const update = {};
     if (event['xaxis.autorange']) {
       update.xaxis = { ...baseLayout.xaxis, autorange: true };

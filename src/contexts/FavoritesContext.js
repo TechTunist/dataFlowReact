@@ -19,6 +19,7 @@ export const FavoritesProvider = ({ children, user, isSignedIn }) => {
     setError('');
     try {
       const token = await getToken();
+      // console.log('JWT Token:', token);
       const response = await fetch(`${API_BASE_URL}/api/favorite-charts/`, {
         method: 'GET',
         headers: {
@@ -48,6 +49,7 @@ export const FavoritesProvider = ({ children, user, isSignedIn }) => {
     setError('');
     try {
       const token = await getToken();
+      // console.log('JWT Token:', token);
       const response = await fetch(`${API_BASE_URL}/api/favorite-charts/add/`, {
         method: 'POST',
         headers: {
@@ -77,6 +79,7 @@ export const FavoritesProvider = ({ children, user, isSignedIn }) => {
     setError('');
     try {
       const token = await getToken();
+      // console.log('JWT Token:', token);
       const response = await fetch(`${API_BASE_URL}/api/favorite-charts/remove/`, {
         method: 'POST',
         headers: {

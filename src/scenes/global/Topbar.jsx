@@ -1,6 +1,6 @@
 // src/scenes/global/Topbar.js
 import React, { useContext, useState } from "react";
-import { Box, IconButton, useTheme, Typography, Menu, MenuItem, Avatar } from "@mui/material";
+import { Box, IconButton, useTheme, Typography, Menu, MenuItem, Avatar, Alert } from "@mui/material";
 import { ColorModeContext, tokens } from "../../theme";
 import LightModeOutlinedIcon from "@mui/icons-material/LightModeOutlined";
 import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
@@ -11,12 +11,84 @@ import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import useIsMobile from "../../hooks/useIsMobile";
 import "../../styling/bitcoinChart.css";
 import Header from "../../components/Header";
-import { useClerk, useUser } from "@clerk/clerk-react"; // Add Clerk hooks
+import { useClerk, useUser } from "@clerk/clerk-react";
 import PersonOutlinedIcon from "@mui/icons-material/PersonOutlined";
 import PaymentOutlinedIcon from "@mui/icons-material/PaymentOutlined";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import StarBorderIcon from "@mui/icons-material/StarBorder";
+import StarIcon from "@mui/icons-material/Star";
+import { useFavorites } from "../../contexts/FavoritesContext";
+
+// Mapping of route paths to chart IDs (aligned with Dashboard.js chartConfig)
+const routeToChartId = {
+  "/btc-20-ext": "bitcoin-20-ext",
+  "/bitcoin": "bitcoin-price",
+  "/total": "total-market-cap",
+  "/total-difference": "total-difference",
+  "/bitcoin-fees": "bitcoin-fees",
+  "/bitcoin-dominance": "bitcoin-dominance",
+  "/bitcoin-roi": "bitcoin-roi",
+  "/running-roi": "running-roi",
+  "/historical-volatility": "historical-volatility",
+  "/monthly-returns": "monthly-returns",
+  "/monthly-average-roi": "monthly-average-roi",
+  "/btc-add-balance": "bitcoin-address-balances",
+  "/ethereum": "ethereum-price",
+  "/puell-multiple": "puell-multiple",
+  "/risk": "bitcoin-risk",
+  "/risk-eth": "ethereum-risk",
+  "/pi-cycle": "pi-cycle-top",
+  "/fear-and-greed": "fear-and-greed",
+  "/fear-and-greed-3d": "fear-and-greed-3d",
+  "/logarithmic-regression": "logarithmic-regression",
+  "/risk-color": "bitcoin-risk-color",
+  "/risk-bands": "risk-bands",
+  "/altcoin-price": "altcoin-price",
+  "/altcoin-risk": "altcoin-risk",
+  "/market-cycles": "market-cycles",
+  "/fear-and-greed-chart": "fear-and-greed-chart",
+  "/fear-and-greed-binary": "fear-and-greed-binary",
+  "/us-inflation": "us-inflation",
+  "/us-unemployment": "us-unemployment",
+  "/us-interest": "us-interest",
+  "/us-combined-macro": "us-combined-macro",
+  "/us-initial-claims": "us-initial-claims",
+  "/tx-combined": "tx-combined",
+  "/tx-mvrv": "tx-mvrv",
+  "/on-chain-historical-risk": "on-chain-historical-risk",
+  "/altcoin-season-index": "altcoin-season-index",
+  "/fred/fed-funds-rate": "fred-fed-funds-rate",
+  "/fred/sp500": "fred-sp500",
+  "/fred/recession-indicator": "fred-recession-indicator",
+  "/fred/cpi": "fred-cpi",
+  "/fred/unemployment-rate": "fred-unemployment-rate",
+  "/fred/10-year-treasury": "fred-10-year-treasury",
+  "/fred/10y-2y-spread": "fred-10y-2y-spread",
+  "/fred/5y-inflation-expectation": "fred-5y-inflation-expectation",
+  "/fred/euro-dollar": "fred-euro-dollar",
+  "/fred/crude-oil": "fred-crude-oil",
+  "/fred/producer-price": "fred-producer-price",
+  "/fred/nonfarm-payrolls": "fred-nonfarm-payrolls",
+  "/fred/gdp": "fred-gdp",
+  "/fred/gdp-growth": "fred-gdp-growth",
+  "/fred/m1-money-supply": "fred-m1-money-supply",
+  "/fred/m2-money-supply": "fred-m2-money-supply",
+  "/fred/consumer-sentiment": "fred-consumer-sentiment",
+  "/fred/vix": "fred-vix",
+  "/fred/ted-spread": "fred-ted-spread",
+  "/fred/yen-dollar": "fred-yen-dollar",
+  "/fred/pound-dollar": "fred-pound-dollar",
+  "/fred/cad-dollar": "fred-cad-dollar",
+  "/fred/chicago-fed-index": "fred-chicago-fed-index",
+  "/fred/economic-policy-uncertainty": "fred-economic-policy-uncertainty",
+  "/fred/housing-starts": "fred-housing-starts",
+  "/fred/case-shiller": "fred-case-shiller",
+  "/fred/nikkei-225": "fred-nikkei-225",
+  "/fred/german-bond-yield": "fred-german-bond-yield",
+  "/workbench": "workbench",
+};
 
 const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
   const theme = useTheme();
@@ -26,11 +98,26 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const sidebarWidth = isSidebar ? 270 : 0;
-  const { user } = useUser(); // Get user data
-  const { signOut } = useClerk(); // Clerk sign-out function
-  const [anchorEl, setAnchorEl] = useState(null); // State for menu anchor
+  const { user } = useUser();
+  const { signOut } = useClerk();
+  const [anchorEl, setAnchorEl] = useState(null);
+  const { favoriteCharts, addFavoriteChart, removeFavoriteChart, error } = useFavorites();
 
-  // Open/close menu
+  // Get current chartId from route
+  const currentChartId = routeToChartId[location.pathname];
+  const isChartPage = !!currentChartId; // Only show favorite button on chart pages
+  const isFavorite = isChartPage && favoriteCharts.includes(currentChartId);
+
+  // Handle favorite toggle
+  const handleToggleFavorite = () => {
+    if (!currentChartId) return;
+    if (isFavorite) {
+      removeFavoriteChart(currentChartId);
+    } else {
+      addFavoriteChart(currentChartId);
+    }
+  };
+
   const handleMenuOpen = (event) => {
     setAnchorEl(event.currentTarget);
   };
@@ -39,15 +126,12 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
     setAnchorEl(null);
   };
 
-  // Handle logout
   const handleLogout = async () => {
     await signOut();
     handleMenuClose();
-    // Redirect is handled by App.js routing (unauthenticated users go to /splash)
   };
 
-  // Placeholder for user plan (to be updated with actual plan data later)
-  const userPlan = "Free"; // Replace with actual plan data from backend later
+  const userPlan = "Free"; // Replace with actual plan data later
 
   const topBarStyle = {
     position: "fixed",
@@ -228,132 +312,150 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
       <div style={{ flexGrow: 1, textAlign: "center" }}>
         <Header title={title} subtitle={subtitle} />
       </div>
-      <Box display="flex" alignItems="center">
-        {isMobile && (
-          <Link to="/">
-            <IconButton aria-label="home" className="home-button">
-              <HomeOutlinedIcon style={{ color: colors.primary[100] }} />
-            </IconButton>
-          </Link>
+      <Box display="flex" alignItems="center" flexDirection="column" position="relative">
+        {error && (
+          <Alert
+            severity="error"
+            sx={{
+              position: "absolute",
+              top: isMobile ? "65px" : "85px",
+              right: 0,
+              zIndex: 1200,
+              maxWidth: "300px",
+            }}
+          >
+            {error}
+          </Alert>
         )}
-        <IconButton onClick={colorMode.toggleColorMode} color="inherit">
-          {theme.palette.mode === "dark" ? <LightModeOutlinedIcon /> : <DarkModeOutlinedIcon />}
-        </IconButton>
-
-        {/* User Element */}
-        {user && (
-          <Box display="flex" alignItems="center">
-            <IconButton onClick={handleMenuOpen}>
-              <Avatar
-                sx={{
-                  bgcolor: colors.greenAccent[500],
-                  width: 32,
-                  height: 32,
-                  fontSize: "1rem",
-                }}
-              >
-                {user.emailAddresses[0]?.emailAddress.charAt(0).toUpperCase()}
-              </Avatar>
-            </IconButton>
-
-            {/* User Menu */}
-            <Menu
-              anchorEl={anchorEl}
-              open={Boolean(anchorEl)}
-              onClose={handleMenuClose}
-              anchorOrigin={{
-                vertical: "bottom",
-                horizontal: "right",
-              }}
-              transformOrigin={{
-                vertical: "top",
-                horizontal: "right",
-              }}
-              PaperProps={{
-                sx: {
-                  backgroundColor: colors.primary[800],
-                  color: colors.grey[100],
-                  minWidth: "200px",
-                },
-              }}
+        <Box display="flex" alignItems="center">
+          {isMobile && (
+            <Link to="/">
+              <IconButton aria-label="home" className="home-button">
+                <HomeOutlinedIcon style={{ color: colors.primary[100] }} />
+              </IconButton>
+            </Link>
+          )}
+          {isChartPage && (
+            <IconButton
+              onClick={handleToggleFavorite}
+              aria-label="favorite"
+              sx={{ color: isFavorite ? colors.greenAccent[500] : colors.grey[100] }}
             >
-              {/* User Email and Plan */}
-              <Box
-                sx={{
-                  padding: "8px 16px",
-                  borderBottom: `1px solid ${colors.grey[700]}`,
-                  backgroundColor: colors.primary[900],
+              {isFavorite ? <StarIcon /> : <StarBorderIcon />}
+            </IconButton>
+          )}
+          <IconButton onClick={colorMode.toggleColorMode} color="inherit">
+            {theme.palette.mode === "dark" ? <LightModeOutlinedIcon /> : <DarkModeOutlinedIcon />}
+          </IconButton>
+          {user && (
+            <Box display="flex" alignItems="center">
+              <IconButton onClick={handleMenuOpen}>
+                <Avatar
+                  sx={{
+                    bgcolor: colors.greenAccent[500],
+                    width: 32,
+                    height: 32,
+                    fontSize: "1rem",
+                  }}
+                >
+                  {user.emailAddresses[0]?.emailAddress.charAt(0).toUpperCase()}
+                </Avatar>
+              </IconButton>
+              <Menu
+                anchorEl={anchorEl}
+                open={Boolean(anchorEl)}
+                onClose={handleMenuClose}
+                anchorOrigin={{
+                  vertical: "bottom",
+                  horizontal: "right",
+                }}
+                transformOrigin={{
+                  vertical: "top",
+                  horizontal: "right",
+                }}
+                PaperProps={{
+                  sx: {
+                    backgroundColor: colors.primary[800],
+                    color: colors.grey[100],
+                    minWidth: "200px",
+                  },
                 }}
               >
-                <Typography variant="body2" sx={{ fontWeight: "bold" }}>
-                  {user.emailAddresses[0]?.emailAddress}
-                </Typography>
-                <Typography variant="caption" sx={{ color: colors.grey[400] }}>
-                  Plan: {userPlan}
-                </Typography>
-              </Box>
-
-              {/* Menu Items */}
-              <MenuItem
-                onClick={() => {
-                  navigate("/profile");
-                  handleMenuClose();
-                }}
-                sx={{
-                  "&:hover": { backgroundColor: colors.primary[700] },
-                }}
-              >
-                <PersonOutlinedIcon sx={{ mr: 1 }} />
-                View Profile
-              </MenuItem>
-              <MenuItem
-                onClick={() => {
-                  navigate("/subscription");
-                  handleMenuClose();
-                }}
-                sx={{
-                  "&:hover": { backgroundColor: colors.primary[700] },
-                }}
-              >
-                <PaymentOutlinedIcon sx={{ mr: 1 }} />
-                Manage Subscription
-              </MenuItem>
-              <MenuItem
-                onClick={() => {
-                  navigate("/settings");
-                  handleMenuClose();
-                }}
-                sx={{
-                  "&:hover": { backgroundColor: colors.primary[700] },
-                }}
-              >
-                <SettingsOutlinedIcon sx={{ mr: 1 }} />
-                Settings
-              </MenuItem>
-              <MenuItem
-                onClick={() => {
-                  navigate("/change-password");
-                  handleMenuClose();
-                }}
-                sx={{
-                  "&:hover": { backgroundColor: colors.primary[700] },
-                }}
-              >
-                <LockOutlinedIcon sx={{ mr: 1 }} />
-                Change Password
-              </MenuItem>
-              <MenuItem
-                onClick={handleLogout}
-                sx={{
-                  "&:hover": { backgroundColor: colors.primary[700] },
-                }}
-              >
-                <LogoutOutlinedIcon sx={{ mr: 1 }} />
-                Logout
-              </MenuItem>
-            </Menu>
-          </Box>
-        )}
+                <Box
+                  sx={{
+                    padding: "8px 16px",
+                    borderBottom: `1px solid ${colors.grey[700]}`,
+                    backgroundColor: colors.primary[900],
+                  }}
+                >
+                  <Typography variant="body2" sx={{ fontWeight: "bold" }}>
+                    {user.emailAddresses[0]?.emailAddress}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: colors.grey[400] }}>
+                    Plan: {userPlan}
+                  </Typography>
+                </Box>
+                <MenuItem
+                  onClick={() => {
+                    navigate("/profile");
+                    handleMenuClose();
+                  }}
+                  sx={{
+                    "&:hover": { backgroundColor: colors.primary[700] },
+                  }}
+                >
+                  <PersonOutlinedIcon sx={{ mr: 1 }} />
+                  View Profile
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    navigate("/subscription");
+                    handleMenuClose();
+                  }}
+                  sx={{
+                    "&:hover": { backgroundColor: colors.primary[700] },
+                  }}
+                >
+                  <PaymentOutlinedIcon sx={{ mr: 1 }} />
+                  Manage Subscription
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    navigate("/settings");
+                    handleMenuClose();
+                  }}
+                  sx={{
+                    "&:hover": { backgroundColor: colors.primary[700] },
+                  }}
+                >
+                  <SettingsOutlinedIcon sx={{ mr: 1 }} />
+                  Settings
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    navigate("/change-password");
+                    handleMenuClose();
+                  }}
+                  sx={{
+                    "&:hover": { backgroundColor: colors.primary[700] },
+                  }}
+                >
+                  <LockOutlinedIcon sx={{ mr: 1 }} />
+                  Change Password
+                </MenuItem>
+                <MenuItem
+                  onClick={handleLogout}
+                  sx={{
+                    "&:hover": { backgroundColor: colors.primary[700] },
+                  }}
+                >
+                  <LogoutOutlinedIcon sx={{ mr: 1 }} />
+                  Logout
+                </MenuItem>
+              </Menu>
+            </Box>
+          )}
+        </Box>
       </Box>
     </Box>
   );

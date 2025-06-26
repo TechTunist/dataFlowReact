@@ -65,6 +65,7 @@ import HistoricalVolatility from "./components/HistoricalVolatility";
 import PuellMultiple from "./components/PuellMultiple";
 import AltcoinSeasonIndexChart from "./components/AltcoinSeasonIndexChart";
 import { FavoritesProvider } from './contexts/FavoritesContext';
+import Charts from "./components/ChartsThumbnails";
 
 // Stripe Context
 const StripeContext = createContext(null);
@@ -185,6 +186,9 @@ const AppContent = memo(({ isSignedIn, user }) => {
                     <Route path="/splash" element={<SplashPage />} />
                     <Route path="/login-signup" element={<LoginSignup />} />
 
+                    {/* thumbnails of all charts */}
+                    <Route path="/charts" element={<Charts />} />
+
                     {/* Protected routes */}
                     <Route
                       path="/dashboard"
@@ -239,14 +243,6 @@ const AppContent = memo(({ isSignedIn, user }) => {
                       element={
                         <ProtectedRoute>
                           <BasicChart ChartComponent={Bitcoin20WeekExtension} />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/test"
-                      element={
-                        <ProtectedRoute>
-                          <TestAPI />
                         </ProtectedRoute>
                       }
                     />

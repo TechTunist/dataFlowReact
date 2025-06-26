@@ -368,7 +368,7 @@ const BitcoinROI = ({ isDashboard = false }) => {
                 <Button
                   onClick={toggleFavorite}
                   sx={{
-                    color: isFavorite ? colors.yellowAccent[500] : colors.grey[100],
+                    color: isFavorite ? colors.greenAccent[500] : colors.grey[100],
                     minWidth: 'auto',
                     padding: '4px',
                   }}
