@@ -1,3 +1,4 @@
+// src/components/BitcoinROI.js
 import React, { useEffect, useState, useContext, useMemo, useCallback } from 'react';
 import Plot from 'react-plotly.js';
 import { tokens } from "../theme";
@@ -8,17 +9,30 @@ import BitcoinFees from './BitcoinTransactionFees';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import LastUpdated from '../hooks/LastUpdated';
+import { useFavorites } from '../contexts/FavoritesContext';
 
 const BitcoinROI = ({ isDashboard = false }) => {
     const theme = useTheme();
     const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
     const isMobile = useIsMobile();
     const { btcData, fetchBtcData } = useContext(DataContext);
+    const { favoriteCharts, addFavoriteChart, removeFavoriteChart } = useFavorites();
     const [yearDataSets, setYearDataSets] = useState([]);
-    const [visibilityMap, setVisibilityMap] = useState({}); // Track visibility per dataset
+    const [visibilityMap, setVisibilityMap] = useState({});
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
     const [selectedYears, setSelectedYears] = useState([]);
+
+    const chartId = "bitcoin-roi"; // Unique ID for this chart
+    const isFavorite = favoriteCharts.includes(chartId);
+
+    const toggleFavorite = () => {
+        if (isFavorite) {
+        removeFavoriteChart(chartId);
+        } else {
+        addFavoriteChart(chartId);
+        }
+    };
 
     const [layout, setLayout] = useState({
         title: isDashboard ? '' : 'Annual Bitcoin ROI',
@@ -259,154 +273,173 @@ const BitcoinROI = ({ isDashboard = false }) => {
 
     return (
         <div style={{ height: '100%' }}>
-            {!isDashboard && (
-                <>
-                    <Box
-                        sx={{
-                            display: 'flex',
-                            flexDirection: { xs: 'column', sm: 'row' },
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '20px',
-                            marginBottom: '10px',
-                            marginTop: '50px',
-                        }}
-                    >
-                        <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '300px' } }}>
-                            <InputLabel
-                                id="years-label"
-                                shrink
-                                sx={{
-                                    color: colors.grey[100],
-                                    '&.Mui-focused': { color: colors.greenAccent[500] },
-                                    top: 0,
-                                    '&.MuiInputLabel-shrink': {
-                                        transform: 'translate(14px, -9px) scale(0.75)',
-                                    },
-                                }}
-                            >
-                                Years to Average
-                            </InputLabel>
-                            <Select
-                                multiple
-                                value={selectedYears}
-                                onChange={handleYearSelection}
-                                label="Years to Average"
-                                labelId="years-label"
-                                displayEmpty
-                                renderValue={(selected) =>
-                                    selected.length > 0
-                                        ? selected.map(year => {
-                                              const item = availableYears.find(y => y.value === year);
-                                              return item ? item.label : year;
-                                          }).join(', ')
-                                        : 'Select Years'
-                                }
-                                sx={{
-                                    color: colors.grey[100],
-                                    backgroundColor: colors.primary[500],
-                                    borderRadius: '8px',
-                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
-                                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                                    '& .MuiSelect-select': { py: 1.5, pl: 2 },
-                                    '& .MuiSelect-select:empty': { color: colors.grey[500] },
-                                }}
-                            >
-                                {availableYears.map(({ value, label }) => (
-                                    <MenuItem key={value} value={value}>
-                                        <Checkbox
-                                            checked={selectedYears.includes(value)}
-                                            sx={{ color: colors.grey[100], '&.Mui-checked': { color: colors.greenAccent[500] } }}
-                                        />
-                                        <span>{label}</span>
-                                    </MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
-                        <Button
-                            onClick={deselectAllYears}
-                            sx={{
-                                backgroundColor: 'transparent',
-                                color: '#31d6aa',
-                                border: `1px solid ${colors.greenAccent[400]}`,
-                                borderRadius: '4px',
-                                padding: '8px 16px',
-                                fontSize: '14px',
-                                textTransform: 'none',
-                                '&:hover': {
-                                    backgroundColor: colors.greenAccent[400],
-                                    color: theme.palette.mode === 'dark' ? colors.grey[900] : colors.grey[100],
-                                },
-                            }}
-                        >
-                            Deselect All
-                        </Button>
-                    </Box>
-                    <div className="chart-top-div" style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginBottom: '10px' }}>
-                        {isLoading && <span style={{ color: colors.grey[100], marginRight: '10px' }}>Loading...</span>}
-                        {error && <span style={{ color: colors.redAccent[500], marginRight: '10px' }}>{error}</span>}
-                        <button onClick={resetChartView} className="button-reset extra-margin">
-                            Reset Chart
-                        </button>
-                    </div>
-                </>
-            )}
-            <div
-                className="chart-container"
-                style={{ 
-                    height: isDashboard ? '100%' : 'calc(100% - 40px)',
-                    width: '100%',
-                    border: '2px solid #a9a9a9' 
+          {!isDashboard && (
+            <>
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexDirection: { xs: 'column', sm: 'row' },
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '20px',
+                  marginBottom: '10px',
+                  marginTop: '50px',
                 }}
-            >
-                <Plot
-                    data={legendDataSets.map(item => ({
-                        x: item.data.map(d => d.day),
-                        y: item.data.map(d => d.roi),
-                        type: 'scatter',
-                        mode: item.shortName === 'Deselect All' ? 'none' : 'lines',
-                        name: isMobile ? item.shortName : item.name,
-                        line: {
-                            color: item.shortName === 'Average' ? colors.greenAccent[500] : undefined,
-                            width: item.shortName === 'Average' ? 3 : 2,
-                            dash: item.shortName === 'Average' ? 'dash' : 'solid'
+              >
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexDirection: { xs: 'column', sm: 'row' },
+                    alignItems: 'center',
+                    gap: '20px',
+                  }}
+                >
+                  <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '300px' } }}>
+                    <InputLabel
+                      id="years-label"
+                      shrink
+                      sx={{
+                        color: colors.grey[100],
+                        '&.Mui-focused': { color: colors.greenAccent[500] },
+                        top: 0,
+                        '&.MuiInputLabel-shrink': {
+                          transform: 'translate(14px, -9px) scale(0.75)',
                         },
-                        text: item.shortName !== 'Deselect All' 
-                            ? item.data.map(d => `<b>${item.shortName}   ROI: ${d.roi.toFixed(2)}</b>  (${new Date(d.date).toLocaleDateString()})`)
-                            : ['Deselect All Years'],
-                        hoverinfo: item.shortName === 'Deselect All' ? 'none' : 'text',
-                        hovertemplate: item.shortName === 'Deselect All' ? undefined : `%{text}<extra></extra>`,
-                        visible: visibilityMap[item.name] !== undefined ? visibilityMap[item.name] : true,
-                        showlegend: true
-                    }))}
-                    layout={layout}
-                    config={{
-                        staticPlot: isDashboard,
-                        displayModeBar: false,
-                        responsive: true
+                      }}
+                    >
+                      Years to Average
+                    </InputLabel>
+                    <Select
+                      multiple
+                      value={selectedYears}
+                      onChange={handleYearSelection}
+                      label="Years to Average"
+                      labelId="years-label"
+                      displayEmpty
+                      renderValue={(selected) =>
+                        selected.length > 0
+                          ? selected.map(year => {
+                              const item = availableYears.find(y => y.value === year);
+                              return item ? item.label : year;
+                            }).join(', ')
+                          : 'Select Years'
+                      }
+                      sx={{
+                        color: colors.grey[100],
+                        backgroundColor: colors.primary[500],
+                        borderRadius: '8px',
+                        '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
+                        '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                        '& .MuiSelect-select': { py: 1.5, pl: 2 },
+                        '& .MuiSelect-select:empty': { color: colors.grey[500] },
+                      }}
+                    >
+                      {availableYears.map(({ value, label }) => (
+                        <MenuItem key={value} value={value}>
+                          <Checkbox
+                            checked={selectedYears.includes(value)}
+                            sx={{ color: colors.grey[100], '&.Mui-checked': { color: colors.greenAccent[500] } }}
+                          />
+                          <span>{label}</span>
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                  <Button
+                    onClick={deselectAllYears}
+                    sx={{
+                      backgroundColor: 'transparent',
+                      color: '#31d6aa',
+                      border: `1px solid ${colors.greenAccent[400]}`,
+                      borderRadius: '4px',
+                      padding: '8px 16px',
+                      fontSize: '14px',
+                      textTransform: 'none',
+                      '&:hover': {
+                        backgroundColor: colors.greenAccent[400],
+                        color: theme.palette.mode === 'dark' ? colors.grey[900] : colors.grey[100],
+                      },
                     }}
-                    useResizeHandler={true}
-                    style={{ width: '100%', height: '100%' }}
-                    onRelayout={handleRelayout}
-                    onLegendClick={handleLegendClick}
-                />
-            </div>
-            <div className='under-chart'>
+                  >
+                    Deselect All
+                  </Button>
+                </Box>
+                <Button
+                  onClick={toggleFavorite}
+                  sx={{
+                    color: isFavorite ? colors.yellowAccent[500] : colors.grey[100],
+                    minWidth: 'auto',
+                    padding: '4px',
+                  }}
+                >
+                  {isFavorite ? '★' : '☆'}
+                </Button>
+              </Box>
+              <div className="chart-top-div" style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginBottom: '10px' }}>
+                {isLoading && <span style={{ color: colors.grey[100], marginRight: '10px' }}>Loading...</span>}
+                {error && <span style={{ color: colors.redAccent[500], marginRight: '10px' }}>{error}</span>}
+                <button onClick={resetChartView} className="button-reset extra-margin">
+                  Reset Chart
+                </button>
+              </div>
+            </>
+          )}
+          <div
+            className="chart-container"
+            style={{
+              height: isDashboard ? '100%' : 'calc(100% - 40px)',
+              width: '100%',
+              border: '2px solid #a9a9a9'
+            }}
+          >
+            <Plot
+              data={legendDataSets.map(item => ({
+                x: item.data.map(d => d.day),
+                y: item.data.map(d => d.roi),
+                type: 'scatter',
+                mode: item.shortName === 'Deselect All' ? 'none' : 'lines',
+                name: isMobile ? item.shortName : item.name,
+                line: {
+                  color: item.shortName === 'Average' ? colors.greenAccent[500] : undefined,
+                  width: item.shortName === 'Average' ? 3 : 2,
+                  dash: item.shortName === 'Average' ? 'dash' : 'solid'
+                },
+                text: item.shortName !== 'Deselect All'
+                  ? item.data.map(d => `<b>${item.shortName}   ROI: ${d.roi.toFixed(2)}</b>  (${new Date(d.date).toLocaleDateString()})`)
+                  : ['Deselect All Years'],
+                hoverinfo: item.shortName === 'Deselect All' ? 'none' : 'text',
+                hovertemplate: item.shortName === 'Deselect All' ? undefined : `%{text}<extra></extra>`,
+                visible: visibilityMap[item.name] !== undefined ? visibilityMap[item.name] : true,
+                showlegend: true
+              }))}
+              layout={layout}
+              config={{
+                staticPlot: isDashboard,
+                displayModeBar: false,
+                responsive: true
+              }}
+              useResizeHandler={true}
+              style={{ width: '100%', height: '100%' }}
+              onRelayout={handleRelayout}
+              onLegendClick={handleLegendClick}
+            />
+          </div>
+          <div className='under-chart'>
             {!isDashboard && btcData.length > 0 && (
-                    <LastUpdated storageKey="btcData" />
-                )}
-                {!isDashboard && <BitcoinFees />}
-            </div>
-            {!isDashboard && (
-                <p className='chart-info'>
-                    The return on investment for each year has been normalized by taking the natural log of the price ratio,
-                    showing growth from the start of each year. Select years to average, use 'Deselect All' in the legend to hide all years,
-                    or click legend items to toggle visibility.
-                </p>
+              <LastUpdated storageKey="btcData" />
             )}
+            {!isDashboard && <BitcoinFees />}
+          </div>
+          {!isDashboard && (
+            <p className='chart-info'>
+              The return on investment for each year has been normalized by taking the natural log of the price ratio,
+              showing growth from the start of each year. Select years to average, use 'Deselect All' in the legend to hide all years,
+              or click legend items to toggle visibility.
+            </p>
+          )}
         </div>
-    );
-};
-
-export default restrictToPaidSubscription(BitcoinROI);
+      );
+    };
+    
+    export default restrictToPaidSubscription(BitcoinROI);

@@ -64,6 +64,7 @@ import Bitcoin20WeekExtension from "./components/Bitcoin20WeekExtension";
 import HistoricalVolatility from "./components/HistoricalVolatility";
 import PuellMultiple from "./components/PuellMultiple";
 import AltcoinSeasonIndexChart from "./components/AltcoinSeasonIndexChart";
+import { FavoritesProvider } from './contexts/FavoritesContext';
 
 // Stripe Context
 const StripeContext = createContext(null);
@@ -144,6 +145,7 @@ const AppContent = memo(({ isSignedIn, user }) => {
       <ColorModeContext.Provider value={memoizedColorMode}>
         <ThemeProvider theme={memoizedTheme}>
           <SubscriptionProvider user={user} isSignedIn={isSignedIn}>
+            <FavoritesProvider user={user} isSignedIn={isSignedIn}>
             <CssBaseline />
             <div className="app" style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
               {/* Render Topbar or AccountNavBar only if signed in */}
@@ -984,6 +986,7 @@ const AppContent = memo(({ isSignedIn, user }) => {
                 </main>
               </div>
             </div>
+            </FavoritesProvider>
           </SubscriptionProvider>
         </ThemeProvider>
       </ColorModeContext.Provider>
