@@ -24,7 +24,6 @@ import AssetRiskTimeInBands from "../../components/RiskTimeInBands";
 import BitcoinROI from "../../components/BitcoinROI";
 import Bitcoin20WeekExtension from "../../components/Bitcoin20WeekExtension";
 import MarketCapDifference from "../../components/TotalMarketCapDifference";
-import BitcoinTransactionFees from "../../components/BitcoinTransactionFees";
 import RunningROI from "../../components/RunningROI";
 import HistoricalVolatility from "../../components/HistoricalVolatility";
 import BitcoinMonthlyReturnsTable from "../../components/MonthlyReturnsTable";
@@ -49,7 +48,6 @@ const chartConfig = [
   { id: "bitcoin-price", title: "Bitcoin Price", linkTo: "/bitcoin", component: (props) => <BitcoinPrice isDashboard={true} {...props} />, description: "A simple chart of the entire bitcoin daily close price history." },
   { id: "total-market-cap", title: "Total Crypto Market Cap", linkTo: "/total", component: (props) => <TotalMarketCap isDashboard={true} {...props} />, description: "The market cap of the entire crypto market." },
   { id: "total-difference", title: "Market Cap Difference", linkTo: "/total-difference", component: (props) => <MarketCapDifference isDashboard={true} {...props} />, description: "Difference in market cap across assets." },
-  { id: "bitcoin-fees", title: "Bitcoin Transaction Fees", linkTo: "/bitcoin-fees", component: (props) => <BitcoinTransactionFees isDashboard={true} {...props} />, description: "Bitcoin transaction fees over time." },
   { id: "bitcoin-dominance", title: "Bitcoin Dominance", linkTo: "/bitcoin-dominance", component: (props) => <BitcoinDominance isDashboard={true} {...props} />, description: "Bitcoin Dominance chart over all crypto assets." },
   { id: "bitcoin-roi", title: "Bitcoin ROI", linkTo: "/bitcoin-roi", component: (props) => <BitcoinROI isDashboard={true} {...props} />, description: "Annualised ROI for Bitcoin." },
   { id: "running-roi", title: "Running ROI", linkTo: "/running-roi", component: (props) => <RunningROI isDashboard={true} {...props} />, description: "Running return on investment for Bitcoin." },
