@@ -1,6 +1,6 @@
 // src/scenes/dashboard/index.js
 import { useState, useEffect, useContext, memo } from "react";
-import { Box, Card, CardContent, Typography, Grid, useTheme, Alert, Button, IconButton } from "@mui/material";
+import { Box, Card, CardContent, Typography, Grid, useTheme, Snackbar, Alert, Button, IconButton } from "@mui/material";
 import { tokens } from "../../theme";
 import { Link } from "react-router-dom";
 import { DataContext } from "../../DataContext";
@@ -174,13 +174,13 @@ const DashboardCard = memo(({ title, component, description, linkTo, chartId, is
                   variant="h4"
                   gutterBottom
                   style={{ color: colors.grey[100] }}
-                  sx={{ maxWidth: 'calc(100% - 50px)' }} // Prevent title overlap with button
+                  sx={{ maxWidth: 'calc(100% - 50px)' }}
                 >
                   {title}
                 </Typography>
                 <IconButton
                   onClick={(e) => {
-                    e.stopPropagation(); // Prevent Link navigation on button click
+                    e.stopPropagation();
                     toggleFavorite(chartId);
                   }}
                   sx={{
@@ -222,7 +222,7 @@ const Dashboard = memo(({ isMobile, isSidebar }) => {
   const colors = tokens(theme.palette.mode);
   const [chartsVisible, setChartsVisible] = useState(!isMobile || !isSidebar);
   const { btcData, ethData, riskData, marketCapData } = useContext(DataContext);
-  const { favoriteCharts, addFavoriteChart, removeFavoriteChart, error } = useFavorites();
+  const { favoriteCharts, addFavoriteChart, removeFavoriteChart, error, clearError } = useFavorites(); // Added clearError
 
   useEffect(() => {
     if (!isMobile) {
@@ -248,17 +248,41 @@ const Dashboard = memo(({ isMobile, isSidebar }) => {
     }
   };
 
+  const handleSnackbarClose = () => {
+    clearError(); // Clear error state when Snackbar closes
+  };
+
   return (
     <Box m="20px">
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
+      <Snackbar
+        open={!!error}
+        autoHideDuration={4000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: 'bottom', horizontal: isMobile ? 'center' : 'right' }}
+      >
+        <Alert
+          severity="error"
+          action={
+            error.includes('Max 1 chart') && (
+              <Button
+                color="inherit"
+                size="small"
+                component={Link}
+                to="/subscription"
+              >
+                Upgrade Plan
+              </Button>
+            )
+          }
+          sx={{ width: '100%' }}
+        >
           {error}
         </Alert>
-      )}
+      </Snackbar>
       {favoriteCharts.length === 0 ? (
         <Box textAlign="center">
           <Typography variant="h5" color={colors.grey[100]} mb={2}>
-            To populate your dashboard, use the star button in the topbar of the current chart.
+            To populate your dashboard, use the sidebar to find your favourite charts and click the star in the top right corner.
           </Typography>
           <Link to="/charts" style={{ textDecoration: "none" }}>
             <Button
@@ -279,7 +303,7 @@ const Dashboard = memo(({ isMobile, isSidebar }) => {
         <Grid container spacing={4}>
           {favoriteCharts
             .map((chartId) => chartConfig.find((chart) => chart.id === chartId))
-            .filter((chart) => chart) // Filter out invalid chartIds
+            .filter((chart) => chart)
             .map(({ id, title, component, description, linkTo }) => (
               <DashboardCard
                 key={id}

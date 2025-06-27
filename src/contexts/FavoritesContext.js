@@ -1,42 +1,49 @@
-// src/contexts/FavoritesContext.js
-import React, { createContext, useState, useEffect, useCallback, useContext } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth, useUser } from '@clerk/clerk-react';
 
-const FavoritesContext = createContext();
+export const FavoritesContext = createContext({
+  favoriteCharts: [],
+  addFavoriteChart: () => {},
+  removeFavoriteChart: () => {},
+  error: '',
+  loading: false,
+  clearError: () => {}, // New function to clear error
+});
 
-export const FavoritesProvider = ({ children, user, isSignedIn }) => {
-  const { getToken } = useAuth();
+export const FavoritesProvider = ({ children }) => {
+  const { isSignedIn, getToken } = useAuth();
+  const { user } = useUser();
   const [favoriteCharts, setFavoriteCharts] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://vercel-dataflow.vercel.app';
 
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://vercel-dataflow.vercel.app';
-
-  const fetchFavoriteCharts = useCallback(async () => {
+  const fetchFavorites = useCallback(async () => {
     if (!isSignedIn || !user) return;
 
     setLoading(true);
     setError('');
     try {
       const token = await getToken();
-      // console.log('JWT Token:', token);
+      if (!token) {
+        throw new Error('Failed to obtain authentication token');
+      }
       const response = await fetch(`${API_BASE_URL}/api/favorite-charts/`, {
-        method: 'GET',
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
         },
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch favorite charts');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch favorite charts');
       }
 
       const data = await response.json();
       setFavoriteCharts(data.favoriteCharts || []);
     } catch (err) {
       setError(`Failed to fetch favorite charts: ${err.message}`);
-      setFavoriteCharts([]);
+      console.error('Fetch favorites error:', err.message);
     } finally {
       setLoading(false);
     }
@@ -48,8 +55,10 @@ export const FavoritesProvider = ({ children, user, isSignedIn }) => {
     setLoading(true);
     setError('');
     try {
-      const token = await getToken();
-      // console.log('JWT Token:', token);
+      const token = await getToken({ forceRefreshToken: true });
+      if (!token) {
+        throw new Error('Failed to obtain authentication token');
+      }
       const response = await fetch(`${API_BASE_URL}/api/favorite-charts/add/`, {
         method: 'POST',
         headers: {
@@ -60,13 +69,15 @@ export const FavoritesProvider = ({ children, user, isSignedIn }) => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to add favorite chart');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to add favorite chart');
       }
 
       const data = await response.json();
       setFavoriteCharts(data.favoriteCharts || []);
     } catch (err) {
       setError(`Failed to add favorite chart: ${err.message}`);
+      console.error('Add favorite error:', err.message);
     } finally {
       setLoading(false);
     }
@@ -78,8 +89,10 @@ export const FavoritesProvider = ({ children, user, isSignedIn }) => {
     setLoading(true);
     setError('');
     try {
-      const token = await getToken();
-      // console.log('JWT Token:', token);
+      const token = await getToken({ forceRefreshToken: true });
+      if (!token) {
+        throw new Error('Failed to obtain authentication token');
+      }
       const response = await fetch(`${API_BASE_URL}/api/favorite-charts/remove/`, {
         method: 'POST',
         headers: {
@@ -90,35 +103,33 @@ export const FavoritesProvider = ({ children, user, isSignedIn }) => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to remove favorite chart');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to remove favorite chart');
       }
 
       const data = await response.json();
       setFavoriteCharts(data.favoriteCharts || []);
     } catch (err) {
       setError(`Failed to remove favorite chart: ${err.message}`);
+      console.error('Remove favorite error:', err.message);
     } finally {
       setLoading(false);
     }
   }, [isSignedIn, user, getToken]);
 
+  const clearError = useCallback(() => {
+    setError('');
+  }, []);
+
   useEffect(() => {
-    if (isSignedIn && user) {
-      fetchFavoriteCharts();
-    }
-  }, [isSignedIn, user, fetchFavoriteCharts]);
+    fetchFavorites();
+  }, [fetchFavorites]);
 
   return (
-    <FavoritesContext.Provider value={{ favoriteCharts, loading, error, addFavoriteChart, removeFavoriteChart }}>
+    <FavoritesContext.Provider value={{ favoriteCharts, addFavoriteChart, removeFavoriteChart, error, loading, clearError }}>
       {children}
     </FavoritesContext.Provider>
   );
 };
 
-export const useFavorites = () => {
-  const context = useContext(FavoritesContext);
-  if (!context) {
-    throw new Error('useFavorites must be used within a FavoritesProvider');
-  }
-  return context;
-};
+export const useFavorites = () => useContext(FavoritesContext);

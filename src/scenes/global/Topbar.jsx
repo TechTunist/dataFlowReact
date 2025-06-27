@@ -1,6 +1,6 @@
 // src/scenes/global/Topbar.js
 import React, { useContext, useState } from "react";
-import { Box, IconButton, useTheme, Typography, Menu, MenuItem, Avatar, Alert } from "@mui/material";
+import { Box, IconButton, useTheme, Typography, Menu, MenuItem, Avatar, Snackbar, Alert, Button } from "@mui/material";
 import { ColorModeContext, tokens } from "../../theme";
 import LightModeOutlinedIcon from "@mui/icons-material/LightModeOutlined";
 import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
@@ -101,14 +101,12 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
   const { user } = useUser();
   const { signOut } = useClerk();
   const [anchorEl, setAnchorEl] = useState(null);
-  const { favoriteCharts, addFavoriteChart, removeFavoriteChart, error } = useFavorites();
+  const { favoriteCharts, addFavoriteChart, removeFavoriteChart, error, clearError } = useFavorites();
 
-  // Get current chartId from route
   const currentChartId = routeToChartId[location.pathname];
-  const isChartPage = !!currentChartId; // Only show favorite button on chart pages
+  const isChartPage = !!currentChartId;
   const isFavorite = isChartPage && favoriteCharts.includes(currentChartId);
 
-  // Handle favorite toggle
   const handleToggleFavorite = () => {
     if (!currentChartId) return;
     if (isFavorite) {
@@ -131,6 +129,10 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
     handleMenuClose();
   };
 
+  const handleSnackbarClose = () => {
+    clearError(); // Clear error state when Snackbar closes
+  };
+
   const userPlan = "Free"; // Replace with actual plan data later
 
   const topBarStyle = {
@@ -149,6 +151,7 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
     borderBottom: `1px solid ${colors.greenAccent[500]}`,
     transition: "left 0.3s ease, width 0.3s ease",
   };
+
 
   const getTitleAndSubtitle = (pathname) => {
     switch (pathname) {
@@ -313,20 +316,31 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
         <Header title={title} subtitle={subtitle} />
       </div>
       <Box display="flex" alignItems="center" flexDirection="column" position="relative">
-        {error && (
+        <Snackbar
+          open={!!error}
+          autoHideDuration={4000}
+          onClose={handleSnackbarClose}
+          anchorOrigin={{ vertical: 'bottom', horizontal: isMobile ? 'center' : 'right' }}
+        >
           <Alert
             severity="error"
-            sx={{
-              position: "absolute",
-              top: isMobile ? "65px" : "85px",
-              right: 0,
-              zIndex: 1200,
-              maxWidth: "300px",
-            }}
+            action={
+              error.includes('Max 1 chart') && (
+                <Button
+                  color="inherit"
+                  size="small"
+                  component={Link}
+                  to="/subscription"
+                >
+                  Upgrade Plan
+                </Button>
+              )
+            }
+            sx={{ width: '100%' }}
           >
             {error}
           </Alert>
-        )}
+        </Snackbar>
         <Box display="flex" alignItems="center">
           {isMobile && (
             <Link to="/">
