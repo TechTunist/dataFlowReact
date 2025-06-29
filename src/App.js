@@ -504,14 +504,14 @@ const AppContent = memo(({ isSignedIn, user }) => {
                         </ProtectedRoute>
                       }
                     />
-                    <Route
+                    {/* <Route
                       path="/tx-combined"
                       element={
                         <ProtectedRoute>
                           <BasicChart ChartComponent={TxCombinedChart} />
                         </ProtectedRoute>
                       }
-                    />
+                    /> */}
                     <Route
                       path="/tx-mvrv"
                       element={

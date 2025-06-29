@@ -55,7 +55,7 @@ const routeToChartId = {
   "/us-interest": "us-interest",
   "/us-combined-macro": "us-combined-macro",
   "/us-initial-claims": "us-initial-claims",
-  "/tx-combined": "tx-combined",
+  // "/tx-combined": "tx-combined",
   "/tx-mvrv": "tx-mvrv",
   "/on-chain-historical-risk": "on-chain-historical-risk",
   "/altcoin-season-index": "altcoin-season-index",
@@ -213,8 +213,8 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
         return { title: "US Macro Information", subtitle: "Compare US Macro Data" };
       case "/us-initial-claims":
         return { title: "US Initial Claims", subtitle: "Jobless Claims" };
-      case "/tx-combined":
-        return { title: "US Macro and BTC Tx Count", subtitle: "Macro and On-Chain Data" };
+      // case "/tx-combined":
+      //   return { title: "US Macro and BTC Tx Count", subtitle: "Macro and On-Chain Data" };
       case "/puell-multiple":
         return { title: "Puell Multiple", subtitle: isMobile ? "Miner Revenue" : "Current Mined BTC Value to the 365 day Moving Average" };
       case "/tx-mvrv":

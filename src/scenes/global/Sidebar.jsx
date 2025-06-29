@@ -145,7 +145,7 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
     { title: "US Interest Rate Chart", to: "/us-interest", category: "MacroEconomics", icon: <PercentIcon />, categoryIcon: <AssessmentIcon /> },
     { title: "US Initial Claims", to: "/us-initial-claims", category: "MacroEconomics", icon: <AssignmentIcon />, categoryIcon: <AssessmentIcon /> },
     { title: "US Macro Information Chart", to: "/us-combined-macro", category: "MacroEconomics", icon: <MultilineChartIcon />, categoryIcon: <AssessmentIcon /> },
-    { title: "US Macro and BTC Tx Count", to: "/tx-combined", category: "MacroEconomics", icon: <BarChartIcon />, categoryIcon: <AssessmentIcon /> },
+    // { title: "US Macro and BTC Tx Count", to: "/tx-combined", category: "MacroEconomics", icon: <BarChartIcon />, categoryIcon: <AssessmentIcon /> },
     { title: "Federal Funds Rate", to: "/fred/fed-funds-rate", category: "MacroEconomics", icon: <PercentIcon />, categoryIcon: <AssessmentIcon /> },
     { title: "S&P 500 Index", to: "/fred/sp500", category: "MacroEconomics", icon: <CandlestickChart />, categoryIcon: <AssessmentIcon /> },
     { title: "US Recession Indicator", to: "/fred/recession-indicator", category: "MacroEconomics", icon: <WarningIcon />, categoryIcon: <AssessmentIcon /> },
