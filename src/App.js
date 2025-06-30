@@ -547,6 +547,7 @@ const AppContent = memo(({ isSignedIn, user }) => {
                             scaleMode="linear"
                             valueFormatter={(value) => `${value.toFixed(2)}%`}
                             explanation="This chart shows the daily Effective Federal Funds Rate in the United States, set by the Federal Reserve."
+                            showSP500Overlay={true}
                           />
                         </ProtectedRoute>
                       }
@@ -577,6 +578,7 @@ const AppContent = memo(({ isSignedIn, user }) => {
                             valueFormatter={(value) => (value === 1 ? "Recession" : "No Recession")}
                             explanation="This chart indicates periods of recession in the US."
                             defaultScaleMode={0}
+                            showSP500Overlay={true}
                           />
                         </ProtectedRoute>
                       }
