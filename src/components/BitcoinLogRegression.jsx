@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useContext } from 'react';
+import React, { useRef, useEffect, useState, useContext, useMemo } from 'react';
 import { createChart } from 'lightweight-charts';
 import '../styling/bitcoinChart.css';
 import { tokens } from "../theme";
@@ -11,8 +11,8 @@ import { DataContext } from '../DataContext';
 const BitcoinLogRegression = ({ isDashboard = false, priceData: propPriceData }) => {
   const chartContainerRef = useRef();
   const chartRef = useRef(null);
-  const priceSeriesRef = useRef(null); // Store price series for crosshair
-  const logRegressionBaseSeriesRef = useRef(null); // Store regression series for crosshair
+  const priceSeriesRef = useRef(null);
+  const logRegressionBaseSeriesRef = useRef(null);
   const logRegressionBase2SeriesRef = useRef(null);
   const logRegressionMidSeriesRef = useRef(null);
   const logRegressionTopSeriesRef = useRef(null);
@@ -38,15 +38,15 @@ const BitcoinLogRegression = ({ isDashboard = false, priceData: propPriceData })
   // Function to format numbers to 'k', 'M', 'B', 'T', etc.
   function compactNumberFormatter(value) {
     if (value >= 1e12) {
-      return (value / 1e12).toFixed(2) + 'T'; // Trillions with 2 decimal places
+      return (value / 1e12).toFixed(2) + 'T';
     } else if (value >= 1e9) {
-      return (value / 1e9).toFixed(0) + 'B'; // Billions without decimal places
+      return (value / 1e9).toFixed(0) + 'B';
     } else if (value >= 1e6) {
-      return (value / 1e6).toFixed(0) + 'M'; // Millions without decimal places
+      return (value / 1e6).toFixed(0) + 'M';
     } else if (value >= 1e3) {
-      return (value / 1e3).toFixed(0) + 'k'; // Thousands without decimal places
+      return (value / 1e3).toFixed(0) + 'k';
     } else {
-      return value.toFixed(0); // For values less than 1000, show the full number
+      return value.toFixed(0);
     }
   }
 
@@ -89,7 +89,6 @@ const BitcoinLogRegression = ({ isDashboard = false, priceData: propPriceData })
       extendedData.push({ time: nextDate.toISOString().split('T')[0], value: null });
     }
 
-    // Ensure the data is sorted and unique
     return removeDuplicates(
       extendedData.sort((a, b) => new Date(a.time) - new Date(b.time))
     );
@@ -101,14 +100,15 @@ const BitcoinLogRegression = ({ isDashboard = false, priceData: propPriceData })
     );
   };
 
-  useEffect(() => {
-    if (priceData.length === 0) return;
+  // Calculate regression lines
+  const regressionLines = useMemo(() => {
+    if (priceData.length === 0) return {};
 
-    const extendedData = extendRegressionPoints(priceData, 730); // Extend by 2 years
+    const extendedData = extendRegressionPoints(priceData, 730);
     const { slope, intercept } = calculateLogarithmicRegression(priceData);
 
     const calculateRegressionPoints = (scale, color, shiftDays = 0, curveAdjustment = 1) => {
-      const points = extendedData.map(({ time }, index) => {
+      return extendedData.map(({ time }, index) => {
         const x = Math.log(index + 1 - shiftDays + 1);
         const adjustedX = Math.pow(x, curveAdjustment);
         const delta = intercept - 11.5;
@@ -116,18 +116,48 @@ const BitcoinLogRegression = ({ isDashboard = false, priceData: propPriceData })
         const y = Math.exp(adjustedSlope * adjustedX + delta) * scale;
         return { time, value: y };
       });
-      const regressionSeries = chart.addLineSeries({
-        color: color,
-        lineWidth: 2,
-        lineStyle: 1,
-        lastValueVisible: false,
-        priceLineVisible: false,
-      });
-      regressionSeries.setData(points);
-      return regressionSeries;
     };
 
-    // Initialize the chart only once
+    return {
+      logBase2: calculateRegressionPoints(0.01, 'maroon', -300, 0.985),
+      logBase: calculateRegressionPoints(0.015, 'red', -320, 0.985),
+      logMid: calculateRegressionPoints(0.033, 'violet', -350, 0.984),
+      logTop: calculateRegressionPoints(0.037, 'green', -510, 0.989),
+      logTop2: calculateRegressionPoints(0.9, 'lime', -500, 0.96),
+    };
+  }, [priceData]);
+
+  // Calculate the percentage difference between current price and fair value
+  const valuationDifference = useMemo(() => {
+    if (priceData.length === 0 || !regressionLines.logMid) return null;
+
+    // Get the latest price and its date
+    const latestPrice = priceData[priceData.length - 1]?.value;
+    const latestPriceDate = priceData[priceData.length - 1]?.time;
+
+    if (!latestPrice || !latestPriceDate) return null;
+
+    // Find the fair value on the latest price date
+    const fairValueOnLatestDate = regressionLines.logMid.find(
+      (point) => point.time === latestPriceDate
+    )?.value;
+
+    if (!fairValueOnLatestDate) return null;
+
+    // Calculate percentage difference: ((current - fair) / fair) * 100
+    const difference = ((latestPrice - fairValueOnLatestDate) / fairValueOnLatestDate) * 100;
+    const isOvervalued = difference > 0;
+    const percentage = Math.abs(difference).toFixed(2);
+
+    return {
+      label: isOvervalued ? 'Overvaluation' : 'Undervaluation',
+      percentage: `${percentage}%`,
+    };
+  }, [priceData, regressionLines]);
+
+  useEffect(() => {
+    if (priceData.length === 0) return;
+
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
       height: chartContainerRef.current.clientHeight,
@@ -238,15 +268,54 @@ const BitcoinLogRegression = ({ isDashboard = false, priceData: propPriceData })
     priceSeriesRef.current = priceSeries;
     priceSeries.setData(priceData);
 
-    const logRegression2TopSeries = calculateRegressionPoints(0.9, 'lime', -500, 0.96);
+    const logRegression2TopSeries = chart.addLineSeries({
+      color: 'lime',
+      lineWidth: 2,
+      lineStyle: 1,
+      lastValueVisible: false,
+      priceLineVisible: false,
+    });
+    logRegression2TopSeries.setData(regressionLines.logTop2);
     logRegression2TopSeriesRef.current = logRegression2TopSeries;
-    const logRegressionTopSeries = calculateRegressionPoints(0.041, 'green', -410, 0.99);
+
+    const logRegressionTopSeries = chart.addLineSeries({
+      color: 'green',
+      lineWidth: 2,
+      lineStyle: 1,
+      lastValueVisible: false,
+      priceLineVisible: false,
+    });
+    logRegressionTopSeries.setData(regressionLines.logTop);
     logRegressionTopSeriesRef.current = logRegressionTopSeries;
-    const logRegressionMidSeries = calculateRegressionPoints(0.033, 'violet', -350, 0.986);
+
+    const logRegressionMidSeries = chart.addLineSeries({
+      color: 'violet',
+      lineWidth: 2,
+      lineStyle: 1,
+      lastValueVisible: false,
+      priceLineVisible: false,
+    });
+    logRegressionMidSeries.setData(regressionLines.logMid);
     logRegressionMidSeriesRef.current = logRegressionMidSeries;
-    const logRegressionBaseSeries = calculateRegressionPoints(0.015, 'red', -320, 0.985);
+
+    const logRegressionBaseSeries = chart.addLineSeries({
+      color: 'red',
+      lineWidth: 2,
+      lineStyle: 1,
+      lastValueVisible: false,
+      priceLineVisible: false,
+    });
+    logRegressionBaseSeries.setData(regressionLines.logBase);
     logRegressionBaseSeriesRef.current = logRegressionBaseSeries;
-    const logRegressionBase2Series = calculateRegressionPoints(0.01, 'maroon', -300, 0.985);
+
+    const logRegressionBase2Series = chart.addLineSeries({
+      color: 'maroon',
+      lineWidth: 2,
+      lineStyle: 1,
+      lastValueVisible: false,
+      priceLineVisible: false,
+    });
+    logRegressionBase2Series.setData(regressionLines.logBase2);
     logRegressionBase2SeriesRef.current = logRegressionBase2Series;
 
     chart.applyOptions({
@@ -265,7 +334,7 @@ const BitcoinLogRegression = ({ isDashboard = false, priceData: propPriceData })
       window.removeEventListener('resize', resizeChart);
       window.removeEventListener('resize', resetChartView);
     };
-  }, [priceData, scaleMode, isDashboard, theme.palette.mode]);
+  }, [priceData, scaleMode, isDashboard, theme.palette.mode, regressionLines]);
 
   useEffect(() => {
     if (chartRef.current) {
@@ -324,7 +393,21 @@ const BitcoinLogRegression = ({ isDashboard = false, priceData: propPriceData })
 
       <div className='under-chart'>
         {!isDashboard && (
-          <LastUpdated storageKey="btcData" />
+          <div style={{ marginTop: '10px' }}>
+            <LastUpdated storageKey="btcData" />
+            {valuationDifference && (
+              <span
+                style={{
+                  fontSize: '1.3rem',
+                  color: valuationDifference.label === 'Overvaluation' ? '#ff0062' : colors.blueAccent[500],
+                  display: 'block',
+                  marginTop: '5px',
+                }}
+              >
+                {valuationDifference.label}: {valuationDifference.percentage}
+              </span>
+            )}
+          </div>
         )}
         {!isDashboard && (
           <BitcoinFees />
@@ -360,7 +443,7 @@ const BitcoinLogRegression = ({ isDashboard = false, priceData: propPriceData })
             {tooltipData.price && <div>Actual Price: ${tooltipData.price}</div>}
             {tooltipData.logTop2 && <div style={{ color: 'lime' }}>Upper Band 2: ${tooltipData.logTop2}</div>}
             {tooltipData.logTop && <div style={{ color: 'green' }}>Upper Band: ${tooltipData.logTop}</div>}
-            {tooltipData.logMid && <div style={{ color: 'violet' }}>Mid Band: ${tooltipData.logMid}</div>}
+            {tooltipData.logMid && <div style={{ color: 'violet' }}>Fair Value: ${tooltipData.logMid}</div>}
             {tooltipData.logBase && <div style={{ color: 'red' }}>Lower Band: ${tooltipData.logBase}</div>}
             {tooltipData.logBase2 && <div style={{ color: 'maroon' }}>Lower Band 2: ${tooltipData.logBase2}</div>}
             {tooltipData.date && <div style={{ fontSize: '13px' }}>{tooltipData.date}</div>}

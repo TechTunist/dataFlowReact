@@ -28,8 +28,6 @@ const calculateSMA = (data, period) => {
       result[i] = avg;
     }
   }
-  // console.log('SMA Input:', data);
-  // console.log('SMA Values:', result);
   return result;
 };
 
@@ -43,8 +41,6 @@ const calculateEMA = (data, period) => {
       result[i] = data[i] * k + result[i - 1] * (1 - k);
     }
   }
-  // console.log('EMA Input:', data);
-  // console.log('EMA Values:', result);
   return result;
 };
 
@@ -92,7 +88,7 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
           yanchor: 'top',
         }
       : {},
-    hovermode: 'closest',
+    hovermode: viewMode === 'scatter' ? 'closest' : 'x unified', // Dynamic hovermode
   }), [colors, isDashboard, isMobile, viewMode]);
 
   // Combined layout with state overrides
@@ -133,15 +129,19 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
       name: 'Bitcoin Price',
       yaxis: 'y1',
       visible: true,
-      hoverinfo: viewMode === 'scatter' ? 'skip' : undefined,
-      hovertemplate: viewMode === 'line' ? `<b>Price:</b> $%{y:,.0f}<br><b>Date:</b> %{x|%B %d, %Y}<extra></extra>` : undefined,
-      hoverlabel: viewMode === 'line' ? {
-        bgcolor: colors.grey[700],
-        font: { color: '#FFFFFF' },
-        bordercolor: '#FFFFFF',
-        align: 'left',
-        namelength: -1,
-      } : undefined,
+      hoverinfo: viewMode === 'scatter' ? 'skip' : 'y+x', // Skip in scatter, contribute y in line view
+      hovertemplate: viewMode === 'line'
+        ? `<b>Bitcoin Price:</b> $%{y:,.0f}<extra></extra>`
+        : undefined,
+      hoverlabel: viewMode === 'line'
+        ? {
+            bgcolor: colors.grey[700],
+            font: { color: '#FFFFFF' },
+            bordercolor: '#FFFFFF',
+            align: 'left',
+            namelength: -1,
+          }
+        : undefined,
     };
 
     if (viewMode === 'scatter') {
@@ -224,16 +224,16 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
 
       return [btcPriceLine, ...btcPriceTooltipDatasets, ...fearGreedDataset];
     } else {
-      const fgData = btcFormattedData
+      // Line view: Align BTC and Fear and Greed data by date
+      const alignedData = btcFormattedData
         .map(item => ({
           time: item.time,
-          value: fearGreedMap[item.time]?.value ?? null,
+          btcPrice: item.value,
+          fgValue: fearGreedMap[item.time]?.value ?? null,
         }))
-        .filter(d => d.value != null && !isNaN(d.value));
+        .filter(d => d.fgValue != null && !isNaN(d.fgValue));
 
-      // console.log('fgData:', fgData);
-
-      let fgValues = fgData.map(d => d.value);
+      let fgValues = alignedData.map(d => d.fgValue);
       let traceName = 'Fear and Greed Index';
       if (smoothing === 'sma') {
         fgValues = calculateSMA(fgValues, smoothingPeriod);
@@ -244,8 +244,9 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
       }
 
       const fgLine = {
-        x: fgData.map(d => d.time),
+        x: alignedData.map(d => d.time),
         y: fgValues,
+        customdata: alignedData.map(d => [d.btcPrice]),
         type: 'scattergl',
         mode: 'lines',
         line: { color: colors.greenAccent[500], width: 1.5 },
@@ -253,8 +254,7 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
         yaxis: 'y2',
         visible: true,
         hovertemplate:
-          `<b>${traceName}:</b> %{y:.0f}<br>` +
-          `<b>Date:</b> %{x|%B %d, %Y}<extra></extra>`,
+          `<b>${traceName}:</b> %{y:.0f}<extra></extra>`,
         hoverlabel: {
           bgcolor: colors.greenAccent[700],
           font: { color: '#FFFFFF' },
@@ -300,7 +300,6 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
   }, [baseLayout, viewMode]);
 
   const handleRelayout = useCallback((event) => {
-    // console.log('Relayout Event:', event);
     const update = {};
     if (event['xaxis.autorange']) {
       update.xaxis = { ...baseLayout.xaxis, autorange: true };

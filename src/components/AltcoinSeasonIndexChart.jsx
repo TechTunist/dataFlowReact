@@ -388,12 +388,12 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
         )}
       </div>
       <div className="under-chart">
-        {!isDashboard && <LastUpdated storageKey="altcoinSeasonTimeseriesData" />}
+        {!isDashboard && <LastUpdated storageKey="btcData" />}
       </div>
       {!isDashboard && (
         <div>
           <div style={{ display: 'inline-block', marginTop: '10px', fontSize: '1.2rem', color: colors.primary[100] }}>
-            Current Index: <b>{currentIndex}</b> (Based on {smoothedData[0]?.altcoin_count || 'N/A'} altcoins)
+            Current Index: <b>{currentIndex}</b>
           </div>
           <p className="chart-info">
             The Altcoin Season Index measures the performance of altcoins relative to Bitcoin over 90-day periods. A value closer to 100 indicates an altcoin season, where most available altcoins outperform Bitcoin, while a value closer to 0 indicates a Bitcoin season. The index is calculated as the percentage of altcoins with data (varies by date, starting from January 2018) outperforming Bitcoin in price change. Select different smoothing periods to view historical trends. Bitcoin price is shown for reference, starting from January 2018.

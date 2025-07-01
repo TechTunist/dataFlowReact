@@ -321,21 +321,21 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
                             className="button-reset extra-margin-right"
                             style={showMarkers ? { backgroundColor: '#4cceac', color: 'black', borderColor: 'violet' } : {}}
                         >
-                            {showMarkers ? 'Hide Top Markers' : 'Show Top Markers'}
+                            {showMarkers ? 'Top Markers' : 'Top Markers'}
                         </button>
                         <button
                             onClick={toggleRatioSeries}
                             className="button-reset"
                             style={showRatioSeries ? { backgroundColor: '#4cceac', color: 'black', borderColor: 'violet' } : {}}
                         >
-                            {showRatioSeries ? 'Hide Ratio' : 'Show Ratio'}
+                            {showRatioSeries ? 'Ratio' : 'Ratio'}
                         </button>
                         <button
                             onClick={toggleNormalizedRatioSeries}
                             className="button-reset"
                             style={showNormalizedRatio ? { backgroundColor: '#4cceac', color: 'black', borderColor: 'violet', marginLeft: '10px', marginRight: '10px' } : {marginLeft: '10px', marginRight: '10px'}}
                         >
-                            {showNormalizedRatio ? 'Hide Normalized Ratio' : 'Show Normalized Ratio'}
+                            {showNormalizedRatio ? 'Normalized Ratio' : 'Normalized Ratio'}
                         </button>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
@@ -383,7 +383,7 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
                             padding: '5px 10px',
                             borderRadius: '4px',
                             color: colors.grey[100],
-                            fontSize: '12px',
+                            fontSize: isMobile ? '8px' : '12px',
                         }}
                     >
                         <div>Active Indicators</div>
