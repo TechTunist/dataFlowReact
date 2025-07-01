@@ -265,6 +265,10 @@ export const DataProvider = ({ children }) => {
   const [isAltcoinSeasonTimeseriesDataFetched, setIsAltcoinSeasonTimeseriesDataFetched] = useState(false);
   const [altcoinSeasonTimeseriesLastUpdated, setAltcoinSeasonTimeseriesLastUpdated] = useState(null);
 
+  const [differenceData, setDifferenceData] = useState([]); // New state for difference data
+  const [isDifferenceDataFetched, setIsDifferenceDataFetched] = useState(false); // New fetch status
+  const [differenceLastUpdated, setDifferenceLastUpdated] = useState(null);
+
   const API_BASE_URL = 'https://vercel-dataflow.vercel.app/api';
   // const API_BASE_URL = 'http://127.0.0.1:8000/api';
 
@@ -300,6 +304,7 @@ export const DataProvider = ({ children }) => {
         { id: 'feeRiskData', setData: setFeeRiskData, setLastUpdated: setFeeRiskLastUpdated, setIsFetched: setIsFeeRiskDataFetched, useDateCheck: true }, // New
         { id: 'soplRiskData', setData: setSoplRiskData, setLastUpdated: setSoplRiskLastUpdated, setIsFetched: setIsSoplRiskDataFetched, useDateCheck: true }, // New
         { id: 'altcoinSeasonTimeseriesData', setData: setAltcoinSeasonTimeseriesData, setLastUpdated: setAltcoinSeasonTimeseriesLastUpdated, setIsFetched: setIsAltcoinSeasonTimeseriesDataFetched, useDateCheck: true },
+        { id: 'differenceData', setData: setDifferenceData, setLastUpdated: setDifferenceLastUpdated, setIsFetched: setIsDifferenceDataFetched, useDateCheck: true }, 
       ];
 
       // Fetch all data in parallel
@@ -326,7 +331,31 @@ export const DataProvider = ({ children }) => {
           }
           // Trigger fetch for non-cached or stale data
           const fetchFunc = {
+            btcData: fetchBtcData,
+            fedBalanceData: fetchFedBalanceData,
+            mvrvData: fetchMvrvData,
+            dominanceData: fetchDominanceData,
+            ethData: fetchEthData,
+            fearAndGreedData: fetchFearAndGreedData,
+            marketCapData: fetchMarketCapData,
+            differenceData: fetchDifferenceData, // New
+            macroData: fetchMacroData,
+            inflationData: fetchInflationData,
+            initialClaimsData: fetchInitialClaimsData,
+            interestData: fetchInterestData,
+            unemploymentData: fetchUnemploymentData,
+            txCountData: fetchTxCountData,
+            txCountCombinedData: fetchTxCountCombinedData,
+            txMvrvData: fetchTxMvrvData,
+            latestFearAndGreed: fetchLatestFearAndGreed,
+            altcoinSeasonData: fetchAltcoinSeasonData,
             onchainMetricsData: fetchOnchainMetricsData,
+            mvrvRiskData: fetchRiskMetricsData,
+            puellRiskData: fetchRiskMetricsData,
+            minerCapThermoCapRiskData: fetchRiskMetricsData,
+            feeRiskData: fetchRiskMetricsData,
+            soplRiskData: fetchRiskMetricsData,
+            altcoinSeasonTimeseriesData: fetchAltcoinSeasonTimeseriesData,
             // Map other ids to their fetch functions (e.g., 'btcData': fetchBtcData)
             // Add mappings for all cacheIds
           }[id];
@@ -349,6 +378,45 @@ export const DataProvider = ({ children }) => {
       isMounted = false;
     };
   }, []);
+
+  const fetchDifferenceData = useCallback(async () => {
+    if (isDifferenceDataFetched) return;
+    if (!preloadComplete) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      if (isDifferenceDataFetched) return;
+    }
+    await fetchWithCache({
+      cacheId: 'differenceData',
+      apiUrl: `${API_BASE_URL}/total/difference/`,
+      formatData: (data) =>
+        data
+          .map((item) => {
+            if (!item.time || typeof item.time !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(item.time) || isNaN(parseFloat(item.value))) {
+              console.warn('Invalid differenceData item:', item);
+              return null;
+            }
+            return {
+              time: item.time, // Corrected from item.date to item.time
+              value: parseFloat(item.value) + 100, // Transform to marketCap / fairValue * 100
+            };
+          })
+          .filter((item) => item !== null)
+          .sort((a, b) => new Date(a.time) - new Date(b.time)),
+      setData: setDifferenceData,
+      setLastUpdated: setDifferenceLastUpdated,
+      setIsFetched: setIsDifferenceDataFetched,
+      useDateCheck: true,
+    });
+  }, [isDifferenceDataFetched, preloadComplete]);
+
+  const refreshDifferenceData = useCallback(async () => {
+    await refreshData({
+      cacheId: 'differenceData',
+      setData: setDifferenceData,
+      setIsFetched: setIsDifferenceDataFetched,
+      fetchFunction: fetchDifferenceData,
+    });
+  }, [fetchDifferenceData]);
 
     const fetchAltcoinSeasonTimeseriesData = useCallback(async () => {
       if (isAltcoinSeasonTimeseriesDataFetched) return;
@@ -1428,6 +1496,10 @@ export const DataProvider = ({ children }) => {
       fetchAltcoinSeasonTimeseriesData,
       refreshAltcoinSeasonTimeseriesData,
       altcoinSeasonTimeseriesLastUpdated,
+      differenceData,
+      fetchDifferenceData,
+      refreshDifferenceData,
+      differenceLastUpdated,
     }),
     [
       btcData,
@@ -1535,6 +1607,10 @@ export const DataProvider = ({ children }) => {
       fetchAltcoinSeasonTimeseriesData,
       refreshAltcoinSeasonTimeseriesData,
       altcoinSeasonTimeseriesLastUpdated,
+      differenceData,
+      fetchDifferenceData,
+      refreshDifferenceData,
+      differenceLastUpdated,
     ]
   );
 

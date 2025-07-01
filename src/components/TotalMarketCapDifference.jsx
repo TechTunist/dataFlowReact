@@ -12,15 +12,14 @@ const MarketCapDifference = ({ isDashboard = false }) => {
   const chartContainerRef = useRef();
   const chartRef = useRef(null);
   const differenceSeriesRef = useRef(null);
-  const marketCapSeriesRef = useRef(null); // Ref for the new market cap series
+  const marketCapSeriesRef = useRef(null);
   const theme = useTheme();
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
   const isMobile = useIsMobile();
-  const { marketCapData, fetchMarketCapData, marketCapLastUpdated } = useContext(DataContext);
+  const { marketCapData, fetchMarketCapData, marketCapLastUpdated, differenceData, fetchDifferenceData, differenceLastUpdated } = useContext(DataContext);
 
   const [tooltipData, setTooltipData] = useState(null);
   const [isInteractive, setIsInteractive] = useState(false);
-  const [differenceData, setDifferenceData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -39,46 +38,45 @@ const MarketCapDifference = ({ isDashboard = false }) => {
   const setInteractivityHandler = useCallback(() => setIsInteractive((prev) => !prev), []);
   const resetChartView = useCallback(() => chartRef.current?.timeScale().fitContent(), []);
 
-  // Fetch difference data from the backend
-  useEffect(() => {
-    const fetchDifferenceData = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const response = await fetch('https://vercel-dataflow.vercel.app/api/total/difference/');
-        if (!response.ok) {
-          throw new Error('Failed to fetch difference data');
-        }
-        const data = await response.json();
-        setDifferenceData(data);
-      } catch (err) {
-        setError('Failed to fetch difference data. Please try again later.');
-        console.error('Error fetching difference data:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchDifferenceData();
-  }, []);
-
-  // Fetch market cap data if not already present in context
+  // Fetch difference data from the backend and transform it
   useEffect(() => {
     const fetchData = async () => {
-      if (marketCapData.length > 0) return;
       setIsLoading(true);
       setError(null);
       try {
-        await fetchMarketCapData();
+        if (marketCapData.length === 0) {
+          await fetchMarketCapData();
+        }
+        if (differenceData.length === 0) {
+          await fetchDifferenceData();
+        }
       } catch (err) {
-        setError('Failed to fetch market cap data. Please try again later.');
-        console.error('Error fetching market cap data:', err);
+        setError('Failed to fetch data. Please try again later.');
+        console.error('Error fetching data:', err);
       } finally {
         setIsLoading(false);
       }
     };
     fetchData();
-  }, [fetchMarketCapData, marketCapData.length]);
+  }, [fetchMarketCapData, fetchDifferenceData, marketCapData.length, differenceData.length]);
+
+  // Fetch market cap data if not already present in context
+  // useEffect(() => {
+  //   const fetchData = async () => {
+  //     if (marketCapData.length > 0) return;
+  //     setIsLoading(true);
+  //     setError(null);
+  //     try {
+  //       await fetchMarketCapData();
+  //     } catch (err) {
+  //       setError('Failed to fetch market cap data. Please try again later.');
+  //       console.error('Error fetching market cap data:', err);
+  //     } finally {
+  //       setIsLoading(false);
+  //     }
+  //   };
+  //   fetchData();
+  // }, [fetchMarketCapData, marketCapData.length]);
 
   useEffect(() => {
     if (differenceData.length === 0 || marketCapData.length === 0) return;
@@ -89,6 +87,8 @@ const MarketCapDifference = ({ isDashboard = false }) => {
       layout: { background: { type: 'solid', color: colors.primary[700] }, textColor: colors.primary[100] },
       grid: { vertLines: { color: colors.greenAccent[700] }, horzLines: { color: colors.greenAccent[700] } },
       timeScale: { minBarSpacing: 0.001 },
+      handleScroll: false, // Disable interactivity on initial render
+      handleScale: false, // Disable interactivity on initial render
     });
 
     // Add market cap series in grey on the left scale
@@ -123,7 +123,7 @@ const MarketCapDifference = ({ isDashboard = false }) => {
       lineStyle: 1,
       lastValueVisible: false,
       priceLineVisible: false,
-    }).setData(differenceData.map(({ time }) => ({ time, value: 0 })));
+    }).setData(differenceData.map(({ time }) => ({ time, value: 100 })));
 
     // Configure price scales
     chart.priceScale('left').applyOptions({
@@ -210,10 +210,6 @@ const MarketCapDifference = ({ isDashboard = false }) => {
               <span style={{ backgroundColor: colors.blueAccent[500], height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
               Fair Value Delta
             </span>
-            {/* <span style={{ display: 'inline-block' }}>
-              <span style={{ backgroundColor: colors.greenAccent[500], height: '10px', width: '10px', display: 'inline-block', marginLeft: '15px', marginRight: '5px' }}></span>
-              Fair Value Boundary
-            </span> */}
           </div>
           <div style={{ display: 'flex', alignItems: 'center' }}>
             {isLoading && <span style={{ color: colors.grey[100] }}>Loading...</span>}
@@ -282,10 +278,10 @@ const MarketCapDifference = ({ isDashboard = false }) => {
               <div style={{ fontSize: '15px', color: colors.primary[300] }} >Market Cap: ${tooltipData.marketCap}</div>
             )}
             {tooltipData.difference && (
-              <div style={{ fontSize: '15px', color: colors.blueAccent[500] }} >Percentage Difference: {tooltipData.difference}</div>
+              <div style={{ fontSize: '15px', color: colors.blueAccent[500] }} >Percentage of Fair Value: {tooltipData.difference}</div>
             )}
             {tooltipData.difference && (
-              <div style={{ fontSize: '15px', color: colors.greenAccent[500] }} >Fair Value Boundary: -----</div>
+              <div style={{ fontSize: '15px', color: colors.greenAccent[500] }} >Fair Value: 100%</div>
             )}
             {tooltipData.date && <div style={{ fontSize: '13px' }}>{tooltipData.date}</div>}
           </b>
@@ -293,9 +289,11 @@ const MarketCapDifference = ({ isDashboard = false }) => {
       )}
       {!isDashboard && (
         <div className="chart-info">
-          The percentage difference between the total market cap and the Fair Value of all crypto assets combined.
+          The percentage of the total market cap relative to the Fair Value of all crypto assets combined.
           The Fair Value line (at 100%) represents where the market cap equals the Fair Value, calculated using
-          a logarithmic regression model fitted to historical data.
+          a logarithmic regression model fitted to historical data. When the total market cap equals the Fair Value,
+          the percentage is 100%. Values below 100% indicate the market cap is less than the Fair Value (undervalued),
+          while values above 100% indicate the market cap exceeds the Fair Value (overvalued).
           <br />
           <br />
           The core calculation involves determining the slope (m) and intercept (b) of the best-fit
