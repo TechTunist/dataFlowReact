@@ -342,13 +342,6 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
           </Alert>
         </Snackbar>
         <Box display="flex" alignItems="center">
-          {isMobile && (
-            <Link to="/">
-              <IconButton aria-label="home" className="home-button">
-                <HomeOutlinedIcon style={{ color: colors.primary[100] }} />
-              </IconButton>
-            </Link>
-          )}
           {isChartPage && (
             <IconButton
               onClick={handleToggleFavorite}

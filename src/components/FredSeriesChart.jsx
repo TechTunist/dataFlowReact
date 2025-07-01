@@ -394,10 +394,10 @@ const FredSeriesChart = ({
             style={{
               position: 'absolute',
               top: '10px',
-              right: '10px',
+              left: '10px',
               background: 'rgba(0, 0, 0, 0.8)',
               color: colors.primary[100],
-              padding: '10px',
+              padding: '25px 10px 10px 10px', // Increased top padding to accommodate button
               borderRadius: '5px',
               zIndex: 1000,
               fontSize: '14px',
@@ -409,7 +409,7 @@ const FredSeriesChart = ({
               style={{
                 position: 'absolute',
                 top: '5px',
-                right: '5px',
+                left: '5px',
                 background: 'transparent',
                 border: 'none',
                 color: colors.primary[100],
@@ -455,7 +455,7 @@ const FredSeriesChart = ({
             style={{
               position: 'absolute',
               top: '10px',
-              right: '10px',
+              left: '10px',
               background: 'rgba(0, 0, 0, 0.8)',
               border: 'none',
               color: colors.primary[100],
