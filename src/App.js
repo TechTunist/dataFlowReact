@@ -66,6 +66,7 @@ import PuellMultiple from "./components/PuellMultiple";
 import AltcoinSeasonIndexChart from "./components/AltcoinSeasonIndexChart";
 import { FavoritesProvider } from './contexts/FavoritesContext';
 import Charts from "./components/ChartsThumbnails";
+import SP500DivUnrateChart from "./components/SP500DivUnrateChart";
 
 // Stripe Context
 const StripeContext = createContext(null);
@@ -371,6 +372,14 @@ const AppContent = memo(({ isSignedIn, user }) => {
                       element={
                         <ProtectedRoute>
                           <BasicChart ChartComponent={EthereumRisk} />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/sp500unrate"
+                      element={
+                        <ProtectedRoute>
+                          <BasicChart ChartComponent={SP500DivUnrateChart} />
                         </ProtectedRoute>
                       }
                     />
