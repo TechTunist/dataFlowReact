@@ -278,6 +278,7 @@ export const DataProvider = ({ children }) => {
 
     const preloadData = async () => {
       await initDB();
+      await fetchFredSeriesData('SP500');
 
       const cacheConfigs = [
         { id: 'btcData', setData: setBtcData, setLastUpdated: setBtcLastUpdated, setIsFetched: setIsBtcDataFetched, useDateCheck: true },

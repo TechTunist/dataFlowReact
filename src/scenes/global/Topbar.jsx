@@ -88,6 +88,7 @@ const routeToChartId = {
   "/fred/nikkei-225": "fred-nikkei-225",
   "/fred/german-bond-yield": "fred-german-bond-yield",
   "/workbench": "workbench",
+  "/sp500-roi": "sp500-roi",
 };
 
 const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
@@ -291,6 +292,8 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
         return { title: "Volatility", subtitle: isMobile ? "Historical Volatility" : "Historical Volatility to Predict Changes of Momentum" };
       case "/altcoin-season-index":
         return { title: "Altcoin Season Index", subtitle: isMobile ? "Crypto Seasonality" : "Is it closer to Altcoin Season or Bitcoin Season?" };
+      case "/sp500-roi":
+        return { title: "S&P500 Return On Investment", subtitle: isMobile ? "Yearly ROI" : "Annualised ROI of the S&P500" };
       default:
         return { title: "CryptoLogical", subtitle: "" };
     }

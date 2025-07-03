@@ -67,6 +67,7 @@ import AltcoinSeasonIndexChart from "./components/AltcoinSeasonIndexChart";
 import { FavoritesProvider } from './contexts/FavoritesContext';
 import Charts from "./components/ChartsThumbnails";
 import SP500DivUnrateChart from "./components/SP500DivUnrateChart";
+import SP500ROI from "./components/SP500ROI";
 
 // Stripe Context
 const StripeContext = createContext(null);
@@ -300,6 +301,14 @@ const AppContent = memo(({ isSignedIn, user }) => {
                       element={
                         <ProtectedRoute>
                           <BasicChart ChartComponent={BitcoinROI} />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/sp500-roi"
+                      element={
+                        <ProtectedRoute>
+                          <BasicChart ChartComponent={SP500ROI} />
                         </ProtectedRoute>
                       }
                     />

@@ -42,6 +42,7 @@ import OnChainHistoricalRisk from "../../components/OnChainHistoricalRisk";
 import AltcoinSeasonIndexChart from "../../components/AltcoinSeasonIndexChart";
 import FredSeriesChart from "../../components/FredSeriesChart";
 import WorkbenchChart from "../../components/Workbench";
+import SP500ROI from "../../components/SP500ROI";
 
 const chartConfig = [
   { id: "bitcoin-20-ext", title: "Bitcoin 20 Week Extension", linkTo: "/btc-20-ext", component: (props) => <Bitcoin20WeekExtension isDashboard={true} {...props} />, description: "Bitcoin price with 20-week extension analysis." },
@@ -105,6 +106,7 @@ const chartConfig = [
   { id: "fred-nikkei-225", title: "Nikkei 225 Index", linkTo: "/fred/nikkei-225", component: (props) => <FredSeriesChart isDashboard={true} seriesId="NIKKEI225" chartType="area" scaleMode="linear" valueFormatter={(value) => value.toLocaleString()} {...props} />, description: "Daily Nikkei 225 Index." },
   { id: "fred-german-bond-yield", title: "German 10-Year Bond Yield", linkTo: "/fred/german-bond-yield", component: (props) => <FredSeriesChart isDashboard={true} seriesId="IRLTLT01DEM156N" chartType="line" scaleMode="linear" valueFormatter={(value) => `${value.toFixed(2)}%`} {...props} />, description: "Monthly German 10-Year Government Bond Yield." },
   { id: "workbench", title: "Workbench Chart", linkTo: "/workbench", component: (props) => <WorkbenchChart isDashboard={true} seriesId="UMCSENT" chartType="area" valueFormatter={(value) => value.toLocaleString()} {...props} />, description: "Custom indicator chart for comparing data series." },
+  { id: "sp500-roi", title: "S&P 500 ROI", linkTo: "/sp500-roi", component: (props) => <SP500ROI isDashboard={true} {...props} />, description: "Annualised ROI of the S&P 500." },
 ];
 
 const DashboardCard = memo(({ title, component, description, linkTo, chartId, isMobile, chartsVisible, colors, isFavorite, toggleFavorite }) => {
