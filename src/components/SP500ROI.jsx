@@ -33,30 +33,37 @@ const SP500ROI = ({ isDashboard = false }) => {
         }
     };
 
+    const toggleLegend = () => {
+        setLayout((prev) => ({
+          ...prev,
+          showlegend: !prev.showlegend,
+        }));
+    };
+
     const [layout, setLayout] = useState({
         title: isDashboard ? '' : 'Annual S&P 500 ROI',
         margin: { l: 50, r: 50, b: 30, t: 50, pad: 4 },
-        plot_bgcolor: colors.primary[700],
-        paper_bgcolor: colors.primary[700],
-        font: { color: colors.primary[100] },
-        xaxis: { 
-            title: !isDashboard && !isMobile ? 'Days from Year Start' : '',
-            autorange: true 
+        plot_bgcolor: colors?.primary?.[700] || '#1F2A44',
+        paper_bgcolor: colors?.primary?.[700] || '#1F2A44',
+        font: { color: colors?.primary?.[100] || '#FFFFFF' },
+        xaxis: {
+          title: !isDashboard ? 'Days from Year Start' : '',
+          autorange: true,
         },
-        yaxis: { 
-            title: 'Logarithmic ROI (Base-10)', 
-            type: 'linear',
-            autorange: true 
+        yaxis: {
+          title: 'Logarithmic ROI (Base-10)',
+          type: 'linear',
+          autorange: true,
         },
-        showlegend: true,
+        showlegend: false, // Set to false by default (legend hidden)
         hovermode: 'x unified',
         legend: {
-            orientation: 'h',
-            x: 0.5,
-            xanchor: 'center',
-            y: -0.1,
-            yanchor: 'top'
-        }
+          orientation: 'h',
+          x: 0.5,
+          xanchor: 'center',
+          y: -0.1,
+          yanchor: 'top',
+        },
     });
 
     // Fetch S&P 500 data
@@ -172,7 +179,6 @@ const SP500ROI = ({ isDashboard = false }) => {
                 shortName: 'Select/Deselect All',
                 data: [{ day: 0, roi: 0 }],
                 visible: true,
-                showlegend: true,
                 type: 'scatter',
                 mode: 'none'
             });
@@ -224,7 +230,8 @@ const SP500ROI = ({ isDashboard = false }) => {
         setLayout(prev => ({
             ...prev,
             xaxis: { ...prev.xaxis, autorange: true },
-            yaxis: { ...prev.yaxis, autorange: true }
+            yaxis: { ...prev.yaxis, autorange: true },
+            showlegend: false // Reset to hidden by default
         }));
         setVisibilityMap(prev => {
             const newMap = { ...prev };
@@ -241,7 +248,7 @@ const SP500ROI = ({ isDashboard = false }) => {
                 ...prev,
                 xaxis: {
                     ...prev.xaxis,
-                    range: [event['xaxis.range[0]'], event['yaxis.range[1]']],
+                    range: [event['xaxis.range[0]'], event['xaxis.range[1]']],
                     autorange: false
                 },
                 yaxis: {
@@ -365,17 +372,25 @@ const SP500ROI = ({ isDashboard = false }) => {
                             >
                                 Deselect All
                             </Button>
+                            <Button
+                                onClick={toggleLegend}
+                                sx={{
+                                    backgroundColor: 'transparent',
+                                    color: '#31d6aa',
+                                    border: `1px solid ${colors?.greenAccent?.[400] || '#45E0B5'}`,
+                                    borderRadius: '4px',
+                                    padding: '8px 16px',
+                                    fontSize: '14px',
+                                    textTransform: 'none',
+                                    '&:hover': {
+                                        backgroundColor: colors?.greenAccent?.[400] || '#45E0B5',
+                                        color: theme?.palette?.mode === 'dark' ? colors?.grey?.[900] || '#333' : colors?.grey?.[100] || '#FFF',
+                                    },
+                                }}
+                            >
+                                {layout.showlegend ? 'Hide Legend' : 'Show Legend'}
+                            </Button>
                         </Box>
-                        <Button
-                            onClick={toggleFavorite}
-                            sx={{
-                                color: isFavorite ? colors.greenAccent[500] : colors.grey[100],
-                                minWidth: 'auto',
-                                padding: '4px',
-                            }}
-                        >
-                            {isFavorite ? '★' : '☆'}
-                        </Button>
                     </Box>
                     <div className="chart-top-div" style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginBottom: '10px' }}>
                         {isLoading && <span style={{ color: colors.grey[100], marginRight: '10px' }}>Loading...</span>}
@@ -411,8 +426,7 @@ const SP500ROI = ({ isDashboard = false }) => {
                             : ['Select/Deselect All Years'],
                         hoverinfo: item.shortName === 'Select/Deselect All' ? 'none' : 'text',
                         hovertemplate: item.shortName === 'Select/Deselect All' ? undefined : `%{text}<extra></extra>`,
-                        visible: visibilityMap[item.name] !== undefined ? visibilityMap[item.name] : true,
-                        showlegend: true
+                        visible: visibilityMap[item.name] !== undefined ? visibilityMap[item.name] : true
                     }))}
                     layout={layout}
                     config={{

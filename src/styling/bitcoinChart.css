@@ -15,15 +15,6 @@
     height: 0;
 }
 
-.plotly .legend {
-    max-height: 300px;
-    overflow-y: auto;
-    background-color: inherit;
-    padding: 5px;
-    scrollbar-width: thin;
-    scrollbar-color: #888 #f1f1f1;
-}
-
 /* The slider */
 .slider {
     position: absolute;
