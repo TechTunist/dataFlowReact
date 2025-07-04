@@ -351,14 +351,14 @@ const AppContent = memo(({ isSignedIn, user }) => {
                         </ProtectedRoute>
                       }
                     />
-                    <Route
+                    {/* <Route
                       path="/ethereum"
                       element={
                         <ProtectedRoute>
                           <BasicChart ChartComponent={EthereumPrice} />
                         </ProtectedRoute>
                       }
-                    />
+                    /> */}
                     <Route
                       path="/puell-multiple"
                       element={

@@ -274,116 +274,173 @@ const BitcoinROI = ({ isDashboard = false }) => {
     return (
         <div style={{ height: '100%' }}>
           {!isDashboard && (
-            <>
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'row', // Row layout for all breakpoints
+                alignItems: 'center',
+                justifyContent: { xs: 'flex-start', sm: 'space-between' }, // Space-between for sm+
+                gap: { xs: '10px', sm: '10px' },
+                marginBottom: '10px',
+                marginTop: '50px',
+                width: '100%',
+                flexWrap: { xs: 'wrap', sm: 'nowrap' }, // Wrap on xs if needed, nowrap on sm+
+              }}
+            >
+              {/* Left Side: Dropdown and Deselect All Button */}
               <Box
                 sx={{
                   display: 'flex',
-                  flexDirection: { xs: 'column', sm: 'row' },
+                  flexDirection: 'row', // Row layout for all breakpoints
                   alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: '20px',
-                  marginBottom: '10px',
-                  marginTop: '50px',
+                  gap: { xs: '10px', sm: '8px' }, // Smaller gap on non-mobile
+                  width: { xs: '100%', sm: 'auto' }, // Full width on xs, auto on sm+
+                  '& > *': {
+                    flexShrink: 0, // Prevent shrinking
+                  },
+                  '& .MuiFormControl-root': {
+                    flex: { xs: '2 1 66.67%', sm: '0 0 200px' }, // 2/3 on xs, fixed 200px on sm+
+                    minWidth: 0,
+                    width: { xs: '66.67%', sm: '200px' }, // Smaller width on sm+
+                  },
+                  '& .MuiButton-root': {
+                    flex: { xs: '1 1 33.33%', sm: '0 0 100px' }, // 1/3 on xs, fixed 100px on sm+
+                    minWidth: 0,
+                    width: { xs: '33.33%', sm: '100px' }, // Smaller width on sm+
+                    padding: { xs: '8px 16px', sm: '6px 12px' }, // Smaller padding on sm+
+                    fontSize: { xs: '12px', sm: '14px' }, // Smaller font on sm+
+                  },
                 }}
               >
-                <Box
-                  sx={{
-                    display: 'flex',
-                    flexDirection: { xs: 'column', sm: 'row' },
-                    alignItems: 'center',
-                    gap: '20px',
-                  }}
-                >
-                  <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '300px' } }}>
-                    <InputLabel
-                      id="years-label"
-                      shrink
-                      sx={{
-                        color: colors.grey[100],
-                        '&.Mui-focused': { color: colors.greenAccent[500] },
-                        top: 0,
-                        '&.MuiInputLabel-shrink': {
-                          transform: 'translate(14px, -9px) scale(0.75)',
-                        },
-                      }}
-                    >
-                      Years to Average
-                    </InputLabel>
-                    <Select
-                      multiple
-                      value={selectedYears}
-                      onChange={handleYearSelection}
-                      label="Years to Average"
-                      labelId="years-label"
-                      displayEmpty
-                      renderValue={(selected) =>
-                        selected.length > 0
-                          ? selected.map(year => {
-                              const item = availableYears.find(y => y.value === year);
-                              return item ? item.label : year;
-                            }).join(', ')
-                          : 'Select Years'
-                      }
-                      sx={{
-                        color: colors.grey[100],
-                        backgroundColor: colors.primary[500],
-                        borderRadius: '8px',
-                        '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
-                        '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                        '& .MuiSelect-select': { py: 1.5, pl: 2 },
-                        '& .MuiSelect-select:empty': { color: colors.grey[500] },
-                      }}
-                    >
-                      {availableYears.map(({ value, label }) => (
-                        <MenuItem key={value} value={value}>
-                          <Checkbox
-                            checked={selectedYears.includes(value)}
-                            sx={{ color: colors.grey[100], '&.Mui-checked': { color: colors.greenAccent[500] } }}
-                          />
-                          <span>{label}</span>
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                  <Button
-                    onClick={deselectAllYears}
+                <FormControl>
+                  <InputLabel
+                    id="years-label"
+                    shrink
                     sx={{
-                      backgroundColor: 'transparent',
-                      color: '#31d6aa',
-                      border: `1px solid ${colors.greenAccent[400]}`,
-                      borderRadius: '4px',
-                      padding: '8px 16px',
-                      fontSize: '14px',
-                      textTransform: 'none',
-                      '&:hover': {
-                        backgroundColor: colors.greenAccent[400],
-                        color: theme.palette.mode === 'dark' ? colors.grey[900] : colors.grey[100],
+                      color: colors.grey[100],
+                      '&.Mui-focused': { color: colors.greenAccent[500] },
+                      top: 0,
+                      '&.MuiInputLabel-shrink': {
+                        transform: { xs: 'translate(14px, -9px) scale(0.75)', sm: 'translate(14px, -9px) scale(0.65)' }, // Smaller label on sm+
                       },
+                      fontSize: { xs: '14px', sm: '16px' }, // Smaller font on sm+
                     }}
                   >
-                    Deselect All
-                  </Button>
-                </Box>
+                    Years to Average
+                  </InputLabel>
+                  <Select
+                    multiple
+                    value={selectedYears}
+                    onChange={handleYearSelection}
+                    label="Years to Average"
+                    labelId="years-label"
+                    displayEmpty
+                    renderValue={(selected) =>
+                      selected.length > 0
+                        ? selected
+                            .map((year) => {
+                              const item = availableYears.find((y) => y.value === year);
+                              return item ? item.label : year;
+                            })
+                            .join(', ')
+                        : 'Select Years'
+                    }
+                    sx={{
+                      color: colors.grey[100],
+                      backgroundColor: colors.primary[500],
+                      borderRadius: '8px',
+                      '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
+                      '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                      '& .MuiSelect-select': { py: { xs: 1.5, sm: 1 }, pl: 2 }, // Smaller padding on sm+
+                      '& .MuiSelect-select:empty': { color: colors.grey[500] },
+                      fontSize: { xs: '14px', sm: '16px' }, // Smaller font on sm+
+                      textOverflow: 'ellipsis', // Handle long text
+                    }}
+                  >
+                    {availableYears.map(({ value, label }) => (
+                      <MenuItem key={value} value={value} sx={{ fontSize: { xs: '14px', sm: '16px' } }}>
+                        <Checkbox
+                          checked={selectedYears.includes(value)}
+                          sx={{ color: colors.grey[100], '&.Mui-checked': { color: colors.greenAccent[500] } }}
+                        />
+                        <span>{label}</span>
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
                 <Button
-                  onClick={toggleFavorite}
+                  onClick={deselectAllYears}
                   sx={{
-                    color: isFavorite ? colors.greenAccent[500] : colors.grey[100],
-                    minWidth: 'auto',
-                    padding: '4px',
+                    backgroundColor: 'transparent',
+                    color: '#31d6aa',
+                    border: `1px solid ${colors.greenAccent[400]}`,
+                    borderRadius: '4px',
+                    textTransform: 'none',
+                    '&:hover': {
+                      backgroundColor: colors.greenAccent[400],
+                      color: theme.palette.mode === 'dark' ? colors.grey[900] : colors.grey[100],
+                    },
                   }}
                 >
-                  {isFavorite ? '★' : '☆'}
+                  {isMobile ? 'Deselect' : 'Deselect All'}
                 </Button>
               </Box>
-              <div className="chart-top-div" style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginBottom: '10px' }}>
-                {isLoading && <span style={{ color: colors.grey[100], marginRight: '10px' }}>Loading...</span>}
-                {error && <span style={{ color: colors.redAccent[500], marginRight: '10px' }}>{error}</span>}
-                <button onClick={resetChartView} className="button-reset extra-margin">
+
+              {/* Right Side: Reset Chart Button and Status Messages */}
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  marginLeft: { xs: 'auto', sm: 'auto' }, // Push to the right
+                  flex: { xs: '1 1 33.33%', sm: '0 0 auto' }, // 1/3 on xs, auto on sm+
+                }}
+              >
+                {isLoading && <span style={{ color: colors.grey[100], fontSize: { xs: '14px', sm: '16px' } }}>Loading...</span>}
+                {error && <span style={{ color: colors.redAccent[500], fontSize: { xs: '14px', sm: '16px' } }}>{error}</span>}
+                <Button
+                  onClick={resetChartView}
+                  sx={{
+                    backgroundColor: 'transparent',
+                    color: '#31d6aa',
+                    border: `1px solid ${colors.greenAccent[400]}`,
+                    borderRadius: '4px',
+                    padding: { xs: '8px 16px', sm: '6px 12px' }, // Smaller padding on sm+
+                    fontSize: { xs: '14px', sm: '12px' }, // Smaller font on sm+
+                    textTransform: 'none',
+                    width: { xs: '100%', sm: '100px' }, // Full width on xs, smaller on sm+
+                    display: { xs: 'none', sm: 'inline-flex' }, // Hide on xs, show on sm+
+                    '&:hover': {
+                      backgroundColor: colors.greenAccent[400],
+                      color: theme.palette.mode === 'dark' ? colors.grey[900] : colors.grey[100],
+                    },
+                  }}
+                >
                   Reset Chart
-                </button>
-              </div>
-            </>
+                </Button>
+                <Button
+                  onClick={resetChartView}
+                  sx={{
+                    backgroundColor: 'transparent',
+                    color: '#31d6aa',
+                    border: `1px solid ${colors.greenAccent[400]}`,
+                    borderRadius: '4px',
+                    padding: { xs: '8px 16px', sm: '6px 12px' }, // Smaller padding on sm+
+                    fontSize: { xs: '12px', sm: '14px' }, // Smaller font on sm+
+                    textTransform: 'none',
+                    width: { xs: '100%', sm: '100px' }, // Full width on xs, smaller on sm+
+                    display: { xs: 'inline-flex', sm: 'none' }, // Show on xs, hide on sm+
+                    '&:hover': {
+                      backgroundColor: colors.greenAccent[400],
+                      color: theme.palette.mode === 'dark' ? colors.grey[900] : colors.grey[100],
+                    },
+                  }}
+                >
+                  {isMobile ? 'Reset' : 'Reset Chart'}
+                </Button>
+              </Box>
+            </Box>
           )}
           <div
             className="chart-container"

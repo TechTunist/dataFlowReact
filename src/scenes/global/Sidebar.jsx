@@ -121,7 +121,7 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
     { title: "Bitcoin Bubble Indicator", to: "/btc-20-ext", category: "Bitcoin", icon: <WarningAmberIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
     { title: "Running ROI", to: "/running-roi", category: "Indicators", icon: <ShowChartIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
     { title: "Monthly Average ROI", to: "/monthly-average-roi", category: "Indicators", icon: <CalculateIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
-    { title: "Ethereum Chart", to: "/ethereum", category: "Ethereum", icon: <SiEthereum />, categoryIcon: <SiEthereum /> },
+    // { title: "Ethereum Chart", to: "/ethereum", category: "Ethereum", icon: <SiEthereum />, categoryIcon: <SiEthereum /> },
     { title: "Altcoin Chart", to: "/altcoin-price", category: "Altcoins", icon: <MonetizationOnIcon />, categoryIcon: <MonetizationOnIcon /> },
     { title: "Total Market Cap", to: "/total", category: "Indicators", icon: <MonetizationOnIcon />, categoryIcon: <AnalyticsIcon /> },
     { title: "Total Cap to Fair Value", to: "/total-difference", category: "Indicators", icon: <CompareArrowsIcon />, categoryIcon: <AnalyticsIcon /> },

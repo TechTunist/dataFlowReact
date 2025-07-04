@@ -7,12 +7,14 @@ import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import LastUpdated from '../hooks/LastUpdated';
 import BitcoinFees from './BitcoinTransactionFees';
+import useIsMobile from '../hooks/useIsMobile';
 
 const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
   const theme = useTheme();
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
   const { btcData, fetchBtcData } = useContext(DataContext);
   const plotRef = useRef(null);
+  const isMobile = useIsMobile(); 
 
   // Define extension ranges with vivid colors
   const extensionRanges = [
@@ -98,6 +100,7 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
       y: -0.2,
       yanchor: 'top',
     },
+    showlegend: isMobile ? false : true,
     hovermode: 'closest',
     hoverdistance: 10,
   });

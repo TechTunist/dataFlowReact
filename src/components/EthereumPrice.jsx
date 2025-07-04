@@ -193,13 +193,13 @@ const EthereumPrice = ({ isDashboard = false }) => {
       grid: { vertLines: { color: colors.greenAccent[700] }, horzLines: { color: colors.greenAccent[700] } },
       timeScale: { minBarSpacing: 0.001 },
       rightPriceScale: {
-        mode: scaleMode,
+        mode: 0, // Initial mode, will be updated dynamically
         borderVisible: false,
         scaleMargins: { top: 0.1, bottom: 0.1 },
         priceFormat: { type: 'custom', formatter: value => `$${value.toFixed(2)}` },
       },
       leftPriceScale: {
-        mode: scaleMode,
+        mode: 0, // Initial mode
         borderVisible: false,
         scaleMargins: { top: 0.1, bottom: 0.1 },
         priceFormat: { type: 'custom', formatter: value => `$${value.toFixed(2)}T` },
@@ -221,7 +221,7 @@ const EthereumPrice = ({ isDashboard = false }) => {
         },
       },
     });
-
+  
     const priceSeries = chart.addAreaSeries({
       priceScaleId: 'right',
       lineWidth: 2,
@@ -232,7 +232,7 @@ const EthereumPrice = ({ isDashboard = false }) => {
       },
     });
     priceSeriesRef.current = priceSeries;
-
+  
     const fedBalanceSeries = chart.addLineSeries({
       priceScaleId: 'left',
       color: indicators['fed-balance'].color,
@@ -241,7 +241,7 @@ const EthereumPrice = ({ isDashboard = false }) => {
       visible: false,
     });
     fedBalanceSeriesRef.current = fedBalanceSeries;
-
+  
     const mayerMultipleSeries = chart.addLineSeries({
       priceScaleId: 'mayer-multiple-scale',
       color: indicators['mayer-multiple'].color,
@@ -250,16 +250,16 @@ const EthereumPrice = ({ isDashboard = false }) => {
       visible: false,
     });
     mayerMultipleSeriesRef.current = mayerMultipleSeries;
-
+  
     const rsiSeries = chart.addLineSeries({
       priceScaleId: 'rsi-scale',
-      color: 'orange', // Hardcode RSI color to match original
+      color: 'orange',
       lineWidth: 2,
       priceLineVisible: false,
       visible: false,
     });
     rsiSeriesRef.current = rsiSeries;
-
+  
     chart.subscribeCrosshairMove(param => {
       if (!param.point || !param.time || param.point.x < 0 || param.point.x > chartContainerRef.current.clientWidth || param.point.y < 0 || param.point.y > chartContainerRef.current.clientHeight) {
         setTooltipData(null);
@@ -269,22 +269,22 @@ const EthereumPrice = ({ isDashboard = false }) => {
         const mayerMultipleData = mayerMultipleSeriesRef.current.data();
         const rsiSeriesData = rsiSeriesRef.current.data();
         const currentTime = new Date(param.time).getTime();
-
+  
         const nearestFedData = fedSeriesData.reduce((prev, curr) => {
           const currTime = new Date(curr.time).getTime();
           return currTime <= currentTime && (!prev || currTime > new Date(prev.time).getTime()) ? curr : prev;
         }, null);
-
+  
         const nearestMayerData = mayerMultipleData.reduce((prev, curr) => {
           const currTime = new Date(curr.time).getTime();
           return currTime <= currentTime && (!prev || currTime > new Date(prev.time).getTime()) ? curr : prev;
         }, null);
-
+  
         const nearestRsiData = rsiSeriesData.reduce((prev, curr) => {
           const currTime = new Date(curr.time).getTime();
           return currTime <= currentTime && (!prev || currTime > new Date(prev.time).getTime()) ? curr : prev;
         }, null);
-
+  
         setTooltipData({
           date: param.time,
           price: priceData?.value,
@@ -296,7 +296,7 @@ const EthereumPrice = ({ isDashboard = false }) => {
         });
       }
     });
-
+  
     const resizeChart = () => {
       chart.applyOptions({
         width: chartContainerRef.current.clientWidth,
@@ -305,9 +305,9 @@ const EthereumPrice = ({ isDashboard = false }) => {
       chart.timeScale().fitContent();
     };
     window.addEventListener('resize', resizeChart);
-
+  
     chartRef.current = chart;
-
+  
     return () => {
       rsiPriceLinesRef.current.forEach(priceLine => {
         try {
@@ -320,7 +320,7 @@ const EthereumPrice = ({ isDashboard = false }) => {
       chart.remove();
       window.removeEventListener('resize', resizeChart);
     };
-  }, [colors, scaleMode]);
+  }, [colors]); // Removed scaleMode from dependencies
 
   // Update chart data
   useEffect(() => {

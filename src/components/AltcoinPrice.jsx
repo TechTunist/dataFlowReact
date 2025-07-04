@@ -253,38 +253,23 @@ const AltcoinPrice = ({ isDashboard = false }) => {
       grid: { vertLines: { color: colors.greenAccent[700] }, horzLines: { color: colors.greenAccent[700] } },
       timeScale: { minBarSpacing: 0.001 },
       rightPriceScale: {
-        mode: scaleMode,
+        mode: 0, // Initial mode, will be updated dynamically
         borderVisible: false,
         scaleMargins: { top: 0.1, bottom: 0.1 },
       },
       leftPriceScale: {
-        mode: scaleMode,
+        mode: 0, // Initial mode
         borderVisible: false,
         scaleMargins: { top: 0.1, bottom: 0.1 },
         priceFormat: { type: 'custom', formatter: value => `$${value.toFixed(2)}T` },
       },
       additionalPriceScales: {
-        'mayer-multiple-scale': {
-          mode: 0,
-          borderVisible: false,
-          scaleMargins: { top: 0.1, bottom: 0.1 },
-          position: 'right',
-          width: 50,
-        },
-        'rsi-scale': {
-          mode: 0,
-          borderVisible: false,
-          scaleMargins: { top: 0.1, bottom: 0.1 },
-          position: 'right',
-          width: 50,
-        },
+        'mayer-multiple-scale': { mode: 0, borderVisible: false, scaleMargins: { top: 0.1, bottom: 0.1 }, position: 'right', width: 50 },
+        'rsi-scale': { mode: 0, borderVisible: false, scaleMargins: { top: 0.1, bottom: 0.1 }, position: 'right', width: 50 },
       },
     });
 
-    const priceSeries = chart.addAreaSeries({
-      priceScaleId: 'right',
-      lineWidth: 2,
-    });
+    const priceSeries = chart.addAreaSeries({ priceScaleId: 'right', lineWidth: 2 });
     priceSeriesRef.current = priceSeries;
 
     const fedBalanceSeries = chart.addLineSeries({
@@ -363,6 +348,7 @@ const AltcoinPrice = ({ isDashboard = false }) => {
     chartRef.current = chart;
 
     return () => {
+      // Cleanup
       rsiPriceLinesRef.current.forEach(priceLine => {
         try {
           rsiSeriesRef.current?.removePriceLine(priceLine);
@@ -374,7 +360,14 @@ const AltcoinPrice = ({ isDashboard = false }) => {
       chart.remove();
       window.removeEventListener('resize', resizeChart);
     };
-  }, [colors, scaleMode]);
+  }, [colors]); // Remove scaleMode from dependencies
+
+  useEffect(() => {
+    if (chartRef.current) {
+      chartRef.current.priceScale('right').applyOptions({ mode: scaleMode });
+      chartRef.current.priceScale('left').applyOptions({ mode: scaleMode });
+    }
+  }, [scaleMode]);
 
   // Update price series format based on denominator
   useEffect(() => {
