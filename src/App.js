@@ -26,7 +26,6 @@ import AltcoinRisk from "./components/AltcoinRisk";
 import MarketCycles from "./components/MarketCycles";
 import FearAndGreedChart from "./components/FearAndGreedChart";
 import UsInflationChart from "./components/UsInflation";
-import UsUnemploymentChart from "./components/UsUnemployment";
 import UsInterestChart from "./components/UsInterest";
 import UsInitialClaimsChart from "./components/UsInitialClaims";
 import UsCombinedMacroChart from "./components/UsCombinedMacro";
@@ -487,14 +486,6 @@ const AppContent = memo(({ isSignedIn, user }) => {
                       element={
                         <ProtectedRoute>
                           <BasicChart ChartComponent={UsInflationChart} />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/us-unemployment"
-                      element={
-                        <ProtectedRoute>
-                          <BasicChart ChartComponent={UsUnemploymentChart} />
                         </ProtectedRoute>
                       }
                     />

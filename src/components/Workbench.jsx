@@ -152,29 +152,41 @@ const WorkbenchChart = ({
   };
 
   // Get data with moving average applied (if any)
-  const getSeriesData = (seriesId, rawData) => {
-    if (!rawData) return [];
-    const movingAverage = seriesMovingAverages[seriesId];
-    if (!movingAverage || movingAverage === 'None') return rawData;
-
-    const periodMap = {
-      '7 day': 7,
-      '28 day': 28,
-      '3 month': 90, // Assuming daily data, ~3 months
+  const getSeriesData = useMemo(() => {
+    return (seriesId, rawData) => {
+      if (!rawData) return [];
+      const movingAverage = seriesMovingAverages[seriesId];
+      if (!movingAverage || movingAverage === 'None') return rawData;
+  
+      const periodMap = {
+        '7 day': 7,
+        '28 day': 28,
+        '3 month': 90,
+      };
+      const period = periodMap[movingAverage];
+      if (!period) return rawData;
+  
+      return calculateMovingAverage(rawData, period);
     };
-    const period = periodMap[movingAverage];
-    if (!period) return rawData;
-
-    return calculateMovingAverage(rawData, period);
-  };
+  }, [seriesMovingAverages]);
 
   // Get the latest value for a series at or before a given time
   const getLatestValue = (data, time) => {
     if (!data || data.length === 0) return null;
     const targetTime = new Date(time).getTime();
-    const latestPoint = data
-      .filter(item => new Date(item.time).getTime() <= targetTime)
-      .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())[0];
+    // Binary search for efficiency
+    let left = 0, right = data.length - 1;
+    let latestPoint = null;
+    while (left <= right) {
+      const mid = Math.floor((left + right) / 2);
+      const pointTime = new Date(data[mid].time).getTime();
+      if (pointTime <= targetTime) {
+        latestPoint = data[mid];
+        left = mid + 1;
+      } else {
+        right = mid - 1;
+      }
+    }
     return latestPoint ? latestPoint.value : null;
   };
 
@@ -346,16 +358,15 @@ const WorkbenchChart = ({
     }
   }, [colors]);
 
-  // Update series and scales
   useEffect(() => {
     if (!chartRef.current) return;
-
+  
     // Check if series changed
     const isNewSeries =
       JSON.stringify(activeFredSeries.sort()) !== JSON.stringify(prevSeriesRef.current.fred.sort()) ||
       JSON.stringify(activeCryptoSeries.sort()) !== JSON.stringify(prevSeriesRef.current.crypto.sort());
     prevSeriesRef.current = { fred: activeFredSeries, crypto: activeCryptoSeries };
-
+  
     // Clear existing series
     Object.keys(seriesRefs.current).forEach(id => {
       if (chartRef.current && seriesRefs.current[id]) {
@@ -367,7 +378,7 @@ const WorkbenchChart = ({
       }
       delete seriesRefs.current[id];
     });
-
+  
     // Combine FRED and Crypto series, ensuring USRECD is at the back
     const allSeries = [
       ...activeFredSeries.map(id => ({ id, type: 'fred' })),
@@ -378,10 +389,10 @@ const WorkbenchChart = ({
       if (b.id === 'USRECD') return -1;
       return 0;
     });
-
+  
     // Track used price scales
     const usedPriceScales = new Set();
-
+  
     // Add series to the chart
     sortedSeries.forEach(({ id, type }) => {
       const seriesInfo = type === 'fred' ? availableFredSeries[id] : availableCryptoSeries[id];
@@ -425,7 +436,7 @@ const WorkbenchChart = ({
       }
       seriesRefs.current[id] = series;
       usedPriceScales.add(seriesInfo.scaleId);
-
+  
       // Set data based on type
       let data = [];
       if (type === 'fred' && fredSeriesData[id]?.length > 0) {
@@ -444,11 +455,11 @@ const WorkbenchChart = ({
       }
       if (data.length > 0) {
         try {
-          // Filter out invalid data for logarithmic scale
-          const validData = scaleModeState === 1
+          // Filter out invalid data for logarithmic scale, except for USRECD
+          const validData = scaleModeState === 1 && id !== 'USRECD'
             ? data.filter(item => item.value > 0) // Log scale requires positive values
             : data;
-          if (validData.length === 0) {
+          if (validData.length === 0 && id !== 'USRECD') {
             console.warn(`No valid data for series ${id} in logarithmic scale`);
             setError(`Cannot display ${seriesInfo.label} in logarithmic scale due to non-positive values.`);
           } else {
@@ -460,14 +471,14 @@ const WorkbenchChart = ({
         }
       }
     });
-
-    // Define and apply price scales
+  
+    // Define price scales, keeping USRECD scale in linear mode
     const priceScales = Object.keys(availableFredSeries).reduce((acc, id) => {
       const seriesInfo = availableFredSeries[id];
       return {
         ...acc,
         [seriesInfo.scaleId]: {
-          mode: scaleModeState,
+          mode: id === 'USRECD' ? 0 : scaleModeState, // USRECD always linear (0)
           borderVisible: false,
           scaleMargins: { top: 0.05, bottom: 0.05 },
           position: 'right',
@@ -484,7 +495,7 @@ const WorkbenchChart = ({
       width: 50,
       visible: usedPriceScales.has('crypto-shared-scale'),
     };
-
+  
     try {
       chartRef.current.applyOptions({
         additionalPriceScales: priceScales,
@@ -493,75 +504,77 @@ const WorkbenchChart = ({
       console.error('Error applying price scales:', err);
       setError('Failed to apply chart scales.');
     }
-
+  
     // Apply scale mode to all used scales
     usedPriceScales.forEach(scaleId => {
       try {
-        chartRef.current.priceScale(scaleId).applyOptions({ mode: scaleModeState });
+        const mode = scaleId === 'usrecd-scale' ? 0 : scaleModeState; // USRECD scale always linear
+        chartRef.current.priceScale(scaleId).applyOptions({ mode });
       } catch (err) {
         console.error(`Failed to apply scale mode for ${scaleId}:`, err);
         setError(`Cannot apply ${scaleModeState === 1 ? 'logarithmic' : 'linear'} scale to ${scaleId}.`);
       }
     });
-
+  
     // Fit content only for new series or initial load
     if (isNewSeries || zoomRange === null) {
       chartRef.current.timeScale().fitContent();
       setZoomRange(null);
     }
-
+  
     // Tooltip subscription with debounced updates
     let tooltipTimeout = null;
-    chartRef.current.subscribeCrosshairMove(param => {
-      if (
-        !param.point ||
-        !param.time ||
-        param.point.x < 0 ||
-        param.point.x > chartContainerRef.current.clientWidth ||
-        param.point.y < 0 ||
-        param.point.y > chartContainerRef.current.clientHeight
-      ) {
-        clearTimeout(tooltipTimeout);
-        setTooltipData(null);
-        return;
-      }
+// In the useEffect for series and scales, update the tooltip subscription:
+chartRef.current.subscribeCrosshairMove(param => {
+  if (
+    !param.point ||
+    !param.time ||
+    param.point.x < 0 ||
+    param.point.x > chartContainerRef.current.clientWidth ||
+    param.point.y < 0 ||
+    param.point.y > chartContainerRef.current.clientHeight
+  ) {
+    clearTimeout(tooltipTimeout);
+    setTooltipData(null);
+    return;
+  }
 
-      const tooltip = {
-        date: param.time,
-        values: {},
-        x: param.point.x,
-        y: param.point.y,
-      };
+  const tooltip = {
+    date: param.time,
+    values: {},
+    x: param.point.x,
+    y: param.point.y,
+  };
 
-      sortedSeries.forEach(({ id, type }) => {
-        const series = seriesRefs.current[id];
-        if (!series) return;
-        let data;
-        if (type === 'fred') {
-          data = getSeriesData(id, fredSeriesData[id]);
-        } else if (type === 'crypto') {
-          const seriesInfo = availableCryptoSeries[id];
-          if (seriesInfo.dataKey === 'btcData') data = btcData;
-          else if (seriesInfo.dataKey === 'ethData') data = ethData;
-          else if (seriesInfo.dataKey === 'altcoinData') data = altcoinData[seriesInfo.coin];
-        }
-        const value = param.seriesData.get(series)?.value ?? getLatestValue(data, param.time);
-        tooltip.values[id] = value;
-      });
+  sortedSeries.forEach(({ id, type }) => {
+    const series = seriesRefs.current[id];
+    if (!series) return;
+    let data;
+    if (type === 'fred') {
+      data = getSeriesData(id, fredSeriesData[id]);
+    } else if (type === 'crypto') {
+      const seriesInfo = availableCryptoSeries[id];
+      if (seriesInfo.dataKey === 'btcData') data = btcData;
+      else if (seriesInfo.dataKey === 'ethData') data = ethData;
+      else if (seriesInfo.dataKey === 'altcoinData') data = altcoinData[seriesInfo.coin];
+    }
+    const value = param.seriesData.get(series)?.value ?? getLatestValue(data, param.time);
+    tooltip.values[id] = value;
+  });
 
-      clearTimeout(tooltipTimeout);
-      tooltipTimeout = setTimeout(() => {
-        setTooltipData(tooltip);
-      }, 1); // Debounce tooltip updates
-    });
-
+  clearTimeout(tooltipTimeout);
+  tooltipTimeout = setTimeout(() => {
+    setTooltipData(tooltip);
+  }, 50); // Increase debounce to 50ms
+});
+  
     return () => {
       if (chartRef.current) {
         chartRef.current.unsubscribeCrosshairMove();
       }
     };
   }, [fredSeriesData, btcData, ethData, altcoinData, activeFredSeries, activeCryptoSeries, seriesMovingAverages, seriesColors, chartType, valueFormatter, scaleModeState]);
-
+  
   // Restore zoom
   useEffect(() => {
     if (!chartRef.current || !zoomRange) return;

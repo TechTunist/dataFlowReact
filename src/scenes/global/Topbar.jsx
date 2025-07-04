@@ -206,8 +206,6 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
         return { title: "Altcoin Risk Chart", subtitle: "Risk metric for a selection of altcoins" };
       case "/us-inflation":
         return { title: "US Inflation", subtitle: "Annualised inflation rate" };
-      case "/us-unemployment":
-        return { title: "US Unemployment", subtitle: "Historical US Unemployment Rate" };
       case "/us-interest":
         return { title: "US Interest Rate", subtitle: "Fed Funds Rate" };
       case "/us-combined-macro":

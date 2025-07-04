@@ -141,7 +141,6 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
     { title: "BTC Transactions to MVRV", to: "/tx-mvrv", category: "On Chain Data", icon: <AssessmentIcon />, categoryIcon: <LinkIcon /> },
     { title: "Puell Multiple", to: "/puell-multiple", category: "On Chain Data", icon: <AssessmentIcon />, categoryIcon: <LinkIcon /> },
     { title: "US Inflation Chart", to: "/us-inflation", category: "MacroEconomics", icon: <PriceChangeIcon />, categoryIcon: <AssessmentIcon /> },
-    { title: "US Unemployment Chart", to: "/us-unemployment", category: "MacroEconomics", icon: <WorkOffIcon />, categoryIcon: <AssessmentIcon /> },
     { title: "US Interest Rate Chart", to: "/us-interest", category: "MacroEconomics", icon: <PercentIcon />, categoryIcon: <AssessmentIcon /> },
     { title: "US Initial Claims", to: "/us-initial-claims", category: "MacroEconomics", icon: <AssignmentIcon />, categoryIcon: <AssessmentIcon /> },
     { title: "US Macro Information Chart", to: "/us-combined-macro", category: "MacroEconomics", icon: <MultilineChartIcon />, categoryIcon: <AssessmentIcon /> },

@@ -33,7 +33,6 @@ import PuellMultiple from "../../components/PuellMultiple";
 import BitcoinRisk from "../../components/BitcoinRisk";
 import FearAndGreedChart from "../../components/FearAndGreedChart";
 import UsInflationChart from "../../components/UsInflation";
-import UsUnemploymentChart from "../../components/UsUnemployment";
 import UsInterestChart from "../../components/UsInterest";
 import UsCombinedMacroChart from "../../components/UsCombinedMacro";
 import UsInitialClaimsChart from "../../components/UsInitialClaims";
@@ -70,7 +69,6 @@ const chartConfig = [
   { id: "market-cycles", title: "Bitcoin Market Cycles", linkTo: "/market-cycles", component: (props) => <MarketCycles isDashboard={true} {...props} />, description: "Compare previous crypto market cycles." },
   { id: "fear-and-greed-chart", title: "Fear and Greed Chart", linkTo: "/fear-and-greed-chart", component: (props) => <FearAndGreedChart isDashboard={true} {...props} />, description: "Chart of Fear and Greed index over time." },
   { id: "us-inflation", title: "US Inflation", linkTo: "/us-inflation", component: (props) => <UsInflationChart isDashboard={true} {...props} />, description: "US inflation rates over time." },
-  { id: "us-unemployment", title: "US Unemployment", linkTo: "/us-unemployment", component: (props) => <UsUnemploymentChart isDashboard={true} {...props} />, description: "US unemployment rates over time." },
   { id: "us-interest", title: "US Interest Rates", linkTo: "/us-interest", component: (props) => <UsInterestChart isDashboard={true} {...props} />, description: "US interest rates over time." },
   { id: "us-combined-macro", title: "US Combined Macro", linkTo: "/us-combined-macro", component: (props) => <UsCombinedMacroChart isDashboard={true} {...props} />, description: "Combined US macroeconomic indicators." },
   { id: "us-initial-claims", title: "US Initial Claims", linkTo: "/us-initial-claims", component: (props) => <UsInitialClaimsChart isDashboard={true} {...props} />, description: "US initial jobless claims." },
@@ -122,6 +120,7 @@ const DashboardCard = memo(({ title, component, description, linkTo, chartId, is
       flexDirection: "column",
       transition: "box-shadow 0.3s ease",
       width: "100%",
+      position: "relative", // Added to support absolute positioning of IconButton
     },
     cardContent: {
       flexGrow: 1,
@@ -158,62 +157,68 @@ const DashboardCard = memo(({ title, component, description, linkTo, chartId, is
   return (
     <Grid item xs={12} lg={6}>
       <LazyLoad height={550} offset={100}>
-        <Link to={linkTo} style={{ textDecoration: "none" }}>
-          <Card
+        <Box sx={{ position: "relative" }}> {/* Wrapper for card and button */}
+          <Link to={linkTo} style={{ textDecoration: "none" }}>
+            <Card
+              sx={{
+                ...dashboardStyles.card,
+                backgroundColor: colors.primary[500],
+                border: `1px solid ${colors.greenAccent[500]}`,
+                '&:hover': {
+                  boxShadow: `0 0 10px ${colors.greenAccent[500]}`,
+                  cursor: 'pointer',
+                },
+              }}
+            >
+              <CardContent sx={dashboardStyles.cardContent}>
+                <Box display="flex" justifyContent="space-between" alignItems="center">
+                  <Typography
+                    variant="h4"
+                    gutterBottom
+                    style={{ color: colors.grey[100] }}
+                    sx={{ maxWidth: 'calc(100% - 50px)' }}
+                  >
+                    {title}
+                  </Typography>
+                  {/* IconButton moved outside Link */}
+                </Box>
+                <Box sx={dashboardStyles.chartContainer}>
+                  {chartsVisible ? component : <ChartPlaceholder />}
+                </Box>
+                <Typography
+                  variant="body3"
+                  color="textSecondary"
+                  className="dashboard-info"
+                  sx={dashboardStyles.infoText}
+                >
+                  {description}
+                </Typography>
+              </CardContent>
+            </Card>
+          </Link>
+          <IconButton
+            onClick={(e) => {
+              e.stopPropagation(); // Kept as a safeguard
+              toggleFavorite(chartId);
+            }}
             sx={{
-              ...dashboardStyles.card,
-              backgroundColor: colors.primary[500],
-              border: `1px solid ${colors.greenAccent[500]}`,
+              color: isFavorite ? colors.greenAccent[500] : colors.grey[100],
+              fontSize: '1.5rem',
+              padding: '8px',
+              width: '40px',
+              height: '40px',
+              position: 'absolute',
+              top: '10px',
+              right: '10px',
               '&:hover': {
-                boxShadow: `0 0 10px ${colors.greenAccent[500]}`,
-                cursor: 'pointer',
+                backgroundColor: colors.primary[700],
               },
             }}
+            title={isFavorite ? "Remove from favorites" : "Add to favorites"}
           >
-            <CardContent sx={dashboardStyles.cardContent}>
-              <Box display="flex" justifyContent="space-between" alignItems="center">
-                <Typography
-                  variant="h4"
-                  gutterBottom
-                  style={{ color: colors.grey[100] }}
-                  sx={{ maxWidth: 'calc(100% - 50px)' }}
-                >
-                  {title}
-                </Typography>
-                <IconButton
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleFavorite(chartId);
-                  }}
-                  sx={{
-                    color: isFavorite ? colors.greenAccent[500] : colors.grey[100],
-                    fontSize: '1.5rem',
-                    padding: '8px',
-                    width: '40px',
-                    height: '40px',
-                    '&:hover': {
-                      backgroundColor: colors.primary[700],
-                    },
-                  }}
-                  title={isFavorite ? "Remove from favorites" : "Add to favorites"}
-                >
-                  {isFavorite ? <StarIcon fontSize="inherit" /> : <StarBorderIcon fontSize="inherit" />}
-                </IconButton>
-              </Box>
-              <Box sx={dashboardStyles.chartContainer}>
-                {chartsVisible ? component : <ChartPlaceholder />}
-              </Box>
-              <Typography
-                variant="body3"
-                color="textSecondary"
-                className="dashboard-info"
-                sx={dashboardStyles.infoText}
-              >
-                {description}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Link>
+            {isFavorite ? <StarIcon fontSize="inherit" /> : <StarBorderIcon fontSize="inherit" />}
+          </IconButton>
+        </Box>
       </LazyLoad>
     </Grid>
   );
@@ -224,7 +229,7 @@ const Dashboard = memo(({ isMobile, isSidebar }) => {
   const colors = tokens(theme.palette.mode);
   const [chartsVisible, setChartsVisible] = useState(!isMobile || !isSidebar);
   const { btcData, ethData, riskData, marketCapData } = useContext(DataContext);
-  const { favoriteCharts, addFavoriteChart, removeFavoriteChart, error, clearError } = useFavorites(); // Added clearError
+  const { favoriteCharts, addFavoriteChart, removeFavoriteChart, error, clearError } = useFavorites();
 
   useEffect(() => {
     if (!isMobile) {
@@ -251,7 +256,7 @@ const Dashboard = memo(({ isMobile, isSidebar }) => {
   };
 
   const handleSnackbarClose = () => {
-    clearError(); // Clear error state when Snackbar closes
+    clearError();
   };
 
   return (
