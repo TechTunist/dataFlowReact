@@ -70,13 +70,7 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
     minerCapThermoCap: minerCapThermoCapRiskLastUpdated,
     fee: feeRiskLastUpdated,
     sopl: soplRiskLastUpdated,
-    average: Math.max( // Use the latest update time from all metrics
-      mvrvRiskLastUpdated || 0,
-      puellRiskLastUpdated || 0,
-      minerCapThermoCapRiskLastUpdated || 0,
-      feeRiskLastUpdated || 0,
-      soplRiskLastUpdated || 0
-    ),
+    average: mvrvRiskLastUpdated,
   };
 
   const isFetchedMap = {
@@ -507,7 +501,7 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
       </div>
       {!isDashboard && (
         <div className="under-chart">
-          <LastUpdated storageKey="btcData" />
+          <LastUpdated customDate={lastUpdatedTime} />
         </div>
       )}
       {!isDashboard && (
