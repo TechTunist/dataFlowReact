@@ -635,6 +635,8 @@ const SahmRecessionIndicator = ({ isDashboard = false, explanation = '' }) => {
             <LastUpdated customDate={latestTimestamp} />
           </div>
         )}
+      </div>
+      <div>
         {latestTimestamp && (
           <div
             style={{
