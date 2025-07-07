@@ -22,6 +22,7 @@ const PuellMultiple = ({ isDashboard = false }) => {
   const [currentPuellMultiple, setCurrentPuellMultiple] = useState(null);
   const [tooltipData, setTooltipData] = useState(null);
   const [smoothingPeriod, setSmoothingPeriod] = useState(7); // Default to 7-day smoothing
+  const [lastUpdatedDate, setLastUpdatedDate] = useState(null);
 
   // Smoothing period options
   const smoothingOptions = [
@@ -250,12 +251,14 @@ const PuellMultiple = ({ isDashboard = false }) => {
     }
   }, [isInteractive, maxPuell, smoothingPeriod]);
 
-  // Update current price and Puell Multiple
+  // Update current price, Puell Multiple, and last updated date
   useEffect(() => {
     const latestPriceData = prepareData.priceData[prepareData.priceData.length - 1];
     const latestPuellData = puellDataAll[puellDataAll.length - 1];
     setCurrentBtcPrice(latestPriceData ? Math.floor(latestPriceData.value / 1000) : 0);
     setCurrentPuellMultiple(latestPuellData && latestPuellData.value ? latestPuellData.value.toFixed(2) : null);
+    // Set the last updated date from the latest data point
+    setLastUpdatedDate(latestPuellData ? latestPuellData.time : null);
   }, [prepareData.priceData, puellDataAll]);
 
   // Calculate tooltip position
@@ -400,7 +403,7 @@ const PuellMultiple = ({ isDashboard = false }) => {
         )}
       </div>
       <div className="under-chart">
-        {!isDashboard && <LastUpdated storageKey="btcData" />}
+        {!isDashboard && <LastUpdated customDate={lastUpdatedDate} />}
         {!isDashboard && <BitcoinFees />}
       </div>
       {!isDashboard && (

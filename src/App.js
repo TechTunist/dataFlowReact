@@ -67,6 +67,7 @@ import { FavoritesProvider } from './contexts/FavoritesContext';
 import Charts from "./components/ChartsThumbnails";
 import SP500DivUnrateChart from "./components/SP500DivUnrateChart";
 import SP500ROI from "./components/SP500ROI";
+import SahmRecessionIndicator from './components/SahmRecessionIndicator';
 
 // Stripe Context
 const StripeContext = createContext(null);
@@ -340,6 +341,14 @@ const AppContent = memo(({ isSignedIn, user }) => {
                       element={
                         <ProtectedRoute>
                           <BasicChart ChartComponent={MonthlyAverageROI} />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/fred/sahm-recession-indicator"
+                      element={
+                        <ProtectedRoute>
+                          <BasicChart ChartComponent={SahmRecessionIndicator} />
                         </ProtectedRoute>
                       }
                     />

@@ -292,6 +292,8 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
         return { title: "Altcoin Season Index", subtitle: isMobile ? "Crypto Seasonality" : "Is it closer to Altcoin Season or Bitcoin Season?" };
       case "/sp500-roi":
         return { title: "S&P500 Return On Investment", subtitle: isMobile ? "Yearly ROI" : "Annualised ROI of the S&P500" };
+      case "/fred/sahm-recession-indicator":
+        return { title: "Sahm Rule", subtitle: isMobile ? "Recession Indicator" : "Recession Indicator" };
       default:
         return { title: "CryptoLogical", subtitle: "" };
     }

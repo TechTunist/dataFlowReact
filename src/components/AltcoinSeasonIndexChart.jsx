@@ -7,6 +7,7 @@ import '../styling/bitcoinChart.css';
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
 import { DataContext } from '../DataContext';
+import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 
 const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
   const chartContainerRef = useRef();
@@ -30,7 +31,6 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
     { value: '90d', label: '90 Days', days: 90 },
   ];
 
-  // Calculate SMA for index data
   const smoothedData = useMemo(() => {
     const selectedSma = smaPeriods.find(sp => sp.value === smaPeriod);
     const days = selectedSma.days || 0;
@@ -50,14 +50,12 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
     return result;
   }, [altcoinSeasonTimeseriesData, smaPeriod]);
 
-  // Filter Bitcoin data to start from first Altcoin Season Index date
   const filteredBtcData = useMemo(() => {
     if (!altcoinSeasonTimeseriesData.length) return [];
-    const startDate = altcoinSeasonTimeseriesData[0].time; // January 1, 2018
+    const startDate = altcoinSeasonTimeseriesData[0].time;
     return btcData.filter(item => new Date(item.time) >= new Date(startDate));
   }, [btcData, altcoinSeasonTimeseriesData]);
 
-  // Fetch data with error handling
   useEffect(() => {
     Promise.all([
       fetchAltcoinSeasonTimeseriesData(),
@@ -68,7 +66,6 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
     });
   }, [fetchAltcoinSeasonTimeseriesData, fetchBtcData]);
 
-  // Initialize chart
   useEffect(() => {
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
@@ -84,19 +81,19 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
       rightPriceScale: {
         scaleMargins: { top: 0.1, bottom: 0.1 },
         borderVisible: false,
-        mode: 0, // Linear for index
+        mode: 0,
       },
       leftPriceScale: {
         visible: true,
         borderColor: 'rgba(197, 203, 206, 1)',
         scaleMargins: { top: 0.1, bottom: 0.1 },
-        mode: 1, // Logarithmic for BTC price
+        mode: 1,
       },
       timeScale: { minBarSpacing: 0.001 },
     });
 
     const btcSeries = chart.addLineSeries({
-      color: '#808080', // Grey
+      color: '#808080',
       priceScaleId: 'left',
       lineWidth: 0.7,
       priceFormat: { type: 'custom', formatter: value => value.toFixed(0) },
@@ -104,7 +101,7 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
     btcSeriesRef.current = btcSeries;
 
     const indexSeries = chart.addLineSeries({
-      color: colors.greenAccent[400], // Placeholder; gradient not supported
+      color: colors.greenAccent[400],
       lastValueVisible: true,
       priceScaleId: 'right',
       lineWidth: 2,
@@ -114,23 +111,25 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
 
     indexSeries.createPriceLine({
       price: 75,
-      color: '#FF0000', // Vibrant red
+      color: '#FF0000',
       lineWidth: 1,
       lineStyle: 2,
       title: 'Altcoin Season',
-      axisLabelColor: '#FF0000', // Match label to line
+      axisLabelColor: '#FF0000',
     });
     indexSeries.createPriceLine({
       price: 25,
-      color: '#0000FF', // Blue
+      color: '#0000FF',
       lineWidth: 1,
       lineStyle: 2,
       title: 'Bitcoin Season',
-      axisLabelColor: '#0000FF', // Match label to line
+      axisLabelColor: '#0000FF',
     });
 
     chart.subscribeCrosshairMove(param => {
       if (
+
+
         !param.point ||
         !param.time ||
         param.point.x < 0 ||
@@ -166,9 +165,8 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
       chart.remove();
       window.removeEventListener('resize', resizeChart);
     };
-  }, []); // Stable initialization
+  }, []);
 
-  // Update index series data
   useEffect(() => {
     if (indexSeriesRef.current && smoothedData.length > 0) {
       indexSeriesRef.current.setData(
@@ -178,7 +176,6 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
     }
   }, [smoothedData]);
 
-  // Update Bitcoin series data
   useEffect(() => {
     if (btcSeriesRef.current && filteredBtcData.length > 0) {
       btcSeriesRef.current.setData(
@@ -188,7 +185,6 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
     }
   }, [filteredBtcData]);
 
-  // Update chart options
   useEffect(() => {
     if (chartRef.current) {
       chartRef.current.applyOptions({
@@ -202,29 +198,24 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
       });
       chartRef.current.priceScale('left').applyOptions({
         title: 'Bitcoin Price (USD)',
-        mode: 1, // Logarithmic
+        mode: 1,
       });
     }
   }, [isInteractive, smaPeriod]);
 
-  // Update current index
   useEffect(() => {
     const latestData = smoothedData[smoothedData.length - 1];
     setCurrentIndex(latestData ? latestData.index.toFixed(1) : null);
   }, [smoothedData]);
 
-  // Handle SMA period change
   const handleSmaPeriodChange = e => setSmaPeriod(e.target.value);
 
-  // Toggle interactivity
   const setInteractivity = () => setIsInteractive(!isInteractive);
 
-  // Reset chart view
   const resetChartView = () => {
     if (chartRef.current) chartRef.current.timeScale().fitContent();
   };
 
-  // Calculate tooltip position
   const calculateLeftPosition = () => {
     if (!tooltipData) return '0px';
     const chartWidth = chartContainerRef.current.clientWidth;
@@ -367,19 +358,34 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
               top: `${tooltipData.y + 10}px`,
               zIndex: 1000,
               backgroundColor: colors.primary[900],
-              padding: '5px 10px',
+              padding: '8px 12px',
               borderRadius: '4px',
               color: colors.grey[100],
               fontSize: '12px',
               pointerEvents: 'none',
             }}
           >
-            <div style={{ fontSize: '15px' }}>Altcoin Season Index</div>
-            {tooltipData.index && <div style={{ fontSize: '20px' }}>{tooltipData.index.toFixed(1)}</div>}
+            <div style={{ fontSize: '16px', fontWeight: 'bold' }}>Altcoin Season Index</div>
+            {tooltipData.index && <div style={{ fontSize: '22px', margin: '4px 0' }}>{tooltipData.index.toFixed(1)}</div>}
             {tooltipData.btcPrice && <div>BTC Price: ${tooltipData.btcPrice.toFixed(2)}</div>}
             {tooltipData.date && smoothedData.find(d => d.time === tooltipData.date) && (
               <>
-                <div>Season: {smoothedData.find(d => d.time === tooltipData.date).season}</div>
+                <div style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '4px' }}>
+                  Season:{' '}
+                  <span
+                    style={{
+                      color:
+                        smoothedData.find(d => d.time === tooltipData.date).season === 'Neutral'
+                          ? colors.greenAccent[400]
+                          : smoothedData.find(d => d.time === tooltipData.date).season === 'Bitcoin Season'
+                          ? '#89CFF0'
+                          : '#F4A7B9',
+                      fontWeight: 'bold',
+                    }}
+                  >
+                    {smoothedData.find(d => d.time === tooltipData.date).season}
+                  </span>
+                </div>
                 <div>Outperforming: {smoothedData.find(d => d.time === tooltipData.date).altcoins_outperforming}/{smoothedData.find(d => d.time === tooltipData.date).altcoin_count}</div>
               </>
             )}
@@ -404,4 +410,4 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
   );
 };
 
-export default AltcoinSeasonIndexChart;
+export default restrictToPaidSubscription(AltcoinSeasonIndexChart);
