@@ -206,14 +206,39 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
 
   // Fetch data on mount
   useEffect(() => {
-    setIsLoading(true);
-    Promise.all([fetchBtcData(), fetchRiskMetricsData()])
-      .catch((error) => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        // Only fetch if data is not already fetched
+        if (
+          !isMvrvRiskDataFetched ||
+          !isPuellRiskDataFetched ||
+          !isMinerCapThermoCapRiskDataFetched ||
+          !isFeeRiskDataFetched ||
+          !isSoplRiskDataFetched ||
+          !btcData.length
+        ) {
+          await Promise.all([fetchBtcData(), fetchRiskMetricsData()]);
+        }
+      } catch (error) {
         console.error('Failed to fetch data:', error);
         setDataError('Failed to load data');
-      })
-      .finally(() => setIsLoading(false));
-  }, [fetchBtcData, fetchRiskMetricsData]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+  
+    fetchData();
+  }, [
+    fetchBtcData,
+    fetchRiskMetricsData,
+    isMvrvRiskDataFetched,
+    isPuellRiskDataFetched,
+    isMinerCapThermoCapRiskDataFetched,
+    isFeeRiskDataFetched,
+    isSoplRiskDataFetched,
+    btcData.length,
+  ]);
 
   // Initialize chart once
   useEffect(() => {
