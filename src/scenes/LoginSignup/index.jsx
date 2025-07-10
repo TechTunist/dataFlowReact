@@ -1,4 +1,3 @@
-// src/scenes/LoginSignup.js
 import { useState, useEffect } from "react";
 import { useSignUp, useSignIn } from "@clerk/clerk-react";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -13,7 +12,9 @@ export default function LoginSignup() {
   const [emailAddress, setEmailAddress] = useState("");
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
+  const [newPassword, setNewPassword] = useState(""); // For password reset
   const [pendingVerification, setPendingVerification] = useState(false);
+  const [isPasswordReset, setIsPasswordReset] = useState(false); // Track password reset flow
   const [isLoading, setIsLoading] = useState(false);
   const { signUp, setActive } = useSignUp();
   const { signIn } = useSignIn();
@@ -37,7 +38,6 @@ export default function LoginSignup() {
         password,
       });
 
-      // Prepare email verification
       await signUp.prepareEmailAddressVerification();
       setPendingVerification(true);
     } catch (err) {
@@ -58,11 +58,9 @@ export default function LoginSignup() {
       if (result.status === "complete") {
         await setActive({ session: result.createdSessionId });
 
-        // Check if Premium Plan was selected
         const query = new URLSearchParams(location.search);
         const plan = query.get('plan');
 
-        // Redirect based on plan
         if (plan === 'premium') {
           navigate("/subscription");
         } else {
@@ -110,6 +108,56 @@ export default function LoginSignup() {
     }
   };
 
+  // Handle Forgot Password
+  const onForgotPasswordPress = async () => {
+    if (!signIn) return;
+
+    setIsLoading(true);
+    try {
+      await signIn.create({
+        identifier: emailAddress,
+      });
+      await signIn.prepareFirstFactor({
+        strategy: "reset_password_email_code",
+        emailAddressId: signIn.supportedFirstFactors.find(
+          (factor) => factor.strategy === "reset_password_email_code"
+        ).emailAddressId,
+      });
+      setIsPasswordReset(true);
+      setPendingVerification(true);
+    } catch (err) {
+      console.error("Password reset error:", JSON.stringify(err, null, 2));
+      alert("Password reset failed: " + (err.errors?.[0]?.message || "Unknown error"));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle Password Reset Verification
+  const onResetPasswordPress = async () => {
+    if (!signIn) return;
+
+    setIsLoading(true);
+    try {
+      const result = await signIn.attemptFirstFactor({
+        strategy: "reset_password_email_code",
+        code,
+        password: newPassword,
+      });
+      if (result.status === "complete") {
+        await setActive({ session: result.createdSessionId });
+        navigate("/dashboard");
+      } else {
+        alert("Password reset incomplete. Please try again.");
+      }
+    } catch (err) {
+      console.error("Password reset verification error:", JSON.stringify(err, null, 2));
+      alert("Password reset failed: " + (err.errors?.[0]?.message || "Unknown error"));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <Box
       sx={{
@@ -142,13 +190,15 @@ export default function LoginSignup() {
                 fontSize: { xs: "2rem", md: "3rem" },
               }}
             >
-              Verify Your Email
+              {isPasswordReset ? "Reset Your Password" : "Verify Your Email"}
             </Typography>
             <Typography
               variant="body1"
               sx={{ color: colors.grey[300], marginBottom: "20px" }}
             >
-              Please enter the verification code sent to your email.
+              {isPasswordReset
+                ? "Enter the verification code sent to your email and your new password."
+                : "Please enter the verification code sent to your email."}
             </Typography>
             <TextField
               type="text"
@@ -166,8 +216,26 @@ export default function LoginSignup() {
                 },
               }}
             />
+            {isPasswordReset && (
+              <TextField
+                type="password"
+                value={newPassword}
+                placeholder="Enter new password"
+                onChange={(e) => setNewPassword(e.target.value)}
+                variant="outlined"
+                sx={{
+                  marginBottom: "20px",
+                  width: "100%",
+                  "& .MuiInputBase-input": { color: colors.grey[100] },
+                  "& .MuiOutlinedInput-root": {
+                    "& fieldset": { borderColor: colors.grey[500] },
+                    "&:hover fieldset": { borderColor: colors.grey[300] },
+                  },
+                }}
+              />
+            )}
             <Button
-              onClick={onVerifyPress}
+              onClick={isPasswordReset ? onResetPasswordPress : onVerifyPress}
               disabled={isLoading}
               sx={{
                 backgroundColor: colors.greenAccent[500],
@@ -179,7 +247,7 @@ export default function LoginSignup() {
                 },
               }}
             >
-              {isLoading ? "Processing..." : "Verify"}
+              {isLoading ? "Processing..." : (isPasswordReset ? "Reset Password" : "Verify")}
             </Button>
           </Box>
         ) : (
@@ -253,6 +321,17 @@ export default function LoginSignup() {
               >
                 {isSignUp ? "Sign in" : "Sign up"}
               </Button>
+              {!isSignUp && (
+                <>
+                  {" | "}
+                  <Button
+                    onClick={onForgotPasswordPress}
+                    sx={{ color: colors.greenAccent[500], textTransform: "none" }}
+                  >
+                    Forgot Password?
+                  </Button>
+                </>
+              )}
             </Typography>
           </Box>
         )}

@@ -20,7 +20,7 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
   const { altcoinSeasonTimeseriesData, fetchAltcoinSeasonTimeseriesData, btcData, fetchBtcData } = useContext(DataContext);
   const [isInteractive, setIsInteractive] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(null);
-  const [smaPeriod, setSmaPeriod] = useState('none');
+  const [smaPeriod, setSmaPeriod] = useState('28d');
   const [tooltipData, setTooltipData] = useState(null);
   const [error, setError] = useState(null);
 
@@ -355,7 +355,7 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
             style={{
               position: 'absolute',
               left: calculateLeftPosition(),
-              top: `${tooltipData.y + 10}px`,
+              top: `${tooltipData.y + 10}px`, // Unchanged from original
               zIndex: 1000,
               backgroundColor: colors.primary[900],
               padding: '8px 12px',
@@ -368,25 +368,30 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
             <div style={{ fontSize: '16px', fontWeight: 'bold' }}>Altcoin Season Index</div>
             {tooltipData.index && <div style={{ fontSize: '22px', margin: '4px 0' }}>{tooltipData.index.toFixed(1)}</div>}
             {tooltipData.btcPrice && <div>BTC Price: ${tooltipData.btcPrice.toFixed(2)}</div>}
-            {tooltipData.date && smoothedData.find(d => d.time === tooltipData.date) && (
+            {tooltipData.date && (
               <>
                 <div style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '4px' }}>
                   Season:{' '}
                   <span
                     style={{
                       color:
-                        smoothedData.find(d => d.time === tooltipData.date).season === 'Neutral'
-                          ? colors.greenAccent[400]
-                          : smoothedData.find(d => d.time === tooltipData.date).season === 'Bitcoin Season'
-                          ? '#89CFF0'
-                          : '#F4A7B9',
+                        tooltipData.index >= 75
+                          ? '#F4A7B9' // Altcoin Season color
+                          : tooltipData.index <= 25
+                          ? '#89CFF0' // Bitcoin Season color
+                          : colors.greenAccent[400], // Neutral color
                       fontWeight: 'bold',
                     }}
                   >
-                    {smoothedData.find(d => d.time === tooltipData.date).season}
+                    {tooltipData.index >= 75 ? 'Altcoin Season' : tooltipData.index <= 25 ? 'Bitcoin Season' : 'Neutral'}
                   </span>
                 </div>
-                <div>Outperforming: {smoothedData.find(d => d.time === tooltipData.date).altcoins_outperforming}/{smoothedData.find(d => d.time === tooltipData.date).altcoin_count}</div>
+                {smoothedData.find(d => d.time === tooltipData.date) && (
+                  <div>
+                    Outperforming: {smoothedData.find(d => d.time === tooltipData.date).altcoins_outperforming}/
+                    {smoothedData.find(d => d.time === tooltipData.date).altcoin_count}
+                  </div>
+                )}
               </>
             )}
             {tooltipData.date && <div>{tooltipData.date}</div>}

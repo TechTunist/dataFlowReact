@@ -64,7 +64,7 @@ const InfoOverlay = ({ explanation, isVisible }) => (
 );
 
 // Define MarketOverview component
-const MarketOverview = () => {
+const MarketOverview = memo(() => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const isMobile = useIsMobile();
@@ -1866,7 +1866,7 @@ const RoiCycleComparisonWidget = memo(() => {
       </Box> {/* End of widgets wrapper */}
     </Box>
   );
-};
+});
 
 // Export MarketOverview wrapped with React.memo
 export default memo(MarketOverview);

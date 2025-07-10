@@ -172,9 +172,9 @@ const Profile = memo(() => {
               <strong>Last Payment:</strong> {subscriptionStatus.last_payment_date.toLocaleDateString()}
             </Typography>
           )}
-          <Typography variant="body1" sx={{ color: colors.grey[100], mb: 1 }}>
+          {/* <Typography variant="body1" sx={{ color: colors.grey[100], mb: 1 }}>
             <strong>Display Name:</strong> {subscriptionStatus.display_name}
-          </Typography>
+          </Typography> */}
           <Typography variant="body1" sx={{ color: colors.grey[100], mb: 2 }}>
             <strong>Features:</strong> Basic Charts: {subscriptionStatus.features.basic_charts ? 'Yes' : 'No'},
             Advanced Charts: {subscriptionStatus.features.advanced_charts ? 'Yes' : 'No'},

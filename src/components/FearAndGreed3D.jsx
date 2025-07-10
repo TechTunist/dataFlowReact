@@ -1,24 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Box, Typography, useTheme } from '@mui/material';
+import { DataContext } from '../DataContext'; // Import DataContext
 
 const FearAndGreed3D = () => {
   const theme = useTheme();
+  const { latestFearAndGreed, fetchLatestFearAndGreed } = useContext(DataContext); // Access context
   const [fearAndGreedValue, setFearAndGreedValue] = useState(50); // Placeholder value
 
   useEffect(() => {
-    // Replace with actual API call
-    const fetchFearAndGreed = async () => {
-      try {
-        const response = await fetch('https://api.alternative.me/fng/?limit=1');
-        const data = await response.json();
-        const value = parseInt(data.data[0].value, 10);
-        setFearAndGreedValue(value);
-      } catch (error) {
-        console.error('Failed to fetch Fear and Greed Index:', error);
-      }
-    };
-    fetchFearAndGreed();
-  }, []);
+    // Fetch the latest Fear and Greed data if not already fetched
+    if (!latestFearAndGreed) {
+      fetchLatestFearAndGreed();
+    } else {
+      // Set the value from the context
+      setFearAndGreedValue(parseInt(latestFearAndGreed.value, 10));
+    }
+  }, [latestFearAndGreed, fetchLatestFearAndGreed]);
 
   const getLabelAndColor = (value) => {
     if (value <= 25) return { label: 'Extreme Fear', color: theme.palette.error.main };
@@ -28,7 +25,6 @@ const FearAndGreed3D = () => {
   };
 
   const { label, color } = getLabelAndColor(fearAndGreedValue);
-
   const percentage = (fearAndGreedValue / 100) * 100;
 
   return (
@@ -39,17 +35,14 @@ const FearAndGreed3D = () => {
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
-        alignItems: 'center', // Added to ensure horizontal centering
+        alignItems: 'center',
       }}
     >
-      {/* <Typography variant="h6" gutterBottom>
-        Fear and Greed Index
-      </Typography> */}
       <Box
         sx={{
           width: 200,
           height: 40,
-          background: `linear-gradient(90deg, #ff0000 0%, ${theme.palette.warning.main} 50%, #00cc00 100%)`, // Vivid red and green
+          background: `linear-gradient(90deg, #ff0000 0%, ${theme.palette.warning.main} 50%, #00cc00 100%)`,
           borderRadius: 2,
           position: 'relative',
           margin: '0 auto',
