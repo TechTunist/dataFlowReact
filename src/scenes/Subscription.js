@@ -26,11 +26,7 @@ const Subscription = memo(() => {
   const navigate = useNavigate();
   const stripe = useContext(StripeContext);
 
-  const DEFAULT_FREE_FEATURES = {
-    basic_charts: true,
-    advanced_charts: false,
-    custom_indicators: false,
-  };
+  const DEFAULT_FREE_ACCESS = { access: 'Limited' };
 
   const [subscriptionStatus, setSubscriptionStatus] = useState({
     plan: 'Free',
@@ -41,13 +37,13 @@ const Subscription = memo(() => {
     payment_method: null,
     subscription_start_date: null,
     display_name: 'User',
-    features: DEFAULT_FREE_FEATURES,
+    access: 'Limited',
     previous_plan: null,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [openCancelDialog, setOpenCancelDialog] = useState(false); // State for dialog
+  const [openCancelDialog, setOpenCancelDialog] = useState(false);
 
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://vercel-dataflow.vercel.app';
 
@@ -101,7 +97,7 @@ const Subscription = memo(() => {
         payment_method: data.payment_method || null,
         subscription_start_date: data.subscription_start_date ? new Date(data.subscription_start_date) : null,
         display_name: data.display_name || 'User',
-        features: data.features && typeof data.features === 'object' ? data.features : DEFAULT_FREE_FEATURES,
+        access: data.access || (data.features && data.features.access) || 'Limited',
         previous_plan: data.previous_plan || null,
       });
     } catch (err) {
@@ -115,7 +111,7 @@ const Subscription = memo(() => {
         payment_method: null,
         subscription_start_date: null,
         display_name: 'User',
-        features: DEFAULT_FREE_FEATURES,
+        access: 'Limited',
         previous_plan: null,
       });
     } finally {
@@ -143,7 +139,6 @@ const Subscription = memo(() => {
       if (!token) {
         throw new Error('Failed to obtain authentication token');
       }
-      // console.log('Checkout token:', token);
 
       const response = await fetch(`${API_BASE_URL}/api/create-checkout-session/`, {
         method: 'POST',
@@ -227,7 +222,6 @@ const Subscription = memo(() => {
     }
   };
 
-  // Handle opening and closing the cancellation dialog
   const handleOpenCancelDialog = () => {
     setOpenCancelDialog(true);
   };
@@ -317,10 +311,9 @@ const Subscription = memo(() => {
         <Box sx={{ mb: 3 }}>
           <Typography variant="body1" sx={{ color: colors.grey[100], mb: 1 }}>
             <strong>Plan:</strong>{' '}
-            {subscriptionStatus.subscription_status.includes('Access will end') && subscriptionStatus.previous_plan ? (
+            {subscriptionStatus.subscription_status.includes('Access will end') ? (
               <>
-                {subscriptionStatus.previous_plan.name} ({subscriptionStatus.previous_plan.billing_interval}) - Retained
-                access until period end
+                {subscriptionStatus.plan} ({subscriptionStatus.billing_interval}) - Retained access until period end
               </>
             ) : (
               <>
@@ -346,17 +339,12 @@ const Subscription = memo(() => {
               <strong>Last Payment:</strong> {new Date(subscriptionStatus.last_payment_date).toLocaleDateString()}
             </Typography>
           )}
-          {/* <Typography variant="body1" sx={{ color: colors.grey[100], mb: 1 }}>
-            <strong>Display Name:</strong> {subscriptionStatus.display_name}
-          </Typography> */}
           <Typography variant="body1" sx={{ color: colors.grey[100], mb: 2 }}>
-            <strong>Features:</strong> Basic Charts: {subscriptionStatus.features.basic_charts ? 'Yes' : 'No'},
-            Advanced Charts: {subscriptionStatus.features.advanced_charts ? 'Yes' : 'No'},
-            Custom Indicators: {subscriptionStatus.features.custom_indicators ? 'Yes' : 'No'}
+            <strong>Access:</strong> {subscriptionStatus.access}
           </Typography>
           {subscriptionStatus.subscription_status === 'premium' && (
             <Button
-              onClick={handleOpenCancelDialog} // Open dialog instead of canceling directly
+              onClick={handleOpenCancelDialog}
               disabled={loading}
               sx={{
                 backgroundColor: colors.redAccent[500],
@@ -371,7 +359,6 @@ const Subscription = memo(() => {
           )}
         </Box>
 
-        {/* Cancellation Confirmation Dialog */}
         <Dialog
           open={openCancelDialog}
           onClose={handleCloseCancelDialog}
@@ -416,6 +403,9 @@ const Subscription = memo(() => {
               </Typography>
               <Typography variant="body1" sx={{ color: colors.grey[100], mb: 1 }}>
                 Price: £{plan.price}
+              </Typography>
+              <Typography variant="body1" sx={{ color: colors.grey[100], mb: 1 }}>
+                Access: Full
               </Typography>
               <Button
                 onClick={() => handleCheckout(plan.id)}

@@ -18,8 +18,8 @@ const Profile = memo(() => {
     payment_method: null,
     subscription_start_date: null,
     display_name: 'User',
-    features: { basic_charts: true, advanced_charts: false, custom_indicators: false },
-    previous_plan: null, // Added previous_plan
+    access: 'Limited',
+    previous_plan: null,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -54,8 +54,6 @@ const Profile = memo(() => {
       }
 
       const data = await response.json();
-      // Debug API response
-      // console.log('Profile API response:', data); 
       setSubscriptionStatus({
         plan: data.plan || 'Free',
         billing_interval: data.billing_interval || 'NONE',
@@ -65,15 +63,11 @@ const Profile = memo(() => {
         payment_method: data.payment_method || null,
         subscription_start_date: data.subscription_start_date ? new Date(data.subscription_start_date) : null,
         display_name: data.display_name || 'User',
-        features: data.features && typeof data.features === 'object' ? data.features : {
-          basic_charts: true,
-          advanced_charts: false,
-          custom_indicators: false,
-        },
-        previous_plan: data.previous_plan || null, // Store previous_plan as object
+        access: data.access || (data.features && data.features.access) || 'Limited',
+        previous_plan: data.previous_plan || null,
       });
     } catch (err) {
-      console.error('Profile fetch error:', err); // Debug error
+      console.error('Profile fetch error:', err);
       setError(`Failed to fetch subscription status: ${err.message}`);
       setSubscriptionStatus({
         plan: 'Free',
@@ -84,7 +78,7 @@ const Profile = memo(() => {
         payment_method: null,
         subscription_start_date: null,
         display_name: 'User',
-        features: { basic_charts: true, advanced_charts: false, custom_indicators: false },
+        access: 'Limited',
         previous_plan: null,
       });
     } finally {
@@ -143,10 +137,9 @@ const Profile = memo(() => {
         <Box sx={{ mb: 3 }}>
           <Typography variant="body1" sx={{ color: colors.grey[100], mb: 1 }}>
             <strong>Plan:</strong>{' '}
-            {subscriptionStatus.subscription_status.includes('Access will end') && subscriptionStatus.previous_plan ? (
+            {subscriptionStatus.subscription_status.includes('Access will end') ? (
               <>
-                {subscriptionStatus.previous_plan.name} ({subscriptionStatus.previous_plan.billing_interval}) - Retained
-                access until period end
+                {subscriptionStatus.plan} ({subscriptionStatus.billing_interval}) - Retained access until period end
               </>
             ) : (
               <>
@@ -172,13 +165,8 @@ const Profile = memo(() => {
               <strong>Last Payment:</strong> {subscriptionStatus.last_payment_date.toLocaleDateString()}
             </Typography>
           )}
-          {/* <Typography variant="body1" sx={{ color: colors.grey[100], mb: 1 }}>
-            <strong>Display Name:</strong> {subscriptionStatus.display_name}
-          </Typography> */}
           <Typography variant="body1" sx={{ color: colors.grey[100], mb: 2 }}>
-            <strong>Features:</strong> Basic Charts: {subscriptionStatus.features.basic_charts ? 'Yes' : 'No'},
-            Advanced Charts: {subscriptionStatus.features.advanced_charts ? 'Yes' : 'No'},
-            Custom Indicators: {subscriptionStatus.features.custom_indicators ? 'Yes' : 'No'}
+            <strong>Access:</strong> {subscriptionStatus.access}
           </Typography>
         </Box>
       </Box>
