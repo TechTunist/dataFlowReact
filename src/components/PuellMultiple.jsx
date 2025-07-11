@@ -48,33 +48,40 @@ const PuellMultiple = ({ isDashboard = false }) => {
   // Normalize time to 'YYYY-MM-DD'
   const normalizeTime = (time) => new Date(time).toISOString().split('T')[0];
 
-  // Prepare price and issuance data with alignment
   const prepareData = useMemo(() => {
-    const rawPriceData = btcData.map(d => ({
-      time: normalizeTime(d.time),
-      value: parseFloat(d.value) || 0,
-    })).sort((a, b) => a.time.localeCompare(b.time));
-
-    let issuanceData = onchainMetricsData
-      .filter(d => d.metric.toLowerCase() === 'isscontusd')
+    if (!btcData || !onchainMetricsData || !Array.isArray(onchainMetricsData)) {
+      console.warn('Invalid input data', { btcData, onchainMetricsData });
+      return { priceData: [], issuanceData: [] };
+    }
+  
+    const rawPriceData = btcData
       .map(d => ({
-        time: normalizeTime(d.time),
+        time: normalizeTime(d.time) || '',
         value: parseFloat(d.value) || 0,
       }))
+      .filter(d => d.time) // Remove invalid time entries
       .sort((a, b) => a.time.localeCompare(b.time));
-
+  
+    let issuanceData = onchainMetricsData
+      .filter(d => d && d.metric && typeof d.metric === 'string' && d.metric.toLowerCase() === 'isscontusd')
+      .map(d => ({
+        time: normalizeTime(d.time) || '',
+        value: parseFloat(d.value) || 0,
+      }))
+      .filter(d => d.time) // Remove invalid time entries
+      .sort((a, b) => a.time.localeCompare(b.time));
+  
     if (issuanceData.length === 0 && rawPriceData.length > 0) {
       console.warn('IssContUSD data missing, calculating issuance using block reward');
       issuanceData = rawPriceData.map(d => ({
         time: d.time,
-        value: calculateDailyIssuance(d.time) * d.value, // Issuance in USD
+        value: calculateDailyIssuance(d.time) * d.value,
       }));
     }
-
-    // Filter priceData to match issuanceData times
+  
     const issuanceTimes = new Set(issuanceData.map(d => d.time));
     const priceData = rawPriceData.filter(d => issuanceTimes.has(d.time));
-
+  
     return { priceData, issuanceData };
   }, [btcData, onchainMetricsData]);
 

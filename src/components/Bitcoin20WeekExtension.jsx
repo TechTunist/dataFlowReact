@@ -49,16 +49,25 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
   };
 
   const downsampleData = (data, factor = 5) => {
-    if (data.length <= 200) return data;
+    if (data.length <= 200) return data; // Return original data for small datasets
     const downsampled = [];
-    for (let i = 0; i < data.length; i += factor) {
-      const slice = data.slice(i, i + factor);
+    for (let i = 0; i < data.length - 1; i += factor) { // Stop before the last point
+      const slice = data.slice(i, Math.min(i + factor, data.length));
       const avgValue = slice.reduce((sum, item) => sum + parseFloat(item.value), 0) / slice.length;
       const avgExtension = slice.reduce((sum, item) => sum + item.Extension, 0) / slice.length;
       downsampled.push({
         time: slice[0].time,
         value: avgValue,
         Extension: avgExtension,
+      });
+    }
+    // Append the last data point to ensure the latest value is included
+    if (data.length > 0) {
+      const lastPoint = data[data.length - 1];
+      downsampled.push({
+        time: lastPoint.time,
+        value: parseFloat(lastPoint.value),
+        Extension: lastPoint.Extension,
       });
     }
     return downsampled;
@@ -274,13 +283,15 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
         {!isDashboard && (
           <div>
             <LastUpdated storageKey="btcData" />
-            <p>Latest Extension: {latestExtension}%</p>
           </div>
         )}
         {!isDashboard && <BitcoinFees />}
       </div>
       {!isDashboard && (
         <div>
+          <div style={{ display: 'inline-block', marginTop: '10px', fontSize: '1.2rem', color: colors.primary[100] }}>
+            Latest Extension: {latestExtension}%
+          </div>
           <p className='chart-info'>
             The Bitcoin 20-Week Extension chart shows the percentage difference between the current price and the 20-week moving average (MA),
             which helps to identify if we are currently in a bubble or a bear market. The chart is color-coded to indicate different ranges of extension.

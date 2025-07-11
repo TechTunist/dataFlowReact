@@ -257,7 +257,7 @@ const SahmRecessionIndicator = ({ isDashboard = false, explanation = '' }) => {
               title: '',
               axisLabelVisible: true,
             });
-            console.log('Added recession signal line at 0.5 for SAHM series (no label)');
+            // console.log('Added recession signal line at 0.5 for SAHM series (no label)');
           }
         } else if (chartType === 'line') {
           series = chartRef.current.addLineSeries({
@@ -281,12 +281,12 @@ const SahmRecessionIndicator = ({ isDashboard = false, explanation = '' }) => {
               formatter: (value) => (value === 1 ? '' : ''),
             },
           });
-          console.log('Added USRECD histogram series without tooltip labels');
+          // console.log('Added USRECD histogram series without tooltip labels');
         }
         if (series) {
           seriesRefs.current[id] = series;
           series.setData(data);
-          console.log(`Series ${id} added with ${data.length} data points`);
+          // console.log(`Series ${id} added with ${data.length} data points`);
         } else {
           console.error(`Failed to create series ${id}`);
         }
@@ -329,7 +329,7 @@ const SahmRecessionIndicator = ({ isDashboard = false, explanation = '' }) => {
       Object.keys(priceScales).forEach((scaleId) => {
         chartRef.current.priceScale(scaleId).applyOptions(priceScales[scaleId]);
         if (scaleId === 'sp500-scale') {
-          console.log('Applied sp500-scale with mode:', priceScales[scaleId].mode);
+          // console.log('Applied sp500-scale with mode:', priceScales[scaleId].mode);
         }
       });
     } catch (err) {
@@ -371,7 +371,7 @@ const SahmRecessionIndicator = ({ isDashboard = false, explanation = '' }) => {
       });
 
       setTooltipData(tooltip);
-      console.log('Tooltip updated:', tooltip);
+      // console.log('Tooltip updated:', tooltip);
     });
 
     return () => {
@@ -435,7 +435,7 @@ const SahmRecessionIndicator = ({ isDashboard = false, explanation = '' }) => {
   const sahmColor = currentSahmValue != null && currentSahmValue >= 0.5 
     ? (colors.redAccent[500] || '#FF0000') 
     : (colors.greenAccent[500] || '#4cceac');
-  console.log('Current Sahm Indicator value:', currentSahmValue, 'Color:', sahmColor);
+  // console.log('Current Sahm Indicator value:', currentSahmValue, 'Color:', sahmColor);
 
   if (error) {
     return (
