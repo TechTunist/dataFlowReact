@@ -317,7 +317,7 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
               <IconButton href="https://twitter.com/CryptoLogical__" target="_blank" sx={{ color: colors.grey[100], mr: 1 }}>
                 <XIcon />
               </IconButton>
-              <IconButton href="mailto:thecryptological@gmail.com" sx={{ color: colors.grey[100] }}>
+              <IconButton href="mailto:support@cryptological.app" sx={{ color: colors.grey[100] }}>
                 <EmailIcon />
               </IconButton>
             </Box>
