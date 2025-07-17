@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useContext } from 'react';
+import React, { useRef, useEffect, useState, useContext, useMemo } from 'react';
 import { createChart } from 'lightweight-charts';
 import '../styling/bitcoinChart.css';
 import { tokens } from "../theme";
@@ -24,6 +24,13 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
 
   // Use prop data if provided, otherwise fall back to context data
   const dominanceData = propDominanceData || contextDominanceData;
+
+  // NEW: Calculate the current Bitcoin dominance value
+  const currentDominance = useMemo(() => {
+    if (dominanceData.length === 0) return null;
+    const latestValue = dominanceData[dominanceData.length - 1]?.value;
+    return latestValue ? latestValue.toFixed(2) : null;
+  }, [dominanceData]);
 
   const setInteractivity = () => {
     setIsInteractive(!isInteractive);
@@ -152,7 +159,7 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
       window.removeEventListener('resize', resizeChart);
       window.removeEventListener('resize', resetChartView);
     };
-  }, [dominanceData, scaleMode, isDashboard, theme.palette.mode]);
+  }, [dominanceData, scaleMode, isDashboard, theme.palette.mode, colors]);
 
   useEffect(() => {
     if (chartRef.current) {
@@ -215,8 +222,23 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
       </div>
 
       <div className='under-chart'>
-        {!isDashboard && (
-          <LastUpdated storageKey="dominanceData" />
+        {!isDashboard && dominanceData.length > 0 && (
+          <div style={{  }}>
+            <LastUpdated storageKey="dominanceData" />
+            {/* NEW: Display current Bitcoin dominance */}
+            {currentDominance && (
+              <span
+                style={{
+                  fontSize: '1.3rem',
+                  color: colors.blueAccent[500],
+                  display: 'block',
+                  marginTop: '1.1rem',
+                }}
+              >
+                Bitcoin Dominance: {currentDominance}%
+              </span>
+            )}
+          </div>
         )}
         {!isDashboard && (
           <BitcoinFees />
@@ -274,8 +296,12 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
 
       {!isDashboard && (
         <p className='chart-info'>
-          The Bitcoin Dominance chart shows the percentage of the total cryptocurrency market capitalization that Bitcoin holds.
-        </p>
+        This chart shows Bitcoin dominance, which is the percentage of the total cryptocurrency market value that Bitcoin represents. For example, if Bitcoin’s market value is $500 billion and the total market value of all cryptocurrencies is $1 trillion, Bitcoin dominance is 50%. This number helps you understand Bitcoin’s influence compared to other cryptocurrencies like Ethereum or smaller altcoins.
+        
+        <br/><br/>A rising dominance means Bitcoin is growing stronger relative to others, often during market downturns when investors prefer Bitcoin’s stability. A falling dominance suggests other cryptocurrencies are gaining ground, which can happen during market booms when altcoins attract more interest.
+
+        The chart uses historical data to show how Bitcoin dominance has changed over time. You can hover over the chart to see the dominance percentage for specific dates.
+      </p>
       )}
     </div>
   );

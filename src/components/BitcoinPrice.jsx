@@ -407,12 +407,26 @@ const BitcoinPrice = ({ isDashboard = false }) => {
       });
     }
     if (priceSeriesRef.current) {
-      const { topColor, bottomColor, lineColor } = theme.palette.mode === 'dark'
-        ? { topColor: 'rgba(38, 198, 218, 0.56)', bottomColor: 'rgba(38, 198, 218, 0.04)', lineColor: 'rgba(38, 198, 218, 1)' }
-        : { topColor: 'rgba(255, 165, 0, 0.56)', bottomColor: 'rgba(255, 165, 0, 0.2)', lineColor: 'rgba(255, 140, 0, 0.8)' };
-      priceSeriesRef.current.applyOptions({ topColor, bottomColor, lineColor });
+      const colors = activeRsiPeriod
+        ? {
+            topColor: 'rgba(128, 128, 128, 0.3)', // Faint grey when RSI is active
+            bottomColor: 'rgba(128, 128, 128, 0.1)',
+            lineColor: 'rgba(128, 128, 128, 0.5)',
+          }
+        : theme.palette.mode === 'dark'
+        ? {
+            topColor: 'rgba(38, 198, 218, 0.56)',
+            bottomColor: 'rgba(38, 198, 218, 0.04)',
+            lineColor: 'rgba(38, 198, 218, 1)',
+          }
+        : {
+            topColor: 'rgba(255, 165, 0, 0.56)',
+            bottomColor: 'rgba(255, 165, 0, 0.2)',
+            lineColor: 'rgba(255, 140, 0, 0.8)',
+          };
+      priceSeriesRef.current.applyOptions({ topColor: colors.topColor, bottomColor: colors.bottomColor, lineColor: colors.lineColor });
     }
-  }, [colors, theme.palette.mode]);
+  }, [colors, theme.palette.mode, activeRsiPeriod]); // Added activeRsiPeriod to update colors when RSI changes
 
   // Update price scale mode
   useEffect(() => {
@@ -504,6 +518,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
         } else {
           mvrvSeriesRef.current.applyOptions({ visible: false });
         }
+      
       } catch (error) {
         console.error('Error setting MVRV data:', error);
       }
@@ -577,7 +592,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
         rsiPriceLinesRef.current = [];
         const overboughtLine = rsiSeriesRef.current.createPriceLine({
           price: 70,
-          color: 'green', // Hardcode color since 'rsi' is removed from indicators
+          color: 'green',
           lineWidth: 1,
           lineStyle: 2,
           axisLabelVisible: true,
@@ -585,7 +600,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
         });
         const oversoldLine = rsiSeriesRef.current.createPriceLine({
           price: 30,
-          color: 'green', // Hardcode color
+          color: 'green',
           lineWidth: 1,
           lineStyle: 2,
           axisLabelVisible: true,
@@ -891,7 +906,11 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                 display: 'inline-block',
                 width: '10px',
                 height: '10px',
-                backgroundColor: theme.palette.mode === 'dark' ? 'rgba(38, 198, 218, 1)' : 'rgba(255, 140, 0, 0.8)',
+                backgroundColor: activeRsiPeriod
+                  ? 'rgba(128, 128, 128, 0.5)'
+                  : theme.palette.mode === 'dark'
+                  ? 'rgba(38, 198, 218, 1)'
+                  : 'rgba(255, 140, 0, 0.8)',
                 marginRight: '5px',
               }}
             />
@@ -918,7 +937,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
                   display: 'inline-block',
                   width: '10px',
                   height: '10px',
-                  backgroundColor: 'green', // Hardcode RSI color
+                  backgroundColor: 'green',
                   marginRight: '5px',
                 }}
               />

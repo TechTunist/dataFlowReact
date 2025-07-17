@@ -580,7 +580,7 @@ const BitcoinAddressBalancesChart = ({ isDashboard = false }) => {
         <p className="chart-info" style={{ marginTop: '10px', textAlign: 'left', width: '100%' }}>
           This chart displays the number of Bitcoin addresses holding various levels of Bitcoin over time.
           This metric gives an indication of the distribution of Bitcoin wealth among holders.
-          Data is sourced from the Coin Metrics Community API, providing insights into Bitcoin’s adoption and holder behavior.
+          
           <br />
           Source: <a href="https://coinmetrics.io/community-network-data/">Coin Metrics Community API</a>
           <br />

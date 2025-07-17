@@ -839,8 +839,8 @@ const EthereumPrice = ({ isDashboard = false }) => {
       {!isDashboard && (
         <p className='chart-info'>
           Ethereum is the second-largest cryptocurrency by market cap, launched in 2015 by Vitalik Buterin.
-          It’s a decentralized blockchain platform that goes beyond simple transactions, enabling smart contracts—self-executing
-          agreements coded on the blockchain—and decentralized applications (dApps). Powered by its native currency, Ether (ETH),
+          It’s a decentralized blockchain platform that goes beyond simple transactions, enabling smart contracts. Self-executing
+          agreements coded on the blockchain and decentralized applications (dApps). Powered by its native currency, Ether (ETH),
           Ethereum supports a vast ecosystem of developers and projects, making it the most actively used blockchain for innovation
           in finance, NFTs, and more.
         </p>

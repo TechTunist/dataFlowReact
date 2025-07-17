@@ -38,6 +38,28 @@ const MarketCapDifference = ({ isDashboard = false }) => {
   const setInteractivityHandler = useCallback(() => setIsInteractive((prev) => !prev), []);
   const resetChartView = useCallback(() => chartRef.current?.timeScale().fitContent(), []);
 
+  // Calculate the valuation difference (overvaluation/undervaluation)
+  // NEW: Calculate the percentage difference for display
+  const valuationDifference = useMemo(() => {
+    if (differenceData.length === 0) return null;
+
+    // Get the latest difference value (percentage of fair value)
+    const latestDifference = differenceData[differenceData.length - 1]?.value;
+
+    if (!latestDifference) return null;
+
+    // Since differenceData is already a percentage relative to fair value (100%),
+    // we can directly use it to determine overvaluation or undervaluation
+    const difference = latestDifference - 100; // Difference from fair value (100%)
+    const isOvervalued = difference > 0;
+    const percentage = Math.abs(difference).toFixed(2);
+
+    return {
+      label: isOvervalued ? 'Overvaluation' : 'Undervaluation',
+      percentage: `${percentage}%`,
+    };
+  }, [differenceData]);
+
   // Fetch difference data from the backend and transform it
   useEffect(() => {
     const fetchData = async () => {
@@ -59,24 +81,6 @@ const MarketCapDifference = ({ isDashboard = false }) => {
     };
     fetchData();
   }, [fetchMarketCapData, fetchDifferenceData, marketCapData.length, differenceData.length]);
-
-  // Fetch market cap data if not already present in context
-  // useEffect(() => {
-  //   const fetchData = async () => {
-  //     if (marketCapData.length > 0) return;
-  //     setIsLoading(true);
-  //     setError(null);
-  //     try {
-  //       await fetchMarketCapData();
-  //     } catch (err) {
-  //       setError('Failed to fetch market cap data. Please try again later.');
-  //       console.error('Error fetching market cap data:', err);
-  //     } finally {
-  //       setIsLoading(false);
-  //     }
-  //   };
-  //   fetchData();
-  // }, [fetchMarketCapData, marketCapData.length]);
 
   useEffect(() => {
     if (differenceData.length === 0 || marketCapData.length === 0) return;
@@ -249,7 +253,24 @@ const MarketCapDifference = ({ isDashboard = false }) => {
         />
       </div>
       <div className="under-chart">
-        {!isDashboard && <LastUpdated customDate={marketCapLastUpdated} />}
+        {!isDashboard && differenceData.length > 0 && (
+          <div style={{ marginTop: '10px' }}>
+            <LastUpdated customDate={marketCapLastUpdated} />
+            {/* NEW: Display valuation difference */}
+            {valuationDifference && (
+              <span
+                style={{
+                  fontSize: '1.3rem',
+                  color: valuationDifference.label === 'Overvaluation' ? '#ff0062' : colors.blueAccent[500],
+                  display: 'block',
+                  marginTop: '5px',
+                }}
+              >
+                {valuationDifference.label}: {valuationDifference.percentage}
+              </span>
+            )}
+          </div>
+        )}
         {!isDashboard && <BitcoinFees />}
       </div>
       {!isDashboard && tooltipData && (

@@ -221,8 +221,8 @@ const BitcoinHistoricalVolatility = ({ isDashboard = false }) => {
   const calculateLeftPosition = () => {
     if (!tooltipData) return '0px';
     const chartWidth = chartContainerRef.current.clientWidth;
-    const tooltipWidth = 200; // Estimated tooltip width
-    const offset = 10; // Distance from cursor
+    const tooltipWidth = 100; // Estimated tooltip width
+    const offset = -100; // Distance from cursor
     const cursorX = tooltipData.x;
   
     if (cursorX + offset + tooltipWidth <= chartWidth) {
