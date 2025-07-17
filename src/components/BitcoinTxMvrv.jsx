@@ -385,7 +385,8 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
         lineStyle: 2,
         priceFormat: { type: 'price', precision: 2, minMove: 0.01 },
         visible: displayMode === 'ratio',
-        crosshairMarkerVisible: false, // Disable crosshair marker
+        crosshairMarkerVisible: false,
+        priceLineVisible: false, // Disable crosshair marker
       });
       bearTrendSeries.applyOptions({
         autoscaleInfoProvider: () => null, // Prevent affecting y-axis scale
@@ -514,7 +515,7 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
                 },
               }}
             >
-              {showBearTrend ? 'Hide Trend Line' : 'Show Trend Line'}
+              {showBearTrend ? 'Bottom Indicator' : 'Bottom Indicator'}
             </ToggleButton>
           )}
         </Box>
