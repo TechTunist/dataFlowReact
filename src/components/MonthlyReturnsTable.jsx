@@ -247,7 +247,7 @@ const monthlyReturnsData = useMemo(() => {
       </div>
       {!isDashboard && (
         <p className="chart-info">
-          This table displays Bitcoin's monthly returns as a percentage change from the first to the last day of each month. Positive returns are highlighted in green, negative returns in red. Returns for the current month (marked with an asterisk, e.g., June 2025*) are not finalized as the month is ongoing. Data starts from August 2010, as Bitcoin price data begins on July 18, 2010.
+          This table displays Bitcoin's monthly returns as a percentage change from the first to the last day of each month. Positive returns are highlighted in green, negative returns in red. Returns for the current month (marked with an asterisk *) are not finalized as the month is ongoing. Data starts from August 2010, as Bitcoin price data begins on July 18, 2010.
         </p>
       )}
     </div>

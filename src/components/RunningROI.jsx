@@ -328,14 +328,18 @@ const RunningROI = ({ isDashboard = false }) => {
     if (!tooltipData || !chartContainerRef.current) return '0px';
     const chartWidth = chartContainerRef.current.clientWidth;
     const tooltipWidth = 200;
-    const offset = 10;
+    const offset = 100; // Distance when tooltip is on the right
+    const leftOffset = -80; // Distance when tooltip is on the left (adjust this value)
     const cursorX = tooltipData.x;
-
+  
     if (cursorX + offset + tooltipWidth <= chartWidth) {
+      // Tooltip on the right of the cursor
       return `${cursorX + offset}px`;
-    } else if (cursorX - offset - tooltipWidth >= 0) {
-      return `${cursorX - offset - tooltipWidth}px`;
+    } else if (cursorX - leftOffset - tooltipWidth >= 0) {
+      // Tooltip on the left of the cursor
+      return `${cursorX - leftOffset - tooltipWidth}px`;
     } else {
+      // Fallback: clamp to chart boundaries
       return `${Math.max(0, Math.min(cursorX, chartWidth - tooltipWidth))}px`;
     }
   };

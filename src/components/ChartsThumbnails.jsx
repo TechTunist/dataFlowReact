@@ -97,13 +97,13 @@ const Charts = () => {
       {
         path: "/puell-multiple",
         title: "Puell Multiple",
-        description: "The Puell Multiple is calculated as the ratio of daily Bitcoin issuance (in USD) to its 365-day moving average. A high Puell Multiple (e.g., above 4) may indicate that miners are earning significantly more than their historical average, often signaling overvaluation or potential price tops.",
+        description: "Tthe Puell Multiple compares current miner revenue to its historical average, indicating periods of high or low profitability for miners.",
         image: '../../assets/puellMultiple.png',
       },
       {
         path: "/tx-mvrv",
         title: "Bitcoin Transaction MVRV",
-        description: "Bitcoin MVRV ratio for transactions.",
+        description: "The relationship between Bitcoin's transactions and MVRV (market value to realised value) ratio. The ratio of the normalised transaction count and MVRV data can indicate potential market tops and bottoms.",
         image: '../../assets/txMvrv.png',
       },
       {
@@ -117,13 +117,13 @@ const Charts = () => {
       {
         path: "/bitcoin-roi",
         title: "Bitcoin ROI",
-        description: "Annualised ROI for Bitcoin.",
+        description: "Annualised return on investment for Bitcoin, with the ability to compare the current cycle to the average of selected years.",
         image: '../../assets/btcRoi.png',
       },
       {
         path: "/running-roi",
         title: "Running ROI",
-        description: "Running return on investment for Bitcoin.",
+        description: "Running return on investment for Bitcoin or selected crypto assets.",
         image: '../../assets/runningRoi.png',
       },
       {
@@ -135,7 +135,7 @@ const Charts = () => {
       {
         path: "/monthly-average-roi",
         title: "Monthly Average ROI",
-        description: "Average monthly ROI for Bitcoin.",
+        description: "Average monthly ROI for Bitcoin and selected crypto assets.",
         image: '../../assets/avgRoi.png',
       },
       {
@@ -153,7 +153,7 @@ const Charts = () => {
       {
         path: "/fear-and-greed-chart",
         title: "Fear and Greed Chart",
-        description: "Chart of Fear and Greed index over time.",
+        description: "Colour coded chart of Fear and Greed index over time.",
         image: '../../assets/fngChart.png',
       },
       {
@@ -171,7 +171,7 @@ const Charts = () => {
       {
         path: "/altcoin-season-index",
         title: "Altcoin Season Index",
-        description: "Index indicating altcoin season trends.",
+        description: "Index indicating whether it is altseason or Bitcoin season.",
         image: '../../assets/altSeason.png',
       },
       {

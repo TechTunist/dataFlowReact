@@ -493,6 +493,8 @@ const BitcoinROI = ({ isDashboard = false }) => {
               The return on investment for each year has been normalized by taking the natural log of the price ratio,
               showing growth from the start of each year. Select years to average, use 'Deselect All' in the legend to hide all years,
               or click legend items to toggle visibility.
+
+              Usage Example: Take the average of the post halving years to compare against the current post halving year ROI
             </p>
           )}
         </div>

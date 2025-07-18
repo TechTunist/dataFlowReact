@@ -169,9 +169,19 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
 
   const handleSmoothingModeChange = (event) => {
     setSmoothingMode(event.target.value);
-    if (event.target.value !== 'ema-28') {
-      setShowBearTrend(false); // Disable trend line when not in ema-28
-    }
+  };
+
+  const getBearMarketBottoms = (ratioData, bottomDates) => {
+    return bottomDates.map(date => {
+      const targetTime = new Date(date).getTime();
+      // Find the closest data point to the target date
+      const closestPoint = ratioData.reduce((closest, point) => {
+        const pointTime = new Date(point.time).getTime();
+        const closestTime = new Date(closest.time).getTime();
+        return Math.abs(pointTime - targetTime) < Math.abs(closestTime - targetTime) ? point : closest;
+      }, ratioData[0]);
+      return { time: date, value: closestPoint.value };
+    });
   };
 
   useEffect(() => {
@@ -181,7 +191,7 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
 
   useEffect(() => {
     if (txMvrvData.length === 0 || btcData.length === 0) return;
-
+  
     const cutoffDate = new Date('2014-10-21');
     const filteredTxMvrvData = txMvrvData.filter(
       item => {
@@ -192,9 +202,9 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
       }
     );
     const filteredBtcData = btcData.filter(item => new Date(item.time) >= cutoffDate);
-
+  
     if (filteredTxMvrvData.length === 0 || filteredBtcData.length === 0) return;
-
+  
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
       height: chartContainerRef.current.clientHeight,
@@ -229,10 +239,10 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
         },
       },
     });
-
+  
     chart.priceScale('left').applyOptions({ mode: 0, borderVisible: false });
     chart.priceScale('right').applyOptions({ mode: 1, borderVisible: false });
-
+  
     chart.subscribeCrosshairMove(param => {
       if (
         !param.point ||
@@ -260,7 +270,7 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
         });
       }
     });
-
+  
     const resizeChart = () => {
       if (chart && chartContainerRef.current) {
         chart.applyOptions({
@@ -270,7 +280,7 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
       }
     };
     window.addEventListener('resize', resizeChart);
-
+  
     const lightThemeColors = {
       txCount: { lineColor: 'rgba(255, 140, 0, 0.8)' },
       mvrv: { lineColor: 'rgba(0, 128, 0, 1)' },
@@ -285,7 +295,7 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
     };
     const { txCount: txCountColors, mvrv: mvrvColors, price: priceColors, ratio: ratioColors } =
       theme.palette.mode === 'dark' ? darkThemeColors : lightThemeColors;
-
+  
     // Transaction Count Series
     const txCountSeries = chart.addLineSeries({
       priceScaleId: 'left',
@@ -306,7 +316,7 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
       txCountData = calculateSMA(txCountData, 28);
     }
     txCountSeries.setData(txCountData);
-
+  
     // Bitcoin Price Series
     const priceSeries = chart.addLineSeries({
       priceScaleId: 'right',
@@ -319,7 +329,7 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
     });
     priceSeriesRef.current = priceSeries;
     priceSeries.setData(filteredBtcData.map(data => ({ time: data.time, value: data.value })));
-
+  
     // MVRV Series
     const mvrvSeries = chart.addLineSeries({
       priceScaleId: 'left',
@@ -332,7 +342,7 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
     mvrvSeries.setData(
       filteredTxMvrvData.map(item => ({ time: item.time, value: item.mvrv * 100000 }))
     );
-
+  
     // MVRV/Tx Ratio Series
     const ratioSeries = chart.addLineSeries({
       priceScaleId: 'ratio',
@@ -345,14 +355,11 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
     const mvrvDataForRatio = filteredTxMvrvData.map(item => ({ time: item.time, mvrv: item.mvrv }));
     const ratioData = calculateRatio(mvrvDataForRatio, txCountData, smoothingMode);
     ratioSeries.setData(ratioData);
-
-    // Bear Market Bottom Trend Line (only for ema-28)
-    if (smoothingMode === 'ema-28' && showBearTrend) {
-      const bearMarketBottoms = [
-        { time: '2015-04-27', value: 1.52 },
-        { time: '2019-02-07', value: 19.84 },
-        { time: '2022-10-02', value: 38.71 },
-      ];
+  
+    // Bear Market Bottom Trend Line (for any smoothing mode)
+    if (showBearTrend) {
+      const bottomDates = ['2015-04-27', '2019-02-07', '2022-10-02'];
+      const bearMarketBottoms = getBearMarketBottoms(ratioData, bottomDates);
       const baseDate = new Date('2015-04-27').getTime();
       const days = bearMarketBottoms.map(point => ({
         x: (new Date(point.time).getTime() - baseDate) / (1000 * 60 * 60 * 24),
@@ -366,7 +373,7 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
       const sumXX = days.reduce((sum, d) => sum + d.x * d.x, 0);
       const m = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
       const c = (sumY - m * sumX) / n;
-
+  
       // Generate line points from 2015-04-27 to 2028-12-31
       const endDate = new Date('2028-12-31').getTime();
       const trendData = [];
@@ -377,27 +384,28 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
           trendData.push({ time: t.toISOString().split('T')[0], value });
         }
       }
-
+  
       const bearTrendSeries = chart.addLineSeries({
         priceScaleId: 'ratio',
         color: 'cyan',
-        lineWidth: 1,
+        lineWidth: 2,
         lineStyle: 2,
         priceFormat: { type: 'price', precision: 2, minMove: 0.01 },
         visible: displayMode === 'ratio',
         crosshairMarkerVisible: false,
-        priceLineVisible: false, // Disable crosshair marker
+        priceLineVisible: false,
+        lastValueVisible: false,
       });
       bearTrendSeries.applyOptions({
-        autoscaleInfoProvider: () => null, // Prevent affecting y-axis scale
+        autoscaleInfoProvider: () => null,
       });
       bearTrendSeriesRef.current = bearTrendSeries;
       bearTrendSeries.setData(trendData);
     }
-
+  
     // Set time scale based on trend line visibility
     if (chartRef.current) {
-      if (smoothingMode === 'ema-28' && showBearTrend && displayMode === 'ratio') {
+      if (showBearTrend && displayMode === 'ratio') {
         const endDate = new Date('2028-12-31').getTime();
         chart.timeScale().setVisibleRange({
           from: new Date('2014-10-21').getTime() / 1000,
@@ -407,9 +415,9 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
         chart.timeScale().fitContent();
       }
     }
-
+  
     chartRef.current = chart;
-
+  
     return () => {
       chart.remove();
       window.removeEventListener('resize', resizeChart);
@@ -700,12 +708,11 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
           <br />
           <br />
           This chart shows the Bitcoin transaction count, Bitcoin price, MVRV ratio, or MVRV/Tx ratio, providing a snapshot of how Bitcoin’s network and value interact over time.
-          The transaction count shows how much people are using Bitcoin, with more transactions potentially reflecting a higher interest.
-          The price, shown on a special scale to make big trends clearer, tells you what Bitcoin is worth in dollars.
-          The MVRV ratio acts like a thermometer for whether Bitcoin is overpriced or underpriced compared to what people paid for it.
-          The MVRV/Tx ratio compares valuation to network activity, where high values may suggest overvaluation (market tops) and low values may indicate undervaluation (market bottoms).
-          Together, these indicators can hint at patterns: for example, a rising transaction count with a climbing price might suggest growing demand,
-          while a high MVRV or MVRV/Tx ratio could warn that Bitcoin’s price is getting ahead of its "true" value, possibly signaling a market peak.
+          The transaction count reflects activity on the Bitcoin network, and potential hype cycles that see an influx of new investors, and conversely bear markets where interest has decreased.
+          The MVRV (market value to realised value) ratio shows the differrence between the current market value of bitcoin and the realised value (the average value of all Bitcoin when last transacted).  <br/><br/>
+          
+          The MVRV/Tx ratio compares the MVRV to network activity. One interpretation of the spikes of this ratio is that the price has increased speculatively without corresponding network activity that would have led to a "natural" increase of value.
+          There is currently a monotonically increasing trendline under the lows in the MVRV/Tx ratio that has held for 10 years and has indicated relatively low risk entry points.
           <br /><br /><br />
         </p>
       )}
