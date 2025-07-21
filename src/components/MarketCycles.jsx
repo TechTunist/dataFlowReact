@@ -34,7 +34,7 @@ const MarketCycles = ({ isDashboard = false }) => {
       autorange: true,
     },
     yaxis: {
-      title: 'Logarithmic ROI (Base-10)',
+      title: 'Logarithmic ROI (Shifted Base-10)', // Updated label
       type: 'linear',
       autorange: true,
     },
@@ -135,7 +135,7 @@ const MarketCycles = ({ isDashboard = false }) => {
         shortName: cycleName,
         data: filteredData.map((item, index) => ({
           day: index,
-          roi: Math.log(item.value / basePrice) / Math.LN10,
+          roi: Math.log10(item.value / basePrice) + 1, // Shifted logarithmic ROI
           date: item.time,
           cycle: cycleName
         }))
@@ -357,7 +357,7 @@ const MarketCycles = ({ isDashboard = false }) => {
                     : 'Select Cycles'
                 }
                 sx={{
-                  color४: colors.grey[100],
+                  color: colors.grey[100],
                   backgroundColor: colors.primary[500],
                   borderRadius: '8px',
                   '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
@@ -409,9 +409,10 @@ const MarketCycles = ({ isDashboard = false }) => {
       </div>
       {!isDashboard && (
         <p>
-          The return on investment between market cycles has been normalized by taking the natural log of the price ratio,
-          which is useful when the starting prices of different cycles can differ by orders of magnitude.
-          The average ROI line (if selected) represents the mean logarithmic ROI of the chosen historical cycles.
+          The return on investment between market cycles is calculated as a shifted logarithmic scale (log10(price / basePrice) + 1),
+          where ROI = 1 indicates no change, above 1 indicates positive returns, and below 1 indicates negative returns.
+          The average ROI line (if selected) represents the mean of the chosen historical cycles on this shifted scale.
+          Select cycles to average or toggle visibility via the legend.
         </p>
       )}
     </div>

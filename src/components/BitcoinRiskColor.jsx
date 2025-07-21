@@ -10,8 +10,8 @@ import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 
 const altcoins = [
-  { label: 'Solana', value: 'SOL' },
   { label: 'Ethereum', value: 'ETH' },
+  { label: 'Solana', value: 'SOL' },
   { label: 'Cardano', value: 'ADA' },
   { label: 'Dogecoin', value: 'DOGE' },
   { label: 'Chainlink', value: 'LINK' },

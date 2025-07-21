@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { ProSidebar, Menu, MenuItem, SubMenu } from "react-pro-sidebar";
-import { Box, IconButton, Typography, useTheme } from "@mui/material";
+import { Box, IconButton, Typography, useTheme, Button } from "@mui/material"; // Added Button
 import { Link } from "react-router-dom";
 import "react-pro-sidebar/dist/css/styles.css";
 import { tokens } from "../../theme";
@@ -35,7 +35,7 @@ import MoodIcon from '@mui/icons-material/Mood';
 import ReportIcon from '@mui/icons-material/Report';
 import ConstructionIcon from '@mui/icons-material/Construction';
 import HomeIcon from '@mui/icons-material/Home';
-import { SiEthereum } from "react-icons/si"; // Ethereum icon
+import { SiEthereum } from "react-icons/si";
 import AnalyticsIcon from "@mui/icons-material/Analytics";
 import LinkIcon from "@mui/icons-material/Link";
 import AssessmentIcon from "@mui/icons-material/Assessment";
@@ -112,8 +112,8 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
   const itemsData = [
     { title: "Dashboard", to: "/dashboard", icon: <DashboardIcon />, category: null },
     { title: "Overview", to: "/market-overview", icon: <DashboardIcon />, category: null },
+    { title: "Charts", to: "/charts", icon: <BarChartIcon />, category: null },
     { title: "Bitcoin Chart", to: "/bitcoin", category: "Bitcoin", icon: <CurrencyBitcoinIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
-    // { title: "Bitcoin Transaction Count", to: "/btc-tx-count", category: "On Chain Data", icon: <SwapHorizIcon />, categoryIcon: <LinkIcon /> },
     { title: "Bitcoin Address Balance", to: "/btc-add-balance", category: "On Chain Data", icon: <AccountBalanceIcon />, categoryIcon: <LinkIcon /> },
     { title: "Market Cycles", to: "/market-cycles", category: "Bitcoin", icon: <RepeatIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
     { title: "Bitcoin ROI", to: "/bitcoin-roi", category: "Bitcoin", icon: <TrendingUpIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
@@ -121,7 +121,6 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
     { title: "Bitcoin Bubble Indicator", to: "/btc-20-ext", category: "Bitcoin", icon: <WarningAmberIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
     { title: "Running ROI", to: "/running-roi", category: "Indicators", icon: <ShowChartIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
     { title: "Monthly Average ROI", to: "/monthly-average-roi", category: "Indicators", icon: <CalculateIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
-    // { title: "Ethereum Chart", to: "/ethereum", category: "Ethereum", icon: <SiEthereum />, categoryIcon: <SiEthereum /> },
     { title: "Altcoin Chart", to: "/altcoin-price", category: "Altcoins", icon: <MonetizationOnIcon />, categoryIcon: <MonetizationOnIcon /> },
     { title: "Total Market Cap", to: "/total", category: "Indicators", icon: <MonetizationOnIcon />, categoryIcon: <AnalyticsIcon /> },
     { title: "Total Cap to Fair Value", to: "/total-difference", category: "Indicators", icon: <CompareArrowsIcon />, categoryIcon: <AnalyticsIcon /> },
@@ -143,8 +142,7 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
     { title: "US Inflation Chart", to: "/us-inflation", category: "Macro Basic Charts", icon: <PriceChangeIcon />, categoryIcon: <AssessmentIcon /> },
     { title: "US Interest Rate Chart", to: "/us-interest", category: "Macro Basic Charts", icon: <PercentIcon />, categoryIcon: <AssessmentIcon /> },
     { title: "US Initial Claims", to: "/us-initial-claims", category: "Macro Basic Charts", icon: <AssignmentIcon />, categoryIcon: <AssessmentIcon /> },
-    { title: "US Macro Information Chart", to: "/us-combined-macro", category: "Macro Basic Charts", icon: <MultilineChartIcon />, categoryIcon: <AssessmentIcon /> },
-    // { title: "US Macro and BTC Tx Count", to: "/tx-combined", category: "Macro Basic Charts", icon: <BarChartIcon />, categoryIcon: <AssessmentIcon /> },
+    // { title: "US Macro Information Chart", to: "/us-combined-macro", category: "Macro Basic Charts", icon: <MultilineChartIcon />, categoryIcon: <AssessmentIcon /> },
     { title: "Federal Funds Rate", to: "/fred/fed-funds-rate", category: "Macro Basic Charts", icon: <PercentIcon />, categoryIcon: <AssessmentIcon /> },
     { title: "S&P 500 Return On Investment", to: "/sp500-roi", category: "Macro Indicators", icon: <PercentIcon />, categoryIcon: <AssessmentIcon /> },
     { title: "S&P 500 Index", to: "/fred/sp500", category: "Macro Basic Charts", icon: <CandlestickChart />, categoryIcon: <AssessmentIcon /> },
@@ -182,8 +180,7 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
     itemsData.filter(item =>
       (item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (item.category && item.category.toLowerCase().includes(searchQuery.toLowerCase()))) &&
-      item.title !== "Dashboard" &&
-      item.title !== "Overview"
+      !["Dashboard", "Overview", "Charts"].includes(item.title)
     ), [searchQuery]
   );
 
@@ -296,21 +293,53 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
               </Box>
             </Box>
 
+            {/* New Buttons Section */}
+            <Box display="flex" justifyContent="space-between" px={2} mb={2}>
+              {[
+                { title: "Dashboard", to: "/dashboard" },
+                { title: "Overview", to: "/market-overview" },
+                { title: "Charts", to: "/charts" },
+              ].map((button) => (
+                <Button
+                  key={button.title}
+                  component={Link}
+                  to={button.to}
+                  onClick={() => {
+                    setSelected(button.title);
+                    handleMenuClick();
+                  }}
+                  sx={{
+                    flex: 1,
+                    mx: 0.5,
+                    color: colors.grey[100],
+                    backgroundColor: selected === button.title ? colors.greenAccent[700] : 'transparent',
+                    border: selected === button.title ? `2px solid ${colors.greenAccent[500]}` : 'none',
+                    '&:hover': {
+                      backgroundColor: colors.greenAccent[700],
+                      border: `2px solid ${colors.greenAccent[500]}`,
+                    },
+                    textTransform: 'none',
+                    fontSize: '0.9rem',
+                    padding: '6px 8px',
+                  }}
+                >
+                  {button.title}
+                </Button>
+              ))}
+            </Box>
+
             <Box display="flex" backgroundColor={colors.primary[400]} borderRadius="3px">
               <InputBase sx={{ ml: 2, flex: 1 }} placeholder="Search" value={searchQuery} onChange={handleSearchChange} />
               {searchQuery && <IconButton onClick={handleClearSearch} sx={{ p: 1 }}><CloseIcon /></IconButton>}
               <IconButton type="button" sx={{ p: 1 }}><SearchIcon /></IconButton>
             </Box>
 
-            {renderMenuItem(itemsData.find(item => item.title === "Dashboard"), 0, false, true)}
-            {renderMenuItem(itemsData.find(item => item.title === "Overview"), 1, false, true)}
-
             {searchQuery ? filteredItems.map((item, index) => renderMenuItem(item, index)) : renderSubMenus()}
           </Menu>
           <Box sx={{ padding: theme.spacing(2) }}>
             <Box display="flex" justifyContent="center" alignItems="center">
               <Typography variant="h5" color={colors.greenAccent[500]}>
-                Contact me here:
+                Contact:
               </Typography>
             </Box>
             <Box display="flex" justifyContent="center" alignItems="center" mt={2}>

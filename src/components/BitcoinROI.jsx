@@ -1,4 +1,3 @@
-// src/components/BitcoinROI.js
 import React, { useEffect, useState, useContext, useMemo, useCallback } from 'react';
 import Plot from 'react-plotly.js';
 import { tokens } from "../theme";
@@ -23,14 +22,14 @@ const BitcoinROI = ({ isDashboard = false }) => {
     const [error, setError] = useState(null);
     const [selectedYears, setSelectedYears] = useState([]);
 
-    const chartId = "bitcoin-roi"; // Unique ID for this chart
+    const chartId = "bitcoin-roi";
     const isFavorite = favoriteCharts.includes(chartId);
 
     const toggleFavorite = () => {
         if (isFavorite) {
-        removeFavoriteChart(chartId);
+            removeFavoriteChart(chartId);
         } else {
-        addFavoriteChart(chartId);
+            addFavoriteChart(chartId);
         }
     };
 
@@ -45,7 +44,7 @@ const BitcoinROI = ({ isDashboard = false }) => {
             autorange: true 
         },
         yaxis: { 
-            title: 'Logarithmic ROI (Base-10)', 
+            title: 'Logarithmic ROI (Shifted Base-10)', // Updated label
             type: 'linear',
             autorange: true 
         },
@@ -82,10 +81,7 @@ const BitcoinROI = ({ isDashboard = false }) => {
     const { yearlyDatasets, availableYears } = useMemo(() => {
         if (btcData.length === 0) return { yearlyDatasets: [], availableYears: [] };
 
-        // Define halving years
         const halvingYears = ['2012', '2016', '2020', '2024'];
-
-        // Get unique years from data
         const years = [...new Set(btcData.map(d => new Date(d.time).getFullYear()))]
             .sort((a, b) => a - b);
 
@@ -105,7 +101,7 @@ const BitcoinROI = ({ isDashboard = false }) => {
                 shortName: `${year}`,
                 data: filteredData.map((item, index) => ({
                     day: index,
-                    roi: Math.log(item.value / basePrice) / Math.LN10,
+                    roi: Math.log10(item.value / basePrice) + 1, // Shifted logarithmic ROI
                     date: item.time,
                     year
                 }))
@@ -228,7 +224,6 @@ const BitcoinROI = ({ isDashboard = false }) => {
             xaxis: { ...prev.xaxis, autorange: true },
             yaxis: { ...prev.yaxis, autorange: true }
         }));
-        // setSelectedYears(availableYears.map(y => y.value));
         setVisibilityMap(prev => {
             const newMap = { ...prev };
             yearDataSets.forEach(dataset => {
@@ -236,7 +231,7 @@ const BitcoinROI = ({ isDashboard = false }) => {
             });
             return newMap;
         });
-    }, [availableYears, yearDataSets]);
+    }, [yearDataSets]);
 
     const handleRelayout = useCallback((event) => {
         if (event['xaxis.range[0]'] || event['yaxis.range[0]']) {
@@ -277,38 +272,37 @@ const BitcoinROI = ({ isDashboard = false }) => {
             <Box
               sx={{
                 display: 'flex',
-                flexDirection: 'row', // Row layout for all breakpoints
+                flexDirection: 'row',
                 alignItems: 'center',
-                justifyContent: { xs: 'flex-start', sm: 'space-between' }, // Space-between for sm+
+                justifyContent: { xs: 'flex-start', sm: 'space-between' },
                 gap: { xs: '10px', sm: '10px' },
                 marginBottom: '10px',
                 marginTop: '50px',
                 width: '100%',
-                flexWrap: { xs: 'wrap', sm: 'nowrap' }, // Wrap on xs if needed, nowrap on sm+
+                flexWrap: { xs: 'wrap', sm: 'nowrap' },
               }}
             >
-              {/* Left Side: Dropdown and Deselect All Button */}
               <Box
                 sx={{
                   display: 'flex',
-                  flexDirection: 'row', // Row layout for all breakpoints
+                  flexDirection: 'row',
                   alignItems: 'center',
-                  gap: { xs: '10px', sm: '8px' }, // Smaller gap on non-mobile
-                  width: { xs: '100%', sm: 'auto' }, // Full width on xs, auto on sm+
+                  gap: { xs: '10px', sm: '8px' },
+                  width: { xs: '100%', sm: 'auto' },
                   '& > *': {
-                    flexShrink: 0, // Prevent shrinking
+                    flexShrink: 0,
                   },
                   '& .MuiFormControl-root': {
-                    flex: { xs: '2 1 66.67%', sm: '0 0 200px' }, // 2/3 on xs, fixed 200px on sm+
+                    flex: { xs: '2 1 66.67%', sm: '0 0 200px' },
                     minWidth: 0,
-                    width: { xs: '66.67%', sm: '200px' }, // Smaller width on sm+
+                    width: { xs: '66.67%', sm: '200px' },
                   },
                   '& .MuiButton-root': {
-                    flex: { xs: '1 1 33.33%', sm: '0 0 100px' }, // 1/3 on xs, fixed 100px on sm+
+                    flex: { xs: '1 1 33.33%', sm: '0 0 100px' },
                     minWidth: 0,
-                    width: { xs: '33.33%', sm: '100px' }, // Smaller width on sm+
-                    padding: { xs: '8px 16px', sm: '6px 12px' }, // Smaller padding on sm+
-                    fontSize: { xs: '12px', sm: '14px' }, // Smaller font on sm+
+                    width: { xs: '33.33%', sm: '100px' },
+                    padding: { xs: '8px 16px', sm: '6px 12px' },
+                    fontSize: { xs: '12px', sm: '14px' },
                   },
                 }}
               >
@@ -321,9 +315,9 @@ const BitcoinROI = ({ isDashboard = false }) => {
                       '&.Mui-focused': { color: colors.greenAccent[500] },
                       top: 0,
                       '&.MuiInputLabel-shrink': {
-                        transform: { xs: 'translate(14px, -9px) scale(0.75)', sm: 'translate(14px, -9px) scale(0.65)' }, // Smaller label on sm+
+                        transform: { xs: 'translate(14px, -9px) scale(0.75)', sm: 'translate(14px, -9px) scale(0.65)' },
                       },
-                      fontSize: { xs: '14px', sm: '16px' }, // Smaller font on sm+
+                      fontSize: { xs: '14px', sm: '16px' },
                     }}
                   >
                     Years to Average
@@ -352,10 +346,10 @@ const BitcoinROI = ({ isDashboard = false }) => {
                       '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
                       '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                      '& .MuiSelect-select': { py: { xs: 1.5, sm: 1 }, pl: 2 }, // Smaller padding on sm+
+                      '& .MuiSelect-select': { py: { xs: 1.5, sm: 1 }, pl: 2 },
                       '& .MuiSelect-select:empty': { color: colors.grey[500] },
-                      fontSize: { xs: '14px', sm: '16px' }, // Smaller font on sm+
-                      textOverflow: 'ellipsis', // Handle long text
+                      fontSize: { xs: '14px', sm: '16px' },
+                      textOverflow: 'ellipsis',
                     }}
                   >
                     {availableYears.map(({ value, label }) => (
@@ -387,14 +381,13 @@ const BitcoinROI = ({ isDashboard = false }) => {
                 </Button>
               </Box>
 
-              {/* Right Side: Reset Chart Button and Status Messages */}
               <Box
                 sx={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: '10px',
-                  marginLeft: { xs: 'auto', sm: 'auto' }, // Push to the right
-                  flex: { xs: '1 1 33.33%', sm: '0 0 auto' }, // 1/3 on xs, auto on sm+
+                  marginLeft: { xs: 'auto', sm: 'auto' },
+                  flex: { xs: '1 1 33.33%', sm: '0 0 auto' },
                 }}
               >
                 {isLoading && <span style={{ color: colors.grey[100], fontSize: { xs: '14px', sm: '16px' } }}>Loading...</span>}
@@ -406,11 +399,11 @@ const BitcoinROI = ({ isDashboard = false }) => {
                     color: '#31d6aa',
                     border: `1px solid ${colors.greenAccent[400]}`,
                     borderRadius: '4px',
-                    padding: { xs: '8px 16px', sm: '6px 12px' }, // Smaller padding on sm+
-                    fontSize: { xs: '14px', sm: '12px' }, // Smaller font on sm+
+                    padding: { xs: '8px 16px', sm: '6px 12px' },
+                    fontSize: { xs: '14px', sm: '12px' },
                     textTransform: 'none',
-                    width: { xs: '100%', sm: '100px' }, // Full width on xs, smaller on sm+
-                    display: { xs: 'none', sm: 'inline-flex' }, // Hide on xs, show on sm+
+                    width: { xs: '100%', sm: '100px' },
+                    display: { xs: 'none', sm: 'inline-flex' },
                     '&:hover': {
                       backgroundColor: colors.greenAccent[400],
                       color: theme.palette.mode === 'dark' ? colors.grey[900] : colors.grey[100],
@@ -426,11 +419,11 @@ const BitcoinROI = ({ isDashboard = false }) => {
                     color: '#31d6aa',
                     border: `1px solid ${colors.greenAccent[400]}`,
                     borderRadius: '4px',
-                    padding: { xs: '8px 16px', sm: '6px 12px' }, // Smaller padding on sm+
-                    fontSize: { xs: '12px', sm: '14px' }, // Smaller font on sm+
+                    padding: { xs: '8px 16px', sm: '6px 12px' },
+                    fontSize: { xs: '12px', sm: '14px' },
                     textTransform: 'none',
-                    width: { xs: '100%', sm: '100px' }, // Full width on xs, smaller on sm+
-                    display: { xs: 'inline-flex', sm: 'none' }, // Show on xs, hide on sm+
+                    width: { xs: '100%', sm: '100px' },
+                    display: { xs: 'inline-flex', sm: 'none' },
                     '&:hover': {
                       backgroundColor: colors.greenAccent[400],
                       color: theme.palette.mode === 'dark' ? colors.grey[900] : colors.grey[100],
@@ -490,11 +483,10 @@ const BitcoinROI = ({ isDashboard = false }) => {
           </div>
           {!isDashboard && (
             <p className='chart-info'>
-              The return on investment for each year has been normalized by taking the natural log of the price ratio,
-              showing growth from the start of each year. Select years to average, use 'Deselect All' in the legend to hide all years,
-              or click legend items to toggle visibility.
-
-              Usage Example: Take the average of the post halving years to compare against the current post halving year ROI
+              The return on investment for each year is calculated as a shifted logarithmic scale (log10(price / basePrice) + 1),
+              where ROI = 1 indicates no change,  above 1 indicates positive returns, and below 1 indicates negative returns.
+              Select years to average, use 'Deselect All' in the legend to hide all years, or click legend items to toggle visibility.
+              Usage Example: Take the average of the post-halving years to compare against the current post-halving year ROI.
             </p>
           )}
         </div>

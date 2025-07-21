@@ -1,9 +1,8 @@
-// src/components/SP500ROI.js
 import React, { useEffect, useState, useContext, useMemo, useCallback } from 'react';
 import Plot from 'react-plotly.js';
 import { tokens } from "../theme";
 import { useTheme, Box, FormControl, InputLabel, Select, MenuItem, Checkbox, Button } from "@mui/material";
-import '../styling/bitcoinChart.css'; // Reuse existing styles
+import '../styling/bitcoinChart.css';
 import useIsMobile from '../hooks/useIsMobile';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
@@ -51,11 +50,11 @@ const SP500ROI = ({ isDashboard = false }) => {
           autorange: true,
         },
         yaxis: {
-          title: 'Logarithmic ROI (Base-10)',
-          type: 'linear',
+          title: 'Logarithmic ROI (Shifted Base-10)', // Updated label
+          type: 'log',
           autorange: true,
         },
-        showlegend: false, // Set to false by default (legend hidden)
+        showlegend: false,
         hovermode: 'x unified',
         legend: {
           orientation: 'h',
@@ -109,7 +108,7 @@ const SP500ROI = ({ isDashboard = false }) => {
                 shortName: `${year}`,
                 data: filteredData.map((item, index) => ({
                     day: index,
-                    roi: Math.log(item.value / basePrice) / Math.LN10,
+                    roi: Math.log10(item.value / basePrice) + 1, // Shifted logarithmic ROI
                     date: item.time,
                     year
                 }))
@@ -231,7 +230,7 @@ const SP500ROI = ({ isDashboard = false }) => {
             ...prev,
             xaxis: { ...prev.xaxis, autorange: true },
             yaxis: { ...prev.yaxis, autorange: true },
-            showlegend: false // Reset to hidden by default
+            showlegend: false
         }));
         setVisibilityMap(prev => {
             const newMap = { ...prev };
@@ -449,8 +448,9 @@ const SP500ROI = ({ isDashboard = false }) => {
             </div>
             {!isDashboard && (
                 <p className='chart-info'>
-                    The return on investment for each year has been normalized by taking the natural log of the price ratio,
-                    showing growth from the start of each year. Select years to average, use 'Select/Deselect All' in the legend to toggle all years,
+                    The return on investment for each year is calculated as a shifted logarithmic scale (log10(price / basePrice) + 1),
+                    where ROI = 1 indicates no change, above 1 indicates positive returns, and below 1 indicates negative returns.
+                    Select years to average, use 'Select/Deselect All' in the legend to toggle all years,
                     or click legend items to toggle visibility.
                 </p>
             )}

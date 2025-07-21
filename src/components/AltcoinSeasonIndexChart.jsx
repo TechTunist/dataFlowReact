@@ -111,19 +111,19 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
 
     indexSeries.createPriceLine({
       price: 75,
-      color: '#FF0000',
-      lineWidth: 1,
+      color: 'violet',
+      lineWidth: 2,
       lineStyle: 2,
       title: 'Altcoin Season',
-      axisLabelColor: '#FF0000',
+      axisLabelColor: 'violet',
     });
     indexSeries.createPriceLine({
       price: 25,
-      color: '#0000FF',
-      lineWidth: 1,
+      color: 'orange',
+      lineWidth: 2,
       lineStyle: 2,
       title: 'Bitcoin Season',
-      axisLabelColor: '#0000FF',
+      axisLabelColor: 'orange',
     });
 
     chart.subscribeCrosshairMove(param => {
@@ -376,9 +376,9 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
                     style={{
                       color:
                         tooltipData.index >= 75
-                          ? '#F4A7B9' // Altcoin Season color
+                          ? 'violet' // Altcoin Season color
                           : tooltipData.index <= 25
-                          ? '#89CFF0' // Bitcoin Season color
+                          ? 'orange' // Bitcoin Season color
                           : colors.greenAccent[400], // Neutral color
                       fontWeight: 'bold',
                     }}
