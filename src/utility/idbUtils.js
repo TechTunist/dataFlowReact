@@ -4,23 +4,24 @@ import { openDB } from 'idb';
 const DB_NAME = 'CryptoDataDB';
 const DATA_STORE_NAME = 'apiData';
 const RISK_STORE_NAME = 'bitcoinRisk';
-const ROI_STORE_NAME = 'roiData'; // New store for ROI data
+const ETH_RISK_STORE_NAME = 'ethereumRisk'; // New store for Ethereum risk
+const ROI_STORE_NAME = 'roiData';
 
 export async function initDB() {
   try {
-    return await openDB(DB_NAME, 3, { // Incremented version to 3 for new store
+    return await openDB(DB_NAME, 4, { // Incremented version to 4 for new store
       upgrade(db, oldVersion) {
         if (!db.objectStoreNames.contains(DATA_STORE_NAME)) {
           db.createObjectStore(DATA_STORE_NAME, { keyPath: 'id' });
-          // console.log(`Created object store: ${DATA_STORE_NAME}`);
         }
         if (!db.objectStoreNames.contains(RISK_STORE_NAME)) {
           db.createObjectStore(RISK_STORE_NAME, { keyPath: 'id' });
-          // console.log(`Created object store: ${RISK_STORE_NAME}`);
         }
         if (!db.objectStoreNames.contains(ROI_STORE_NAME) && oldVersion < 3) {
           db.createObjectStore(ROI_STORE_NAME, { keyPath: 'id' });
-          // console.log(`Created object store: ${ROI_STORE_NAME}`);
+        }
+        if (!db.objectStoreNames.contains(ETH_RISK_STORE_NAME) && oldVersion < 4) {
+          db.createObjectStore(ETH_RISK_STORE_NAME, { keyPath: 'id' });
         }
       },
     });
@@ -34,9 +35,7 @@ export async function cacheData(id, data, timestamp) {
   try {
     const db = await initDB();
     await db.put(DATA_STORE_NAME, { id, data, timestamp });
-    // console.log(`Cached data for id: ${id}`);
   } catch (error) {
-    // console.error(`Failed to cache data for id ${id}:`, error);
     throw error;
   }
 }
@@ -56,7 +55,6 @@ export async function clearCache(id) {
   try {
     const db = await initDB();
     await db.delete(DATA_STORE_NAME, id);
-    // console.log(`Cleared cache for id: ${id}`);
   } catch (error) {
     console.error(`Failed to clear cache for id ${id}:`, error);
     throw error;
@@ -67,9 +65,8 @@ export async function saveBitcoinRisk(riskLevel) {
   try {
     const db = await initDB();
     await db.put(RISK_STORE_NAME, { id: 'currentRisk', riskLevel, timestamp: Date.now() });
-    // console.log(`Saved Bitcoin risk level: ${riskLevel}`);
   } catch (error) {
-    // console.error('Failed to save Bitcoin risk level:', error);
+    console.error('Failed to save Bitcoin risk level:', error);
     throw error;
   }
 }
@@ -85,19 +82,37 @@ export async function getBitcoinRisk() {
   }
 }
 
-// New function to save ROI data
+export async function saveEthereumRisk(riskLevel) {
+  try {
+    const db = await initDB();
+    await db.put(ETH_RISK_STORE_NAME, { id: 'currentEthRisk', riskLevel, timestamp: Date.now() });
+  } catch (error) {
+    console.error('Failed to save Ethereum risk level:', error);
+    throw error;
+  }
+}
+
+export async function getEthereumRisk() {
+  try {
+    const db = await initDB();
+    const data = await db.get(ETH_RISK_STORE_NAME, 'currentEthRisk');
+    return data || { riskLevel: 0 }; // Return mock value if no data
+  } catch (error) {
+    console.error('Failed to get Ethereum risk level:', error);
+    return { riskLevel: 0 }; // Fallback mock value
+  }
+}
+
 export async function saveRoiData(roiData) {
   try {
     const db = await initDB();
     await db.put(ROI_STORE_NAME, { id: 'roiCycles', ...roiData, timestamp: Date.now() });
-    // console.log('Saved ROI data');
   } catch (error) {
     console.error('Failed to save ROI data:', error);
     throw error;
   }
 }
 
-// New function to get ROI data
 export async function getRoiData() {
   try {
     const db = await initDB();
@@ -105,6 +120,19 @@ export async function getRoiData() {
     return data;
   } catch (error) {
     console.error('Failed to get ROI data:', error);
+    throw error;
+  }
+}
+
+export async function clearRoiData() {
+  try {
+    const db = await initDB();
+    const tx = db.transaction(ROI_STORE_NAME, 'readwrite');
+    const store = tx.objectStore(ROI_STORE_NAME);
+    await store.clear();
+    await tx.done;
+  } catch (error) {
+    console.error('Failed to clear ROI data cache:', error);
     throw error;
   }
 }

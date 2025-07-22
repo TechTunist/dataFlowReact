@@ -20,7 +20,7 @@ import { Box, Typography, useTheme, LinearProgress, CircularProgress } from '@mu
 import { tokens } from '../theme';
 import { DataContext } from '../DataContext';
 import useIsMobile from '../hooks/useIsMobile';
-import { getBitcoinRisk, saveRoiData, getRoiData } from '../utility/idbUtils';
+import { getBitcoinRisk, saveRoiData, getRoiData, clearRoiData } from '../utility/idbUtils';
 import InfoIcon from '@mui/icons-material/Info'; 
 import ShowChartIcon from '@mui/icons-material/ShowChart';
 
@@ -598,6 +598,7 @@ const RoiCycleComparisonWidget = memo(() => {
   const [zScore, setZScore] = useState(null);
   const [heatScore, setHeatScore] = useState(null);
   const [currentDays, setCurrentDays] = useState(null);
+  const { btcData } = useContext(DataContext);
 
   useEffect(() => {
     const calculateRoiData = async () => {
@@ -622,7 +623,7 @@ const RoiCycleComparisonWidget = memo(() => {
         const basePrice = filteredData[0].value;
         return filteredData.map((item, index) => ({
           day: index,
-          roi: Math.log(item.value / basePrice) / Math.LN10,
+          roi: Math.log10(item.value / basePrice) + 1, // Updated ROI calculation
           date: item.time,
           cycle: cycleName,
         }));
@@ -711,7 +712,15 @@ const RoiCycleComparisonWidget = memo(() => {
       return false;
     };
 
+    // const initialize = async () => {
+    //   const usedCache = await loadCachedData();
+    //   if (!usedCache) {
+    //     await calculateRoiData();
+    //   }
+    // };
+
     const initialize = async () => {
+      await clearRoiData(); // Add this line temporarily
       const usedCache = await loadCachedData();
       if (!usedCache) {
         await calculateRoiData();
@@ -814,7 +823,7 @@ const RoiCycleComparisonWidget = memo(() => {
       )}
       <InfoOverlay
         isVisible={isInfoVisible}
-        explanation="The ROI Cycle Comparison widget shows the current ROI of Bitcoin compared to the average ROI of previous cycles (Cycle 2 and Cycle 3). It helps identify how the current market performance compares to historical trends, providing insights into potential market overheating or undervaluation."
+        explanation="The ROI Cycle Comparison widget shows the current ROI of Bitcoin compared to the average ROI of previous cycles (Cycle 2 and Cycle 3). ROI is calculated as a shifted logarithmic scale (log10(price / basePrice) + 1), where 1 indicates no change, above 1 indicates positive returns, and below 1 indicates negative returns. This helps identify how the current market performance compares to historical trends."
       />
     </Box>
   );
