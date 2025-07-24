@@ -61,6 +61,7 @@ const AltcoinPrice = ({ isDashboard = false }) => {
   const smaIndicators = useMemo(() => ({
     '8w-sma': { period: 8 * 7, color: 'blue', label: '8 Week SMA', type: 'sma' },
     '20w-sma': { period: 20 * 7, color: 'limegreen', label: '20 Week SMA', type: 'sma' },
+    '50w-sma': { period: 50 * 7, color: 'magenta', label: '50 Week SMA', type: 'sma' },
     '100w-sma': { period: 100 * 7, color: 'white', label: '100 Week SMA', type: 'sma' },
     '200w-sma': { period: 200 * 7, color: 'yellow', label: '200 Week SMA', type: 'sma' },
     'bull-market-support': {
@@ -73,14 +74,14 @@ const AltcoinPrice = ({ isDashboard = false }) => {
 
   // Define RSI periods
   const rsiPeriods = useMemo(() => ({
-    '14-day': { days: 14, label: '14 Day RSI' },
-    '28-day': { days: 28, label: '28 Day RSI' },
-    '90-day': { days: 90, label: '90 Day RSI' },
-    '180-day': { days: 180, label: '180 Day RSI' },
-    '1-year': { days: 365, label: '1 Year RSI' },
-    '2-year': { days: 730, label: '2 Year RSI' },
-    '3-year': { days: 1095, label: '3 Year RSI' },
-    '4-year': { days: 1460, label: '4 Year RSI' },
+    'Daily': { days: 14, label: 'Daily RSI' },
+    'Weekly': { days: 98, label: 'Weekly RSI' },
+    // '90-day': { days: 90, label: '90 Day RSI' },
+    // '180-day': { days: 180, label: '180 Day RSI' },
+    // '1-year': { days: 365, label: '1 Year RSI' },
+    // '2-year': { days: 730, label: '2 Year RSI' },
+    // '3-year': { days: 1095, label: '3 Year RSI' },
+    // '4-year': { days: 1460, label: '4 Year RSI' },
   }), []);
 
   // Hardcoded list of altcoins
