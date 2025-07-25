@@ -49,7 +49,7 @@ const Subscription = memo(() => {
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://vercel-dataflow.vercel.app';
 
   const plans = [
-    { id: 7, name: 'Full Access (Beta)', billing_interval: 'MONTHLY', price_gbp: 10.00, price_usd: 13.45 },
+    { id: 11, name: 'Full Access (Beta)', billing_interval: 'MONTHLY', price_gbp: 10.00, price_usd: 13.45 },
   ];
 
   const fetchSubscriptionStatus = async () => {

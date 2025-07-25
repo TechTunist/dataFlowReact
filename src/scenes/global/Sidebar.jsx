@@ -313,7 +313,7 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
                     mx: 0.5,
                     color: colors.grey[100],
                     backgroundColor: selected === button.title ? colors.greenAccent[700] : 'transparent',
-                    border: selected === button.title ? `2px solid ${colors.greenAccent[500]}` : 'none',
+                    border: `2px solid ${selected === button.title ? colors.greenAccent[500] : 'transparent'}`, // Transparent border by default
                     '&:hover': {
                       backgroundColor: colors.greenAccent[700],
                       border: `2px solid ${colors.greenAccent[500]}`,
