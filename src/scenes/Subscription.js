@@ -145,12 +145,29 @@ const Subscription = memo(() => {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ plan_id: planId, currency: currency.toUpperCase() }), // Add currency here
+        body: JSON.stringify({ plan_id: planId, currency: currency.toUpperCase() }),
       });
   
-      // ... (rest of the function remains the same)
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`HTTP error! status: ${response.status}, message: ${errorData.error || 'Unknown error'}`);
+      }
+  
+      const responseData = await response.json();
+      console.log('Full checkout response:', responseData);  // Log to browser console for debugging
+  
+      const { sessionId, url } = responseData;  // Ensure backend returns {sessionId, url}
+  
+      const { error } = await stripe.redirectToCheckout({ sessionId });
+      if (error) {
+        console.error('Stripe redirect error:', error);
+        // Fallback: Manually redirect to the session URL
+        window.location.href = url;
+        setError('Automatic redirect failed—opening Checkout manually.');
+      }
     } catch (err) {
       setError(`Failed to initiate checkout: ${err.message}`);
+      console.error('Checkout catch error:', err);  // Additional log
     } finally {
       setLoading(false);
     }
