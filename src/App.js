@@ -1012,7 +1012,7 @@ const AppContent = memo(({ isSignedIn, user }) => {
 
 const App = memo(() => {
   return (
-    <ClerkProvider publishableKey={PUBLISHABLE_KEY} domain="https://clerk.cryptological.app">
+    <ClerkProvider publishableKey={PUBLISHABLE_KEY} domain="clerk.cryptological.app">
       <AuthWrapper />
     </ClerkProvider>
   );
