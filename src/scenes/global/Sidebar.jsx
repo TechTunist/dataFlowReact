@@ -1,7 +1,7 @@
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react"; // Removed useState
 import { ProSidebar, Menu, MenuItem, SubMenu } from "react-pro-sidebar";
-import { Box, IconButton, Typography, useTheme, Button } from "@mui/material"; // Added Button
-import { Link } from "react-router-dom";
+import { Box, IconButton, Typography, useTheme, Button } from "@mui/material";
+import { Link, useLocation } from "react-router-dom"; // Added useLocation
 import "react-pro-sidebar/dist/css/styles.css";
 import { tokens } from "../../theme";
 import InputBase from "@mui/material/InputBase";
@@ -56,20 +56,20 @@ import WorkOffIcon from "@mui/icons-material/WorkOff";
 import PercentIcon from "@mui/icons-material/Percent";
 import MultilineChartIcon from "@mui/icons-material/MultilineChart";
 
-const Item = ({ title, to, icon, selected, setSelected, isNested, onClick, isProminent = false }) => {
+const Item = ({ title, to, icon, isNested, onClick, isProminent = false }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
+  const location = useLocation(); // Added
+  const isActive = useMemo(() => location.pathname === to, [location.pathname, to]); // Compute based on URL
+
   return (
     <MenuItem
-      active={selected === title}
+      active={isActive}
       style={{
         color: isProminent ? colors.greenAccent[500] : colors.grey[100],
         padding: '5px 0px 5px 0px',
       }}
-      onClick={() => {
-        setSelected(title);
-        if (onClick) onClick();
-      }}
+      onClick={onClick}
       icon={icon}
     >
       <Link to={to} style={{ textDecoration: "none", color: "inherit" }}>
@@ -105,7 +105,7 @@ const Item = ({ title, to, icon, selected, setSelected, isNested, onClick, isPro
 const Sidebar = ({ isSidebar, setIsSidebar }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
-  const [selected, setSelected] = useState("Dashboard");
+  const location = useLocation(); // Added for buttons
   const [searchQuery, setSearchQuery] = useState("");
   const isMobile = useIsMobile();
 
@@ -205,11 +205,9 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
       title={item.title}
       to={item.to}
       icon={item.icon}
-      selected={selected}
-      setSelected={setSelected}
       isNested={isNested}
       isProminent={isProminent}
-      onClick={handleMenuClick}
+      onClick={handleMenuClick} // Only handle mobile close, no setSelected
     />
   );
 
@@ -242,7 +240,6 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
           onClick={() => setIsSidebar(false)}
         />
       )}
-
       <Box
         className="sidebar"
         sx={{
@@ -292,48 +289,53 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
                 <img alt="main-logo" width="200px" height="50px" src={`../../assets/cryptological-title-resized.png`} />
               </Box>
             </Box>
-
-            {/* New Buttons Section */}
+            {/* Buttons Section - Now uses location for isActive */}
             <Box display="flex" justifyContent="space-between" px={2} mb={2}>
               {[
                 { title: "Dashboard", to: "/dashboard" },
                 { title: "Overview", to: "/market-overview" },
                 { title: "Charts", to: "/charts" },
-              ].map((button) => (
-                <Button
-                  key={button.title}
-                  component={Link}
-                  to={button.to}
-                  onClick={() => {
-                    setSelected(button.title);
-                    handleMenuClick();
-                  }}
-                  sx={{
-                    flex: 1,
-                    mx: 0.5,
-                    color: colors.grey[100],
-                    backgroundColor: selected === button.title ? colors.greenAccent[700] : 'transparent',
-                    border: `2px solid ${selected === button.title ? colors.greenAccent[500] : 'transparent'}`, // Transparent border by default
-                    '&:hover': {
-                      backgroundColor: colors.greenAccent[700],
-                      border: `2px solid ${colors.greenAccent[500]}`,
-                    },
-                    textTransform: 'none',
-                    fontSize: '0.9rem',
-                    padding: '6px 8px',
-                  }}
-                >
-                  {button.title}
-                </Button>
-              ))}
-            </Box>
+              ].map((button) => {
+                let isActive;
+                if (button.title === "Dashboard") {
+                  isActive = location.pathname === "/dashboard";
+                } else if (button.title === "Overview") {
+                  isActive = location.pathname === "/market-overview";
+                } else { // Charts
+                  isActive = !["/dashboard", "/market-overview"].includes(location.pathname);
+                }
 
+                return (
+                  <Button
+                    key={button.title}
+                    component={Link}
+                    to={button.to}
+                    onClick={handleMenuClick} // Only mobile close, no setSelected
+                    sx={{
+                      flex: 1,
+                      mx: 0.5,
+                      color: colors.grey[100],
+                      backgroundColor: isActive ? colors.greenAccent[700] : 'transparent',
+                      border: `2px solid ${isActive ? colors.greenAccent[500] : 'transparent'}`,
+                      '&:hover': {
+                        backgroundColor: colors.greenAccent[700],
+                        border: `2px solid ${colors.greenAccent[500]}`,
+                      },
+                      textTransform: 'none',
+                      fontSize: '0.9rem',
+                      padding: '6px 8px',
+                    }}
+                  >
+                    {button.title}
+                  </Button>
+                );
+              })}
+            </Box>
             <Box display="flex" backgroundColor={colors.primary[400]} borderRadius="3px">
               <InputBase sx={{ ml: 2, flex: 1 }} placeholder="Search" value={searchQuery} onChange={handleSearchChange} />
               {searchQuery && <IconButton onClick={handleClearSearch} sx={{ p: 1 }}><CloseIcon /></IconButton>}
               <IconButton type="button" sx={{ p: 1 }}><SearchIcon /></IconButton>
             </Box>
-
             {searchQuery ? filteredItems.map((item, index) => renderMenuItem(item, index)) : renderSubMenus()}
           </Menu>
           <Box sx={{ padding: theme.spacing(2) }}>

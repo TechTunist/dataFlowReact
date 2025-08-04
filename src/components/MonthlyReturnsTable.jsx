@@ -18,14 +18,13 @@ const BitcoinMonthlyReturnsTable = ({ isDashboard = false }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Fetch data if not already loaded
+  // Fetch data on mount, even if btcData exists, to ensure freshness
   useEffect(() => {
     const fetchData = async () => {
-      if (btcData.length > 0) return;
       setIsLoading(true);
       setError(null);
       try {
-        await fetchBtcData();
+        await fetchBtcData(); // Always fetch to ensure latest data
       } catch (err) {
         setError('Error fetching data. Please try again later.');
         console.error('Error:', err);
@@ -34,10 +33,11 @@ const BitcoinMonthlyReturnsTable = ({ isDashboard = false }) => {
       }
     };
     fetchData();
-  }, [fetchBtcData, btcData.length]);
+  }, [fetchBtcData]); // Removed btcData.length dependency to force refresh
 
   // Process data to calculate monthly returns
-const monthlyReturnsData = useMemo(() => {
+  const monthlyReturnsData = useMemo(() => {
+    console.log('btcData:', btcData); // Debug: Log raw btcData
     if (btcData.length === 0) {
       return {
         years: [],
@@ -48,7 +48,7 @@ const monthlyReturnsData = useMemo(() => {
         monthColors: [],
       };
     }
-  
+
     const dataByYearMonth = btcData.reduce((acc, item) => {
       const date = new Date(item.time);
       if (isNaN(date.getTime())) {
@@ -62,42 +62,50 @@ const monthlyReturnsData = useMemo(() => {
       acc[year][month].push({ date, value: item.value });
       return acc;
     }, {});
-  
+    console.log('dataByYearMonth:', dataByYearMonth); // Debug: Log grouped data
+
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth();
+
     const years = [];
-    for (let y = 2010; y <= 2025; y++) {
+    for (let y = 2010; y <= currentYear; y++) {
       years.push(y.toString());
     }
     years.sort((a, b) => b - a);
-  
+
     const months = isMobile
       ? ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D']
       : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    
+
     const returns = [];
     const cellColors = [];
-    const currentYear = 2025;
-    const currentMonth = 5;
-  
+
     years.forEach(year => {
       const yearReturns = [];
       const yearColors = [];
       for (let month = 0; month < 12; month++) {
+        // Skip pre-Bitcoin months (before August 2010)
         if (parseInt(year) === 2010 && month < 7) {
           yearReturns.push(null);
           yearColors.push(colors.primary[700]);
           continue;
         }
-        if (parseInt(year) === 2025 && month > 5) {
+        // Skip future months beyond current
+        if (parseInt(year) === currentYear && month > currentMonth) {
           yearReturns.push(null);
           yearColors.push(colors.primary[700]);
           continue;
         }
+
         const monthData = dataByYearMonth[year] && dataByYearMonth[year][month];
         if (!monthData || monthData.length === 0) {
+          console.warn(`No data for ${year}-${month + 1}`); // Debug: Log missing months
           yearReturns.push(null);
           yearColors.push(colors.primary[700]);
           continue;
         }
+
         monthData.sort((a, b) => a.date - b.date);
         const firstDay = monthData[0];
         const lastDay = monthData[monthData.length - 1];
@@ -120,18 +128,17 @@ const monthlyReturnsData = useMemo(() => {
       returns.push(yearReturns);
       cellColors.push(yearColors);
     });
-  
+
     const monthColumns = months.map((_, monthIndex) =>
       returns.map(row => {
         const val = row[monthIndex];
         return val !== null ? (val.includes('*') ? val.replace('*', '%*') : `${val}%`) : '';
       })
     );
-  
     const monthColors = months.map((_, monthIndex) =>
       cellColors.map(row => row[monthIndex])
     );
-  
+
     return {
       years,
       months,
@@ -141,9 +148,9 @@ const monthlyReturnsData = useMemo(() => {
       monthColors,
     };
   }, [btcData, colors]);
-  
+
   const { years, months, monthColumns, monthColors } = monthlyReturnsData;
-  
+
   // Plotly table data
   const tableData = [
     {
@@ -151,40 +158,40 @@ const monthlyReturnsData = useMemo(() => {
       header: {
         values: [''],
         align: 'center',
-        line: { width: 0 }, // No outline for header
+        line: { width: 0 },
         fill: { color: colors.primary[700] },
         font: { color: colors.primary[100], size: 16 },
-        height: 40, // Consistent header height
+        height: 40,
       },
       cells: {
         values: [years],
         align: 'center',
-        line: { width: 0 }, // No grid lines for year cells
+        line: { width: 0 },
         fill: { color: colors.primary[700] },
         font: { color: colors.primary[100], size: isMobile ? 8 : 12 },
-        height: 30, // Consistent cell height
+        height: 30,
       },
-      domain: { x: [0, 0.05], y: [0, 1] }, // Years take 15% of width
+      domain: { x: [0, 0.05], y: [0, 1] },
     },
     {
       type: 'table',
       header: {
         values: months,
         align: 'center',
-        line: { width: 0 }, // No outline for header
+        line: { width: 0 },
         fill: { color: colors.primary[700] },
         font: { color: colors.primary[100], size: 14 },
-        height: 40, // Consistent header height
+        height: 40,
       },
       cells: {
         values: monthColumns,
         align: 'center',
-        line: { width: 1, color: colors.grey[300] }, // Grid lines for monthly data
+        line: { width: 1, color: colors.grey[300] },
         fill: { color: monthColors },
-        font: { color: colors.primary[100], size: isMobile ? 10 : 13},
-        height: 30, // Consistent cell height
+        font: { color: colors.primary[100], size: isMobile ? 10 : 13 },
+        height: 30,
       },
-      domain: { x: [0.05, 1], y: [0, 1] }, // Monthly data takes 85% of width
+      domain: { x: [0.05, 1], y: [0, 1] },
     },
   ];
 
