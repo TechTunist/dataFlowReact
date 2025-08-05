@@ -128,7 +128,7 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
     { title: "Bitcoin Dominance", to: "/bitcoin-dominance", category: "Bitcoin", icon: <PieChartIcon />, categoryIcon: <AnalyticsIcon /> },
     { title: "PiCycleTop Indicator", to: "/pi-cycle", category: "Indicators", icon: <TimelineIcon />, categoryIcon: <AnalyticsIcon /> },
     { title: "Fear And Greed Indicator", to: "/fear-and-greed", category: "Indicators", icon: <MoodIcon />, categoryIcon: <AnalyticsIcon /> },
-    { title: "Historical Volatility", to: "/historical-volatility", category: "Indicators", icon: <TimelineIcon />, categoryIcon: <AnalyticsIcon /> },
+    { title: "Historical BTC Volatility", to: "/historical-volatility", category: "Bitcoin", icon: <TimelineIcon />, categoryIcon: <AnalyticsIcon /> },
     { title: "Bitcoin Logarithmic Regression", to: "/logarithmic-regression", category: "Bitcoin", icon: <FunctionsIcon />, categoryIcon: <AnalyticsIcon /> },
     { title: "Fear and Greed Chart", to: "/fear-and-greed-chart", category: "Indicators", icon: <SentimentSatisfiedIcon />, categoryIcon: <AnalyticsIcon /> },
     { title: "Bitcoin Risk Metric", to: "/risk", category: "Risk", icon: <WarningIcon />, categoryIcon: <WarningIcon /> },
