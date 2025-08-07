@@ -37,24 +37,14 @@ const BitcoinMonthlyReturnsTable = ({ isDashboard = false }) => {
 
   // Process data to calculate monthly returns
   const monthlyReturnsData = useMemo(() => {
-    console.log('btcData:', btcData); // Debug: Log raw btcData
-    if (btcData.length === 0) {
-      return {
-        years: [],
-        months: [],
-        returns: [],
-        colors: [],
-        monthColumns: [],
-        monthColors: [],
-      };
-    }
-
-    const dataByYearMonth = btcData.reduce((acc, item) => {
+    if (btcData.length === 0) return { /* ... */ };
+  
+    // Sort all data by date once for efficiency
+    const sortedBtcData = [...btcData].sort((a, b) => new Date(a.time) - new Date(b.time));
+  
+    // Group by year and month, but also track last price per month
+    const dataByYearMonth = sortedBtcData.reduce((acc, item) => {
       const date = new Date(item.time);
-      if (isNaN(date.getTime())) {
-        console.error('Invalid date in btcData:', item.time);
-        return acc;
-      }
       const year = date.getFullYear();
       const month = date.getMonth();
       if (!acc[year]) acc[year] = {};
@@ -62,67 +52,85 @@ const BitcoinMonthlyReturnsTable = ({ isDashboard = false }) => {
       acc[year][month].push({ date, value: item.value });
       return acc;
     }, {});
-    console.log('dataByYearMonth:', dataByYearMonth); // Debug: Log grouped data
-
+  
+    // Function to get last close of previous month
+    const getPreviousMonthClose = (year, month) => {
+      let prevYear = year;
+      let prevMonth = month - 1;
+      if (prevMonth < 0) {
+        prevMonth = 11;
+        prevYear--;
+      }
+      const prevMonthData = dataByYearMonth[prevYear]?.[prevMonth];
+      if (prevMonthData && prevMonthData.length > 0) {
+        // Sort if not already (though groups are small)
+        prevMonthData.sort((a, b) => a.date - b.date);
+        return prevMonthData[prevMonthData.length - 1].value;
+      }
+      return null; // If no previous data, fall back or skip
+    };
+  
     const currentDate = new Date();
     const currentYear = currentDate.getFullYear();
     const currentMonth = currentDate.getMonth();
-
+  
     const years = [];
-    for (let y = 2010; y <= currentYear; y++) {
-      years.push(y.toString());
-    }
+    for (let y = 2010; y <= currentYear; y++) years.push(y.toString());
     years.sort((a, b) => b - a);
-
+  
     const months = isMobile
-      ? ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D']
-      : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
+    ? ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D']
+    : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  
     const returns = [];
     const cellColors = [];
-
     years.forEach(year => {
       const yearReturns = [];
       const yearColors = [];
       for (let month = 0; month < 12; month++) {
-        // Skip pre-Bitcoin months (before August 2010)
+        // Skip pre-Bitcoin or future months (same as before)
         if (parseInt(year) === 2010 && month < 7) {
           yearReturns.push(null);
           yearColors.push(colors.primary[700]);
           continue;
         }
-        // Skip future months beyond current
         if (parseInt(year) === currentYear && month > currentMonth) {
           yearReturns.push(null);
           yearColors.push(colors.primary[700]);
           continue;
         }
-
-        const monthData = dataByYearMonth[year] && dataByYearMonth[year][month];
+  
+        const monthData = dataByYearMonth[year]?.[month];
         if (!monthData || monthData.length === 0) {
-          console.warn(`No data for ${year}-${month + 1}`); // Debug: Log missing months
           yearReturns.push(null);
           yearColors.push(colors.primary[700]);
           continue;
         }
-
+  
+        // Sort month data
         monthData.sort((a, b) => a.date - b.date);
-        const firstDay = monthData[0];
+  
+        // Last price is the same: last day of month
         const lastDay = monthData[monthData.length - 1];
-        const firstPrice = firstDay.value;
         const lastPrice = lastDay.value;
+  
+        // Start price: last close of previous month
+        let firstPrice = getPreviousMonthClose(parseInt(year), month);
+  
+        // Fallback: If no previous month data (e.g., first month ever), use first day's price
+        if (firstPrice === null) {
+          firstPrice = monthData[0].value;
+        }
+  
         const monthlyReturn = firstPrice !== 0 ? ((lastPrice - firstPrice) / firstPrice) * 100 : 0;
         const displayValue =
           parseInt(year) === currentYear && month === currentMonth
             ? `${monthlyReturn.toFixed(1)}*`
             : monthlyReturn.toFixed(1);
+  
         yearReturns.push(displayValue);
         yearColors.push(
-          monthlyReturn > 0
-            ? '#28822d'
-            : monthlyReturn < 0
-            ? '#9c4f4f'
-            : colors.primary[700]
+          monthlyReturn > 0 ? '#28822d' : monthlyReturn < 0 ? '#9c4f4f' : colors.primary[700]
         );
       }
       returns.push(yearReturns);

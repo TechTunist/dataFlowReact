@@ -408,7 +408,7 @@ const MarketCycles = ({ isDashboard = false }) => {
         {!isDashboard && <BitcoinFees />}
       </div>
       {!isDashboard && (
-        <p>
+        <p className = 'chart-info'>
           The return on investment between market cycles is calculated as a shifted logarithmic scale (log10(price / basePrice) + 1),
           where ROI = 1 indicates no change, above 1 indicates positive returns, and below 1 indicates negative returns.
           The average ROI line (if selected) represents the mean of the chosen historical cycles on this shifted scale.

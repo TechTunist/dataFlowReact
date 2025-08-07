@@ -17,12 +17,12 @@ const MonthlyAverageROI = ({ isDashboard = false }) => {
   const { btcData, fetchBtcData, isBtcDataFetched, ethData, fetchEthData, isEthDataFetched, altcoinData, fetchAltcoinData, isAltcoinDataFetched } = useContext(DataContext);
   const [selectedAsset, setSelectedAsset] = useState('BTC');
   const [timeframe, setTimeframe] = useState('1y');
+  const [startYear, setStartYear] = useState('All');
   const [monthlyRoiData, setMonthlyRoiData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showLoadingMessage, setShowLoadingMessage] = useState(false);
   const [error, setError] = useState(null);
   const loadingTimeoutRef = useRef(null);
-
   const [layout, setLayout] = useState({
     title: isDashboard ? '' : `${selectedAsset} Average Monthly ROI`,
     autosize: true,
@@ -100,6 +100,9 @@ const MonthlyAverageROI = ({ isDashboard = false }) => {
     { value: '4y', label: '4 Years', months: 48 },
   ];
 
+  // Start year options
+  const startYears = ['All', '2013', '2017', '2021'];
+
   // Month names for tooltips
   const monthNames = isMobile
     ? ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D']
@@ -118,15 +121,12 @@ const MonthlyAverageROI = ({ isDashboard = false }) => {
         setShowLoadingMessage(false);
         return;
       }
-
       setIsLoading(true);
       setError(null);
-
       // Set a timeout to show the loading message only if fetch takes longer than 50ms
       loadingTimeoutRef.current = setTimeout(() => {
         setShowLoadingMessage(true);
       }, 50);
-
       try {
         if (selectedAsset === 'BTC') {
           await fetchBtcData();
@@ -144,9 +144,7 @@ const MonthlyAverageROI = ({ isDashboard = false }) => {
         clearTimeout(loadingTimeoutRef.current);
       }
     };
-
     fetchData();
-
     // Cleanup timeout on unmount or re-fetch
     return () => {
       clearTimeout(loadingTimeoutRef.current);
@@ -157,10 +155,9 @@ const MonthlyAverageROI = ({ isDashboard = false }) => {
   const calculateMonthlyAverageROI = useMemo(() => {
     const data = selectedAsset === 'BTC' ? btcData : selectedAsset === 'ETH' ? ethData : altcoinData[selectedAsset] || [];
     if (data.length === 0) return [];
-  
     const selectedTimeframe = timeframes.find(tf => tf.value === timeframe);
     const monthsAhead = selectedTimeframe ? selectedTimeframe.months : 12;
-  
+    const minYear = startYear === 'All' ? 0 : parseInt(startYear);
     // Group data by year and month, and calculate average price for each month
     const dataByYearMonth = data.reduce((acc, item) => {
       const date = new Date(item.time);
@@ -176,7 +173,6 @@ const MonthlyAverageROI = ({ isDashboard = false }) => {
       acc[year][month].count += 1;
       return acc;
     }, {});
-  
     // Calculate average price for each month
     const averagePrices = {};
     for (let year in dataByYearMonth) {
@@ -187,33 +183,28 @@ const MonthlyAverageROI = ({ isDashboard = false }) => {
         }
       }
     }
-  
     // Calculate ROI for each month in each year
     const monthlyRoisByMonth = Array(12).fill().map(() => []); // Array of ROIs for each month
-    for (let startYear in averagePrices) {
-      startYear = parseInt(startYear);
+    for (let sYear in averagePrices) {
+      const startY = parseInt(sYear);
+      if (startY < minYear) continue;
       for (let startMonth = 0; startMonth < 12; startMonth++) {
-        if (!averagePrices[startYear][startMonth]) continue;
-  
-        const currentAvgPrice = averagePrices[startYear][startMonth];
-  
+        if (!averagePrices[startY][startMonth]) continue;
+        const currentAvgPrice = averagePrices[startY][startMonth];
         // Calculate the future year and month
-        let futureYear = startYear;
+        let futureYear = startY;
         let futureMonth = startMonth + monthsAhead;
         while (futureMonth >= 12) {
           futureMonth -= 12;
           futureYear += 1;
         }
-  
         // Skip if future data doesn't exist (e.g., for 2025 + 1 year)
         if (futureYear > 2025 || !averagePrices[futureYear] || !averagePrices[futureYear][futureMonth]) continue;
-  
         const futureAvgPrice = averagePrices[futureYear][futureMonth];
         const roi = currentAvgPrice !== 0 ? futureAvgPrice / currentAvgPrice : 1;
         monthlyRoisByMonth[startMonth].push(roi);
       }
     }
-  
     // Average ROI for each month across all years
     const monthAverages = monthlyRoisByMonth.map((rois, month) => {
       const avgRoi = rois.length > 0
@@ -221,9 +212,8 @@ const MonthlyAverageROI = ({ isDashboard = false }) => {
         : 1; // Default to 1 if no data
       return { month, avgRoi: parseFloat(avgRoi.toFixed(2)), rois }; // Ensure avgRoi is a number
     });
-  
     return monthAverages;
-  }, [btcData, ethData, altcoinData, selectedAsset, timeframe]);
+  }, [btcData, ethData, altcoinData, selectedAsset, timeframe, startYear]);
 
   useEffect(() => {
     setMonthlyRoiData(calculateMonthlyAverageROI);
@@ -338,6 +328,41 @@ const MonthlyAverageROI = ({ isDashboard = false }) => {
               ))}
             </Select>
           </FormControl>
+          <FormControl sx={{ minWidth: '150px', width: { xs: '100%', sm: '200px' } }}>
+            <InputLabel
+              id="start-year-label"
+              shrink
+              sx={{
+                color: colors.grey[100],
+                '&.Mui-focused': { color: colors.greenAccent[500] },
+                top: 0,
+                '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' },
+              }}
+            >
+              Start Year
+            </InputLabel>
+            <Select
+              value={startYear}
+              onChange={(e) => setStartYear(e.target.value)}
+              label="Start Year"
+              labelId="start-year-label"
+              sx={{
+                color: colors.grey[100],
+                backgroundColor: colors.primary[500],
+                borderRadius: '8px',
+                '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
+                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                '& .MuiSelect-select': { py: 1.5, pl: 2 },
+              }}
+            >
+              {startYears.map(year => (
+                <MenuItem key={year} value={year}>
+                  {year}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
         </Box>
       )}
       <div
@@ -358,46 +383,46 @@ const MonthlyAverageROI = ({ isDashboard = false }) => {
           </Box>
         ) : (
           <Plot
-  data={[
-    {
-      type: 'bar',
-      x: monthlyRoiData.map(data => data.month),
-      y: monthlyRoiData.map(data => data.avgRoi),
-      customdata: monthlyRoiData.map(data => ({
-        sampleSize: data.rois?.length || 0,
-        asset: selectedAsset,
-        timeframe: timeframes.find(tf => tf.value === timeframe)?.label || timeframe,
-      })),
-      hoverinfo: 'text',
-      hovertemplate:
-        '<b>%{customdata.asset} ROI</b><br>' +
-        'Month: %{text}<br>' +
-        'Average ROI: %{y:.2f} <br>' +
-        'Timeframe: %{customdata.timeframe}<br>' +
-        'Sample Size: %{customdata.sampleSize} years<extra></extra>',
-      text: monthlyRoiData.map(data => monthNames[data.month]),
-      marker: {
-        color: monthlyRoiData.map(data => getBarColor(data.avgRoi)),
-      },
-      hoverlabel: {
-        bgcolor: colors.primary[700],
-        font: { color: colors.primary[100], size: isMobile ? 12 : 14 },
-        bordercolor: colors.grey[300],
-        align: 'left',
-      },
-    },
-  ]}
-  layout={layout}
-  config={{
-    displayModeBar: false,
-    responsive: true,
-    scrollZoom: false,
-    doubleClick: false,
-    staticPlot: isDashboard, // Enable tooltips by default, disable interactivity in dashboard
-  }}
-  useResizeHandler={true}
-  style={{ width: '100%', height: '100%' }}
-/>
+            data={[
+              {
+                type: 'bar',
+                x: monthlyRoiData.map(data => data.month),
+                y: monthlyRoiData.map(data => data.avgRoi),
+                customdata: monthlyRoiData.map(data => ({
+                  sampleSize: data.rois?.length || 0,
+                  asset: selectedAsset,
+                  timeframe: timeframes.find(tf => tf.value === timeframe)?.label || timeframe,
+                })),
+                hoverinfo: 'text',
+                hovertemplate:
+                  '<b>%{customdata.asset} ROI</b><br>' +
+                  'Month: %{text}<br>' +
+                  'Average ROI: %{y:.2f} <br>' +
+                  'Timeframe: %{customdata.timeframe}<br>' +
+                  'Sample Size: %{customdata.sampleSize} years<extra></extra>',
+                text: monthlyRoiData.map(data => monthNames[data.month]),
+                marker: {
+                  color: monthlyRoiData.map(data => getBarColor(data.avgRoi)),
+                },
+                hoverlabel: {
+                  bgcolor: colors.primary[700],
+                  font: { color: colors.primary[100], size: isMobile ? 12 : 14 },
+                  bordercolor: colors.grey[300],
+                  align: 'left',
+                },
+              },
+            ]}
+            layout={layout}
+            config={{
+              displayModeBar: false,
+              responsive: true,
+              scrollZoom: false,
+              doubleClick: false,
+              staticPlot: isDashboard, // Enable tooltips by default, disable interactivity in dashboard
+            }}
+            useResizeHandler={true}
+            style={{ width: '100%', height: '100%' }}
+          />
         )}
       </div>
       <div className="under-chart">
@@ -406,7 +431,7 @@ const MonthlyAverageROI = ({ isDashboard = false }) => {
       </div>
       {!isDashboard && (
         <p className="chart-info" >
-          This chart displays the average {selectedAsset} Return on Investment (ROI) for each month over the selected timeframe, averaged across all available years. For each month, the ROI is calculated as the ratio of the average price {timeframes.find(tf => tf.value === timeframe)?.label} ahead to the average price of the current month. An ROI of 1 means no change, above 1 indicates growth (e.g., 2 means the price doubled), and below 1 indicates a decline (e.g., 0.5 means the price halved). Positive ROIs are shown in green, negative in red.
+          This chart displays the average {selectedAsset} Return on Investment (ROI) for each month over the selected timeframe, averaged {startYear === 'All' ? 'across all available years' : `from ${startYear} onward`}. For each month, the ROI is calculated as the ratio of the average price {timeframes.find(tf => tf.value === timeframe)?.label} ahead to the average price of the current month. An ROI of 1 means no change, above 1 indicates growth (e.g., 2 means the price doubled), and below 1 indicates a decline (e.g., 0.5 means the price halved). Positive ROIs are shown in green, negative in red.
         </p>
       )}
     </div>
