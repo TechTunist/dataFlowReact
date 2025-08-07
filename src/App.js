@@ -625,6 +625,7 @@ const AppContent = memo(({ isSignedIn, user }) => {
                             seriesId="UNRATE"
                             chartType="area"
                             scaleMode="linear"
+                            showSP500Overlay={true}
                             valueFormatter={(value) => `${value.toFixed(1)}%`}
                             explanation="The monthly U.S. unemployment rate is a key economic indicator that measures the percentage of the labor force that is jobless, actively seeking work, and available to work. It is calculated and reported by the U.S. Bureau of Labor Statistics (BLS) through the Current Population Survey (CPS), typically released on the first Friday of each month as part of the Employment Situation report."
                           />
@@ -641,6 +642,7 @@ const AppContent = memo(({ isSignedIn, user }) => {
                             chartType="line"
                             scaleMode="linear"
                             valueFormatter={(value) => `${value.toFixed(2)}%`}
+                            showSP500Overlay={true}
                             explanation="The daily 10-Year Treasury Note yield represents the annualized return investors receive for holding a U.S. 10-Year Treasury Note, a key benchmark for interest rates in the global economy. The yield is determined by the note’s price in the bond market, which fluctuates based on supply, demand, and economic conditions. Data is typically reported by the U.S. Department of the Treasury or financial platforms like the Federal Reserve’s FRED database."
                           />
                         </ProtectedRoute>
@@ -656,6 +658,7 @@ const AppContent = memo(({ isSignedIn, user }) => {
                             chartType="line"
                             scaleMode="linear"
                             valueFormatter={(value) => `${value.toFixed(2)}%`}
+                            showSP500Overlay={true}
                             explanation="The daily spread between the 10-Year and 2-Year Treasury yields measures the difference between the yields of the U.S. 10-Year Treasury Note and the 2-Year Treasury Note. This spread, often referred to as the 10-2 yield spread, is a key component of the Treasury yield curve and a widely watched indicator of economic health, particularly for predicting recessions. The data is typically sourced from the U.S. Department of the Treasury or platforms like the Federal Reserve’s FRED database."
                           />
                         </ProtectedRoute>
@@ -671,6 +674,7 @@ const AppContent = memo(({ isSignedIn, user }) => {
                             chartType="line"
                             scaleMode="linear"
                             valueFormatter={(value) => `${value.toFixed(2)}%`}
+                            showSP500Overlay={true}
                             explanation="The daily 5-Year Breakeven Inflation Rate represents the market's expected average annual inflation rate over the next five years, derived from the difference between the yields of the 5-Year U.S. Treasury Note and the 5-Year Treasury Inflation-Protected Securities (TIPS). This metric, often reported by the Federal Reserve (e.g., via FRED) or financial platforms, reflects investor inflation expectations and is a key gauge of anticipated price pressures in the economy."
                           />
                         </ProtectedRoute>
@@ -686,6 +690,7 @@ const AppContent = memo(({ isSignedIn, user }) => {
                             chartType="line"
                             scaleMode="linear"
                             valueFormatter={(value) => value.toFixed(4)}
+                            showSP500Overlay={true}
                             explanation="This chart shows the daily exchange rate of Euro to US Dollar."
                           />
                         </ProtectedRoute>
@@ -701,6 +706,7 @@ const AppContent = memo(({ isSignedIn, user }) => {
                             chartType="area"
                             scaleMode="linear"
                             valueFormatter={(value) => `$${value.toFixed(2)}`}
+                            showSP500Overlay={true}
                             explanation="This chart shows the daily West Texas Intermediate (WTI) crude oil price."
                           />
                         </ProtectedRoute>
@@ -716,6 +722,7 @@ const AppContent = memo(({ isSignedIn, user }) => {
                             chartType="area"
                             scaleMode="linear"
                             valueFormatter={(value) => value.toLocaleString()}
+                            showSP500Overlay={true}
                             explanation="The monthly Producer Price Index (PPI) for All Commodities measures the average change over time in the selling prices received by domestic producers for their output, specifically for a broad basket of commodities. Calculated by the U.S. Bureau of Labor Statistics (BLS), the PPI is a key indicator of wholesale price trends and serves as an early signal of inflationary pressures in the economy, complementing metrics like the Consumer Price Index (CPI)."
                           />
                         </ProtectedRoute>
@@ -731,6 +738,7 @@ const AppContent = memo(({ isSignedIn, user }) => {
                             chartType="area"
                             scaleMode="linear"
                             valueFormatter={(value) => value.toLocaleString()}
+                            showSP500Overlay={true}
                             explanation="The monthly total nonfarm payroll employment in the U.S. represents the total number of paid workers in the U.S. economy, excluding farm workers, private household employees, nonprofit employees, and unincorporated self-employed individuals. This data, compiled by the U.S. Bureau of Labor Statistics (BLS) through the Current Employment Statistics (CES) survey, is a critical indicator of labor market health and economic activity. It is released monthly, typically on the first Friday of the following month, as part of the Employment Situation report."
                           />
                         </ProtectedRoute>
@@ -746,6 +754,7 @@ const AppContent = memo(({ isSignedIn, user }) => {
                             chartType="area"
                             scaleMode="linear"
                             valueFormatter={(value) => value.toLocaleString()}
+                            showSP500Overlay={true}
                             explanation="The quarterly Real Gross Domestic Product (GDP) in the U.S. measures the inflation-adjusted value of all final goods and services produced within the U.S. economy over a three-month period. Reported by the Bureau of Economic Analysis (BEA), Real GDP is a key indicator of economic growth, expressed in constant dollars (e.g., chained 2017 dollars) to remove the effects of price changes. It is typically presented as an annualized growth rate (e.g., 2.5% annualized) or as a total dollar value, released in three estimates (advance, second, third) per quarter."
                           />
                         </ProtectedRoute>
@@ -761,6 +770,7 @@ const AppContent = memo(({ isSignedIn, user }) => {
                             chartType="area"
                             scaleMode="linear"
                             valueFormatter={(value) => `${value.toFixed(2)}%`}
+                            showSP500Overlay={true}
                             explanation="The quarterly Real GDP growth rate in the U.S. represents the annualized percentage change in inflation-adjusted Gross Domestic Product (GDP) from one quarter to the next. Real GDP, reported by the U.S. Bureau of Economic Analysis (BEA), measures the value of all final goods and services produced within the U.S., adjusted for inflation using a price deflator (e.g., chained 2017 dollars). The growth rate, expressed as an annualized figure, is a key indicator of economic momentum, released in three estimates (advance, second, third) per quarter."
                           />
                         </ProtectedRoute>
@@ -776,6 +786,7 @@ const AppContent = memo(({ isSignedIn, user }) => {
                             chartType="area"
                             scaleMode="logarithmic"
                             valueFormatter={(value) => value.toLocaleString()}
+                            showSP500Overlay={true}
                             explanation="The monthly M1 money supply in the U.S. measures the most liquid components of the money supply, including physical currency, demand deposits, and other highly liquid deposits. Reported by the Federal Reserve through the H.6 Money Stock Measures, M1 reflects the money readily available for spending and is a key indicator of monetary policy, liquidity, and potential inflationary pressures. Data is typically presented in billions of dollars, seasonally adjusted, and updated monthly via sources like the Federal Reserve’s FRED database."
                           />
                         </ProtectedRoute>
@@ -791,6 +802,7 @@ const AppContent = memo(({ isSignedIn, user }) => {
                             chartType="area"
                             scaleMode="linear"
                             valueFormatter={(value) => value.toLocaleString()}
+                            showSP500Overlay={true}
                             explanation="The monthly M2 money supply in the U.S. measures a broader definition of the money supply compared to M1, encompassing all components of M1 plus less liquid assets such as savings deposits, small-denomination time deposits, and retail money market mutual funds (MMFs). Reported by the Federal Reserve through the H.6 Money Stock Measures, M2 reflects money available for spending and short-term saving, serving as a key indicator of monetary policy, economic liquidity, and potential inflationary pressures. Data is presented in billions of dollars, seasonally adjusted, and updated monthly via sources like the Federal Reserve’s FRED database."
                           />
                         </ProtectedRoute>
@@ -806,6 +818,7 @@ const AppContent = memo(({ isSignedIn, user }) => {
                             chartType="area"
                             scaleMode="linear"
                             valueFormatter={(value) => value.toLocaleString()}
+                            showSP500Overlay={true}
                             explanation="The monthly University of Michigan Consumer Sentiment Index (UMCSI) measures U.S. consumer confidence based on their perceptions of current economic conditions and expectations for the future. Compiled by the University of Michigan through its Surveys of Consumers, the UMCSI is a leading indicator of consumer spending, which drives ~70% of U.S. economic activity. The index is reported monthly, with preliminary and final readings, and is expressed relative to a base period (1966 = 100)."
                           />
                         </ProtectedRoute>
@@ -821,6 +834,7 @@ const AppContent = memo(({ isSignedIn, user }) => {
                             chartType="area"
                             scaleMode="linear"
                             valueFormatter={(value) => value.toFixed(2)}
+                            showSP500Overlay={true}
                             explanation="The daily CBOE Volatility Index (VIX) measures the market's expectation of 30-day forward-looking volatility in the S&P 500 Index, often referred to as the 'fear gauge.' Calculated by the Chicago Board Options Exchange (CBOE), the VIX is derived from the prices of S&P 500 index options and reflects investor sentiment about near-term market uncertainty. It is reported daily in real-time during market hours, expressed as an annualized percentage."
                           />
                         </ProtectedRoute>
@@ -836,6 +850,7 @@ const AppContent = memo(({ isSignedIn, user }) => {
                             chartType="line"
                             scaleMode="logarithmic"
                             valueFormatter={(value) => `${value.toFixed(2)}%`}
+                            showSP500Overlay={true}
                             explanation="The daily TED Spread measures the difference between the 3-Month London Interbank Offered Rate (LIBOR) and the 3-Month U.S. Treasury Bill (T-Bill) rate. It serves as an indicator of perceived credit risk and liquidity in the interbank lending market. The spread is expressed in percentage points (or basis points, where 1% = 100 bps) and is calculated daily using data from financial markets, typically reported via platforms like the Federal Reserve’s FRED database or Bloomberg."
                           />
                         </ProtectedRoute>
@@ -851,6 +866,7 @@ const AppContent = memo(({ isSignedIn, user }) => {
                             chartType="line"
                             scaleMode="logarithmic"
                             valueFormatter={(value) => value.toFixed(2)}
+                            showSP500Overlay={true}
                             explanation="This chart shows the daily exchange rate of Japanese Yen to US Dollar."
                           />
                         </ProtectedRoute>
@@ -866,6 +882,7 @@ const AppContent = memo(({ isSignedIn, user }) => {
                             chartType="line"
                             scaleMode="logarithmic"
                             valueFormatter={(value) => value.toFixed(4)}
+                            showSP500Overlay={true}
                             explanation="This chart shows the daily exchange rate of British Pound to US Dollar."
                           />
                         </ProtectedRoute>
@@ -881,6 +898,7 @@ const AppContent = memo(({ isSignedIn, user }) => {
                             chartType="line"
                             scaleMode="logarithmic"
                             valueFormatter={(value) => value.toFixed(4)}
+                            showSP500Overlay={true}
                             explanation="This chart shows the daily exchange rate of Canadian Dollar to US Dollar."
                           />
                         </ProtectedRoute>
@@ -896,6 +914,7 @@ const AppContent = memo(({ isSignedIn, user }) => {
                             chartType="area"
                             scaleMode="linear"
                             valueFormatter={(value) => value.toFixed(2)}
+                            showSP500Overlay={true}
                             explanation="The monthly Chicago Fed National Activity Index (CFNAI) is a weighted average of 85 economic indicators that provides a single, comprehensive measure of U.S. economic activity. Produced by the Federal Reserve Bank of Chicago, the CFNAI tracks the economy’s overall health, with values above zero indicating above-average growth and values below zero signaling below-average growth. It is reported monthly, typically three weeks after the month ends, and is a key tool for assessing economic trends and recession risks."
                           />
                         </ProtectedRoute>
@@ -911,6 +930,7 @@ const AppContent = memo(({ isSignedIn, user }) => {
                             chartType="area"
                             scaleMode="linear"
                             valueFormatter={(value) => value.toLocaleString()}
+                            showSP500Overlay={true}
                             explanation="The daily U.S. Economic Policy Uncertainty (EPU) Index measures uncertainty related to economic policy based on newspaper coverage, tax code provisions, and forecaster disagreement. Developed by economists Scott R. Baker, Nicholas Bloom, and Steven J. Davis, the EPU Index quantifies how uncertainty about fiscal, monetary, regulatory, or trade policies affects economic decision-making. It is reported daily, expressed as an index with a long-term average of 100, and is available via sources like policyuncertainty.com or FRED."
                           />
                         </ProtectedRoute>
@@ -926,6 +946,7 @@ const AppContent = memo(({ isSignedIn, user }) => {
                             chartType="area"
                             scaleMode="linear"
                             valueFormatter={(value) => value.toLocaleString()}
+                            showSP500Overlay={true}
                             explanation="The monthly U.S. Housing Starts measures the number of new residential construction projects (privately owned housing units) that began during a given month, expressed as a seasonally adjusted annualized rate (SAAR) in thousands of units. Reported by the U.S. Census Bureau and the Department of Housing and Urban Development (HUD) as part of the New Residential Construction report, housing starts are a leading indicator of economic strength, reflecting activity in the housing sector, consumer confidence, and broader economic conditions. Data is released around the 17th of each month for the prior month and is available via sources like FRED, Census.gov, or tradingeconomics.com."
                           />
                         </ProtectedRoute>
@@ -941,6 +962,7 @@ const AppContent = memo(({ isSignedIn, user }) => {
                             chartType="area"
                             scaleMode="linear"
                             valueFormatter={(value) => value.toLocaleString()}
+                            showSP500Overlay={true}
                             explanation="The monthly S&P/Case-Shiller U.S. National Home Price Index measures changes in the value of single-family homes across the U.S., adjusted for inflation and seasonal variations. Produced by S&P Dow Jones Indices and CoreLogic, the index uses a repeat-sales methodology, tracking price changes of the same properties over time to provide a consistent measure of home price trends. Reported monthly with a two-month lag (e.g., March 2025 data released in May 2025), it is expressed relative to a base value (January 2000 = 100) and is a key indicator of housing market health, consumer wealth, and economic conditions."
                           />
                         </ProtectedRoute>
@@ -956,6 +978,7 @@ const AppContent = memo(({ isSignedIn, user }) => {
                             chartType="area"
                             scaleMode="linear"
                             valueFormatter={(value) => value.toLocaleString()}
+                            showSP500Overlay={true}
                             explanation="The daily Nikkei 225 Index tracks the performance of 225 major, highly liquid, publicly owned companies listed on the Prime Market of the Tokyo Stock Exchange (TSE). Calculated by the Nihon Keizai Shimbun (Nikkei) newspaper, the Nikkei 225 is a price-weighted index, denominated in Japanese Yen (JPY), and serves as a leading indicator of the Japanese equity market and broader economic conditions. The index is updated every five seconds during trading hours (9:00 AM–3:00 PM JST, with a lunch break from 11:30 AM–12:30 PM) and is reported daily via platforms like Yahoo Finance, FRED, or TradingView."
                           />
                         </ProtectedRoute>
@@ -971,6 +994,7 @@ const AppContent = memo(({ isSignedIn, user }) => {
                             chartType="line"
                             scaleMode="linear"
                             valueFormatter={(value) => `${value.toFixed(2)}%`}
+                            showSP500Overlay={true}
                             explanation="This chart shows the monthly German 10-Year Government Bond Yield."
                           />
                         </ProtectedRoute>
@@ -985,6 +1009,7 @@ const AppContent = memo(({ isSignedIn, user }) => {
                             seriesId="UMCSENT"
                             chartType="area"
                             valueFormatter={(value) => value.toLocaleString()}
+                            showSP500Overlay={true}
                             explanation="Create your own indicator by choosing your own data series' to compare."
                           />
                         </ProtectedRoute>

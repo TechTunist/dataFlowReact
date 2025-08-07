@@ -26,7 +26,6 @@ const FredSeriesChart = ({
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
   const isMobile = useIsMobile();
   const { fredSeriesData, fetchFredSeriesData } = useContext(DataContext);
-
   const initialScaleMode = scaleMode === 'logarithmic' ? 1 : 0;
   const [scaleModeState, setScaleModeState] = useState(initialScaleMode);
   const [tooltipData, setTooltipData] = useState(null);
@@ -36,7 +35,6 @@ const FredSeriesChart = ({
   const [zoomRange, setZoomRange] = useState(null);
   const [isLegendVisible, setIsLegendVisible] = useState(!isMobile); // Default: hidden on mobile, shown on desktop
   const currentYear = useMemo(() => new Date().getFullYear().toString(), []);
-
   const primarySeriesData = fredSeriesData[seriesId] || [];
   const sp500SeriesData = fredSeriesData['SP500'] || [];
 
@@ -65,7 +63,6 @@ const FredSeriesChart = ({
   // Initialize chart
   useEffect(() => {
     if (!chartContainerRef.current) return;
-
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
       height: chartContainerRef.current.clientHeight,
@@ -93,7 +90,6 @@ const FredSeriesChart = ({
       },
     });
     chartRef.current = chart;
-
     const resizeChart = () => {
       if (chartRef.current && chartContainerRef.current) {
         chartRef.current.applyOptions({
@@ -103,7 +99,6 @@ const FredSeriesChart = ({
       }
     };
     window.addEventListener('resize', resizeChart);
-
     return () => {
       if (chartRef.current) {
         chartRef.current.remove();
@@ -115,21 +110,17 @@ const FredSeriesChart = ({
   // Update series
   useEffect(() => {
     if (!chartRef.current || primarySeriesData.length === 0) return;
-
     const isNewSeries = seriesId !== prevSeriesIdRef.current;
     prevSeriesIdRef.current = seriesId;
-
     // Clean and validate primary series data
     const cleanedPrimaryData = primarySeriesData
       .filter((item) => item.value != null && !isNaN(item.value) && (scaleModeState === 1 ? item.value > 0 : true))
       .sort((a, b) => new Date(a.time) - new Date(b.time));
-
     if (cleanedPrimaryData.length === 0) {
       console.warn(`No valid data points for series ${seriesId}`);
       setError(`No valid data available for ${seriesId}.`);
       return;
     }
-
     // Remove existing primary series
     if (primarySeriesRef.current) {
       try {
@@ -139,7 +130,6 @@ const FredSeriesChart = ({
       }
       primarySeriesRef.current = null;
     }
-
     // Colors for primary series
     const { topColor, bottomColor, lineColor, color } = theme.palette.mode === 'dark'
       ? {
@@ -154,7 +144,6 @@ const FredSeriesChart = ({
           lineColor: 'rgba(255, 140, 0, 0.8)',
           color: 'rgba(255, 140, 0, 0.8)',
         };
-
     // Create primary series
     let primarySeries;
     if (chartType === 'area') {
@@ -203,15 +192,14 @@ const FredSeriesChart = ({
 
     // Handle S&P 500 overlay
     if (showSP500Overlay && sp500SeriesData.length > 0) {
+      const minPrimaryTime = new Date(cleanedPrimaryData[0].time).getTime();
       const cleanedSP500Data = sp500SeriesData
-        .filter((item) => item.value != null && !isNaN(item.value) && item.value > 0) // Log scale requires positive values
+        .filter((item) => new Date(item.time).getTime() >= minPrimaryTime && item.value != null && !isNaN(item.value) && item.value > 0) // Log scale requires positive values, and start from primary min time
         .sort((a, b) => new Date(a.time) - new Date(b.time));
-
       if (cleanedSP500Data.length === 0) {
         console.warn('No valid data points for S&P 500');
         return;
       }
-
       // Remove existing S&P 500 series
       if (sp500SeriesRef.current) {
         try {
@@ -221,10 +209,8 @@ const FredSeriesChart = ({
         }
         sp500SeriesRef.current = null;
       }
-
       // Colors for S&P 500
-      const sp500Color = theme.palette.mode === 'dark' ? 'rgba(255, 99, 132, 1)' : 'rgba(0, 128, 0, 0.8)';
-
+      const sp500Color = theme.palette.mode === 'dark' ? 'rgb(223, 175, 185)' : 'rgba(112, 153, 112, 0.8)';
       // Create S&P 500 series as a line
       const sp500Series = chartRef.current.addLineSeries({
         priceScaleId: 'left',
@@ -238,7 +224,6 @@ const FredSeriesChart = ({
       });
       sp500SeriesRef.current = sp500Series;
       sp500Series.setData(cleanedSP500Data);
-
       // Update left price scale to logarithmic
       chartRef.current.priceScale('left').applyOptions({
         mode: 1, // Always logarithmic for S&P 500
@@ -267,10 +252,8 @@ const FredSeriesChart = ({
         setTooltipData(null);
         return;
       }
-
-      const primaryData = param.seriesData.get(primarySeries);
+      const primaryData = param.seriesData.get(primarySeriesRef.current);
       const sp500Data = showSP500Overlay ? param.seriesData.get(sp500SeriesRef.current) : null;
-
       clearTimeout(tooltipTimeout);
       tooltipTimeout = setTimeout(() => {
         setTooltipData({
@@ -344,7 +327,7 @@ const FredSeriesChart = ({
 
   // Define colors for use in chart, tooltip, and legend
   const primaryColor = theme.palette.mode === 'dark' ? 'rgba(38, 198, 218, 1)' : 'rgba(255, 140, 0, 0.8)';
-  const sp500Color = theme.palette.mode === 'dark' ? 'rgba(255, 99, 132, 1)' : 'rgba(0, 128, 0, 0.8)';
+  const sp500Color = theme.palette.mode === 'dark' ? 'rgb(223, 175, 185)' : 'rgba(112, 153, 112, 0.8)';
 
   return (
     <div style={{ height: '100%', position: 'relative' }}>

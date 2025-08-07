@@ -31,7 +31,6 @@ const AltcoinPrice = ({ isDashboard = false }) => {
   const theme = useTheme();
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
   const isMobile = useIsMobile();
-
   const {
     altcoinData,
     fetchAltcoinData,
@@ -211,13 +210,11 @@ const AltcoinPrice = ({ isDashboard = false }) => {
       if (activeIndicators.includes('fed-balance') && fedBalanceData.length === 0) {
         promises.push(fetchFedBalanceData());
       }
-
       if (promises.length > 0) {
         setIsLoading(true);
         await Promise.all(promises);
       }
     };
-
     fetchData();
   }, [selectedCoin, altcoinData, btcData, denominator, activeIndicators, fedBalanceData, fetchAltcoinData, fetchBtcData, fetchFedBalanceData]);
 
@@ -227,7 +224,6 @@ const AltcoinPrice = ({ isDashboard = false }) => {
     const isAltcoinDataLoaded = altData.length > 0;
     const isBtcDataLoaded = denominator === 'BTC' ? btcData.length > 0 : true;
     const isFedBalanceDataLoaded = activeIndicators.includes('fed-balance') ? fedBalanceData.length > 0 : true;
-
     if (isAltcoinDataLoaded && isBtcDataLoaded && isFedBalanceDataLoaded) {
       let newChartData = [];
       if (denominator === 'USD') {
@@ -269,10 +265,8 @@ const AltcoinPrice = ({ isDashboard = false }) => {
         'rsi-scale': { mode: 0, borderVisible: false, scaleMargins: { top: 0.1, bottom: 0.1 }, position: 'right', width: 50 },
       },
     });
-
     const priceSeries = chart.addAreaSeries({ priceScaleId: 'right', lineWidth: 2 });
     priceSeriesRef.current = priceSeries;
-
     const fedBalanceSeries = chart.addLineSeries({
       priceScaleId: 'left',
       color: indicators['fed-balance'].color,
@@ -281,7 +275,6 @@ const AltcoinPrice = ({ isDashboard = false }) => {
       visible: false,
     });
     fedBalanceSeriesRef.current = fedBalanceSeries;
-
     const mayerMultipleSeries = chart.addLineSeries({
       priceScaleId: 'mayer-multiple-scale',
       color: indicators['mayer-multiple'].color,
@@ -290,7 +283,6 @@ const AltcoinPrice = ({ isDashboard = false }) => {
       visible: false,
     });
     mayerMultipleSeriesRef.current = mayerMultipleSeries;
-
     const rsiSeries = chart.addLineSeries({
       priceScaleId: 'rsi-scale',
       color: 'orange',
@@ -299,7 +291,6 @@ const AltcoinPrice = ({ isDashboard = false }) => {
       visible: false,
     });
     rsiSeriesRef.current = rsiSeries;
-
     chart.subscribeCrosshairMove(param => {
       if (!param.point || !param.time || param.point.x < 0 || param.point.x > chartContainerRef.current.clientWidth || param.point.y < 0 || param.point.y > chartContainerRef.current.clientHeight) {
         setTooltipData(null);
@@ -309,22 +300,18 @@ const AltcoinPrice = ({ isDashboard = false }) => {
         const mayerMultipleData = mayerMultipleSeriesRef.current.data();
         const rsiSeriesData = rsiSeriesRef.current.data();
         const currentTime = new Date(param.time).getTime();
-
         const nearestFedData = fedSeriesData.reduce((prev, curr) => {
           const currTime = new Date(curr.time).getTime();
           return currTime <= currentTime && (!prev || currTime > new Date(prev.time).getTime()) ? curr : prev;
         }, null);
-
         const nearestMayerData = mayerMultipleData.reduce((prev, curr) => {
           const currTime = new Date(curr.time).getTime();
           return currTime <= currentTime && (!prev || currTime > new Date(prev.time).getTime()) ? curr : prev;
         }, null);
-
         const nearestRsiData = rsiSeriesData.reduce((prev, curr) => {
           const currTime = new Date(curr.time).getTime();
           return currTime <= currentTime && (!prev || currTime > new Date(prev.time).getTime()) ? curr : prev;
         }, null);
-
         setTooltipData({
           date: param.time,
           price: priceData?.value,
@@ -336,10 +323,8 @@ const AltcoinPrice = ({ isDashboard = false }) => {
         });
       }
     });
-
     // Restore double-click interactivity
     chart.subscribeDblClick(() => setInteractivity(prev => !prev));
-
     const resizeChart = () => {
       chart.applyOptions({
         width: chartContainerRef.current.clientWidth,
@@ -348,9 +333,7 @@ const AltcoinPrice = ({ isDashboard = false }) => {
       chart.timeScale().fitContent();
     };
     window.addEventListener('resize', resizeChart);
-
     chartRef.current = chart;
-
     return () => {
       rsiPriceLinesRef.current.forEach(priceLine => {
         try {
@@ -466,14 +449,12 @@ const AltcoinPrice = ({ isDashboard = false }) => {
   // Update SMA indicators
   useEffect(() => {
     if (!chartRef.current || chartData.length === 0) return;
-
     Object.keys(smaSeriesRefs).forEach(key => {
       if (smaSeriesRefs[key]) {
         chartRef.current.removeSeries(smaSeriesRefs[key]);
         delete smaSeriesRefs[key];
       }
     });
-
     activeSMAs.forEach(key => {
       const indicator = smaIndicators[key];
       if (indicator.type === 'sma') {
@@ -496,7 +477,6 @@ const AltcoinPrice = ({ isDashboard = false }) => {
         smaSeriesRefs[`${key}-sma`] = smaSeries;
         const smaData = calculateMovingAverage(chartData, indicator.sma.period);
         smaSeries.setData(smaData);
-
         const emaSeries = chartRef.current.addLineSeries({
           color: indicator.ema.color,
           lineWidth: 2,
@@ -807,7 +787,6 @@ const AltcoinPrice = ({ isDashboard = false }) => {
           width: '100%',
           border: '2px solid #a9a9a9',
         }}
-        onDoubleClick={() => setInteractivity(!isInteractive)} // Restored DOM-based double-click
       >
         <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
         {isLoading && (
