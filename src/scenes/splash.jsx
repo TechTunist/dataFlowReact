@@ -123,18 +123,20 @@ const SplashPage = () => {
             variant="contained"
             size="large"
             sx={{
-              backgroundColor: colors.greenAccent[500],
-              color: colors.grey[900],
-              fontSize: '1.2rem',
-              fontWeight: 'bold',
-              px: 6,
-              py: 2,
-              borderRadius: '50px',
-              '&:hover': {
-                backgroundColor: '#D500F9',
-              },
+            backgroundColor: colors.greenAccent[500],
+            color: colors.grey[900],
+            fontSize: '1.2rem',
+            fontWeight: 'bold',
+            px: 6,
+            py: 2,
+            borderRadius: '50px',
+            '&:hover': {
+            backgroundColor: '#D500F9',
+            color: colors.greenAccent[500],
+            },
             }}
-          >
+            >
+
             Sign up now for free access
           </Button>
           <Typography
@@ -145,6 +147,30 @@ const SplashPage = () => {
           </Typography>
         </Container>
       </Box>
+
+      {/* Simulation Section */}
+      <Container maxWidth="lg" sx={{ py: 10, textAlign: 'center' }}>
+        <Typography variant="h2" sx={{ color: colors.grey[100], fontWeight: 'bold', mb: 4, fontSize: { xs: '2.5rem', md: '3rem' } }}>
+        Take the emotion out of investing with our Strategy Simulation
+        </Typography>
+        <Typography variant="body1" sx={{ color: colors.grey[300], maxWidth: '800px', mx: 'auto', mb: 6, fontSize: '1.2rem' }}>
+          Backtest different investment strategies based around risk metrics
+        </Typography>
+        <Grid container spacing={6} justifyContent="center">
+          <Grid item xs={12} md={4}>
+            <Card sx={{ backgroundColor: colors.primary[800], p: 3, textAlign: 'centre' }}>
+              <Typography variant="h5" sx={{ color: colors.greenAccent[500], mb: 2 }}>HODL Strategy</Typography>
+              <Typography>Pick a historical date to invest a lump sum and see what it would be worth at current prices.</Typography>
+            </Card>
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <Card sx={{ backgroundColor: colors.primary[800], p: 3, textAlign: 'centre' }}>
+              <Typography variant="h5" sx={{ color: colors.greenAccent[500], mb: 2 }}>Dollar Cost Average Strategy</Typography>
+              <Typography>Choose an amount and a frequency to invest under certain risk levels, then set the 'take-profit' when over certain risk levels.</Typography>
+            </Card>
+          </Grid>
+        </Grid>
+      </Container>
 
       {/* Trust Bar / Logos Section */}
       <Box sx={{ width: '100%', py: 4, backgroundColor: colors.primary[800], textAlign: 'center' }}>
@@ -164,20 +190,20 @@ const SplashPage = () => {
       {/* Problem-Solution Section */}
       <Container maxWidth="lg" sx={{ py: 10, textAlign: 'center' }}>
         <Typography variant="h2" sx={{ color: colors.grey[100], fontWeight: 'bold', mb: 4, fontSize: { xs: '2.5rem', md: '3rem' } }}>
-          Tired of Losing Money in Crypto?
+          Knowledge is Power
         </Typography>
         <Typography variant="body1" sx={{ color: colors.grey[300], maxWidth: '800px', mx: 'auto', mb: 6, fontSize: '1.2rem' }}>
           The crypto market is confusing and volatile. Without the right tools, beginners get overwhelmed and intermediates miss opportunities. Cryptological changes that with easy-to-understand analytics and insights.
         </Typography>
         <Grid container spacing={6} justifyContent="center">
           <Grid item xs={12} md={4}>
-            <Card sx={{ backgroundColor: colors.primary[800], p: 3, textAlign: 'left' }}>
+            <Card sx={{ backgroundColor: colors.primary[800], p: 3, textAlign: 'centre' }}>
               <Typography variant="h5" sx={{ color: colors.greenAccent[500], mb: 2 }}>Problem: Market Overwhelm</Typography>
               <Typography>Too much data, not enough clarity.</Typography>
             </Card>
           </Grid>
           <Grid item xs={12} md={4}>
-            <Card sx={{ backgroundColor: colors.primary[800], p: 3, textAlign: 'left' }}>
+            <Card sx={{ backgroundColor: colors.primary[800], p: 3, textAlign: 'centre' }}>
               <Typography variant="h5" sx={{ color: colors.greenAccent[500], mb: 2 }}>Solution: Simplified Insights</Typography>
               <Typography>Get curated metrics that matter.</Typography>
             </Card>
@@ -189,12 +215,12 @@ const SplashPage = () => {
       <Box sx={{ width: '100%', py: 10, backgroundColor: colors.primary[800] }}>
         <Container maxWidth="lg" sx={{ textAlign: 'center' }}>
           <Typography variant="h2" sx={{ color: colors.grey[100], fontWeight: 'bold', mb: 6, fontSize: { xs: '2.5rem', md: '3rem' } }}>
-            Powerful Features to Supercharge Your Investments
+            Powerful Features to Supercharge Your Understanding
           </Typography>
           <Grid container spacing={4} justifyContent="center">
             <Grid item xs={12} md={4}>
               <Card sx={{ backgroundColor: colors.primary[900], p: 4, height: '100%' }}>
-                <Typography variant="h5" sx={{ color: colors.grey[100], mb: 2 }}>Real-Time Risk Metrics</Typography>
+                <Typography variant="h5" sx={{ color: colors.grey[100], mb: 2 }}>Risk Metrics</Typography>
                 <Typography sx={{ color: colors.grey[300] }}>Assess market risks instantly to avoid costly mistakes.</Typography>
               </Card>
             </Grid>
