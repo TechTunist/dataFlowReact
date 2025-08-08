@@ -67,15 +67,43 @@ const SplashPage = () => {
         />
         <Container maxWidth="md" sx={{ position: 'relative', zIndex: 2, textAlign: 'center' }}>
           <Typography
+            component="span"
             variant="h1"
+            sx={{
+            color: colors.grey[100],
+            fontWeight: 'bold',
+            fontSize: { xs: '3rem', sm: '4rem', md: '5rem' },
+            mb: 2,
+            }}
+            >
+
+            Crypto
+          </Typography>
+          <Typography
+            component="span"
+            variant="h1"
+            sx={{
+            color: colors.greenAccent[500],
+            fontWeight: 'bold',
+            fontSize: { xs: '3rem', sm: '4rem', md: '5rem' },
+            mb: 2,
+            }}
+            >
+
+            Logical
+          </Typography>
+
+          <Typography
+            variant="h3"
             sx={{
               color: colors.grey[100],
               fontWeight: 'bold',
-              fontSize: { xs: '3rem', sm: '4rem', md: '5rem' },
-              mb: 2,
+              fontSize: { xs: '1.5rem', sm: '2.5rem', md: '3.5rem' },
+              marginBottom: '0.5rem',
+              marginTop: '0.5rem'
             }}
           >
-            Demystify Crypto Chaos: Invest Smarter, Not Harder
+            Decrypt The Confusing
           </Typography>
           <Typography
             variant="h4"
@@ -87,7 +115,7 @@ const SplashPage = () => {
               mx: 'auto',
             }}
           >
-            Unlock powerful analytics, risk metrics, and market insights to make confident decisions in the volatile crypto world – designed for beginners and intermediates.
+            Unlock powerful analytics, risk metrics, and market insights, whether you're a beginner or experienced investor. 
           </Typography>
           <Button
             component={Link}
@@ -107,7 +135,7 @@ const SplashPage = () => {
               },
             }}
           >
-            Sign up now for over 50% off
+            Sign up now for free access
           </Button>
           <Typography
             variant="body2"
@@ -122,14 +150,13 @@ const SplashPage = () => {
       <Box sx={{ width: '100%', py: 4, backgroundColor: colors.primary[800], textAlign: 'center' }}>
         <Container maxWidth="lg">
           <Typography variant="body1" sx={{ color: colors.grey[300], mb: 2 }}>
-            Trusted by 10,000+ crypto enthusiasts worldwide
+            Data on tried and tested assets like Bitcoin, as well as more speculative assets
           </Typography>
           <Grid container spacing={4} justifyContent="center">
             {/* Placeholder logos */}
-            <Grid item><img src="/assets/placeholder-logo1.png" alt="Logo 1" height="40" /></Grid>
-            <Grid item><img src="/assets/placeholder-logo2.png" alt="Logo 2" height="40" /></Grid>
-            <Grid item><img src="/assets/placeholder-logo3.png" alt="Logo 3" height="40" /></Grid>
-            <Grid item><img src="/assets/placeholder-logo4.png" alt="Logo 4" height="40" /></Grid>
+            <Grid item><img src="/assets/bitcoin.jpg" alt="Logo 1" height="40" /></Grid>
+            <Grid item><img src="/assets/ethereum.jpg" alt="Logo 2" height="40" /></Grid>
+            <Grid item><img src="/assets/dollar.jpg" alt="Logo 3" height="40" /></Grid>
           </Grid>
         </Container>
       </Box>
@@ -455,7 +482,7 @@ const SplashPage = () => {
               },
             }}
           >
-            Claim Your Free Trial
+            Start For Free
           </Button>
           <Typography sx={{ color: colors.primary[800], mt: 2 }}>Limited spots – Act now!</Typography>
         </Container>
