@@ -1,3 +1,4 @@
+
 import React, { useRef, useEffect, useState, useMemo, useCallback, useContext } from 'react';
 import { createChart } from 'lightweight-charts';
 import '../styling/bitcoinChart.css';
@@ -741,30 +742,44 @@ const WorkbenchChart = ({
     return new Date(timeField).getTime();
   };
   const allActive = [...activeMacroSeries, ...activeCryptoSeries, ...activeIndicatorSeries];
+  const hasDerived = derivedSeriesDefs.length > 0;
+  const numSelectors = hasDerived ? 4 : 3;
+  const minWidthNeeded = numSelectors * 250 + (numSelectors - 1) * 20;
+  let breakpointForRow;
+  if (minWidthNeeded <= 600) breakpointForRow = 'sm';
+  else if (minWidthNeeded <= 900) breakpointForRow = 'md';
+  else if (minWidthNeeded <= 1200) breakpointForRow = 'lg';
+  else breakpointForRow = 'xl';
   return (
     <div style={{ height: '100%' }}>
       {!isDashboard && (
         <Box
           sx={{
             display: 'flex',
-            flexDirection: { xs: 'column', sm: 'row' },
-            alignItems: isMobile ? 'stretch' : 'center',
+            flexDirection: { xs: 'column', [breakpointForRow]: 'row' },
+            alignItems: { xs: 'stretch', [breakpointForRow]: 'center' },
             justifyContent: 'center',
             gap: '20px',
             marginBottom: '30px',
             marginTop: '50px',
             width: '100%',
-            maxWidth: isMobile ? 'none' : '600px',
             mx: 'auto',
-            }}
+          }}
         >
           <Autocomplete
             multiple
+            disableCloseOnSelect={true}
             id="macro-series"
             options={Object.entries(availableMacroSeries).map(([id, { label }]) => ({ id, label }))}
             getOptionLabel={(option) => option.label}
             value={activeMacroSeries.map(id => ({ id, label: availableMacroSeries[id].label }))}
             onChange={(event, newValue) => handleMacroSeriesChange({ target: { value: newValue.map(v => v.id) } })}
+            isOptionEqualToValue={(option, value) => option.id === value.id}
+            renderTags={(tagValue) => (
+              <Box sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {tagValue.map((option) => option.label).join(', ')}
+              </Box>
+            )}
             renderOption={(props, option, { selected }) => (
               <li {...props} key={option.id}>
                 <Checkbox
@@ -807,8 +822,8 @@ const WorkbenchChart = ({
                 {...params}
                 label="Macro Data"
                 sx={{
-                  minWidth: '100px',
-                  width: { xs: '100%', sm: '250px' },
+                  minWidth: '250px',
+                  width: { xs: '100%', [breakpointForRow]: '250px' },
                   '& .MuiInputLabel-root': { color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900] },
                   '& .MuiInputLabel-root.Mui-focused': { color: colors.greenAccent[500] },
                   '& .MuiOutlinedInput-root': {
@@ -824,11 +839,18 @@ const WorkbenchChart = ({
           />
           <Autocomplete
             multiple
+            disableCloseOnSelect={true}
             id="crypto-series"
             options={Object.entries(availableCryptoSeries).map(([id, { label }]) => ({ id, label }))}
             getOptionLabel={(option) => option.label}
             value={activeCryptoSeries.map(id => ({ id, label: availableCryptoSeries[id].label }))}
             onChange={(event, newValue) => handleCryptoSeriesChange({ target: { value: newValue.map(v => v.id) } })}
+            isOptionEqualToValue={(option, value) => option.id === value.id}
+            renderTags={(tagValue) => (
+              <Box sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {tagValue.map((option) => option.label).join(', ')}
+              </Box>
+            )}
             renderOption={(props, option, { selected }) => (
               <li {...props} key={option.id}>
                 <Checkbox
@@ -871,8 +893,8 @@ const WorkbenchChart = ({
                 {...params}
                 label="Crypto Series"
                 sx={{
-                  minWidth: '100px',
-                  width: { xs: '100%', sm: '250px' },
+                  minWidth: '250px',
+                  width: { xs: '100%', [breakpointForRow]: '250px' },
                   '& .MuiInputLabel-root': { color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900] },
                   '& .MuiInputLabel-root.Mui-focused': { color: colors.greenAccent[500] },
                   '& .MuiOutlinedInput-root': {
@@ -888,11 +910,18 @@ const WorkbenchChart = ({
           />
           <Autocomplete
             multiple
+            disableCloseOnSelect={true}
             id="indicator-series"
             options={Object.entries(availableIndicatorSeries).map(([id, { label }]) => ({ id, label }))}
             getOptionLabel={(option) => option.label}
             value={activeIndicatorSeries.map(id => ({ id, label: availableIndicatorSeries[id].label }))}
             onChange={(event, newValue) => handleIndicatorSeriesChange({ target: { value: newValue.map(v => v.id) } })}
+            isOptionEqualToValue={(option, value) => option.id === value.id}
+            renderTags={(tagValue) => (
+              <Box sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {tagValue.map((option) => option.label).join(', ')}
+              </Box>
+            )}
             renderOption={(props, option, { selected }) => (
               <li {...props} key={option.id}>
                 <Checkbox
@@ -935,8 +964,8 @@ const WorkbenchChart = ({
                 {...params}
                 label="Indicators"
                 sx={{
-                  minWidth: '100px',
-                  width: { xs: '100%', sm: '250px' },
+                  minWidth: '250px',
+                  width: { xs: '100%', [breakpointForRow]: '250px' },
                   '& .MuiInputLabel-root': { color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900] },
                   '& .MuiInputLabel-root.Mui-focused': { color: colors.greenAccent[500] },
                   '& .MuiOutlinedInput-root': {
@@ -950,88 +979,81 @@ const WorkbenchChart = ({
               />
             )}
           />
+          {hasDerived && (
+            <Autocomplete
+              multiple
+              disableCloseOnSelect={true}
+              id="derived-series"
+              options={derivedSeriesDefs.map(d => ({ id: d.id, label: d.label }))}
+              getOptionLabel={(option) => option.label}
+              value={activeDerivedSeries.map(id => ({ id, label: derivedSeriesDefs.find(d => d.id === id).label }))}
+              onChange={(event, newValue) => handleDerivedSeriesChange({ target: { value: newValue.map(v => v.id) } })}
+              isOptionEqualToValue={(option, value) => option.id === value.id}
+              renderTags={(tagValue) => (
+                <Box sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {tagValue.map((option) => option.label).join(', ')}
+                </Box>
+              )}
+              renderOption={(props, option, { selected }) => (
+                <li {...props} key={option.id}>
+                  <Checkbox
+                    style={{ marginRight: 8 }}
+                    checked={selected}
+                    sx={{ color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900], '&.Mui-checked': { color: colors.greenAccent[500] } }}
+                  />
+                  {option.label}
+                  <Box sx={{ ml: 'auto' }}>
+                    <Button
+                      onClick={(e) => handleEditClick(e, option.id, 'derived')}
+                      disabled={!activeDerivedSeries.includes(option.id)}
+                      sx={{
+                        textTransform: 'none',
+                        fontSize: '12px',
+                        color: activeDerivedSeries.includes(option.id) ? (theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900]) : (theme.palette.mode === 'dark' ? colors.grey[500] : colors.grey[600]),
+                        border: `1px solid ${activeDerivedSeries.includes(option.id) ? (theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[700]) : (theme.palette.mode === 'dark' ? colors.grey[500] : colors.grey[600])}`,
+                        borderRadius: '4px',
+                        padding: '2px 8px',
+                        minWidth: '50px',
+                        backgroundColor: editClicked[option.id] ? '#4cceac' : 'transparent',
+                        ...(editClicked[option.id] && { color: 'black', borderColor: 'violet' }),
+                        '&:hover': {
+                          borderColor: activeDerivedSeries.includes(option.id) ? colors.greenAccent[500] : (theme.palette.mode === 'dark' ? colors.grey[500] : colors.grey[600]),
+                          backgroundColor: activeDerivedSeries.includes(option.id) && !editClicked[option.id] ? (theme.palette.mode === 'dark' ? colors.primary[600] : colors.primary[300]) : 'transparent',
+                        },
+                        '&.Mui-disabled': {
+                          pointerEvents: 'none',
+                          opacity: 0.6,
+                        },
+                      }}
+                    >
+                      Edit
+                    </Button>
+                  </Box>
+                </li>
+              )}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Derived Series"
+                  sx={{
+                    minWidth: '250px',
+                    width: { xs: '100%', [breakpointForRow]: '250px' },
+                    '& .MuiInputLabel-root': { color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900] },
+                    '& .MuiInputLabel-root.Mui-focused': { color: colors.greenAccent[500] },
+                    '& .MuiOutlinedInput-root': {
+                      color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900],
+                      backgroundColor: theme.palette.mode === 'dark' ? colors.primary[500] : colors.primary[200],
+                      '& fieldset': { borderColor: theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[700] },
+                      '&:hover fieldset': { borderColor: colors.greenAccent[500] },
+                      '&.Mui-focused fieldset': { borderColor: colors.greenAccent[500] },
+                    },
+                  }}
+                />
+              )}
+            />
+          )}
         </Box>
       )}
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: { xs: 'column', sm: 'row' },
-          alignItems: 'stretch',
-          gap: '20px',
-          width: '100%',
-          maxWidth: { xs: '100%', sm: '600px' },
-          mx: 'auto',
-          mt: 2,
-          mb: 2
-        }}
-      >
-        {derivedSeriesDefs.length > 0 && (
-          <Autocomplete
-            multiple
-            id="derived-series"
-            options={derivedSeriesDefs.map(d => ({ id: d.id, label: d.label }))}
-            getOptionLabel={(option) => option.label}
-            value={activeDerivedSeries.map(id => ({ id, label: derivedSeriesDefs.find(d => d.id === id).label }))}
-            onChange={(event, newValue) => handleDerivedSeriesChange({ target: { value: newValue.map(v => v.id) } })}
-            renderOption={(props, option, { selected }) => (
-              <li {...props} key={option.id}>
-                <Checkbox
-                  style={{ marginRight: 8 }}
-                  checked={selected}
-                  sx={{ color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900], '&.Mui-checked': { color: colors.greenAccent[500] } }}
-                />
-                {option.label}
-                <Box sx={{ ml: 'auto' }}>
-                  <Button
-                    onClick={(e) => handleEditClick(e, option.id, 'derived')}
-                    disabled={!activeDerivedSeries.includes(option.id)}
-                    sx={{
-                      textTransform: 'none',
-                      fontSize: '12px',
-                      color: activeDerivedSeries.includes(option.id) ? (theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900]) : (theme.palette.mode === 'dark' ? colors.grey[500] : colors.grey[600]),
-                      border: `1px solid ${activeDerivedSeries.includes(option.id) ? (theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[700]) : (theme.palette.mode === 'dark' ? colors.grey[500] : colors.grey[600])}`,
-                      borderRadius: '4px',
-                      padding: '2px 8px',
-                      minWidth: '50px',
-                      backgroundColor: editClicked[option.id] ? '#4cceac' : 'transparent',
-                      ...(editClicked[option.id] && { color: 'black', borderColor: 'violet' }),
-                      '&:hover': {
-                        borderColor: activeDerivedSeries.includes(option.id) ? colors.greenAccent[500] : (theme.palette.mode === 'dark' ? colors.grey[500] : colors.grey[600]),
-                        backgroundColor: activeDerivedSeries.includes(option.id) && !editClicked[option.id] ? (theme.palette.mode === 'dark' ? colors.primary[600] : colors.primary[300]) : 'transparent',
-                      },
-                      '&.Mui-disabled': {
-                        pointerEvents: 'none',
-                        opacity: 0.6,
-                      },
-                    }}
-                  >
-                    Edit
-                  </Button>
-                </Box>
-              </li>
-            )}
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                label="Derived Series"
-                sx={{
-                  minWidth: '250px',
-                  width: '100%',
-                  '& .MuiInputLabel-root': { color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900] },
-                  '& .MuiInputLabel-root.Mui-focused': { color: colors.greenAccent[500] },
-                  '& .MuiOutlinedInput-root': {
-                    color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900],
-                    backgroundColor: theme.palette.mode === 'dark' ? colors.primary[500] : colors.primary[200],
-                    '& fieldset': { borderColor: theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[700] },
-                    '&:hover fieldset': { borderColor: colors.greenAccent[500] },
-                    '&.Mui-focused fieldset': { borderColor: colors.greenAccent[500] },
-                  },
-                }}
-              />
-            )}
-          />
-        )}
-      </Box>
       <Dialog
         open={showDerivedDialog}
         onClose={() => setShowDerivedDialog(false)}
@@ -1142,8 +1164,32 @@ const WorkbenchChart = ({
           </FormControl>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setShowDerivedDialog(false)}>Cancel</Button>
-          <Button onClick={handleCreateDerived}>Create</Button>
+          <Button 
+            onClick={() => setShowDerivedDialog(false)}
+            sx={{
+              backgroundColor: colors.greenAccent[500],
+              color: 'white',
+              '&:hover': {
+                backgroundColor: '#D500F9',
+                color: 'black',
+              },
+            }}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleCreateDerived}
+            sx={{
+              backgroundColor: colors.greenAccent[500],
+              color: 'white',
+              '&:hover': {
+                backgroundColor: '#D500F9',
+                color: 'black',
+              },
+            }}
+          >
+            Create
+          </Button>
         </DialogActions>
       </Dialog>
       <Dialog
