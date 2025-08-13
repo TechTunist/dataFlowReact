@@ -78,7 +78,7 @@ const BitcoinFees = () => {
 
     return (
         <div>
-            <p style={{ marginBottom: '0', color: colors.greenAccent[500]}}>BTC Transaction Fee: ~${averageFee.toFixed(2)}</p>
+            <p style={{ marginBottom: '0', color: colors.greenAccent[500]}}>BTC Transaction Fee provided by <a href="https://www.coingecko.com/en/api" target="_blank" rel="noopener noreferrer">CoinGecko</a>: ~${averageFee.toFixed(2)}</p>
         </div>
     );
 };
