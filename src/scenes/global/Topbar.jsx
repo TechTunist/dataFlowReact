@@ -294,6 +294,8 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
         return { title: "S&P500 Return On Investment", subtitle: isMobile ? "Yearly ROI" : "Annualised ROI of the S&P500" };
       case "/fred/sahm-recession-indicator":
         return { title: "Sahm Rule", subtitle: isMobile ? "Recession Indicator" : "Recession Indicator" };
+      case "/charts":
+        return { title: "Charts", subtitle: "All availible charts on Cryptological" };
       default:
         return { title: "CryptoLogical", subtitle: "" };
     }

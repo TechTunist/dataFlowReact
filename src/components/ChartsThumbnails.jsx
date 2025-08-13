@@ -1,16 +1,69 @@
 import { Box, Typography, Grid, Card, CardContent, CardMedia, useTheme } from "@mui/material";
 import { Link } from "react-router-dom";
 import { tokens } from "../theme";
-
 // Placeholder image (replace with actual chart images later)
 const placeholderImage = "https://via.placeholder.com/300x200?text=Chart+Image";
-
 const Charts = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
-
   // Organized chart data by sections
   const chartSections = {
+    "Free Charts": [
+      {
+        path: "/total",
+        title: "Total Crypto Market Cap",
+        description: "The market cap of the entire crypto market, with upper, lower and fair value logarithmic regression curves.",
+        image: '../../assets/total.png',
+      },
+      {
+        path: "/total-difference",
+        title: "Market Cap Difference",
+        description: "The percentage of the total market cap relative to the Fair Value of all crypto assets combined.",
+        image: '../../assets/totalDifference.png',
+      },
+      {
+        path: "/bitcoin-dominance",
+        title: "Bitcoin Dominance",
+        description: "Bitcoin Dominance, the percentage of the total cryptocurrency market value that Bitcoin represents.",
+        image: '../../assets/btcDominance.png',
+      },
+      {
+        path: "/logarithmic-regression",
+        title: "Bitcoin Logarithmic Regression",
+        description: "Logarithmic Regression trend lines for Bitcoin.",
+        image: '../../assets/logRegression.png',
+      },
+      {
+        path: "/fear-and-greed",
+        title: "Fear and Greed Indicator",
+        description: "The Fear and Greed index measures market sentiment.",
+        image: '../../assets/fngIndicator.png',
+      },
+      {
+        path: "/risk-bands",
+        title: "Time Spent in Bitcoin Risk Bands",
+        description: "Time spent in each defined risk band for Bitcoin and a selection of altcoins.",
+        image: '../../assets/bandsRisk.png',
+      },
+      {
+        path: "/us-inflation",
+        title: "US Inflation",
+        description: "US inflation rates over time.",
+        image: '../../assets/inflation.png',
+      },
+      {
+        path: "/us-interest",
+        title: "US Interest Rates",
+        description: "US interest rates over time.",
+        image: '../../assets/interest.png',
+      },
+      {
+        path: "/us-initial-claims",
+        title: "US Initial Claims",
+        description: "US initial jobless claims.",
+        image: '../../assets/initialClaims.png',
+      },
+    ],
     Price: [
       {
         path: "/bitcoin",
@@ -195,10 +248,10 @@ const Charts = () => {
         image: '../../assets/interest.png',
       },
       // {
-      //   path: "/us-combined-macro",
-      //   title: "US Combined Macro",
-      //   description: "Combined US macroeconomic indicators.",
-      //   image: placeholderImage,
+      // path: "/us-combined-macro",
+      // title: "US Combined Macro",
+      // description: "Combined US macroeconomic indicators.",
+      // image: placeholderImage,
       // },
       {
         path: "/us-initial-claims",
@@ -384,15 +437,11 @@ const Charts = () => {
       },
     ],
   };
-
   return (
     <Box m="20px" maxWidth="1200px" mx="auto">
-      <Typography variant="h2" color={colors.grey[100]} mb={4} textAlign="center">
-        Available Charts
-      </Typography>
       {Object.entries(chartSections).map(([section, charts]) => (
         <Box key={section} mb={6}>
-          <Typography variant="h4" color={colors.grey[100]} mb={3} textAlign="center">
+          <Typography variant="h3" color={colors.grey[100]} mb={1} mt={10} textAlign="left" ml={3.5} >
             {section}
           </Typography>
           <Grid
@@ -470,5 +519,4 @@ const Charts = () => {
     </Box>
   );
 };
-
 export default Charts;
