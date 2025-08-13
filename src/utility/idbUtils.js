@@ -7,6 +7,8 @@ const RISK_STORE_NAME = 'bitcoinRisk';
 const ETH_RISK_STORE_NAME = 'ethereumRisk'; // New store for Ethereum risk
 const ROI_STORE_NAME = 'roiData';
 
+const API_BASE_URL = 'https://vercel-dataflow.vercel.app/api'; // Assuming this from DataContext; adjust if needed
+
 export async function initDB() {
   try {
     return await openDB(DB_NAME, 4, { // Incremented version to 4 for new store
@@ -71,14 +73,34 @@ export async function saveBitcoinRisk(riskLevel) {
   }
 }
 
-export async function getBitcoinRisk() {
+export async function getBitcoinRisk(cacheDuration = 24 * 60 * 60 * 1000) { // Default to 24 hours
   try {
     const db = await initDB();
-    const data = await db.get(RISK_STORE_NAME, 'currentRisk');
-    return data;
+    let data = await db.get(RISK_STORE_NAME, 'currentRisk');
+    
+    const currentTimestamp = Date.now();
+    const isStale = !data || !data.timestamp || (currentTimestamp - data.timestamp > cacheDuration);
+    
+    if (isStale) {
+      // Fetch fresh data from API
+      const response = await fetch(`${API_BASE_URL}/bitcoin-risk/`); // Assumed endpoint; adjust based on actual API
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      const apiData = await response.json();
+      const riskLevel = apiData.riskLevel; // Assumed response structure { riskLevel: number }
+      
+      // Save to DB
+      await saveBitcoinRisk(riskLevel);
+      
+      // Retrieve again to return
+      data = await db.get(RISK_STORE_NAME, 'currentRisk');
+    }
+    
+    return data || { riskLevel: 0 }; // Fallback if still null
   } catch (error) {
     console.error('Failed to get Bitcoin risk level:', error);
-    throw error;
+    return { riskLevel: 0 }; // Fallback on error
   }
 }
 

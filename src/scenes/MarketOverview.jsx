@@ -23,6 +23,7 @@ import useIsMobile from '../hooks/useIsMobile';
 import { getBitcoinRisk, saveRoiData, getRoiData, clearRoiData } from '../utility/idbUtils';
 import InfoIcon from '@mui/icons-material/Info'; 
 import ShowChartIcon from '@mui/icons-material/ShowChart';
+import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 
 
 // Wrap GridLayout with WidthProvider for responsiveness
@@ -1836,7 +1837,7 @@ const RoiCycleComparisonWidget = memo(() => {
         </ResponsiveGridLayout>
 
         {/* Price Section */}
-        <Typography
+        {/* <Typography
           variant="h4"
           color={colors.grey[100]}
           gutterBottom
@@ -1870,7 +1871,7 @@ const RoiCycleComparisonWidget = memo(() => {
           <div key="marketCap">
             <MarketCapChart />
           </div>
-        </ResponsiveGridLayout>
+        </ResponsiveGridLayout> */}
 
       </Box> {/* End of widgets wrapper */}
     </Box>
@@ -1878,4 +1879,4 @@ const RoiCycleComparisonWidget = memo(() => {
 });
 
 // Export MarketOverview wrapped with React.memo
-export default memo(MarketOverview);
+export default restrictToPaidSubscription(memo(MarketOverview));
