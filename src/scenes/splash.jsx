@@ -166,7 +166,7 @@ const SplashPage = () => {
           <Grid item xs={12} md={4}>
             <Card sx={{ backgroundColor: colors.primary[800], p: 3, textAlign: 'centre' }}>
               <Typography variant="h5" sx={{ color: colors.greenAccent[500], mb: 2 }}>Dollar Cost Average Strategy</Typography>
-              <Typography>Choose an amount and a frequency to invest under certain risk levels, then set the 'take-profit' when over certain risk levels.</Typography>
+              <Typography>Choose an amount and a frequency to invest under certain risk levels, then set the 'take-profit' when over certain risk levels. Observe every transaction.</Typography>
             </Card>
           </Grid>
         </Grid>
@@ -176,7 +176,7 @@ const SplashPage = () => {
       <Box sx={{ width: '100%', py: 4, backgroundColor: colors.primary[800], textAlign: 'center' }}>
         <Container maxWidth="lg">
           <Typography variant="body1" sx={{ color: colors.grey[300], mb: 2 }}>
-            Data on tried and tested assets like Bitcoin, as well as more speculative assets
+            Data on the asset class leader Bitcoin, as well as a selection of top altcoins and even fiat currency.
           </Typography>
           <Grid container spacing={4} justifyContent="center">
             {/* Placeholder logos */}
@@ -193,7 +193,7 @@ const SplashPage = () => {
           Knowledge is Power
         </Typography>
         <Typography variant="body1" sx={{ color: colors.grey[300], maxWidth: '800px', mx: 'auto', mb: 6, fontSize: '1.2rem' }}>
-          The crypto market is confusing and volatile. Without the right tools, beginners get overwhelmed and intermediates miss opportunities. Cryptological changes that with easy-to-understand analytics and insights.
+          The crypto market is confusing and volatile. Get access to a range of tools to help you navigate the markets, each with a description to help understand what the tool is showing.
         </Typography>
         <Grid container spacing={6} justifyContent="center">
           <Grid item xs={12} md={4}>
@@ -204,8 +204,8 @@ const SplashPage = () => {
           </Grid>
           <Grid item xs={12} md={4}>
             <Card sx={{ backgroundColor: colors.primary[800], p: 3, textAlign: 'centre' }}>
-              <Typography variant="h5" sx={{ color: colors.greenAccent[500], mb: 2 }}>Solution: Simplified Insights</Typography>
-              <Typography>Get curated metrics that matter.</Typography>
+              <Typography variant="h5" sx={{ color: colors.greenAccent[500], mb: 2 }}>Solution: Levels of Understanding</Typography>
+              <Typography>Get a general overview of market conditions, or drill down into specific metrics when you are ready.</Typography>
             </Card>
           </Grid>
         </Grid>
@@ -221,7 +221,7 @@ const SplashPage = () => {
             <Grid item xs={12} md={4}>
               <Card sx={{ backgroundColor: colors.primary[900], p: 4, height: '100%' }}>
                 <Typography variant="h5" sx={{ color: colors.grey[100], mb: 2 }}>Risk Metrics</Typography>
-                <Typography sx={{ color: colors.grey[300] }}>Assess market risks instantly to avoid costly mistakes.</Typography>
+                <Typography sx={{ color: colors.grey[300] }}>You can create your own investment strategy based on our risk metrics, available for all crypto assets on the platform.</Typography>
               </Card>
             </Grid>
             <Grid item xs={12} md={4}>
