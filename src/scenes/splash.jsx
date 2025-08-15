@@ -1,11 +1,12 @@
 import React from 'react';
-import { Box, Typography, Button, useTheme, Grid, Container, Card, CardContent, Divider, Accordion, AccordionSummary, AccordionDetails, List, ListItem, ListItemIcon, ListItemText } from "@mui/material";
+import { Box, AppBar, Toolbar, Typography, Button, useTheme, Grid, Container, Card, CardContent, Divider, Accordion, AccordionSummary, AccordionDetails, List, ListItem, ListItemIcon, ListItemText } from "@mui/material";
 import { tokens } from "../theme";
 import { Link } from "react-router-dom";
 import CheckIcon from '@mui/icons-material/Check';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import StarIcon from '@mui/icons-material/Star';
 import '../styling/splashPage.css';
+import Navbar from "./global/SplashNavBar.jsx";
 
 const SplashPage = () => {
   const theme = useTheme();
@@ -23,6 +24,8 @@ const SplashPage = () => {
         boxSizing: 'border-box',
       }}
     >
+    <Navbar colors={colors} />
+      
       {/* Hero Section with Video Background */}
       <Box
         sx={{
@@ -140,10 +143,10 @@ const SplashPage = () => {
             Sign up now for free access
           </Button>
           <Typography
-            variant="body2"
+            variant="body1"
             sx={{ color: colors.grey[300], mt: 2 }}
           >
-            No credit card required • Instant access • Cancel anytime
+            No card details required • Instant access • Cancel anytime
           </Typography>
         </Container>
       </Box>
@@ -226,14 +229,14 @@ const SplashPage = () => {
             </Grid>
             <Grid item xs={12} md={4}>
               <Card sx={{ backgroundColor: colors.primary[900], p: 4, height: '100%' }}>
-                <Typography variant="h5" sx={{ color: colors.grey[100], mb: 2 }}>Market Sentiment Analysis</Typography>
-                <Typography sx={{ color: colors.grey[300] }}>Gauge fear and greed to time your trades perfectly.</Typography>
+                <Typography variant="h5" sx={{ color: colors.grey[100], mb: 2 }}>Market Overview Analysis</Typography>
+                <Typography sx={{ color: colors.grey[300] }}>Our Market Heat Index combines several metrics into a single, easy to understand value that expresses how under or over-heated things are.</Typography>
               </Card>
             </Grid>
             <Grid item xs={12} md={4}>
               <Card sx={{ backgroundColor: colors.primary[900], p: 4, height: '100%' }}>
                 <Typography variant="h5" sx={{ color: colors.grey[100], mb: 2 }}>Customizable Dashboards</Typography>
-                <Typography sx={{ color: colors.grey[300] }}>Tailor your view for quick, informed decisions.</Typography>
+                <Typography sx={{ color: colors.grey[300] }}>Curate your own bespoke indicator dashboard, giving you the charts that matter most to you instantly viewable.</Typography>
               </Card>
             </Grid>
           </Grid>
@@ -269,28 +272,28 @@ const SplashPage = () => {
       <Box sx={{ width: '100%', py: 10, backgroundColor: colors.primary[800] }}>
         <Container maxWidth="lg" sx={{ textAlign: 'center' }}>
           <Typography variant="h2" sx={{ color: colors.grey[100], fontWeight: 'bold', mb: 6, fontSize: { xs: '2.5rem', md: '3rem' } }}>
-            How Cryptological Works – Simple 3-Step Process
+            How Cryptological Works. A Simple 3-Step Process:
           </Typography>
           <Grid container spacing={6} justifyContent="center">
             <Grid item xs={12} md={4}>
               <Box sx={{ textAlign: 'center' }}>
                 <Typography variant="h3" sx={{ color: colors.greenAccent[500], mb: 2 }}>1</Typography>
                 <Typography variant="h5" sx={{ color: colors.grey[100], mb: 2 }}>Sign Up Free</Typography>
-                <Typography sx={{ color: colors.grey[300] }}>Create your account in seconds – no card needed.</Typography>
+                <Typography sx={{ color: colors.grey[300] }}>Create your account in seconds, no card needed.</Typography>
               </Box>
             </Grid>
             <Grid item xs={12} md={4}>
               <Box sx={{ textAlign: 'center' }}>
                 <Typography variant="h3" sx={{ color: colors.greenAccent[500], mb: 2 }}>2</Typography>
                 <Typography variant="h5" sx={{ color: colors.grey[100], mb: 2 }}>Explore Insights</Typography>
-                <Typography sx={{ color: colors.grey[300] }}>Dive into charts, metrics, and dashboards tailored to you.</Typography>
+                <Typography sx={{ color: colors.grey[300] }}>Dive into the free charts.</Typography>
               </Box>
             </Grid>
             <Grid item xs={12} md={4}>
               <Box sx={{ textAlign: 'center' }}>
                 <Typography variant="h3" sx={{ color: colors.greenAccent[500], mb: 2 }}>3</Typography>
-                <Typography variant="h5" sx={{ color: colors.grey[100], mb: 2 }}>Make Wiser Trades</Typography>
-                <Typography sx={{ color: colors.grey[300] }}>Use data-driven decisions to grow your portfolio.</Typography>
+                <Typography variant="h5" sx={{ color: colors.grey[100], mb: 2 }}>Subscribe to Premium to Unlock Full Access</Typography>
+                <Typography sx={{ color: colors.grey[300] }}>Use data to help you make wiser decisions and grow your portfolio.</Typography>
               </Box>
             </Grid>
           </Grid>
@@ -300,7 +303,7 @@ const SplashPage = () => {
       {/* Social Proof Section */}
       <Container maxWidth="lg" sx={{ py: 10, textAlign: 'center' }}>
         <Typography variant="h2" sx={{ color: colors.grey[100], fontWeight: 'bold', mb: 6, fontSize: { xs: '2.5rem', md: '3rem' } }}>
-          Don't Just Take Our Word – Hear From Real Users
+          Hear From Real Users
         </Typography>
         <Grid container spacing={4} justifyContent="center">
           <Grid item xs={12} md={4}>
@@ -312,10 +315,10 @@ const SplashPage = () => {
                 <StarIcon sx={{ color: '#FFD700' }} />
                 <StarIcon sx={{ color: '#FFD700' }} />
               </Box>
-              <Typography sx={{ color: colors.grey[300], mb: 2 }}>"Cryptological turned me from a crypto newbie into a confident investor. The risk metrics saved me thousands!"</Typography>
+              <Typography sx={{ color: colors.grey[300], mb: 2 }}>"Cryptological provided me with a lot of value for money, compared to other options out there, but the real reason I subscribed was for access to the risk metrics."</Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <img src="/assets/user1-placeholder.png" alt="John D." style={{ width: 40, height: 40, borderRadius: '50%', mr: 2 }} />
-                <Typography sx={{ color: colors.grey[400] }}>- John D., Beginner Investor</Typography>
+                {/* <img src="/assets/user1-placeholder.png" alt="Peter Andrews." style={{ width: 40, height: 40, borderRadius: '50%', mr: 2 }} /> */}
+                <Typography sx={{ color: colors.grey[400] }}>- Peter A. Crypto Enthusiast</Typography>
               </Box>
             </Card>
           </Grid>
@@ -328,10 +331,10 @@ const SplashPage = () => {
                 <StarIcon sx={{ color: '#FFD700' }} />
                 <StarIcon sx={{ color: '#FFD700' }} />
               </Box>
-              <Typography sx={{ color: colors.grey[300], mb: 2 }}>"The insights are spot-on. Helped me spot trends early and avoid bad trades."</Typography>
+              <Typography sx={{ color: colors.grey[300], mb: 2 }}>"The market overview is like nothing I have seen anywhere else. I like to check each metric's colors every morning and open up the charts if I see purple or red to see what's going on."</Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <img src="/assets/user2-placeholder.png" alt="Sarah L." style={{ width: 40, height: 40, borderRadius: '50%', mr: 2 }} />
-                <Typography sx={{ color: colors.grey[400] }}>- Sarah L., Intermediate Trader</Typography>
+                {/* <img src="/assets/user2-placeholder.png" alt="Sarah L." style={{ width: 40, height: 40, borderRadius: '50%', mr: 2 }} /> */}
+                <Typography sx={{ color: colors.grey[400] }}>- Sarah L. Bitcoin Investor</Typography>
               </Box>
             </Card>
           </Grid>
@@ -344,103 +347,168 @@ const SplashPage = () => {
                 <StarIcon sx={{ color: '#FFD700' }} />
                 <StarIcon sx={{ color: '#FFD700' }} />
               </Box>
-              <Typography sx={{ color: colors.grey[300], mb: 2 }}>"Worth every penny. The premium features give me an edge in the market."</Typography>
+              <Typography sx={{ color: colors.grey[300], mb: 2 }}>"The other options with the metrics I wanted were out of my price range for a relatively small portfolio such as mine, but Cryptological offered an affordable option."</Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <img src="/assets/user3-placeholder.png" alt="Mike R." style={{ width: 40, height: 40, borderRadius: '50%', mr: 2 }} />
-                <Typography sx={{ color: colors.grey[400] }}>- Mike R., Crypto Enthusiast</Typography>
+                {/* <img src="/assets/user3-placeholder.png" alt="Mike R." style={{ width: 40, height: 40, borderRadius: '50%', mr: 2 }} /> */}
+                <Typography sx={{ color: colors.grey[400] }}>- Mike R., Newbie Investor</Typography>
               </Box>
             </Card>
           </Grid>
         </Grid>
       </Container>
 
-      {/* Pricing Section with Table */}
       <Box sx={{ width: '100%', py: 10, backgroundColor: colors.primary[800] }}>
-        <Container maxWidth="lg" sx={{ textAlign: 'center' }}>
-          <Typography variant="h2" sx={{ color: colors.grey[100], fontWeight: 'bold', mb: 2, fontSize: { xs: '2.5rem', md: '3rem' } }}>
-            Choose the Plan That Fits Your Journey
-          </Typography>
-          <Typography variant="body1" sx={{ color: colors.grey[300], mb: 6 }}>
-            Start free or go premium for unlimited access. Limited time: Over 50% off for new signups!
-          </Typography>
-          <Card sx={{ backgroundColor: colors.primary[900], overflowX: 'auto' }}>
-            <Grid container>
-              <Grid item xs={12} md={4} sx={{ p: 4 }}>
-                <Typography variant="h5" sx={{ color: colors.grey[100], mb: 2 }}>Feature</Typography>
-              </Grid>
-              <Grid item xs={12} md={4} sx={{ p: 4, backgroundColor: colors.primary[800], position: 'relative' }}>
-                <Box sx={{ position: 'absolute', top: -20, left: '50%', transform: 'translateX(-50%)', bgcolor: colors.greenAccent[500], color: colors.grey[900], px: 2, py: 1, borderRadius: 20, fontWeight: 'bold' }}>Free</Box>
-                <Typography variant="h5" sx={{ color: colors.grey[100], mb: 2 }}>Free Plan</Typography>
-                <Typography variant="h6" sx={{ color: colors.greenAccent[500] }}>$0 / month</Typography>
-              </Grid>
-              <Grid item xs={12} md={4} sx={{ p: 4, border: `2px solid ${colors.greenAccent[500]}`, position: 'relative' }}>
-                <Box sx={{ position: 'absolute', top: -20, left: '50%', transform: 'translateX(-50%)', bgcolor: colors.greenAccent[500], color: colors.grey[900], px: 2, py: 1, borderRadius: 20, fontWeight: 'bold' }}>Premium</Box>
-                <Typography variant="h5" sx={{ color: colors.grey[100], mb: 2 }}>Premium Plan</Typography>
-                <Typography variant="h6" sx={{ color: colors.greenAccent[500] }}>$13.45 / month</Typography>
-              </Grid>
-            </Grid>
-            <Divider />
-            <Grid container>
-              <Grid item xs={12} md={4} sx={{ p: 2 }}><Typography>Basic Charts</Typography></Grid>
-              <Grid item xs={12} md={4} sx={{ p: 2, backgroundColor: colors.primary[800] }}><CheckIcon sx={{ color: colors.greenAccent[500] }} /></Grid>
-              <Grid item xs={12} md={4} sx={{ p: 2 }}><CheckIcon sx={{ color: colors.greenAccent[500] }} /></Grid>
-            </Grid>
-            <Divider />
-            <Grid container>
-              <Grid item xs={12} md={4} sx={{ p: 2 }}><Typography>Advanced Risk Metrics</Typography></Grid>
-              <Grid item xs={12} md={4} sx={{ p: 2, backgroundColor: colors.primary[800] }}>-</Grid>
-              <Grid item xs={12} md={4} sx={{ p: 2 }}><CheckIcon sx={{ color: colors.greenAccent[500] }} /></Grid>
-            </Grid>
-            <Divider />
-            <Grid container>
-              <Grid item xs={12} md={4} sx={{ p: 2 }}><Typography>Full Market Insights</Typography></Grid>
-              <Grid item xs={12} md={4} sx={{ p: 2, backgroundColor: colors.primary[800] }}>-</Grid>
-              <Grid item xs={12} md={4} sx={{ p: 2 }}><CheckIcon sx={{ color: colors.greenAccent[500] }} /></Grid>
-            </Grid>
-            <Divider />
-            <Grid container>
-              <Grid item xs={12} md={4} sx={{ p: 2 }}><Typography>Priority Support</Typography></Grid>
-              <Grid item xs={12} md={4} sx={{ p: 2, backgroundColor: colors.primary[800] }}>-</Grid>
-              <Grid item xs={12} md={4} sx={{ p: 2 }}><CheckIcon sx={{ color: colors.greenAccent[500] }} /></Grid>
-            </Grid>
-            <Divider />
-            <Grid container>
-              <Grid item xs={12} md={4} sx={{ p: 4 }}></Grid>
-              <Grid item xs={12} md={4} sx={{ p: 4, backgroundColor: colors.primary[800] }}>
-                <Button
-                  component={Link}
-                  to="/login-signup?mode=signup"
-                  variant="contained"
-                  fullWidth
-                  sx={{
-                    backgroundColor: colors.greenAccent[500],
-                    color: colors.grey[900],
-                    '&:hover': { backgroundColor: '#D500F9' },
-                  }}
-                >
-                  Get Started Free
-                </Button>
-              </Grid>
-              <Grid item xs={12} md={4} sx={{ p: 4 }}>
-                <Button
-                  component={Link}
-                  to="/login-signup?mode=signup&plan=premium"
-                  variant="contained"
-                  fullWidth
-                  sx={{
-                    backgroundColor: colors.greenAccent[500],
-                    color: colors.grey[900],
-                    '&:hover': { backgroundColor: '#D500F9' },
-                  }}
-                >
-                  Upgrade to Premium
-                </Button>
-              </Grid>
-            </Grid>
+  <Container maxWidth="lg" sx={{ textAlign: 'center' }}>
+    <Typography variant="h2" sx={{ color: colors.grey[100], fontWeight: 'bold', mb: 2, fontSize: { xs: '2.5rem', md: '3rem' } }}>
+      Choose the Plan That Fits Your Journey
+    </Typography>
+    <Typography variant="body1" sx={{ color: colors.grey[300], mb: 6 }}>
+      Start free or go premium for unlimited access. Limited time: Over 50% off for new signups!
+    </Typography>
+
+    {/* Mobile Layout: Vertical Cards */}
+    <Box sx={{ display: { xs: 'block', md: 'none' } }}>
+      <Grid container spacing={4} justifyContent="center">
+        <Grid item xs={12} sm={6}>
+          <Card sx={{ backgroundColor: colors.primary[800], p: 4, position: 'relative' }}>
+            <Typography variant="h5" sx={{ color: colors.grey[100], mb: 1, textAlign: 'center' }}>
+              Free Plan
+            </Typography>
+            <Typography variant="h6" sx={{ color: colors.greenAccent[500], mb: 2, textAlign: 'center' }}>
+              $0 / month
+            </Typography>
+            <Box sx={{ textAlign: 'left' }}>
+              <Typography sx={{ color: colors.grey[300], mb: 1 }}><CheckIcon sx={{ color: colors.greenAccent[500], mr: 1 }} />Basic Charts</Typography>
+              <Typography sx={{ color: colors.grey[300], mb: 1 }}>-</Typography>
+              <Typography sx={{ color: colors.grey[300], mb: 1 }}>-</Typography>
+              <Typography sx={{ color: colors.grey[300], mb: 2 }}>-</Typography>
+            </Box>
+            <Button
+              component={Link}
+              to="/login-signup?mode=signup"
+              variant="contained"
+              fullWidth
+              sx={{
+                backgroundColor: colors.greenAccent[500],
+                color: colors.grey[900],
+                '&:hover': { backgroundColor: '#D500F9' },
+              }}
+            >
+              Get Started Free
+            </Button>
           </Card>
-          <Typography sx={{ color: colors.grey[300], mt: 4 }}>30-Day Money-Back Guarantee on Premium – Risk-Free!</Typography>
-        </Container>
-      </Box>
+        </Grid>
+        <Grid item xs={12} sm={6}>
+          <Card sx={{ backgroundColor: colors.primary[900], p: 4, border: `2px solid ${colors.greenAccent[500]}` }}>
+            <Typography variant="h5" sx={{ color: colors.grey[100], mb: 1, textAlign: 'center' }}>
+              Premium Plan
+            </Typography>
+            <Typography variant="h6" sx={{ color: colors.greenAccent[500], mb: 2, textAlign: 'center' }}>
+              $13.45 / month
+            </Typography>
+            <Box sx={{ textAlign: 'left' }}>
+              <Typography sx={{ color: colors.grey[300], mb: 1 }}><CheckIcon sx={{ color: colors.greenAccent[500], mr: 1 }} />Basic Charts</Typography>
+              <Typography sx={{ color: colors.grey[300], mb: 1 }}><CheckIcon sx={{ color: colors.greenAccent[500], mr: 1 }} />Advanced Risk Metrics</Typography>
+              <Typography sx={{ color: colors.grey[300], mb: 1 }}><CheckIcon sx={{ color: colors.greenAccent[500], mr: 1 }} />Full Market Insights</Typography>
+              <Typography sx={{ color: colors.grey[300], mb: 2 }}><CheckIcon sx={{ color: colors.greenAccent[500], mr: 1 }} />Priority Support</Typography>
+            </Box>
+            <Button
+              component={Link}
+              to="/login-signup?mode=signup&plan=premium"
+              variant="contained"
+              fullWidth
+              sx={{
+                backgroundColor: colors.greenAccent[500],
+                color: colors.grey[900],
+                '&:hover': { backgroundColor: '#D500F9' },
+              }}
+            >
+              Upgrade to Premium
+            </Button>
+          </Card>
+        </Grid>
+      </Grid>
+    </Box>
+
+    {/* Desktop Layout: Table */}
+    <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+      <Card sx={{ backgroundColor: colors.primary[900], p: 2 }}>
+        <Grid container alignItems="center">
+          <Grid item md={4} sx={{ p: 2 }}>
+            <Typography variant="h5" sx={{ color: colors.grey[100], mb: 2 }}>Feature</Typography>
+          </Grid>
+          <Grid item md={4} sx={{ p: 2, backgroundColor: colors.primary[800], textAlign: 'center' }}>
+            <Typography variant="h5" sx={{ color: colors.grey[100], mb: 1, pt: 2 }}>Free Plan</Typography>
+            <Typography variant="h6" sx={{ color: colors.greenAccent[500] }}>$0 / month</Typography>
+          </Grid>
+          <Grid item md={4} sx={{ p: 2, border: `2px solid ${colors.greenAccent[500]}`, textAlign: 'center' }}>
+            <Typography variant="h5" sx={{ color: colors.grey[100], mb: 1, pt: 2 }}>Premium Plan</Typography>
+            <Typography variant="h6" sx={{ color: colors.greenAccent[500] }}>$13.45 / month</Typography>
+          </Grid>
+        </Grid>
+        <Divider />
+        <Grid container>
+          <Grid item md={4} sx={{ p: 2 }}><Typography>Basic Charts</Typography></Grid>
+          <Grid item md={4} sx={{ p: 2, backgroundColor: colors.primary[800], textAlign: 'center' }}><CheckIcon sx={{ color: colors.greenAccent[500] }} /></Grid>
+          <Grid item md={4} sx={{ p: 2, textAlign: 'center' }}><CheckIcon sx={{ color: colors.greenAccent[500] }} /></Grid>
+        </Grid>
+        <Divider />
+        <Grid container>
+          <Grid item md={4} sx={{ p: 2 }}><Typography>Advanced Risk Metrics</Typography></Grid>
+          <Grid item md={4} sx={{ p: 2, backgroundColor: colors.primary[800], textAlign: 'center' }}>-</Grid>
+          <Grid item md={4} sx={{ p: 2, textAlign: 'center' }}><CheckIcon sx={{ color: colors.greenAccent[500] }} /></Grid>
+        </Grid>
+        <Divider />
+        <Grid container>
+          <Grid item md={4} sx={{ p: 2 }}><Typography>Full Market Insights</Typography></Grid>
+          <Grid item md={4} sx={{ p: 2, backgroundColor: colors.primary[800], textAlign: 'center' }}>-</Grid>
+          <Grid item md={4} sx={{ p: 2, textAlign: 'center' }}><CheckIcon sx={{ color: colors.greenAccent[500] }} /></Grid>
+        </Grid>
+        <Divider />
+        <Grid container>
+          <Grid item md={4} sx={{ p: 2 }}><Typography>Priority Support</Typography></Grid>
+          <Grid item md={4} sx={{ p: 2, backgroundColor: colors.primary[800], textAlign: 'center' }}>-</Grid>
+          <Grid item md={4} sx={{ p: 2, textAlign: 'center' }}><CheckIcon sx={{ color: colors.greenAccent[500] }} /></Grid>
+        </Grid>
+        <Divider />
+        <Grid container>
+          <Grid item md={4} sx={{ p: 4 }}></Grid>
+          <Grid item md={4} sx={{ p: 4, backgroundColor: colors.primary[800] }}>
+            <Button
+              component={Link}
+              to="/login-signup?mode=signup"
+              variant="contained"
+              fullWidth
+              sx={{
+                backgroundColor: colors.greenAccent[500],
+                color: colors.grey[900],
+                '&:hover': { backgroundColor: '#D500F9' },
+              }}
+            >
+              Get Started Free
+            </Button>
+          </Grid>
+          <Grid item md={4} sx={{ p: 4 }}>
+            <Button
+              component={Link}
+              to="/login-signup?mode=signup&plan=premium"
+              variant="contained"
+              fullWidth
+              sx={{
+                backgroundColor: colors.greenAccent[500],
+                color: colors.grey[900],
+                '&:hover': { backgroundColor: '#D500F9' },
+              }}
+            >
+              Upgrade to Premium
+            </Button>
+          </Grid>
+        </Grid>
+      </Card>
+    </Box>
+    <Typography sx={{ color: colors.grey[300], mt: 4 }}>Cancel anytime at the click of a button.</Typography>
+  </Container>
+</Box>
 
       {/* FAQ Section */}
       <Container maxWidth="lg" sx={{ py: 10, textAlign: 'left' }}>
@@ -457,37 +525,51 @@ const SplashPage = () => {
         </Accordion>
         <Accordion sx={{ backgroundColor: colors.primary[800], mb: 2 }}>
           <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: colors.grey[100] }} />}>
-            <Typography variant="h6" sx={{ color: colors.grey[100] }}>What data sources do you use?</Typography>
+            <Typography variant="h6" sx={{ color: colors.grey[100] }}>Can I cancel anytime?</Typography>
           </AccordionSummary>
           <AccordionDetails>
-            <Typography sx={{ color: colors.grey[300] }}>We aggregate real-time data from top exchanges, blockchain metrics, and sentiment analysis tools.</Typography>
+            <Typography sx={{ color: colors.grey[300] }}>Yes. Each payment you make gives you access for the related period (a month). If you cancel your subscription, you will retain access for the remainder of that period and no more payments will be made.</Typography>
           </AccordionDetails>
         </Accordion>
         <Accordion sx={{ backgroundColor: colors.primary[800], mb: 2 }}>
           <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: colors.grey[100] }} />}>
-            <Typography variant="h6" sx={{ color: colors.grey[100] }}>Can I cancel anytime?</Typography>
+            <Typography variant="h6" sx={{ color: colors.grey[100] }}>Do you get real-time data?</Typography>
           </AccordionSummary>
           <AccordionDetails>
-            <Typography sx={{ color: colors.grey[300] }}>Yes, cancel your subscription at any time with no hidden fees.</Typography>
+            <Typography sx={{ color: colors.grey[300] }}>Assets are either shown at their real-time valuations, or the value at the previous daily close. Some other datasets are updated when new data is availble, depending on the frequency in which the data is published.</Typography>
           </AccordionDetails>
         </Accordion>
       </Container>
 
-      {/* Final CTA Section */}
       <Box
         sx={{
           width: '100%',
           py: 12,
           textAlign: 'center',
-          backgroundColor: colors.greenAccent[700],
+          backgroundColor: colors.greenAccent[700], // Solid green for vibrancy
         }}
       >
         <Container maxWidth="md">
-          <Typography variant="h2" sx={{ color: colors.primary[900], fontWeight: 'bold', mb: 4, fontSize: { xs: '2.5rem', md: '3.5rem' } }}>
+          <Typography
+            variant="h2"
+            sx={{
+              color: colors.grey[100], // White for high contrast
+              fontWeight: 'bold',
+              mb: 4,
+              fontSize: { xs: '2.5rem', md: '3.5rem' },
+            }}
+          >
             Ready to Transform Your Crypto Investments?
           </Typography>
-          <Typography variant="h5" sx={{ color: colors.primary[900], mb: 6 }}>
-            Join thousands making wiser decisions today. Don't miss out on the next bull run.
+          <Typography
+            variant="h5"
+            sx={{
+              color: colors.grey[100], // White for readability
+              mb: 6,
+              fontSize: { xs: '1.2rem', md: '1.5rem' },
+            }}
+          >
+            Join thousands making wiser decisions today. Don’t miss out on the next bull run.
           </Typography>
           <Button
             component={Link}
@@ -502,15 +584,25 @@ const SplashPage = () => {
               px: 6,
               py: 2,
               borderRadius: '50px',
+              transition: 'transform 0.2s ease-in-out',
               '&:hover': {
                 backgroundColor: '#D500F9',
                 color: colors.grey[100],
+                transform: 'scale(1.05)', // Subtle zoom on hover
               },
             }}
           >
             Start For Free
           </Button>
-          <Typography sx={{ color: colors.primary[800], mt: 2 }}>Limited spots – Act now!</Typography>
+          <Typography
+            sx={{
+              color: colors.grey[200], // Slightly lighter white for subtlety
+              mt: 2,
+              fontSize: '1rem',
+            }}
+          >
+            Become Cryptological Today!
+          </Typography>
         </Container>
       </Box>
 
