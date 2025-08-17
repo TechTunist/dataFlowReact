@@ -6,7 +6,7 @@ import { useTheme } from "@mui/material";
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
 import BitcoinFees from './BitcoinTransactionFees';
-import { Select, MenuItem, FormControl, InputLabel, Box, Checkbox } from '@mui/material';
+import { Select, MenuItem, FormControl, InputLabel, Box, Checkbox, useMediaQuery} from '@mui/material';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 
@@ -27,6 +27,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
   const [isInteractive, setIsInteractive] = useState(false);
   const [activeIndicators, setActiveIndicators] = useState([]);
   const [activeSMAs, setActiveSMAs] = useState([]);
+  const isNarrowScreen = useMediaQuery('(max-width:600px)');
   const [activeRsiPeriod, setActiveRsiPeriod] = useState('');
   // New state for the current Bitcoin price from localStorage
   const [currentBtcPrice, setCurrentBtcPrice] = useState(null);
@@ -892,7 +893,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
             padding: '5px 10px',
             borderRadius: '4px',
             color: colors.grey[100],
-            fontSize: '12px',
+            fontSize: isNarrowScreen ? '8px' : '12px',
           }}
         >
           {!isDashboard && <div>Active Indicators</div>}
