@@ -7,7 +7,6 @@ import useIsMobile from '../hooks/useIsMobile';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import LastUpdated from '../hooks/LastUpdated';
-
 const FredSeriesChart = ({
   seriesId,
   isDashboard = false,
@@ -37,7 +36,8 @@ const FredSeriesChart = ({
   const currentYear = useMemo(() => new Date().getFullYear().toString(), []);
   const primarySeriesData = fredSeriesData[seriesId] || [];
   const sp500SeriesData = fredSeriesData['SP500'] || [];
-
+  const primaryDataRef = useRef([]);
+  const sp500DataRef = useRef([]);
   // Fetch data for primary series and S&P 500 if overlay is enabled
   useEffect(() => {
     const fetchData = async () => {
@@ -59,7 +59,6 @@ const FredSeriesChart = ({
     };
     fetchData();
   }, [fetchFredSeriesData, seriesId, primarySeriesData.length, showSP500Overlay, sp500SeriesData.length]);
-
   // Initialize chart
   useEffect(() => {
     if (!chartContainerRef.current) return;
@@ -106,7 +105,31 @@ const FredSeriesChart = ({
       window.removeEventListener('resize', resizeChart);
     };
   }, [colors, showSP500Overlay]);
-
+  // Function to find nearest data point
+  const findNearestData = useCallback((data, targetTime) => {
+    if (data.length === 0) return null;
+    const target = new Date(targetTime).getTime();
+    let left = 0;
+    let right = data.length - 1;
+    while (left <= right) {
+      const mid = Math.floor((left + right) / 2);
+      const midTime = new Date(data[mid].time).getTime();
+      if (midTime === target) {
+        return data[mid];
+      } else if (midTime < target) {
+        left = mid + 1;
+      } else {
+        right = mid - 1;
+      }
+    }
+    const prev = right >= 0 ? data[right] : null;
+    const next = left < data.length ? data[left] : null;
+    if (!prev) return next;
+    if (!next) return prev;
+    const prevDiff = Math.abs(new Date(prev.time).getTime() - target);
+    const nextDiff = Math.abs(new Date(next.time).getTime() - target);
+    return prevDiff <= nextDiff ? prev : next;
+  }, []);
   // Update series
   useEffect(() => {
     if (!chartRef.current || primarySeriesData.length === 0) return;
@@ -121,6 +144,7 @@ const FredSeriesChart = ({
       setError(`No valid data available for ${seriesId}.`);
       return;
     }
+    primaryDataRef.current = cleanedPrimaryData;
     // Remove existing primary series
     if (primarySeriesRef.current) {
       try {
@@ -183,13 +207,11 @@ const FredSeriesChart = ({
     }
     primarySeriesRef.current = primarySeries;
     primarySeries.setData(cleanedPrimaryData);
-
     // Update right price scale for primary series
     chartRef.current.priceScale('right').applyOptions({
       mode: scaleModeState,
       borderVisible: false,
     });
-
     // Handle S&P 500 overlay
     if (showSP500Overlay && sp500SeriesData.length > 0) {
       const minPrimaryTime = new Date(cleanedPrimaryData[0].time).getTime();
@@ -200,6 +222,7 @@ const FredSeriesChart = ({
         console.warn('No valid data points for S&P 500');
         return;
       }
+      sp500DataRef.current = cleanedSP500Data;
       // Remove existing S&P 500 series
       if (sp500SeriesRef.current) {
         try {
@@ -230,13 +253,11 @@ const FredSeriesChart = ({
         borderVisible: false,
       });
     }
-
     // Fit content for new series or initial load
     if (isNewSeries || zoomRange === null) {
       chartRef.current.timeScale().fitContent();
       setZoomRange(null);
     }
-
     // Tooltip subscription
     let tooltipTimeout = null;
     chartRef.current.subscribeCrosshairMove((param) => {
@@ -252,31 +273,34 @@ const FredSeriesChart = ({
         setTooltipData(null);
         return;
       }
-      const primaryData = param.seriesData.get(primarySeriesRef.current);
-      const sp500Data = showSP500Overlay ? param.seriesData.get(sp500SeriesRef.current) : null;
+      let primaryNearest = param.seriesData.get(primarySeriesRef.current);
+      if (!primaryNearest) {
+        primaryNearest = findNearestData(primaryDataRef.current, param.time);
+      }
+      let sp500Nearest = showSP500Overlay ? param.seriesData.get(sp500SeriesRef.current) : null;
+      if (showSP500Overlay && !sp500Nearest) {
+        sp500Nearest = findNearestData(sp500DataRef.current, param.time);
+      }
       clearTimeout(tooltipTimeout);
       tooltipTimeout = setTimeout(() => {
         setTooltipData({
           date: param.time,
-          primaryValue: primaryData ? primaryData.value : null,
-          sp500Value: sp500Data ? sp500Data.value : null,
+          primaryValue: primaryNearest ? primaryNearest.value : null,
+          sp500Value: sp500Nearest ? sp500Nearest.value : null,
           x: param.point.x,
           y: param.point.y,
         });
       }, 1);
     });
-
     return () => {
       clearTimeout(tooltipTimeout);
     };
-  }, [primarySeriesData, sp500SeriesData, chartType, scaleModeState, valueFormatter, theme.palette.mode, seriesId, showSP500Overlay]);
-
+  }, [primarySeriesData, sp500SeriesData, chartType, scaleModeState, valueFormatter, theme.palette.mode, seriesId, showSP500Overlay, findNearestData]);
   // Restore zoom
   useEffect(() => {
     if (!chartRef.current || !zoomRange) return;
     chartRef.current.timeScale().setVisibleLogicalRange(zoomRange);
   }, [zoomRange]);
-
   // Save zoom state
   useEffect(() => {
     if (!chartRef.current) return;
@@ -303,7 +327,6 @@ const FredSeriesChart = ({
       }
     };
   }, []);
-
   // Update interactivity
   useEffect(() => {
     if (chartRef.current) {
@@ -314,7 +337,6 @@ const FredSeriesChart = ({
       });
     }
   }, [isInteractive]);
-
   const setInteractivity = useCallback(() => setIsInteractive((prev) => !prev), []);
   const toggleScaleMode = useCallback(() => setScaleModeState((prev) => (prev === 1 ? 0 : 1)), []);
   const resetChartView = useCallback(() => {
@@ -324,11 +346,9 @@ const FredSeriesChart = ({
     }
   }, []);
   const toggleLegend = useCallback(() => setIsLegendVisible((prev) => !prev), []);
-
   // Define colors for use in chart, tooltip, and legend
   const primaryColor = theme.palette.mode === 'dark' ? 'rgba(38, 198, 218, 1)' : 'rgba(255, 140, 0, 0.8)';
   const sp500Color = theme.palette.mode === 'dark' ? 'rgb(223, 175, 185)' : 'rgba(112, 153, 112, 0.8)';
-
   return (
     <div style={{ height: '100%', position: 'relative' }}>
       {!isDashboard && (
@@ -505,5 +525,4 @@ const FredSeriesChart = ({
     </div>
   );
 };
-
 export default restrictToPaidSubscription(FredSeriesChart);
