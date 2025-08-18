@@ -964,7 +964,7 @@ const AltcoinPrice = ({ isDashboard = false }) => {
               if (leftPosition >= 0) return `${leftPosition}px`;
               return `${Math.max(0, Math.min(rightPosition, chartWidth - tooltipWidth))}px`;
             })(),
-            top: `${tooltipData.y + 150}px`,
+            top: `${tooltipData.y + 250}px`,
           }}
         >
           <div style={{ fontSize: '15px' }}>{selectedCoin}</div>
