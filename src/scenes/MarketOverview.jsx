@@ -1788,8 +1788,8 @@ const RoiCycleComparisonWidget = memo(() => {
         cols={cols}
         rowHeight={rowHeight}
         onLayoutChange={(layout, allLayouts) => setSentimentIndexesLayout(allLayouts)}
-        isDraggable
-        isResizable
+        isDraggable={false}
+        isResizable={false}
         compactType="vertical"
         margin={margin}
         containerPadding={[0, 0]}
@@ -1822,8 +1822,8 @@ const RoiCycleComparisonWidget = memo(() => {
           cols={cols}
           rowHeight={rowHeight}
           onLayoutChange={(layout, allLayouts) => setOnChainLayout(allLayouts)}
-          isDraggable
-          isResizable
+          isDraggable={false}
+          isResizable={false}
           compactType="vertical"
           margin={margin}
           containerPadding={[0, 0]}
@@ -1852,8 +1852,8 @@ const RoiCycleComparisonWidget = memo(() => {
           cols={cols}
           rowHeight={rowHeight}
           onLayoutChange={(layout, allLayouts) => setPriceLayout(allLayouts)}
-          isDraggable
-          isResizable
+          isDraggable={false}
+          isResizable={false}
           compactType="vertical"
           margin={margin}
           containerPadding={[0, 0]}
