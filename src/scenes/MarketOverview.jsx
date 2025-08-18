@@ -20,10 +20,31 @@ import { Box, Typography, useTheme, LinearProgress, CircularProgress } from '@mu
 import { tokens } from '../theme';
 import { DataContext } from '../DataContext';
 import useIsMobile from '../hooks/useIsMobile';
-import { getBitcoinRisk, saveRoiData, getRoiData, clearRoiData } from '../utility/idbUtils';
+import { getBitcoinRisk, saveRoiData, getRoiData, clearRoiData, saveBitcoinRisk } from '../utility/idbUtils';
 import InfoIcon from '@mui/icons-material/Info'; 
 import ShowChartIcon from '@mui/icons-material/ShowChart';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
+
+const calculateRiskMetric = (data) => {
+  const movingAverage = data.map((item, index) => {
+    const start = Math.max(index - 373, 0);
+    const subset = data.slice(start, index + 1);
+    const avg = subset.reduce((sum, curr) => sum + parseFloat(curr.value), 0) / subset.length;
+    return { ...item, MA: avg };
+  });
+  const movingAverageWithPreavg = movingAverage.map((item, index) => {
+    const preavg = index > 0 ? (Math.log(item.value) - Math.log(item.MA)) * Math.pow(index, 0.395) : 0;
+    return { ...item, Preavg: preavg };
+  });
+  const preavgValues = movingAverageWithPreavg.map(item => item.Preavg);
+  const preavgMin = Math.min(...preavgValues);
+  const preavgMax = Math.max(...preavgValues);
+  const normalizedRisk = movingAverageWithPreavg.map(item => ({
+    ...item,
+    Risk: (item.Preavg - preavgMin) / (preavgMax - preavgMin),
+  }));
+  return normalizedRisk;
+};
 
 
 // Wrap GridLayout with WidthProvider for responsiveness
@@ -92,12 +113,11 @@ const MarketOverview = memo(() => {
 
   // Fetch all data and manage loading state
   useEffect(() => {
-    let isMounted = true; // Flag to prevent state updates after unmount
+    let isMounted = true;
   
     const fetchAllData = async () => {
       try {
         setIsLoading(true);
-        // Fetch all data in parallel
         await Promise.all([
           fetchBtcData(),
           fetchEthData(),
@@ -107,7 +127,7 @@ const MarketOverview = memo(() => {
           fetchMvrvData(),
           fetchAltcoinSeasonData(),
         ]);
-        if (isMounted) setIsLoading(false); // Only update if mounted
+        if (isMounted) setIsLoading(false);
       } catch (err) {
         console.error('Error fetching data:', err);
         if (isMounted) {
@@ -119,9 +139,8 @@ const MarketOverview = memo(() => {
   
     fetchAllData();
   
-    // Cleanup function
     return () => {
-      isMounted = false; // Prevent state updates after unmount
+      isMounted = false;
     };
   }, [
     fetchBtcData,
@@ -131,7 +150,7 @@ const MarketOverview = memo(() => {
     fetchMarketCapData,
     fetchMvrvData,
     fetchAltcoinSeasonData,
-  ]); // Dependency array includes only the fetch functions
+  ]);
 
   // Define breakpoints and columns for different screen sizes
   const breakpoints = { lg: 1200, md: 996, sm: 768, xs: 480 };
@@ -1089,19 +1108,52 @@ const RoiCycleComparisonWidget = memo(() => {
   // Bitcoin Risk Widget
   const BitcoinRiskWidget = memo(() => {
     const [riskLevel, setRiskLevel] = useState(null);
+    const { btcData } = useContext(DataContext);
   
     useEffect(() => {
       const fetchRiskLevel = async () => {
         try {
           const riskData = await getBitcoinRisk();
-          setRiskLevel(riskData ? riskData.riskLevel : 0);
+          if (riskData && riskData.riskLevel !== undefined) {
+            setRiskLevel(riskData.riskLevel);
+          } else {
+            // No valid cached data, calculate locally
+            if (btcData && btcData.length > 0) {
+              const riskDataArray = calculateRiskMetric(btcData);
+              if (riskDataArray && riskDataArray.length > 0) {
+                const calculatedRisk = riskDataArray[riskDataArray.length - 1].Risk;
+                await saveBitcoinRisk(calculatedRisk);
+                setRiskLevel(calculatedRisk);
+              } else {
+                console.error('Failed to calculate risk level: Invalid risk data');
+                setRiskLevel(0);
+              }
+            } else {
+              console.error('No btcData available for risk calculation');
+              setRiskLevel(0);
+            }
+          }
         } catch (error) {
-          console.error('Error fetching Bitcoin risk level:', error);
-          setRiskLevel(0);
+          console.error('Error handling Bitcoin risk level:', error);
+          // Fallback to local calculation
+          if (btcData && btcData.length > 0) {
+            const riskDataArray = calculateRiskMetric(btcData);
+            if (riskDataArray && riskDataArray.length > 0) {
+              const calculatedRisk = riskDataArray[riskDataArray.length - 1].Risk;
+              await saveBitcoinRisk(calculatedRisk);
+              setRiskLevel(calculatedRisk);
+            } else {
+              console.error('Failed to calculate risk level: Invalid risk data');
+              setRiskLevel(0);
+            }
+          } else {
+            console.error('No btcData available for risk calculation');
+            setRiskLevel(0);
+          }
         }
       };
       fetchRiskLevel();
-    }, []);
+    }, [btcData]);
   
     const displayRisk = riskLevel !== null ? Math.max(0, Math.min(100, riskLevel * 100)).toFixed(2) : 0;
     const backgroundColor = getBackgroundColor(displayRisk);

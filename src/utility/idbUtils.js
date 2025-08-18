@@ -1,17 +1,14 @@
-// src/utility/idbUtils.js
 import { openDB } from 'idb';
 
 const DB_NAME = 'CryptoDataDB';
 const DATA_STORE_NAME = 'apiData';
 const RISK_STORE_NAME = 'bitcoinRisk';
-const ETH_RISK_STORE_NAME = 'ethereumRisk'; // New store for Ethereum risk
+const ETH_RISK_STORE_NAME = 'ethereumRisk';
 const ROI_STORE_NAME = 'roiData';
-
-const API_BASE_URL = 'https://vercel-dataflow.vercel.app/api'; // Assuming this from DataContext; adjust if needed
 
 export async function initDB() {
   try {
-    return await openDB(DB_NAME, 4, { // Incremented version to 4 for new store
+    return await openDB(DB_NAME, 4, {
       upgrade(db, oldVersion) {
         if (!db.objectStoreNames.contains(DATA_STORE_NAME)) {
           db.createObjectStore(DATA_STORE_NAME, { keyPath: 'id' });
@@ -38,6 +35,7 @@ export async function cacheData(id, data, timestamp) {
     const db = await initDB();
     await db.put(DATA_STORE_NAME, { id, data, timestamp });
   } catch (error) {
+    console.error(`Failed to cache data for id ${id}:`, error);
     throw error;
   }
 }
@@ -73,34 +71,24 @@ export async function saveBitcoinRisk(riskLevel) {
   }
 }
 
-export async function getBitcoinRisk(cacheDuration = 24 * 60 * 60 * 1000) { // Default to 24 hours
+export async function getBitcoinRisk() {
   try {
     const db = await initDB();
-    let data = await db.get(RISK_STORE_NAME, 'currentRisk');
-    
-    const currentTimestamp = Date.now();
-    const isStale = !data || !data.timestamp || (currentTimestamp - data.timestamp > cacheDuration);
-    
-    if (isStale) {
-      // Fetch fresh data from API
-      const response = await fetch(`${API_BASE_URL}/bitcoin-risk/`); // Assumed endpoint; adjust based on actual API
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
+    const data = await db.get(RISK_STORE_NAME, 'currentRisk');
+    // Check if data exists and is from today
+    if (data && data.timestamp) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const dataDate = new Date(data.timestamp);
+      dataDate.setHours(0, 0, 0, 0);
+      if (dataDate.getTime() === today.getTime()) {
+        return data;
       }
-      const apiData = await response.json();
-      const riskLevel = apiData.riskLevel; // Assumed response structure { riskLevel: number }
-      
-      // Save to DB
-      await saveBitcoinRisk(riskLevel);
-      
-      // Retrieve again to return
-      data = await db.get(RISK_STORE_NAME, 'currentRisk');
     }
-    
-    return data || { riskLevel: 0 }; // Fallback if still null
+    return null; // Return null if no data or stale
   } catch (error) {
-    console.error('Failed to get Bitcoin risk level:', error);
-    return { riskLevel: 0 }; // Fallback on error
+    console.error('Failed to get Bitcoin risk level from IndexedDB:', error);
+    return null;
   }
 }
 
@@ -118,10 +106,10 @@ export async function getEthereumRisk() {
   try {
     const db = await initDB();
     const data = await db.get(ETH_RISK_STORE_NAME, 'currentEthRisk');
-    return data || { riskLevel: 0 }; // Return mock value if no data
+    return data || { riskLevel: 0 };
   } catch (error) {
     console.error('Failed to get Ethereum risk level:', error);
-    return { riskLevel: 0 }; // Fallback mock value
+    return { riskLevel: 0 };
   }
 }
 
