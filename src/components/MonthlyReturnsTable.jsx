@@ -1,8 +1,6 @@
-// src/components/BitcoinMonthlyReturnsTable.js
-import React, { useContext, useEffect, useMemo, useState } from 'react';
-import Plot from 'react-plotly.js';
+import React, { useContext, useEffect, useMemo, useState, useRef } from 'react';
 import { tokens } from "../theme";
-import { useTheme, Box } from "@mui/material";
+import { useTheme, Box, Table, TableBody, TableCell, TableContainer, TableFooter, TableHead, TableRow, Tooltip, Paper } from "@mui/material";
 import '../styling/bitcoinChart.css';
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
@@ -17,14 +15,15 @@ const BitcoinMonthlyReturnsTable = ({ isDashboard = false }) => {
   const { btcData, fetchBtcData } = useContext(DataContext);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const tableRef = useRef(null);
 
-  // Fetch data on mount, even if btcData exists, to ensure freshness
+  // Fetch data on mount to ensure freshness
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
       setError(null);
       try {
-        await fetchBtcData(); // Always fetch to ensure latest data
+        await fetchBtcData();
       } catch (err) {
         setError('Error fetching data. Please try again later.');
         console.error('Error:', err);
@@ -33,16 +32,20 @@ const BitcoinMonthlyReturnsTable = ({ isDashboard = false }) => {
       }
     };
     fetchData();
-  }, [fetchBtcData]); // Removed btcData.length dependency to force refresh
+  }, [fetchBtcData]);
+
+  // Force re-render on isMobile change to ensure layout updates
+  useEffect(() => {
+    if (tableRef.current) {
+      tableRef.current.style.width = '100%';
+    }
+  }, [isMobile]);
 
   // Process data to calculate monthly returns
   const monthlyReturnsData = useMemo(() => {
-    if (btcData.length === 0) return { /* ... */ };
-  
-    // Sort all data by date once for efficiency
+    if (btcData.length === 0) return { years: [], months: [], returns: [], averages: [] };
+
     const sortedBtcData = [...btcData].sort((a, b) => new Date(a.time) - new Date(b.time));
-  
-    // Group by year and month, but also track last price per month
     const dataByYearMonth = sortedBtcData.reduce((acc, item) => {
       const date = new Date(item.time);
       const year = date.getFullYear();
@@ -52,8 +55,7 @@ const BitcoinMonthlyReturnsTable = ({ isDashboard = false }) => {
       acc[year][month].push({ date, value: item.value });
       return acc;
     }, {});
-  
-    // Function to get last close of previous month
+
     const getPreviousMonthClose = (year, month) => {
       let prevYear = year;
       let prevMonth = month - 1;
@@ -63,163 +65,80 @@ const BitcoinMonthlyReturnsTable = ({ isDashboard = false }) => {
       }
       const prevMonthData = dataByYearMonth[prevYear]?.[prevMonth];
       if (prevMonthData && prevMonthData.length > 0) {
-        // Sort if not already (though groups are small)
         prevMonthData.sort((a, b) => a.date - b.date);
         return prevMonthData[prevMonthData.length - 1].value;
       }
-      return null; // If no previous data, fall back or skip
+      return null;
     };
-  
+
     const currentDate = new Date();
     const currentYear = currentDate.getFullYear();
     const currentMonth = currentDate.getMonth();
-  
     const years = [];
     for (let y = 2010; y <= currentYear; y++) years.push(y.toString());
     years.sort((a, b) => b - a);
-  
+
     const months = isMobile
-    ? ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D']
-    : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  
+      ? ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D']
+      : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
     const returns = [];
-    const cellColors = [];
     years.forEach(year => {
       const yearReturns = [];
-      const yearColors = [];
       for (let month = 0; month < 12; month++) {
-        // Skip pre-Bitcoin or future months (same as before)
         if (parseInt(year) === 2010 && month < 7) {
           yearReturns.push(null);
-          yearColors.push(colors.primary[700]);
           continue;
         }
         if (parseInt(year) === currentYear && month > currentMonth) {
           yearReturns.push(null);
-          yearColors.push(colors.primary[700]);
           continue;
         }
-  
         const monthData = dataByYearMonth[year]?.[month];
         if (!monthData || monthData.length === 0) {
           yearReturns.push(null);
-          yearColors.push(colors.primary[700]);
           continue;
         }
-  
-        // Sort month data
         monthData.sort((a, b) => a.date - b.date);
-  
-        // Last price is the same: last day of month
-        const lastDay = monthData[monthData.length - 1];
-        const lastPrice = lastDay.value;
-  
-        // Start price: last close of previous month
+        const lastPrice = monthData[monthData.length - 1].value;
         let firstPrice = getPreviousMonthClose(parseInt(year), month);
-  
-        // Fallback: If no previous month data (e.g., first month ever), use first day's price
         if (firstPrice === null) {
           firstPrice = monthData[0].value;
         }
-  
         const monthlyReturn = firstPrice !== 0 ? ((lastPrice - firstPrice) / firstPrice) * 100 : 0;
         const displayValue =
           parseInt(year) === currentYear && month === currentMonth
             ? `${monthlyReturn.toFixed(1)}*`
             : monthlyReturn.toFixed(1);
-  
         yearReturns.push(displayValue);
-        yearColors.push(
-          monthlyReturn > 0 ? '#28822d' : monthlyReturn < 0 ? '#9c4f4f' : colors.primary[700]
-        );
       }
       returns.push(yearReturns);
-      cellColors.push(yearColors);
     });
 
-    const monthColumns = months.map((_, monthIndex) =>
-      returns.map(row => {
-        const val = row[monthIndex];
-        return val !== null ? (val.includes('*') ? val.replace('*', '%*') : `${val}%`) : '';
-      })
-    );
-    const monthColors = months.map((_, monthIndex) =>
-      cellColors.map(row => row[monthIndex])
-    );
+    const averages = [];
+    for (let month = 0; month < 12; month++) {
+      let sum = 0;
+      let count = 0;
+      for (let y = 0; y < returns.length; y++) {
+        const valStr = returns[y][month];
+        if (valStr !== null) {
+          const val = parseFloat(valStr.replace('*', ''));
+          if (!isNaN(val)) {
+            sum += val;
+            count++;
+          }
+        }
+      }
+      averages.push(count > 0 ? (sum / count).toFixed(1) : null);
+    }
 
-    return {
-      years,
-      months,
-      returns,
-      colors: cellColors,
-      monthColumns,
-      monthColors,
-    };
-  }, [btcData, colors]);
+    return { years, months, returns, averages };
+  }, [btcData, isMobile]);
 
-  const { years, months, monthColumns, monthColors } = monthlyReturnsData;
-
-  // Plotly table data
-  const tableData = [
-    {
-      type: 'table',
-      header: {
-        values: [''],
-        align: 'center',
-        line: { width: 0 },
-        fill: { color: colors.primary[700] },
-        font: { color: colors.primary[100], size: 16 },
-        height: 40,
-      },
-      cells: {
-        values: [years],
-        align: 'center',
-        line: { width: 0 },
-        fill: { color: colors.primary[700] },
-        font: { color: colors.primary[100], size: isMobile ? 8 : 12 },
-        height: 30,
-      },
-      domain: { x: [0, 0.05], y: [0, 1] },
-    },
-    {
-      type: 'table',
-      header: {
-        values: months,
-        align: 'center',
-        line: { width: 0 },
-        fill: { color: colors.primary[700] },
-        font: { color: colors.primary[100], size: 14 },
-        height: 40,
-      },
-      cells: {
-        values: monthColumns,
-        align: 'center',
-        line: { width: 1, color: colors.grey[300] },
-        fill: { color: monthColors },
-        font: { color: colors.primary[100], size: isMobile ? 10 : 13 },
-        height: 30,
-      },
-      domain: { x: [0.05, 1], y: [0, 1] },
-    },
-  ];
-
-  const layout = {
-    title: isDashboard ? '' : {
-      font: { color: colors.primary[700], size: 18 },
-      x: 0.5,
-      xanchor: 'center',
-      y: 0.95,
-      yanchor: 'top',
-    },
-    margin: { l: 10, r: 20, b: 10, t: isDashboard ? 10 : 50 },
-    plot_bgcolor: colors.primary[700],
-    paper_bgcolor: colors.primary[700],
-    font: { color: colors.primary[100] },
-    autosize: true,
-  };
+  const { years, months, returns, averages } = monthlyReturnsData;
 
   return (
-    <div style={{ height: '100%' }}>
+    <div style={{ height: '100%', position: 'relative' }}>
       {!isDashboard && (
         <Box
           sx={{
@@ -235,27 +154,77 @@ const BitcoinMonthlyReturnsTable = ({ isDashboard = false }) => {
           {error && <span style={{ color: colors.redAccent[500], marginBottom: '10px' }}>{error}</span>}
         </Box>
       )}
-      <div
-        className="chart-container"
-        style={{
-          height: isDashboard ? '100%' : 'calc(100% - 40px)',
-          width: '100%',
+      <TableContainer
+        component={Paper}
+        ref={tableRef}
+        sx={{
+          maxHeight: isMobile ? 400 : 'none',
+          overflow: 'auto',
           border: '2px solid #a9a9a9',
-          minHeight: '600px',
+          minHeight: isDashboard ? '100%' : 600,
+          width: '100%',
+          '& .MuiTableCell-root': {
+            padding: isMobile ? '4px' : '8px',
+            fontSize: isMobile ? '0.75rem' : '0.875rem',
+            textAlign: 'center',
+            whiteSpace: 'nowrap',
+          },
         }}
       >
-        <Plot
-          data={tableData}
-          layout={layout}
-          config={{
-            staticPlot: isDashboard,
-            displayModeBar: false,
-            responsive: true,
-          }}
-          useResizeHandler={true}
-          style={{ width: '100%', height: '100%' }}
-        />
-      </div>
+        <Table stickyHeader>
+          <TableHead>
+            <TableRow>
+              <TableCell sx={{ backgroundColor: colors.primary[700], color: colors.primary[100], minWidth: isMobile ? 60 : 80 }}>
+                Year
+              </TableCell>
+              {months.map((month) => (
+                <TableCell
+                  key={month}
+                  sx={{
+                    backgroundColor: colors.primary[700],
+                    color: colors.primary[100],
+                    minWidth: isMobile ? 40 : 60,
+                    width: `${100 / (months.length + 1)}%`, // Distribute width evenly
+                  }}
+                >
+                  {month}
+                </TableCell>
+              ))}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {years.map((year, yIdx) => (
+              <TableRow key={year}>
+                <TableCell sx={{ backgroundColor: colors.primary[700], color: colors.primary[100] }}>{year}</TableCell>
+                {months.map((month, mIdx) => {
+                  const value = returns[yIdx][mIdx];
+                  if (value === null) return <TableCell key={mIdx} />;
+                  const num = parseFloat(value.replace('*', ''));
+                  const bgColor = num > 0 ? '#28822d' : num < 0 ? '#9c4f4f' : colors.primary[700];
+                  const tooltipTitle = `Return for ${months[mIdx]} ${year}: ${value}%${value.includes('*') ? ' (ongoing)' : ''}`;
+                  return (
+                    <TableCell key={mIdx} sx={{ backgroundColor: bgColor }}>
+                      <Tooltip title={tooltipTitle}>
+                        <span>{value}</span>
+                      </Tooltip>
+                    </TableCell>
+                  );
+                })}
+              </TableRow>
+            ))}
+          </TableBody>
+          <TableFooter sx={{ position: 'sticky', bottom: 0, backgroundColor: colors.primary[700] }}>
+            <TableRow>
+              <TableCell sx={{ color: colors.primary[100] }}>Average</TableCell>
+              {averages.map((avg, idx) => (
+                <TableCell key={idx} sx={{ color: colors.primary[100] }}>
+                  {avg !== null ? `${avg}%` : ''}
+                </TableCell>
+              ))}
+            </TableRow>
+          </TableFooter>
+        </Table>
+      </TableContainer>
       <div className="under-chart">
         {!isDashboard && <LastUpdated storageKey="btcData" />}
         {!isDashboard && <BitcoinFees />}

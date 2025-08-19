@@ -2,7 +2,7 @@ import React, { useEffect, useState, useContext, useMemo, useCallback } from 're
 import Plot from 'react-plotly.js';
 import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
-import { Select, MenuItem, FormControl, InputLabel, Box, Checkbox } from '@mui/material';
+import { Select, MenuItem, FormControl, InputLabel, Box, Checkbox, useMediaQuery } from '@mui/material';
 import '../styling/bitcoinChart.css';
 import useIsMobile from '../hooks/useIsMobile';
 import BitcoinFees from './BitcoinTransactionFees';
@@ -21,6 +21,7 @@ const MarketCycles = ({ isDashboard = false }) => {
   const [error, setError] = useState(null);
   const [selectedCycles, setSelectedCycles] = useState([]);
   const [seriesVisibility, setSeriesVisibility] = useState({});
+  const isNarrowScreen = useMediaQuery('(max-width:600px)');
 
   // Define the initial layout with useMemo
   const initialLayout = useMemo(() => ({
@@ -34,12 +35,17 @@ const MarketCycles = ({ isDashboard = false }) => {
       autorange: true,
     },
     yaxis: {
-      title: 'Logarithmic ROI (Shifted Base-10)', // Updated label
+      title: 'Logarithmic ROI (Shifted Base-10)',
       type: 'linear',
       autorange: true,
     },
     showlegend: !isDashboard,
     hovermode: 'x unified',
+    hoverlabel: {
+      font: {
+        size: isNarrowScreen ? 8 : 12,
+      },
+    },
     legend: !isDashboard ? {
       orientation: 'h',
       x: 0.5,
@@ -47,10 +53,22 @@ const MarketCycles = ({ isDashboard = false }) => {
       y: -0.2,
       yanchor: 'top',
     } : {},
-  }), [colors, isDashboard, isMobile]);
+  }), [colors, isDashboard, isMobile, isNarrowScreen]);
 
   // State to manage the current layout
   const [currentLayout, setCurrentLayout] = useState(initialLayout);
+
+  // Update tooltip size when isNarrowScreen changes
+  useEffect(() => {
+    setCurrentLayout((prev) => ({
+      ...prev,
+      hoverlabel: {
+        font: {
+          size: isNarrowScreen ? 8 : 12,
+        },
+      },
+    }));
+  }, [isNarrowScreen]);
 
   // Fetch data
   useEffect(() => {
@@ -73,14 +91,12 @@ const MarketCycles = ({ isDashboard = false }) => {
   // Process cycle data and compute average
   const cycleDatasets = useMemo(() => {
     if (btcData.length === 0) return [];
-
     const halvingDates = {
       'Cycle 1': '2012-11-28',
       'Cycle 2': '2016-07-09',
       'Cycle 3': '2020-05-11',
       'Cycle 4': '2024-04-19'
     };
-
     const cycleStarts = {
       bottom: {
         'Cycle 1': '2011-11-22',
@@ -95,7 +111,6 @@ const MarketCycles = ({ isDashboard = false }) => {
         'Cycle 3': '2021-11-10'
       }
     };
-
     const legendYears = {
       bottom: {
         'Cycle 1': '(2011-2013)',
@@ -115,7 +130,6 @@ const MarketCycles = ({ isDashboard = false }) => {
         'Cycle 3': '(2021-present)'
       }
     };
-
     const cycleEnds = {
       peak: {
         'Cycle 1': '2017-12-17',
@@ -123,45 +137,37 @@ const MarketCycles = ({ isDashboard = false }) => {
         'Cycle 3': null
       }
     };
-
     const processCycle = (start, end, cycleName, shortName) => {
       const endDate = end || btcData[btcData.length - 1].time;
       const filteredData = btcData.filter(d => new Date(d.time) >= new Date(start) && new Date(d.time) <= new Date(endDate));
       if (filteredData.length === 0) return null;
-
       const basePrice = filteredData[0].value;
       return {
         name: `${cycleName} ${legendYears[startPoint][cycleName]}`,
         shortName: cycleName,
         data: filteredData.map((item, index) => ({
           day: index,
-          roi: Math.log10(item.value / basePrice) + 1, // Shifted logarithmic ROI
+          roi: Math.log10(item.value / basePrice) + 1,
           date: item.time,
           cycle: cycleName
         }))
       };
     };
-
     const cycles = [
       processCycle(cycleStarts[startPoint]['Cycle 1'], startPoint === 'peak' ? cycleEnds[startPoint]['Cycle 1'] : '2013-11-30', 'Cycle 1'),
       processCycle(cycleStarts[startPoint]['Cycle 2'], startPoint === 'peak' ? cycleEnds[startPoint]['Cycle 2'] : '2017-12-17', 'Cycle 2'),
       processCycle(cycleStarts[startPoint]['Cycle 3'], startPoint === 'peak' ? cycleEnds[startPoint]['Cycle 3'] : '2021-11-08', 'Cycle 3')
     ];
-
     if (startPoint !== 'peak') {
       cycles.push(processCycle(cycleStarts[startPoint]['Cycle 4'], null, 'Cycle 4'));
     }
-
     const validCycles = cycles.filter(cycle => cycle !== null);
-
-    // Compute average ROI for selected cycles
     let averageCycle = null;
     if (selectedCycles.length > 0) {
       const selectedCycleData = validCycles.filter(cycle => selectedCycles.includes(cycle.shortName));
       if (selectedCycleData.length > 0) {
         const maxDays = Math.max(...selectedCycleData.map(cycle => cycle.data.length));
         const averageData = [];
-
         for (let day = 0; day < maxDays; day++) {
           const rois = selectedCycleData
             .filter(cycle => cycle.data[day])
@@ -176,7 +182,6 @@ const MarketCycles = ({ isDashboard = false }) => {
             });
           }
         }
-
         if (averageData.length > 0) {
           averageCycle = {
             name: `Average (${selectedCycles.join(', ')})`,
@@ -186,7 +191,6 @@ const MarketCycles = ({ isDashboard = false }) => {
         }
       }
     }
-
     return [...validCycles, ...(averageCycle ? [averageCycle] : [])];
   }, [btcData, startPoint, selectedCycles]);
 
@@ -218,7 +222,7 @@ const MarketCycles = ({ isDashboard = false }) => {
       },
       text: cycle.data.map(
         (d) =>
-          `<b>${cycle.shortName}   ROI: ${d.roi.toFixed(2)}</b>  (${new Date(
+          `<b>${cycle.shortName} ROI: ${d.roi.toFixed(2)}</b> (${new Date(
             d.date
           ).toLocaleDateString()})`
       ),
@@ -408,7 +412,7 @@ const MarketCycles = ({ isDashboard = false }) => {
         {!isDashboard && <BitcoinFees />}
       </div>
       {!isDashboard && (
-        <p className = 'chart-info'>
+        <p className='chart-info'>
           The return on investment between market cycles is calculated as a shifted logarithmic scale (log10(price / basePrice) + 1),
           where ROI = 1 indicates no change, above 1 indicates positive returns, and below 1 indicates negative returns.
           The average ROI line (if selected) represents the mean of the chosen historical cycles on this shifted scale.

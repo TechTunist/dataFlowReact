@@ -5,7 +5,7 @@ import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
-import { Select, MenuItem, FormControl, InputLabel, Box, Checkbox } from '@mui/material';
+import { Select, MenuItem, FormControl, InputLabel, Box, Checkbox, useMediaQuery } from '@mui/material';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 
@@ -30,6 +30,7 @@ const AltcoinPrice = ({ isDashboard = false }) => {
   const [activeRsiPeriod, setActiveRsiPeriod] = useState('');
   const theme = useTheme();
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
+  const isNarrowScreen = useMediaQuery('(max-width:600px)');
   const isMobile = useIsMobile();
   const {
     altcoinData,
@@ -964,7 +965,11 @@ const AltcoinPrice = ({ isDashboard = false }) => {
               if (leftPosition >= 0) return `${leftPosition}px`;
               return `${Math.max(0, Math.min(rightPosition, chartWidth - tooltipWidth))}px`;
             })(),
-            top: `${tooltipData.y + 250}px`,
+            top: (() => {
+              const offsetY = isNarrowScreen ? 400 : 220;
+              return `${tooltipData.y + offsetY}px`
+            })()
+            // top: `${tooltipData.y + 250}px`,
           }}
         >
           <div style={{ fontSize: '15px' }}>{selectedCoin}</div>

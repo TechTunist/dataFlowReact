@@ -1054,7 +1054,11 @@ const BitcoinPrice = ({ isDashboard = false }) => {
               if (leftPosition >= 0) return `${leftPosition}px`;
               return `${Math.max(0, Math.min(rightPosition, chartWidth - tooltipWidth))}px`;
             })(),
-            top: `${tooltipData.y + 150}px`,
+            top: (() => {
+              const offsetY = isNarrowScreen ? 300 : 150;
+              return `${tooltipData.y + offsetY}px`
+            })(),
+            // top: `${tooltipData.y + 150}px`,
             zIndex: 1000,
           }}
         >
