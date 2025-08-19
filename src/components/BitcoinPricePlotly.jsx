@@ -8,7 +8,6 @@ const BitcoinPrice = ({ isDashboard = false }) => {
     const [scaleMode, setScaleMode] = useState('log'); // 'log' for logarithmic, 'linear' for linear
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
-    const isNarrowScreen = useMediaQuery('(max-width:600px)');
 
     useEffect(() => {
         // Replace the fetch URL with your API endpoint

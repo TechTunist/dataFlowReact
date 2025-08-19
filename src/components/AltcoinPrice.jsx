@@ -969,7 +969,6 @@ const AltcoinPrice = ({ isDashboard = false }) => {
               const offsetY = isNarrowScreen ? 400 : 220;
               return `${tooltipData.y + offsetY}px`
             })()
-            // top: `${tooltipData.y + 250}px`,
           }}
         >
           <div style={{ fontSize: '15px' }}>{selectedCoin}</div>
