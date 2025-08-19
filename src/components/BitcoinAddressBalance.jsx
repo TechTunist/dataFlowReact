@@ -1,8 +1,7 @@
-// src/components/BitcoinAddressBalancesChart.js
 import React, { useEffect, useState, useContext, useMemo, useRef } from 'react';
 import Plot from 'react-plotly.js';
 import { tokens } from '../theme';
-import { useTheme, Box, FormControl, InputLabel, Select, MenuItem, Typography } from '@mui/material';
+import { useTheme, Box, FormControl, InputLabel, Select, MenuItem, Typography, useMediaQuery } from '@mui/material';
 import '../styling/bitcoinChart.css';
 import useIsMobile from '../hooks/useIsMobile';
 import { DataContext } from '../DataContext';
@@ -24,6 +23,7 @@ const BitcoinAddressBalancesChart = ({ isDashboard = false }) => {
   const [activeMetrics, setActiveMetrics] = useState(''); // Single metric selection
   const [rangeStart, setRangeStart] = useState(''); // Start of the address range
   const [rangeEnd, setRangeEnd] = useState(''); // End of the address range
+  const isNarrowScreen = useMediaQuery('(max-width:600px)');
 
   // Fetch address metrics when the component mounts
   useEffect(() => {
@@ -67,7 +67,7 @@ const BitcoinAddressBalancesChart = ({ isDashboard = false }) => {
     margin: { l: 70, r: 70, b: 50, t: isDashboard ? 30 : 50, pad: 4 },
     plot_bgcolor: colors.primary[700],
     paper_bgcolor: colors.primary[700],
-    font: { color: colors.grey[100] },
+    font: { color: colors.grey[100], size: 12 },
     xaxis: {
       title: 'Date',
       autorange: true,
@@ -82,9 +82,14 @@ const BitcoinAddressBalancesChart = ({ isDashboard = false }) => {
       tickfont: { color: colors.grey[100] },
     },
     yaxis: {
-      title: 'Number of Addresses',
+      title: {
+        text: 'Number of Addresses',
+        font: { color: colors.grey[100], size: 14 },
+        standoff: 10,
+      },
       type: 'log',
       autorange: true,
+      nticks: 5,
       tickcolor: colors.grey[100],
       gridcolor: colors.grey[800],
       gridwidth: 1,
@@ -93,13 +98,18 @@ const BitcoinAddressBalancesChart = ({ isDashboard = false }) => {
       linecolor: colors.grey[100],
       linewidth: 1,
       ticks: 'outside',
-      tickfont: { color: colors.grey[100] },
+      tickfont: { color: colors.grey[100], size: 12 },
       tickformat: '.2s',
     },
     yaxis2: {
-      title: 'BTC Price (USD)',
+      title: {
+        text: 'BTC Price (USD)',
+        font: { color: colors.grey[100], size: 14 },
+        standoff: 10,
+      },
       type: 'log',
       autorange: true,
+      nticks: 5,
       overlaying: 'y',
       side: 'right',
       tickcolor: colors.grey[100],
@@ -110,7 +120,7 @@ const BitcoinAddressBalancesChart = ({ isDashboard = false }) => {
       linecolor: colors.grey[100],
       linewidth: 1,
       ticks: 'outside',
-      tickfont: { color: colors.grey[100] },
+      tickfont: { color: colors.grey[100], size: 12 },
       tickformat: '$,.2s',
     },
     showlegend: !isDashboard,
@@ -125,17 +135,17 @@ const BitcoinAddressBalancesChart = ({ isDashboard = false }) => {
         }
       : {},
     hovermode: 'x unified',
-    hoverlabel: { bgcolor: colors.grey[700], font: { color: colors.grey[100] } },
+    hoverlabel: { 
+      bgcolor: colors.grey[700], 
+      font: { color: colors.grey[100], size: isNarrowScreen ? 10 : 12 }
+    },
   });
 
   const datasets = useMemo(() => {
     if (!onchainMetricsData || onchainMetricsData.length === 0) {
-      // console.log('No onchainMetricsData available for datasets');
       return [];
     }
-
     let metricTraces = [];
-
     if (activeMetrics) {
       metricTraces = [{
         x: onchainMetricsData.map((d) => d.time),
@@ -151,7 +161,6 @@ const BitcoinAddressBalancesChart = ({ isDashboard = false }) => {
       const startIndex = orderedMetricKeys.indexOf(rangeStart);
       const endIndex = orderedMetricKeys.indexOf(rangeEnd);
       const selectedMetrics = orderedMetricKeys.slice(startIndex, endIndex + 1);
-
       const combinedData = onchainMetricsData.map((dataPoint) => {
         let totalAddresses = 0;
         selectedMetrics.forEach((metric) => {
@@ -159,11 +168,9 @@ const BitcoinAddressBalancesChart = ({ isDashboard = false }) => {
         });
         return totalAddresses;
       });
-
-      const startLabel = addressMetrics[rangeStart].label.replace('Addresses ', '');
-      const endLabel = addressMetrics[rangeEnd].label.replace('Addresses ', '');
+      const startLabel = addressMetrics[rangeStart].label.replace('Addresses ≥ ', ' ≥ ').replace(' BTC', '');
+      const endLabel = addressMetrics[rangeEnd].label.replace('Addresses ≥ ', ' ≥ ').replace(' BTC', '');
       const rangeLabel = `Addresses ${startLabel} to ${endLabel}`;
-
       metricTraces = [{
         x: onchainMetricsData.map((d) => d.time),
         y: combinedData,
@@ -175,7 +182,6 @@ const BitcoinAddressBalancesChart = ({ isDashboard = false }) => {
         hovertemplate: `<b>${rangeLabel}</b>: %{y:,.0f}<br><extra></extra>`,
       }];
     }
-
     const btcPriceTrace = btcData.length > 0 ? [{
       x: btcData.map((d) => d.time),
       y: btcData.map((d) => d.value),
@@ -187,7 +193,6 @@ const BitcoinAddressBalancesChart = ({ isDashboard = false }) => {
       hovertemplate: `<b>Bitcoin Price</b>: $%{y:,.0f}<br><extra></extra>`,
       yaxis: 'y2',
     }] : [];
-
     return [...metricTraces, ...btcPriceTrace];
   }, [onchainMetricsData, btcData, activeMetrics, rangeStart, rangeEnd, addressMetrics, orderedMetricKeys]);
 
@@ -196,7 +201,7 @@ const BitcoinAddressBalancesChart = ({ isDashboard = false }) => {
       ...prev,
       plot_bgcolor: colors.primary[700],
       paper_bgcolor: colors.primary[700],
-      font: { color: colors.grey[100] },
+      font: { color: colors.grey[100], size: 12 },
       xaxis: {
         ...prev.xaxis,
         title: 'Date',
@@ -212,8 +217,13 @@ const BitcoinAddressBalancesChart = ({ isDashboard = false }) => {
       },
       yaxis: {
         ...prev.yaxis,
-        title: 'Number of Addresses',
+        title: {
+          text: 'Number of Addresses',
+          font: { color: colors.grey[100], size: 14 },
+          standoff: 10,
+        },
         type: scaleMode === 1 ? 'log' : 'linear',
+        nticks: 5,
         tickcolor: colors.grey[100],
         gridcolor: colors.grey[800],
         gridwidth: 1,
@@ -222,13 +232,18 @@ const BitcoinAddressBalancesChart = ({ isDashboard = false }) => {
         linecolor: colors.grey[100],
         linewidth: 1,
         ticks: 'outside',
-        tickfont: { color: colors.grey[100] },
+        tickfont: { color: colors.grey[100], size: 12 },
         tickformat: '.2s',
       },
       yaxis2: {
         ...prev.yaxis2,
-        title: 'BTC Price (USD)',
+        title: {
+          text: 'BTC Price (USD)',
+          font: { color: colors.grey[100], size: 14 },
+          standoff: 10,
+        },
         type: 'log',
+        nticks: 5,
         tickcolor: colors.grey[100],
         gridcolor: colors.grey[800],
         gridwidth: 1,
@@ -237,17 +252,19 @@ const BitcoinAddressBalancesChart = ({ isDashboard = false }) => {
         linecolor: colors.grey[100],
         linewidth: 1,
         ticks: 'outside',
-        tickfont: { color: colors.grey[100] },
+        tickfont: { color: colors.grey[100], size: 12 },
         tickformat: '$,.2s',
       },
+      hoverlabel: { 
+        bgcolor: colors.grey[700], 
+        font: { color: colors.grey[100], size: isNarrowScreen ? 10 : 12 }
+      },
     }));
-  }, [colors, scaleMode]);
+  }, [colors, scaleMode, isNarrowScreen]);
 
   const handleMetricChange = (event) => {
     const selected = event.target.value;
-    // console.log(`Metric selection changed to: ${selected}`);
     setActiveMetrics(selected);
-    // Clear the range selectors when a single metric is selected
     setRangeStart('');
     setRangeEnd('');
   };
@@ -255,9 +272,7 @@ const BitcoinAddressBalancesChart = ({ isDashboard = false }) => {
   const handleRangeStartChange = (event) => {
     const selectedStart = event.target.value;
     setRangeStart(selectedStart);
-    // Clear the single metric selection when a range is selected
     setActiveMetrics('');
-    // If the end is before the start, reset the end
     if (rangeEnd && orderedMetricKeys.indexOf(rangeEnd) < orderedMetricKeys.indexOf(selectedStart)) {
       setRangeEnd('');
     }
@@ -266,19 +281,16 @@ const BitcoinAddressBalancesChart = ({ isDashboard = false }) => {
   const handleRangeEndChange = (event) => {
     const selectedEnd = event.target.value;
     setRangeEnd(selectedEnd);
-    // Clear the single metric selection when a range is selected
     setActiveMetrics('');
   };
 
   const toggleScaleMode = () => {
     setScaleMode((prev) => {
-      // console.log(`Scale mode toggled to: ${prev === 1 ? 'Linear' : 'Logarithmic'}`);
       return prev === 1 ? 0 : 1;
     });
   };
 
   const resetChartView = () => {
-    // console.log('Resetting chart view');
     setLayout((prev) => ({
       ...prev,
       xaxis: { ...prev.xaxis, autorange: true },
@@ -289,7 +301,6 @@ const BitcoinAddressBalancesChart = ({ isDashboard = false }) => {
 
   const handleRelayout = (event) => {
     if (event['xaxis.range[0]'] || event['yaxis.range[0]'] || event['yaxis2.range[0]']) {
-      // console.log('Chart relayout:', event);
       setLayout((prev) => ({
         ...prev,
         xaxis: {
@@ -368,12 +379,14 @@ const BitcoinAddressBalancesChart = ({ isDashboard = false }) => {
           <Box
             sx={{
               display: 'flex',
-              flexDirection: { xs: 'column', sm: 'row' },
+              flexDirection: 'row',
               alignItems: 'center',
-              gap: '10px',
+              gap: { xs: '5px', sm: '10px' },
+              width: { xs: '100%', sm: 'auto' },
+              flexWrap: 'nowrap',
             }}
           >
-            <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '200px' } }}>
+            <FormControl sx={{ minWidth: '80px', width: { xs: '30%', sm: '200px' } }}>
               <InputLabel
                 id="range-start-label"
                 shrink
@@ -402,7 +415,7 @@ const BitcoinAddressBalancesChart = ({ isDashboard = false }) => {
                   '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
                   '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
                   '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                  '& .MuiSelect-select': { py: 1.5, pl: 2 },
+                  '& .MuiSelect-select': { py: 1, pl: 1.5 },
                   '& .MuiSelect-select:empty': { color: colors.grey[500] },
                 }}
               >
@@ -417,13 +430,14 @@ const BitcoinAddressBalancesChart = ({ isDashboard = false }) => {
               variant="subtitle2"
               sx={{
                 color: colors.grey[100],
-                fontSize: '14px',
-                mx: '5px',
+                fontSize: { xs: '12px', sm: '14px' },
+                mx: { xs: '2px', sm: '5px' },
+                whiteSpace: 'nowrap',
               }}
             >
               Create Range
             </Typography>
-            <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '200px' } }}>
+            <FormControl sx={{ minWidth: '80px', width: { xs: '30%', sm: '200px' } }}>
               <InputLabel
                 id="range-end-label"
                 shrink
@@ -453,7 +467,7 @@ const BitcoinAddressBalancesChart = ({ isDashboard = false }) => {
                   '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
                   '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
                   '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                  '& .MuiSelect-select': { py: 1.5, pl: 2 },
+                  '& .MuiSelect-select': { py: 1, pl: 1.5 },
                   '& .MuiSelect-select:empty': { color: colors.grey[500] },
                 }}
               >
@@ -554,7 +568,7 @@ const BitcoinAddressBalancesChart = ({ isDashboard = false }) => {
                   marginRight: '5px',
                 }}
               />
-              Addresses {addressMetrics[rangeStart].label.split(' ')[1]} to {addressMetrics[rangeEnd].label.split(' ')[1]}
+              Addr {addressMetrics[rangeStart].label.replace('Addresses ≥ ', '≥ ').replace(' BTC', '')} to {addressMetrics[rangeEnd].label.replace('Addresses ≥ ', '≥ ').replace(' BTC', '')}
             </div>
           )}
         </div>
@@ -580,7 +594,6 @@ const BitcoinAddressBalancesChart = ({ isDashboard = false }) => {
         <p className="chart-info" style={{ marginTop: '10px', textAlign: 'left', width: '100%' }}>
           This chart displays the number of Bitcoin addresses holding various levels of Bitcoin over time.
           This metric gives an indication of the distribution of Bitcoin wealth among holders.
-          
           <br />
           Source: <a href="https://coinmetrics.io/community-network-data/">Coin Metrics Community API</a>
           <br />

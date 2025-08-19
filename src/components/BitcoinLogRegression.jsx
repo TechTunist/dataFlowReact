@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState, useContext, useMemo } from 'react';
 import { createChart } from 'lightweight-charts';
 import '../styling/bitcoinChart.css';
 import { tokens } from "../theme";
-import { useTheme } from "@mui/material";
+import { useTheme, useMediaQuery } from "@mui/material";
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
 import BitcoinFees from './BitcoinTransactionFees';
@@ -23,6 +23,7 @@ const BitcoinLogRegression = ({ isDashboard = false, priceData: propPriceData })
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const isMobile = useIsMobile();
+  const isNarrowScreen = useMediaQuery('(max-width:600px)');
 
   // Access DataContext
   const { btcData: contextPriceData, fetchBtcData } = useContext(DataContext);
@@ -437,6 +438,8 @@ const BitcoinLogRegression = ({ isDashboard = false, priceData: propPriceData })
               }
             })(),
             top: `${tooltipData.y + 100}px`,
+            width: isNarrowScreen ? '150px' : '200px',
+            fontSize: isNarrowScreen ? '12px' : '14px',
           }}
         >
           <b>

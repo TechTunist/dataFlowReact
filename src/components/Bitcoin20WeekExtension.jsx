@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useContext, useMemo, useRef } from 'react';
 import Plot from 'react-plotly.js';
 import { tokens } from "../theme";
-import { useTheme } from "@mui/material";
+import { useTheme, useMediaQuery} from "@mui/material";
 import '../styling/bitcoinChart.css';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
@@ -15,6 +15,7 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
   const { btcData, fetchBtcData } = useContext(DataContext);
   const plotRef = useRef(null);
   const isMobile = useIsMobile(); 
+  const isNarrowScreen = useMediaQuery('(max-width:600px)');
 
   // Define extension ranges with vivid colors
   const extensionRanges = [
@@ -234,15 +235,46 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
   }, [chartData, theme]);
 
   useEffect(() => {
-    setLayout(prevLayout => ({
-      ...prevLayout,
+    setLayout({
+      title: isDashboard ? '' : 'Bitcoin Price vs. 20-Week MA Extension',
+      autosize: true,
+      margin: { l: 60, r: 50, b: isNarrowScreen ? 80 : 50, t: 30, pad: 4 },
       plot_bgcolor: colors.primary[700],
       paper_bgcolor: colors.primary[700],
       font: { color: colors.primary[100] },
-      yaxis: { ...prevLayout.yaxis, title: { text: 'Price ($)', font: { color: colors.primary[100], size: 14 }, standoff: 5 } },
-      yaxis2: { ...prevLayout.yaxis2, title: { text: 'Extension (%)', font: { color: colors.primary[100], size: 14 }, standoff: 5 }, zerolinecolor: colors.primary[100] },
-    }));
-  }, [colors]);
+      xaxis: { autorange: true },
+      yaxis: {
+        title: { text: 'Price ($)', font: { color: colors.primary[100], size: 14 }, standoff: 5 },
+        type: 'log',
+        autorange: true,
+        automargin: true,
+      },
+      yaxis2: {
+        title: { text: 'Extension (%)', font: { color: colors.primary[100], size: 14 }, standoff: 5 },
+        overlaying: 'y',
+        side: 'right',
+        autorange: true,
+        automargin: true,
+        zeroline: true,
+        zerolinecolor: colors.primary[100],
+        zerolinewidth: 1,
+      },
+      legend: {
+        orientation: 'h',
+        x: 0.5,
+        xanchor: 'center',
+        y: isNarrowScreen ? -0.3 : -0.2, // Move legend slightly lower on narrow screens
+        yanchor: 'top',
+        font: { size: isNarrowScreen ? 10 : 12 }, // Smaller font on narrow screens
+        itemwidth: isNarrowScreen ? 70 : undefined, // Allow wrapping by setting item width
+        tracegroupgap: isNarrowScreen ? 2 : 10, // Reduce gap between legend items
+        itemsizing: 'constant', // Ensure consistent marker sizes
+      },
+      showlegend: isMobile ? false : true,
+      hovermode: 'closest',
+      hoverdistance: 10,
+    });
+  }, [colors, isDashboard, isMobile, isNarrowScreen]);
 
   const resetChartView = () => {
     // Update layout to reset axes

@@ -184,7 +184,7 @@ const BitcoinMonthlyReturnsTable = ({ isDashboard = false }) => {
                     backgroundColor: colors.primary[700],
                     color: colors.primary[100],
                     minWidth: isMobile ? 40 : 60,
-                    width: `${100 / (months.length + 1)}%`, // Distribute width evenly
+                    width: `${100 / (months.length + 1)}%`,
                   }}
                 >
                   {month}
@@ -203,24 +203,61 @@ const BitcoinMonthlyReturnsTable = ({ isDashboard = false }) => {
                   const bgColor = num > 0 ? '#28822d' : num < 0 ? '#9c4f4f' : colors.primary[700];
                   const tooltipTitle = `Return for ${months[mIdx]} ${year}: ${value}%${value.includes('*') ? ' (ongoing)' : ''}`;
                   return (
-                    <TableCell key={mIdx} sx={{ backgroundColor: bgColor }}>
-                      <Tooltip title={tooltipTitle}>
+                    <Tooltip
+                      key={mIdx}
+                      title={tooltipTitle}
+                      enterDelay={300}
+                      PopperProps={{
+                        sx: {
+                          '& .MuiTooltip-tooltip': {
+                            fontSize: '1rem',
+                            padding: '8px 12px',
+                          },
+                        },
+                      }}
+                    >
+                      <TableCell sx={{ backgroundColor: bgColor }}>
                         <span>{value}</span>
-                      </Tooltip>
-                    </TableCell>
+                      </TableCell>
+                    </Tooltip>
                   );
                 })}
               </TableRow>
             ))}
           </TableBody>
-          <TableFooter sx={{ position: 'sticky', bottom: 0, backgroundColor: colors.primary[700] }}>
+          <TableFooter>
+            {/* Separator row */}
             <TableRow>
-              <TableCell sx={{ color: colors.primary[100] }}>Average</TableCell>
-              {averages.map((avg, idx) => (
-                <TableCell key={idx} sx={{ color: colors.primary[100] }}>
-                  {avg !== null ? `${avg}%` : ''}
-                </TableCell>
-              ))}
+              <TableCell colSpan={months.length + 1} sx={{ height: '8px', backgroundColor: colors.primary[700], padding: 0 }} />
+            </TableRow>
+            {/* Average row */}
+            <TableRow>
+              <TableCell sx={{ backgroundColor: colors.primary[700], color: colors.primary[100] }}>Average</TableCell>
+              {averages.map((avg, idx) => {
+                if (avg === null) return <TableCell key={idx} />;
+                const num = parseFloat(avg);
+                const bgColor = num > 0 ? '#28822d' : num < 0 ? '#9c4f4f' : colors.primary[700];
+                const tooltipTitle = `Average return for ${months[idx]}: ${avg}%`;
+                return (
+                  <Tooltip
+                    key={idx}
+                    title={tooltipTitle}
+                    enterDelay={300}
+                    PopperProps={{
+                      sx: {
+                        '& .MuiTooltip-tooltip': {
+                          fontSize: '1rem',
+                          padding: '8px 12px',
+                        },
+                      },
+                    }}
+                  >
+                    <TableCell sx={{ backgroundColor: bgColor }}>
+                      {`${avg}%`}
+                    </TableCell>
+                  </Tooltip>
+                );
+              })}
             </TableRow>
           </TableFooter>
         </Table>
