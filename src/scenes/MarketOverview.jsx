@@ -1,5 +1,5 @@
 // src/scenes/MarketOverview.js
-import React, { useState, useEffect, useContext, memo } from 'react';
+import React, { useState, useEffect, useContext, memo, useMemo } from 'react';
 import FearAndGreed3D from '../components/FearAndGreed3D';
 import ProgressBar3D from '../components/ProgressBar3D';
 import {
@@ -1510,67 +1510,88 @@ const RoiCycleComparisonWidget = memo(() => {
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
     const { btcData } = useContext(DataContext);
-    const [cycleData, setCycleData] = useState(null);
-    const [heatScore, setHeatScore] = useState(null);
     const [isInfoVisible, setIsInfoVisible] = useState(false);
+    const [heatScore, setHeatScore] = useState(null);
+  
+    // Define cycle dates (same as CycleDaysLeft)
+    const cycleDates = useMemo(() => ({
+      bottom: {
+        'Cycle 2': { start: '2015-01-15', end: '2017-12-17' },
+        'Cycle 3': { start: '2018-12-15', end: '2021-11-08' },
+        'Cycle 4': { start: '2022-11-21', end: null },
+      },
+      halving: {
+        'Cycle 2': { start: '2016-07-09', end: '2017-12-17' },
+        'Cycle 3': { start: '2020-05-11', end: '2021-11-08' },
+        'Cycle 4': { start: '2024-04-19', end: null },
+      },
+      peak: {
+        'Cycle 1': { start: '2013-11-30', end: '2017-12-17' },
+        'Cycle 2': { start: '2017-12-17', end: '2021-11-10' },
+        'Cycle 3': { start: '2021-11-10', end: null },
+      },
+    }), []);
+  
+    // Calculate days between two dates
+    const calculateDays = (start, end) => {
+      if (!start || !end) return 0;
+      const startDate = new Date(start);
+      const endDate = new Date(end);
+      return Math.round((endDate - startDate) / (1000 * 60 * 60 * 24));
+    };
+  
+    // Calculate average cycle lengths
+    const averageCycleLengths = useMemo(() => {
+      const averages = {
+        bottom: 0,
+        halving: 0,
+        peak: 0,
+      };
+      const bottomDays = [
+        calculateDays(cycleDates.bottom['Cycle 2'].start, cycleDates.bottom['Cycle 2'].end),
+        calculateDays(cycleDates.bottom['Cycle 3'].start, cycleDates.bottom['Cycle 3'].end),
+      ].filter(days => days !== 0);
+      averages.bottom = bottomDays.length > 0 ? Math.round(bottomDays.reduce((sum, days) => sum + days, 0) / bottomDays.length) : 0;
+      const halvingDays = [
+        calculateDays(cycleDates.halving['Cycle 2'].start, cycleDates.halving['Cycle 2'].end),
+        calculateDays(cycleDates.halving['Cycle 3'].start, cycleDates.halving['Cycle 3'].end),
+      ].filter(days => days !== 0);
+      averages.halving = halvingDays.length > 0 ? Math.round(halvingDays.reduce((sum, days) => sum + days, 0) / halvingDays.length) : 0;
+      const peakDays = [
+        calculateDays(cycleDates.peak['Cycle 1'].start, cycleDates.peak['Cycle 1'].end),
+        calculateDays(cycleDates.peak['Cycle 2'].start, cycleDates.peak['Cycle 2'].end),
+      ].filter(days => days !== 0);
+      averages.peak = peakDays.length > 0 ? Math.round(peakDays.reduce((sum, days) => sum + days, 0) / peakDays.length) : 0;
+      return averages;
+    }, [cycleDates]);
+  
+    // Calculate days elapsed and days left for current cycle
+    const daysLeftData = useMemo(() => {
+      if (btcData.length === 0) return { bottom: { elapsed: 0, left: 0 }, halving: { elapsed: 0, left: 0 }, peak: { elapsed: 0, left: 0 } };
+      const currentDate = btcData[btcData.length - 1]?.time || new Date().toISOString().split('T')[0];
+      const data = {
+        bottom: { elapsed: 0, left: 0 },
+        halving: { elapsed: 0, left: 0 },
+        peak: { elapsed: 0, left: 0 },
+      };
+      data.bottom.elapsed = calculateDays(cycleDates.bottom['Cycle 4'].start, currentDate) || 0;
+      data.bottom.left = Math.max(0, averageCycleLengths.bottom - data.bottom.elapsed);
+      data.halving.elapsed = calculateDays(cycleDates.halving['Cycle 4'].start, currentDate) || 0;
+      data.halving.left = Math.max(0, averageCycleLengths.halving - data.halving.elapsed);
+      data.peak.elapsed = calculateDays(cycleDates.peak['Cycle 3'].start, currentDate) || 0;
+      data.peak.left = Math.max(0, averageCycleLengths.peak - data.peak.elapsed);
+      return data;
+    }, [averageCycleLengths, btcData, cycleDates]);
   
     useEffect(() => {
-      const fetchCycleData = async () => {
-        let data = await getCycleDaysData();
-        if (!data) {
-          // Calculate if not cached or stale
-          const currentDate = btcData[btcData.length - 1]?.time || new Date().toISOString().split('T')[0];
-          const calculateDays = (start, end) => {
-            if (!start || !end) return 0;
-            const startD = new Date(start);
-            const endD = new Date(end);
-            return Math.floor((endD - startD) / (1000 * 60 * 60 * 24));
-          };
-  
-          const averages = {};
-          const elapsed = {};
-          const left = {};
-  
-          // Cycle Low
-          const bottomDays = [
-            calculateDays('2015-01-15', '2017-12-17'),
-            calculateDays('2018-12-15', '2021-11-08'),
-          ];
-          averages.bottom = Math.round(bottomDays.reduce((a, b) => a + b, 0) / bottomDays.length);
-          elapsed.bottom = calculateDays('2022-11-21', currentDate);
-          left.bottom = Math.max(0, averages.bottom - elapsed.bottom);
-  
-          // Halving
-          const halvingDays = [
-            calculateDays('2016-07-09', '2017-12-17'),
-            calculateDays('2020-05-11', '2021-11-08'),
-          ];
-          averages.halving = Math.round(halvingDays.reduce((a, b) => a + b, 0) / halvingDays.length);
-          elapsed.halving = calculateDays('2024-04-19', currentDate);
-          left.halving = Math.max(0, averages.halving - elapsed.halving);
-  
-          // Cycle Peak
-          const peakDays = [
-            calculateDays('2013-11-30', '2017-12-17'),
-            calculateDays('2017-12-17', '2021-11-10'),
-          ];
-          averages.peak = Math.round(peakDays.reduce((a, b) => a + b, 0) / peakDays.length);
-          elapsed.peak = calculateDays('2021-11-10', currentDate);
-          left.peak = Math.max(0, averages.peak - elapsed.peak);
-  
-          data = { averages, elapsed, left };
-          await saveCycleDaysData(data);
-        }
-        setCycleData(data[type]);
-        if (data[type]) {
-          const progress = Math.min(100, (data[type].elapsed / data[type].averages) * 100);
-          setHeatScore(progress);
-        }
-      };
-      if (btcData.length > 0) {
-        fetchCycleData();
+      if (btcData.length === 0) return;
+      const cycleData = daysLeftData[type];
+      if (cycleData && cycleData.averages !== 0) {
+        setHeatScore(Math.min(100, (cycleData.elapsed / cycleData.averages) * 100));
+      } else {
+        setHeatScore(0);
       }
-    }, [btcData, type]);
+    }, [daysLeftData, type]);
   
     const backgroundColor = getBackgroundColor(heatScore || 0);
     const textColor = getTextColor(backgroundColor);
@@ -1582,6 +1603,7 @@ const RoiCycleComparisonWidget = memo(() => {
       halving: 'Halving',
       peak: 'Cycle Peak',
     };
+  
     const explanationMap = {
       low: 'Estimates days left in the current Bitcoin cycle based on historical averages from cycle lows (Cycles 2 and 3).',
       halving: 'Estimates days left in the current Bitcoin cycle based on historical averages from halvings (Cycles 2 and 3).',
@@ -1652,13 +1674,13 @@ const RoiCycleComparisonWidget = memo(() => {
           }}
         >
           <Typography variant="h3" color={textColor} sx={{ fontWeight: 'bold' }}>
-            {cycleData?.left ?? 'N/A'}
+            {daysLeftData[type]?.left ?? 'N/A'}
           </Typography>
           <Typography variant="h5" color={textColor} sx={{ fontWeight: 'bold' }}>
-            Avg: {cycleData?.averages ?? 'N/A'} days
+            Avg: {daysLeftData[type]?.averages ?? 'N/A'} days
           </Typography>
           <Typography variant="body1" color={textColor}>
-            Elapsed: {cycleData?.elapsed ?? 'N/A'} days
+            Elapsed: {daysLeftData[type]?.elapsed ?? 'N/A'} days
           </Typography>
           <Typography variant="body1" color={textColor}>
             Heat: {heatDescription}
