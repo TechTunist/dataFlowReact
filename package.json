@@ -2,6 +2,9 @@
   "name": "react-flow",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": "20.x"
+  },
   "dependencies": {
     "@clerk/clerk-react": "^5.30.4",
     "@emotion/react": "^11.11.4",
