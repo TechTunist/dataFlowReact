@@ -1,6 +1,7 @@
 // src/scenes/MarketOverview.js
 import React, { useState, useEffect, useContext, memo } from 'react';
 import FearAndGreed3D from '../components/FearAndGreed3D';
+import ProgressBar3D from '../components/ProgressBar3D';
 import {
   LineChart,
   Line,
@@ -106,15 +107,13 @@ const MarketOverview = memo(() => {
     altcoinSeasonData,
     fetchAltcoinSeasonData,
   } = useContext(DataContext);
-
   // State for loading
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-
   // Fetch all data and manage loading state
   useEffect(() => {
     let isMounted = true;
-  
+
     const fetchAllData = async () => {
       try {
         setIsLoading(true);
@@ -136,9 +135,9 @@ const MarketOverview = memo(() => {
         }
       }
     };
-  
+
     fetchAllData();
-  
+
     return () => {
       isMounted = false;
     };
@@ -433,10 +432,12 @@ const MarketOverview = memo(() => {
 
   // Altcoin Season Widget
   const AltcoinSeasonWidget = memo(() => {
+    const theme = useTheme();
+    const colors = tokens(theme.palette.mode);
     const [heatScore, setHeatScore] = useState(null);
     const [currentIndex, setCurrentIndex] = useState(null);
     const [isInfoVisible, setIsInfoVisible] = useState(false);
-  
+    const { altcoinSeasonData } = useContext(DataContext);
     useEffect(() => {
       if (altcoinSeasonData && altcoinSeasonData.index !== undefined) {
         const indexValue = Math.max(0, Math.min(100, altcoinSeasonData.index));
@@ -445,12 +446,10 @@ const MarketOverview = memo(() => {
         setHeatScore(heat);
       }
     }, [altcoinSeasonData]);
-  
     const backgroundColor = getBackgroundColor(heatScore || 0);
     const textColor = getTextColor(backgroundColor);
     const heatDescription = getHeatDescription(heatScore || 0);
     const isSignificant = heatScore !== null && heatScore >= 85;
-  
     const getGaugeColor = (value) => {
       const startColor = { r: 255, g: 255, b: 255 };
       const endColor = { r: 128, g: 0, b: 128 };
@@ -460,14 +459,11 @@ const MarketOverview = memo(() => {
       const b = Math.round(startColor.b + (endColor.b - startColor.b) * ratio);
       return `rgb(${r}, ${g}, ${b})`;
     };
-  
     const gaugeColor = getGaugeColor(heatScore);
-  
     const handleChartRedirect = (event) => {
-      event.stopPropagation(); // Prevent event from reaching react-grid-layout
+      event.stopPropagation();
       window.location.href = 'https://www.cryptological.app/altcoin-season-index';
     };
-  
     return (
       <Box
         sx={{
@@ -478,29 +474,12 @@ const MarketOverview = memo(() => {
           padding: '24px',
           textAlign: 'center',
           position: 'relative',
+          minHeight: '200px',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
         }}
       >
-        {/* Chart Redirect Icon */}
-        <ShowChartIcon
-          sx={{
-            position: 'absolute',
-            top: '12px',
-            left: '12px',
-            color: textColor,
-            cursor: 'pointer',
-            fontSize: '35px',
-            zIndex: 1001,
-            padding: '4px',
-            borderRadius: '50%',
-            pointerEvents: 'auto', // Ensure clickability
-            '&:hover': {
-              backgroundColor: 'rgba(255, 255, 255, 0.1)',
-            },
-          }}
-          onMouseDown={handleChartRedirect}
-          aria-label="View chart"
-        />
-        {/* Info Icon */}
         <InfoIcon
           sx={{
             position: 'absolute',
@@ -512,52 +491,59 @@ const MarketOverview = memo(() => {
             zIndex: 1001,
             padding: '4px',
             borderRadius: '50%',
-            '&:hover': {
-              backgroundColor: 'rgba(255, 255, 255, 0.1)',
-            },
+            '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
           }}
           onMouseEnter={() => setIsInfoVisible(true)}
           onMouseLeave={() => setIsInfoVisible(false)}
           aria-label="Information"
         />
-        <Typography variant="h4" color={textColor} gutterBottom sx={{ fontWeight: 'bold' }}>
+        <ShowChartIcon
+          sx={{
+            position: 'absolute',
+            top: '12px',
+            left: '12px',
+            color: textColor,
+            cursor: 'pointer',
+            fontSize: '35px',
+            zIndex: 1001,
+            padding: '4px',
+            borderRadius: '50%',
+            pointerEvents: 'auto',
+            '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+          }}
+          onMouseDown={handleChartRedirect}
+          aria-label="View chart"
+        />
+        <Typography variant="h4" color={textColor} sx={{ fontWeight: 'bold' }}>
           Altcoin Season Index
         </Typography>
-        <Box sx={{ width: '100%', mt: 2 }}>
-          <LinearProgress
-            variant="determinate"
-            value={heatScore || 0}
-            sx={{
-              height: 10,
-              borderRadius: 5,
-              backgroundColor: colors.grey[theme.palette.mode === 'dark' ? 700 : 300],
-              '& .MuiLinearProgress-bar': {
-                backgroundColor: gaugeColor,
-              },
-            }}
-          />
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
-            <Typography variant="body1" color={textColor}>0 (Bitcoin Season)</Typography>
-            <Typography variant="body1" color={textColor}>
-              {currentIndex !== null ? currentIndex.toFixed(0) : 'N/A'}
-            </Typography>
-            <Typography variant="body1" color={textColor}>100 (Altcoin Season)</Typography>
+        <Box
+          sx={{
+            flexGrow: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '100%',
+          }}
+        >
+          <Box sx={{ width: '80%', maxWidth: 600 }}>
+            <ProgressBar3D
+              value={currentIndex || 0}
+              fillColor={gaugeColor}
+              markerBorderColor={theme.palette.common.white}
+              leftEndLabel="0 (Bitcoin Season)"
+              rightEndLabel="100 (Altcoin Season)"
+              bottomLabel={heatDescription}
+              heatStatusLabel={`Heat: ${heatDescription}`}
+              labelColor={theme.palette.common.white}
+            />
           </Box>
-          <Typography variant="body1" color={textColor} sx={{ textAlign: 'center', mt: 1 }}>
-            Heat: {heatDescription}
-          </Typography>
-          <Typography variant="body1" color={textColor} sx={{ textAlign: 'center', mt: 1 }}>
-            Season: {altcoinSeasonData.season || 'N/A'}
-          </Typography>
-          <Typography variant="body1" color={textColor} sx={{ textAlign: 'center', mt: 1 }}>
-            Outperforming: {altcoinSeasonData.altcoins_outperforming || 0}/{altcoinSeasonData.altcoin_count || 0}
-          </Typography>
         </Box>
         {isSignificant && (
           <Typography
             variant="body1"
             color={colors.redAccent[500]}
-            sx={{ textAlign: 'center', mt: 2, fontWeight: 'bold' }}
+            sx={{ textAlign: 'center', fontWeight: 'bold', fontSize: '11px' }}
           >
             Warning: Strong Altcoin Season detected.
           </Typography>
@@ -1243,30 +1229,64 @@ const RoiCycleComparisonWidget = memo(() => {
 
   // Fear and Greed Gauge
   const FearAndGreedGauge = memo(() => {
+    const theme = useTheme();
+    const colors = tokens(theme.palette.mode);
+    const { fearAndGreedData, fetchFearAndGreedData } = useContext(DataContext);
+    const [isInfoVisible, setIsInfoVisible] = useState(false);
+
     const latestValue = fearAndGreedData && fearAndGreedData.length > 0 ? Math.max(0, Math.min(100, fearAndGreedData[fearAndGreedData.length - 1].value)) : 0;
     const backgroundColor = getBackgroundColor(latestValue);
     const textColor = getTextColor(backgroundColor);
     const heatDescription = getHeatDescription(latestValue);
     const isSignificant = latestValue >= 85;
-  
-    const [isInfoVisible, setIsInfoVisible] = useState(false);
+
+    const getLabelAndColor = (value) => {
+      if (value <= 25) return { label: 'Extreme Fear' };
+      if (value <= 50) return { label: 'Fear' };
+      if (value <= 75) return { label: 'Greed' };
+      return { label: 'Extreme Greed' };
+    };
+
+    const getGaugeColor = (value) => {
+      const startColor = { r: 255, g: 255, b: 255 }; // White
+      const endColor = { r: 128, g: 0, b: 128 }; // Purple
+      const ratio = (value || 0) / 100;
+      const r = Math.round(startColor.r + (endColor.r - startColor.r) * ratio);
+      const g = Math.round(startColor.g + (endColor.g - startColor.g) * ratio);
+      const b = Math.round(startColor.b + (endColor.b - startColor.b) * ratio);
+      return `rgb(${r}, ${g}, ${b})`;
+    };
+
+    const { label } = getLabelAndColor(latestValue);
+    const gaugeColor = getGaugeColor(latestValue);
+
+    useEffect(() => {
+      if (!fearAndGreedData) {
+        fetchFearAndGreedData();
+      }
+    }, [fearAndGreedData, fetchFearAndGreedData]);
+
     const handleChartRedirect = (event) => {
       event.stopPropagation();
       window.location.href = 'https://www.cryptological.app/fear-and-greed-chart';
     };
-  
+
     return (
-      <Box sx={{
-        ...chartBoxStyle(colors, theme),
-        backgroundColor: backgroundColor,
-        transition: 'background-color 0.3s ease, transform 0.2s ease-in-out',
-        border: isSignificant ? `2px solid ${colors.redAccent[500]}` : 'none',
-        padding: '24px',
-        textAlign: 'center',
-        display: 'flex',
-        justifyContent: 'center',
-        position: 'relative',
-      }}>
+      <Box
+        sx={{
+          ...chartBoxStyle(colors, theme),
+          backgroundColor: backgroundColor,
+          transition: 'background-color 0.3s ease, transform 0.2s ease-in-out',
+          border: isSignificant ? `2px solid ${colors.redAccent[500]}` : 'none',
+          padding: '24px',
+          textAlign: 'center',
+          position: 'relative',
+          minHeight: '200px',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+        }}
+      >
         <InfoIcon
           sx={{
             position: 'absolute',
@@ -1300,18 +1320,36 @@ const RoiCycleComparisonWidget = memo(() => {
           onMouseDown={handleChartRedirect}
           aria-label="View chart"
         />
-        <Typography variant="h4" color={textColor} gutterBottom sx={{ fontWeight: 'bold' }}>
+        <Typography variant="h4" color={textColor} sx={{ fontWeight: 'bold' }}>
           Fear and Greed Index
         </Typography>
-        <FearAndGreed3D backgroundColor={backgroundColor} />
-        <Typography variant="body1" color={textColor} sx={{ textAlign: 'center', mt: 1 }}>
-          Heat: {heatDescription}
-        </Typography>
+        <Box
+          sx={{
+            flexGrow: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '100%', // Ensure the container spans the full width
+          }}
+        >
+          <Box sx={{ width: '80%', maxWidth: 600 }}> {/* Match ProgressBar3D's internal width */}
+            <ProgressBar3D
+              value={latestValue}
+              fillColor={gaugeColor}
+              markerBorderColor={theme.palette.common.white}
+              leftEndLabel="Extreme Fear"
+              rightEndLabel="Extreme Greed"
+              bottomLabel={label}
+              heatStatusLabel={`Heat: ${heatDescription}`}
+              labelColor={theme.palette.common.white}
+            />
+          </Box>
+        </Box>
         {isSignificant && (
           <Typography
             variant="body1"
             color={colors.redAccent[500]}
-            sx={{ textAlign: 'center', mt: 2, fontWeight: 'bold' }}
+            sx={{ textAlign: 'center', fontWeight: 'bold', fontSize: '11px' }}
           >
             Warning: Extreme market greed.
           </Typography>
@@ -1455,128 +1493,115 @@ const RoiCycleComparisonWidget = memo(() => {
     );
   });
 
-  // Market Heat Gauge Widget
-  const MarketHeatGaugeWidget = memo(() => {
-    const [heatScore, setHeatScore] = useState(null);
-    const [debugScores, setDebugScores] = useState({});
-    const [debugInputs, setDebugInputs] = useState({});
-  
-    useEffect(() => {
-      if (mvrvData?.length > 0 && btcData?.length > 350 && fearAndGreedData?.length > 0) {
-        // MVRV Heat
-        const latestMvrvRaw = mvrvData[mvrvData.length - 1].value;
-        const latestMvrv = Math.max(0, Math.min(10000, latestMvrvRaw));
-        const { projectedPeak } = calculateMvrvPeakProjection(mvrvData);
-        let mvrvHeat = 0;
-        if (latestMvrv && projectedPeak) {
-          const cappedProjectedPeak = Math.max(0, Math.min(10000, projectedPeak));
-          const thresholds = [cappedProjectedPeak, 3.7];
-          const distances = thresholds.map(t => ((latestMvrv - t) / t) * 100);
-          const minDistance = Math.min(...distances.map(Math.abs));
-          mvrvHeat = Math.max(0, Math.min(100, 100 - (minDistance / 10) * 100));
-        }
-  
-        // Mayer Multiple Heat
-        const mayerMultiples = calculateMayerMultiple(btcData);
-        const latestMayerRaw = mayerMultiples[mayerMultiples.length - 1]?.value;
-        const latestMayer = latestMayerRaw ? Math.max(0, Math.min(100, latestMayerRaw)) : 0;
-        let mayerHeat = 0;
-        if (latestMayer) {
-          const thresholds = [2.4, 0.6];
-          const distances = thresholds.map(t => ((latestMayer - t) / t) * 100);
-          const minDistance = Math.min(...distances.map(Math.abs));
-          mayerHeat = Math.max(0, Math.min(100, 100 - (minDistance / 10) * 100));
-        }
-  
-        // Bitcoin Risk Heat
-        let riskHeat = 0;
-        let riskData = null;
-        const fetchRisk = async () => {
-          try {
-            riskData = await getBitcoinRisk();
-            riskHeat = riskData && riskData.riskLevel !== undefined ? Math.min(100, riskData.riskLevel * 100) : 0;
-          } catch (error) {
-            console.error('Error fetching risk:', error);
-            riskHeat = 0;
-          }
-  
-          // Fear and Greed Heat
-          const fearGreedValueRaw = fearAndGreedData[fearAndGreedData.length - 1].value;
-          const fearGreedValue = Math.max(0, Math.min(100, fearGreedValueRaw));
-  
-          // PiCycle Top Heat
-          const ratioData = calculateRatioSeries(btcData);
-          const latestRatioRaw = ratioData[ratioData.length - 1]?.value;
-          const latestRatio = latestRatioRaw ? Math.max(0, Math.min(100, latestRatioRaw)) : 0;
-          let piCycleHeat = 0;
-          if (latestRatio) {
-            const buffer = 0.5;
-            const minRatio = 0;
-            const heatOffset = 0.28;
-            piCycleHeat = Math.max(0, Math.min(100, (((latestRatio - minRatio) / buffer) * 100) + heatOffset));
-          }
-  
-          const inputs = {
-            latestMvrv: latestMvrvRaw,
-            projectedPeak: projectedPeak,
-            latestMayer: latestMayerRaw,
-            riskLevel: riskData?.riskLevel,
-            fearGreedValue: fearGreedValueRaw,
-            latestRatio: latestRatioRaw,
-          };
-          setDebugInputs(inputs);
-  
-          const scores = {
-            mvrv: mvrvHeat,
-            mayer: mayerHeat,
-            risk: riskHeat,
-            fearGreed: fearGreedValue,
-            piCycle: piCycleHeat,
-          };
-          const weights = {
-            mvrv: 0.25,
-            mayer: 0.25,
-            risk: 0.15,
-            fearGreed: 0.20,
-            piCycle: 0.15,
-          };
-          const weightedSum = Object.keys(scores).reduce((sum, key) => {
-            const score = scores[key] || 0;
-            return sum + score * weights[key];
-          }, 0);
-          const avgHeat = Math.max(0, Math.min(100, weightedSum));
-  
-          setDebugScores(scores);
-          setHeatScore(avgHeat);
-        };
-        fetchRisk();
+// Market Heat Gauge Widget
+const MarketHeatGaugeWidget = memo(() => {
+  const theme = useTheme();
+  const colors = tokens(theme.palette.mode);
+  const [heatScore, setHeatScore] = useState(null);
+  const [debugScores, setDebugScores] = useState({});
+  const [debugInputs, setDebugInputs] = useState({});
+  const { mvrvData, btcData, fearAndGreedData } = useContext(DataContext);
+  useEffect(() => {
+    if (mvrvData?.length > 0 && btcData?.length > 350 && fearAndGreedData?.length > 0) {
+      const latestMvrvRaw = mvrvData[mvrvData.length - 1].value;
+      const latestMvrv = Math.max(0, Math.min(10000, latestMvrvRaw));
+      const { projectedPeak } = calculateMvrvPeakProjection(mvrvData);
+      let mvrvHeat = 0;
+      if (latestMvrv && projectedPeak) {
+        const cappedProjectedPeak = Math.max(0, Math.min(10000, projectedPeak));
+        const thresholds = [cappedProjectedPeak, 3.7];
+        const distances = thresholds.map(t => ((latestMvrv - t) / t) * 100);
+        const minDistance = Math.min(...distances.map(Math.abs));
+        mvrvHeat = Math.max(0, Math.min(100, 100 - (minDistance / 10) * 100));
       }
-    }, [mvrvData, btcData, fearAndGreedData]);
-  
-    const backgroundColor = getBackgroundColor(heatScore || 0);
-    const textColor = getTextColor(backgroundColor);
-    const heatDescription = getHeatDescription(heatScore || 0);
-    const isSignificant = heatScore !== null && heatScore >= 85;
-  
-    const getGaugeColor = (value) => {
-      const startColor = { r: 255, g: 255, b: 255 };
-      const endColor = { r: 128, g: 0, b: 128 };
-      const ratio = (value || 0) / 100;
-      const r = Math.round(startColor.r + (endColor.r - startColor.r) * ratio);
-      const g = Math.round(startColor.g + (endColor.g - startColor.g) * ratio);
-      const b = Math.round(startColor.b + (endColor.b - startColor.b) * ratio);
-      return `rgb(${r}, ${g}, ${b})`;
-    };
-  
-    const gaugeColor = getGaugeColor(heatScore);
-    const [isInfoVisible, setIsInfoVisible] = useState(false);
-    const handleChartRedirect = (event) => {
-      event.stopPropagation();
-      window.location.href = '#';
-    };
-  
-    return (
-      <Box sx={{
+      const mayerMultiples = calculateMayerMultiple(btcData);
+      const latestMayerRaw = mayerMultiples[mayerMultiples.length - 1]?.value;
+      const latestMayer = latestMayerRaw ? Math.max(0, Math.min(100, latestMayerRaw)) : 0;
+      let mayerHeat = 0;
+      if (latestMayer) {
+        const thresholds = [2.4, 0.6];
+        const distances = thresholds.map(t => ((latestMayer - t) / t) * 100);
+        const minDistance = Math.min(...distances.map(Math.abs));
+        mayerHeat = Math.max(0, Math.min(100, 100 - (minDistance / 10) * 100));
+      }
+      let riskHeat = 0;
+      let riskData = null;
+      const fetchRisk = async () => {
+        try {
+          riskData = await getBitcoinRisk();
+          riskHeat = riskData && riskData.riskLevel !== undefined ? Math.min(100, riskData.riskLevel * 100) : 0;
+        } catch (error) {
+          console.error('Error fetching risk:', error);
+          riskHeat = 0;
+        }
+        const fearGreedValueRaw = fearAndGreedData[fearAndGreedData.length - 1].value;
+        const fearGreedValue = Math.max(0, Math.min(100, fearGreedValueRaw));
+        const ratioData = calculateRatioSeries(btcData);
+        const latestRatioRaw = ratioData[ratioData.length - 1]?.value;
+        const latestRatio = latestRatioRaw ? Math.max(0, Math.min(100, latestRatioRaw)) : 0;
+        let piCycleHeat = 0;
+        if (latestRatio) {
+          const buffer = 0.5;
+          const minRatio = 0;
+          const heatOffset = 0.28;
+          piCycleHeat = Math.max(0, Math.min(100, (((latestRatio - minRatio) / buffer) * 100) + heatOffset));
+        }
+        const inputs = {
+          latestMvrv: latestMvrvRaw,
+          projectedPeak: projectedPeak,
+          latestMayer: latestMayerRaw,
+          riskLevel: riskData?.riskLevel,
+          fearGreedValue: fearGreedValueRaw,
+          latestRatio: latestRatioRaw,
+        };
+        setDebugInputs(inputs);
+        const scores = {
+          mvrv: mvrvHeat,
+          mayer: mayerHeat,
+          risk: riskHeat,
+          fearGreed: fearGreedValue,
+          piCycle: piCycleHeat,
+        };
+        const weights = {
+          mvrv: 0.25,
+          mayer: 0.25,
+          risk: 0.15,
+          fearGreed: 0.20,
+          piCycle: 0.15,
+        };
+        const weightedSum = Object.keys(scores).reduce((sum, key) => {
+          const score = scores[key] || 0;
+          return sum + score * weights[key];
+        }, 0);
+        const avgHeat = Math.max(0, Math.min(100, weightedSum));
+        setDebugScores(scores);
+        setHeatScore(avgHeat);
+      };
+      fetchRisk();
+    }
+  }, [mvrvData, btcData, fearAndGreedData]);
+  const backgroundColor = getBackgroundColor(heatScore || 0);
+  const textColor = getTextColor(backgroundColor);
+  const heatDescription = getHeatDescription(heatScore || 0);
+  const isSignificant = heatScore !== null && heatScore >= 85;
+  const getGaugeColor = (value) => {
+    const startColor = { r: 255, g: 255, b: 255 };
+    const endColor = { r: 128, g: 0, b: 128 };
+    const ratio = (value || 0) / 100;
+    const r = Math.round(startColor.r + (endColor.r - startColor.r) * ratio);
+    const g = Math.round(startColor.g + (endColor.g - startColor.g) * ratio);
+    const b = Math.round(startColor.b + (endColor.b - startColor.b) * ratio);
+    return `rgb(${r}, ${g}, ${b})`;
+  };
+  const gaugeColor = getGaugeColor(heatScore);
+  const [isInfoVisible, setIsInfoVisible] = useState(false);
+  const handleChartRedirect = (event) => {
+    event.stopPropagation();
+    window.location.href = '#';
+  };
+  return (
+    <Box
+      sx={{
         ...chartBoxStyle(colors, theme),
         backgroundColor: backgroundColor,
         transition: 'background-color 0.3s ease, transform 0.2s ease-in-out',
@@ -1584,90 +1609,86 @@ const RoiCycleComparisonWidget = memo(() => {
         padding: '24px',
         textAlign: 'center',
         position: 'relative',
-      }}>
-        <InfoIcon
-          sx={{
-            position: 'absolute',
-            top: '12px',
-            right: '12px',
-            color: textColor,
-            cursor: 'pointer',
-            fontSize: '35px',
-            zIndex: 1001,
-            padding: '4px',
-            borderRadius: '50%',
-            '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
-          }}
-          onMouseEnter={() => setIsInfoVisible(true)}
-          onMouseLeave={() => setIsInfoVisible(false)}
-          aria-label="Information"
-        />
-        <ShowChartIcon
-          sx={{
-            position: 'absolute',
-            top: '12px',
-            left: '12px',
-            color: textColor,
-            cursor: 'pointer',
-            fontSize: '35px',
-            zIndex: 1001,
-            padding: '4px',
-            borderRadius: '50%',
-            '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
-          }}
-          onMouseDown={handleChartRedirect}
-          aria-label="View chart"
-        />
-        <Typography variant="h4" color={textColor} gutterBottom sx={{ fontWeight: 'bold' }}>
-          Market Heat Index
-        </Typography>
-        <Box sx={{ width: '100%', mt: 2 }}>
-          <LinearProgress
-            variant="determinate"
+        minHeight: '200px',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+      }}
+    >
+      <InfoIcon
+        sx={{
+          position: 'absolute',
+          top: '12px',
+          right: '12px',
+          color: textColor,
+          cursor: 'pointer',
+          fontSize: '35px',
+          zIndex: 1001,
+          padding: '4px',
+          borderRadius: '50%',
+          '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+        }}
+        onMouseEnter={() => setIsInfoVisible(true)}
+        onMouseLeave={() => setIsInfoVisible(false)}
+        aria-label="Information"
+      />
+      <ShowChartIcon
+        sx={{
+          position: 'absolute',
+          top: '12px',
+          left: '12px',
+          color: textColor,
+          cursor: 'pointer',
+          fontSize: '35px',
+          zIndex: 1001,
+          padding: '4px',
+          borderRadius: '50%',
+          '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+        }}
+        onMouseDown={handleChartRedirect}
+        aria-label="View chart"
+      />
+      <Typography variant="h4" color={textColor} sx={{ fontWeight: 'bold' }}>
+        Market Heat Index
+      </Typography>
+      <Box
+        sx={{
+          flexGrow: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: '100%',
+        }}
+      >
+        <Box sx={{ width: '80%', maxWidth: 600 }}>
+          <ProgressBar3D
             value={heatScore || 0}
-            sx={{
-              height: 10,
-              borderRadius: 5,
-              backgroundColor: colors.grey[theme.palette.mode === 'dark' ? 700 : 300],
-              '& .MuiLinearProgress-bar': { backgroundColor: gaugeColor },
-            }}
+            fillColor={gaugeColor}
+            markerBorderColor={theme.palette.common.white}
+            leftEndLabel="0 (Cold)"
+            rightEndLabel="100 (Hot)"
+            bottomLabel={heatDescription}
+            heatStatusLabel={`Heat: ${heatDescription}`}
+            labelColor={theme.palette.common.white}
           />
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
-            <Typography variant="body1" color={textColor}>0 (Cold)</Typography>
-            <Typography variant="body1" color={textColor}>{heatScore !== null ? heatScore.toFixed(0) : 'N/A'}</Typography>
-            <Typography variant="body1" color={textColor}>100 (Hot)</Typography>
-          </Box>
-          <Typography
-            variant="body1"
-            color={textColor}
-            sx={{ textAlign: 'center', mt: 1 }}
-          >
-            Heat: {heatDescription}
-          </Typography>
-          <Typography
-            variant="body1"
-            color={textColor}
-            sx={{ textAlign: 'center', mt: 1 }}
-          >
-            An aggregate of multiple indicators to assess market heat.
-          </Typography>
         </Box>
-        {isSignificant && (
-          <Typography
-            variant="body1"
-            color={colors.redAccent[500]}
-            sx={{ textAlign: 'center', mt: 2, fontWeight: 'bold' }}
-          >
-            Warning: Market is significantly overheated.
-          </Typography>
-        )}
-        <InfoOverlay
-          isVisible={isInfoVisible}
-          explanation="The Market Heat Index combines multiple indicators (MVRV, Mayer Multiple, Fear and Greed, etc.) to assess overall market conditions. A higher score indicates an overheated market, calculated as a weighted average of individual indicator scores."
-        />
       </Box>
-    );
-  });
+      {isSignificant && (
+        <Typography
+          variant="body1"
+          color={colors.redAccent[500]}
+          sx={{ textAlign: 'center', fontWeight: 'bold', fontSize: '11px' }}
+        >
+          Warning: Market is significantly overheated.
+        </Typography>
+      )}
+      <InfoOverlay
+        isVisible={isInfoVisible}
+        explanation="The Market Heat Index combines multiple indicators (MVRV, Mayer Multiple, Fear and Greed, etc.) to assess overall market conditions. A higher score indicates an overheated market, calculated as a weighted average of individual indicator scores."
+      />
+    </Box>
+  );
+});
 
   // Chart components
   const BitcoinPriceChart = memo(() => (
@@ -1803,7 +1824,7 @@ const RoiCycleComparisonWidget = memo(() => {
     boxSizing: 'border-box',
     display: 'flex',
     flexDirection: 'column',
-    position: 'relative', // Ensure relative positioning for absolute children
+    position: 'relative',
     boxShadow: `0 4px 12px ${theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.1)'}`,
     transition: 'transform 0.2s ease-in-out',
     '&:hover': {
@@ -1811,6 +1832,47 @@ const RoiCycleComparisonWidget = memo(() => {
       boxShadow: `0 6px 16px ${theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.2)'}`,
     },
   });
+
+  // Loading UI
+  if (isLoading) {
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '100vh',
+          backgroundColor: colors.primary[500],
+        }}
+      >
+        <CircularProgress size={60} sx={{ color: colors.blueAccent[400] }} />
+        <Typography variant="h5" color={colors.grey[100]} sx={{ mt: 2 }}>
+          Loading Market Overview...
+        </Typography>
+      </Box>
+    );
+  }
+
+  // Error UI
+  if (error) {
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '100vh',
+          backgroundColor: colors.primary[500],
+        }}
+      >
+        <Typography variant="h5" color={colors.redAccent[400]}>
+          {error}
+        </Typography>
+      </Box>
+    );
+  }
 
   return (
     <Box
@@ -1822,43 +1884,68 @@ const RoiCycleComparisonWidget = memo(() => {
         textAlign: 'center',
       }}
     >
-
-      <Box sx={{ width: '100%', maxWidth: 1440, margin: '0 auto' }}> {/* Wrapper for widgets - MOVE WIDGETS WITHIN HERE */}
-        
-      <Typography
-        variant="h4"
-        color={colors.grey[100]}
-        gutterBottom
-        sx={{ fontWeight: 'bold', marginBottom: '24px' }}
+      <Box
+        sx={{
+          // position: 'fixed',
+          top: 0, // Adjust if topbar exists, e.g., top: '64px' for a 64px topbar
+          left: 0,
+          // width: '100vw',
+          height: '20px',
+          background: `linear-gradient(to right, ${gaugeColors[0]}, ${gaugeColors[gaugeColors.length - 1]})`,
+          zIndex: 1100, // Above content but below potential topbar
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '0 16px',
+          boxShadow: `0 2px 4px ${theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.1)'}`,
+        }}
       >
-        Market Sentiment
-      </Typography>
-      <ResponsiveGridLayout
-        className="layout"
-        layouts={sentimentIndexesLayout}
-        breakpoints={breakpoints}
-        cols={cols}
-        rowHeight={rowHeight}
-        onLayoutChange={(layout, allLayouts) => setSentimentIndexesLayout(allLayouts)}
-        isDraggable={false}
-        isResizable={false}
-        compactType="vertical"
-        margin={margin}
-        containerPadding={[0, 0]}
-        style={{ width: '100%' }}
-      >
-        <div key="fearAndGreed">
-          <FearAndGreedGauge />
-        </div>
-        <div key="marketHeat">
-          <MarketHeatGaugeWidget />
-        </div>
-        <div key="altcoinSeason">
-          <AltcoinSeasonWidget />
-        </div>
-      </ResponsiveGridLayout>
-
-        {/* Performance Section */}
+        <Typography
+          variant="body2"
+          sx={{ color: theme.palette.common.white, fontSize: '12px', fontWeight: '600' }}
+        >
+          Cold (0)
+        </Typography>
+        <Typography
+          variant="body2"
+          sx={{ color: theme.palette.common.white, fontSize: '12px', fontWeight: '600' }}
+        >
+          Hot (100)
+        </Typography>
+      </Box>
+      <Box sx={{ width: '100%', maxWidth: 1440, margin: '0 auto', paddingTop: '28px' }}>
+        <Typography
+          variant="h4"
+          color={colors.grey[100]}
+          gutterBottom
+          sx={{ fontWeight: 'bold', marginBottom: '24px' }}
+        >
+          Market Sentiment
+        </Typography>
+        <ResponsiveGridLayout
+          className="layout"
+          layouts={sentimentIndexesLayout}
+          breakpoints={breakpoints}
+          cols={cols}
+          rowHeight={rowHeight}
+          onLayoutChange={(layout, allLayouts) => setSentimentIndexesLayout(allLayouts)}
+          isDraggable={false}
+          isResizable={false}
+          compactType="vertical"
+          margin={margin}
+          containerPadding={[0, 0]}
+          style={{ width: '100%' }}
+        >
+          <div key="fearAndGreed">
+            <FearAndGreedGauge />
+          </div>
+          <div key="marketHeat">
+            <MarketHeatGaugeWidget />
+          </div>
+          <div key="altcoinSeason">
+            <AltcoinSeasonWidget />
+          </div>
+        </ResponsiveGridLayout>
         <Typography
           variant="h4"
           color={colors.grey[100]}
@@ -1887,45 +1974,7 @@ const RoiCycleComparisonWidget = memo(() => {
           <div key="piCycleTop"><PiCycleTopWidget /></div>
           <div key="roiCycleComparison"><RoiCycleComparisonWidget /></div>
         </ResponsiveGridLayout>
-
-        {/* Price Section */}
-        {/* <Typography
-          variant="h4"
-          color={colors.grey[100]}
-          gutterBottom
-          sx={{ fontWeight: 'bold', margin: '24px 0 16px' }}
-        >
-          Charts
-        </Typography>
-        <ResponsiveGridLayout
-          className="layout"
-          layouts={priceLayout}
-          breakpoints={breakpoints}
-          cols={cols}
-          rowHeight={rowHeight}
-          onLayoutChange={(layout, allLayouts) => setPriceLayout(allLayouts)}
-          isDraggable={false}
-          isResizable={false}
-          compactType="vertical"
-          margin={margin}
-          containerPadding={[0, 0]}
-          style={{ width: '100%' }}
-        >
-          <div key="bitcoin">
-            <BitcoinPriceChart />
-          </div>
-          <div key="ethereum">
-            <EthereumPriceChart />
-          </div>
-          <div key="inflation">
-            <InflationChart />
-          </div>
-          <div key="marketCap">
-            <MarketCapChart />
-          </div>
-        </ResponsiveGridLayout> */}
-
-      </Box> {/* End of widgets wrapper */}
+      </Box>
     </Box>
   );
 });

@@ -1,18 +1,16 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Box, Typography, useTheme } from '@mui/material';
-import { DataContext } from '../DataContext'; // Import DataContext
+import { DataContext } from '../DataContext';
 
 const FearAndGreed3D = () => {
   const theme = useTheme();
-  const { latestFearAndGreed, fetchLatestFearAndGreed } = useContext(DataContext); // Access context
-  const [fearAndGreedValue, setFearAndGreedValue] = useState(50); // Placeholder value
+  const { latestFearAndGreed, fetchLatestFearAndGreed } = useContext(DataContext);
+  const [fearAndGreedValue, setFearAndGreedValue] = useState(50);
 
   useEffect(() => {
-    // Fetch the latest Fear and Greed data if not already fetched
     if (!latestFearAndGreed) {
       fetchLatestFearAndGreed();
     } else {
-      // Set the value from the context
       setFearAndGreedValue(parseInt(latestFearAndGreed.value, 10));
     }
   }, [latestFearAndGreed, fetchLatestFearAndGreed]);
@@ -31,60 +29,91 @@ const FearAndGreed3D = () => {
     <Box
       sx={{
         textAlign: 'center',
-        height: '100%',
+        height: '80px', // Further reduced height for thinner background
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'center',
+        background: 'rgba(0, 0, 0, 0.55)', // Dark, semi-transparent background
+        borderRadius: '8px', // Slightly smaller radius
+        padding: '4px', // Significantly reduced padding for thinner background
+        boxShadow: '0 6px 24px rgba(0, 0, 0, 0.15)', // Subtler shadow
+        backdropFilter: 'blur(8px)', // Slightly reduced blur for compactness
+        border: `1px solid rgba(255, 255, 255, 0.1)`,
       }}
     >
       <Box
         sx={{
-          width: 200,
-          height: 40,
-          background: `linear-gradient(90deg, #ff0000 0%, ${theme.palette.warning.main} 50%, #00cc00 100%)`,
-          borderRadius: 2,
+          width: '80%', // Maintain wide lateral width
+          maxWidth: 400, // Max width for larger screens
+          height: 20, // Slightly thinner gauge bar for balance
+          background: `linear-gradient(90deg, #4B6587 0%, #8BBCCC 100%)`, // Minimal blue-to-green gradient
+          borderRadius: '5px', // Adjusted for thinner bar
           position: 'relative',
           margin: '0 auto',
-          boxShadow: '0 4px 10px rgba(0,0,0,0.3)',
-          transform: 'perspective(500px) rotateX(20deg)',
-          marginTop: 4,
+          boxShadow: '0 3px 6px rgba(0, 0, 0, 0.25)', // Subtler shadow
+          transform: 'perspective(600px) rotateX(8deg)', // Subtler 3D effect
+          transition: 'transform 0.3s ease-in-out',
+          '&:hover': {
+            transform: 'perspective(600px) rotateX(6deg) translateY(-1px)',
+          },
         }}
       >
         <Box
           sx={{
             width: `${percentage}%`,
             height: '100%',
-            background: 'rgba(255,255,255,0.3)',
+            background: 'rgba(255, 255, 255, 0.2)', // Subtle overlay
             position: 'absolute',
             top: 0,
             left: 0,
-            borderRadius: 2,
-            transition: 'width 1s ease-in-out',
+            borderRadius: '5px',
+            transition: 'width 1.2s ease-in-out', // Smoother transition
           }}
         />
         <Box
           sx={{
             position: 'absolute',
-            top: -30,
-            left: `calc(${percentage}% - 15px)`,
-            width: 30,
-            height: 30,
-            backgroundColor: theme.palette.grey[700],
+            top: -18, // Adjusted for thinner bar
+            left: `calc(${percentage}% - 14px)`,
+            width: 28, // Slightly smaller marker for compact look
+            height: 28,
+            backgroundColor: theme.palette.grey[800],
             borderRadius: '50%',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: '0 2px 5px rgba(0,0,0,0.5)',
-            transition: 'left 1s ease-in-out',
+            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.3)',
+            border: `1px solid ${color}`, // Border matches dynamic label color
+            transition: 'left 1.2s ease-in-out, transform 0.3s ease-in-out',
+            '&:hover': {
+              transform: 'scale(1.1)',
+            },
           }}
         >
-          <Typography variant="body2" sx={{ color: theme.palette.common.white }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: theme.palette.common.white,
+              fontWeight: 'bold',
+              fontSize: '11px', // Smaller font for compact marker
+            }}
+          >
             {fearAndGreedValue}
           </Typography>
         </Box>
       </Box>
-      <Typography variant="h5" sx={{ mt: 4, color }}>
+      <Typography
+        variant="h6"
+        sx={{
+          mt: 1.5, // Further reduced margin
+          color,
+          fontWeight: '600',
+          letterSpacing: '0.5px',
+          textTransform: 'uppercase',
+          fontSize: '0.9rem', // Slightly smaller font
+        }}
+      >
         {label}
       </Typography>
     </Box>

@@ -26,6 +26,36 @@ export default function LoginSignup() {
   const { signIn } = useSignIn();
   const navigate = useNavigate();
 
+
+  // Add handlers for Google
+  const handleGoogle = async () => {
+    setIsLoading(true);
+    try {
+      const query = new URLSearchParams(location.search);
+      const plan = query.get('plan');
+      const redirectUrlComplete = plan === 'premium' ? '/subscription' : '/dashboard';  // Match your existing logic
+
+      if (isSignUp) {
+        await signUp.authenticateWithRedirect({
+          strategy: 'oauth_google',
+          redirectUrl: '/sso-callback',  // Your callback route
+          redirectUrlComplete,  // Dynamic based on plan
+        });
+      } else {
+        await signIn.authenticateWithRedirect({
+          strategy: 'oauth_google',
+          redirectUrl: '/sso-callback',
+          redirectUrlComplete: '/dashboard',  // Or adjust for sign-in
+        });
+      }
+    } catch (err) {
+      console.error("Google auth error:", JSON.stringify(err, null, 2));
+      alert("Google auth failed: " + (err.errors?.[0]?.message || "Unknown error"));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Read query parameters
   useEffect(() => {
     const query = new URLSearchParams(location.search);
@@ -413,6 +443,22 @@ export default function LoginSignup() {
                 </>
               )}
             </Typography>
+            <Button
+              onClick={handleGoogle}
+              disabled={isLoading}
+              sx={{
+                backgroundColor: colors.greenAccent[500],
+                color: colors.grey[900],
+                padding: "10px 20px",
+                fontWeight: "bold",
+                marginBottom: "20px",
+                "&:hover": {
+                  backgroundColor: colors.greenAccent[600],
+                },
+              }}
+            >
+              {isLoading ? "Processing..." : (isSignUp ? "Sign Up with Google" : "Sign In with Google")}
+            </Button>
           </form>
         )}
       </Box>
