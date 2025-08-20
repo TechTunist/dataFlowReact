@@ -1884,35 +1884,54 @@ const MarketHeatGaugeWidget = memo(() => {
         textAlign: 'center',
       }}
     >
-      <Box
-        sx={{
-          // position: 'fixed',
-          top: 0, // Adjust if topbar exists, e.g., top: '64px' for a 64px topbar
-          left: 0,
-          // width: '100vw',
-          height: '20px',
-          background: `linear-gradient(to right, ${gaugeColors[0]}, ${gaugeColors[gaugeColors.length - 1]})`,
-          zIndex: 1100, // Above content but below potential topbar
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '0 16px',
-          boxShadow: `0 2px 4px ${theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.1)'}`,
-        }}
-      >
-        <Typography
-          variant="body2"
-          sx={{ color: theme.palette.common.white, fontSize: '12px', fontWeight: '600' }}
+      <Box 
+          sx={{
+            borderBottom: '1px solid #4cceac',
+            marginbottom: '10px'
+          }}
         >
-          Cold (0)
-        </Typography>
         <Typography
-          variant="body2"
-          sx={{ color: theme.palette.common.white, fontSize: '12px', fontWeight: '600' }}
+          variant="h6"
+          sx={{
+            color: theme.palette.common.white, 
+            fontSize: '16px', 
+            fontWeight: '600', 
+            marginBottom: '8px',
+          }}
         >
-          Hot (100)
+          Heat Scale
         </Typography>
+        <Box
+          sx={{
+            top: 0,
+            left: 0,
+            height: '20px',
+            background: `linear-gradient(to right, ${gaugeColors[0]}, ${gaugeColors[gaugeColors.length - 1]})`,
+            zIndex: 1100,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '10px',
+            // boxShadow: `0 2px 4px ${theme.palette.mode === 'dark' ? 'rgba(255, 250, 250, 0.9)' : 'rgba(250, 250, 250, 0.9)'}`,
+            border: '2px solid rgb(0, 0, 0)', // Added border
+            marginBottom: '20px',
+          }}
+        >
+          <Typography
+            variant="body2"
+            sx={{ color: theme.palette.common.black, fontSize: '12px', fontWeight: '600' }}
+          >
+            Cold (0)
+          </Typography>
+          <Typography
+            variant="body2"
+            sx={{ color: theme.palette.common.black, fontSize: '12px', fontWeight: '600' }}
+          >
+            Hot (100)
+          </Typography>
+        </Box>
       </Box>
+      
       <Box sx={{ width: '100%', maxWidth: 1440, margin: '0 auto', paddingTop: '28px' }}>
         <Typography
           variant="h4"
