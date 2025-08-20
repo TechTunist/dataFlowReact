@@ -25,6 +25,7 @@ import { getBitcoinRisk, saveRoiData, getRoiData, clearRoiData, saveBitcoinRisk 
 import InfoIcon from '@mui/icons-material/Info'; 
 import ShowChartIcon from '@mui/icons-material/ShowChart';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
+import { saveCycleDaysData, getCycleDaysData } from '../utility/idbUtils';
 
 const calculateRiskMetric = (data) => {
   const movingAverage = data.map((item, index) => {
@@ -239,6 +240,9 @@ const MarketOverview = memo(() => {
       { i: 'mayerMultiple', x: 6, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
       { i: 'piCycleTop', x: 9, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
       { i: 'roiCycleComparison', x: 0, y: 2, w: 3, h: 2, minW: 2, minH: 2 },
+      { i: 'daysLeftLow', x: 3, y: 2, w: 3, h: 2, minW: 2, minH: 2 },
+      { i: 'daysLeftHalving', x: 6, y: 2, w: 3, h: 2, minW: 2, minH: 2 },
+      { i: 'daysLeftPeak', x: 9, y: 2, w: 3, h: 2, minW: 2, minH: 2 },
     ],
     md: [
       { i: 'bitcoinRisk', x: 0, y: 0, w: 4, h: 2, minW: 2, minH: 2 },
@@ -246,6 +250,9 @@ const MarketOverview = memo(() => {
       { i: 'mayerMultiple', x: 0, y: 2, w: 4, h: 2, minW: 2, minH: 2 },
       { i: 'piCycleTop', x: 4, y: 2, w: 4, h: 2, minW: 2, minH: 2 },
       { i: 'roiCycleComparison', x: 0, y: 4, w: 4, h: 2, minW: 2, minH: 2 },
+      { i: 'daysLeftLow', x: 4, y: 4, w: 4, h: 2, minW: 2, minH: 2 },
+      { i: 'daysLeftHalving', x: 0, y: 6, w: 4, h: 2, minW: 2, minH: 2 },
+      { i: 'daysLeftPeak', x: 4, y: 6, w: 4, h: 2, minW: 2, minH: 2 },
     ],
     sm: [
       { i: 'bitcoinRisk', x: 0, y: 0, w: 6, h: 2, minW: 2, minH: 2 },
@@ -253,6 +260,9 @@ const MarketOverview = memo(() => {
       { i: 'mayerMultiple', x: 0, y: 4, w: 6, h: 2, minW: 2, minH: 2 },
       { i: 'piCycleTop', x: 0, y: 6, w: 6, h: 2, minW: 2, minH: 2 },
       { i: 'roiCycleComparison', x: 0, y: 8, w: 6, h: 2, minW: 2, minH: 2 },
+      { i: 'daysLeftLow', x: 0, y: 10, w: 6, h: 2, minW: 2, minH: 2 },
+      { i: 'daysLeftHalving', x: 0, y: 12, w: 6, h: 2, minW: 2, minH: 2 },
+      { i: 'daysLeftPeak', x: 0, y: 14, w: 6, h: 2, minW: 2, minH: 2 },
     ],
     xs: [
       { i: 'bitcoinRisk', x: 0, y: 0, w: 4, h: 2, minW: 2, minH: 2 },
@@ -260,6 +270,9 @@ const MarketOverview = memo(() => {
       { i: 'mayerMultiple', x: 0, y: 4, w: 4, h: 2, minW: 2, minH: 2 },
       { i: 'piCycleTop', x: 0, y: 6, w: 4, h: 2, minW: 2, minH: 2 },
       { i: 'roiCycleComparison', x: 0, y: 8, w: 4, h: 2, minW: 2, minH: 2 },
+      { i: 'daysLeftLow', x: 0, y: 10, w: 4, h: 2, minW: 2, minH: 2 },
+      { i: 'daysLeftHalving', x: 0, y: 12, w: 4, h: 2, minW: 2, minH: 2 },
+      { i: 'daysLeftPeak', x: 0, y: 14, w: 4, h: 2, minW: 2, minH: 2 },
     ],
   };
 
@@ -1493,6 +1506,181 @@ const RoiCycleComparisonWidget = memo(() => {
     );
   });
 
+  const DaysLeftWidget = memo(({ type }) => {
+    const theme = useTheme();
+    const colors = tokens(theme.palette.mode);
+    const { btcData } = useContext(DataContext);
+    const [cycleData, setCycleData] = useState(null);
+    const [heatScore, setHeatScore] = useState(null);
+    const [isInfoVisible, setIsInfoVisible] = useState(false);
+  
+    useEffect(() => {
+      const fetchCycleData = async () => {
+        let data = await getCycleDaysData();
+        if (!data) {
+          // Calculate if not cached or stale
+          const currentDate = btcData[btcData.length - 1]?.time || new Date().toISOString().split('T')[0];
+          const calculateDays = (start, end) => {
+            if (!start || !end) return 0;
+            const startD = new Date(start);
+            const endD = new Date(end);
+            return Math.floor((endD - startD) / (1000 * 60 * 60 * 24));
+          };
+  
+          const averages = {};
+          const elapsed = {};
+          const left = {};
+  
+          // Cycle Low
+          const bottomDays = [
+            calculateDays('2015-01-15', '2017-12-17'),
+            calculateDays('2018-12-15', '2021-11-08'),
+          ];
+          averages.bottom = Math.round(bottomDays.reduce((a, b) => a + b, 0) / bottomDays.length);
+          elapsed.bottom = calculateDays('2022-11-21', currentDate);
+          left.bottom = Math.max(0, averages.bottom - elapsed.bottom);
+  
+          // Halving
+          const halvingDays = [
+            calculateDays('2016-07-09', '2017-12-17'),
+            calculateDays('2020-05-11', '2021-11-08'),
+          ];
+          averages.halving = Math.round(halvingDays.reduce((a, b) => a + b, 0) / halvingDays.length);
+          elapsed.halving = calculateDays('2024-04-19', currentDate);
+          left.halving = Math.max(0, averages.halving - elapsed.halving);
+  
+          // Cycle Peak
+          const peakDays = [
+            calculateDays('2013-11-30', '2017-12-17'),
+            calculateDays('2017-12-17', '2021-11-10'),
+          ];
+          averages.peak = Math.round(peakDays.reduce((a, b) => a + b, 0) / peakDays.length);
+          elapsed.peak = calculateDays('2021-11-10', currentDate);
+          left.peak = Math.max(0, averages.peak - elapsed.peak);
+  
+          data = { averages, elapsed, left };
+          await saveCycleDaysData(data);
+        }
+        setCycleData(data[type]);
+        if (data[type]) {
+          const progress = Math.min(100, (data[type].elapsed / data[type].averages) * 100);
+          setHeatScore(progress);
+        }
+      };
+      if (btcData.length > 0) {
+        fetchCycleData();
+      }
+    }, [btcData, type]);
+  
+    const backgroundColor = getBackgroundColor(heatScore || 0);
+    const textColor = getTextColor(backgroundColor);
+    const heatDescription = getHeatDescription(heatScore || 0);
+    const isSignificant = heatScore >= 85;
+  
+    const titleMap = {
+      low: 'Cycle Low',
+      halving: 'Halving',
+      peak: 'Cycle Peak',
+    };
+    const explanationMap = {
+      low: 'Estimates days left in the current Bitcoin cycle based on historical averages from cycle lows (Cycles 2 and 3).',
+      halving: 'Estimates days left in the current Bitcoin cycle based on historical averages from halvings (Cycles 2 and 3).',
+      peak: 'Estimates days left in the current Bitcoin cycle based on historical averages from cycle peaks (Cycles 1 and 2).',
+    };
+  
+    const handleChartRedirect = (event) => {
+      event.stopPropagation();
+      window.location.href = 'https://www.cryptological.app/market-cycles';
+    };
+  
+    return (
+      <Box
+        sx={{
+          ...chartBoxStyle(colors, theme),
+          backgroundColor,
+          transition: 'background-color 0.3s ease, transform 0.2s ease-in-out',
+          border: isSignificant ? `2px solid ${colors.redAccent[500]}` : 'none',
+          padding: '24px',
+          textAlign: 'center',
+          position: 'relative',
+        }}
+      >
+        <InfoIcon
+          sx={{
+            position: 'absolute',
+            top: '12px',
+            right: '12px',
+            color: textColor,
+            cursor: 'pointer',
+            fontSize: '35px',
+            zIndex: 1001,
+            padding: '4px',
+            borderRadius: '50%',
+            '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+          }}
+          onMouseEnter={() => setIsInfoVisible(true)}
+          onMouseLeave={() => setIsInfoVisible(false)}
+          aria-label="Information"
+        />
+        <ShowChartIcon
+          sx={{
+            position: 'absolute',
+            top: '12px',
+            left: '12px',
+            color: textColor,
+            cursor: 'pointer',
+            fontSize: '35px',
+            zIndex: 1001,
+            padding: '4px',
+            borderRadius: '50%',
+            '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+          }}
+          onMouseDown={handleChartRedirect}
+          aria-label="View chart"
+        />
+        <Typography variant="h4" color={textColor} gutterBottom sx={{ fontWeight: 'bold' }}>
+          Days Left (From {titleMap[type]})
+        </Typography>
+        <Box
+          sx={{
+            flexGrow: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+          }}
+        >
+          <Typography variant="h3" color={textColor} sx={{ fontWeight: 'bold' }}>
+            {cycleData?.left ?? 'N/A'}
+          </Typography>
+          <Typography variant="h5" color={textColor} sx={{ fontWeight: 'bold' }}>
+            Avg: {cycleData?.averages ?? 'N/A'} days
+          </Typography>
+          <Typography variant="body1" color={textColor}>
+            Elapsed: {cycleData?.elapsed ?? 'N/A'} days
+          </Typography>
+          <Typography variant="body1" color={textColor}>
+            Heat: {heatDescription}
+          </Typography>
+        </Box>
+        {isSignificant && (
+          <Typography
+            variant="body1"
+            color={colors.redAccent[500]}
+            sx={{ textAlign: 'center', mt: 2, fontWeight: 'bold' }}
+          >
+            Warning: Cycle nearing end.
+          </Typography>
+        )}
+        <InfoOverlay
+          isVisible={isInfoVisible}
+          explanation={explanationMap[type]}
+        />
+      </Box>
+    );
+  });
+
 // Market Heat Gauge Widget
 const MarketHeatGaugeWidget = memo(() => {
   const theme = useTheme();
@@ -1992,6 +2180,17 @@ const MarketHeatGaugeWidget = memo(() => {
           <div key="mayerMultiple"><MayerMultipleWidget /></div>
           <div key="piCycleTop"><PiCycleTopWidget /></div>
           <div key="roiCycleComparison"><RoiCycleComparisonWidget /></div>
+
+          <div key="daysLeftLow">
+            <DaysLeftWidget type="low" />
+          </div>
+          <div key="daysLeftHalving">
+            <DaysLeftWidget type="halving" />
+          </div>
+          <div key="daysLeftPeak">
+            <DaysLeftWidget type="peak" />
+          </div>
+          
         </ResponsiveGridLayout>
       </Box>
     </Box>

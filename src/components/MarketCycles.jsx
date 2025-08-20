@@ -9,6 +9,7 @@ import BitcoinFees from './BitcoinTransactionFees';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import LastUpdated from '../hooks/LastUpdated';
+import CycleDaysLeft from './CycleDaysLeft';
 
 const MarketCycles = ({ isDashboard = false }) => {
   const theme = useTheme();
@@ -410,6 +411,9 @@ const MarketCycles = ({ isDashboard = false }) => {
       <div className="under-chart">
         {!isDashboard && btcData.length > 0 && <LastUpdated storageKey="btcData" />}
         {!isDashboard && <BitcoinFees />}
+      </div>
+      <div>
+        {!isDashboard && <CycleDaysLeft />}
       </div>
       {!isDashboard && (
         <p className='chart-info'>

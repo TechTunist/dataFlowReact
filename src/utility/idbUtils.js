@@ -5,10 +5,11 @@ const DATA_STORE_NAME = 'apiData';
 const RISK_STORE_NAME = 'bitcoinRisk';
 const ETH_RISK_STORE_NAME = 'ethereumRisk';
 const ROI_STORE_NAME = 'roiData';
+const CYCLE_DAYS_STORE_NAME = 'cycleDaysData';
 
 export async function initDB() {
   try {
-    return await openDB(DB_NAME, 4, {
+    return await openDB(DB_NAME, 5, {
       upgrade(db, oldVersion) {
         if (!db.objectStoreNames.contains(DATA_STORE_NAME)) {
           db.createObjectStore(DATA_STORE_NAME, { keyPath: 'id' });
@@ -21,6 +22,9 @@ export async function initDB() {
         }
         if (!db.objectStoreNames.contains(ETH_RISK_STORE_NAME) && oldVersion < 4) {
           db.createObjectStore(ETH_RISK_STORE_NAME, { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains(CYCLE_DAYS_STORE_NAME) && oldVersion < 5) {
+          db.createObjectStore(CYCLE_DAYS_STORE_NAME, { keyPath: 'id' });
         }
       },
     });
@@ -75,7 +79,6 @@ export async function getBitcoinRisk() {
   try {
     const db = await initDB();
     const data = await db.get(RISK_STORE_NAME, 'currentRisk');
-    // Check if data exists and is from today
     if (data && data.timestamp) {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -85,7 +88,7 @@ export async function getBitcoinRisk() {
         return data;
       }
     }
-    return null; // Return null if no data or stale
+    return null;
   } catch (error) {
     console.error('Failed to get Bitcoin risk level from IndexedDB:', error);
     return null;
@@ -143,6 +146,49 @@ export async function clearRoiData() {
     await tx.done;
   } catch (error) {
     console.error('Failed to clear ROI data cache:', error);
+    throw error;
+  }
+}
+
+export async function saveCycleDaysData(cycleDaysData) {
+  try {
+    const db = await initDB();
+    await db.put(CYCLE_DAYS_STORE_NAME, { id: 'cycleDays', ...cycleDaysData, timestamp: Date.now() });
+  } catch (error) {
+    console.error('Failed to save cycle days data:', error);
+    throw error;
+  }
+}
+
+export async function getCycleDaysData() {
+  try {
+    const db = await initDB();
+    const data = await db.get(CYCLE_DAYS_STORE_NAME, 'cycleDays');
+    if (data && data.timestamp) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const dataDate = new Date(data.timestamp);
+      dataDate.setHours(0, 0, 0, 0);
+      if (dataDate.getTime() === today.getTime()) {
+        return data;
+      }
+    }
+    return null;
+  } catch (error) {
+    console.error('Failed to get cycle days data:', error);
+    return null;
+  }
+}
+
+export async function clearCycleDaysData() {
+  try {
+    const db = await initDB();
+    const tx = db.transaction(CYCLE_DAYS_STORE_NAME, 'readwrite');
+    const store = tx.objectStore(CYCLE_DAYS_STORE_NAME);
+    await store.clear();
+    await tx.done;
+  } catch (error) {
+    console.error('Failed to clear cycle days data cache:', error);
     throw error;
   }
 }
