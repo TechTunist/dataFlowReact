@@ -1589,14 +1589,13 @@ const RoiCycleComparisonWidget = memo(() => {
     );
   });
 
-// Replace the existing DaysLeftWidget component in MarketOverview.js with this corrected version
+
 const DaysLeftWidget = memo(({ type }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const { btcData } = useContext(DataContext);
   const [isInfoVisible, setIsInfoVisible] = useState(false);
   const [heatScore, setHeatScore] = useState(null);
-
   // Map type prop to daysLeftData keys
   const typeMap = {
     low: 'bottom',
@@ -1604,7 +1603,6 @@ const DaysLeftWidget = memo(({ type }) => {
     peak: 'peak',
   };
   const mappedType = typeMap[type] || type; // Fallback to type if not in map
-
   // Define cycle dates (same as CycleDaysLeft)
   const cycleDates = useMemo(() => ({
     bottom: {
@@ -1623,7 +1621,6 @@ const DaysLeftWidget = memo(({ type }) => {
       'Cycle 3': { start: '2021-11-10', end: null },
     },
   }), []);
-
   // Calculate days between two dates
   const calculateDays = (start, end) => {
     if (!start || !end) return 0;
@@ -1635,7 +1632,6 @@ const DaysLeftWidget = memo(({ type }) => {
     }
     return Math.round((endDate - startDate) / (1000 * 60 * 60 * 24));
   };
-
   // Calculate average cycle lengths
   const averageCycleLengths = useMemo(() => {
     const averages = {
@@ -1660,7 +1656,6 @@ const DaysLeftWidget = memo(({ type }) => {
     averages.peak = peakDays.length > 0 ? Math.round(peakDays.reduce((sum, days) => sum + days, 0) / peakDays.length) : 0;
     return averages;
   }, [cycleDates]);
-
   // Calculate days elapsed and days left for current cycle
   const daysLeftData = useMemo(() => {
     const data = {
@@ -1668,19 +1663,16 @@ const DaysLeftWidget = memo(({ type }) => {
       halving: { elapsed: 0, left: 0, average: averageCycleLengths.halving },
       peak: { elapsed: 0, left: 0, average: averageCycleLengths.peak },
     };
-
     if (btcData.length === 0) {
       console.warn('btcData is empty, returning default daysLeftData');
       return data;
     }
-
     const currentDate = btcData[btcData.length - 1]?.time || new Date().toISOString().split('T')[0];
     const parsedCurrentDate = new Date(currentDate);
     if (isNaN(parsedCurrentDate)) {
       console.warn('Invalid current date:', currentDate);
       return data;
     }
-
     // Bottom (Cycle Low) calculations
     const bottomStartDate = new Date(cycleDates.bottom['Cycle 4'].start);
     if (!isNaN(bottomStartDate)) {
@@ -1689,7 +1681,6 @@ const DaysLeftWidget = memo(({ type }) => {
     } else {
       console.warn('Invalid bottom start date:', cycleDates.bottom['Cycle 4'].start);
     }
-
     // Halving calculations
     const halvingStartDate = new Date(cycleDates.halving['Cycle 4'].start);
     if (!isNaN(halvingStartDate)) {
@@ -1698,7 +1689,6 @@ const DaysLeftWidget = memo(({ type }) => {
     } else {
       console.warn('Invalid halving start date:', cycleDates.halving['Cycle 4'].start);
     }
-
     // Peak calculations
     const peakStartDate = new Date(cycleDates.peak['Cycle 3'].start);
     if (!isNaN(peakStartDate)) {
@@ -1707,10 +1697,18 @@ const DaysLeftWidget = memo(({ type }) => {
     } else {
       console.warn('Invalid peak start date:', cycleDates.peak['Cycle 3'].start);
     }
-
     return data;
   }, [averageCycleLengths, btcData, cycleDates]);
-
+  // Non-linear color scaling
+  const calculateNonLinearHeatScore = (elapsed, average) => {
+    if (average <= 0) return 0;
+    const progress = elapsed / average; // Linear progress from 0 to 1
+    // Use a quadratic function to skew the heat score: y = x^2
+    // At 50% progress (x = 0.5), heatScore = 0.25 (25% of color scale)
+    // At 66.67% progress (x = 0.6667), heatScore ≈ 0.4444 (44.44% of color scale)
+    const skewedProgress = Math.pow(progress, 3);
+    return Math.min(100, skewedProgress * 100);
+  };
   useEffect(() => {
     if (btcData.length === 0) {
       console.warn('btcData is empty, setting heatScore to 0');
@@ -1724,36 +1722,31 @@ const DaysLeftWidget = memo(({ type }) => {
       return;
     }
     if (cycleData.average > 0) {
-      const calculatedHeatScore = Math.min(100, (cycleData.elapsed / cycleData.average) * 100);
+      const calculatedHeatScore = calculateNonLinearHeatScore(cycleData.elapsed, cycleData.average);
       setHeatScore(calculatedHeatScore);
     } else {
       console.warn(`Invalid cycle data for type ${type} (mapped to ${mappedType}):`, cycleData);
       setHeatScore(0);
     }
   }, [daysLeftData, type, mappedType, btcData]);
-
   const backgroundColor = getBackgroundColor(heatScore || 0);
   const textColor = getTextColor(backgroundColor);
   const heatDescription = getHeatDescription(heatScore || 0);
   const isSignificant = heatScore >= 85;
-
   const titleMap = {
     low: 'Cycle Low',
     halving: 'Halving',
     peak: 'Cycle Peak',
   };
-
   const explanationMap = {
     low: 'Estimates days left in the current Bitcoin cycle based on historical averages from cycle lows (Cycles 2 and 3).',
     halving: 'Estimates days left in the current Bitcoin cycle based on historical averages from halvings (Cycles 2 and 3).',
     peak: 'Estimates days left in the current Bitcoin cycle based on historical averages from cycle peaks (Cycles 1 and 2).',
   };
-
   const handleChartRedirect = (event) => {
     event.stopPropagation();
     window.location.href = 'https://www.cryptological.app/market-cycles';
   };
-
   return (
     <Box
       sx={{

@@ -11,21 +11,16 @@ import { DataContext } from '../DataContext';
 const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominanceData }) => {
   const chartContainerRef = useRef();
   const chartRef = useRef(null);
-  const areaSeriesRef = useRef(null); // Added to store the area series for crosshair
+  const areaSeriesRef = useRef(null);
   const [scaleMode, setScaleMode] = useState(1);
   const [tooltipData, setTooltipData] = useState(null);
-  const [isInteractive, setIsInteractive] = useState(false);
+  const [isInteractive, setIsInteractive] = useState(true);
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const isMobile = useIsMobile();
-
-  // Access DataContext
   const { dominanceData: contextDominanceData, fetchDominanceData } = useContext(DataContext);
-
-  // Use prop data if provided, otherwise fall back to context data
   const dominanceData = propDominanceData || contextDominanceData;
 
-  // NEW: Calculate the current Bitcoin dominance value
   const currentDominance = useMemo(() => {
     if (dominanceData.length === 0) return null;
     const latestValue = dominanceData[dominanceData.length - 1]?.value;
@@ -46,14 +41,12 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
     }
   };
 
-  // Trigger lazy fetching when the component mounts
   useEffect(() => {
     fetchDominanceData();
   }, [fetchDominanceData]);
 
+  // Chart initialization (run once on mount)
   useEffect(() => {
-    if (dominanceData.length === 0) return;
-
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
       height: chartContainerRef.current.clientHeight,
@@ -62,57 +55,18 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
         textColor: colors.primary[100],
       },
       grid: {
-        vertLines: {
-          color: colors.greenAccent[700],
-        },
-        horzLines: {
-          color: colors.greenAccent[700],
-        },
+        vertLines: { color: colors.greenAccent[700] },
+        horzLines: { color: colors.greenAccent[700] },
       },
       timeScale: {
         minBarSpacing: 0.001,
       },
+      rightPriceScale: {
+        mode: scaleMode,
+        borderVisible: false,
+        scaleMargins: { top: 0.05, bottom: 0.05 },
+      },
     });
-
-    chart.subscribeCrosshairMove(param => {
-      if (
-        param.point === undefined ||
-        !param.time ||
-        param.point.x < 0 ||
-        param.point.x > chartContainerRef.current.clientWidth ||
-        param.point.y < 0 ||
-        param.point.y > chartContainerRef.current.clientHeight
-      ) {
-        setTooltipData(null);
-      } else {
-        const dateStr = param.time;
-        const data = param.seriesData.get(areaSeriesRef.current);
-        setTooltipData({
-          date: dateStr,
-          price: data?.value,
-          x: param.point.x,
-          y: param.point.y,
-        });
-      }
-    });
-
-    chart.priceScale('right').applyOptions({
-      mode: scaleMode,
-      borderVisible: false,
-    });
-
-    const resizeChart = () => {
-      if (chart && chartContainerRef.current) {
-        chart.applyOptions({
-          width: chartContainerRef.current.clientWidth,
-          height: chartContainerRef.current.clientHeight,
-        });
-        chart.timeScale().fitContent();
-      }
-    };
-
-    window.addEventListener('resize', resizeChart);
-    window.addEventListener('resize', resetChartView);
 
     const lightThemeColors = {
       topColor: 'rgba(255, 165, 0, 0.56)',
@@ -126,13 +80,13 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
       lineColor: 'rgba(38, 198, 218, 1)',
     };
 
-    const { topColor, bottomColor, lineColor } = theme.palette.mode === 'dark' ? darkThemeColors : lightThemeColors;
+    const areaColors = theme.palette.mode === 'dark' ? darkThemeColors : lightThemeColors;
 
     const areaSeries = chart.addAreaSeries({
       priceScaleId: 'right',
-      topColor: topColor,
-      bottomColor: bottomColor,
-      lineColor: lineColor,
+      topColor: areaColors.topColor,
+      bottomColor: areaColors.bottomColor,
+      lineColor: areaColors.lineColor,
       lineWidth: 2,
       priceFormat: {
         type: 'price',
@@ -140,35 +94,111 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
         minMove: 0.01,
       },
     });
-    areaSeriesRef.current = areaSeries; // Store the series for crosshair
-    areaSeries.setData(dominanceData);
 
-    chart.applyOptions({
-      handleScroll: !isDashboard,
-      handleScale: !isDashboard,
-      handleScroll: isInteractive,
-      handleScale: isInteractive,
+    areaSeriesRef.current = areaSeries;
+
+    chart.subscribeCrosshairMove(param => {
+      if (
+        param.point === undefined ||
+        !param.time ||
+        param.point.x < 0 ||
+        param.point.x > chartContainerRef.current.clientWidth ||
+        param.point.y < 0 ||
+        param.point.y > chartContainerRef.current.clientHeight
+      ) {
+        setTooltipData(null);
+      } else {
+        const dateStr = param.time;
+        const data = param.seriesData.get(areaSeries);
+        setTooltipData({
+          date: dateStr,
+          price: data?.value,
+          x: param.point.x,
+          y: param.point.y,
+        });
+      }
     });
 
-    resizeChart();
-    chart.timeScale().fitContent();
+    const resizeChart = () => {
+      if (chart && chartContainerRef.current) {
+        chart.applyOptions({
+          width: chartContainerRef.current.clientWidth,
+          height: chartContainerRef.current.clientHeight,
+        });
+        chart.timeScale().fitContent();
+      }
+    };
+
+    window.addEventListener('resize', resizeChart);
+
     chartRef.current = chart;
 
     return () => {
-      chart.remove();
       window.removeEventListener('resize', resizeChart);
-      window.removeEventListener('resize', resetChartView);
+      chart.remove();
     };
-  }, [dominanceData, scaleMode, isDashboard, theme.palette.mode, colors]);
+  }, []); // Empty dependencies to run only once
 
+  // Update dominance data
+  useEffect(() => {
+    if (areaSeriesRef.current && dominanceData.length > 0) {
+      areaSeriesRef.current.setData(dominanceData);
+      if (chartRef.current) {
+        chartRef.current.timeScale().fitContent();
+      }
+    }
+  }, [dominanceData]);
+
+  // Update chart layout and colors when theme changes
+  useEffect(() => {
+    if (chartRef.current) {
+      chartRef.current.applyOptions({
+        layout: {
+          background: { type: 'solid', color: colors.primary[700] },
+          textColor: colors.primary[100],
+        },
+        grid: {
+          vertLines: { color: colors.greenAccent[700] },
+          horzLines: { color: colors.greenAccent[700] },
+        },
+      });
+    }
+
+    if (areaSeriesRef.current) {
+      const lightThemeColors = {
+        topColor: 'rgba(255, 165, 0, 0.56)',
+        bottomColor: 'rgba(255, 165, 0, 0.2)',
+        lineColor: 'rgba(255, 140, 0, 0.8)',
+      };
+
+      const darkThemeColors = {
+        topColor: 'rgba(38, 198, 218, 0.56)',
+        bottomColor: 'rgba(38, 198, 218, 0.04)',
+        lineColor: 'rgba(38, 198, 218, 1)',
+      };
+
+      const areaColors = theme.palette.mode === 'dark' ? darkThemeColors : lightThemeColors;
+
+      areaSeriesRef.current.applyOptions({
+        topColor: areaColors.topColor,
+        bottomColor: areaColors.bottomColor,
+        lineColor: areaColors.lineColor,
+      });
+    }
+  }, [colors, theme.palette.mode]);
+
+  // Update scale mode and interactivity
   useEffect(() => {
     if (chartRef.current) {
       chartRef.current.applyOptions({
         handleScroll: isInteractive,
         handleScale: isInteractive,
       });
+      chartRef.current.priceScale('right').applyOptions({
+        mode: scaleMode,
+      });
     }
-  }, [isInteractive]);
+  }, [scaleMode, isInteractive]);
 
   return (
     <div style={{ height: '100%' }}>
@@ -201,7 +231,6 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
           </div>
         </div>
       )}
-
       <div
         className="chart-container"
         style={{
@@ -210,22 +239,14 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
           width: '100%',
           border: '2px solid #a9a9a9',
         }}
-        onDoubleClick={() => {
-          if (!isInteractive && !isDashboard) {
-            setInteractivity();
-          } else {
-            setInteractivity();
-          }
-        }}
+        onDoubleClick={setInteractivity}
       >
         <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
       </div>
-
       <div className='under-chart'>
         {!isDashboard && dominanceData.length > 0 && (
-          <div style={{  }}>
+          <div style={{ }}>
             <LastUpdated storageKey="dominanceData" />
-            {/* NEW: Display current Bitcoin dominance */}
             {currentDominance && (
               <span
                 style={{
@@ -244,7 +265,6 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
           <BitcoinFees />
         )}
       </div>
-
       {!isDashboard && (
         <div
           style={{
@@ -259,7 +279,6 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
           }}
         />
       )}
-
       {!isDashboard && tooltipData && (
         <div
           className="tooltip"
@@ -271,12 +290,9 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
               const tooltipWidth = 200;
               const K = 10000;
               const C = 300;
-
               const offset = K / (chartWidth + C);
-
               const rightPosition = cursorX + offset;
               const leftPosition = cursorX - tooltipWidth - offset;
-
               if (rightPosition + tooltipWidth <= chartWidth) {
                 return `${rightPosition}px`;
               } else if (leftPosition >= 0) {
@@ -293,15 +309,12 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
           <div>{tooltipData.date?.toString()}</div>
         </div>
       )}
-
       {!isDashboard && (
         <p className='chart-info'>
-        This chart shows Bitcoin dominance, which is the percentage of the total cryptocurrency market value that Bitcoin represents. For example, if Bitcoin’s market value is $500 billion and the total market value of all cryptocurrencies is $1 trillion, Bitcoin dominance is 50%. This number helps you understand Bitcoin’s influence compared to other cryptocurrencies like Ethereum or smaller altcoins.
-        
-        <br/><br/>A rising dominance means Bitcoin is growing stronger relative to others, often during market downturns when investors prefer Bitcoin’s stability. A falling dominance suggests other cryptocurrencies are gaining ground, which can happen during market booms when altcoins attract more interest.
-
-        The chart uses historical data to show how Bitcoin dominance has changed over time. You can hover over the chart to see the dominance percentage for specific dates.
-      </p>
+          This chart shows Bitcoin dominance, which is the percentage of the total cryptocurrency market value that Bitcoin represents. For example, if Bitcoin’s market value is $500 billion and the total market value of all cryptocurrencies is $1 trillion, Bitcoin dominance is 50%. This number helps you understand Bitcoin’s influence compared to other cryptocurrencies like Ethereum or smaller altcoins.
+          <br/><br/>A rising dominance means Bitcoin is growing stronger relative to others, often during market downturns when investors prefer Bitcoin’s stability. A falling dominance suggests other cryptocurrencies are gaining ground, which can happen during market booms when altcoins attract more interest.
+          The chart uses historical data to show how Bitcoin dominance has changed over time. You can hover over the chart to see the dominance percentage for specific dates.
+        </p>
       )}
     </div>
   );
