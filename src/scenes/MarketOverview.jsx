@@ -52,7 +52,7 @@ const calculateRiskMetric = (data) => {
 // Wrap GridLayout with WidthProvider for responsiveness
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
-const InfoOverlay = ({ explanation, isVisible }) => (
+const InfoOverlay = ({ explanation, isVisible, borderColor }) => (
   <Box
     sx={{
       position: 'absolute',
@@ -60,17 +60,18 @@ const InfoOverlay = ({ explanation, isVisible }) => (
       left: 0,
       width: '100%',
       height: '100%',
-      backgroundColor: 'rgba(0, 0, 0, 0.85)', // Slightly darker for better contrast
-      opacity: isVisible ? 1 : 0, // Explicit opacity
+      backgroundColor: 'rgba(0, 0, 0, 0.85)',
+      opacity: isVisible ? 1 : 0,
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      transition: 'opacity 0.3s ease', // Smooth transition
+      transition: 'opacity 0.3s ease',
       borderRadius: '12px',
       padding: '16px',
       textAlign: 'center',
-      zIndex: 1000, // High z-index to ensure overlay is on top
-      pointerEvents: isVisible ? 'auto' : 'none', // Prevent interaction when hidden
+      zIndex: 1000,
+      pointerEvents: isVisible ? 'auto' : 'none',
+      border: `2px solid ${borderColor || 'transparent'}`, // Add dynamic border
     }}
   >
     <Typography
@@ -78,8 +79,8 @@ const InfoOverlay = ({ explanation, isVisible }) => (
       color="white"
       sx={{
         fontSize: '14px',
-        opacity: isVisible ? 1 : 0, // Ensure text is fully opaque when visible
-        transition: 'opacity 0.3s ease', // Sync text transition with overlay
+        opacity: isVisible ? 1 : 0,
+        transition: 'opacity 0.3s ease',
       }}
     >
       {explanation}
@@ -240,9 +241,6 @@ const MarketOverview = memo(() => {
       { i: 'mayerMultiple', x: 6, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
       { i: 'piCycleTop', x: 9, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
       { i: 'roiCycleComparison', x: 0, y: 2, w: 3, h: 2, minW: 2, minH: 2 },
-      { i: 'daysLeftLow', x: 3, y: 2, w: 3, h: 2, minW: 2, minH: 2 },
-      { i: 'daysLeftHalving', x: 6, y: 2, w: 3, h: 2, minW: 2, minH: 2 },
-      { i: 'daysLeftPeak', x: 9, y: 2, w: 3, h: 2, minW: 2, minH: 2 },
     ],
     md: [
       { i: 'bitcoinRisk', x: 0, y: 0, w: 4, h: 2, minW: 2, minH: 2 },
@@ -250,9 +248,6 @@ const MarketOverview = memo(() => {
       { i: 'mayerMultiple', x: 0, y: 2, w: 4, h: 2, minW: 2, minH: 2 },
       { i: 'piCycleTop', x: 4, y: 2, w: 4, h: 2, minW: 2, minH: 2 },
       { i: 'roiCycleComparison', x: 0, y: 4, w: 4, h: 2, minW: 2, minH: 2 },
-      { i: 'daysLeftLow', x: 4, y: 4, w: 4, h: 2, minW: 2, minH: 2 },
-      { i: 'daysLeftHalving', x: 0, y: 6, w: 4, h: 2, minW: 2, minH: 2 },
-      { i: 'daysLeftPeak', x: 4, y: 6, w: 4, h: 2, minW: 2, minH: 2 },
     ],
     sm: [
       { i: 'bitcoinRisk', x: 0, y: 0, w: 6, h: 2, minW: 2, minH: 2 },
@@ -260,9 +255,6 @@ const MarketOverview = memo(() => {
       { i: 'mayerMultiple', x: 0, y: 4, w: 6, h: 2, minW: 2, minH: 2 },
       { i: 'piCycleTop', x: 0, y: 6, w: 6, h: 2, minW: 2, minH: 2 },
       { i: 'roiCycleComparison', x: 0, y: 8, w: 6, h: 2, minW: 2, minH: 2 },
-      { i: 'daysLeftLow', x: 0, y: 10, w: 6, h: 2, minW: 2, minH: 2 },
-      { i: 'daysLeftHalving', x: 0, y: 12, w: 6, h: 2, minW: 2, minH: 2 },
-      { i: 'daysLeftPeak', x: 0, y: 14, w: 6, h: 2, minW: 2, minH: 2 },
     ],
     xs: [
       { i: 'bitcoinRisk', x: 0, y: 0, w: 4, h: 2, minW: 2, minH: 2 },
@@ -270,9 +262,6 @@ const MarketOverview = memo(() => {
       { i: 'mayerMultiple', x: 0, y: 4, w: 4, h: 2, minW: 2, minH: 2 },
       { i: 'piCycleTop', x: 0, y: 6, w: 4, h: 2, minW: 2, minH: 2 },
       { i: 'roiCycleComparison', x: 0, y: 8, w: 4, h: 2, minW: 2, minH: 2 },
-      { i: 'daysLeftLow', x: 0, y: 10, w: 4, h: 2, minW: 2, minH: 2 },
-      { i: 'daysLeftHalving', x: 0, y: 12, w: 4, h: 2, minW: 2, minH: 2 },
-      { i: 'daysLeftPeak', x: 0, y: 14, w: 4, h: 2, minW: 2, minH: 2 },
     ],
   };
 
@@ -290,6 +279,29 @@ const MarketOverview = memo(() => {
     xs: [{ i: 'altcoinSeason', x: 0, y: 0, w: 4, h: 2, minW: 4, minH: 2 }],
   };
 
+  const cycleLengthLayouts = {
+  lg: [
+    { i: 'daysLeftLow', x: 0, y: 0, w: 4, h: 2, minW: 2, minH: 2 },
+    { i: 'daysLeftHalving', x: 4, y: 0, w: 4, h: 2, minW: 2, minH: 2 },
+    { i: 'daysLeftPeak', x: 8, y: 0, w: 4, h: 2, minW: 2, minH: 2 },
+  ],
+  md: [
+    { i: 'daysLeftLow', x: 0, y: 0, w: 4, h: 2, minW: 2, minH: 2 },
+    { i: 'daysLeftHalving', x: 4, y: 0, w: 4, h: 2, minW: 2, minH: 2 },
+    { i: 'daysLeftPeak', x: 0, y: 2, w: 4, h: 2, minW: 2, minH: 2 },
+  ],
+  sm: [
+    { i: 'daysLeftLow', x: 0, y: 0, w: 6, h: 2, minW: 2, minH: 2 },
+    { i: 'daysLeftHalving', x: 0, y: 2, w: 6, h: 2, minW: 2, minH: 2 },
+    { i: 'daysLeftPeak', x: 0, y: 4, w: 6, h: 2, minW: 2, minH: 2 },
+  ],
+  xs: [
+    { i: 'daysLeftLow', x: 0, y: 0, w: 4, h: 2, minW: 2, minH: 2 },
+    { i: 'daysLeftHalving', x: 0, y: 2, w: 4, h: 2, minW: 2, minH: 2 },
+    { i: 'daysLeftPeak', x: 0, y: 4, w: 4, h: 2, minW: 2, minH: 2 },
+  ],
+};
+
   // State for grid layouts
   const [priceLayout, setPriceLayout] = useState(priceLayouts);
   const [indicatorsLayout, setIndicatorsLayout] = useState(indicatorsLayouts);
@@ -298,6 +310,7 @@ const MarketOverview = memo(() => {
   const [overallConditionsLayout, setOverallConditionsLayout] = useState(overallConditionsLayouts);
   const [altcoinSeasonLayout, setAltcoinSeasonLayout] = useState(altcoinSeasonLayouts);
   const [sentimentIndexesLayout, setSentimentIndexesLayout] = useState(sentimentIndexesLayouts);
+  const [cycleLengthLayout, setCycleLengthLayout] = useState(cycleLengthLayouts);
 
   // useEffect(() => {
   //   console.log('MarketOverview mounted');
@@ -555,15 +568,25 @@ const MarketOverview = memo(() => {
         {isSignificant && (
           <Typography
             variant="body1"
-            color={colors.redAccent[500]}
-            sx={{ textAlign: 'center', fontWeight: 'bold', fontSize: '11px' }}
+            sx={{
+              color: colors.redAccent[500],
+              textAlign: 'center',
+              fontWeight: 'bold',
+              fontSize: '11px',
+              backgroundColor: 'white',
+              borderRadius: '8px',
+              padding: '4px 8px',
+              marginTop: '8px',
+              display: 'inline-block', // Ensures the background wraps tightly around the text
+            }}
           >
-            Warning: Strong Altcoin Season detected.
+            Warning: Cycle nearing end.
           </Typography>
         )}
         <InfoOverlay
           isVisible={isInfoVisible}
           explanation="The Altcoin Season Index measures the performance of altcoins relative to Bitcoin. A higher value (closer to 100) indicates an altcoin season, where altcoins outperform Bitcoin. It’s calculated based on the percentage of altcoins outperforming Bitcoin over a specific period."
+          borderColor={backgroundColor}
         />
       </Box>
     );
@@ -834,15 +857,25 @@ const RoiCycleComparisonWidget = memo(() => {
       {isSignificant && (
         <Typography
           variant="body1"
-          color={colors.redAccent[500]}
-          sx={{ textAlign: 'center', mt: 2, fontWeight: 'bold' }}
+          sx={{
+            color: colors.redAccent[500],
+            textAlign: 'center',
+            fontWeight: 'bold',
+            fontSize: '11px',
+            backgroundColor: 'white',
+            borderRadius: '8px',
+            padding: '4px 8px',
+            marginTop: '8px',
+            display: 'inline-block', // Ensures the background wraps tightly around the text
+          }}
         >
-          Warning: Market significantly above historical ROI.
+          Warning: Cycle nearing end.
         </Typography>
       )}
       <InfoOverlay
         isVisible={isInfoVisible}
-        explanation="The ROI Cycle Comparison widget shows the current ROI of Bitcoin compared to the average ROI of previous cycles (Cycle 2 and Cycle 3). ROI is calculated as a shifted logarithmic scale (log10(price / basePrice) + 1), where 1 indicates no change, above 1 indicates positive returns, and below 1 indicates negative returns. This helps identify how the current market performance compares to historical trends."
+        explanation="This helps identify how the current market performance compares to historical trends. The ROI Cycle Comparison widget shows the current ROI (return on investment) of Bitcoin compared to the average ROI of previous cycles (Cycle 2 and Cycle ). ROI is calculated as a shifted logarithmic scale (log10(price / basePrice) + 1), where 1 indicates no change, above 1 indicates positive returns, and below 1 indicates negative returns."
+        borderColor={backgroundColor}
       />
     </Box>
   );
@@ -965,15 +998,25 @@ const RoiCycleComparisonWidget = memo(() => {
         {isSignificant && (
           <Typography
             variant="body1"
-            color={colors.redAccent[500]}
-            sx={{ textAlign: 'center', mt: 2, fontWeight: 'bold' }}
+            sx={{
+              color: colors.redAccent[500],
+              textAlign: 'center',
+              fontWeight: 'bold',
+              fontSize: '11px',
+              backgroundColor: 'white',
+              borderRadius: '8px',
+              padding: '4px 8px',
+              marginTop: '8px',
+              display: 'inline-block', // Ensures the background wraps tightly around the text
+            }}
           >
-            Warning: Market is overheated.
+            Warning: Cycle nearing end.
           </Typography>
         )}
         <InfoOverlay
           isVisible={isInfoVisible}
           explanation="The MVRV Ratio (Market Value to Realized Value) compares the market value of Bitcoin to its realized value. A high MVRV indicates that the market is overvalued, while a low MVRV suggests it is undervalued. This widget helps identify potential market overheating or undervaluation."
+          borderColor={backgroundColor}
         />
       </Box>
     );
@@ -1090,15 +1133,25 @@ const RoiCycleComparisonWidget = memo(() => {
         {isSignificant && (
           <Typography
             variant="body1"
-            color={colors.redAccent[500]}
-            sx={{ textAlign: 'center', mt: 2, fontWeight: 'bold' }}
+            sx={{
+              color: colors.redAccent[500],
+              textAlign: 'center',
+              fontWeight: 'bold',
+              fontSize: '11px',
+              backgroundColor: 'white',
+              borderRadius: '8px',
+              padding: '4px 8px',
+              marginTop: '8px',
+              display: 'inline-block', // Ensures the background wraps tightly around the text
+            }}
           >
-            Warning: Market is overheating or severely undervalued.
+            Warning: Cycle nearing end.
           </Typography>
         )}
         <InfoOverlay
           isVisible={isInfoVisible}
           explanation="The Mayer Multiple is a ratio of Bitcoin's current price to its 200-day moving average. It helps identify whether Bitcoin is overbought or oversold. A high Mayer Multiple indicates that Bitcoin is significantly above its historical average, suggesting potential overvaluation, while a low value indicates undervaluation."
+          borderColor={backgroundColor}
         />
       </Box>
     );
@@ -1226,15 +1279,25 @@ const RoiCycleComparisonWidget = memo(() => {
         {isSignificant && (
           <Typography
             variant="body1"
-            color={colors.redAccent[500]}
-            sx={{ textAlign: 'center', mt: 2, fontWeight: 'bold' }}
+            sx={{
+              color: colors.redAccent[500],
+              textAlign: 'center',
+              fontWeight: 'bold',
+              fontSize: '11px',
+              backgroundColor: 'white',
+              borderRadius: '8px',
+              padding: '4px 8px',
+              marginTop: '8px',
+              display: 'inline-block', // Ensures the background wraps tightly around the text
+            }}
           >
-            Warning: High market risk.
+            Warning: Cycle nearing end.
           </Typography>
         )}
         <InfoOverlay
           isVisible={isInfoVisible}
           explanation="The Bitcoin Risk Level assesses the risk of investing in Bitcoin based on historical price patterns and volatility. A higher value indicates higher risk, derived from proprietary risk models."
+          borderColor={backgroundColor}
         />
       </Box>
     );
@@ -1361,15 +1424,25 @@ const RoiCycleComparisonWidget = memo(() => {
         {isSignificant && (
           <Typography
             variant="body1"
-            color={colors.redAccent[500]}
-            sx={{ textAlign: 'center', fontWeight: 'bold', fontSize: '11px' }}
+            sx={{
+              color: colors.redAccent[500],
+              textAlign: 'center',
+              fontWeight: 'bold',
+              fontSize: '11px',
+              backgroundColor: 'white',
+              borderRadius: '8px',
+              padding: '4px 8px',
+              marginTop: '8px',
+              display: 'inline-block', // Ensures the background wraps tightly around the text
+            }}
           >
-            Warning: Extreme market greed.
+            Warning: Cycle nearing end.
           </Typography>
         )}
         <InfoOverlay
           isVisible={isInfoVisible}
           explanation="The Fear and Greed Index gauges market sentiment, ranging from 0 (Extreme Fear) to 100 (Extreme Greed). It’s calculated using factors like volatility, market momentum, and social media sentiment."
+          borderColor={backgroundColor}
         />
       </Box>
     );
@@ -1492,216 +1565,291 @@ const RoiCycleComparisonWidget = memo(() => {
         {isSignificant && (
           <Typography
             variant="body1"
-            color={colors.redAccent[500]}
-            sx={{ textAlign: 'center', mt: 2, fontWeight: 'bold' }}
-          >
-            Warning: Market approaching cycle top.
-          </Typography>
-        )}
-        <InfoOverlay
-          isVisible={isInfoVisible}
-          explanation="The PiCycle Top Indicator (created by Phillip Swift) uses the 111-day and 350-day moving averages to predict potential market tops. The ratio of these moving averages shows decreasing peaks, suggesting a cycle top of under 1.0."
-        />
-      </Box>
-    );
-  });
-
-  const DaysLeftWidget = memo(({ type }) => {
-    const theme = useTheme();
-    const colors = tokens(theme.palette.mode);
-    const { btcData } = useContext(DataContext);
-    const [isInfoVisible, setIsInfoVisible] = useState(false);
-    const [heatScore, setHeatScore] = useState(null);
-  
-    // Define cycle dates (same as CycleDaysLeft)
-    const cycleDates = useMemo(() => ({
-      bottom: {
-        'Cycle 2': { start: '2015-01-15', end: '2017-12-17' },
-        'Cycle 3': { start: '2018-12-15', end: '2021-11-08' },
-        'Cycle 4': { start: '2022-11-21', end: null },
-      },
-      halving: {
-        'Cycle 2': { start: '2016-07-09', end: '2017-12-17' },
-        'Cycle 3': { start: '2020-05-11', end: '2021-11-08' },
-        'Cycle 4': { start: '2024-04-19', end: null },
-      },
-      peak: {
-        'Cycle 1': { start: '2013-11-30', end: '2017-12-17' },
-        'Cycle 2': { start: '2017-12-17', end: '2021-11-10' },
-        'Cycle 3': { start: '2021-11-10', end: null },
-      },
-    }), []);
-  
-    // Calculate days between two dates
-    const calculateDays = (start, end) => {
-      if (!start || !end) return 0;
-      const startDate = new Date(start);
-      const endDate = new Date(end);
-      return Math.round((endDate - startDate) / (1000 * 60 * 60 * 24));
-    };
-  
-    // Calculate average cycle lengths
-    const averageCycleLengths = useMemo(() => {
-      const averages = {
-        bottom: 0,
-        halving: 0,
-        peak: 0,
-      };
-      const bottomDays = [
-        calculateDays(cycleDates.bottom['Cycle 2'].start, cycleDates.bottom['Cycle 2'].end),
-        calculateDays(cycleDates.bottom['Cycle 3'].start, cycleDates.bottom['Cycle 3'].end),
-      ].filter(days => days !== 0);
-      averages.bottom = bottomDays.length > 0 ? Math.round(bottomDays.reduce((sum, days) => sum + days, 0) / bottomDays.length) : 0;
-      const halvingDays = [
-        calculateDays(cycleDates.halving['Cycle 2'].start, cycleDates.halving['Cycle 2'].end),
-        calculateDays(cycleDates.halving['Cycle 3'].start, cycleDates.halving['Cycle 3'].end),
-      ].filter(days => days !== 0);
-      averages.halving = halvingDays.length > 0 ? Math.round(halvingDays.reduce((sum, days) => sum + days, 0) / halvingDays.length) : 0;
-      const peakDays = [
-        calculateDays(cycleDates.peak['Cycle 1'].start, cycleDates.peak['Cycle 1'].end),
-        calculateDays(cycleDates.peak['Cycle 2'].start, cycleDates.peak['Cycle 2'].end),
-      ].filter(days => days !== 0);
-      averages.peak = peakDays.length > 0 ? Math.round(peakDays.reduce((sum, days) => sum + days, 0) / peakDays.length) : 0;
-      return averages;
-    }, [cycleDates]);
-  
-    // Calculate days elapsed and days left for current cycle
-    const daysLeftData = useMemo(() => {
-      if (btcData.length === 0) return { bottom: { elapsed: 0, left: 0 }, halving: { elapsed: 0, left: 0 }, peak: { elapsed: 0, left: 0 } };
-      const currentDate = btcData[btcData.length - 1]?.time || new Date().toISOString().split('T')[0];
-      const data = {
-        bottom: { elapsed: 0, left: 0 },
-        halving: { elapsed: 0, left: 0 },
-        peak: { elapsed: 0, left: 0 },
-      };
-      data.bottom.elapsed = calculateDays(cycleDates.bottom['Cycle 4'].start, currentDate) || 0;
-      data.bottom.left = Math.max(0, averageCycleLengths.bottom - data.bottom.elapsed);
-      data.halving.elapsed = calculateDays(cycleDates.halving['Cycle 4'].start, currentDate) || 0;
-      data.halving.left = Math.max(0, averageCycleLengths.halving - data.halving.elapsed);
-      data.peak.elapsed = calculateDays(cycleDates.peak['Cycle 3'].start, currentDate) || 0;
-      data.peak.left = Math.max(0, averageCycleLengths.peak - data.peak.elapsed);
-      return data;
-    }, [averageCycleLengths, btcData, cycleDates]);
-  
-    useEffect(() => {
-      if (btcData.length === 0) return;
-      const cycleData = daysLeftData[type];
-      if (cycleData && cycleData.averages !== 0) {
-        setHeatScore(Math.min(100, (cycleData.elapsed / cycleData.averages) * 100));
-      } else {
-        setHeatScore(0);
-      }
-    }, [daysLeftData, type]);
-  
-    const backgroundColor = getBackgroundColor(heatScore || 0);
-    const textColor = getTextColor(backgroundColor);
-    const heatDescription = getHeatDescription(heatScore || 0);
-    const isSignificant = heatScore >= 85;
-  
-    const titleMap = {
-      low: 'Cycle Low',
-      halving: 'Halving',
-      peak: 'Cycle Peak',
-    };
-  
-    const explanationMap = {
-      low: 'Estimates days left in the current Bitcoin cycle based on historical averages from cycle lows (Cycles 2 and 3).',
-      halving: 'Estimates days left in the current Bitcoin cycle based on historical averages from halvings (Cycles 2 and 3).',
-      peak: 'Estimates days left in the current Bitcoin cycle based on historical averages from cycle peaks (Cycles 1 and 2).',
-    };
-  
-    const handleChartRedirect = (event) => {
-      event.stopPropagation();
-      window.location.href = 'https://www.cryptological.app/market-cycles';
-    };
-  
-    return (
-      <Box
-        sx={{
-          ...chartBoxStyle(colors, theme),
-          backgroundColor,
-          transition: 'background-color 0.3s ease, transform 0.2s ease-in-out',
-          border: isSignificant ? `2px solid ${colors.redAccent[500]}` : 'none',
-          padding: '24px',
-          textAlign: 'center',
-          position: 'relative',
-        }}
-      >
-        <InfoIcon
-          sx={{
-            position: 'absolute',
-            top: '12px',
-            right: '12px',
-            color: textColor,
-            cursor: 'pointer',
-            fontSize: '35px',
-            zIndex: 1001,
-            padding: '4px',
-            borderRadius: '50%',
-            '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
-          }}
-          onMouseEnter={() => setIsInfoVisible(true)}
-          onMouseLeave={() => setIsInfoVisible(false)}
-          aria-label="Information"
-        />
-        <ShowChartIcon
-          sx={{
-            position: 'absolute',
-            top: '12px',
-            left: '12px',
-            color: textColor,
-            cursor: 'pointer',
-            fontSize: '35px',
-            zIndex: 1001,
-            padding: '4px',
-            borderRadius: '50%',
-            '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
-          }}
-          onMouseDown={handleChartRedirect}
-          aria-label="View chart"
-        />
-        <Typography variant="h4" color={textColor} gutterBottom sx={{ fontWeight: 'bold' }}>
-          Days Left (From {titleMap[type]})
-        </Typography>
-        <Box
-          sx={{
-            flexGrow: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px',
-          }}
-        >
-          <Typography variant="h3" color={textColor} sx={{ fontWeight: 'bold' }}>
-            {daysLeftData[type]?.left ?? 'N/A'}
-          </Typography>
-          <Typography variant="h5" color={textColor} sx={{ fontWeight: 'bold' }}>
-            Avg: {daysLeftData[type]?.averages ?? 'N/A'} days
-          </Typography>
-          <Typography variant="body1" color={textColor}>
-            Elapsed: {daysLeftData[type]?.elapsed ?? 'N/A'} days
-          </Typography>
-          <Typography variant="body1" color={textColor}>
-            Heat: {heatDescription}
-          </Typography>
-        </Box>
-        {isSignificant && (
-          <Typography
-            variant="body1"
-            color={colors.redAccent[500]}
-            sx={{ textAlign: 'center', mt: 2, fontWeight: 'bold' }}
+            sx={{
+              color: colors.redAccent[500],
+              textAlign: 'center',
+              fontWeight: 'bold',
+              fontSize: '11px',
+              backgroundColor: 'white',
+              borderRadius: '8px',
+              padding: '4px 8px',
+              marginTop: '8px',
+              display: 'inline-block', // Ensures the background wraps tightly around the text
+            }}
           >
             Warning: Cycle nearing end.
           </Typography>
         )}
         <InfoOverlay
           isVisible={isInfoVisible}
-          explanation={explanationMap[type]}
+          explanation="The PiCycle Top Indicator (created by Phillip Swift) uses the 111-day and 350-day moving averages to predict potential market tops. The ratio of these moving averages shows decreasing peaks, suggesting a cycle top of under 1.0."
+          borderColor={backgroundColor}
         />
       </Box>
     );
   });
+
+// Replace the existing DaysLeftWidget component in MarketOverview.js with this corrected version
+const DaysLeftWidget = memo(({ type }) => {
+  const theme = useTheme();
+  const colors = tokens(theme.palette.mode);
+  const { btcData } = useContext(DataContext);
+  const [isInfoVisible, setIsInfoVisible] = useState(false);
+  const [heatScore, setHeatScore] = useState(null);
+
+  // Map type prop to daysLeftData keys
+  const typeMap = {
+    low: 'bottom',
+    halving: 'halving',
+    peak: 'peak',
+  };
+  const mappedType = typeMap[type] || type; // Fallback to type if not in map
+
+  // Define cycle dates (same as CycleDaysLeft)
+  const cycleDates = useMemo(() => ({
+    bottom: {
+      'Cycle 2': { start: '2015-01-15', end: '2017-12-17' },
+      'Cycle 3': { start: '2018-12-15', end: '2021-11-08' },
+      'Cycle 4': { start: '2022-11-21', end: null },
+    },
+    halving: {
+      'Cycle 2': { start: '2016-07-09', end: '2017-12-17' },
+      'Cycle 3': { start: '2020-05-11', end: '2021-11-08' },
+      'Cycle 4': { start: '2024-04-19', end: null },
+    },
+    peak: {
+      'Cycle 1': { start: '2013-11-30', end: '2017-12-17' },
+      'Cycle 2': { start: '2017-12-17', end: '2021-11-10' },
+      'Cycle 3': { start: '2021-11-10', end: null },
+    },
+  }), []);
+
+  // Calculate days between two dates
+  const calculateDays = (start, end) => {
+    if (!start || !end) return 0;
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    if (isNaN(startDate) || isNaN(endDate)) {
+      console.warn(`Invalid dates: start=${start}, end=${end}`);
+      return 0;
+    }
+    return Math.round((endDate - startDate) / (1000 * 60 * 60 * 24));
+  };
+
+  // Calculate average cycle lengths
+  const averageCycleLengths = useMemo(() => {
+    const averages = {
+      bottom: 0,
+      halving: 0,
+      peak: 0,
+    };
+    const bottomDays = [
+      calculateDays(cycleDates.bottom['Cycle 2'].start, cycleDates.bottom['Cycle 2'].end),
+      calculateDays(cycleDates.bottom['Cycle 3'].start, cycleDates.bottom['Cycle 3'].end),
+    ].filter(days => days > 0);
+    averages.bottom = bottomDays.length > 0 ? Math.round(bottomDays.reduce((sum, days) => sum + days, 0) / bottomDays.length) : 0;
+    const halvingDays = [
+      calculateDays(cycleDates.halving['Cycle 2'].start, cycleDates.halving['Cycle 2'].end),
+      calculateDays(cycleDates.halving['Cycle 3'].start, cycleDates.halving['Cycle 3'].end),
+    ].filter(days => days > 0);
+    averages.halving = halvingDays.length > 0 ? Math.round(halvingDays.reduce((sum, days) => sum + days, 0) / halvingDays.length) : 0;
+    const peakDays = [
+      calculateDays(cycleDates.peak['Cycle 1'].start, cycleDates.peak['Cycle 1'].end),
+      calculateDays(cycleDates.peak['Cycle 2'].start, cycleDates.peak['Cycle 2'].end),
+    ].filter(days => days > 0);
+    averages.peak = peakDays.length > 0 ? Math.round(peakDays.reduce((sum, days) => sum + days, 0) / peakDays.length) : 0;
+    return averages;
+  }, [cycleDates]);
+
+  // Calculate days elapsed and days left for current cycle
+  const daysLeftData = useMemo(() => {
+    const data = {
+      bottom: { elapsed: 0, left: 0, average: averageCycleLengths.bottom },
+      halving: { elapsed: 0, left: 0, average: averageCycleLengths.halving },
+      peak: { elapsed: 0, left: 0, average: averageCycleLengths.peak },
+    };
+
+    if (btcData.length === 0) {
+      console.warn('btcData is empty, returning default daysLeftData');
+      return data;
+    }
+
+    const currentDate = btcData[btcData.length - 1]?.time || new Date().toISOString().split('T')[0];
+    const parsedCurrentDate = new Date(currentDate);
+    if (isNaN(parsedCurrentDate)) {
+      console.warn('Invalid current date:', currentDate);
+      return data;
+    }
+
+    // Bottom (Cycle Low) calculations
+    const bottomStartDate = new Date(cycleDates.bottom['Cycle 4'].start);
+    if (!isNaN(bottomStartDate)) {
+      data.bottom.elapsed = calculateDays(cycleDates.bottom['Cycle 4'].start, currentDate);
+      data.bottom.left = Math.max(0, averageCycleLengths.bottom - data.bottom.elapsed);
+    } else {
+      console.warn('Invalid bottom start date:', cycleDates.bottom['Cycle 4'].start);
+    }
+
+    // Halving calculations
+    const halvingStartDate = new Date(cycleDates.halving['Cycle 4'].start);
+    if (!isNaN(halvingStartDate)) {
+      data.halving.elapsed = calculateDays(cycleDates.halving['Cycle 4'].start, currentDate);
+      data.halving.left = Math.max(0, averageCycleLengths.halving - data.halving.elapsed);
+    } else {
+      console.warn('Invalid halving start date:', cycleDates.halving['Cycle 4'].start);
+    }
+
+    // Peak calculations
+    const peakStartDate = new Date(cycleDates.peak['Cycle 3'].start);
+    if (!isNaN(peakStartDate)) {
+      data.peak.elapsed = calculateDays(cycleDates.peak['Cycle 3'].start, currentDate);
+      data.peak.left = Math.max(0, averageCycleLengths.peak - data.peak.elapsed);
+    } else {
+      console.warn('Invalid peak start date:', cycleDates.peak['Cycle 3'].start);
+    }
+
+    return data;
+  }, [averageCycleLengths, btcData, cycleDates]);
+
+  useEffect(() => {
+    if (btcData.length === 0) {
+      console.warn('btcData is empty, setting heatScore to 0');
+      setHeatScore(0);
+      return;
+    }
+    const cycleData = daysLeftData[mappedType];
+    if (!cycleData) {
+      console.warn(`No cycle data for mapped type ${mappedType} (original type: ${type})`);
+      setHeatScore(0);
+      return;
+    }
+    if (cycleData.average > 0) {
+      const calculatedHeatScore = Math.min(100, (cycleData.elapsed / cycleData.average) * 100);
+      setHeatScore(calculatedHeatScore);
+    } else {
+      console.warn(`Invalid cycle data for type ${type} (mapped to ${mappedType}):`, cycleData);
+      setHeatScore(0);
+    }
+  }, [daysLeftData, type, mappedType, btcData]);
+
+  const backgroundColor = getBackgroundColor(heatScore || 0);
+  const textColor = getTextColor(backgroundColor);
+  const heatDescription = getHeatDescription(heatScore || 0);
+  const isSignificant = heatScore >= 85;
+
+  const titleMap = {
+    low: 'Cycle Low',
+    halving: 'Halving',
+    peak: 'Cycle Peak',
+  };
+
+  const explanationMap = {
+    low: 'Estimates days left in the current Bitcoin cycle based on historical averages from cycle lows (Cycles 2 and 3).',
+    halving: 'Estimates days left in the current Bitcoin cycle based on historical averages from halvings (Cycles 2 and 3).',
+    peak: 'Estimates days left in the current Bitcoin cycle based on historical averages from cycle peaks (Cycles 1 and 2).',
+  };
+
+  const handleChartRedirect = (event) => {
+    event.stopPropagation();
+    window.location.href = 'https://www.cryptological.app/market-cycles';
+  };
+
+  return (
+    <Box
+      sx={{
+        ...chartBoxStyle(colors, theme),
+        backgroundColor,
+        transition: 'background-color 0.3s ease, transform 0.2s ease-in-out',
+        border: isSignificant ? `2px solid ${colors.redAccent[500]}` : 'none',
+        padding: '24px',
+        textAlign: 'center',
+        position: 'relative',
+      }}
+    >
+      <InfoIcon
+        sx={{
+          position: 'absolute',
+          top: '12px',
+          right: '12px',
+          color: textColor,
+          cursor: 'pointer',
+          fontSize: '35px',
+          zIndex: 1001,
+          padding: '4px',
+          borderRadius: '50%',
+          '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+        }}
+        onMouseEnter={() => setIsInfoVisible(true)}
+        onMouseLeave={() => setIsInfoVisible(false)}
+        aria-label="Information"
+      />
+      <ShowChartIcon
+        sx={{
+          position: 'absolute',
+          top: '12px',
+          left: '12px',
+          color: textColor,
+          cursor: 'pointer',
+          fontSize: '35px',
+          zIndex: 1001,
+          padding: '4px',
+          borderRadius: '50%',
+          '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+        }}
+        onMouseDown={handleChartRedirect}
+        aria-label="View chart"
+      />
+      <Typography variant="h4" color={textColor} gutterBottom sx={{ fontWeight: 'bold' }}>
+        Days Left (From {titleMap[type]})
+      </Typography>
+      <Box
+        sx={{
+          flexGrow: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '8px',
+        }}
+      >
+        <Typography variant="h3" color={textColor} sx={{ fontWeight: 'bold' }}>
+          {daysLeftData[mappedType]?.left >= 0 ? daysLeftData[mappedType].left : 'N/A'}
+        </Typography>
+        <Typography variant="h5" color={textColor} sx={{ fontWeight: 'bold' }}>
+          Avg: {daysLeftData[mappedType]?.average > 0 ? daysLeftData[mappedType].average : 'N/A'} days
+        </Typography>
+        <Typography variant="body1" color={textColor}>
+          Elapsed: {daysLeftData[mappedType]?.elapsed >= 0 ? daysLeftData[mappedType].elapsed : 'N/A'} days
+        </Typography>
+        <Typography variant="body1" color={textColor}>
+          Heat: {heatDescription}
+        </Typography>
+      </Box>
+      {isSignificant && (
+        <Typography
+          variant="body1"
+          sx={{
+            color: colors.redAccent[500],
+            textAlign: 'center',
+            fontWeight: 'bold',
+            fontSize: '11px',
+            backgroundColor: 'white',
+            borderRadius: '8px',
+            padding: '4px 8px',
+            marginTop: '8px',
+            display: 'inline-block', // Ensures the background wraps tightly around the text
+          }}
+        >
+          Warning: Cycle nearing end.
+        </Typography>
+      )}
+      <InfoOverlay
+        isVisible={isInfoVisible}
+        explanation={explanationMap[type]}
+      />
+    </Box>
+  );
+});
 
 // Market Heat Gauge Widget
 const MarketHeatGaugeWidget = memo(() => {
@@ -1886,10 +2034,19 @@ const MarketHeatGaugeWidget = memo(() => {
       {isSignificant && (
         <Typography
           variant="body1"
-          color={colors.redAccent[500]}
-          sx={{ textAlign: 'center', fontWeight: 'bold', fontSize: '11px' }}
+          sx={{
+            color: colors.redAccent[500],
+            textAlign: 'center',
+            fontWeight: 'bold',
+            fontSize: '11px',
+            backgroundColor: 'white',
+            borderRadius: '8px',
+            padding: '4px 8px',
+            marginTop: '8px',
+            display: 'inline-block', // Ensures the background wraps tightly around the text
+          }}
         >
-          Warning: Market is significantly overheated.
+          Warning: Cycle nearing end.
         </Typography>
       )}
       <InfoOverlay
@@ -2181,7 +2338,7 @@ const MarketHeatGaugeWidget = memo(() => {
           gutterBottom
           sx={{ fontWeight: 'bold', margin: '24px 0 16px' }}
         >
-          Indicators
+          Price Based Indicators
         </Typography>
         <ResponsiveGridLayout
           className="layout"
@@ -2201,8 +2358,31 @@ const MarketHeatGaugeWidget = memo(() => {
           <div key="mvrv"><MvrvRatioWidget /></div>
           <div key="mayerMultiple"><MayerMultipleWidget /></div>
           <div key="piCycleTop"><PiCycleTopWidget /></div>
-          <div key="roiCycleComparison"><RoiCycleComparisonWidget /></div>
+          <div key="roiCycleComparison"><RoiCycleComparisonWidget /></div>          
+        </ResponsiveGridLayout>
 
+        <Typography
+          variant="h4"
+          color={colors.grey[100]}
+          gutterBottom
+          sx={{ fontWeight: 'bold', margin: '24px 0 16px' }}
+        >
+          Cycle Length
+        </Typography>
+        <ResponsiveGridLayout
+          className="layout"
+          layouts={cycleLengthLayout}
+          breakpoints={breakpoints}
+          cols={cols}
+          rowHeight={rowHeight}
+          onLayoutChange={(layout, allLayouts) => setCycleLengthLayout(allLayouts)}
+          isDraggable={false}
+          isResizable={false}
+          compactType="vertical"
+          margin={margin}
+          containerPadding={[0, 0]}
+          style={{ width: '100%' }}
+        >
           <div key="daysLeftLow">
             <DaysLeftWidget type="low" />
           </div>
@@ -2212,7 +2392,6 @@ const MarketHeatGaugeWidget = memo(() => {
           <div key="daysLeftPeak">
             <DaysLeftWidget type="peak" />
           </div>
-          
         </ResponsiveGridLayout>
       </Box>
     </Box>

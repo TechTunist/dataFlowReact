@@ -68,6 +68,7 @@ import Charts from "./components/ChartsThumbnails";
 import SP500DivUnrateChart from "./components/SP500DivUnrateChart";
 import SP500ROI from "./components/SP500ROI";
 import SahmRecessionIndicator from './components/SahmRecessionIndicator';
+import MarketHeatIndex from './components/MarketHeatIndex';
 
 // Stripe Context
 const StripeContext = createContext(null);
@@ -253,6 +254,14 @@ const AppContent = memo(({ isSignedIn, user }) => {
                       element={
                         <ProtectedRoute>
                           <BasicChart ChartComponent={BitcoinPrice} />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/market-heat-index"
+                      element={
+                        <ProtectedRoute>
+                          <BasicChart ChartComponent={MarketHeatIndex} />
                         </ProtectedRoute>
                       }
                     />
