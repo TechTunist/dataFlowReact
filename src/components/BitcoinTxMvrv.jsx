@@ -240,6 +240,8 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
     chart.priceScale('left').applyOptions({ mode: 0, borderVisible: false });
     chart.priceScale('right').applyOptions({ mode: 1, borderVisible: false });
 
+    chart.timeScale().fitContent();
+
     chart.subscribeCrosshairMove(param => {
       if (
         !param.point ||

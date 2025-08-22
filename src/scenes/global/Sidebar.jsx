@@ -1,7 +1,7 @@
-import { useMemo, useState } from "react"; // Removed useState
+import { useMemo, useState } from "react";
 import { ProSidebar, Menu, MenuItem, SubMenu } from "react-pro-sidebar";
 import { Box, IconButton, Typography, useTheme, Button } from "@mui/material";
-import { Link, useLocation } from "react-router-dom"; // Added useLocation
+import { Link, useLocation } from "react-router-dom";
 import "react-pro-sidebar/dist/css/styles.css";
 import { tokens } from "../../theme";
 import InputBase from "@mui/material/InputBase";
@@ -59,8 +59,8 @@ import MultilineChartIcon from "@mui/icons-material/MultilineChart";
 const Item = ({ title, to, icon, isNested, onClick, isProminent = false }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
-  const location = useLocation(); // Added
-  const isActive = useMemo(() => location.pathname === to, [location.pathname, to]); // Compute based on URL
+  const location = useLocation();
+  const isActive = useMemo(() => location.pathname === to, [location.pathname, to]);
 
   return (
     <MenuItem
@@ -105,9 +105,10 @@ const Item = ({ title, to, icon, isNested, onClick, isProminent = false }) => {
 const Sidebar = ({ isSidebar, setIsSidebar }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
-  const location = useLocation(); // Added for buttons
+  const location = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const isMobile = useIsMobile();
+  const [buttonOrder, setButtonOrder] = useState(["Dashboard", "Overview", "Charts"]);
 
   const itemsData = [
     { title: "Dashboard", to: "/dashboard", icon: <DashboardIcon />, category: null },
@@ -115,7 +116,7 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
     { title: "Charts", to: "/charts", icon: <BarChartIcon />, category: null },
     { title: "Bitcoin Chart", to: "/bitcoin", category: "Bitcoin", icon: <CurrencyBitcoinIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
     { title: "Bitcoin Address Balance", to: "/btc-add-balance", category: "On Chain Data", icon: <AccountBalanceIcon />, categoryIcon: <LinkIcon /> },
-    { title: "Market Cycles", to: "/market-cycles", category: "Bitcoin", icon: <RepeatIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
+    { title: "Market cycles", to: "/market-cycles", category: "Bitcoin", icon: <RepeatIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
     { title: "Bitcoin ROI", to: "/bitcoin-roi", category: "Bitcoin", icon: <TrendingUpIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
     { title: "Bitcoin Monthly Returns", to: "/monthly-returns", category: "Bitcoin", icon: <TableChartIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
     { title: "Bitcoin Bubble Indicator", to: "/btc-20-ext", category: "Bitcoin", icon: <WarningAmberIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
@@ -142,7 +143,6 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
     { title: "US Inflation Chart", to: "/us-inflation", category: "Macro Basic Charts", icon: <PriceChangeIcon />, categoryIcon: <AssessmentIcon /> },
     { title: "US Interest Rate Chart", to: "/us-interest", category: "Macro Basic Charts", icon: <PercentIcon />, categoryIcon: <AssessmentIcon /> },
     { title: "US Initial Claims", to: "/us-initial-claims", category: "Macro Basic Charts", icon: <AssignmentIcon />, categoryIcon: <AssessmentIcon /> },
-    // { title: "US Macro Information Chart", to: "/us-combined-macro", category: "Macro Basic Charts", icon: <MultilineChartIcon />, categoryIcon: <AssessmentIcon /> },
     { title: "Federal Funds Rate", to: "/fred/fed-funds-rate", category: "Macro Basic Charts", icon: <PercentIcon />, categoryIcon: <AssessmentIcon /> },
     { title: "S&P 500 Return On Investment", to: "/sp500-roi", category: "Macro Indicators", icon: <PercentIcon />, categoryIcon: <AssessmentIcon /> },
     { title: "S&P 500 Index", to: "/fred/sp500", category: "Macro Basic Charts", icon: <CandlestickChart />, categoryIcon: <AssessmentIcon /> },
@@ -181,12 +181,24 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
       (item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (item.category && item.category.toLowerCase().includes(searchQuery.toLowerCase()))) &&
       !["Dashboard", "Overview", "Charts"].includes(item.title)
-    ), [searchQuery]
-  );
+    ), [searchQuery]);
 
   const handleSearchChange = (event) => setSearchQuery(event.target.value);
   const handleClearSearch = () => setSearchQuery("");
   const handleMenuClick = () => isMobile && setIsSidebar(false);
+
+  const handleButtonClick = (title) => {
+    // Rotate the button order to place the clicked button in the center
+    const currentIndex = buttonOrder.indexOf(title);
+    if (currentIndex === 0) {
+      // Left button clicked, move to center: [Left, Center, Right] -> [Right, Left, Center]
+      setButtonOrder([buttonOrder[2], buttonOrder[0], buttonOrder[1]]);
+    } else if (currentIndex === 2) {
+      // Right button clicked, move to center: [Left, Center, Right] -> [Center, Right, Left]
+      setButtonOrder([buttonOrder[1], buttonOrder[2], buttonOrder[0]]);
+    }
+    handleMenuClick();
+  };
 
   const itemsByCategory = useMemo(() =>
     itemsData.reduce((acc, item) => {
@@ -207,7 +219,7 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
       icon={item.icon}
       isNested={isNested}
       isProminent={isProminent}
-      onClick={handleMenuClick} // Only handle mobile close, no setSelected
+      onClick={handleMenuClick}
     />
   );
 
@@ -223,6 +235,12 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
       </SubMenu>
     ))
   );
+
+  const buttonData = [
+    { title: "Dashboard", to: "/dashboard" },
+    { title: "Overview", to: "/market-overview" },
+    { title: "Charts", to: "/charts" },
+  ];
 
   return (
     <>
@@ -289,45 +307,71 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
                 <img alt="main-logo" width="200px" height="50px" src={`../../assets/cryptological-title-resized.png`} />
               </Box>
             </Box>
-            {/* Buttons Section - Now uses location for isActive */}
-            <Box display="flex" justifyContent="space-between" px={2} mb={2}>
-              {[
-                { title: "Dashboard", to: "/dashboard" },
-                { title: "Overview", to: "/market-overview" },
-                { title: "Charts", to: "/charts" },
-              ].map((button) => {
-                let isActive;
-                if (button.title === "Dashboard") {
-                  isActive = location.pathname === "/dashboard";
-                } else if (button.title === "Overview") {
-                  isActive = location.pathname === "/market-overview";
-                } else { // Charts
-                  isActive = !["/dashboard", "/market-overview"].includes(location.pathname);
-                }
+            {/* Carousel Button Section */}
+            <Box
+              sx={{
+                width: '270px', // Match sidebar width
+                height: '60px', // Fixed height for the carousel
+                position: 'relative',
+                overflow: 'hidden', // Prevent buttons from spilling out
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                mx: 'auto', // Center the carousel in the sidebar
+                mb: 2,
+              }}
+            >
+              {buttonOrder.map((title, index) => {
+                const button = buttonData.find(b => b.title === title);
+                const isActive = location.pathname === button.to ||
+                  (button.title === "Charts" && !["/dashboard", "/market-overview"].includes(location.pathname));
+                const buttonWidth = 80; // Fixed width for each button (adjust as needed)
+                const gap = 4; // Gap between buttons
+                const totalWidth = buttonWidth * 3 + gap * 2; // Total width of buttons + gaps
+                const offset = (270 - totalWidth) / 2; // Center the buttons in the 270px sidebar
+                const positionOffset = [
+                  offset, // Left position
+                  offset + buttonWidth + gap, // Center position
+                  offset + (buttonWidth + gap) * 2, // Right position
+                ];
+                const positionStyles = [
+                  { transform: 'scale(0.8)', zIndex: 1, opacity: 0.7 }, // Left
+                  { transform: 'scale(1)', zIndex: 2, opacity: 1 }, // Center
+                  { transform: 'scale(0.8)', zIndex: 1, opacity: 0.7 }, // Right
+                ];
 
                 return (
-                  <Button
+                  <Box
                     key={button.title}
-                    component={Link}
-                    to={button.to}
-                    onClick={handleMenuClick} // Only mobile close, no setSelected
                     sx={{
-                      flex: 1,
-                      mx: 0.5,
-                      color: colors.grey[100],
-                      backgroundColor: isActive ? colors.greenAccent[700] : 'transparent',
-                      border: `2px solid ${isActive ? colors.greenAccent[500] : 'transparent'}`,
-                      '&:hover': {
-                        backgroundColor: colors.greenAccent[700],
-                        border: `2px solid ${colors.greenAccent[500]}`,
-                      },
-                      textTransform: 'none',
-                      fontSize: '0.9rem',
-                      padding: '6px 8px',
+                      position: 'absolute',
+                      width: `${buttonWidth}px`,
+                      left: `${positionOffset[index]}px`,
+                      transition: 'all 0.3s ease',
+                      ...positionStyles[index],
                     }}
                   >
-                    {button.title}
-                  </Button>
+                    <Button
+                      component={Link}
+                      to={button.to}
+                      onClick={() => handleButtonClick(button.title)}
+                      sx={{
+                        width: '100%',
+                        color: colors.grey[100],
+                        backgroundColor: isActive ? colors.greenAccent[700] : 'transparent',
+                        border: `2px solid ${isActive ? colors.greenAccent[500] : 'transparent'}`,
+                        '&:hover': {
+                          backgroundColor: colors.greenAccent[700],
+                          border: `2px solid ${colors.greenAccent[500]}`,
+                        },
+                        textTransform: 'none',
+                        fontSize: '0.85rem', // Smaller font to fit within buttonWidth
+                        padding: '4px 6px', // Reduced padding
+                      }}
+                    >
+                      {button.title}
+                    </Button>
+                  </Box>
                 );
               })}
             </Box>
