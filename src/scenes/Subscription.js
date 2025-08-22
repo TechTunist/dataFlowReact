@@ -25,9 +25,6 @@ const Subscription = memo(() => {
   const location = useLocation();
   const navigate = useNavigate();
   const stripe = useContext(StripeContext);
-
-  const DEFAULT_FREE_ACCESS = { access: 'Limited' };
-
   const [subscriptionStatus, setSubscriptionStatus] = useState({
     plan: 'Free',
     billing_interval: 'NONE',
@@ -45,9 +42,7 @@ const Subscription = memo(() => {
   const [success, setSuccess] = useState('');
   const [openCancelDialog, setOpenCancelDialog] = useState(false);
   const [selectedCurrency, setSelectedCurrency] = useState('USD');
-
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://vercel-dataflow.vercel.app';
-
   const plans = [
     { id: 11, name: 'Full Access (Beta)', billing_interval: 'MONTHLY', price_gbp: 10.00, price_usd: 13.45 },
   ];
@@ -57,17 +52,14 @@ const Subscription = memo(() => {
       setError('Please sign in to view subscription status.');
       return;
     }
-
     setLoading(true);
     setError('');
     setSuccess('');
-
     try {
       const token = await getToken();
       if (!token) {
         throw new Error('Failed to obtain authentication token');
       }
-
       const response = await fetch(`${API_BASE_URL}/api/subscription-status/`, {
         method: 'GET',
         headers: {
@@ -75,18 +67,15 @@ const Subscription = memo(() => {
           'Content-Type': 'application/json',
         },
       });
-
       let data;
       try {
         data = await response.json();
       } catch {
         throw new Error('Invalid response format');
       }
-
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}, message: ${data.error || 'Unknown error'}`);
       }
-
       setSubscriptionStatus({
         plan: data.plan || 'Free',
         billing_interval: data.billing_interval || 'NONE',
@@ -123,22 +112,18 @@ const Subscription = memo(() => {
       setError('Please sign in to subscribe.');
       return;
     }
-  
     if (!stripe) {
       setError('Stripe is not initialized. Please wait or refresh the page.');
       return;
     }
-  
     setLoading(true);
     setError('');
     setSuccess('');
-  
     try {
       const token = await getToken();
       if (!token) {
         throw new Error('Failed to obtain authentication token');
       }
-  
       const response = await fetch(`${API_BASE_URL}/api/create-checkout-session/`, {
         method: 'POST',
         headers: {
@@ -147,27 +132,21 @@ const Subscription = memo(() => {
         },
         body: JSON.stringify({ plan_id: planId, currency: currency.toUpperCase() }),
       });
-  
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(`HTTP error! status: ${response.status}, message: ${errorData.error || 'Unknown error'}`);
       }
-  
       const responseData = await response.json();
-      console.log('Full checkout response:', responseData);  // Log to browser console for debugging
-  
-      const { sessionId, url } = responseData;  // Ensure backend returns {sessionId, url}
-  
+      const { sessionId, url } = responseData;
       const { error } = await stripe.redirectToCheckout({ sessionId });
       if (error) {
         console.error('Stripe redirect error:', error);
-        // Fallback: Manually redirect to the session URL
         window.location.href = url;
         setError('Automatic redirect failed—opening Checkout manually.');
       }
     } catch (err) {
       setError(`Failed to initiate checkout: ${err.message}`);
-      console.error('Checkout catch error:', err);  // Additional log
+      console.error('Checkout catch error:', err);
     } finally {
       setLoading(false);
     }
@@ -178,17 +157,14 @@ const Subscription = memo(() => {
       setError('Please sign in to cancel your subscription.');
       return;
     }
-
     setLoading(true);
     setError('');
     setSuccess('');
-
     try {
       const token = await getToken();
       if (!token) {
         throw new Error('Failed to obtain authentication token');
       }
-
       const response = await fetch(`${API_BASE_URL}/api/cancel-subscription/`, {
         method: 'POST',
         headers: {
@@ -196,18 +172,15 @@ const Subscription = memo(() => {
           'Content-Type': 'application/json',
         },
       });
-
       let responseData;
       try {
         responseData = await response.json();
       } catch {
         responseData = { error: 'Invalid response format' };
       }
-
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}, message: ${responseData.error || 'Unknown error'}`);
       }
-
       setSuccess('Your subscription has been cancelled successfully.');
       await fetchSubscriptionStatus();
     } catch (err) {
@@ -296,6 +269,11 @@ const Subscription = memo(() => {
             {success}
           </Alert>
         )}
+        {subscriptionStatus.subscription_status === 'past_due' && (
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            Your subscription payment is past due. Please update your payment method to restore access.
+          </Alert>
+        )}
         {loading && (
           <Typography variant="body1" sx={{ color: colors.grey[300], mb: 2 }}>
             Loading...
@@ -355,25 +333,24 @@ const Subscription = memo(() => {
           )}
         </Box>
         <Box sx={{ mb: 3 }}>
-        <Typography variant="body1" sx={{ color: colors.grey[100], mb: 1 }}>
-          Select Currency:
-        </Typography>
-        <select
-          value={selectedCurrency}
-          onChange={(e) => setSelectedCurrency(e.target.value)}
-          style={{
-            backgroundColor: colors.primary[900],
-            color: colors.grey[100],
-            border: `1px solid ${colors.grey[500]}`,
-            padding: '8px',
-            borderRadius: '4px',
-          }}
-        >
-          <option value="GBP">GBP (£)</option>
-          <option value="USD">USD ($)</option>
-        </select>
-      </Box>
-
+          <Typography variant="body1" sx={{ color: colors.grey[100], mb: 1 }}>
+            Select Currency:
+          </Typography>
+          <select
+            value={selectedCurrency}
+            onChange={(e) => setSelectedCurrency(e.target.value)}
+            style={{
+              backgroundColor: colors.primary[900],
+              color: colors.grey[100],
+              border: `1px solid ${colors.grey[500]}`,
+              padding: '8px',
+              borderRadius: '4px',
+            }}
+          >
+            <option value="GBP">GBP (£)</option>
+            <option value="USD">USD ($)</option>
+          </select>
+        </Box>
         <Dialog
           open={openCancelDialog}
           onClose={handleCloseCancelDialog}
@@ -399,7 +376,6 @@ const Subscription = memo(() => {
             </Button>
           </DialogActions>
         </Dialog>
-
         <Typography variant="h4" sx={{ color: colors.grey[100], mb: 2 }}>
           Available Plans
         </Typography>
