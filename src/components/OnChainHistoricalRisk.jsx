@@ -47,7 +47,7 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
   } = useContext(DataContext);
 
   const metricLabels = {
-    mvrv: 'MVRV Z-Score',
+    mvrv: 'MVRV Risk',
     puell: 'Puell Multiple',
     minerCapThermoCap: 'Miner Cap to Thermo Cap',
     fee: 'Fee Risk',
@@ -56,7 +56,7 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
   };
 
   const metricDescriptions = {
-    mvrv: 'The MVRV Z-Score measures the market value to realized value ratio, indicating overvaluation (high Z-Score) or undervaluation (low Z-Score) of Bitcoin. A value above 7 suggests a market top, while below -1 indicates a potential bottom.',
+    mvrv: 'The MVRV Z-Score Risk measures the market value to realized value ratio in standard deviations, indicating overvaluation (high Z-Score) or undervaluation (low Z-Score) of Bitcoin. A value above 7 suggests a market top, while below -1 indicates a potential bottom.',
     puell: 'The Puell Multiple compares daily issuance value to a 365-day moving average, reflecting miner profitability. High values (>3) suggest a market top, while low values (<0.5) may indicate a bottom.',
     minerCapThermoCap: 'The Miner Cap to Thermo Cap ratio assesses miner revenue relative to market cap. High ratios signal miner selling pressure, while low ratios suggest accumulation.',
     fee: 'Fee Risk tracks transaction fee levels relative to Bitcoin price, indicating network congestion or speculative activity. High values suggest increased risk, while low values indicate reduced demand.',
