@@ -156,14 +156,28 @@ const BitcoinPrice = ({ isDashboard = false }) => {
     return rsiData;
   }, []);
   const calculateMvrvPeakProjection = useCallback((mvrvData) => {
+    // Smooth MVRV data with a 30-day SMA to reduce noise for better peak detection
+    const smoothPeriod = 30;
+    const smoothedMvrv = [];
+    for (let i = smoothPeriod - 1; i < mvrvData.length; i++) {
+      let sum = 0;
+      for (let j = 0; j < smoothPeriod; j++) {
+        sum += mvrvData[i - j].value;
+      }
+      smoothedMvrv.push({
+        time: mvrvData[i].time,
+        value: sum / smoothPeriod,
+      });
+    }
+  
     const peaks = [];
-    const window = 90;
-    for (let i = window; i < mvrvData.length - window; i++) {
-      const isPeak = mvrvData.slice(i - window, i + window + 1).every(
-        (item, idx) => item.value <= mvrvData[i].value || idx === window
+    const window = 365; // 1-year window for cycle-level peak detection
+    for (let i = window; i < smoothedMvrv.length - window; i++) {
+      const isPeak = smoothedMvrv.slice(i - window, i + window + 1).every(
+        (item, idx) => item.value <= smoothedMvrv[i].value || idx === window
       );
-      if (isPeak && mvrvData[i].value > 2) {
-        peaks.push(mvrvData[i]);
+      if (isPeak && smoothedMvrv[i].value > 3) { // Filter for significant peaks above 3
+        peaks.push(smoothedMvrv[i]);
       }
     }
     const decreases = [];

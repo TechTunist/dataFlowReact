@@ -16,13 +16,12 @@ const AltcoinRisk = ({ isDashboard = false }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const [selectedCoin, setSelectedCoin] = useState('SOL');
+  const [denominator, setDenominator] = useState('USD');
   const [isInteractive, setIsInteractive] = useState(false);
   const isMobile = useIsMobile();
   const [tooltipData, setTooltipData] = useState(null);
-  const [isLoading, setIsLoading] = useState(false); // Add loading state
-
-  // Access DataContext
-  const { altcoinData, fetchAltcoinData } = useContext(DataContext);
+  const [isLoading, setIsLoading] = useState(false);
+  const { altcoinData, fetchAltcoinData, btcData, fetchBtcData } = useContext(DataContext);
 
   const altcoins = [
     { label: 'Ethereum', value: 'ETH' },
@@ -63,6 +62,10 @@ const AltcoinRisk = ({ isDashboard = false }) => {
     setSelectedCoin(event.target.value);
   };
 
+  const handleDenominatorChange = (event) => {
+    setDenominator(event.target.value);
+  };
+
   const setInteractivity = () => {
     setIsInteractive(!isInteractive);
   };
@@ -74,29 +77,26 @@ const AltcoinRisk = ({ isDashboard = false }) => {
   };
 
   const calculateRiskMetric = (data) => {
+    const maWindow = Math.min(373, Math.floor(data.length / 2));
     const movingAverage = data.map((item, index) => {
-      const start = Math.max(index - 373, 0);
+      const start = Math.max(index - maWindow, 0);
       const subset = data.slice(start, index + 1);
       const avg = subset.reduce((sum, curr) => sum + curr.value, 0) / subset.length;
       return { ...item, MA: avg };
     });
 
     let consecutiveDeclineDays = 0;
-
     movingAverage.forEach((item, index) => {
       const changeFactor = index ** 0.395;
       let preavg = (Math.log(item.value) - Math.log(item.MA)) * changeFactor;
-
       if (index > 0) {
         const previousItem = movingAverage[index - 1];
         const priceChange = item.value / previousItem.value;
-
         if (priceChange > 1.5) {
           const dampingFactor = 1 / priceChange;
           preavg *= dampingFactor;
           consecutiveDeclineDays = 0;
         }
-
         if (priceChange < 1) {
           consecutiveDeclineDays++;
           const declineFactor = Math.min(consecutiveDeclineDays / 30, 1);
@@ -105,7 +105,6 @@ const AltcoinRisk = ({ isDashboard = false }) => {
           consecutiveDeclineDays = 0;
         }
       }
-
       item.Preavg = preavg;
     });
 
@@ -120,37 +119,53 @@ const AltcoinRisk = ({ isDashboard = false }) => {
     return normalizedRisk;
   };
 
-  // Fetch altcoin price data with loading state
   useEffect(() => {
     const fetchData = async () => {
-      if (!altcoinData[selectedCoin]) {
-        setIsLoading(true); // Set loading state to true
-        try {
+      setIsLoading(true);
+      try {
+        if (!altcoinData[selectedCoin]) {
           await fetchAltcoinData(selectedCoin);
-        } catch (error) {
-          console.error(`Failed to fetch data for ${selectedCoin}:`, error);
-        } finally {
-          setIsLoading(false); // Set loading state to false when done
         }
+        if (denominator === 'BTC' && btcData.length === 0) {
+          await fetchBtcData();
+        }
+      } catch (error) {
+        console.error(`Failed to fetch data for ${selectedCoin}:`, error);
+      } finally {
+        setIsLoading(false);
       }
     };
     fetchData();
-  }, [selectedCoin, altcoinData, fetchAltcoinData]);
+  }, [selectedCoin, denominator, altcoinData, btcData, fetchAltcoinData, fetchBtcData]);
 
-  // Update chart data when altcoin data is available
   useEffect(() => {
     if (altcoinData[selectedCoin] && altcoinData[selectedCoin].length > 0) {
-      const withRiskMetric = calculateRiskMetric(altcoinData[selectedCoin]);
-      setChartData(withRiskMetric);
+      let baseData = altcoinData[selectedCoin];
+      if (denominator === 'BTC' && btcData && btcData.length > 0) {
+        const btcMap = new Map(btcData.map(item => [item.time, item.value]));
+        baseData = altcoinData[selectedCoin]
+          .map(altItem => {
+            const btcPrice = btcMap.get(altItem.time);
+            if (btcPrice) {
+              return { time: altItem.time, value: altItem.value / btcPrice };
+            }
+            return null;
+          })
+          .filter(Boolean);
+      }
+      if (baseData.length > 0) {
+        const withRiskMetric = calculateRiskMetric(baseData);
+        setChartData(withRiskMetric);
+      } else {
+        setChartData([]);
+      }
     } else {
-      setChartData([]); // Clear chart data if no data is available
+      setChartData([]);
     }
-  }, [altcoinData, selectedCoin]);
+  }, [altcoinData, selectedCoin, denominator, btcData]);
 
-  // Initialize chart
   useEffect(() => {
     if (chartData.length === 0) return;
-
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
       height: chartContainerRef.current.clientHeight,
@@ -172,8 +187,9 @@ const AltcoinRisk = ({ isDashboard = false }) => {
         scaleMargins: { top: 0.1, bottom: 0.1 },
       },
       timeScale: { minBarSpacing: 0.001 },
+      handleScroll: isInteractive, // Apply current isInteractive state
+      handleScale: isInteractive, // Apply current isInteractive state
     });
-
     const riskSeries = chart.addLineSeries({
       color: '#ff0062',
       lastValueVisible: true,
@@ -181,23 +197,24 @@ const AltcoinRisk = ({ isDashboard = false }) => {
       lineWidth: 2,
     });
     riskSeries.setData(chartData.map(data => ({ time: data.time, value: data.Risk })));
-
     const priceSeries = chart.addLineSeries({
       color: 'gray',
       priceScaleId: 'left',
       lineWidth: 0.7,
-      priceFormat: { type: 'custom', formatter: value => value.toFixed(2) },
+      priceFormat: {
+        type: 'custom',
+        formatter: value => denominator === 'BTC' ? value.toFixed(8) : value.toFixed(2)
+      },
     });
     priceSeries.setData(chartData.map(data => ({ time: data.time, value: data.value })));
-
-    chart.applyOptions({ handleScroll: false, handleScale: false });
-
     chart.priceScale('left').applyOptions({
       mode: 1,
       borderVisible: false,
-      priceFormat: { type: 'custom', formatter: value => value.toFixed(2) },
+      priceFormat: {
+        type: 'custom',
+        formatter: value => denominator === 'BTC' ? value.toFixed(8) : value.toFixed(2)
+      },
     });
-
     const resizeChart = () => {
       if (chart && chartContainerRef.current) {
         chart.applyOptions({
@@ -207,22 +224,18 @@ const AltcoinRisk = ({ isDashboard = false }) => {
         chart.timeScale().fitContent();
       }
     };
-
     window.addEventListener('resize', resizeChart);
     window.addEventListener('resize', resetChartView);
-
     resizeChart();
     chart.timeScale().fitContent();
     chartRef.current = chart;
-
     return () => {
       chart.remove();
       window.removeEventListener('resize', resizeChart);
       window.removeEventListener('resize', resetChartView);
     };
-  }, [chartData, theme.palette.mode, isDashboard, colors]);
+  }, [chartData, theme.palette.mode, isDashboard, colors, denominator, isInteractive]);
 
-  // Update chart interactivity
   useEffect(() => {
     if (chartRef.current) {
       chartRef.current.applyOptions({
@@ -244,12 +257,19 @@ const AltcoinRisk = ({ isDashboard = false }) => {
               ))}
             </Select>
           </FormControl>
+          <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '200px' } }}>
+            <InputLabel id="denominator-label" shrink sx={{ color: colors.grey[100], '&.Mui-focused': { color: colors.greenAccent[500] }, top: 0, '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' } }}>Denominator</InputLabel>
+            <Select value={denominator} onChange={handleDenominatorChange} label="Denominator" labelId='denominator-label' sx={{ color: colors.grey[100], backgroundColor: colors.primary[600], borderRadius: "8px", '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] }, '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] }, '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] }, '& .MuiSelect-select': { py: 1.5, pl: 2 } }}>
+              <MenuItem value="USD">USD</MenuItem>
+              <MenuItem value="BTC">BTC</MenuItem>
+            </Select>
+          </FormControl>
         </Box>
       )}
       {!isDashboard && (
         <div className='chart-top-div'>
           <div className='span-container'>
-            <span style={{ marginRight: '20px', display: 'inline-block' }}><span style={{ backgroundColor: 'gray', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>Altcoin Price</span>
+            <span style={{ marginRight: '20px', display: 'inline-block' }}><span style={{ backgroundColor: 'gray', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>Altcoin Price {denominator === 'BTC' ? '(BTC)' : '(USD)'}</span>
             <span style={{ display: 'inline-block' }}><span style={{ backgroundColor: '#ff0062', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>Risk Metric</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
@@ -306,7 +326,6 @@ const AltcoinRisk = ({ isDashboard = false }) => {
           smart-contract functionality (permissionless and immutable executable code that is deployed on the blockchain) and are genuinely attempting
           to build the next generation of the internet through distributed ledger blockchain technology. These crypto assets are used to drive the
           functionality and security of their respective blockchain.
-          
           These projects are far riskier, but during certain phases of the business cycle (severe drops in Bitcoin dominance paired with looser monetary policy)
           they have historically offered far greater returns than that of traditional markets and the 2 crypto blue-chips; Bitcoin & Ethereum.
           Since Bitcoin is the lowest risk crypto asset, it makes sense to value these altcoins against not only their USD pair, but also their BTC pair.

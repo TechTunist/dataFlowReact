@@ -1,5 +1,5 @@
 // src/scenes/MarketOverview.js
-import React, { useState, useEffect, useContext, memo, useMemo } from 'react';
+import React, { useState, useEffect, useContext, memo, useMemo, useCallback } from 'react';
 import FearAndGreed3D from '../components/FearAndGreed3D';
 import ProgressBar3D from '../components/ProgressBar3D';
 import {
@@ -371,37 +371,43 @@ const MarketOverview = memo(() => {
   };
 
   // Calculate MVRV peak projection
-  const calculateMvrvPeakProjection = (mvrvData) => {
-    if (!mvrvData || mvrvData.length < 181) return { projectedPeak: null };
-    const sortedMvrvData = [...mvrvData].sort((a, b) => new Date(a.time) - new Date(b.time));
+  const calculateMvrvPeakProjection = useCallback((mvrvData) => {
+    // Smooth MVRV data with a 30-day SMA to reduce noise for better peak detection
+    const smoothPeriod = 30;
+    const smoothedMvrv = [];
+    for (let i = smoothPeriod - 1; i < mvrvData.length; i++) {
+      let sum = 0;
+      for (let j = 0; j < smoothPeriod; j++) {
+        sum += mvrvData[i - j].value;
+      }
+      smoothedMvrv.push({
+        time: mvrvData[i].time,
+        value: sum / smoothPeriod,
+      });
+    }
+  
     const peaks = [];
-    const window = 90;
-    for (let i = window; i < sortedMvrvData.length - window; i++) {
-      const isPeak = sortedMvrvData.slice(i - window, i + window + 1).every(
-        (item, idx) => item.value <= sortedMvrvData[i].value || idx === window
+    const window = 365; // 1-year window for cycle-level peak detection
+    for (let i = window; i < smoothedMvrv.length - window; i++) {
+      const isPeak = smoothedMvrv.slice(i - window, i + window + 1).every(
+        (item, idx) => item.value <= smoothedMvrv[i].value || idx === window
       );
-      if (isPeak && sortedMvrvData[i].value > 2) {
-        peaks.push(sortedMvrvData[i]);
+      if (isPeak && smoothedMvrv[i].value > 3) { // Filter for significant peaks above 3
+        peaks.push(smoothedMvrv[i]);
       }
     }
-
     const decreases = [];
     for (let i = 1; i < peaks.length; i++) {
       const decrease = (peaks[i - 1].value - peaks[i].value) / peaks[i - 1].value;
       decreases.push(decrease);
     }
-
     const avgDecrease = decreases.length > 0
       ? decreases.reduce((sum, val) => sum + val, 0) / decreases.length
       : 0;
-
-    const latestPeak = peaks.length > 0 ? peaks[peaks.length - 1] : null;
-    const projectedPeak = latestPeak
-      ? latestPeak.value * (1 - avgDecrease)
-      : null;
-
-    return { projectedPeak };
-  };
+    const latestPeak = peaks[peaks.length - 1];
+    const projectedPeak = latestPeak ? latestPeak.value * (1 - avgDecrease) : null;
+    return { peaks, projectedPeak };
+  }, []);
 
   // Calculate Mayer Multiple
   const calculateMayerMultiple = (data) => {
