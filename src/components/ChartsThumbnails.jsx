@@ -439,9 +439,9 @@ const Charts = () => {
   };
   return (
     <Box m="20px" maxWidth="1200px" mx="auto">
-      {Object.entries(chartSections).map(([section, charts]) => (
+      {Object.entries(chartSections).filter(([section]) => section === "Free Charts").map(([section, charts]) => (
         <Box key={section} mb={6}>
-          <Typography variant="h3" color={colors.grey[100]} mb={1} mt={10} textAlign="left" ml={3.5} >
+          <Typography variant="h3" color={colors.grey[100]} mb={1} mt={10} textAlign="left" ml={'45%'} >
             {section}
           </Typography>
           <Grid
@@ -467,7 +467,6 @@ const Charts = () => {
                     maxWidth: "360px",
                   }}
                 >
-                  {/* Title Section */}
                   <CardContent>
                     <Typography
                       variant="h5"
@@ -477,11 +476,10 @@ const Charts = () => {
                       {title}
                     </Typography>
                   </CardContent>
-                  {/* Image Section with Padding */}
                   <CardMedia
                     sx={{
-                      padding: "7px", // Padding around the image container
-                      height: 200, // Maintain height for layout consistency
+                      padding: "7px",
+                      height: 200,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -495,12 +493,11 @@ const Charts = () => {
                         width: "100%",
                         height: "100%",
                         objectFit: "cover",
-                        border: `2px solid ${colors.greenAccent[500]}`, // Border tight around the image
+                        border: `2px solid ${colors.greenAccent[500]}`,
                       }}
                       loading="lazy"
                     />
                   </CardMedia>
-                  {/* Description Section */}
                   <CardContent>
                     <Typography
                       variant="body2"
@@ -516,6 +513,85 @@ const Charts = () => {
           </Grid>
         </Box>
       ))}
+      <Box mb={6}>
+        <Typography variant="h3" color={colors.grey[100]} mb={3} mt={12} textAlign="left" ml={'43%'} >
+          Premium Charts
+        </Typography>
+        {Object.entries(chartSections).filter(([section]) => section !== "Free Charts").map(([subSection, charts]) => (
+          <Box key={subSection} mb={4}>
+            <Typography variant="h4" color={colors.grey[100]} mb={1} textAlign="left" ml={3.5} >
+              {subSection}
+            </Typography>
+            <Grid
+              container
+              spacing={3}
+              justifyContent="center"
+              sx={{ maxWidth: "100%", margin: "0 auto" }}
+            >
+              {charts.map(({ path, title, description, image }) => (
+                <Grid item xs={12} sm={4} key={path} sx={{ display: "flex", justifyContent: "center" }}>
+                  <Card
+                    component={Link}
+                    to={path}
+                    sx={{
+                      textDecoration: "none",
+                      backgroundColor: colors.primary[400],
+                      transition: "transform 0.2s, box-shadow 0.2s",
+                      "&:hover": {
+                        transform: "scale(1.05)",
+                        boxShadow: `0 4px 20px ${colors.greenAccent[500]}`,
+                      },
+                      width: "100%",
+                      maxWidth: "360px",
+                    }}
+                  >
+                    <CardContent>
+                      <Typography
+                        variant="h5"
+                        color={colors.grey[100]}
+                        textAlign="center"
+                      >
+                        {title}
+                      </Typography>
+                    </CardContent>
+                    <CardMedia
+                      sx={{
+                        padding: "7px",
+                        height: 200,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Box
+                        component="img"
+                        src={image}
+                        alt={`${title} chart`}
+                        sx={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                          border: `2px solid ${colors.greenAccent[500]}`,
+                        }}
+                        loading="lazy"
+                      />
+                    </CardMedia>
+                    <CardContent>
+                      <Typography
+                        variant="body2"
+                        color={colors.grey[300]}
+                        textAlign="center"
+                      >
+                        {description}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
+          </Box>
+        ))}
+      </Box>
     </Box>
   );
 };
