@@ -12,10 +12,10 @@ import BitcoinFees from './BitcoinTransactionFees';
 
 const BitcoinAddressBalancesChart = ({ isDashboard = false }) => {
   const theme = useTheme();
-  const isMobile = useIsMobile();
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
   const { fetchAddressMetricsData, onchainMetricsData, onchainMetricsLastUpdated, onchainFetchError, btcData, fetchBtcData } = useContext(DataContext);
   const plotRef = useRef(null);
+  const containerRef = useRef(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [scaleMode, setScaleMode] = useState(1); // 1: Logarithmic, 0: Linear
@@ -100,6 +100,7 @@ const BitcoinAddressBalancesChart = ({ isDashboard = false }) => {
       ticks: 'outside',
       tickfont: { color: colors.grey[100], size: 12 },
       tickformat: '.2s',
+      fixedrange: true,
     },
     yaxis2: {
       title: {
@@ -122,6 +123,7 @@ const BitcoinAddressBalancesChart = ({ isDashboard = false }) => {
       ticks: 'outside',
       tickfont: { color: colors.grey[100], size: 12 },
       tickformat: '$,.2s',
+      fixedrange: true,
     },
     showlegend: !isDashboard,
     legend: !isDashboard
@@ -135,8 +137,8 @@ const BitcoinAddressBalancesChart = ({ isDashboard = false }) => {
         }
       : {},
     hovermode: 'x unified',
-    hoverlabel: { 
-      bgcolor: colors.grey[700], 
+    hoverlabel: {
+      bgcolor: colors.grey[700],
       font: { color: colors.grey[100], size: isNarrowScreen ? 10 : 12 }
     },
   });
@@ -255,8 +257,8 @@ const BitcoinAddressBalancesChart = ({ isDashboard = false }) => {
         tickfont: { color: colors.grey[100], size: 12 },
         tickformat: '$,.2s',
       },
-      hoverlabel: { 
-        bgcolor: colors.grey[700], 
+      hoverlabel: {
+        bgcolor: colors.grey[700],
         font: { color: colors.grey[100], size: isNarrowScreen ? 10 : 12 }
       },
     }));
@@ -300,27 +302,92 @@ const BitcoinAddressBalancesChart = ({ isDashboard = false }) => {
   };
 
   const handleRelayout = (event) => {
-    if (event['xaxis.range[0]'] || event['yaxis.range[0]'] || event['yaxis2.range[0]']) {
+    if (event['xaxis.range[0]']) {
+      const newXMin = new Date(event['xaxis.range[0]']);
+      const newXMax = new Date(event['xaxis.range[1]']);
+      const visibleMetricsData = onchainMetricsData.filter(d => {
+        const date = new Date(d.time);
+        return date >= newXMin && date <= newXMax;
+      });
+      const visibleBtcData = btcData.filter(d => {
+        const date = new Date(d.time);
+        return date >= newXMin && date <= newXMax;
+      });
+      let yValues = [];
+      if (activeMetrics) {
+        yValues = visibleMetricsData.map(d => d[activeMetrics]);
+      } else if (rangeStart && rangeEnd) {
+        const startIndex = orderedMetricKeys.indexOf(rangeStart);
+        const endIndex = orderedMetricKeys.indexOf(rangeEnd);
+        const selectedMetrics = orderedMetricKeys.slice(startIndex, endIndex + 1);
+        yValues = visibleMetricsData.map(dataPoint => {
+          let total = 0;
+          selectedMetrics.forEach(metric => {
+            total += dataPoint[metric] || 0;
+          });
+          return total;
+        });
+      }
+      const btcYValues = visibleBtcData.map(d => d.value);
+      const yMin = yValues.length > 0 ? Math.min(...yValues) : 1e-10;
+      const yMax = yValues.length > 0 ? Math.max(...yValues) : 1;
+      const btcYMin = btcYValues.length > 0 ? Math.min(...btcYValues) : 1e-10;
+      const btcYMax = btcYValues.length > 0 ? Math.max(...btcYValues) : 1;
+      const factor = 1.05;
+      const clampedYMin = Math.max(yMin / factor, 1e-10);
+      const clampedYMax = yMax * factor;
+      const clampedBtcYMin = Math.max(btcYMin / factor, 1e-10);
+      const clampedBtcYMax = btcYMax * factor;
+      const yRange = scaleMode === 1 ? [Math.log10(clampedYMin), Math.log10(clampedYMax)] : [clampedYMin, clampedYMax];
+      const y2Range = [Math.log10(clampedBtcYMin), Math.log10(clampedBtcYMax)];
       setLayout((prev) => ({
         ...prev,
         xaxis: {
           ...prev.xaxis,
-          range: event['xaxis.range[0]'] ? [event['xaxis.range[0]'], event['xaxis.range[1]']] : prev.xaxis.range,
-          autorange: event['xaxis.range[0]'] ? false : prev.xaxis.autorange,
+          range: [event['xaxis.range[0]'], event['xaxis.range[1]']],
+          autorange: false,
         },
         yaxis: {
           ...prev.yaxis,
-          range: event['yaxis.range[0]'] ? [event['yaxis.range[0]'], event['yaxis.range[1]']] : prev.yaxis.range,
-          autorange: event['yaxis.range[0]'] ? false : prev.yaxis.autorange,
+          range: yRange,
+          autorange: false,
         },
         yaxis2: {
           ...prev.yaxis2,
-          range: event['yaxis2.range[0]'] ? [event['yaxis2.range[0]'], event['yaxis2.range[1]']] : prev.yaxis2.range,
-          autorange: event['yaxis2.range[0]'] ? false : prev.yaxis2.autorange,
+          range: y2Range,
+          autorange: false,
         },
       }));
     }
   };
+
+  // Handle cursor changes on mousedown/mouseup
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const svgContainer = plotRef.current.el.querySelector('.svg-container');
+    if (svgContainer) {
+      svgContainer.style.cursor = 'default';
+    }
+    const handleMouseDown = () => {
+      if (svgContainer) {
+        svgContainer.style.cursor = 'ew-resize';
+      }
+    };
+    const handleMouseUp = () => {
+      if (svgContainer) {
+        svgContainer.style.cursor = 'default';
+      }
+    };
+    container.addEventListener('mousedown', handleMouseDown);
+    container.addEventListener('mouseup', handleMouseUp);
+    container.addEventListener('mouseleave', handleMouseUp);
+    return () => {
+      container.removeEventListener('mousedown', handleMouseDown);
+      container.removeEventListener('mouseup', handleMouseUp);
+      container.removeEventListener('mouseleave', handleMouseUp);
+    };
+  }, []);
 
   return (
     <div style={{ height: '100%', position: 'relative' }}>
@@ -504,6 +571,7 @@ const BitcoinAddressBalancesChart = ({ isDashboard = false }) => {
         </div>
       )}
       <div
+        ref={containerRef}
         className="chart-container"
         style={{
           height: isDashboard ? '100%' : 'calc(100% - 40px)',
@@ -511,6 +579,7 @@ const BitcoinAddressBalancesChart = ({ isDashboard = false }) => {
           border: '2px solid #a9a9a9',
           position: 'relative',
           zIndex: 1,
+          cursor: 'default',
         }}
       >
         <div style={{ height: '100%', width: '100%', zIndex: 1 }}>
@@ -522,6 +591,7 @@ const BitcoinAddressBalancesChart = ({ isDashboard = false }) => {
               staticPlot: isDashboard || !isInteractive,
               displayModeBar: false,
               responsive: true,
+              dragmode: 'zoom',
             }}
             useResizeHandler={true}
             style={{ width: '100%', height: '100%' }}
@@ -594,14 +664,13 @@ const BitcoinAddressBalancesChart = ({ isDashboard = false }) => {
         <p className="chart-info" style={{ marginTop: '10px', textAlign: 'left', width: '100%' }}>
           This chart displays the number of Bitcoin addresses holding various levels of Bitcoin over time.
           This metric gives an indication of the distribution of Bitcoin wealth among holders.
-          <br />
+<br />
           Source: <a href="https://coinmetrics.io/community-network-data/">Coin Metrics Community API</a>
-          <br />
-          <br />
-        </p>
+<br />
+<br />
+</p>
       )}
     </div>
   );
 };
-
 export default restrictToPaidSubscription(BitcoinAddressBalancesChart);

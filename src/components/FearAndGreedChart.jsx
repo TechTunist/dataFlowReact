@@ -50,6 +50,7 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
   const { btcData, fetchBtcData, fearAndGreedData, fetchFearAndGreedData } = useContext(DataContext);
   const plotRef = useRef(null);
+  const containerRef = useRef(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [viewMode, setViewMode] = useState('scatter');
@@ -66,7 +67,7 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
     paper_bgcolor: colors.primary[700],
     font: { color: colors.primary[100] },
     xaxis: { title: '', autorange: true },
-    yaxis: { title: 'Price (USD)', type: 'log', autorange: true },
+    yaxis: { title: 'Price (USD)', type: 'log', autorange: true, fixedrange: true },
     ...(viewMode === 'line' && {
       yaxis2: {
         title: 'Fear and Greed Index',
@@ -75,6 +76,7 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
         side: 'right',
         autorange: false,
         tickfont: { color: colors.greenAccent[500] },
+        fixedrange: true,
       },
     }),
     showlegend: !isDashboard,
@@ -108,7 +110,6 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
   // Memoized datasets
   const datasets = useMemo(() => {
     if (btcData.length === 0 || fearAndGreedData.length === 0) return [];
-
     const startDate = new Date('2018-02-01');
     const btcFormattedData = btcData.filter(item => new Date(item.time) >= startDate);
     const fearGreedMap = {};
@@ -129,7 +130,7 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
       name: 'Bitcoin Price',
       yaxis: 'y1',
       visible: true,
-      hoverinfo: viewMode === 'scatter' ? 'skip' : 'y+x', // Skip in scatter, contribute y in line view
+      hoverinfo: viewMode === 'scatter' ? 'skip' : 'y+x',
       hovertemplate: viewMode === 'line'
         ? `<b>Bitcoin Price:</b> $%{y:,.0f}<extra></extra>`
         : undefined,
@@ -156,7 +157,6 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
           btcPrice: btcFormattedData.find(btc => btc.time === date)?.value || null,
         });
       });
-
       const classificationOrder = ['Extreme Fear', 'Fear', 'Neutral', 'Greed', 'Extreme Greed'];
       const fearGreedDataset = Object.keys(fearGreedGroups)
         .sort((a, b) => classificationOrder.indexOf(a) - classificationOrder.indexOf(b))
@@ -300,28 +300,75 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
   }, [baseLayout, viewMode]);
 
   const handleRelayout = useCallback((event) => {
-    const update = {};
-    if (event['xaxis.autorange']) {
-      update.xaxis = { ...baseLayout.xaxis, autorange: true };
-    } else if (event['xaxis.range[0]'] && event['xaxis.range[1]']) {
-      update.xaxis = { ...baseLayout.xaxis, range: [event['xaxis.range[0]'], event['xaxis.range[1]']], autorange: false };
-    }
-    if (event['yaxis.autorange']) {
-      update.yaxis = { ...baseLayout.yaxis, autorange: true };
-    } else if (event['yaxis.range[0]'] && event['yaxis.range[1]']) {
-      update.yaxis = { ...baseLayout.yaxis, range: [event['yaxis.range[0]'], event['yaxis.range[1]']], autorange: false };
-    }
-    if (viewMode === 'line') {
-      if (event['yaxis2.autorange']) {
-        update.yaxis2 = { ...baseLayout.yaxis2, autorange: false, range: [0, 100] };
-      } else if (event['yaxis2.range[0]'] && event['yaxis2.range[1]']) {
-        update.yaxis2 = { ...baseLayout.yaxis2, range: [event['yaxis2.range[0]'], event['yaxis2.range[1]']], autorange: false };
+    if (event['xaxis.range[0]']) {
+      const newXMin = new Date(event['xaxis.range[0]']);
+      const newXMax = new Date(event['xaxis.range[1]']);
+      const startDate = new Date('2018-02-01');
+      const btcFormattedData = btcData.filter(item => new Date(item.time) >= startDate);
+      const visibleBtcData = btcFormattedData.filter(d => {
+        const date = new Date(d.time);
+        return date >= newXMin && date <= newXMax;
+      });
+      const fearGreedMap = {};
+      fearAndGreedData.forEach(item => {
+        const date = new Date(item.timestamp * 1000).toISOString().slice(0, 10);
+        const value = Number(item.value);
+        if (!isNaN(value)) {
+          fearGreedMap[date] = { value, classification: item.value_classification };
+        }
+      });
+      const alignedData = visibleBtcData
+        .map(item => ({
+          time: item.time,
+          btcPrice: item.value,
+          fgValue: fearGreedMap[item.time]?.value ?? null,
+        }))
+        .filter(d => d.fgValue != null && !isNaN(d.fgValue));
+
+      let yValues = visibleBtcData.map(d => d.value);
+      let fgValues = alignedData.map(d => d.fgValue);
+      let traceName = 'Fear and Greed Index';
+      if (smoothing === 'sma') {
+        fgValues = calculateSMA(fgValues, smoothingPeriod);
+        traceName = `Fear and Greed (SMA ${smoothingPeriod})`;
+      } else if (smoothing === 'ema') {
+        fgValues = calculateEMA(fgValues, smoothingPeriod);
+        traceName = `Fear and Greed (EMA ${smoothingPeriod})`;
       }
-    }
-    if (Object.keys(update).length > 0) {
+
+      const yMin = yValues.length > 0 ? Math.min(...yValues) : 1e-10;
+      const yMax = yValues.length > 0 ? Math.max(...yValues) : 1;
+      const factor = 1.05;
+      const clampedYMin = Math.max(yMin / factor, 1e-10);
+      const clampedYMax = yMax * factor;
+
+      const update = {
+        xaxis: {
+          ...baseLayout.xaxis,
+          range: [event['xaxis.range[0]'], event['xaxis.range[1]']],
+          autorange: false,
+        },
+        yaxis: {
+          ...baseLayout.yaxis,
+          range: [Math.log10(clampedYMin), Math.log10(clampedYMax)],
+          autorange: false,
+        },
+      };
+
+      if (viewMode === 'line' && fgValues.length > 0) {
+        const fgMin = Math.min(...fgValues.filter(v => v !== null));
+        const fgMax = Math.max(...fgValues.filter(v => v !== null));
+        const fgPadding = (fgMax - fgMin) * 0.1;
+        update.yaxis2 = {
+          ...baseLayout.yaxis2,
+          range: [fgMin - fgPadding, fgMax + fgPadding],
+          autorange: false,
+        };
+      }
+
       setLayoutState(update);
     }
-  }, [baseLayout, viewMode]);
+  }, [baseLayout, viewMode, btcData, fearAndGreedData, smoothing, smoothingPeriod]);
 
   const toggleDataset = useCallback((index) => {
     if (plotRef.current?.el) {
@@ -330,6 +377,34 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
       datasets[index].visible = !datasets[index].visible;
     }
   }, [datasets]);
+
+  // Handle cursor changes on mousedown/mouseup
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const svgContainer = plotRef.current.el.querySelector('.svg-container');
+    if (svgContainer) {
+      svgContainer.style.cursor = 'default';
+    }
+    const handleMouseDown = () => {
+      if (svgContainer) {
+        svgContainer.style.cursor = 'ew-resize';
+      }
+    };
+    const handleMouseUp = () => {
+      if (svgContainer) {
+        svgContainer.style.cursor = 'default';
+      }
+    };
+    container.addEventListener('mousedown', handleMouseDown);
+    container.addEventListener('mouseup', handleMouseUp);
+    container.addEventListener('mouseleave', handleMouseUp);
+    return () => {
+      container.removeEventListener('mousedown', handleMouseDown);
+      container.removeEventListener('mouseup', handleMouseUp);
+      container.removeEventListener('mouseleave', handleMouseUp);
+    };
+  }, []);
 
   return (
     <div style={{ height: '100%' }}>
@@ -467,7 +542,6 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
           </Button>
         </Box>
       )}
-
       {!isDashboard && (
         <div className="chart-top-div" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
           <div className="risk-filter">
@@ -476,8 +550,8 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
           </div>
         </div>
       )}
-
       <div
+        ref={containerRef}
         className="chart-container"
         style={{ height: isDashboard ? '100%' : 'calc(100% - 40px)', width: '100%', border: '2px solid #a9a9a9' }}
       >
@@ -485,22 +559,19 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
           ref={plotRef}
           data={datasets}
           layout={layout}
-          config={{ staticPlot: isDashboard, displayModeBar: false, responsive: true }}
+          config={{ staticPlot: isDashboard, displayModeBar: false, responsive: true, dragmode: 'zoom' }}
           useResizeHandler={true}
           style={{ width: '100%', height: '100%' }}
           onRelayout={handleRelayout}
           plotly={Plotly}
         />
       </div>
-
       <div className="under-chart">
         {!isDashboard && btcData.length > 0 && (
           <LastUpdated customDate={btcData[btcData.length - 1].time} />
         )}
-        
         {!isDashboard && <BitcoinFees />}
       </div>
-
       {!isDashboard && (
         <p className="chart-info" style={{ marginTop: '10px', textAlign: 'left', width: '100%' }}>
           <b>Data only available starting from February 2018.</b>

@@ -48,6 +48,7 @@ const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
 const isNarrowScreen = useMediaQuery('(max-width:600px)');
 const { btcData, fetchBtcData, altcoinData, fetchAltcoinData } = useContext(DataContext);
 const plotRef = useRef(null);
+const containerRef = useRef(null);
 const [selectedAsset, setSelectedAsset] = useState('BTC');
 // Get the label for the selected asset
 const selectedAssetLabel = useMemo(() => {
@@ -102,6 +103,7 @@ standoff: 5,
 type: 'log',
 autorange: true,
 automargin: true,
+fixedrange: true, // Prevent vertical zooming
     },
 legend: {
 title: { text: isNarrowScreen ? '' : 'Select Risk Bands' },
@@ -192,6 +194,7 @@ font: { color: colors.primary[100], size: 14 },
 standoff: 5,
         },
 automargin: true,
+fixedrange: true, // Ensure it persists
       },
 legend: {
 ...prevLayout.legend,
@@ -213,20 +216,34 @@ prevDatasets.map(dataset => ({ ...dataset, visible: true }))
     );
   };
 const handleRelayout = (event) => {
-if (event['xaxis.range[0]'] || event['yaxis.range[0]']) {
+if (event['xaxis.range[0]']) {
+const newXMin = new Date(event['xaxis.range[0]']);
+const newXMax = new Date(event['xaxis.range[1]']);
+const visibleData = chartData.filter(d => {
+const date = new Date(d.time);
+return date >= newXMin && date <= newXMax;
+      });
+if (visibleData.length > 0) {
+const yValues = visibleData.map(d => d.value);
+const yMin = Math.min(...yValues);
+const yMax = Math.max(...yValues);
+const factor = 1.05; // 5% padding for log scale
+const clampedYMin = Math.max(yMin / factor, 1e-10); // Multiplicative padding
+const clampedYMax = yMax * factor;
 setLayout(prevLayout => ({
 ...prevLayout,
 xaxis: {
 ...prevLayout.xaxis,
 range: [event['xaxis.range[0]'], event['xaxis.range[1]']],
 autorange: false,
-        },
+          },
 yaxis: {
 ...prevLayout.yaxis,
-range: [event['yaxis.range[0]'], event['yaxis.range[1]']],
+range: [Math.log10(clampedYMin), Math.log10(clampedYMax)],
 autorange: false,
-        },
-      }));
+          },
+        }));
+      }
     }
   };
 const handleLegendDoubleClick = (event) => {
@@ -285,6 +302,33 @@ label: isNarrowScreen
     );
 resetChartView();
   };
+// Handle cursor changes on mousedown/mouseup
+useEffect(() => {
+const container = containerRef.current;
+if (!container) return;
+const svgContainer = plotRef.current.el.querySelector('.svg-container');
+if (svgContainer) {
+svgContainer.style.cursor = 'default';
+  }
+const handleMouseDown = () => {
+if (svgContainer) {
+svgContainer.style.cursor = 'ew-resize';
+    }
+  };
+const handleMouseUp = () => {
+if (svgContainer) {
+svgContainer.style.cursor = 'default';
+    }
+  };
+container.addEventListener('mousedown', handleMouseDown);
+container.addEventListener('mouseup', handleMouseUp);
+container.addEventListener('mouseleave', handleMouseUp);
+return () => {
+container.removeEventListener('mousedown', handleMouseDown);
+container.removeEventListener('mouseup', handleMouseUp);
+container.removeEventListener('mouseleave', handleMouseUp);
+    };
+  }, []);
 return (
 <div style={{ height: '100%' }}>
 {!isDashboard && (
@@ -371,11 +415,13 @@ textAlign: 'center',
 </div>
       )}
 <div
+ref={containerRef}
 className="chart-container"
 style={{
 height: isDashboard ? '100%' : 'calc(100% - 40px)',
 width: '100%',
 border: '2px solid #a9a9a9',
+cursor: 'default',
         }}
 >
 <Plot
@@ -411,6 +457,7 @@ config={{
 staticPlot: isDashboard,
 displayModeBar: false,
 responsive: true,
+dragmode: 'zoom', // Explicitly set to zoom mode
           }}
 useResizeHandler={true}
 style={{ width: "100%", height: "100%" }}
