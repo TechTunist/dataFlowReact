@@ -24,7 +24,6 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
   const [dataError, setDataError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [tooltipData, setTooltipData] = useState(null);
-
   const {
     btcData,
     mvrvRiskData,
@@ -52,7 +51,7 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
     minerCapThermoCap: 'Miner Cap to Thermo Cap',
     fee: 'Fee Risk',
     sopl: 'SOPL Risk',
-    average: 'Average Risk', // New metric
+    average: 'Average Risk',
   };
 
   const metricDescriptions = {
@@ -61,7 +60,7 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
     minerCapThermoCap: 'The Miner Cap to Thermo Cap ratio assesses miner revenue relative to market cap. High ratios signal miner selling pressure, while low ratios suggest accumulation.',
     fee: 'Fee Risk tracks transaction fee levels relative to Bitcoin price, indicating network congestion or speculative activity. High values suggest increased risk, while low values indicate reduced demand.',
     sopl: 'The SOPL (Spent Output Profit/Loss) Risk measures the profit or loss of spent outputs. High positive values indicate profit-taking (high risk), while negative values suggest capitulation (low risk).',
-    average: 'The Average Risk metric combines MVRV, Puell, Miner Cap to Thermo Cap, Fee, and SOPL risk metrics by averaging their values, providing a composite view of market risk.', // New description
+    average: 'The Average Risk metric combines MVRV, Puell, Miner Cap to Thermo Cap, Fee, and SOPL risk metrics by averaging their values, providing a composite view of market risk.',
   };
 
   const lastUpdatedMap = {
@@ -79,7 +78,7 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
     minerCapThermoCap: isMinerCapThermoCapRiskDataFetched,
     fee: isFeeRiskDataFetched,
     sopl: isSoplRiskDataFetched,
-    average: isMvrvRiskDataFetched && isPuellRiskDataFetched && isMinerCapThermoCapRiskDataFetched && isFeeRiskDataFetched && isSoplRiskDataFetched, // All metrics must be fetched
+    average: isMvrvRiskDataFetched && isPuellRiskDataFetched && isMinerCapThermoCapRiskDataFetched && isFeeRiskDataFetched && isSoplRiskDataFetched,
   };
 
   const lastUpdatedTime = lastUpdatedMap[selectedMetric];
@@ -96,34 +95,26 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
       minerCapThermoCap: minerCapThermoCapRiskData,
       fee: feeRiskData,
       sopl: soplRiskData,
-      average: [], // Will compute below
+      average: [],
     };
-
-    // Normalize and sort price data
     const priceData = btcData
       .map((d) => ({
         time: normalizeTime(d.time),
         value: parseFloat(d.value) || 0,
       }))
       .sort((a, b) => a.time.localeCompare(b.time));
-
-    // Normalize individual risk metrics
-    const allRiskData = {
-      mvrv: mvrvRiskData.map((d) => ({ time: normalizeTime(d.time), value: parseFloat(d.Risk) || 0 })),
-      puell: puellRiskData.map((d) => ({ time: normalizeTime(d.time), value: parseFloat(d.Risk) || 0 })),
-      minerCapThermoCap: minerCapThermoCapRiskData.map((d) => ({ time: normalizeTime(d.time), value: parseFloat(d.Risk) || 0 })),
-      fee: feeRiskData.map((d) => ({ time: normalizeTime(d.time), value: parseFloat(d.Risk) || 0 })),
-      sopl: soplRiskData.map((d) => ({ time: normalizeTime(d.time), value: parseFloat(d.Risk) || 0 })),
-    };
-
     let riskData;
     if (selectedMetric === 'average') {
-      // Collect all unique timestamps
       const allTimes = new Set();
+      const allRiskData = {
+        mvrv: mvrvRiskData.map((d) => ({ time: normalizeTime(d.time), value: parseFloat(d.Risk) || 0 })),
+        puell: puellRiskData.map((d) => ({ time: normalizeTime(d.time), value: parseFloat(d.Risk) || 0 })),
+        minerCapThermoCap: minerCapThermoCapRiskData.map((d) => ({ time: normalizeTime(d.time), value: parseFloat(d.Risk) || 0 })),
+        fee: feeRiskData.map((d) => ({ time: normalizeTime(d.time), value: parseFloat(d.Risk) || 0 })),
+        sopl: soplRiskData.map((d) => ({ time: normalizeTime(d.time), value: parseFloat(d.Risk) || 0 })),
+      };
       Object.values(allRiskData).forEach((data) => data.forEach((d) => allTimes.add(d.time)));
       const sortedTimes = Array.from(allTimes).sort((a, b) => a.localeCompare(b));
-
-      // Calculate average risk for each timestamp
       riskData = sortedTimes.map((time) => {
         const values = Object.values(allRiskData)
           .map((data) => {
@@ -131,7 +122,6 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
             return point ? point.value : null;
           })
           .filter((value) => value !== null);
-
         const avgValue = values.length > 0 ? values.reduce((sum, val) => sum + val, 0) / values.length : null;
         return { time, value: avgValue !== null ? parseFloat(avgValue.toFixed(2)) : null };
       }).filter((d) => d.value !== null);
@@ -143,11 +133,8 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
         }))
         .sort((a, b) => a.time.localeCompare(b.time));
     }
-
-    // Align priceData to riskData timestamps
     const riskTimes = new Set(riskData.map((d) => d.time));
     const alignedPriceData = priceData.filter((d) => riskTimes.has(d.time));
-
     return { priceData: alignedPriceData, riskData };
   }, [btcData, mvrvRiskData, puellRiskData, minerCapThermoCapRiskData, feeRiskData, soplRiskData, selectedMetric]);
 
@@ -157,10 +144,8 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
     if (selectedSmoothing === 'none') {
       return riskData.map((d) => ({ time: d.time, value: parseFloat(d.value.toFixed(2)) }));
     }
-
     const windowSize = selectedSmoothing === '7day' ? 7 : 28;
     const smoothedData = [];
-
     for (let i = 0; i < riskData.length; i++) {
       const startIndex = Math.max(0, i - windowSize + 1);
       const window = riskData.slice(startIndex, i + 1).filter((d) => d.value !== null);
@@ -172,7 +157,6 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
         value: smoothedValue !== null ? parseFloat(smoothedValue.toFixed(2)) : null,
       });
     }
-
     return smoothedData.filter((d) => d.value !== null);
   }, [prepareData, selectedSmoothing]);
 
@@ -192,18 +176,15 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
     if (!tooltipData || !chartContainerRef.current) return '0px';
     const chartWidth = chartContainerRef.current.clientWidth;
     const tooltipWidth = 200;
-    const offset = 100; // Distance when tooltip is on the right
-    const leftOffset = 20; // Distance when tooltip is on the left (adjust this value)
+    const offset = 100;
+    const leftOffset = 20;
     const cursorX = tooltipData.x;
-  
+ 
     if (cursorX + offset + tooltipWidth <= chartWidth) {
-      // Tooltip on the right of the cursor
       return `${cursorX + offset}px`;
     } else if (cursorX - leftOffset - tooltipWidth >= 0) {
-      // Tooltip on the left of the cursor
       return `${cursorX - leftOffset - tooltipWidth}px`;
     } else {
-      // Fallback: clamp to chart boundaries
       return `${Math.max(0, Math.min(cursorX, chartWidth - tooltipWidth))}px`;
     }
   };
@@ -213,7 +194,6 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        // Only fetch if data is not already fetched
         if (
           !isMvrvRiskDataFetched ||
           !isPuellRiskDataFetched ||
@@ -231,7 +211,7 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
         setIsLoading(false);
       }
     };
-  
+ 
     fetchData();
   }, [
     fetchBtcData,
@@ -243,6 +223,22 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
     isSoplRiskDataFetched,
     btcData.length,
   ]);
+
+  // Update chart colors on theme change
+  useEffect(() => {
+    if (chartRef.current) {
+      chartRef.current.applyOptions({
+        layout: {
+          background: { type: 'solid', color: colors.primary[700] },
+          textColor: colors.primary[100],
+        },
+        grid: {
+          vertLines: { color: 'rgba(70, 70, 70, 0.5)' },
+          horzLines: { color: 'rgba(70, 70, 70, 0.5)' },
+        },
+      });
+    }
+  }, [colors.primary[700], colors.primary[100]]);
 
   // Initialize chart once
   useEffect(() => {
@@ -271,7 +267,6 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
       timeScale: { minBarSpacing: 0.001 },
       crosshair: { mode: 0 },
     });
-
     const riskSeries = chart.addLineSeries({
       color: '#ff0062',
       lastValueVisible: true,
@@ -280,7 +275,6 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
       priceFormat: { type: 'custom', formatter: (value) => value.toFixed(2) },
     });
     riskSeriesRef.current = riskSeries;
-
     const priceSeries = chart.addLineSeries({
       color: 'gray',
       priceScaleId: 'left',
@@ -288,7 +282,6 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
       priceFormat: { type: 'custom', formatter: compactNumberFormatter },
     });
     priceSeriesRef.current = priceSeries;
-
     chart.subscribeCrosshairMove((param) => {
       if (
         !param.point ||
@@ -311,9 +304,7 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
         });
       }
     });
-
     chart.applyOptions({ handleScroll: isInteractive, handleScale: isInteractive });
-
     const resizeChart = () => {
       chart.applyOptions({
         width: chartContainerRef.current.clientWidth,
@@ -323,9 +314,7 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
     };
     window.addEventListener('resize', resizeChart);
     resizeChart();
-
     chartRef.current = chart;
-
     return () => {
       chart.remove();
       window.removeEventListener('resize', resizeChart);
@@ -460,11 +449,11 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
       {!isDashboard && (
         <div className="chart-top-div">
           <div className="span-container">
-            <span style={{ marginRight: '20px', display: 'inline-block' }}>
+            <span style={{ marginRight: '20px', display: 'inline-block', color: colors.primary[100] }}>
               <span style={{ backgroundColor: 'gray', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
               Bitcoin Price
             </span>
-            <span style={{ display: 'inline-block' }}>
+            <span style={{ display: 'inline-block', color: colors.primary[100] }}>
               <span style={{ backgroundColor: '#ff0062', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
               {metricLabels[selectedMetric]}
             </span>
@@ -496,8 +485,8 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
           border: '2px solid #a9a9a9',
         }}
         onDoubleClick={() => {
-          if (!isInteractive && !isDashboard) setInteractivity(true);
-          else setInteractivity(false);
+          if (!isInteractive && !isDashboard) setIsInteractive(true);
+          else setIsInteractive(false);
         }}
       >
         <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
@@ -512,7 +501,7 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
               backgroundColor: colors.primary[900],
               padding: '5px 10px',
               borderRadius: '4px',
-              color: colors.grey[100],
+              color: colors.primary[100],
               fontSize: '12px',
               pointerEvents: 'none',
             }}
@@ -527,6 +516,34 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
             {tooltipData.date && <div>{tooltipData.date}</div>}
           </div>
         )}
+        {isLoading && (
+          <div
+            style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              color: colors.primary[100],
+              zIndex: 2,
+            }}
+          >
+            Loading...
+          </div>
+        )}
+        {dataError && (
+          <Typography
+            style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              color: colors.redAccent[400],
+              zIndex: 2,
+            }}
+          >
+            {dataError}
+          </Typography>
+        )}
       </div>
       {!isDashboard && (
         <div className="under-chart">
@@ -538,7 +555,7 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
           <div style={{ display: 'inline-block', marginTop: '10px', fontSize: '1.2rem', color: colors.primary[100] }}>
             Current {metricLabels[selectedMetric]}: <b>{currentRiskLevel}</b> (${currentBtcPrice}k)
           </div>
-          <p>(data typically lags by 1 day)</p>
+          <p style={{ color: colors.primary[100] }}>(data typically lags by 1 day)</p>
           <p
             className="chart-info"
             style={{
@@ -553,8 +570,6 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
           </p>
         </div>
       )}
-      {dataError && <Typography color="error">{dataError}</Typography>}
-      {isLoading && <Typography>Loading...</Typography>}
     </div>
   );
 };

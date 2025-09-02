@@ -1,4 +1,3 @@
-// src/components/PuellMultiple.js
 import React, { useRef, useEffect, useState, useContext, useMemo } from 'react';
 import { createChart } from 'lightweight-charts';
 import { tokens } from "../theme";
@@ -53,7 +52,7 @@ const PuellMultiple = ({ isDashboard = false }) => {
       console.warn('Invalid input data', { btcData, onchainMetricsData });
       return { priceData: [], issuanceData: [] };
     }
-  
+ 
     const rawPriceData = btcData
       .map(d => ({
         time: normalizeTime(d.time) || '',
@@ -61,7 +60,7 @@ const PuellMultiple = ({ isDashboard = false }) => {
       }))
       .filter(d => d.time) // Remove invalid time entries
       .sort((a, b) => a.time.localeCompare(b.time));
-  
+ 
     let issuanceData = onchainMetricsData
       .filter(d => d && d.metric && typeof d.metric === 'string' && d.metric.toLowerCase() === 'isscontusd')
       .map(d => ({
@@ -70,7 +69,7 @@ const PuellMultiple = ({ isDashboard = false }) => {
       }))
       .filter(d => d.time) // Remove invalid time entries
       .sort((a, b) => a.time.localeCompare(b.time));
-  
+ 
     if (issuanceData.length === 0 && rawPriceData.length > 0) {
       console.warn('IssContUSD data missing, calculating issuance using block reward');
       issuanceData = rawPriceData.map(d => ({
@@ -78,10 +77,10 @@ const PuellMultiple = ({ isDashboard = false }) => {
         value: calculateDailyIssuance(d.time) * d.value,
       }));
     }
-  
+ 
     const issuanceTimes = new Set(issuanceData.map(d => d.time));
     const priceData = rawPriceData.filter(d => issuanceTimes.has(d.time));
-  
+ 
     return { priceData, issuanceData };
   }, [btcData, onchainMetricsData]);
 
@@ -89,7 +88,6 @@ const PuellMultiple = ({ isDashboard = false }) => {
   const puellDataAll = useMemo(() => {
     const { issuanceData } = prepareData;
     const puellData = [];
-
     for (let i = 0; i < issuanceData.length; i++) {
       const startIndex = Math.max(0, i - 365);
       const windowData = issuanceData.slice(startIndex, i + 1);
@@ -102,7 +100,6 @@ const PuellMultiple = ({ isDashboard = false }) => {
         value: puellMultiple !== null ? parseFloat(puellMultiple.toFixed(2)) : null,
       });
     }
-
     // Apply smoothing based on selected period
     const smoothedPuellData = [];
     for (let i = 0; i < puellData.length; i++) {
@@ -116,7 +113,6 @@ const PuellMultiple = ({ isDashboard = false }) => {
         value: smoothedValue !== null ? parseFloat(smoothedValue.toFixed(2)) : null,
       });
     }
-
     return smoothedPuellData;
   }, [prepareData, smoothingPeriod]);
 
@@ -172,7 +168,6 @@ const PuellMultiple = ({ isDashboard = false }) => {
       timeScale: { minBarSpacing: 0.001 },
       crosshair: { mode: 0 }, // Normal crosshair mode
     });
-
     const puellSeries = chart.addLineSeries({
       color: '#ff0062',
       lastValueVisible: true,
@@ -181,7 +176,6 @@ const PuellMultiple = ({ isDashboard = false }) => {
       priceFormat: { type: 'custom', formatter: (value) => value.toFixed(2) },
     });
     puellSeriesRef.current = puellSeries;
-
     const priceSeries = chart.addLineSeries({
       color: 'gray',
       priceScaleId: 'left',
@@ -189,9 +183,7 @@ const PuellMultiple = ({ isDashboard = false }) => {
       priceFormat: { type: 'custom', formatter: compactNumberFormatter },
     });
     priceSeriesRef.current = priceSeries;
-
     chart.applyOptions({ handleScroll: false, handleScale: false });
-
     chart.subscribeCrosshairMove(param => {
       if (!param.point || !param.time || param.point.x < 0 || param.point.x > chartContainerRef.current.clientWidth || param.point.y < 0 || param.point.y > chartContainerRef.current.clientHeight) {
         setTooltipData(null);
@@ -207,7 +199,6 @@ const PuellMultiple = ({ isDashboard = false }) => {
         });
       }
     });
-
     const resizeChart = () => {
       chart.applyOptions({
         width: chartContainerRef.current.clientWidth,
@@ -217,14 +208,24 @@ const PuellMultiple = ({ isDashboard = false }) => {
     };
     window.addEventListener('resize', resizeChart);
     resizeChart();
-
     chartRef.current = chart;
-
     return () => {
       chart.remove();
       window.removeEventListener('resize', resizeChart);
     };
   }, []); // Empty dependency array for single initialization
+
+  // Update chart colors on theme change
+  useEffect(() => {
+    if (chartRef.current) {
+      chartRef.current.applyOptions({
+        layout: {
+          background: { type: 'solid', color: colors.primary[700] },
+          textColor: colors.primary[100],
+        },
+      });
+    }
+  }, [colors.primary[700], colors.primary[100]]);
 
   // Update price series data
   useEffect(() => {
@@ -264,7 +265,6 @@ const PuellMultiple = ({ isDashboard = false }) => {
     const latestPuellData = puellDataAll[puellDataAll.length - 1];
     setCurrentBtcPrice(latestPriceData ? Math.floor(latestPriceData.value / 1000) : 0);
     setCurrentPuellMultiple(latestPuellData && latestPuellData.value ? latestPuellData.value.toFixed(2) : null);
-    // Set the last updated date from the latest data point
     setLastUpdatedDate(latestPuellData ? latestPuellData.time : null);
   }, [prepareData.priceData, puellDataAll]);
 
@@ -275,7 +275,6 @@ const PuellMultiple = ({ isDashboard = false }) => {
     const tooltipWidth = 200; // Estimated tooltip width
     const offset = 10; // Distance from cursor
     const cursorX = tooltipData.x;
-
     if (cursorX + offset + tooltipWidth <= chartWidth) {
       return `${cursorX + offset}px`;
     } else if (cursorX - offset - tooltipWidth >= 0) {
@@ -338,38 +337,57 @@ const PuellMultiple = ({ isDashboard = false }) => {
                 ))}
               </Select>
             </FormControl>
+            <Box sx={{ display: 'flex', gap: '10px', marginLeft: 'auto' }}>
+              <Button
+                onClick={setInteractivity}
+                sx={{
+                  backgroundColor: isInteractive ? '#4cceac' : 'transparent',
+                  color: isInteractive ? 'black' : '#31d6aa',
+                  border: `1px solid ${isInteractive ? 'violet' : '#70d8bd'}`,
+                  borderRadius: '4px',
+                  padding: '8px 16px',
+                  fontSize: '14px',
+                  textTransform: 'none',
+                  '&:hover': {
+                    backgroundColor: colors.greenAccent[400],
+                    color: theme.palette.mode === 'dark' ? colors.grey[900] : colors.grey[100],
+                  },
+                }}
+              >
+                {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
+              </Button>
+              <Button
+                onClick={resetChart}
+                sx={{
+                  backgroundColor: 'transparent',
+                  color: '#31d6aa',
+                  border: `1px solid ${colors.greenAccent[400]}`,
+                  borderRadius: '4px',
+                  padding: '8px 16px',
+                  fontSize: '14px',
+                  textTransform: 'none',
+                  '&:hover': {
+                    backgroundColor: colors.greenAccent[400],
+                    color: theme.palette.mode === 'dark' ? colors.grey[900] : colors.grey[100],
+                  },
+                }}
+              >
+                Reset Chart
+              </Button>
+            </Box>
           </Box>
-          {!isDashboard && (
-        <div className='chart-top-div'>
-          <div className='span-container'>
-            <span style={{ marginRight: '20px', display: 'inline-block' }}>
-              <span style={{ backgroundColor: 'gray', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
-              Bitcoin Price
-            </span>
-            <span style={{ display: 'inline-block' }}>
-              <span style={{ backgroundColor: '#ff0062', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
-              Puell Multiple
-            </span>
+          <div className='chart-top-div'>
+            <div className='span-container'>
+              <span style={{ marginRight: '20px', display: 'inline-block', color: colors.primary[100] }}>
+                <span style={{ backgroundColor: 'gray', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
+                Bitcoin Price
+              </span>
+              <span style={{ display: 'inline-block', color: colors.primary[100] }}>
+                <span style={{ backgroundColor: '#ff0062', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
+                Puell Multiple
+              </span>
+            </div>
           </div>
-
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <button
-              onClick={setInteractivity}
-              className="button-reset"
-              style={{
-                backgroundColor: isInteractive ? '#4cceac' : 'transparent',
-                color: isInteractive ? 'black' : '#31d6aa',
-                borderColor: isInteractive ? 'violet' : '#70d8bd',
-              }}
-            >
-              {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
-            </button>
-            <button onClick={resetChart} className="button-reset extra-margin">
-              Reset Chart
-            </button>
-          </div>
-        </div>
-      )}
         </>
       )}
       <div
@@ -397,7 +415,7 @@ const PuellMultiple = ({ isDashboard = false }) => {
               backgroundColor: colors.primary[900],
               padding: '5px 10px',
               borderRadius: '4px',
-              color: colors.grey[100],
+              color: colors.primary[100],
               fontSize: '12px',
               pointerEvents: 'none',
             }}

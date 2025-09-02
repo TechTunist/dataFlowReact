@@ -398,7 +398,7 @@ const FredSeriesChart = ({
               position: 'absolute',
               top: '10px',
               left: '10px',
-              background: 'rgba(0, 0, 0, 0.8)',
+              background: colors.primary[900],
               color: colors.primary[100],
               padding: '25px 10px 10px 10px', // Increased top padding to accommodate button
               borderRadius: '5px',
@@ -459,7 +459,7 @@ const FredSeriesChart = ({
               position: 'absolute',
               top: '10px',
               left: '10px',
-              background: 'rgba(0, 0, 0, 0.8)',
+              background: colors.primary[900],
               border: 'none',
               color: colors.primary[100],
               fontSize: '16px',

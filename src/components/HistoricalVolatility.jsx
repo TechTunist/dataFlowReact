@@ -1,4 +1,3 @@
-// src/components/BitcoinHistoricalVolatility.js
 import React, { useRef, useEffect, useState, useContext, useCallback, useMemo } from 'react';
 import { createChart } from 'lightweight-charts';
 import { tokens } from "../theme";
@@ -24,7 +23,6 @@ const BitcoinHistoricalVolatility = ({ isDashboard = false }) => {
   const [currentVolatility, setCurrentVolatility] = useState(null);
   const [timeframe, setTimeframe] = useState('60d'); // Default to 60 days
   const [tooltipData, setTooltipData] = useState(null);
-
   const timeframes = [
     { value: '30d', label: '30 Days', days: 30 },
     { value: '60d', label: '60 Days', days: 60 },
@@ -35,39 +33,32 @@ const BitcoinHistoricalVolatility = ({ isDashboard = false }) => {
   // **Calculate historical volatility**
   const calculateVolatility = useCallback((data, days) => {
     if (data.length === 0) return [];
-
     const result = [];
     const startDate = new Date(data[0].time);
-
     for (let index = 0; index < data.length; index++) {
       const item = data[index];
       const currentDate = new Date(item.time);
       const daysPassed = (currentDate - startDate) / (1000 * 60 * 60 * 24);
-
       if (daysPassed < days) continue;
-
       const startIndex = Math.max(0, index - days);
       const windowData = data.slice(startIndex, index + 1).map(d => d.value);
-      
+     
       const returns = [];
       for (let i = 1; i < windowData.length; i++) {
         if (windowData[i - 1] !== 0) {
           returns.push(Math.log(windowData[i] / windowData[i - 1]));
         }
       }
-
       const mean = returns.reduce((sum, r) => sum + r, 0) / returns.length;
       const variance = returns.reduce((sum, r) => sum + Math.pow(r - mean, 2), 0) / returns.length;
       const stdDev = Math.sqrt(variance);
       const volatility = stdDev * Math.sqrt(365) * 100;
-
       result.push({
         time: item.time,
         value: item.value,
         volatility: volatility,
       });
     }
-
     return result;
   }, []);
 
@@ -78,7 +69,6 @@ const BitcoinHistoricalVolatility = ({ isDashboard = false }) => {
     const filteredData = calculateVolatility(btcData, days);
     const maxVolatility = filteredData.length > 0 ? Math.max(...filteredData.map(d => d.volatility)) : 15;
     const adjustedMax = Math.max(15, maxVolatility * 1.1); // 10% buffer
-
     return { volatilityData: filteredData, maxVolatility: adjustedMax };
   }, [btcData, timeframe, calculateVolatility]);
 
@@ -125,7 +115,6 @@ const BitcoinHistoricalVolatility = ({ isDashboard = false }) => {
       },
       timeScale: { minBarSpacing: 0.001 },
     });
-
     const volatilitySeries = chart.addLineSeries({
       color: '#ff0062',
       lastValueVisible: true,
@@ -134,7 +123,6 @@ const BitcoinHistoricalVolatility = ({ isDashboard = false }) => {
       priceFormat: { type: 'custom', formatter: (value) => value.toFixed(1) + '%' },
     });
     volatilitySeriesRef.current = volatilitySeries;
-
     const priceSeries = chart.addLineSeries({
       color: 'blue',
       priceScaleId: 'left',
@@ -142,7 +130,6 @@ const BitcoinHistoricalVolatility = ({ isDashboard = false }) => {
       priceFormat: { type: 'custom', formatter: compactNumberFormatter },
     });
     priceSeriesRef.current = priceSeries;
-
     chart.subscribeCrosshairMove(param => {
       if (!param.point || !param.time || param.point.x < 0 || param.point.x > chartContainerRef.current.clientWidth || param.point.y < 0 || param.point.y > chartContainerRef.current.clientHeight) {
         setTooltipData(null);
@@ -158,7 +145,6 @@ const BitcoinHistoricalVolatility = ({ isDashboard = false }) => {
         });
       }
     });
-
     const resizeChart = () => {
       chart.applyOptions({
         width: chartContainerRef.current.clientWidth,
@@ -166,14 +152,24 @@ const BitcoinHistoricalVolatility = ({ isDashboard = false }) => {
       });
     };
     window.addEventListener('resize', resizeChart);
-
     chartRef.current = chart;
-
     return () => {
       chart.remove();
       window.removeEventListener('resize', resizeChart);
     };
   }, []); // Empty dependencies: run once on mount
+
+  // **Update chart colors on theme change**
+  useEffect(() => {
+    if (chartRef.current) {
+      chartRef.current.applyOptions({
+        layout: {
+          background: { type: 'solid', color: colors.primary[700] },
+          textColor: colors.primary[100],
+        },
+      });
+    }
+  }, [colors.primary[700], colors.primary[100]]);
 
   // **Update price series data**
   useEffect(() => {
@@ -223,9 +219,9 @@ const BitcoinHistoricalVolatility = ({ isDashboard = false }) => {
     const chartWidth = chartContainerRef.current.clientWidth;
     const tooltipWidth = 200;
     const offset = 100; // Distance when tooltip is on the right
-    const leftOffset = -80; // Distance when tooltip is on the left (adjust this value)
+    const leftOffset = -80; // Distance when tooltip is on the left
     const cursorX = tooltipData.x;
-  
+ 
     if (cursorX + offset + tooltipWidth <= chartWidth) {
       // Tooltip on the right of the cursor
       return `${cursorX + offset}px`;

@@ -15,9 +15,9 @@ export default function LoginSignup() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [code, setCode] = useState("");
-  const [newPassword, setNewPassword] = useState(""); // For password reset
+  const [newPassword, setNewPassword] = useState("");
   const [pendingVerification, setPendingVerification] = useState(false);
-  const [isPasswordReset, setIsPasswordReset] = useState(false); // Track password reset flow
+  const [isPasswordReset, setIsPasswordReset] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -26,26 +26,24 @@ export default function LoginSignup() {
   const { signIn } = useSignIn();
   const navigate = useNavigate();
 
-
-  // Add handlers for Google
+  // Google auth handler
   const handleGoogle = async () => {
     setIsLoading(true);
     try {
       const query = new URLSearchParams(location.search);
       const plan = query.get('plan');
-      const redirectUrlComplete = plan === 'premium' ? '/subscription' : '/dashboard';  // Match your existing logic
-
+      const redirectUrlComplete = plan === 'premium' ? '/subscription' : '/dashboard';
       if (isSignUp) {
         await signUp.authenticateWithRedirect({
           strategy: 'oauth_google',
-          redirectUrl: '/sso-callback',  // Your callback route
-          redirectUrlComplete,  // Dynamic based on plan
+          redirectUrl: '/sso-callback',
+          redirectUrlComplete,
         });
       } else {
         await signIn.authenticateWithRedirect({
           strategy: 'oauth_google',
           redirectUrl: '/sso-callback',
-          redirectUrlComplete: '/dashboard',  // Or adjust for sign-in
+          redirectUrlComplete: '/dashboard',
         });
       }
     } catch (err) {
@@ -427,7 +425,7 @@ export default function LoginSignup() {
               {isSignUp ? "Have an account?" : "Don't have an account?"}{" "}
               <Button
                 onClick={() => setIsSignUp(!isSignUp)}
-                sx={{ color: colors.greenAccent[500], textTransform: "none", fontSize:'1.2rem' }}
+                sx={{ color: colors.greenAccent[500], textTransform: "none", fontSize: "1.2rem" }}
               >
                 {isSignUp ? "Sign in" : "Sign up"}
               </Button>
@@ -436,29 +434,26 @@ export default function LoginSignup() {
                   {" | "}
                   <Button
                     onClick={onForgotPasswordPress}
-                    sx={{ color: colors.greenAccent[500], textTransform: "none", fontSize: "1.2rem"}}
+                    sx={{ color: colors.greenAccent[500], textTransform: "none", fontSize: "1.2rem" }}
                   >
                     Forgot Password?
                   </Button>
                 </>
               )}
             </Typography>
-            <Button
-              onClick={handleGoogle}
-              disabled={isLoading}
-              sx={{
-                backgroundColor: colors.greenAccent[500],
-                color: colors.grey[900],
-                padding: "10px 20px",
-                fontWeight: "bold",
-                marginBottom: "20px",
-                "&:hover": {
-                  backgroundColor: colors.greenAccent[600],
-                },
-              }}
+            <Typography
+              variant="h3"
+              sx={{ color: colors.grey[300], marginTop: "10px" }}
             >
-              {isLoading ? "Processing..." : (isSignUp ? "Sign Up with Google" : "Sign In with Google")}
-            </Button>
+              Or{" "}
+              <Button
+                onClick={handleGoogle}
+                disabled={isLoading}
+                sx={{ color: colors.greenAccent[500], textTransform: "none", fontSize: "1.2rem" }}
+              >
+                {isSignUp ? "Sign Up with Google" : "Sign In with Google"}
+              </Button>
+            </Typography>
           </form>
         )}
       </Box>

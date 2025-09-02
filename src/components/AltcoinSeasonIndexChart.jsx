@@ -65,6 +65,7 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
     });
   }, [fetchAltcoinSeasonTimeseriesData, fetchBtcData]);
 
+  // Initialize chart
   useEffect(() => {
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
@@ -74,8 +75,8 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
         textColor: colors.primary[100],
       },
       grid: {
-        vertLines: { color: 'rgba(70, 70, 70, 0.5)' },
-        horzLines: { color: 'rgba(70, 70, 70, 0.5)' },
+        vertLines: { color: 'rgba(70, 70, 70, 0.1)' },
+        horzLines: { color: 'rgba(70, 70, 70, 0.1)' },
       },
       rightPriceScale: {
         scaleMargins: { top: 0.1, bottom: 0.1 },
@@ -90,7 +91,6 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
       },
       timeScale: { minBarSpacing: 0.001 },
     });
-
     const btcSeries = chart.addLineSeries({
       color: '#808080',
       priceScaleId: 'left',
@@ -98,7 +98,6 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
       priceFormat: { type: 'custom', formatter: value => value.toFixed(0) },
     });
     btcSeriesRef.current = btcSeries;
-
     const indexSeries = chart.addLineSeries({
       color: colors.greenAccent[400],
       lastValueVisible: true,
@@ -107,7 +106,6 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
       priceFormat: { type: 'custom', formatter: value => value.toFixed(1) },
     });
     indexSeriesRef.current = indexSeries;
-
     indexSeries.createPriceLine({
       price: 75,
       color: 'violet',
@@ -124,7 +122,6 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
       title: 'Bitcoin Season',
       axisLabelColor: 'orange',
     });
-
     chart.subscribeCrosshairMove(param => {
       if (
         !param.point ||
@@ -147,7 +144,6 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
         });
       }
     });
-
     const resizeChart = () => {
       chart.applyOptions({
         width: chartContainerRef.current.clientWidth,
@@ -156,12 +152,27 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
     };
     window.addEventListener('resize', resizeChart);
     chartRef.current = chart;
-
     return () => {
       chart.remove();
       window.removeEventListener('resize', resizeChart);
     };
   }, []);
+
+  // Update chart colors on theme change
+  useEffect(() => {
+    if (chartRef.current) {
+      chartRef.current.applyOptions({
+        layout: {
+          background: { type: 'solid', color: colors.primary[700] },
+          textColor: colors.primary[100],
+        },
+        grid: {
+          vertLines: { color: 'rgba(70, 70, 70, 0.1)' },
+          horzLines: { color: 'rgba(70, 70, 70, 0.1)' },
+        },
+      });
+    }
+  }, [colors.primary[700], colors.primary[100]]);
 
   useEffect(() => {
     if (indexSeriesRef.current && smoothedData.length > 0) {
@@ -213,16 +224,13 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
   const calculateLeftPosition = () => {
     if (!tooltipData) return '0px';
     const chartWidth = chartContainerRef.current.clientWidth;
-    const tooltipWidth = isNarrowScreen ? 150 : 200; // Reduced width for narrow screens
+    const tooltipWidth = isNarrowScreen ? 150 : 200;
     const offset = 10;
     const offsetRight = 100;
     const cursorX = tooltipData.x;
-
-    // Place tooltip to the right if cursor is in the left half of the chart
     if (cursorX < chartWidth / 2) {
       return `${cursorX + offsetRight}px`;
     }
-    // Place tooltip to the left if cursor is in the right half of the chart
     return `${cursorX - offset - tooltipWidth}px`;
   };
 
@@ -250,7 +258,7 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
           }}
         >
           <div className="span-container" style={{ marginRight: 'auto' }}>
-            <span style={{ marginRight: '20px', display: 'inline-block' }}>
+            <span style={{ marginRight: '20px', display: 'inline-block', color: colors.primary[100] }}>
               <span
                 style={{
                   backgroundColor: colors.greenAccent[400],
@@ -262,7 +270,7 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
               ></span>
               {isMobile ? 'Index' : 'Altcoin Season Index'}
             </span>
-            <span style={{ display: 'inline-block' }}>
+            <span style={{ display: 'inline-block', color: colors.primary[100] }}>
               <span
                 style={{
                   backgroundColor: '#808080',
@@ -275,7 +283,7 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
               {isMobile ? 'BTC' : 'Bitcoin Price'}
             </span>
           </div>
-          <FormControl sx={{ minWidth: '150px', width: { xs: '100%', sm: '200px' }, margin: '0 строительство auto' }}>
+          <FormControl sx={{ minWidth: '150px', width: { xs: '100%', sm: '200px' }, margin: '0 auto' }}>
             <InputLabel
               id="sma-period-label"
               shrink
@@ -355,12 +363,12 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
               })(),
               zIndex: 1000,
               backgroundColor: colors.primary[900],
-              padding: isNarrowScreen ? '6px 8px' : '8px 12px', // Reduced padding for narrow screens
+              padding: isNarrowScreen ? '6px 8px' : '8px 12px',
               borderRadius: '4px',
-              color: colors.grey[100],
-              fontSize: isNarrowScreen ? '10px' : '12px', // Reduced font size for narrow screens
+              color: colors.primary[100],
+              fontSize: isNarrowScreen ? '10px' : '12px',
               pointerEvents: 'none',
-              width: isNarrowScreen ? '150px' : '200px', // Reduced width for narrow screens
+              width: isNarrowScreen ? '150px' : '200px',
             }}
           >
             <div style={{ fontSize: isNarrowScreen ? '14px' : '16px', fontWeight: 'bold' }}>
@@ -380,10 +388,10 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
                     style={{
                       color:
                         tooltipData.index >= 75
-                          ? 'violet' // Altcoin Season color
+                          ? 'violet'
                           : tooltipData.index <= 25
-                          ? 'orange' // Bitcoin Season color
-                          : colors.greenAccent[400], // Neutral color
+                          ? 'orange'
+                          : colors.greenAccent[400],
                       fontWeight: 'bold',
                     }}
                   >

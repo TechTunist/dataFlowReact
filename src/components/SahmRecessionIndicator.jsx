@@ -645,7 +645,7 @@ const SahmRecessionIndicator = ({ isDashboard = false, explanation = '' }) => {
               fontSize: '20px',
             }}
           >
-            <span style={{ color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900] }}>
+            <span style={{ color: theme.palette.mode === 'dark' ? colors.grey[100] : 'black' }}>
               Current Sahm Indicator:
             </span>
             <span style={{ color: sahmColor }}>

@@ -21,6 +21,8 @@ const AltcoinRisk = ({ isDashboard = false }) => {
   const isMobile = useIsMobile();
   const [tooltipData, setTooltipData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [currentAltcoinPrice, setCurrentAltcoinPrice] = useState(0);
+  const [currentRiskLevel, setCurrentRiskLevel] = useState(null);
   const { altcoinData, fetchAltcoinData, btcData, fetchBtcData } = useContext(DataContext);
 
   const altcoins = [
@@ -76,6 +78,16 @@ const AltcoinRisk = ({ isDashboard = false }) => {
     }
   };
 
+  const compactNumberFormatter = (value) => {
+    if (value >= 1000000) {
+      return (value / 1000000).toFixed(0) + 'M';
+    } else if (value >= 1000) {
+      return (value / 1000).toFixed(0) + 'k';
+    } else {
+      return value.toFixed(2);
+    }
+  };
+
   const calculateRiskMetric = (data) => {
     const maWindow = Math.min(373, Math.floor(data.length / 2));
     const movingAverage = data.map((item, index) => {
@@ -84,7 +96,6 @@ const AltcoinRisk = ({ isDashboard = false }) => {
       const avg = subset.reduce((sum, curr) => sum + curr.value, 0) / subset.length;
       return { ...item, MA: avg };
     });
-
     let consecutiveDeclineDays = 0;
     movingAverage.forEach((item, index) => {
       const changeFactor = index ** 0.395;
@@ -107,7 +118,6 @@ const AltcoinRisk = ({ isDashboard = false }) => {
       }
       item.Preavg = preavg;
     });
-
     const preavgValues = movingAverage.map(item => item.Preavg);
     const preavgMin = Math.min(...preavgValues);
     const preavgMax = Math.max(...preavgValues);
@@ -115,7 +125,6 @@ const AltcoinRisk = ({ isDashboard = false }) => {
       ...item,
       Risk: (item.Preavg - preavgMin) / (preavgMax - preavgMin)
     }));
-
     return normalizedRisk;
   };
 
@@ -187,8 +196,8 @@ const AltcoinRisk = ({ isDashboard = false }) => {
         scaleMargins: { top: 0.1, bottom: 0.1 },
       },
       timeScale: { minBarSpacing: 0.001 },
-      handleScroll: isInteractive, // Apply current isInteractive state
-      handleScale: isInteractive, // Apply current isInteractive state
+      handleScroll: isInteractive,
+      handleScale: isInteractive,
     });
     const riskSeries = chart.addLineSeries({
       color: '#ff0062',
@@ -224,6 +233,16 @@ const AltcoinRisk = ({ isDashboard = false }) => {
         chart.timeScale().fitContent();
       }
     };
+    if (chartData.length > 0) {
+      const price = denominator === 'BTC' ? chartData[chartData.length - 1].value.toFixed(8) : compactNumberFormatter(chartData[chartData.length - 1].value);
+      setCurrentAltcoinPrice(price);
+      try {
+        const riskLevel = chartData[chartData.length - 1].Risk.toFixed(2);
+        setCurrentRiskLevel(riskLevel);
+      } catch (error) {
+        console.error('Failed to set risk level:', error);
+      }
+    }
     window.addEventListener('resize', resizeChart);
     window.addEventListener('resize', resetChartView);
     resizeChart();
@@ -251,7 +270,21 @@ const AltcoinRisk = ({ isDashboard = false }) => {
         <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: 'center', justifyContent: 'center', gap: '20px', marginBottom: '30px', marginTop: '30px' }}>
           <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '200px' } }}>
             <InputLabel id="altcoin-label" shrink sx={{ color: colors.grey[100], '&.Mui-focused': { color: colors.greenAccent[500] }, top: 0, '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' } }}>Altcoin</InputLabel>
-            <Select value={selectedCoin} onChange={handleSelectChange} label="Altcoin" labelId='altcoin-label' sx={{ color: colors.grey[100], backgroundColor: colors.primary[600], borderRadius: "8px", '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] }, '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] }, '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] }, '& .MuiSelect-select': { py: 1.5, pl: 2 } }}>
+            <Select
+              value={selectedCoin}
+              onChange={handleSelectChange}
+              label="Altcoin"
+              labelId='altcoin-label'
+              sx={{
+                color: colors.grey[100],
+                backgroundColor: colors.primary[500],
+                borderRadius: "8px",
+                '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
+                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                '& .MuiSelect-select': { py: 1.5, pl: 2 }
+              }}
+            >
               {altcoins.map((coin) => (
                 <MenuItem key={coin.value} value={coin.value}>{coin.label}</MenuItem>
               ))}
@@ -259,7 +292,21 @@ const AltcoinRisk = ({ isDashboard = false }) => {
           </FormControl>
           <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '200px' } }}>
             <InputLabel id="denominator-label" shrink sx={{ color: colors.grey[100], '&.Mui-focused': { color: colors.greenAccent[500] }, top: 0, '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' } }}>Denominator</InputLabel>
-            <Select value={denominator} onChange={handleDenominatorChange} label="Denominator" labelId='denominator-label' sx={{ color: colors.grey[100], backgroundColor: colors.primary[600], borderRadius: "8px", '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] }, '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] }, '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] }, '& .MuiSelect-select': { py: 1.5, pl: 2 } }}>
+            <Select
+              value={denominator}
+              onChange={handleDenominatorChange}
+              label="Denominator"
+              labelId='denominator-label'
+              sx={{
+                color: colors.grey[100],
+                backgroundColor: colors.primary[500],
+                borderRadius: "8px",
+                '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
+                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                '& .MuiSelect-select': { py: 1.5, pl: 2 }
+              }}
+            >
               <MenuItem value="USD">USD</MenuItem>
               <MenuItem value="BTC">BTC</MenuItem>
             </Select>
@@ -310,28 +357,30 @@ const AltcoinRisk = ({ isDashboard = false }) => {
           </div>
         )}
       </div>
-      {!isDashboard && <LastUpdated storageKey={`${selectedCoin.toLowerCase()}Data`} />}
-      {!isDashboard && tooltipData && (
-        <div className="tooltip" style={{ left: `${tooltipData.x}px`, top: `${tooltipData.y}px` }}>
-          <div>{selectedCoin}</div>
-          <div>${tooltipData.price.toFixed(2)}</div>
-          <div>{tooltipData.date.toString()}</div>
+      {!isDashboard && (
+        <div className="under-chart">
+          <LastUpdated storageKey={`${selectedCoin.toLowerCase()}Data`} />
         </div>
       )}
       {!isDashboard && (
-        <p className='chart-info'>
-          The altcoin market is the wild-west of the crypto world. This asset class faces regulatory uncertainty, scams perpetuated by bad actors,
-          extreme volatility and the tendency to lose anywhere between 70-99% of a token's value in a bear market, with no guarantee that the price will ever recover.
-          There is however a core of projects that are being driven by some talented and respected developers and technologists that are implementing
-          smart-contract functionality (permissionless and immutable executable code that is deployed on the blockchain) and are genuinely attempting
-          to build the next generation of the internet through distributed ledger blockchain technology. These crypto assets are used to drive the
-          functionality and security of their respective blockchain.
-          These projects are far riskier, but during certain phases of the business cycle (severe drops in Bitcoin dominance paired with looser monetary policy)
-          they have historically offered far greater returns than that of traditional markets and the 2 crypto blue-chips; Bitcoin & Ethereum.
-          Since Bitcoin is the lowest risk crypto asset, it makes sense to value these altcoins against not only their USD pair, but also their BTC pair.
-          If the altcoin is underperforming against BTC, it makes no sense to hold the far riskier asset.
-          This chart allows you to compare the performance of various altcoins against Bitcoin.
-        </p>
+        <div style={{ paddingBottom: '20px' }}>
+          <div style={{ display: 'inline-block', marginTop: '10px', fontSize: '1.2rem', color: colors.primary[100] }}>
+            Current Risk level: <b>{currentRiskLevel}</b> ({denominator === 'BTC' ? '₿' : '$'}{currentAltcoinPrice})
+          </div>
+          <p className='chart-info'>
+            The altcoin market is the wild-west of the crypto world. This asset class faces regulatory uncertainty, scams perpetuated by bad actors,
+            extreme volatility and the tendency to lose anywhere between 70-99% of a token's value in a bear market, with no guarantee that the price will ever recover.
+            There is however a core of projects that are being driven by some talented and respected developers and technologists that are implementing
+            smart-contract functionality (permissionless and immutable executable code that is deployed on the blockchain) and are genuinely attempting
+            to build the next generation of the internet through distributed ledger blockchain technology. These crypto assets are used to drive the
+            functionality and security of their respective blockchain.
+            These projects are far riskier, but during certain phases of the business cycle (severe drops in Bitcoin dominance paired with looser monetary policy)
+            they have historically offered far greater returns than that of traditional markets and the 2 crypto blue-chips; Bitcoin & Ethereum.
+            Since Bitcoin is the lowest risk crypto asset, it makes sense to value these altcoins against not only their USD pair, but also their BTC pair.
+            If the altcoin is underperforming against BTC, it makes no sense to hold the far riskier asset.
+            This chart allows you to compare the performance of various altcoins against Bitcoin.
+          </p>
+        </div>
       )}
     </div>
   );

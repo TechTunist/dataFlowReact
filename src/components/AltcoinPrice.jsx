@@ -76,12 +76,6 @@ const AltcoinPrice = ({ isDashboard = false }) => {
   const rsiPeriods = useMemo(() => ({
     'Daily': { days: 14, label: 'Daily RSI' },
     'Weekly': { days: 98, label: 'Weekly RSI' },
-    // '90-day': { days: 90, label: '90 Day RSI' },
-    // '180-day': { days: 180, label: '180 Day RSI' },
-    // '1-year': { days: 365, label: '1 Year RSI' },
-    // '2-year': { days: 730, label: '2 Year RSI' },
-    // '3-year': { days: 1095, label: '3 Year RSI' },
-    // '4-year': { days: 1460, label: '4 Year RSI' },
   }), []);
 
   // Hardcoded list of altcoins
@@ -324,7 +318,6 @@ const AltcoinPrice = ({ isDashboard = false }) => {
         });
       }
     });
-    // Restore double-click interactivity
     chart.subscribeDblClick(() => setInteractivity(prev => !prev));
     const resizeChart = () => {
       chart.applyOptions({
@@ -347,7 +340,41 @@ const AltcoinPrice = ({ isDashboard = false }) => {
       chart.remove();
       window.removeEventListener('resize', resizeChart);
     };
-  }, [colors]);
+  }, []);
+
+  // Update chart colors on theme change
+  useEffect(() => {
+    if (chartRef.current) {
+      chartRef.current.applyOptions({
+        layout: { background: { type: 'solid', color: colors.primary[700] }, textColor: colors.primary[100] },
+        grid: { vertLines: { color: colors.greenAccent[700] }, horzLines: { color: colors.greenAccent[700] } },
+      });
+    }
+  }, [colors.primary[700], colors.primary[100]]);
+
+  // Update price series colors based on RSI and theme
+  useEffect(() => {
+    if (priceSeriesRef.current) {
+      const seriesColors = activeRsiPeriod
+        ? {
+            topColor: 'rgba(128, 128, 128, 0.3)', // Faint grey when RSI is active
+            bottomColor: 'rgba(128, 128, 128, 0.1)',
+            lineColor: 'rgba(128, 128, 128, 0.5)',
+          }
+        : theme.palette.mode === 'dark'
+        ? {
+            topColor: 'rgba(38, 198, 218, 0.56)',
+            bottomColor: 'rgba(38, 198, 218, 0.04)',
+            lineColor: 'rgba(38, 198, 218, 1)',
+          }
+        : {
+            topColor: 'rgba(255, 165, 0, 0.56)',
+            bottomColor: 'rgba(255, 165, 0, 0.2)',
+            lineColor: 'rgba(255, 140, 0, 0.8)',
+          };
+      priceSeriesRef.current.applyOptions({ topColor: seriesColors.topColor, bottomColor: seriesColors.bottomColor, lineColor: seriesColors.lineColor });
+    }
+  }, [activeRsiPeriod, theme.palette.mode]);
 
   useEffect(() => {
     if (chartRef.current) {
@@ -500,36 +527,6 @@ const AltcoinPrice = ({ isDashboard = false }) => {
       });
     }
   }, [isInteractive]);
-
-  // Update theme colors and price series color based on RSI
-  useEffect(() => {
-    if (priceSeriesRef.current) {
-      const colors = activeRsiPeriod
-        ? {
-            topColor: 'rgba(128, 128, 128, 0.3)', // Faint grey when RSI is active
-            bottomColor: 'rgba(128, 128, 128, 0.1)',
-            lineColor: 'rgba(128, 128, 128, 0.5)',
-          }
-        : theme.palette.mode === 'dark'
-        ? {
-            topColor: 'rgba(38, 198, 218, 0.56)',
-            bottomColor: 'rgba(38, 198, 218, 0.04)',
-            lineColor: 'rgba(38, 198, 218, 1)',
-          }
-        : {
-            topColor: 'rgba(255, 165, 0, 0.56)',
-            bottomColor: 'rgba(255, 165, 0, 0.2)',
-            lineColor: 'rgba(255, 140, 0, 0.8)',
-          };
-      priceSeriesRef.current.applyOptions({ topColor: colors.topColor, bottomColor: colors.bottomColor, lineColor: colors.lineColor });
-    }
-    if (chartRef.current) {
-      chartRef.current.applyOptions({
-        layout: { background: { type: 'solid', color: colors.primary[700] }, textColor: colors.primary[100] },
-        grid: { vertLines: { color: colors.greenAccent[700] }, horzLines: { color: colors.greenAccent[700] } },
-      });
-    }
-  }, [theme.palette.mode, colors, activeRsiPeriod]);
 
   return (
     <div style={{ height: '100%' }}>
@@ -797,7 +794,7 @@ const AltcoinPrice = ({ isDashboard = false }) => {
               top: '50%',
               left: '50%',
               transform: 'translate(-50%, -50%)',
-              color: colors.grey[100],
+              color: colors.primary[100],
               zIndex: 2,
             }}
           >
@@ -813,7 +810,7 @@ const AltcoinPrice = ({ isDashboard = false }) => {
             backgroundColor: colors.primary[900],
             padding: '5px 10px',
             borderRadius: '4px',
-            color: colors.grey[100],
+            color: colors.primary[100],
             fontSize: '12px',
           }}
         >
@@ -910,6 +907,61 @@ const AltcoinPrice = ({ isDashboard = false }) => {
             );
           })}
         </div>
+        {!isDashboard && tooltipData && (
+          <div
+            className="tooltip"
+            style={{
+              left: (() => {
+                const sidebarWidth = isMobile ? -80 : -320;
+                const cursorX = tooltipData.x - sidebarWidth;
+                const chartWidth = chartContainerRef.current.clientWidth - sidebarWidth;
+                const tooltipWidth = 200;
+                const offset = 1000 / (chartWidth + 300);
+                const rightPosition = cursorX + offset;
+                const leftPosition = cursorX - tooltipWidth - offset;
+                if (rightPosition + tooltipWidth <= chartWidth) return `${rightPosition}px`;
+                if (leftPosition >= 0) return `${leftPosition}px`;
+                return `${Math.max(0, Math.min(rightPosition, chartWidth - tooltipWidth))}px`;
+              })(),
+              top: (() => {
+                const offsetY = isNarrowScreen ? 400 : 220;
+                return `${tooltipData.y + offsetY}px`
+              })(),
+              position: 'absolute',
+              zIndex: 1000,
+              backgroundColor: colors.primary[900],
+              padding: '5px 10px',
+              borderRadius: '4px',
+              color: colors.primary[100],
+              fontSize: '12px',
+              pointerEvents: 'none',
+            }}
+          >
+            <div style={{ fontSize: '15px' }}>{selectedCoin}</div>
+            {tooltipData.price !== undefined && (
+              <div style={{ fontSize: '20px' }}>
+                {denominator === 'BTC' ? '₿' : '$'}
+                {denominator === 'BTC' ? tooltipData.price.toFixed(8) : tooltipData.price.toFixed(2)}
+              </div>
+            )}
+            {activeIndicators.includes('fed-balance') && tooltipData.fedBalance !== undefined && (
+              <div style={{ color: indicators['fed-balance'].color }}>
+                Fed Balance: ${tooltipData.fedBalance.toFixed(2)}T
+              </div>
+            )}
+            {activeIndicators.includes('mayer-multiple') && tooltipData.mayerMultiple !== undefined && (
+              <div style={{ color: indicators['mayer-multiple'].color }}>
+                Mayer Multiple: {tooltipData.mayerMultiple.toFixed(2)}
+              </div>
+            )}
+            {activeRsiPeriod && tooltipData.rsi !== undefined && (
+              <div style={{ color: 'orange' }}>
+                {rsiPeriods[activeRsiPeriod].label}: {tooltipData.rsi.toFixed(2)}
+              </div>
+            )}
+            <div>{tooltipData.date ? tooltipData.date.split('-').reverse().join('-') : ''}</div>
+          </div>
+        )}
       </div>
       {!isDashboard && (
         <div className="under-chart">
@@ -948,53 +1000,6 @@ const AltcoinPrice = ({ isDashboard = false }) => {
             </p>
           )}
         </Box>
-      )}
-      {!isDashboard && tooltipData && (
-        <div
-          className="tooltip"
-          style={{
-            left: (() => {
-              const sidebarWidth = isMobile ? -80 : -320;
-              const cursorX = tooltipData.x - sidebarWidth;
-              const chartWidth = chartContainerRef.current.clientWidth - sidebarWidth;
-              const tooltipWidth = 200;
-              const offset = 1000 / (chartWidth + 300);
-              const rightPosition = cursorX + offset;
-              const leftPosition = cursorX - tooltipWidth - offset;
-              if (rightPosition + tooltipWidth <= chartWidth) return `${rightPosition}px`;
-              if (leftPosition >= 0) return `${leftPosition}px`;
-              return `${Math.max(0, Math.min(rightPosition, chartWidth - tooltipWidth))}px`;
-            })(),
-            top: (() => {
-              const offsetY = isNarrowScreen ? 400 : 220;
-              return `${tooltipData.y + offsetY}px`
-            })()
-          }}
-        >
-          <div style={{ fontSize: '15px' }}>{selectedCoin}</div>
-          {tooltipData.price !== undefined && (
-            <div style={{ fontSize: '20px' }}>
-              {denominator === 'BTC' ? '₿' : '$'}
-              {denominator === 'BTC' ? tooltipData.price.toFixed(8) : tooltipData.price.toFixed(2)}
-            </div>
-          )}
-          {activeIndicators.includes('fed-balance') && tooltipData.fedBalance !== undefined && (
-            <div style={{ color: indicators['fed-balance'].color }}>
-              Fed Balance: ${tooltipData.fedBalance.toFixed(2)}T
-            </div>
-          )}
-          {activeIndicators.includes('mayer-multiple') && tooltipData.mayerMultiple !== undefined && (
-            <div style={{ color: indicators['mayer-multiple'].color }}>
-              Mayer Multiple: {tooltipData.mayerMultiple.toFixed(2)}
-            </div>
-          )}
-          {activeRsiPeriod && tooltipData.rsi !== undefined && (
-            <div style={{ color: 'orange' }}>
-              {rsiPeriods[activeRsiPeriod].label}: {tooltipData.rsi.toFixed(2)}
-            </div>
-          )}
-          <div>{tooltipData.date ? tooltipData.date.split('-').reverse().join('-') : ''}</div>
-        </div>
       )}
       {!isDashboard && (
         <p className="chart-info">

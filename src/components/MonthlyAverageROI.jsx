@@ -1,4 +1,3 @@
-// src/components/MonthlyAverageROI.js
 import React, { useContext, useEffect, useState, useMemo, useRef } from 'react';
 import Plot from 'react-plotly.js';
 import { tokens } from "../theme";
@@ -51,6 +50,29 @@ const MonthlyAverageROI = ({ isDashboard = false }) => {
     },
     showlegend: false,
   });
+
+  // Update chart colors on theme change
+  useEffect(() => {
+    setLayout((prev) => ({
+      ...prev,
+      plot_bgcolor: colors.primary[700],
+      paper_bgcolor: colors.primary[700],
+      font: {
+        ...prev.font,
+        color: colors.primary[100],
+      },
+      yaxis: {
+        ...prev.yaxis,
+        title: {
+          ...prev.yaxis.title,
+          font: {
+            ...prev.yaxis.title.font,
+            color: colors.primary[100],
+          },
+        },
+      },
+    }));
+  }, [colors.primary[700], colors.primary[100]]);
 
   // Hardcoded list of altcoins (shared with AltcoinPrice)
   const altcoins = [
@@ -111,7 +133,6 @@ const MonthlyAverageROI = ({ isDashboard = false }) => {
   // Fetch data only when necessary
   useEffect(() => {
     const fetchData = async () => {
-      // Check if data is already available or being fetched
       if (
         (selectedAsset === 'BTC' && (isBtcDataFetched || btcData.length > 0)) ||
         (selectedAsset === 'ETH' && (isEthDataFetched || ethData.length > 0)) ||
@@ -123,7 +144,6 @@ const MonthlyAverageROI = ({ isDashboard = false }) => {
       }
       setIsLoading(true);
       setError(null);
-      // Set a timeout to show the loading message only if fetch takes longer than 50ms
       loadingTimeoutRef.current = setTimeout(() => {
         setShowLoadingMessage(true);
       }, 50);
@@ -145,7 +165,6 @@ const MonthlyAverageROI = ({ isDashboard = false }) => {
       }
     };
     fetchData();
-    // Cleanup timeout on unmount or re-fetch
     return () => {
       clearTimeout(loadingTimeoutRef.current);
     };
@@ -375,7 +394,7 @@ const MonthlyAverageROI = ({ isDashboard = false }) => {
       >
         {isLoading && showLoadingMessage ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-            <span style={{ color: colors.grey[100], fontSize: '16px' }}>Loading data...</span>
+            <span style={{ color: colors.primary[100], fontSize: '16px' }}>Loading data...</span>
           </Box>
         ) : !isLoading && !hasData && error ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
@@ -405,7 +424,7 @@ const MonthlyAverageROI = ({ isDashboard = false }) => {
                   color: monthlyRoiData.map(data => getBarColor(data.avgRoi)),
                 },
                 hoverlabel: {
-                  bgcolor: colors.primary[700],
+                  bgcolor: colors.primary[900],
                   font: { color: colors.primary[100], size: isMobile ? 12 : 14 },
                   bordercolor: colors.grey[300],
                   align: 'left',
@@ -430,7 +449,7 @@ const MonthlyAverageROI = ({ isDashboard = false }) => {
         {!isDashboard && selectedAsset === 'BTC' && <BitcoinFees />}
       </div>
       {!isDashboard && (
-        <p className="chart-info" >
+        <p className="chart-info">
           This chart displays the average {selectedAsset} Return on Investment (ROI) for each month over the selected timeframe, averaged {startYear === 'All' ? 'across all available years' : `from ${startYear} onward`}. For each month, the ROI is calculated as the ratio of the average price {timeframes.find(tf => tf.value === timeframe)?.label} ahead to the average price of the current month. An ROI of 1 means no change, above 1 indicates growth (e.g., 2 means the price doubled), and below 1 indicates a decline (e.g., 0.5 means the price halved). Positive ROIs are shown in green, negative in red.
         </p>
       )}

@@ -20,7 +20,6 @@ const SP500ROI = ({ isDashboard = false }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
     const [selectedYears, setSelectedYears] = useState([]);
-
     const chartId = "sp500-roi";
     const isFavorite = favoriteCharts.includes(chartId);
 
@@ -50,7 +49,7 @@ const SP500ROI = ({ isDashboard = false }) => {
           autorange: true,
         },
         yaxis: {
-          title: 'Logarithmic ROI (Shifted Base-10)', // Updated label
+          title: 'Logarithmic ROI (Shifted Base-10)',
           type: 'log',
           autorange: true,
         },
@@ -64,6 +63,19 @@ const SP500ROI = ({ isDashboard = false }) => {
           yanchor: 'top',
         },
     });
+
+    // Update chart colors on theme change
+    useEffect(() => {
+        setLayout((prev) => ({
+            ...prev,
+            plot_bgcolor: colors.primary[700],
+            paper_bgcolor: colors.primary[700],
+            font: {
+                ...prev.font,
+                color: colors.primary[100],
+            },
+        }));
+    }, [colors.primary[700], colors.primary[100]]);
 
     // Fetch S&P 500 data
     useEffect(() => {
@@ -87,11 +99,9 @@ const SP500ROI = ({ isDashboard = false }) => {
     const { yearlyDatasets, availableYears } = useMemo(() => {
         const sp500Data = fredSeriesData['SP500'] || [];
         if (sp500Data.length === 0) return { yearlyDatasets: [], availableYears: [] };
-
         const significantYears = ['2008', '2020'];
         const years = [...new Set(sp500Data.map(d => new Date(d.time).getFullYear()))]
             .sort((a, b) => a - b);
-
         const processYearlyData = (year) => {
             const yearStart = `${year}-01-01`;
             const yearEnd = `${year}-12-31`;
@@ -99,41 +109,35 @@ const SP500ROI = ({ isDashboard = false }) => {
                 const date = new Date(item.time);
                 return date >= new Date(yearStart) && date <= new Date(yearEnd);
             });
-            
+           
             if (filteredData.length === 0) return null;
-
             const basePrice = filteredData[0].value;
             return {
                 name: `${year}`,
                 shortName: `${year}`,
                 data: filteredData.map((item, index) => ({
                     day: index,
-                    roi: Math.log10(item.value / basePrice) + 1, // Shifted logarithmic ROI
+                    roi: Math.log10(item.value / basePrice) + 1,
                     date: item.time,
                     year
                 }))
             };
         };
-
         const yearlyData = years.map(year => processYearlyData(year)).filter(year => year !== null);
         const yearsAvailable = years.map(year => ({
             value: `${year}`,
             label: `Year ${year}${significantYears.includes(`${year}`) ? ' (Significant)' : ''}`
         }));
-
         return { yearlyDatasets: yearlyData, availableYears: yearsAvailable };
     }, [fredSeriesData]);
 
     // Compute average dataset
     const averageDataset = useMemo(() => {
         if (selectedYears.length === 0) return null;
-
         const selectedDatasets = yearlyDatasets.filter(d => selectedYears.includes(d.name));
         if (selectedDatasets.length === 0) return null;
-
         const minLength = Math.min(...selectedDatasets.map(d => d.data.length));
         const averageData = [];
-
         for (let day = 0; day < minLength; day++) {
             const rois = selectedDatasets
                 .map(d => d.data[day]?.roi)
@@ -147,7 +151,6 @@ const SP500ROI = ({ isDashboard = false }) => {
                 });
             }
         }
-
         return {
             name: 'Average of Selected Years',
             shortName: 'Average',
@@ -210,18 +213,18 @@ const SP500ROI = ({ isDashboard = false }) => {
             return newMap;
         });
     }, [yearlyDatasets, averageDataset]);
-    
+   
     useEffect(() => {
         const datasets = [...yearlyDatasets];
         if (averageDataset) {
             datasets.push(averageDataset);
         }
-    
+   
         const updatedDatasets = datasets.map(dataset => ({
             ...dataset,
             visible: visibilityMap[dataset.name] !== undefined ? visibilityMap[dataset.name] : true
         }));
-    
+   
         setYearDataSets(updatedDatasets);
     }, [yearlyDatasets, averageDataset, visibilityMap]);
 
@@ -274,8 +277,8 @@ const SP500ROI = ({ isDashboard = false }) => {
     }, [toggleAllLegend]);
 
     // Get the latest timestamp from fredSeriesData['SP500'] for LastUpdated
-    const latestTimestamp = fredSeriesData['SP500']?.length > 0 
-      ? fredSeriesData['SP500'][fredSeriesData['SP500'].length - 1].time 
+    const latestTimestamp = fredSeriesData['SP500']?.length > 0
+      ? fredSeriesData['SP500'][fredSeriesData['SP500'].length - 1].time
       : null;
 
     return (
@@ -357,7 +360,7 @@ const SP500ROI = ({ isDashboard = false }) => {
                                 onClick={deselectAllYears}
                                 sx={{
                                     backgroundColor: 'transparent',
-                                    color: '#31d6aa',
+                                    color: colors.primary[100],
                                     border: `1px solid ${colors.greenAccent[400]}`,
                                     borderRadius: '4px',
                                     padding: '8px 16px',
@@ -375,15 +378,15 @@ const SP500ROI = ({ isDashboard = false }) => {
                                 onClick={toggleLegend}
                                 sx={{
                                     backgroundColor: 'transparent',
-                                    color: '#31d6aa',
-                                    border: `1px solid ${colors?.greenAccent?.[400] || '#45E0B5'}`,
+                                    color: colors.primary[100],
+                                    border: `1px solid ${colors.greenAccent[400]}`,
                                     borderRadius: '4px',
                                     padding: '8px 16px',
                                     fontSize: '14px',
                                     textTransform: 'none',
                                     '&:hover': {
-                                        backgroundColor: colors?.greenAccent?.[400] || '#45E0B5',
-                                        color: theme?.palette?.mode === 'dark' ? colors?.grey?.[900] || '#333' : colors?.grey?.[100] || '#FFF',
+                                        backgroundColor: colors.greenAccent[400],
+                                        color: theme.palette.mode === 'dark' ? colors.grey[900] : colors.grey[100],
                                     },
                                 }}
                             >
@@ -392,7 +395,7 @@ const SP500ROI = ({ isDashboard = false }) => {
                         </Box>
                     </Box>
                     <div className="chart-top-div" style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginBottom: '10px' }}>
-                        {isLoading && <span style={{ color: colors.grey[100], marginRight: '10px' }}>Loading...</span>}
+                        {isLoading && <span style={{ color: colors.primary[100], marginRight: '10px' }}>Loading...</span>}
                         {error && <span style={{ color: colors.redAccent[500], marginRight: '10px' }}>{error}</span>}
                         <button onClick={resetChartView} className="button-reset extra-margin">
                             Reset Chart
@@ -421,11 +424,17 @@ const SP500ROI = ({ isDashboard = false }) => {
                             dash: item.shortName === 'Average' ? 'dash' : 'solid'
                         },
                         text: item.shortName !== 'Select/Deselect All'
-                            ? item.data.map(d => `<b>${item.shortName}   ROI: ${d.roi.toFixed(2)}</b>  (${new Date(d.date).toLocaleDateString()})`)
+                            ? item.data.map(d => `<b>${item.shortName} ROI: ${d.roi.toFixed(2)}</b> (${new Date(d.date).toLocaleDateString()})`)
                             : ['Select/Deselect All Years'],
                         hoverinfo: item.shortName === 'Select/Deselect All' ? 'none' : 'text',
                         hovertemplate: item.shortName === 'Select/Deselect All' ? undefined : `%{text}<extra></extra>`,
-                        visible: visibilityMap[item.name] !== undefined ? visibilityMap[item.name] : true
+                        visible: visibilityMap[item.name] !== undefined ? visibilityMap[item.name] : true,
+                        hoverlabel: {
+                            bgcolor: colors.primary[900],
+                            font: { color: colors.primary[100], size: isMobile ? 12 : 14 },
+                            bordercolor: colors.grey[300],
+                            align: 'left',
+                        },
                     }))}
                     layout={layout}
                     config={{
@@ -447,7 +456,7 @@ const SP500ROI = ({ isDashboard = false }) => {
                 )}
             </div>
             {!isDashboard && (
-                <p className='chart-info'>
+                <p className='chart-info' style={{ color: colors.primary[100] }}>
                     The return on investment for each year is calculated as a shifted logarithmic scale (log10(price / basePrice) + 1),
                     where ROI = 1 indicates no change, above 1 indicates positive returns, and below 1 indicates negative returns.
                     Select years to average, use 'Select/Deselect All' in the legend to toggle all years,
