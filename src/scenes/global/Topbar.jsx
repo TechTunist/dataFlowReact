@@ -177,7 +177,7 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
       case "/logarithmic-regression":
         return { title: "Bitcoin", subtitle: "Logarithmic Regression" };
       case "/risk-color":
-        return { title: "Price v Risk Bands", subtitle: isMobile ? "Colorized Price v Risk" : "Colorized BTC price based on the given risk level" };
+        return { title: "Price v Risk Bands", subtitle: isMobile ? "Colorized Price v Risk" : "Colorized asset price based on the given risk level" };
       case "/risk-bands":
         return { title: "Time in Risk Bands", subtitle: isMobile ? "" : "See how long an asset spends in different risk bands" };
       case "/altcoin-price":

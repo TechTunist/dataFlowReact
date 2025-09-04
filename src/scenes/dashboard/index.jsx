@@ -62,7 +62,7 @@ const chartConfig = [
   { id: "pi-cycle-top", title: "PiCycle Top Indicator", linkTo: "/pi-cycle", component: (props) => <PiCycleTop isDashboard={true} {...props} />, description: "The PiCycle Top Indicator for Bitcoin market tops." },
   { id: "fear-and-greed", title: "Fear and Greed Indicator", linkTo: "/fear-and-greed", component: (props) => <FearAndGreed isDashboard={true} {...props} />, description: "The Fear and Greed index measures market sentiment." },
   { id: "logarithmic-regression", title: "Bitcoin Logarithmic Regression", linkTo: "/logarithmic-regression", component: (props) => <BitcoinLogRegression isDashboard={true} {...props} />, description: "Logarithmic Regression trend lines for Bitcoin." },
-  { id: "bitcoin-risk-color", title: "Bitcoin Risk Colour Chart", linkTo: "/risk-color", component: (props) => <BitcoinRiskColor isDashboard={true} {...props} />, description: "Colour coded bitcoin risk levels." },
+  { id: "risk-color", title: "Risk Colour Chart", linkTo: "/risk-color", component: (props) => <BitcoinRiskColor isDashboard={true} {...props} />, description: "Colour coded bitcoin risk levels." },
   { id: "risk-bands", title: "Time Spent in Risk Bands", linkTo: "/risk-bands", component: (props) => <AssetRiskTimeInBands isDashboard={true} {...props} />, description: "Time spent in each defined Bitcoin risk band." },
   { id: "altcoin-price", title: "Altcoin Charts", linkTo: "/altcoin-price", component: (props) => <AltcoinPrice isDashboard={true} {...props} />, description: "Simple price chart for a selection of altcoins." },
   { id: "altcoin-risk", title: "Altcoin Risk", linkTo: "/altcoin-risk", component: (props) => <AltcoinRisk isDashboard={true} {...props} />, description: "Risk metrics for altcoins." },
