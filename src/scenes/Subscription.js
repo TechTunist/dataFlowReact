@@ -152,6 +152,44 @@ const Subscription = memo(() => {
     }
   };
 
+  const handleManageSubscription = async () => {
+    if (!isSignedIn || !user) {
+      setError('Please sign in to manage your subscription.');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    setSuccess('');
+    try {
+      const token = await getToken();
+      if (!token) {
+        throw new Error('Failed to obtain authentication token');
+      }
+      const response = await fetch(`${API_BASE_URL}/api/create-portal-session/`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      let responseData;
+      try {
+        responseData = await response.json();
+      } catch {
+        throw new Error('Invalid response format');
+      }
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}, message: ${responseData.error || 'Unknown error'}`);
+      }
+      window.location.href = responseData.url;
+    } catch (err) {
+      setError(`Failed to access billing portal: ${err.message}`);
+      console.error('Portal session error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleCancelSubscription = async () => {
     if (!isSignedIn || !user) {
       setError('Please sign in to cancel your subscription.');
@@ -316,7 +354,23 @@ const Subscription = memo(() => {
           <Typography variant="body1" sx={{ color: colors.grey[100], mb: 2 }}>
             <strong>Access:</strong> {subscriptionStatus.access}
           </Typography>
-          {subscriptionStatus.subscription_status === 'premium' && (
+          {['active', 'past_due', 'canceling'].includes(subscriptionStatus.subscription_status) && (
+            <Button
+              onClick={handleManageSubscription}
+              disabled={loading}
+              sx={{
+                backgroundColor: colors.blueAccent[500],
+                color: colors.grey[100],
+                '&:hover': { backgroundColor: colors.blueAccent[600] },
+                '&:disabled': { backgroundColor: colors.grey[700], color: colors.grey[400] },
+                mr: 2,
+                mt: 2,
+              }}
+            >
+              Manage Subscription
+            </Button>
+          )}
+          {subscriptionStatus.subscription_status === 'active' && (
             <Button
               onClick={handleOpenCancelDialog}
               disabled={loading}
@@ -364,7 +418,7 @@ const Subscription = memo(() => {
               {subscriptionStatus.current_period_end
                 ? new Date(subscriptionStatus.current_period_end).toLocaleDateString()
                 : 'the end of your billing period'}
-              .
+              . You can also manage your subscription, including updating your payment method, via the billing portal.
             </DialogContentText>
           </DialogContent>
           <DialogActions>
