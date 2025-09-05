@@ -246,7 +246,7 @@ const Subscription = memo(() => {
     const query = new URLSearchParams(location.search);
     if (query.get('success')) {
       fetchSubscriptionStatus();
-      navigate('/profile', { replace: true });
+      navigate('/subscription', { replace: true }); // Changed to /subscription
     } else if (query.get('canceled')) {
       setError('Checkout was canceled. Please try again.');
       navigate('/subscription', { replace: true });
