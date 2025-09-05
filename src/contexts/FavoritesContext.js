@@ -7,7 +7,7 @@ export const FavoritesContext = createContext({
   removeFavoriteChart: () => {},
   error: '',
   loading: false,
-  clearError: () => {}, // New function to clear error
+  clearError: () => {},
 });
 
 export const FavoritesProvider = ({ children }) => {
@@ -20,7 +20,6 @@ export const FavoritesProvider = ({ children }) => {
 
   const fetchFavorites = useCallback(async () => {
     if (!isSignedIn || !user) return;
-
     setLoading(true);
     setError('');
     try {
@@ -28,17 +27,15 @@ export const FavoritesProvider = ({ children }) => {
       if (!token) {
         throw new Error('Failed to obtain authentication token');
       }
-      const response = await fetch(`${API_BASE_URL}/api/favorite-charts/`, {
+      const response = await fetch(`${API_BASE_URL}/api/favorite-charts/?t=${Date.now()}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to fetch favorite charts');
       }
-
       const data = await response.json();
       setFavoriteCharts(data.favoriteCharts || []);
     } catch (err) {
@@ -50,8 +47,10 @@ export const FavoritesProvider = ({ children }) => {
   }, [isSignedIn, user, getToken]);
 
   const addFavoriteChart = useCallback(async (chartId) => {
-    if (!isSignedIn || !user) return;
-
+    if (!isSignedIn || !user) {
+      setError('Please sign in to add favorite charts.');
+      return;
+    }
     setLoading(true);
     setError('');
     try {
@@ -67,16 +66,14 @@ export const FavoritesProvider = ({ children }) => {
         },
         body: JSON.stringify({ chartId }),
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to add favorite chart');
       }
-
       const data = await response.json();
       setFavoriteCharts(data.favoriteCharts || []);
     } catch (err) {
-      setError(`Failed to add favorite chart: ${err.message}`);
+      setError(err.message);
       console.error('Add favorite error:', err.message);
     } finally {
       setLoading(false);
@@ -84,8 +81,10 @@ export const FavoritesProvider = ({ children }) => {
   }, [isSignedIn, user, getToken]);
 
   const removeFavoriteChart = useCallback(async (chartId) => {
-    if (!isSignedIn || !user) return;
-
+    if (!isSignedIn || !user) {
+      setError('Please sign in to remove favorite charts.');
+      return;
+    }
     setLoading(true);
     setError('');
     try {
@@ -101,16 +100,14 @@ export const FavoritesProvider = ({ children }) => {
         },
         body: JSON.stringify({ chartId }),
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to remove favorite chart');
       }
-
       const data = await response.json();
       setFavoriteCharts(data.favoriteCharts || []);
     } catch (err) {
-      setError(`Failed to remove favorite chart: ${err.message}`);
+      setError(err.message);
       console.error('Remove favorite error:', err.message);
     } finally {
       setLoading(false);
