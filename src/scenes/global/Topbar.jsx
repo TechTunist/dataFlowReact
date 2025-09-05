@@ -1,12 +1,10 @@
-// src/scenes/global/Topbar.js
-import React, { useContext, useState } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import { Box, IconButton, useTheme, Typography, Menu, MenuItem, Avatar, Snackbar, Alert, Button } from "@mui/material";
 import { ColorModeContext, tokens } from "../../theme";
 import LightModeOutlinedIcon from "@mui/icons-material/LightModeOutlined";
 import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
 import MenuOutlinedIcon from "@mui/icons-material/MenuOutlined";
 import { useLocation, Link, useNavigate } from "react-router-dom";
-// import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import useIsMobile from "../../hooks/useIsMobile";
 import "../../styling/bitcoinChart.css";
@@ -21,7 +19,7 @@ import StarBorderIcon from "@mui/icons-material/StarBorder";
 import StarIcon from "@mui/icons-material/Star";
 import { useFavorites } from "../../contexts/FavoritesContext";
 
-// Mapping of route paths to chart IDs (aligned with Dashboard.js chartConfig)
+// Mapping of route paths to chart IDs
 const routeToChartId = {
   "/btc-20-ext": "bitcoin-20-ext",
   "/bitcoin": "bitcoin-price",
@@ -55,7 +53,6 @@ const routeToChartId = {
   "/us-interest": "us-interest",
   "/us-combined-macro": "us-combined-macro",
   "/us-initial-claims": "us-initial-claims",
-  // "/tx-combined": "tx-combined",
   "/tx-mvrv": "tx-mvrv",
   "/on-chain-historical-risk": "on-chain-historical-risk",
   "/altcoin-season-index": "altcoin-season-index",
@@ -99,14 +96,40 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const sidebarWidth = isSidebar ? 270 : 0;
-  const { user } = useUser();
+  const { user, isSignedIn } = useUser();
   const { signOut } = useClerk();
   const [anchorEl, setAnchorEl] = useState(null);
   const { favoriteCharts, addFavoriteChart, removeFavoriteChart, error, clearError } = useFavorites();
-
+  const [userPlan, setUserPlan] = useState('Free');
   const currentChartId = routeToChartId[location.pathname];
   const isChartPage = !!currentChartId;
   const isFavorite = isChartPage && favoriteCharts.includes(currentChartId);
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://vercel-dataflow.vercel.app';
+
+  // Fetch subscription status to get the user's plan
+  useEffect(() => {
+    if (isSignedIn && user) {
+      const fetchSubscriptionStatus = async () => {
+        try {
+          const token = await user.getToken();
+          const response = await fetch(`${API_BASE_URL}/api/subscription-status/?t=${Date.now()}`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+          if (!response.ok) throw new Error('Failed to fetch subscription status');
+          const data = await response.json();
+          setUserPlan(data.plan || 'Free');
+        } catch (err) {
+          console.error('Error fetching subscription status:', err);
+          setUserPlan('Free');
+        }
+      };
+      fetchSubscriptionStatus();
+    }
+  }, [isSignedIn, user]);
 
   const handleToggleFavorite = () => {
     if (!currentChartId) return;
@@ -131,10 +154,8 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
   };
 
   const handleSnackbarClose = () => {
-    clearError(); // Clear error state when Snackbar closes
+    clearError();
   };
-
-  const userPlan = "Free"; // Replace with actual plan data later
 
   const topBarStyle = {
     position: "fixed",
@@ -152,7 +173,6 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
     borderBottom: `1px solid ${colors.greenAccent[500]}`,
     transition: "left 0.3s ease, width 0.3s ease",
   };
-
 
   const getTitleAndSubtitle = (pathname) => {
     switch (pathname) {
@@ -198,8 +218,6 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
         return { title: "Bitcoin Monthly Returns", subtitle: isMobile ? "Monthly Returns" : "The Monthly Returns for Bitcoin" };
       case "/running-roi":
         return { title: "Running ROI", subtitle: isMobile ? "Running ROI v Price" : "The Running ROI plotted Against Price" };
-      // case "/btc-tx-count":
-      //   return { title: "Bitcoin Transaction Count", subtitle: isMobile ? "Transaction Count" : "Daily Transaction Count for Bitcoin" };
       case "/fear-and-greed-chart":
         return { title: "Bitcoin Fear and Greed", subtitle: "Fear and Greed plotted over the Bitcoin Price" };
       case "/altcoin-risk":
@@ -212,8 +230,6 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
         return { title: "US Macro Information", subtitle: "Compare US Macro Data" };
       case "/us-initial-claims":
         return { title: "US Initial Claims", subtitle: "Jobless Claims" };
-      // case "/tx-combined":
-      //   return { title: "US Macro and BTC Tx Count", subtitle: "Macro and On-Chain Data" };
       case "/puell-multiple":
         return { title: "Puell Multiple", subtitle: isMobile ? "Miner Revenue" : "Current Mined BTC Value to the 365 day Moving Average" };
       case "/tx-mvrv":
@@ -295,7 +311,7 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
       case "/fred/sahm-recession-indicator":
         return { title: "Sahm Rule", subtitle: isMobile ? "Recession Indicator" : "Recession Indicator" };
       case "/charts":
-        return { title: "Charts", subtitle: "All availible charts on Cryptological" };
+        return { title: "Charts", subtitle: "All available charts on Cryptological" };
       default:
         return { title: "CryptoLogical", subtitle: "" };
     }

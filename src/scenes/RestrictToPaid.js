@@ -1,4 +1,3 @@
-// src/components/restrictToPaidSubscription.js
 import React, { memo } from 'react';
 import { useUser } from '@clerk/clerk-react';
 import { Box, Typography, useTheme, Button } from '@mui/material';
@@ -24,7 +23,6 @@ const RestrictedComponent = memo(
         </Box>
       );
     }
-
     if (loading) {
       return (
         <Box sx={{ padding: '20px', textAlign: 'center' }}>
@@ -34,7 +32,6 @@ const RestrictedComponent = memo(
         </Box>
       );
     }
-
     if (error) {
       return (
         <Box sx={{ padding: '20px', textAlign: 'center' }}>
@@ -44,19 +41,15 @@ const RestrictedComponent = memo(
         </Box>
       );
     }
-
-    // Check if user has a paid subscription or a cancelled subscription with valid current_period_end
-    const isPaidSubscription =
-      subscriptionStatus.plan !== 'Free' && subscriptionStatus.subscription_status === 'premium';
+    // Check if user has premium access or a canceled subscription with valid current_period_end
+    const hasPremiumAccess = subscriptionStatus.access === 'Full';
     const isCancelledButValid =
       subscriptionStatus.subscription_status === 'canceled' &&
       subscriptionStatus.current_period_end &&
       subscriptionStatus.current_period_end > new Date();
-
-    if (isPaidSubscription || isCancelledButValid) {
+    if (hasPremiumAccess || isCancelledButValid) {
       return <WrappedComponent {...props} />;
     }
-
     return (
       <Box sx={{ padding: '20px', textAlign: 'center' }}>
         <Typography variant="h5" sx={{ color: colors.grey[100], mb: 2 }}>
@@ -91,13 +84,12 @@ const restrictToPaidSubscription = (
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
     const { subscriptionStatus, loading, error } = useSubscription();
-
     return (
       <RestrictedComponent
         WrappedComponent={WrappedComponent}
         props={props}
         fallbackMessage={fallbackMessage}
-        subscriptionStatus={subscriptionStatus || { plan: 'Free', subscription_status: 'free', current_period_end: null, features: DEFAULT_FREE_FEATURES }}
+        subscriptionStatus={subscriptionStatus || { plan: 'Free', subscription_status: 'free', current_period_end: null, access: 'Limited', features: DEFAULT_FREE_FEATURES }}
         loading={loading}
         error={error}
         isSignedIn={isSignedIn}
