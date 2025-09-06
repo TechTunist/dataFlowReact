@@ -51,6 +51,11 @@ export const FavoritesProvider = ({ children }) => {
       setError('Please sign in to add favorite charts.');
       return;
     }
+    // Optimistic update: Add chart to state immediately
+    setFavoriteCharts((prev) => {
+      if (prev.includes(chartId)) return prev; // Avoid duplicates
+      return [...prev, chartId];
+    });
     setLoading(true);
     setError('');
     try {
@@ -71,8 +76,11 @@ export const FavoritesProvider = ({ children }) => {
         throw new Error(errorData.error || 'Failed to add favorite chart');
       }
       const data = await response.json();
+      // Sync with server response
       setFavoriteCharts(data.favoriteCharts || []);
     } catch (err) {
+      // Revert optimistic update on failure
+      setFavoriteCharts((prev) => prev.filter((id) => id !== chartId));
       setError(err.message);
       console.error('Add favorite error:', err.message);
     } finally {
@@ -85,6 +93,8 @@ export const FavoritesProvider = ({ children }) => {
       setError('Please sign in to remove favorite charts.');
       return;
     }
+    // Optimistic update: Remove chart from state immediately
+    setFavoriteCharts((prev) => prev.filter((id) => id !== chartId));
     setLoading(true);
     setError('');
     try {
@@ -105,8 +115,11 @@ export const FavoritesProvider = ({ children }) => {
         throw new Error(errorData.error || 'Failed to remove favorite chart');
       }
       const data = await response.json();
+      // Sync with server response
       setFavoriteCharts(data.favoriteCharts || []);
     } catch (err) {
+      // Revert optimistic update on failure
+      setFavoriteCharts((prev) => [...prev, chartId].sort()); // Re-add and sort to maintain order
       setError(err.message);
       console.error('Remove favorite error:', err.message);
     } finally {
