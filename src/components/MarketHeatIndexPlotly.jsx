@@ -7,7 +7,6 @@ import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
-
 // Helper function to calculate Risk Metric
 const calculateRiskMetric = (data) => {
   const movingAverage = data.map((item, index) => {
@@ -29,7 +28,6 @@ const calculateRiskMetric = (data) => {
   }));
   return normalizedRisk;
 };
-
 // Helper function to calculate Simple Moving Average
 const calculateSMA = (data, windowSize) => {
   if (!data || data.length < windowSize) return [];
@@ -43,7 +41,6 @@ const calculateSMA = (data, windowSize) => {
   }
   return sma;
 };
-
 // Helper function to calculate PiCycle Ratio
 const calculateRatioSeries = (data) => {
   if (!data || data.length < 350) return [];
@@ -59,7 +56,6 @@ const calculateRatioSeries = (data) => {
   }
   return ratioData;
 };
-
 // Helper function to calculate MVRV Peak Projection
 const calculateMvrvPeakProjection = (mvrvData) => {
   if (!mvrvData || mvrvData.length < 181) return { projectedPeak: null };
@@ -88,7 +84,6 @@ const calculateMvrvPeakProjection = (mvrvData) => {
     : null;
   return { projectedPeak };
 };
-
 // Helper function to calculate Mayer Multiple
 const calculateMayerMultiple = (data) => {
   if (!data || data.length < 200) return [];
@@ -107,7 +102,6 @@ const calculateMayerMultiple = (data) => {
   }
   return mayerMultiples;
 };
-
 const MarketHeatIndexChart = ({ isDashboard = false }) => {
   const theme = useTheme();
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
@@ -118,14 +112,12 @@ const MarketHeatIndexChart = ({ isDashboard = false }) => {
   const [smaPeriod, setSmaPeriod] = useState('28d');
   const [seriesVisibility, setSeriesVisibility] = useState({ marketHeat: true, btcPrice: true });
   const isNarrowScreen = useMediaQuery('(max-width:600px)');
-
   const smaPeriods = [
     { value: 'none', label: 'None' },
     { value: '7d', label: '7 Days', days: 7 },
     { value: '28d', label: '28 Days', days: 28 },
     { value: '90d', label: '90 Days', days: 90 },
   ];
-
   // Define the initial layout with useMemo
   const initialLayout = useMemo(() => ({
     title: isDashboard ? '' : 'Market Heat Index',
@@ -195,10 +187,8 @@ const MarketHeatIndexChart = ({ isDashboard = false }) => {
       },
     ],
   }), [colors, isDashboard, isMobile, isNarrowScreen]);
-
   // State to manage the current layout
   const [currentLayout, setCurrentLayout] = useState(initialLayout);
-
   // Update tooltip size when isNarrowScreen changes
   useEffect(() => {
     setCurrentLayout((prev) => ({
@@ -210,7 +200,6 @@ const MarketHeatIndexChart = ({ isDashboard = false }) => {
       },
     }));
   }, [isNarrowScreen]);
-
   // Fetch data
   useEffect(() => {
     const fetchData = async () => {
@@ -232,20 +221,16 @@ const MarketHeatIndexChart = ({ isDashboard = false }) => {
     };
     fetchData();
   }, [fetchBtcData, fetchMvrvData, fetchFearAndGreedData, btcData.length, mvrvData.length, fearAndGreedData.length]);
-
   // Calculate Market Heat Index for each day
   const marketHeatData = useMemo(() => {
     if (!btcData.length || !mvrvData.length || !fearAndGreedData.length) return [];
-
     // Align data to the earliest common date (2018-01-01 for Fear and Greed)
     const startDate = '2018-01-01';
     const alignedData = btcData.filter(item => new Date(item.time) >= new Date(startDate));
-
     return alignedData.map((btcItem, index) => {
       const date = btcItem.time;
       const mvrvItem = mvrvData.find(m => m.time === date);
       const fearGreedItem = fearAndGreedData.find(f => f.time === date);
-
       // MVRV Heat
       let mvrvHeat = 0;
       if (mvrvItem) {
@@ -254,25 +239,25 @@ const MarketHeatIndexChart = ({ isDashboard = false }) => {
         const { projectedPeak } = calculateMvrvPeakProjection(historicalMvrv);
         if (latestMvrv && projectedPeak) {
           const cappedProjectedPeak = Math.max(0, Math.min(10000, projectedPeak));
-          const thresholds = [cappedProjectedPeak, 3.7];
-          const distances = thresholds.map(t => ((latestMvrv - t) / t) * 100);
-          const minDistance = Math.min(...distances.map(Math.abs));
-          mvrvHeat = Math.max(0, Math.min(100, 100 - (minDistance / 10) * 100));
+          const lower = 1.0;
+          const upper = Math.max(cappedProjectedPeak, 3.7);
+          if (latestMvrv > lower) {
+            mvrvHeat = Math.min(100, ((latestMvrv - lower) / (upper - lower)) * 100);
+          }
         }
       }
-
       // Mayer Heat
       let mayerHeat = 0;
       const mayerMultiples = calculateMayerMultiple(btcData.slice(0, index + 1));
       const latestMayerRaw = mayerMultiples[mayerMultiples.length - 1]?.value;
       const latestMayer = latestMayerRaw ? Math.max(0, Math.min(100, latestMayerRaw)) : 0;
       if (latestMayer) {
-        const thresholds = [2.4, 0.6];
-        const distances = thresholds.map(t => ((latestMayer - t) / t) * 100);
-        const minDistance = Math.min(...distances.map(Math.abs));
-        mayerHeat = Math.max(0, Math.min(100, 100 - (minDistance / 10) * 100));
+        const lower = 0.6;
+        const upper = 2.4;
+        if (latestMayer > lower) {
+          mayerHeat = Math.min(100, ((latestMayer - lower) / (upper - lower)) * 100);
+        }
       }
-
       // Risk Heat
       let riskHeat = 0;
       const riskDataArray = calculateRiskMetric(btcData.slice(0, index + 1));
@@ -280,10 +265,8 @@ const MarketHeatIndexChart = ({ isDashboard = false }) => {
         const calculatedRisk = riskDataArray[riskDataArray.length - 1].Risk;
         riskHeat = Math.min(100, calculatedRisk * 100);
       }
-
       // Fear and Greed
       const fearGreedValue = fearGreedItem ? Math.max(0, Math.min(100, fearGreedItem.value)) : 0;
-
       // PiCycle Heat
       let piCycleHeat = 0;
       const ratioData = calculateRatioSeries(btcData.slice(0, index + 1));
@@ -292,23 +275,20 @@ const MarketHeatIndexChart = ({ isDashboard = false }) => {
       if (latestRatio) {
         const buffer = 0.5;
         const minRatio = 0;
-        const heatOffset = 0.28;
+        const heatOffset = 0;
         piCycleHeat = Math.max(0, Math.min(100, (((latestRatio - minRatio) / buffer) * 100) + heatOffset));
       }
-
       // Weighted Average
       const scores = { mvrv: mvrvHeat, mayer: mayerHeat, risk: riskHeat, fearGreed: fearGreedValue, piCycle: piCycleHeat };
-      const weights = { mvrv: 0.25, mayer: 0.25, risk: 0.15, fearGreed: 0.20, piCycle: 0.15 };
+      const weights = { mvrv: 0.2, mayer: 0.2, risk: 0.2, fearGreed: 0.2, piCycle: 0.2 };
       const weightedSum = Object.keys(scores).reduce((sum, key) => sum + (scores[key] || 0) * weights[key], 0);
       const heatValue = Math.max(0, Math.min(100, weightedSum));
-
       return {
         date: date,
         index: heatValue,
       };
     });
   }, [btcData, mvrvData, fearAndGreedData]);
-
   // Apply smoothing
   const smoothedData = useMemo(() => {
     const selectedSma = smaPeriods.find(sp => sp.value === smaPeriod);
@@ -327,7 +307,6 @@ const MarketHeatIndexChart = ({ isDashboard = false }) => {
     }
     return result;
   }, [marketHeatData, smaPeriod]);
-
   // Filter Bitcoin data to match Market Heat data range
   const filteredBtcData = useMemo(() => {
     if (!marketHeatData.length) return [];
@@ -337,7 +316,6 @@ const MarketHeatIndexChart = ({ isDashboard = false }) => {
       price: item.value,
     }));
   }, [btcData, marketHeatData]);
-
   // Memoized plot data
   const plotData = useMemo(() => {
     return [
@@ -377,7 +355,6 @@ const MarketHeatIndexChart = ({ isDashboard = false }) => {
       },
     ];
   }, [smoothedData, filteredBtcData, seriesVisibility, isMobile, colors.greenAccent]);
-
   // Update series visibility
   useEffect(() => {
     setSeriesVisibility((prev) => ({
@@ -385,7 +362,6 @@ const MarketHeatIndexChart = ({ isDashboard = false }) => {
       btcPrice: prev.btcPrice !== undefined ? prev.btcPrice : true,
     }));
   }, []);
-
   // Handle legend click to toggle series visibility
   const handleLegendClick = useCallback((event) => {
     const seriesKey = event.data[event.curveNumber].key;
@@ -395,7 +371,6 @@ const MarketHeatIndexChart = ({ isDashboard = false }) => {
     }));
     return false;
   }, []);
-
   // Handle chart relayout (e.g., zooming)
   const handleRelayout = useCallback((event) => {
     if (event['xaxis.range[0]'] || event['yaxis.range[0]'] || event['yaxis2.range[0]']) {
@@ -419,7 +394,6 @@ const MarketHeatIndexChart = ({ isDashboard = false }) => {
       }));
     }
   }, []);
-
   // Reset chart to initial view
   const resetChartView = useCallback(() => {
     setCurrentLayout((prev) => ({
@@ -429,12 +403,10 @@ const MarketHeatIndexChart = ({ isDashboard = false }) => {
       yaxis2: { ...prev.yaxis2, autorange: true, range: undefined },
     }));
   }, []);
-
   // Handle SMA period selection
   const handleSmaPeriodChange = (event) => {
     setSmaPeriod(event.target.value);
   };
-
   if (error) {
     return (
       <Box sx={{ color: colors.redAccent[400], textAlign: 'center', padding: '20px' }}>
@@ -442,7 +414,6 @@ const MarketHeatIndexChart = ({ isDashboard = false }) => {
       </Box>
     );
   }
-
   return (
     <div style={{ height: '100%' }}>
       {!isDashboard && (
@@ -533,5 +504,4 @@ const MarketHeatIndexChart = ({ isDashboard = false }) => {
     </div>
   );
 };
-
 export default restrictToPaidSubscription(MarketHeatIndexChart);
