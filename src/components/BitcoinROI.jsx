@@ -8,7 +8,6 @@ import BitcoinFees from './BitcoinTransactionFees';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import LastUpdated from '../hooks/LastUpdated';
-import { useFavorites } from '../contexts/FavoritesContext';
 
 const BitcoinROI = ({ isDashboard = false }) => {
   const theme = useTheme();
@@ -16,21 +15,12 @@ const BitcoinROI = ({ isDashboard = false }) => {
   const isMobile = useIsMobile();
   const isNarrowScreen = useMediaQuery('(max-width:600px)');
   const { btcData, fetchBtcData } = useContext(DataContext);
-  const { favoriteCharts, addFavoriteChart, removeFavoriteChart } = useFavorites();
   const [yearDataSets, setYearDataSets] = useState([]);
   const [visibilityMap, setVisibilityMap] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [selectedYears, setSelectedYears] = useState([]);
-  const chartId = "bitcoin-roi";
-  const isFavorite = favoriteCharts.includes(chartId);
-  const toggleFavorite = () => {
-    if (isFavorite) {
-      removeFavoriteChart(chartId);
-    } else {
-      addFavoriteChart(chartId);
-    }
-  };
+  const [isSelectAll, setIsSelectAll] = useState(false); // Track toggle state
   const plotRef = useRef(null);
   const containerRef = useRef(null);
   const [layout, setLayout] = useState({
@@ -164,26 +154,28 @@ const BitcoinROI = ({ isDashboard = false }) => {
     };
   }, [selectedYears, yearlyDatasets]);
 
-  // Deselect all years for legend
-  const deselectAllLegend = useCallback(() => {
+  // Toggle deselect/select all for legend
+  const toggleSelectAllLegend = useCallback(() => {
     setVisibilityMap(prev => {
       const newMap = { ...prev };
+      const newVisibility = isSelectAll ? true : 'legendonly';
       yearDataSets.forEach(dataset => {
-        if (dataset.shortName !== 'Average') {
-          newMap[dataset.name] = 'legendonly';
+        if (dataset.shortName !== 'Average' && dataset.shortName !== 'Deselect / Select All') {
+          newMap[dataset.name] = newVisibility;
         }
       });
       return newMap;
     });
-  }, [yearDataSets]);
+    setIsSelectAll(prev => !prev);
+  }, [yearDataSets, isSelectAll]);
 
-  // Legend datasets with deselect all option
+  // Legend datasets with deselect/select all option
   const legendDataSets = useMemo(() => {
     const datasets = [...yearDataSets];
     if (datasets.length > 0) {
       datasets.push({
-        name: 'Deselect All',
-        shortName: 'Deselect All',
+        name: 'Deselect / Select All',
+        shortName: 'Deselect / Select All',
         data: [{ day: 0, roi: 0 }],
         visible: true,
         showlegend: true,
@@ -238,27 +230,24 @@ const BitcoinROI = ({ isDashboard = false }) => {
       xaxis: { ...prev.xaxis, autorange: true },
       yaxis: { ...prev.yaxis, autorange: true }
     }));
-    setVisibilityMap(prev => {
-      const newMap = { ...prev };
-      yearDataSets.forEach(dataset => {
-        newMap[dataset.name] = true;
-      });
-      return newMap;
-    });
-  }, [yearDataSets]);
+  }, []);
 
+  // Handle chart relayout (e.g., zooming)
   const handleRelayout = (event) => {
-    if (event['xaxis.range[0]']) {
+    if (event['xaxis.range[0]'] && event['xaxis.range[1]']) {
       const newXMin = event['xaxis.range[0]'];
       const newXMax = event['xaxis.range[1]'];
-      const visibleData = yearDataSets.flatMap(year =>
-        year.data.filter(d => d.day >= newXMin && d.day <= newXMax)
-      );
+      // Filter data for visible years within the zoomed x-axis range
+      const visibleData = yearDataSets
+        .filter(year => visibilityMap[year.name] !== 'legendonly')
+        .flatMap(year =>
+          year.data.filter(d => d.day >= newXMin && d.day <= newXMax)
+        );
       if (visibleData.length > 0) {
         const yValues = visibleData.map(d => d.roi);
         const yMin = Math.min(...yValues);
         const yMax = Math.max(...yValues);
-        const padding = (yMax - yMin) * 0.1; // 10% padding
+        const padding = (yMax - yMin) * 0.05; // 5% padding for better visualization
         setLayout(prev => ({
           ...prev,
           xaxis: {
@@ -270,6 +259,7 @@ const BitcoinROI = ({ isDashboard = false }) => {
             ...prev.yaxis,
             range: [yMin - padding, yMax + padding],
             autorange: false,
+            fixedrange: true,
           },
         }));
       }
@@ -279,8 +269,8 @@ const BitcoinROI = ({ isDashboard = false }) => {
   // Handle legend click to toggle visibility
   const handleLegendClick = useCallback((event) => {
     const name = event.data[event.curveNumber].name;
-    if (name === 'Deselect All') {
-      deselectAllLegend();
+    if (name === 'Deselect / Select All') {
+      toggleSelectAllLegend();
       return false;
     }
     setVisibilityMap(prev => {
@@ -289,33 +279,27 @@ const BitcoinROI = ({ isDashboard = false }) => {
       return newMap;
     });
     return false;
-  }, [deselectAllLegend]);
+  }, [toggleSelectAllLegend]);
 
-  // Handle cursor changes on mousedown/mouseup
+  // Handle double-click to reset chart
+  const handleDoubleClick = useCallback(() => {
+    resetChartView();
+  }, [resetChartView]);
+
+  // Handle cursor changes
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-    const svgContainer = plotRef.current.el.querySelector('.svg-container');
-    if (svgContainer) {
-      svgContainer.style.cursor = 'default';
-    }
-    const handleMouseDown = () => {
-      if (svgContainer) {
-        svgContainer.style.cursor = 'ew-resize';
+    const style = document.createElement('style');
+    style.textContent = `
+      .chart-container .js-plotly-plot .plotly .cursor-ew-resize {
+        cursor: default !important;
       }
-    };
-    const handleMouseUp = () => {
-      if (svgContainer) {
-        svgContainer.style.cursor = 'default';
+      .chart-container .js-plotly-plot .plotly .cursor-ns-resize {
+        cursor: default !important;
       }
-    };
-    container.addEventListener('mousedown', handleMouseDown);
-    container.addEventListener('mouseup', handleMouseUp);
-    container.addEventListener('mouseleave', handleMouseUp);
+    `;
+    document.head.appendChild(style);
     return () => {
-      container.removeEventListener('mousedown', handleMouseDown);
-      container.removeEventListener('mouseup', handleMouseUp);
-      container.removeEventListener('mouseleave', handleMouseUp);
+      document.head.removeChild(style);
     };
   }, []);
 
@@ -484,25 +468,6 @@ const BitcoinROI = ({ isDashboard = false }) => {
             >
               {isMobile ? 'Reset' : 'Reset Chart'}
             </Button>
-            <Button
-              onClick={toggleFavorite}
-              sx={{
-                backgroundColor: isFavorite ? colors.greenAccent[400] : 'transparent',
-                color: isFavorite ? (theme.palette.mode === 'dark' ? colors.grey[900] : colors.grey[100]) : '#31d6aa',
-                border: `1px solid ${colors.greenAccent[400]}`,
-                borderRadius: '4px',
-                padding: { xs: '8px 16px', sm: '6px 12px' },
-                fontSize: { xs: '12px', sm: '14px' },
-                textTransform: 'none',
-                width: { xs: '100%', sm: '100px' },
-                '&:hover': {
-                  backgroundColor: colors.greenAccent[400],
-                  color: theme.palette.mode === 'dark' ? colors.grey[900] : colors.grey[100],
-                },
-              }}
-            >
-              {isFavorite ? 'Remove Favorite' : 'Add Favorite'}
-            </Button>
           </Box>
         </Box>
       )}
@@ -522,18 +487,18 @@ const BitcoinROI = ({ isDashboard = false }) => {
             x: item.data.map(d => d.day),
             y: item.data.map(d => d.roi),
             type: 'scatter',
-            mode: item.shortName === 'Deselect All' ? 'none' : 'lines',
-            name: isMobile ? item.shortName : item.name,
+            mode: item.shortName === 'Deselect / Select All' ? 'none' : 'lines',
+            name: item.name,
             line: {
               color: item.shortName === 'Average' ? colors.greenAccent[500] : undefined,
               width: item.shortName === 'Average' ? 3 : 2,
               dash: item.shortName === 'Average' ? 'dash' : 'solid'
             },
-            text: item.shortName !== 'Deselect All'
+            text: item.shortName !== 'Deselect / Select All'
               ? item.data.map(d => `<b>${item.shortName} ROI: ${d.roi.toFixed(2)}</b> (${new Date(d.date).toLocaleDateString()})`)
-              : ['Deselect All Years'],
-            hoverinfo: item.shortName === 'Deselect All' ? 'none' : 'text',
-            hovertemplate: item.shortName === 'Deselect All' ? undefined : `%{text}<extra></extra>`,
+              : ['Toggle All Series Visibility'],
+            hoverinfo: item.shortName === 'Deselect / Select All' ? 'none' : 'text',
+            hovertemplate: item.shortName === 'Deselect / Select All' ? undefined : `%{text}<extra></extra>`,
             visible: visibilityMap[item.name] !== undefined ? visibilityMap[item.name] : true,
             showlegend: true
           }))}
@@ -548,6 +513,7 @@ const BitcoinROI = ({ isDashboard = false }) => {
           style={{ width: '100%', height: '100%' }}
           onRelayout={handleRelayout}
           onLegendClick={handleLegendClick}
+          onDoubleClick={handleDoubleClick}
         />
       </div>
       <div className='under-chart'>
@@ -560,7 +526,7 @@ const BitcoinROI = ({ isDashboard = false }) => {
         <p className='chart-info'>
           The return on investment for each year is calculated as a shifted logarithmic scale (log10(price / basePrice) + 1),
           where ROI = 1 indicates no change, above 1 indicates positive returns, and below 1 indicates negative returns.
-          Select years to average, use 'Deselect All' in the legend to hide all years, or click legend items to toggle visibility.
+          Select years to average, use 'Deselect / Select All' in the legend to toggle all years, or click legend items to toggle visibility.
           Usage Example: Take the average of the post-halving years to compare against the current post-halving year ROI.
         </p>
       )}
