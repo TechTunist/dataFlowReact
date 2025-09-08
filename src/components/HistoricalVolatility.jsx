@@ -402,7 +402,6 @@
 
 
 
-
 import React, { useRef, useEffect, useState, useContext, useCallback, useMemo } from 'react';
 import { createChart } from 'lightweight-charts';
 import { tokens } from '../theme';
@@ -460,6 +459,7 @@ const BitcoinHistoricalVolatility = ({ isDashboard = false }) => {
   const [timeframe, setTimeframe] = useState('60d');
   const [tooltipData, setTooltipData] = useState(null);
   const isNarrowScreen = useMediaQuery('(max-width:400px)');
+
   const timeframes = [
     { value: '30d', label: '30 Days', days: 30 },
     { value: '60d', label: '60 Days', days: 60 },
@@ -496,6 +496,7 @@ const BitcoinHistoricalVolatility = ({ isDashboard = false }) => {
 
   // Initialize chart
   useEffect(() => {
+    if (!chartContainerRef.current) return;
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
       height: chartContainerRef.current.clientHeight,
@@ -562,19 +563,22 @@ const BitcoinHistoricalVolatility = ({ isDashboard = false }) => {
     });
 
     const resizeChart = () => {
-      chart.applyOptions({
-        width: chartContainerRef.current.clientWidth,
-        height: chartContainerRef.current.clientHeight,
-      });
+      if (chartRef.current && chartContainerRef.current) {
+        chart.applyOptions({
+          width: chartContainerRef.current.clientWidth,
+          height: chartContainerRef.current.clientHeight,
+        });
+      }
     };
-    window.addEventListener('resize', resizeChart);
 
+    window.addEventListener('resize', resizeChart);
     chartRef.current = chart;
+
     return () => {
       chart.remove();
       window.removeEventListener('resize', resizeChart);
     };
-  }, []); // Empty dependency array to run only once on mount
+  }, []);
 
   // Update chart colors on theme change
   useEffect(() => {
@@ -587,16 +591,6 @@ const BitcoinHistoricalVolatility = ({ isDashboard = false }) => {
       });
     }
   }, [colors.primary[700], colors.primary[100]]);
-
-  // Update chart dimensions on isNarrowScreen change
-  useEffect(() => {
-    if (chartRef.current && chartContainerRef.current) {
-      chartRef.current.applyOptions({
-        width: chartContainerRef.current.clientWidth,
-        height: chartContainerRef.current.clientHeight,
-      });
-    }
-  }, [isNarrowScreen]);
 
   // Update price series data
   useEffect(() => {
@@ -653,28 +647,67 @@ const BitcoinHistoricalVolatility = ({ isDashboard = false }) => {
     return `${cursorX - offset - tooltipWidth}px`;
   };
 
+  // Show loading state if data is not available
+  if (!btcData.length) {
+    return (
+      <Box
+        sx={{
+          backgroundColor: colors.primary[400],
+          borderRadius: '12px',
+          padding: '20px',
+          width: '100%',
+          maxWidth: isDashboard ? '100%' : '1400px',
+          margin: '0 auto',
+          boxSizing: 'border-box',
+          display: 'flex',
+          flexDirection: 'column',
+          position: 'relative',
+          height: '100%',
+          boxShadow: isDashboard ? 'none' : `0 4px 12px ${theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.1)'}`,
+          transition: isDashboard ? 'none' : 'transform 0.2s ease-in-out',
+          '&:hover': isDashboard ? {} : {
+            transform: 'translateY(-4px)',
+            boxShadow: `0 6px 16px ${theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.2)'}`,
+          },
+        }}
+      >
+        <Typography variant="h4" color={colors.grey[100]} gutterBottom sx={{ width: '100%', maxWidth: '100%' }}>
+          Bitcoin Historical Volatility
+        </Typography>
+        <Box height="100%" display="flex" alignItems="center" justifyContent="center">
+          <Typography variant="h5" color={colors.grey[100]}>Loading chart data...</Typography>
+        </Box>
+      </Box>
+    );
+  }
+
   return (
-    <Box sx={{
-      backgroundColor: colors.primary[400],
-      borderRadius: '12px',
-      padding: '20px',
-      width: '100%',
-      maxWidth: '1400px',
-      margin: '0 auto',
-      boxSizing: 'border-box',
-      display: 'flex',
-      flexDirection: 'column',
-      position: 'relative',
-      boxShadow: `0 4px 12px ${theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.1)'}`,
-      transition: 'transform 0.2s ease-in-out',
-      '&:hover': {
-        transform: 'translateY(-4px)',
-        boxShadow: `0 6px 16px ${theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.2)'}`,
-      },
-    }}>
-      <Typography variant="h4" color={colors.grey[100]} gutterBottom sx={{ width: '100%', maxWidth: '100%' }}>
-        Bitcoin Historical Volatility
-      </Typography>
+    <Box
+      sx={{
+        backgroundColor: colors.primary[400],
+        borderRadius: isDashboard ? '0px' : '12px',
+        padding: isDashboard ? '10px' : '20px',
+        width: '100%',
+        maxWidth: isDashboard ? '100%' : '1400px',
+        margin: '0 auto',
+        boxSizing: 'border-box',
+        display: 'flex',
+        flexDirection: 'column',
+        position: 'relative',
+        height: '100%',
+        boxShadow: isDashboard ? 'none' : `0 4px 12px ${theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.1)'}`,
+        transition: isDashboard ? 'none' : 'transform 0.2s ease-in-out',
+        '&:hover': isDashboard ? {} : {
+          transform: 'translateY(-4px)',
+          boxShadow: `0 6px 16px ${theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.2)'}`,
+        },
+      }}
+    >
+      {!isDashboard && (
+        <Typography variant="h4" color={colors.grey[100]} gutterBottom sx={{ width: '100%', maxWidth: '100%' }}>
+          Bitcoin Historical Volatility
+        </Typography>
+      )}
       {!isDashboard && (
         <Box
           sx={{
@@ -771,11 +804,9 @@ const BitcoinHistoricalVolatility = ({ isDashboard = false }) => {
         style={{
           position: 'relative',
           height: isDashboard ? '100%' : '60vh',
-          minHeight: isNarrowScreen ? '200px' : '400px',
-          maxHeight: isNarrowScreen ? '300px' : '600px',
           width: '100%',
           maxWidth: '100%',
-          border: '2px solid #a9a9a9',
+          border: isDashboard ? 'none' : '2px solid #a9a9a9',
         }}
       >
         <div
