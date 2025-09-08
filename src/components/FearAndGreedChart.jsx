@@ -120,7 +120,6 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
         fearGreedMap[date] = { value, classification: item.value_classification };
       }
     });
-
     const btcPriceLine = {
       x: btcFormattedData.map(d => d.time),
       y: btcFormattedData.map(d => d.value),
@@ -144,7 +143,6 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
           }
         : undefined,
     };
-
     if (viewMode === 'scatter') {
       const fearGreedGroups = {};
       fearAndGreedData.forEach(item => {
@@ -183,7 +181,6 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
             namelength: -1,
           },
         }));
-
       const btcPriceTooltipGroups = {};
       btcFormattedData.forEach(item => {
         const classification = fearGreedMap[item.time]?.classification || 'Unknown';
@@ -195,7 +192,6 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
           fgClassification: classification === 'Unknown' ? null : classification,
         });
       });
-
       const btcPriceTooltipDatasets = Object.keys(btcPriceTooltipGroups)
         .sort((a, b) => classificationOrder.indexOf(a) - classificationOrder.indexOf(b))
         .map(classification => ({
@@ -221,7 +217,6 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
             namelength: -1,
           },
         }));
-
       return [btcPriceLine, ...btcPriceTooltipDatasets, ...fearGreedDataset];
     } else {
       // Line view: Align BTC and Fear and Greed data by date
@@ -232,7 +227,6 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
           fgValue: fearGreedMap[item.time]?.value ?? null,
         }))
         .filter(d => d.fgValue != null && !isNaN(d.fgValue));
-
       let fgValues = alignedData.map(d => d.fgValue);
       let traceName = 'Fear and Greed Index';
       if (smoothing === 'sma') {
@@ -242,7 +236,6 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
         fgValues = calculateEMA(fgValues, smoothingPeriod);
         traceName = `Fear and Greed (EMA ${smoothingPeriod})`;
       }
-
       const fgLine = {
         x: alignedData.map(d => d.time),
         y: fgValues,
@@ -263,7 +256,6 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
           namelength: -1,
         },
       };
-
       return [btcPriceLine, fgLine];
     }
   }, [btcData, fearAndGreedData, viewMode, smoothing, smoothingPeriod, colors]);
@@ -324,7 +316,6 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
           fgValue: fearGreedMap[item.time]?.value ?? null,
         }))
         .filter(d => d.fgValue != null && !isNaN(d.fgValue));
-
       let yValues = visibleBtcData.map(d => d.value);
       let fgValues = alignedData.map(d => d.fgValue);
       let traceName = 'Fear and Greed Index';
@@ -335,13 +326,11 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
         fgValues = calculateEMA(fgValues, smoothingPeriod);
         traceName = `Fear and Greed (EMA ${smoothingPeriod})`;
       }
-
       const yMin = yValues.length > 0 ? Math.min(...yValues) : 1e-10;
       const yMax = yValues.length > 0 ? Math.max(...yValues) : 1;
       const factor = 1.05;
       const clampedYMin = Math.max(yMin / factor, 1e-10);
       const clampedYMax = yMax * factor;
-
       const update = {
         xaxis: {
           ...baseLayout.xaxis,
@@ -354,7 +343,6 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
           autorange: false,
         },
       };
-
       if (viewMode === 'line' && fgValues.length > 0) {
         const fgMin = Math.min(...fgValues.filter(v => v !== null));
         const fgMax = Math.max(...fgValues.filter(v => v !== null));
@@ -365,7 +353,6 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
           autorange: false,
         };
       }
-
       setLayoutState(update);
     }
   }, [baseLayout, viewMode, btcData, fearAndGreedData, smoothing, smoothingPeriod]);
@@ -378,31 +365,25 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
     }
   }, [datasets]);
 
-  // Handle cursor changes on mousedown/mouseup
+  // Handle double-click to reset chart
+  const handleDoubleClick = useCallback(() => {
+    resetChartView();
+  }, [resetChartView]);
+
+  // Handle cursor changes
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-    const svgContainer = plotRef.current.el.querySelector('.svg-container');
-    if (svgContainer) {
-      svgContainer.style.cursor = 'default';
-    }
-    const handleMouseDown = () => {
-      if (svgContainer) {
-        svgContainer.style.cursor = 'ew-resize';
+    const style = document.createElement('style');
+    style.textContent = `
+      .chart-container .js-plotly-plot .plotly .cursor-ew-resize {
+        cursor: default !important;
       }
-    };
-    const handleMouseUp = () => {
-      if (svgContainer) {
-        svgContainer.style.cursor = 'default';
+      .chart-container .js-plotly-plot .plotly .cursor-ns-resize {
+        cursor: default !important;
       }
-    };
-    container.addEventListener('mousedown', handleMouseDown);
-    container.addEventListener('mouseup', handleMouseUp);
-    container.addEventListener('mouseleave', handleMouseUp);
+    `;
+    document.head.appendChild(style);
     return () => {
-      container.removeEventListener('mousedown', handleMouseDown);
-      container.removeEventListener('mouseup', handleMouseUp);
-      container.removeEventListener('mouseleave', handleMouseUp);
+      document.head.removeChild(style);
     };
   }, []);
 
@@ -563,6 +544,7 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
           useResizeHandler={true}
           style={{ width: '100%', height: '100%' }}
           onRelayout={handleRelayout}
+          onDoubleClick={handleDoubleClick}
           plotly={Plotly}
         />
       </div>
