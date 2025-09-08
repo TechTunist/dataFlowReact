@@ -458,7 +458,7 @@ const BitcoinHistoricalVolatility = ({ isDashboard = false }) => {
   const [currentVolatility, setCurrentVolatility] = useState(null);
   const [timeframe, setTimeframe] = useState('60d');
   const [tooltipData, setTooltipData] = useState(null);
-  const isNarrowScreen = useMediaQuery('(max-width:400px)');
+  const isNarrowScreen = useMediaQuery('(max-width:550px)');
 
   const timeframes = [
     { value: '30d', label: '30 Days', days: 30 },
@@ -592,6 +592,16 @@ const BitcoinHistoricalVolatility = ({ isDashboard = false }) => {
     }
   }, [colors.primary[700], colors.primary[100]]);
 
+  // Update chart dimensions on isNarrowScreen change
+  useEffect(() => {
+    if (chartRef.current && chartContainerRef.current) {
+      chartRef.current.applyOptions({
+        width: chartContainerRef.current.clientWidth,
+        height: chartContainerRef.current.clientHeight,
+      });
+    }
+  }, [isNarrowScreen]);
+
   // Update price series data
   useEffect(() => {
     if (priceSeriesRef.current && btcData.length > 0) {
@@ -656,16 +666,15 @@ const BitcoinHistoricalVolatility = ({ isDashboard = false }) => {
           borderRadius: '12px',
           padding: '20px',
           width: '100%',
-          maxWidth: isDashboard ? '100%' : '1400px',
+          maxWidth: '1400px',
           margin: '0 auto',
           boxSizing: 'border-box',
           display: 'flex',
           flexDirection: 'column',
           position: 'relative',
-          height: '100%',
-          boxShadow: isDashboard ? 'none' : `0 4px 12px ${theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.1)'}`,
-          transition: isDashboard ? 'none' : 'transform 0.2s ease-in-out',
-          '&:hover': isDashboard ? {} : {
+          boxShadow: `0 4px 12px ${theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.1)'}`,
+          transition: 'transform 0.2s ease-in-out',
+          '&:hover': {
             transform: 'translateY(-4px)',
             boxShadow: `0 6px 16px ${theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.2)'}`,
           },
@@ -685,19 +694,18 @@ const BitcoinHistoricalVolatility = ({ isDashboard = false }) => {
     <Box
       sx={{
         backgroundColor: colors.primary[400],
-        borderRadius: isDashboard ? '0px' : '12px',
-        padding: isDashboard ? '10px' : '20px',
+        borderRadius: '12px',
+        padding: '20px',
         width: '100%',
-        maxWidth: isDashboard ? '100%' : '1400px',
+        maxWidth: '1400px',
         margin: '0 auto',
         boxSizing: 'border-box',
         display: 'flex',
         flexDirection: 'column',
         position: 'relative',
-        height: '100%',
-        boxShadow: isDashboard ? 'none' : `0 4px 12px ${theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.1)'}`,
-        transition: isDashboard ? 'none' : 'transform 0.2s ease-in-out',
-        '&:hover': isDashboard ? {} : {
+        boxShadow: `0 4px 12px ${theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.1)'}`,
+        transition: 'transform 0.2s ease-in-out',
+        '&:hover': {
           transform: 'translateY(-4px)',
           boxShadow: `0 6px 16px ${theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.2)'}`,
         },
@@ -804,6 +812,8 @@ const BitcoinHistoricalVolatility = ({ isDashboard = false }) => {
         style={{
           position: 'relative',
           height: isDashboard ? '100%' : '60vh',
+          minHeight: isDashboard ? 'none' : isNarrowScreen ? '200px' : '400px',
+          maxHeight: isDashboard ? 'none' : isNarrowScreen ? '300px' : '600px',
           width: '100%',
           maxWidth: '100%',
           border: isDashboard ? 'none' : '2px solid #a9a9a9',
