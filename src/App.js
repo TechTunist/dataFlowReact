@@ -69,6 +69,7 @@ import SP500ROI from "./components/SP500ROI";
 import SahmRecessionIndicator from './components/SahmRecessionIndicator';
 import MarketHeatIndexChart from './components/MarketHeatIndexPlotly';
 import restrictToPaidSubscription from './scenes/RestrictToPaid';
+import BitcoinMvrvZScore from "./components/BitcoinMvrvZScore";
 
 // Stripe Context
 const StripeContext = createContext(null);
@@ -333,6 +334,14 @@ const AppContent = memo(() => {
                         element={
                           <ProtectedRoute>
                             <BasicChart ChartComponent={MonthlyAverageROI} />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/btc-mvrv-z"
+                        element={
+                          <ProtectedRoute>
+                            <BasicChart ChartComponent={BitcoinMvrvZScore} />
                           </ProtectedRoute>
                         }
                       />
