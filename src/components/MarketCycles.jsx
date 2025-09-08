@@ -256,17 +256,20 @@ const MarketCycles = ({ isDashboard = false }) => {
 
   // Handle chart relayout (e.g., zooming)
   const handleRelayout = (event) => {
-    if (event['xaxis.range[0]']) {
+    if (event['xaxis.range[0]'] && event['xaxis.range[1]']) {
       const newXMin = event['xaxis.range[0]'];
       const newXMax = event['xaxis.range[1]'];
-      const visibleData = cycleDataSets.flatMap(cycle =>
-        cycle.data.filter(d => d.day >= newXMin && d.day <= newXMax)
-      );
+      // Filter data for visible cycles within the zoomed x-axis range
+      const visibleData = cycleDataSets
+        .filter(cycle => seriesVisibility[cycle.shortName] !== false)
+        .flatMap(cycle =>
+          cycle.data.filter(d => d.day >= newXMin && d.day <= newXMax)
+        );
       if (visibleData.length > 0) {
         const yValues = visibleData.map(d => d.roi);
         const yMin = Math.min(...yValues);
         const yMax = Math.max(...yValues);
-        const padding = (yMax - yMin) * 0.1; // 10% padding
+        const padding = (yMax - yMin) * 0.05; // 5% padding for better visualization
         setCurrentLayout(prev => ({
           ...prev,
           xaxis: {
@@ -278,6 +281,7 @@ const MarketCycles = ({ isDashboard = false }) => {
             ...prev.yaxis,
             range: [yMin - padding, yMax + padding],
             autorange: false,
+            fixedrange: true,
           },
         }));
       }
@@ -307,29 +311,18 @@ const MarketCycles = ({ isDashboard = false }) => {
 
   // Handle cursor changes on mousedown/mouseup
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-    const svgContainer = plotRef.current.el.querySelector('.svg-container');
-    if (svgContainer) {
-      svgContainer.style.cursor = 'default';
-    }
-    const handleMouseDown = () => {
-      if (svgContainer) {
-        svgContainer.style.cursor = 'ew-resize';
+    const style = document.createElement('style');
+    style.textContent = `
+      .market-cycles-plot .js-plotly-plot .plotly .cursor-ew-resize {
+        cursor: default !important;
       }
-    };
-    const handleMouseUp = () => {
-      if (svgContainer) {
-        svgContainer.style.cursor = 'default';
+      .market-cycles-plot .js-plotly-plot .plotly .cursor-ns-resize {
+        cursor: default !important;
       }
-    };
-    container.addEventListener('mousedown', handleMouseDown);
-    container.addEventListener('mouseup', handleMouseUp);
-    container.addEventListener('mouseleave', handleMouseUp);
+    `;
+    document.head.appendChild(style);
     return () => {
-      container.removeEventListener('mousedown', handleMouseDown);
-      container.removeEventListener('mouseup', handleMouseUp);
-      container.removeEventListener('mouseleave', handleMouseUp);
+      document.head.removeChild(style);
     };
   }, []);
 
@@ -443,6 +436,7 @@ const MarketCycles = ({ isDashboard = false }) => {
       )}
       <div
         ref={containerRef}
+        className="market-cycles-plot"
         style={{
           height: isDashboard ? '100%' : 'calc(100% - 40px)',
           width: '100%',

@@ -1463,7 +1463,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
     const rsiSeries = chart.addLineSeries({
       priceScaleId: 'left',
       color: 'green',
-      lineWidth: 2,
+      lineWidth: 1,
       priceLineVisible: false,
       visible: false,
     });
