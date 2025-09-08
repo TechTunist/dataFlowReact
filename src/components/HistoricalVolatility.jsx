@@ -366,9 +366,9 @@ const BitcoinHistoricalVolatility = ({ isDashboard = false }) => {
               pointerEvents: 'none',
             }}
           >
-            <div style={{ fontSize: '15px' }}>Bitcoin</div>
+            <div style={{ fontSize: '12px' }}>Bitcoin</div>
             {tooltipData.price && <div style={{ fontSize: '20px' }}>${tooltipData.price.toFixed(2)}</div>}
-            {tooltipData.volatility && <div style={{ color: '#ff0062' }}>Volatility: {tooltipData.volatility.toFixed(1)}%</div>}
+            {tooltipData.volatility && <div style={{ color: '#ff0062', fontSize: '15px' }}>Volatility: {tooltipData.volatility.toFixed(1)}%</div>}
             {tooltipData.date && <div>{tooltipData.date}</div>}
           </div>
         )}

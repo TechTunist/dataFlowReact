@@ -301,7 +301,7 @@ const SplashPage = () => {
       </Box>
 
       {/* Social Proof Section */}
-      <Container maxWidth="lg" sx={{ py: 10, textAlign: 'center' }}>
+      {/* <Container maxWidth="lg" sx={{ py: 10, textAlign: 'center' }}>
         <Typography variant="h2" sx={{ color: colors.grey[100], fontWeight: 'bold', mb: 6, fontSize: { xs: '2.5rem', md: '3rem' } }}>
           Hear From Real Users
         </Typography>
@@ -317,7 +317,6 @@ const SplashPage = () => {
               </Box>
               <Typography sx={{ color: colors.grey[300], mb: 2 }}>"Cryptological provided me with a lot of value for money, compared to other options out there, but the real reason I subscribed was for access to the risk metrics."</Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {/* <img src="/assets/user1-placeholder.png" alt="Peter Andrews." style={{ width: 40, height: 40, borderRadius: '50%', mr: 2 }} /> */}
                 <Typography sx={{ color: colors.grey[400] }}>- Peter A. Crypto Enthusiast</Typography>
               </Box>
             </Card>
@@ -333,7 +332,7 @@ const SplashPage = () => {
               </Box>
               <Typography sx={{ color: colors.grey[300], mb: 2 }}>"The market overview is like nothing I have seen anywhere else. I like to check each metric's colors every morning and open up the charts if I see purple or red to see what's going on."</Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {/* <img src="/assets/user2-placeholder.png" alt="Sarah L." style={{ width: 40, height: 40, borderRadius: '50%', mr: 2 }} /> */}
+                
                 <Typography sx={{ color: colors.grey[400] }}>- Sarah L. Bitcoin Investor</Typography>
               </Box>
             </Card>
@@ -349,13 +348,13 @@ const SplashPage = () => {
               </Box>
               <Typography sx={{ color: colors.grey[300], mb: 2 }}>"The other options with the metrics I wanted were out of my price range for a relatively small portfolio such as mine, but Cryptological offered an affordable option."</Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {/* <img src="/assets/user3-placeholder.png" alt="Mike R." style={{ width: 40, height: 40, borderRadius: '50%', mr: 2 }} /> */}
+                
                 <Typography sx={{ color: colors.grey[400] }}>- Mike R., Newbie Investor</Typography>
               </Box>
             </Card>
           </Grid>
         </Grid>
-      </Container>
+      </Container> */}
 
       <Box sx={{ width: '100%', py: 10, backgroundColor: colors.primary[800] }}>
   <Container maxWidth="lg" sx={{ textAlign: 'center' }}>
@@ -617,7 +616,8 @@ const SplashPage = () => {
         }}
       >
         <Typography>
-          © {new Date().getFullYear()} Cryptological. All rights reserved. | <Link to="/privacy" style={{ color: colors.grey[300] }}>Privacy Policy</Link> | <Link to="/terms" style={{ color: colors.grey[300] }}>Terms of Service</Link>
+          © {new Date().getFullYear()} Cryptological. All rights reserved.
+          {/* © {new Date().getFullYear()} Cryptological. All rights reserved. | <Link to="/privacy" style={{ color: colors.grey[300] }}>Privacy Policy</Link> | <Link to="/terms" style={{ color: colors.grey[300] }}>Terms of Service</Link> */}
         </Typography>
       </Box>
     </Box>
