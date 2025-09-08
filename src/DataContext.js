@@ -1039,10 +1039,13 @@ export const DataProvider = ({ children }) => {
       apiUrl: `${API_BASE_URL}/tx-mvrv/`,
       formatData: (data) =>
         data
+          .filter(item => item.date && item.mvrv !== null && !isNaN(parseFloat(item.mvrv)))
           .map((item) => ({
             time: item.date,
             tx_count: parseFloat(item.tx_count),
             mvrv: parseFloat(item.mvrv),
+            market_cap: item.market_cap !== null ? parseFloat(item.market_cap) : null,
+            realized_cap: item.realized_cap !== null ? parseFloat(item.realized_cap) : null,
           }))
           .sort((a, b) => new Date(a.time) - new Date(b.time)),
       setData: setTxMvrvData,
