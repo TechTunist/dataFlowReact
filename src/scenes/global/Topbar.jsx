@@ -86,6 +86,7 @@ const routeToChartId = {
   "/fred/german-bond-yield": "fred-german-bond-yield",
   "/workbench": "workbench",
   "/sp500-roi": "sp500-roi",
+  "/btc-mvrv-z":"mvrv-zscore",
 };
 
 const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
@@ -312,6 +313,8 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
         return { title: "Sahm Rule", subtitle: isMobile ? "Recession Indicator" : "Recession Indicator" };
       case "/charts":
         return { title: "Charts", subtitle: "All available charts on Cryptological" };
+      case "/btc-mvrv-z":
+        return { title: "Bitcoin MVRV Z-Score", subtitle: isMobile ? "Identify extreme conditions" : "Demonstrates the relationship between market value and realised value" };
       default:
         return { title: "CryptoLogical", subtitle: "" };
     }

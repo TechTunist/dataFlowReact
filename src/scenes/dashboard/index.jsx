@@ -42,6 +42,7 @@ import AltcoinSeasonIndexChart from "../../components/AltcoinSeasonIndexChart";
 import FredSeriesChart from "../../components/FredSeriesChart";
 import WorkbenchChart from "../../components/Workbench";
 import SP500ROI from "../../components/SP500ROI";
+import BitcoinMvrvZScoreChart from "../../components/BitcoinMvrvZScore";
 
 const chartConfig = [
   { id: "bitcoin-20-ext", title: "Bitcoin 20 Week Extension", linkTo: "/btc-20-ext", component: (props) => <Bitcoin20WeekExtension isDashboard={true} {...props} />, description: "Bitcoin price with 20-week extension analysis." },
@@ -57,6 +58,7 @@ const chartConfig = [
   { id: "bitcoin-address-balances", title: "Bitcoin Address Balances", linkTo: "/btc-add-balance", component: (props) => <BitcoinAddressBalancesChart isDashboard={true} {...props} />, description: "Bitcoin address balances over time." },
   { id: "ethereum-price", title: "Ethereum Price", linkTo: "/ethereum", component: (props) => <EthereumPrice isDashboard={true} {...props} />, description: "A simple chart of the entire Ethereum daily close price history." },
   { id: "puell-multiple", title: "Puell Multiple", linkTo: "/puell-multiple", component: (props) => <PuellMultiple isDashboard={true} {...props} />, description: "Puell Multiple indicator for Bitcoin mining." },
+  { id: "mvrv-zscore", title: "Bitcoin Mvrv Z-Score", linkTo: "/btc-mvrv-z", component: (props) => <BitcoinMvrvZScoreChart isDashboard={true} {...props} />, description: "Pick out extremes between the market value and realised value of Bitcoin." },
   { id: "bitcoin-risk", title: "Bitcoin Risk Metric", linkTo: "/risk", component: (props) => <BitcoinRisk isDashboard={true} {...props} />, description: "The risk metric demonstrates the risk of holding bitcoin at any given time." },
   { id: "ethereum-risk", title: "Ethereum Risk Metric", linkTo: "/risk-eth", component: (props) => <EthereumRisk isDashboard={true} {...props} />, description: "The risk metric demonstrates the risk of holding Eth at any given time." },
   { id: "pi-cycle-top", title: "PiCycle Top Indicator", linkTo: "/pi-cycle", component: (props) => <PiCycleTop isDashboard={true} {...props} />, description: "The PiCycle Top Indicator for Bitcoin market tops." },

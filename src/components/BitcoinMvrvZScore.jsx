@@ -15,16 +15,8 @@ const BitcoinMvrvZScoreChart = ({ isDashboard = false, txMvrvData: propTxMvrvDat
   const chartRef = useRef(null);
   const zScoreSeriesRef = useRef(null);
   const priceSeriesRef = useRef(null);
-  const marketCapSeriesRef = useRef(null);
-  const realizedCapSeriesRef = useRef(null);
   const [tooltipData, setTooltipData] = useState(null);
   const [isInteractive, setIsInteractive] = useState(false);
-  const [visibleSeries, setVisibleSeries] = useState({
-    zScore: true,
-    price: true,
-    marketCap: false,
-    realizedCap: false,
-  });
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const isMobile = useIsMobile();
@@ -32,23 +24,29 @@ const BitcoinMvrvZScoreChart = ({ isDashboard = false, txMvrvData: propTxMvrvDat
   const txMvrvData = propTxMvrvData || contextTxMvrvData;
   const isNarrowScreen = useMediaQuery('(max-width:600px)');
 
-  // Calculate Z-Score for a given key
-  const calculateZScore = (data, key) => {
-    const values = data.map(item => item[key]).filter(v => v !== null && !isNaN(v));
-    if (values.length === 0) {
-      console.warn(`No valid data for ${key} in calculateZScore`);
-      return [];
+  // Calculate running MVRV Z-Score as (marketCap - realizedCap) / running std(marketCap)
+  const calculateMvrvZScore = (data) => {
+    const minWindow = 365; // Minimum number of data points required to start calculating Z-Score
+    const sorted = data.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
+    const zScores = [];
+    const pastMarkets = [];
+    for (const item of sorted) {
+      const mc = item.market_cap;
+      const rc = item.realized_cap;
+      if (mc === null || isNaN(mc) || rc === null || isNaN(rc)) continue;
+      pastMarkets.push(mc);
+      if (pastMarkets.length < 2) continue;
+      const mean = pastMarkets.reduce((sum, v) => sum + v, 0) / pastMarkets.length;
+      const variance = pastMarkets.reduce((sum, v) => sum + (v - mean) ** 2, 0) / pastMarkets.length;
+      const std = Math.sqrt(variance);
+      if (std === 0) continue;
+      const diff = mc - rc;
+      const z = diff / std;
+      if (pastMarkets.length >= minWindow) {
+        zScores.push({ time: item.time, value: z });
+      }
     }
-    const mean = values.reduce((sum, v) => sum + v, 0) / values.length;
-    const variance = values.reduce((sum, v) => sum + (v - mean) ** 2, 0) / values.length;
-    const std = Math.sqrt(variance);
-    const zScores = data
-      .map(item => ({
-        time: item.time,
-        value: item[key] !== null && !isNaN(item[key]) && std !== 0 ? (item[key] - mean) / std : null,
-      }))
-      .filter(item => item.value !== null);
-    console.debug(`Calculated Z-Scores for ${key}:`, zScores);
+    console.debug('Calculated MVRV Z-Scores:', zScores);
     return zScores;
   };
 
@@ -56,34 +54,17 @@ const BitcoinMvrvZScoreChart = ({ isDashboard = false, txMvrvData: propTxMvrvDat
     'z-score': {
       color: theme.palette.mode === 'dark' ? 'rgba(255, 99, 71, 1)' : 'rgba(0, 128, 0, 1)',
       label: 'MVRV Z-Score',
-      description: 'Z-Score of the MVRV ratio, showing standardized deviations from its historical mean.',
+      description: 'Calculated as (Market Cap - Realized Cap) / running Std Dev of Market Cap, identifying extremes in valuation.',
     },
     'price': {
       color: 'gray',
       label: 'Bitcoin Price',
       description: 'The price of Bitcoin over time.',
     },
-    'marketCap': {
-      color: theme.palette.mode === 'dark' ? 'rgba(0, 191, 255, 1)' : 'rgba(0, 0, 255, 1)',
-      label: 'Market Cap Z-Score',
-      description: 'Z-Score of the market capitalization, showing standardized deviations from its historical mean.',
-    },
-    'realizedCap': {
-      color: theme.palette.mode === 'dark' ? 'rgba(255, 215, 0, 1)' : 'rgba(255, 165, 0, 1)',
-      label: 'Realized Cap Z-Score',
-      description: 'Z-Score of the realized capitalization, showing standardized deviations from its historical mean.',
-    },
   });
 
   const setInteractivity = () => {
     setIsInteractive(prev => !prev);
-  };
-
-  const toggleSeries = (seriesKey) => {
-    setVisibleSeries(prev => ({
-      ...prev,
-      [seriesKey]: !prev[seriesKey]
-    }));
   };
 
   const resetChartView = () => {
@@ -100,12 +81,10 @@ const BitcoinMvrvZScoreChart = ({ isDashboard = false, txMvrvData: propTxMvrvDat
   useEffect(() => {
     console.debug('txMvrvData:', txMvrvData);
     console.debug('btcData:', btcData);
-
     if (txMvrvData.length === 0 || btcData.length === 0) {
       console.warn('No data available: txMvrvData or btcData is empty');
       return;
     }
-
     const cutoffDate = new Date('2011-04-16');
     const filteredTxMvrvData = txMvrvData.filter(
       item => {
@@ -115,15 +94,12 @@ const BitcoinMvrvZScoreChart = ({ isDashboard = false, txMvrvData: propTxMvrvDat
       }
     );
     const filteredBtcData = btcData.filter(item => new Date(item.time) >= cutoffDate);
-
     console.debug('filteredTxMvrvData:', filteredTxMvrvData);
     console.debug('filteredBtcData:', filteredBtcData);
-
     if (filteredTxMvrvData.length === 0 || filteredBtcData.length === 0) {
       console.warn('No valid data after filtering');
       return;
     }
-
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
       height: chartContainerRef.current.clientHeight,
@@ -141,19 +117,17 @@ const BitcoinMvrvZScoreChart = ({ isDashboard = false, txMvrvData: propTxMvrvDat
       handleScroll: isInteractive && !isDashboard,
       handleScale: isInteractive && !isDashboard,
       leftPriceScale: {
-        mode: 0,
-        borderVisible: false,
-      },
-      rightPriceScale: {
         mode: 1,
         borderVisible: false,
       },
+      rightPriceScale: {
+        mode: 0,
+        borderVisible: false,
+      },
     });
-
-    chart.priceScale('left').applyOptions({ mode: 0, borderVisible: false });
-    chart.priceScale('right').applyOptions({ mode: 1, borderVisible: false });
+    chart.priceScale('left').applyOptions({ mode: 1, borderVisible: false });
+    chart.priceScale('right').applyOptions({ mode: 0, borderVisible: false });
     chart.timeScale().fitContent();
-
     chart.subscribeCrosshairMove(param => {
       if (
         !param.point ||
@@ -168,20 +142,15 @@ const BitcoinMvrvZScoreChart = ({ isDashboard = false, txMvrvData: propTxMvrvDat
         const dateStr = param.time;
         const zScoreData = param.seriesData.get(zScoreSeriesRef.current);
         const priceData = param.seriesData.get(priceSeriesRef.current);
-        const marketCapData = param.seriesData.get(marketCapSeriesRef.current);
-        const realizedCapData = param.seriesData.get(realizedCapSeriesRef.current);
         setTooltipData({
           date: dateStr,
           zScore: zScoreData?.value,
           price: priceData?.value,
-          marketCap: marketCapData?.value,
-          realizedCap: realizedCapData?.value,
           x: param.point.x,
           y: param.point.y,
         });
       }
     });
-
     const resizeChart = () => {
       if (chart && chartContainerRef.current) {
         chart.applyOptions({
@@ -191,74 +160,41 @@ const BitcoinMvrvZScoreChart = ({ isDashboard = false, txMvrvData: propTxMvrvDat
       }
     };
     window.addEventListener('resize', resizeChart);
-
     const lightThemeColors = {
       zScore: { lineColor: 'rgba(0, 128, 0, 1)' },
       price: { lineColor: 'gray' },
-      marketCap: { lineColor: 'rgba(0, 0, 255, 1)' },
-      realizedCap: { lineColor: 'rgba(255, 165, 0, 1)' },
     };
     const darkThemeColors = {
       zScore: { lineColor: 'rgba(255, 99, 71, 1)' },
       price: { lineColor: 'gray' },
-      marketCap: { lineColor: 'rgba(0, 191, 255, 1)' },
-      realizedCap: { lineColor: 'rgba(255, 215, 0, 1)' },
     };
-    const { zScore: zScoreColors, price: priceColors, marketCap: marketCapColors, realizedCap: realizedCapColors } =
+    const { zScore: zScoreColors, price: priceColors } =
       theme.palette.mode === 'dark' ? darkThemeColors : lightThemeColors;
-
     // Bitcoin Price Series
     const priceSeries = chart.addLineSeries({
-      priceScaleId: 'right',
+      priceScaleId: 'left',
       color: priceColors.lineColor,
       lineWidth: 0.7,
       priceFormat: {
         type: 'custom',
         formatter: value => (value >= 1000 ? (value / 1000).toFixed(0) + 'k' : value.toFixed(0)),
       },
-      visible: visibleSeries.price,
+      visible: true,
     });
     priceSeriesRef.current = priceSeries;
     priceSeries.setData(filteredBtcData.map(data => ({ time: data.time, value: data.value })));
-
     // MVRV Z-Score Series
-    const zScoreData = calculateZScore(filteredTxMvrvData, 'mvrv');
+    const zScoreData = calculateMvrvZScore(filteredTxMvrvData);
     const zScoreSeries = chart.addLineSeries({
-      priceScaleId: 'left',
+      priceScaleId: 'right',
       color: zScoreColors.lineColor,
       lineWidth: 2,
       priceFormat: { type: 'price', precision: 2, minMove: 0.01 },
-      visible: visibleSeries.zScore,
+      visible: true,
     });
     zScoreSeriesRef.current = zScoreSeries;
     zScoreSeries.setData(zScoreData);
-
-    // Market Cap Z-Score Series
-    const marketCapZScoreData = calculateZScore(filteredTxMvrvData, 'market_cap');
-    const marketCapSeries = chart.addLineSeries({
-      priceScaleId: 'left',
-      color: marketCapColors.lineColor,
-      lineWidth: 2,
-      priceFormat: { type: 'price', precision: 2, minMove: 0.01 },
-      visible: visibleSeries.marketCap,
-    });
-    marketCapSeriesRef.current = marketCapSeries;
-    marketCapSeries.setData(marketCapZScoreData);
-
-    // Realized Cap Z-Score Series
-    const realizedCapZScoreData = calculateZScore(filteredTxMvrvData, 'realized_cap');
-    const realizedCapSeries = chart.addLineSeries({
-      priceScaleId: 'left',
-      color: realizedCapColors.lineColor,
-      lineWidth: 2,
-      priceFormat: { type: 'price', precision: 2, minMove: 0.01 },
-      visible: visibleSeries.realizedCap,
-    });
-    realizedCapSeriesRef.current = realizedCapSeries;
-    realizedCapSeries.setData(realizedCapZScoreData);
-
     chartRef.current = chart;
-
     // Handle cursor styling
     const container = chartContainerRef.current;
     if (container) {
@@ -275,7 +211,7 @@ const BitcoinMvrvZScoreChart = ({ isDashboard = false, txMvrvData: propTxMvrvDat
         window.removeEventListener('resize', resizeChart);
       };
     }
-  }, [txMvrvData, btcData, isDashboard, theme.palette.mode, visibleSeries]);
+  }, [txMvrvData, btcData, isDashboard, theme.palette.mode]);
 
   useEffect(() => {
     if (chartRef.current) {
@@ -283,12 +219,8 @@ const BitcoinMvrvZScoreChart = ({ isDashboard = false, txMvrvData: propTxMvrvDat
         handleScroll: isInteractive && !isDashboard,
         handleScale: isInteractive && !isDashboard,
       });
-      zScoreSeriesRef.current.applyOptions({ visible: visibleSeries.zScore });
-      priceSeriesRef.current.applyOptions({ visible: visibleSeries.price });
-      marketCapSeriesRef.current.applyOptions({ visible: visibleSeries.marketCap });
-      realizedCapSeriesRef.current.applyOptions({ visible: visibleSeries.realizedCap });
     }
-  }, [isInteractive, isDashboard, visibleSeries]);
+  }, [isInteractive, isDashboard]);
 
   const indicators = getIndicators();
 
@@ -324,7 +256,7 @@ const BitcoinMvrvZScoreChart = ({ isDashboard = false, txMvrvData: propTxMvrvDat
           border: '2px solid #a9a9a9',
           zIndex: 1,
         }}
-        onDoubleClick={resetChartView}
+        onDoubleClick={setInteractivity}
       >
         <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
         {!isDashboard && (
@@ -344,15 +276,14 @@ const BitcoinMvrvZScoreChart = ({ isDashboard = false, txMvrvData: propTxMvrvDat
             {Object.entries(indicators).map(([key, { label, color }]) => (
               <div
                 key={key}
-                style={{ display: 'flex', alignItems: 'center', marginTop: '5px', cursor: 'pointer' }}
-                onClick={() => toggleSeries(key)}
+                style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}
               >
                 <span
                   style={{
                     display: 'inline-block',
                     width: '10px',
                     height: '10px',
-                    backgroundColor: visibleSeries[key] ? color : 'grey',
+                    backgroundColor: color,
                     marginRight: '5px',
                   }}
                 />
@@ -370,9 +301,9 @@ const BitcoinMvrvZScoreChart = ({ isDashboard = false, txMvrvData: propTxMvrvDat
       </div>
       {!isDashboard && (
         <Box sx={{ margin: '10px 0', color: colors.grey[100] }}>
-          {Object.entries(indicators).map(([key, { label, color, description }]) => (
+          {Object.entries(indicators).filter(([key]) => key === 'z-score').map(([key, { label, color, description }]) => (
             <p key={key} style={{ margin: '5px 0' }}>
-              <strong style={{ color: visibleSeries[key] ? color : 'grey' }}>{label}:</strong> {description}
+              <strong style={{ color: color }}>{label}:</strong> {description}
             </p>
           ))}
         </Box>
@@ -404,23 +335,17 @@ const BitcoinMvrvZScoreChart = ({ isDashboard = false, txMvrvData: propTxMvrvDat
           <div style={{ color: indicators['z-score'].color }}>
             MVRV Z-Score: {tooltipData.zScore?.toFixed(2) ?? 'N/A'}
           </div>
-          <div style={{ color: indicators['marketCap'].color }}>
-            Market Cap Z-Score: {tooltipData.marketCap?.toFixed(2) ?? 'N/A'}
-          </div>
-          <div style={{ color: indicators['realizedCap'].color }}>
-            Realized Cap Z-Score: {tooltipData.realizedCap?.toFixed(2) ?? 'N/A'}
-          </div>
           <div>{tooltipData.date?.toString()}</div>
         </div>
       )}
       {!isDashboard && (
         <p className='chart-info'>
-          The Bitcoin Price & MVRV Z-Score chart shows the Bitcoin price, MVRV Z-Score, Market Cap Z-Score, and Realized Cap Z-Score starting from April 16th, 2011, illustrating price trends and standardized valuation deviations.
+          The Bitcoin Price & MVRV Z-Score chart shows the Bitcoin price and MVRV Z-Score starting from April 16th, 2011, illustrating price trends and standardized valuation deviations. The MVRV Z-Score is only calculated and displayed after at least 365 data points to avoid initial instability due to small sample size.
           <br />
           <br />
-          This chart shows the Bitcoin price and Z-Scores of MVRV, Market Cap, and Realized Cap, providing a snapshot of how Bitcoin’s value and standardized metrics interact over time.
-          The MVRV (market value to realized value) Z-Score is the standardized deviation of the MVRV ratio from its historical mean, where high positive values may indicate overvaluation and negative values undervaluation.
-          Similarly, Market Cap and Realized Cap Z-Scores show standardized deviations of market and realized capitalization.
+          This chart shows the Bitcoin price and MVRV Z-Score, providing a snapshot of how Bitcoin’s value and standardized metrics interact over time.
+          The MVRV Z-Score is the relative indicator, which is the circulating market value of Bitcoin minus the realized market value, standardized by the running standard deviation of the circulating market value up to that point.
+          When this indicator is too high, it means that the market value of Bitcoin is overvalued relative to its actual value; otherwise, it means undervaluation.
           <br /><br /><br />
         </p>
       )}

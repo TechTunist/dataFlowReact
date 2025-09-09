@@ -140,6 +140,7 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
     { title: "Bitcoin On-chain Risk", to: "/on-chain-historical-risk", category: "Risk", icon: <HistoryIcon />, categoryIcon: <WarningIcon /> },
     { title: "BTC Transactions to MVRV", to: "/tx-mvrv", category: "On Chain Data", icon: <AssessmentIcon />, categoryIcon: <LinkIcon /> },
     { title: "Puell Multiple", to: "/puell-multiple", category: "On Chain Data", icon: <AssessmentIcon />, categoryIcon: <LinkIcon /> },
+    { title: "MVRV Z-Score", to: "/btc-mvrv-z", category: "On Chain Data", icon: <AssessmentIcon />, categoryIcon: <LinkIcon /> },
     { title: "US Inflation Chart", to: "/us-inflation", category: "Macro Basic Charts", icon: <PriceChangeIcon />, categoryIcon: <AssessmentIcon /> },
     { title: "US Interest Rate Chart", to: "/us-interest", category: "Macro Basic Charts", icon: <PercentIcon />, categoryIcon: <AssessmentIcon /> },
     { title: "US Initial Claims", to: "/us-initial-claims", category: "Macro Basic Charts", icon: <AssignmentIcon />, categoryIcon: <AssessmentIcon /> },
