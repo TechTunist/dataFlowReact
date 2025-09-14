@@ -22,11 +22,10 @@ import { tokens } from '../theme';
 import { DataContext } from '../DataContext';
 import useIsMobile from '../hooks/useIsMobile';
 import { getBitcoinRisk, saveRoiData, getRoiData, clearRoiData, saveBitcoinRisk } from '../utility/idbUtils';
-import InfoIcon from '@mui/icons-material/Info'; 
+import InfoIcon from '@mui/icons-material/Info';
 import ShowChartIcon from '@mui/icons-material/ShowChart';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import { saveCycleDaysData, getCycleDaysData } from '../utility/idbUtils';
-
 const calculateRiskMetric = (data) => {
   const movingAverage = data.map((item, index) => {
     const start = Math.max(index - 373, 0);
@@ -47,11 +46,8 @@ const calculateRiskMetric = (data) => {
   }));
   return normalizedRisk;
 };
-
-
 // Wrap GridLayout with WidthProvider for responsiveness
 const ResponsiveGridLayout = WidthProvider(Responsive);
-
 const InfoOverlay = ({ explanation, isVisible, borderColor }) => (
   <Box
     sx={{
@@ -87,7 +83,6 @@ const InfoOverlay = ({ explanation, isVisible, borderColor }) => (
     </Typography>
   </Box>
 );
-
 // Define MarketOverview component
 const MarketOverview = memo(() => {
   const theme = useTheme();
@@ -115,7 +110,6 @@ const MarketOverview = memo(() => {
   // Fetch all data and manage loading state
   useEffect(() => {
     let isMounted = true;
-
     const fetchAllData = async () => {
       try {
         setIsLoading(true);
@@ -137,9 +131,7 @@ const MarketOverview = memo(() => {
         }
       }
     };
-
     fetchAllData();
-
     return () => {
       isMounted = false;
     };
@@ -152,11 +144,9 @@ const MarketOverview = memo(() => {
     fetchMvrvData,
     fetchAltcoinSeasonData,
   ]);
-
   // Define breakpoints and columns for different screen sizes
   const breakpoints = { lg: 1200, md: 996, sm: 768, xs: 480 };
   const cols = { lg: 12, md: 8, sm: 6, xs: 4 };
-
   // Responsive layouts for each section
   const priceLayouts = {
     lg: [
@@ -184,7 +174,6 @@ const MarketOverview = memo(() => {
       { i: 'marketCap', x: 0, y: 6, w: 4, h: 2, minW: 2, minH: 2 }, // Moved to fourth row (y: 6)
     ],
   };
-
   const indicatorsLayouts = {
     lg: [
       { i: 'inflation', x: 0, y: 0, w: 6, h: 2, minW: 2, minH: 2 },
@@ -203,14 +192,12 @@ const MarketOverview = memo(() => {
       { i: 'marketCap', x: 0, y: 2, w: 4, h: 2, minW: 2, minH: 2 },
     ],
   };
-
   const sentimentLayouts = {
     lg: [{ i: 'fearAndGreed', x: 0, y: 0, w: 12, h: 2, minW: 4, minH: 2 }],
     md: [{ i: 'fearAndGreed', x: 0, y: 0, w: 8, h: 2, minW: 4, minH: 2 }],
     sm: [{ i: 'fearAndGreed', x: 0, y: 0, w: 6, h: 2, minW: 4, minH: 2 }],
     xs: [{ i: 'fearAndGreed', x: 0, y: 0, w: 4, h: 2, minW: 4, minH: 2 }],
   };
-
   const sentimentIndexesLayouts = {
     lg: [
       { i: 'fearAndGreed', x: 0, y: 0, w: 4, h: 2, minW: 4, minH: 2 },
@@ -233,7 +220,6 @@ const MarketOverview = memo(() => {
       { i: 'altcoinSeason', x: 0, y: 4, w: 4, h: 2, minW: 4, minH: 2 },
     ],
   };
-
   const onChainLayouts = {
     lg: [
       { i: 'bitcoinRisk', x: 0, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
@@ -241,6 +227,7 @@ const MarketOverview = memo(() => {
       { i: 'mayerMultiple', x: 6, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
       { i: 'piCycleTop', x: 9, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
       { i: 'roiCycleComparison', x: 0, y: 2, w: 3, h: 2, minW: 2, minH: 2 },
+      { i: 'dailyRsi', x: 3, y: 2, w: 3, h: 2, minW: 2, minH: 2 },
     ],
     md: [
       { i: 'bitcoinRisk', x: 0, y: 0, w: 4, h: 2, minW: 2, minH: 2 },
@@ -248,6 +235,7 @@ const MarketOverview = memo(() => {
       { i: 'mayerMultiple', x: 0, y: 2, w: 4, h: 2, minW: 2, minH: 2 },
       { i: 'piCycleTop', x: 4, y: 2, w: 4, h: 2, minW: 2, minH: 2 },
       { i: 'roiCycleComparison', x: 0, y: 4, w: 4, h: 2, minW: 2, minH: 2 },
+      { i: 'dailyRsi', x: 4, y: 4, w: 4, h: 2, minW: 2, minH: 2 },
     ],
     sm: [
       { i: 'bitcoinRisk', x: 0, y: 0, w: 6, h: 2, minW: 2, minH: 2 },
@@ -255,6 +243,7 @@ const MarketOverview = memo(() => {
       { i: 'mayerMultiple', x: 0, y: 4, w: 6, h: 2, minW: 2, minH: 2 },
       { i: 'piCycleTop', x: 0, y: 6, w: 6, h: 2, minW: 2, minH: 2 },
       { i: 'roiCycleComparison', x: 0, y: 8, w: 6, h: 2, minW: 2, minH: 2 },
+      { i: 'dailyRsi', x: 0, y: 10, w: 6, h: 2, minW: 2, minH: 2 },
     ],
     xs: [
       { i: 'bitcoinRisk', x: 0, y: 0, w: 4, h: 2, minW: 2, minH: 2 },
@@ -262,23 +251,21 @@ const MarketOverview = memo(() => {
       { i: 'mayerMultiple', x: 0, y: 4, w: 4, h: 2, minW: 2, minH: 2 },
       { i: 'piCycleTop', x: 0, y: 6, w: 4, h: 2, minW: 2, minH: 2 },
       { i: 'roiCycleComparison', x: 0, y: 8, w: 4, h: 2, minW: 2, minH: 2 },
+      { i: 'dailyRsi', x: 0, y: 10, w: 4, h: 2, minW: 2, minH: 2 },
     ],
   };
-
   const overallConditionsLayouts = {
     lg: [{ i: 'marketHeat', x: 0, y: 0, w: 12, h: 2, minW: 4, minH: 2 }],
     md: [{ i: 'marketHeat', x: 0, y: 0, w: 8, h: 2, minW: 4, minH: 2 }],
     sm: [{ i: 'marketHeat', x: 0, y: 0, w: 6, h: 2, minW: 4, minH: 2 }],
     xs: [{ i: 'marketHeat', x: 0, y: 0, w: 4, h: 2, minW: 4, minH: 2 }],
   };
-
   const altcoinSeasonLayouts = {
     lg: [{ i: 'altcoinSeason', x: 0, y: 0, w: 12, h: 2, minW: 4, minH: 2 }],
     md: [{ i: 'altcoinSeason', x: 0, y: 0, w: 8, h: 2, minW: 4, minH: 2 }],
     sm: [{ i: 'altcoinSeason', x: 0, y: 0, w: 6, h: 2, minW: 4, minH: 2 }],
     xs: [{ i: 'altcoinSeason', x: 0, y: 0, w: 4, h: 2, minW: 4, minH: 2 }],
   };
-
   const cycleLengthLayouts = {
   lg: [
     { i: 'daysLeftLow', x: 0, y: 0, w: 4, h: 2, minW: 2, minH: 2 },
@@ -301,7 +288,6 @@ const MarketOverview = memo(() => {
     { i: 'daysLeftPeak', x: 0, y: 4, w: 4, h: 2, minW: 2, minH: 2 },
   ],
 };
-
   // State for grid layouts
   const [priceLayout, setPriceLayout] = useState(priceLayouts);
   const [indicatorsLayout, setIndicatorsLayout] = useState(indicatorsLayouts);
@@ -311,35 +297,9 @@ const MarketOverview = memo(() => {
   const [altcoinSeasonLayout, setAltcoinSeasonLayout] = useState(altcoinSeasonLayouts);
   const [sentimentIndexesLayout, setSentimentIndexesLayout] = useState(sentimentIndexesLayouts);
   const [cycleLengthLayout, setCycleLengthLayout] = useState(cycleLengthLayouts);
-
-  // useEffect(() => {
-  //   console.log('MarketOverview mounted');
-  //   return () => console.log('MarketOverview unmounted');
-  // }, []);
-
-  // Fetch data on mount
-  // useEffect(() => {
-  //   fetchBtcData();
-  //   fetchEthData();
-  //   fetchFearAndGreedData();
-  //   fetchInflationData();
-  //   fetchMarketCapData();
-  //   fetchMvrvData();
-  //   fetchAltcoinSeasonData();
-  // }, [
-  //   fetchBtcData,
-  //   fetchEthData,
-  //   fetchFearAndGreedData,
-  //   fetchInflationData,
-  //   fetchMarketCapData,
-  //   fetchMvrvData,
-  //   fetchAltcoinSeasonData,
-  // ]);
-
   // Responsive row height and margin
   const rowHeight = isMobile ? 100 : 120;
   const margin = isMobile ? [8, 8] : [16, 16];
-
   // Calculate SMA
   const calculateSMA = (data, windowSize) => {
     if (!data || data.length < windowSize) return [];
@@ -353,7 +313,6 @@ const MarketOverview = memo(() => {
     }
     return sma;
   };
-
   // Calculate PiCycle Ratio
   const calculateRatioSeries = (data) => {
     if (!data || data.length < 350) return [];
@@ -369,7 +328,6 @@ const MarketOverview = memo(() => {
     }
     return ratioData;
   };
-
   // Calculate MVRV peak projection
   const calculateMvrvPeakProjection = useCallback((mvrvData) => {
     // Smooth MVRV data with a 30-day SMA to reduce noise for better peak detection
@@ -385,7 +343,7 @@ const MarketOverview = memo(() => {
         value: sum / smoothPeriod,
       });
     }
-  
+ 
     const peaks = [];
     const window = 365; // 1-year window for cycle-level peak detection
     for (let i = window; i < smoothedMvrv.length - window; i++) {
@@ -408,7 +366,6 @@ const MarketOverview = memo(() => {
     const projectedPeak = latestPeak ? latestPeak.value * (1 - avgDecrease) : null;
     return { peaks, projectedPeak };
   }, []);
-
   // Calculate Mayer Multiple
   const calculateMayerMultiple = (data) => {
     if (!data || data.length < 200) return [];
@@ -427,21 +384,17 @@ const MarketOverview = memo(() => {
     }
     return mayerMultiples;
   };
-
-  
-
+ 
   // Gauge colors
   const gaugeColors = [
     '#4BC0C8', '#33D1FF', '#66A3FF', '#9996FF', '#CC89FF',
     '#FF7DFF', '#FF61C3', '#FF4590', '#FF295D', '#FF0033', '#FF0033',
   ];
-
   // Color and description mapping
   const getBackgroundColor = (value) => {
     const index = Math.min(Math.floor((value / 100) * gaugeColors.length), gaugeColors.length - 1);
     return gaugeColors[index];
   };
-
   const getHeatDescription = (value) => {
     if (value <= 30) return 'Cold';
     if (value <= 50) return 'Cool';
@@ -449,7 +402,6 @@ const MarketOverview = memo(() => {
     if (value <= 85) return 'Warm';
     return 'Hot';
   };
-
   // Text color based on background luminance
   const getTextColor = (bgColor) => {
     const hex = bgColor.replace('#', '');
@@ -461,7 +413,6 @@ const MarketOverview = memo(() => {
       ? (theme.palette.mode === 'dark' ? colors.grey[900] : colors.grey[100])
       : (theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900]);
   };
-
   // Altcoin Season Widget
   const AltcoinSeasonWidget = memo(() => {
     const theme = useTheme();
@@ -591,13 +542,12 @@ const MarketOverview = memo(() => {
         )}
         <InfoOverlay
           isVisible={isInfoVisible}
-          explanation="The Altcoin Season Index measures the performance of altcoins relative to Bitcoin. A higher value (closer to 100) indicates an altcoin season, where altcoins outperform Bitcoin. It’s calculated based on the percentage of altcoins outperforming Bitcoin over a specific period."
+          explanation="The Altcoin Season Index measures the performance of altcoins relative to Bitcoin. A higher value (closer to 100) indicates an altcoin season, where altcoins outperform Bitcoin over a specific period."
           borderColor={backgroundColor}
         />
       </Box>
     );
   });
-
   // Loading UI
   if (isLoading) {
     return (
@@ -618,7 +568,6 @@ const MarketOverview = memo(() => {
       </Box>
     );
   }
-
   // Error UI
   if (error) {
     return (
@@ -638,7 +587,6 @@ const MarketOverview = memo(() => {
       </Box>
     );
   }
-
 // New RoiCycleComparisonWidget
 const RoiCycleComparisonWidget = memo(() => {
   const [currentRoi, setCurrentRoi] = useState(null);
@@ -647,11 +595,9 @@ const RoiCycleComparisonWidget = memo(() => {
   const [heatScore, setHeatScore] = useState(null);
   const [currentDays, setCurrentDays] = useState(null);
   const { btcData } = useContext(DataContext);
-
   useEffect(() => {
     const calculateRoiData = async () => {
       if (!btcData || btcData.length === 0) return;
-
       const cycleStarts = {
         'Cycle 2': '2015-01-15',
         'Cycle 3': '2018-12-15',
@@ -662,7 +608,6 @@ const RoiCycleComparisonWidget = memo(() => {
         'Cycle 3': '2021-11-08',
         'Cycle 4': btcData[btcData.length - 1].time,
       };
-
       const processCycle = (start, end, cycleName) => {
         const filteredData = btcData.filter(
           d => new Date(d.time) >= new Date(start) && new Date(d.time) <= new Date(end)
@@ -676,22 +621,17 @@ const RoiCycleComparisonWidget = memo(() => {
           cycle: cycleName,
         }));
       };
-
       const cycle2 = processCycle(cycleStarts['Cycle 2'], cycleEnds['Cycle 2'], 'Cycle 2');
       const cycle3 = processCycle(cycleStarts['Cycle 3'], cycleEnds['Cycle 3'], 'Cycle 3');
       const cycle4 = processCycle(cycleStarts['Cycle 4'], cycleEnds['Cycle 4'], 'Cycle 4');
-
       if (!cycle2 || !cycle3 || !cycle4) return;
-
       try {
         await saveRoiData({ cycle2, cycle3, cycle4 });
       } catch (error) {
         console.error('Failed to cache ROI data:', error);
       }
-
       const days = cycle4.length;
       const currentRoiValue = cycle4[cycle4.length - 1].roi;
-
       const maxDays = Math.min(cycle2.length, cycle3.length, days);
       const avgRois = [];
       for (let day = 0; day < maxDays; day++) {
@@ -700,24 +640,20 @@ const RoiCycleComparisonWidget = memo(() => {
           avgRois.push(rois.reduce((sum, roi) => sum + roi, 0) / rois.length);
         }
       }
-
       if (avgRois.length > 0) {
         const latestAvgRoi = avgRois[avgRois.length - 1];
         setCurrentRoi(currentRoiValue);
         setAvgRoi(latestAvgRoi);
         setCurrentDays(days);
-
         const mean = avgRois.reduce((sum, val) => sum + val, 0) / avgRois.length;
         const variance = avgRois.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / avgRois.length;
         const stdDev = Math.sqrt(variance);
         const z = stdDev > 0 ? (currentRoiValue - latestAvgRoi) / stdDev : 0;
         setZScore(z);
-
         let heat = stdDev === 0 ? 60 : Math.max(0, Math.min(100, 60 + (z * 20)));
         setHeatScore(heat);
       }
     };
-
     const loadCachedData = async () => {
       try {
         const cachedRoiData = await getRoiData();
@@ -759,14 +695,12 @@ const RoiCycleComparisonWidget = memo(() => {
       }
       return false;
     };
-
     // const initialize = async () => {
-    //   const usedCache = await loadCachedData();
-    //   if (!usedCache) {
-    //     await calculateRoiData();
-    //   }
+    // const usedCache = await loadCachedData();
+    // if (!usedCache) {
+    // await calculateRoiData();
+    // }
     // };
-
     const initialize = async () => {
       await clearRoiData(); // Add this line temporarily
       const usedCache = await loadCachedData();
@@ -774,21 +708,17 @@ const RoiCycleComparisonWidget = memo(() => {
         await calculateRoiData();
       }
     };
-
     initialize();
   }, [btcData]);
-
   const backgroundColor = getBackgroundColor(heatScore || 0);
   const textColor = getTextColor(backgroundColor);
   const isSignificant = heatScore !== null && heatScore >= 85;
   const roiDifference = currentRoi !== null && avgRoi !== null ? currentRoi - avgRoi : null;
-
   const [isInfoVisible, setIsInfoVisible] = useState(false);
   const handleChartRedirect = (event) => {
     event.stopPropagation();
     window.location.href = 'https://www.cryptological.app/market-cycles';
   };
-
   return (
     <Box
       sx={{
@@ -886,31 +816,30 @@ const RoiCycleComparisonWidget = memo(() => {
     </Box>
   );
 });
-
-  // MVRV Ratio Widget
+// MVRV Ratio Widget
   const MvrvRatioWidget = memo(() => {
     const [currentMvrv, setCurrentMvrv] = useState(null);
     const [projectedPeak, setProjectedPeak] = useState(null);
     const [heatScore, setHeatScore] = useState(null);
     const [zScore, setZScore] = useState(null);
-  
+ 
     useEffect(() => {
       if (mvrvData && mvrvData.length > 0) {
         const latestMvrvRaw = mvrvData[mvrvData.length - 1].value;
         const latestMvrv = Math.max(0, Math.min(10000, latestMvrvRaw));
         const { projectedPeak } = calculateMvrvPeakProjection(mvrvData);
-  
+ 
         if (latestMvrv && projectedPeak) {
           const cappedProjectedPeak = Math.max(0, Math.min(10000, projectedPeak));
           setCurrentMvrv(latestMvrv);
           setProjectedPeak(cappedProjectedPeak);
-  
+ 
           const thresholds = [cappedProjectedPeak, 3.7];
           const distances = thresholds.map(t => ((latestMvrv - t) / t) * 100);
           const minDistance = Math.min(...distances.map(Math.abs));
           const heat = Math.max(0, Math.min(100, 100 - (minDistance / 20) * 100));
           setHeatScore(heat);
-  
+ 
           const values = mvrvData.map(item => Math.max(0, Math.min(10000, item.value)));
           const mean = values.reduce((sum, val) => sum + val, 0) / values.length;
           const variance = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length;
@@ -920,18 +849,18 @@ const RoiCycleComparisonWidget = memo(() => {
         }
       }
     }, [mvrvData]);
-  
+ 
     const backgroundColor = getBackgroundColor(heatScore || 0);
     const textColor = getTextColor(backgroundColor);
     const heatDescription = getHeatDescription(heatScore || 0);
     const isSignificant = heatScore !== null && heatScore >= 85 && zScore !== null && Math.abs(zScore) <= 1;
-  
+ 
     const [isInfoVisible, setIsInfoVisible] = useState(false);
     const handleChartRedirect = (event) => {
       event.stopPropagation();
       window.location.href = 'https://www.cryptological.app/tx-mvrv';
     };
-  
+ 
     return (
       <Box sx={{
         ...chartBoxStyle(colors, theme),
@@ -1027,28 +956,27 @@ const RoiCycleComparisonWidget = memo(() => {
       </Box>
     );
   });
-
   // Mayer Multiple Widget
   const MayerMultipleWidget = memo(() => {
     const [currentMayer, setCurrentMayer] = useState(null);
     const [heatScore, setHeatScore] = useState(null);
     const [zScore, setZScore] = useState(null);
-  
+ 
     useEffect(() => {
       if (btcData && btcData.length > 200) {
         const mayerMultiples = calculateMayerMultiple(btcData);
         const latestMayerRaw = mayerMultiples[mayerMultiples.length - 1]?.value;
         const latestMayer = latestMayerRaw ? Math.max(0, Math.min(100, latestMayerRaw)) : 0;
-  
+ 
         if (latestMayer) {
           setCurrentMayer(latestMayer);
-  
+ 
           const thresholds = [2.4, 0.6];
           const distances = thresholds.map(t => ((latestMayer - t) / t) * 100);
           const minDistance = Math.min(...distances.map(Math.abs));
           const heat = Math.max(0, Math.min(100, 100 - (minDistance / 20) * 100));
           setHeatScore(heat);
-  
+ 
           const values = mayerMultiples.map(item => Math.max(0, Math.min(100, item.value)));
           const mean = values.reduce((sum, val) => sum + val, 0) / values.length;
           const variance = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length;
@@ -1058,18 +986,18 @@ const RoiCycleComparisonWidget = memo(() => {
         }
       }
     }, [btcData]);
-  
+ 
     const backgroundColor = getBackgroundColor(heatScore || 0);
     const textColor = getTextColor(backgroundColor);
     const heatDescription = getHeatDescription(heatScore || 0);
     const isSignificant = heatScore !== null && heatScore >= 85 && (currentMayer >= 2.4 || currentMayer <= 0.6);
-  
+ 
     const [isInfoVisible, setIsInfoVisible] = useState(false);
     const handleChartRedirect = (event) => {
       event.stopPropagation();
       window.location.href = 'https://www.cryptological.app/bitcoin';
     };
-  
+ 
     return (
       <Box sx={{
         ...chartBoxStyle(colors, theme),
@@ -1162,12 +1090,11 @@ const RoiCycleComparisonWidget = memo(() => {
       </Box>
     );
   });
-
   // Bitcoin Risk Widget
   const BitcoinRiskWidget = memo(() => {
     const [riskLevel, setRiskLevel] = useState(null);
     const { btcData } = useContext(DataContext);
-  
+ 
     useEffect(() => {
       const fetchRiskLevel = async () => {
         try {
@@ -1212,19 +1139,19 @@ const RoiCycleComparisonWidget = memo(() => {
       };
       fetchRiskLevel();
     }, [btcData]);
-  
+ 
     const displayRisk = riskLevel !== null ? Math.max(0, Math.min(100, riskLevel * 100)).toFixed(2) : 0;
     const backgroundColor = getBackgroundColor(displayRisk);
     const textColor = getTextColor(backgroundColor);
     const heatDescription = getHeatDescription(displayRisk);
     const isSignificant = parseFloat(displayRisk) >= 85;
-  
+ 
     const [isInfoVisible, setIsInfoVisible] = useState(false);
     const handleChartRedirect = (event) => {
       event.stopPropagation();
       window.location.href = 'https://www.cryptological.app/risk';
     };
-  
+ 
     return (
       <Box sx={{
         ...chartBoxStyle(colors, theme),
@@ -1308,27 +1235,23 @@ const RoiCycleComparisonWidget = memo(() => {
       </Box>
     );
   });
-
   // Fear and Greed Gauge
   const FearAndGreedGauge = memo(() => {
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
     const { fearAndGreedData, fetchFearAndGreedData } = useContext(DataContext);
     const [isInfoVisible, setIsInfoVisible] = useState(false);
-
     const latestValue = fearAndGreedData && fearAndGreedData.length > 0 ? Math.max(0, Math.min(100, fearAndGreedData[fearAndGreedData.length - 1].value)) : 0;
     const backgroundColor = getBackgroundColor(latestValue);
     const textColor = getTextColor(backgroundColor);
     const heatDescription = getHeatDescription(latestValue);
     const isSignificant = latestValue >= 85;
-
     const getLabelAndColor = (value) => {
       if (value <= 25) return { label: 'Extreme Fear' };
       if (value <= 50) return { label: 'Fear' };
       if (value <= 75) return { label: 'Greed' };
       return { label: 'Extreme Greed' };
     };
-
     const getGaugeColor = (value) => {
       const startColor = { r: 255, g: 255, b: 255 }; // White
       const endColor = { r: 128, g: 0, b: 128 }; // Purple
@@ -1338,21 +1261,17 @@ const RoiCycleComparisonWidget = memo(() => {
       const b = Math.round(startColor.b + (endColor.b - startColor.b) * ratio);
       return `rgb(${r}, ${g}, ${b})`;
     };
-
     const { label } = getLabelAndColor(latestValue);
     const gaugeColor = getGaugeColor(latestValue);
-
     useEffect(() => {
       if (!fearAndGreedData) {
         fetchFearAndGreedData();
       }
     }, [fearAndGreedData, fetchFearAndGreedData]);
-
     const handleChartRedirect = (event) => {
       event.stopPropagation();
       window.location.href = 'https://www.cryptological.app/fear-and-greed-chart';
     };
-
     return (
       <Box
         sx={{
@@ -1453,20 +1372,19 @@ const RoiCycleComparisonWidget = memo(() => {
       </Box>
     );
   });
-
   // PiCycle Top Widget
   const PiCycleTopWidget = memo(() => {
     const [currentRatio, setCurrentRatio] = useState(null);
     const [predictedPeak, setPredictedPeak] = useState(null);
     const [heatScore, setHeatScore] = useState(null);
-  
+ 
     useEffect(() => {
       if (btcData && btcData.length > 350) {
         const ratioData = calculateRatioSeries(btcData);
         const latestRatioRaw = ratioData[ratioData.length - 1]?.value;
         const latestRatio = latestRatioRaw ? Math.max(0, Math.min(100, latestRatioRaw)) : 0;
         setCurrentRatio(latestRatio);
-  
+ 
         const historicalPeaks = [
           { date: '2017-12-17', ratio: 1.05, timestamp: Date.parse('2017-12-17') },
           { date: '2021-04-12', ratio: 1.00, timestamp: Date.parse('2021-04-12') },
@@ -1480,7 +1398,7 @@ const RoiCycleComparisonWidget = memo(() => {
         const b = y1 - m * t1;
         const predictedRatio = m * targetDate + b;
         setPredictedPeak(predictedRatio);
-  
+ 
         if (latestRatio && predictedRatio) {
           const buffer = 1.0;
           const minRatio = 0;
@@ -1490,18 +1408,18 @@ const RoiCycleComparisonWidget = memo(() => {
         }
       }
     }, [btcData]);
-  
+ 
     const backgroundColor = getBackgroundColor(heatScore || 0);
     const textColor = getTextColor(backgroundColor);
     const heatDescription = getHeatDescription(heatScore || 0);
     const isSignificant = heatScore !== null && heatScore >= 85;
-  
+ 
     const [isInfoVisible, setIsInfoVisible] = useState(false);
     const handleChartRedirect = (event) => {
       event.stopPropagation();
       window.location.href = 'https://www.cryptological.app/pi-cycle';
     };
-  
+ 
     return (
       <Box sx={{
         ...chartBoxStyle(colors, theme),
@@ -1594,8 +1512,6 @@ const RoiCycleComparisonWidget = memo(() => {
       </Box>
     );
   });
-
-
 const DaysLeftWidget = memo(({ type }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
@@ -1849,7 +1765,6 @@ const DaysLeftWidget = memo(({ type }) => {
     </Box>
   );
 });
-
 // Market Heat Gauge Widget
 const MarketHeatGaugeWidget = memo(() => {
   const theme = useTheme();
@@ -2055,7 +1970,6 @@ const MarketHeatGaugeWidget = memo(() => {
     </Box>
   );
 });
-
   // Chart components
   const BitcoinPriceChart = memo(() => (
     <Box sx={chartBoxStyle(colors, theme)}>
@@ -2082,7 +1996,6 @@ const MarketHeatGaugeWidget = memo(() => {
       </ResponsiveContainer>
     </Box>
   ));
-
   const EthereumPriceChart = memo(() => (
     <Box sx={chartBoxStyle(colors, theme)}>
       <Typography variant="h4" color={colors.grey[100]} gutterBottom>
@@ -2108,7 +2021,6 @@ const MarketHeatGaugeWidget = memo(() => {
       </ResponsiveContainer>
     </Box>
   ));
-
   const InflationChart = memo(() => (
     <Box sx={chartBoxStyle(colors, theme)}>
       <Typography variant="h4" color={colors.grey[100]} gutterBottom>
@@ -2141,7 +2053,6 @@ const MarketHeatGaugeWidget = memo(() => {
       </ResponsiveContainer>
     </Box>
   ));
-
   const MarketCapChart = memo(() => (
     <Box sx={chartBoxStyle(colors, theme)}>
       <Typography variant="h4" color={colors.grey[100]} gutterBottom>
@@ -2179,7 +2090,6 @@ const MarketHeatGaugeWidget = memo(() => {
       </ResponsiveContainer>
     </Box>
   ));
-
   // Common chart box style
   const chartBoxStyle = (colors, theme) => ({
     backgroundColor: colors.primary[400],
@@ -2198,7 +2108,6 @@ const MarketHeatGaugeWidget = memo(() => {
       boxShadow: `0 6px 16px ${theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.2)'}`,
     },
   });
-
   // Loading UI
   if (isLoading) {
     return (
@@ -2219,7 +2128,6 @@ const MarketHeatGaugeWidget = memo(() => {
       </Box>
     );
   }
-
   // Error UI
   if (error) {
     return (
@@ -2239,7 +2147,141 @@ const MarketHeatGaugeWidget = memo(() => {
       </Box>
     );
   }
-
+// New Daily RSI Widget (added here)
+const DailyRsiWidget = memo(() => {
+  const { btcData } = useContext(DataContext);
+  const [latestRsi, setLatestRsi] = useState(null);
+  const [heatScore, setHeatScore] = useState(null);
+  const calculateRSI = (data, period) => {
+    let rsiData = [];
+    for (let i = period; i < data.length; i++) {
+      let gains = 0;
+      let losses = 0;
+      for (let j = 1; j <= period; j++) {
+        const diff = data[i - j + 1].value - data[i - j].value;
+        if (diff > 0) gains += diff;
+        else losses -= diff;
+      }
+      const avgGain = gains / period;
+      const avgLoss = losses / period;
+      const rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
+      const rsi = avgLoss === 0 ? 100 : 100 - (100 / (1 + rs));
+      rsiData.push({
+        time: data[i].time,
+        value: rsi,
+      });
+    }
+    return rsiData;
+  };
+  useEffect(() => {
+    if (btcData && btcData.length > 14) {
+      const rsiData = calculateRSI(btcData, 14); // Daily RSI with period=14
+      const latestRsiValue = rsiData[rsiData.length - 1]?.value;
+      if (latestRsiValue !== undefined) {
+        const cappedRsi = Math.max(0, Math.min(100, latestRsiValue));
+        setLatestRsi(cappedRsi);
+        setHeatScore(cappedRsi); // Map RSI directly to heat (high RSI = high heat, overbought)
+      }
+    }
+  }, [btcData]);
+  const backgroundColor = getBackgroundColor(heatScore || 0);
+  const textColor = getTextColor(backgroundColor);
+  const heatDescription = getHeatDescription(heatScore || 0);
+  const isSignificant = heatScore !== null && heatScore >= 70; // Overbought warning
+  const [isInfoVisible, setIsInfoVisible] = useState(false);
+  const handleChartRedirect = (event) => {
+    event.stopPropagation();
+    window.location.href = 'https://www.cryptological.app/bitcoin';
+  };
+  return (
+    <Box sx={{
+      ...chartBoxStyle(colors, theme),
+      backgroundColor: backgroundColor,
+      transition: 'background-color 0.3s ease, transform 0.2s ease-in-out',
+      border: isSignificant ? `2px solid ${colors.redAccent[500]}` : 'none',
+      padding: '24px',
+      textAlign: 'center',
+      position: 'relative',
+    }}>
+      <InfoIcon
+        sx={{
+          position: 'absolute',
+          top: '12px',
+          right: '12px',
+          color: textColor,
+          cursor: 'pointer',
+          fontSize: '35px',
+          zIndex: 1001,
+          padding: '4px',
+          borderRadius: '50%',
+          '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+        }}
+        onMouseEnter={() => setIsInfoVisible(true)}
+        onMouseLeave={() => setIsInfoVisible(false)}
+        aria-label="Information"
+      />
+      <ShowChartIcon
+        sx={{
+          position: 'absolute',
+          top: '12px',
+          left: '12px',
+          color: textColor,
+          cursor: 'pointer',
+          fontSize: '35px',
+          zIndex: 1001,
+          padding: '4px',
+          borderRadius: '50%',
+          '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+        }}
+        onMouseDown={handleChartRedirect}
+        aria-label="View chart"
+      />
+      <Typography variant="h4" color={textColor} gutterBottom sx={{ fontWeight: 'bold' }}>
+        Daily RSI
+      </Typography>
+      <Box
+        sx={{
+          flexGrow: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '8px',
+        }}
+      >
+        <Typography variant="h4" color={textColor} sx={{ fontWeight: 'bold' }}>
+          Current: {latestRsi !== null ? latestRsi.toFixed(2) : 'N/A'}
+        </Typography>
+        <Typography variant="body1" color={textColor}>
+          Heat: {heatDescription}
+        </Typography>
+      </Box>
+      {isSignificant && (
+        <Typography
+          variant="body1"
+          sx={{
+            color: colors.redAccent[500],
+            textAlign: 'center',
+            fontWeight: 'bold',
+            fontSize: '11px',
+            backgroundColor: 'white',
+            borderRadius: '8px',
+            padding: '4px 8px',
+            marginTop: '8px',
+            display: 'inline-block',
+          }}
+        >
+          Warning: Overbought (potential top).
+        </Typography>
+      )}
+      <InfoOverlay
+        isVisible={isInfoVisible}
+        explanation="Relative Strength Index (RSI) measures momentum on a 14-day period. Values above 70 suggest overbought conditions (potential top); below 30 indicate oversold (potential bottom)."
+        borderColor={backgroundColor}
+      />
+    </Box>
+  );
+});
   return (
     <Box
       sx={{
@@ -2250,7 +2292,7 @@ const MarketHeatGaugeWidget = memo(() => {
         textAlign: 'center',
       }}
     >
-      <Box 
+      <Box
           sx={{
             borderBottom: '1px solid #4cceac',
             marginbottom: '10px'
@@ -2259,9 +2301,9 @@ const MarketHeatGaugeWidget = memo(() => {
         <Typography
           variant="h6"
           sx={{
-            color: theme.palette.common.white, 
-            fontSize: '16px', 
-            fontWeight: '600', 
+            color: theme.palette.common.white,
+            fontSize: '16px',
+            fontWeight: '600',
             marginBottom: '8px',
           }}
         >
@@ -2297,7 +2339,7 @@ const MarketHeatGaugeWidget = memo(() => {
           </Typography>
         </Box>
       </Box>
-      
+     
       <Box sx={{ width: '100%', maxWidth: 1440, margin: '0 auto', paddingTop: '28px' }}>
         <Typography
           variant="h4"
@@ -2357,9 +2399,9 @@ const MarketHeatGaugeWidget = memo(() => {
           <div key="mvrv"><MvrvRatioWidget /></div>
           <div key="mayerMultiple"><MayerMultipleWidget /></div>
           <div key="piCycleTop"><PiCycleTopWidget /></div>
-          <div key="roiCycleComparison"><RoiCycleComparisonWidget /></div>          
+          <div key="roiCycleComparison"><RoiCycleComparisonWidget /></div>
+          <div key="dailyRsi"><DailyRsiWidget /></div>
         </ResponsiveGridLayout>
-
         <Typography
           variant="h4"
           color={colors.grey[100]}
@@ -2396,6 +2438,5 @@ const MarketHeatGaugeWidget = memo(() => {
     </Box>
   );
 });
-
 // Export MarketOverview wrapped with React.memo
 export default restrictToPaidSubscription(memo(MarketOverview));
