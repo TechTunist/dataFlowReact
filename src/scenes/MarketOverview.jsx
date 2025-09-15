@@ -220,40 +220,44 @@ const MarketOverview = memo(() => {
       { i: 'altcoinSeason', x: 0, y: 4, w: 4, h: 2, minW: 4, minH: 2 },
     ],
   };
-  const onChainLayouts = {
-    lg: [
-      { i: 'bitcoinRisk', x: 0, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
-      { i: 'mvrv', x: 3, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
-      { i: 'mayerMultiple', x: 6, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
-      { i: 'piCycleTop', x: 9, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
-      { i: 'roiCycleComparison', x: 0, y: 2, w: 3, h: 2, minW: 2, minH: 2 },
-      { i: 'dailyRsi', x: 3, y: 2, w: 3, h: 2, minW: 2, minH: 2 },
-    ],
-    md: [
-      { i: 'bitcoinRisk', x: 0, y: 0, w: 4, h: 2, minW: 2, minH: 2 },
-      { i: 'mvrv', x: 4, y: 0, w: 4, h: 2, minW: 2, minH: 2 },
-      { i: 'mayerMultiple', x: 0, y: 2, w: 4, h: 2, minW: 2, minH: 2 },
-      { i: 'piCycleTop', x: 4, y: 2, w: 4, h: 2, minW: 2, minH: 2 },
-      { i: 'roiCycleComparison', x: 0, y: 4, w: 4, h: 2, minW: 2, minH: 2 },
-      { i: 'dailyRsi', x: 4, y: 4, w: 4, h: 2, minW: 2, minH: 2 },
-    ],
-    sm: [
-      { i: 'bitcoinRisk', x: 0, y: 0, w: 6, h: 2, minW: 2, minH: 2 },
-      { i: 'mvrv', x: 0, y: 2, w: 6, h: 2, minW: 2, minH: 2 },
-      { i: 'mayerMultiple', x: 0, y: 4, w: 6, h: 2, minW: 2, minH: 2 },
-      { i: 'piCycleTop', x: 0, y: 6, w: 6, h: 2, minW: 2, minH: 2 },
-      { i: 'roiCycleComparison', x: 0, y: 8, w: 6, h: 2, minW: 2, minH: 2 },
-      { i: 'dailyRsi', x: 0, y: 10, w: 6, h: 2, minW: 2, minH: 2 },
-    ],
-    xs: [
-      { i: 'bitcoinRisk', x: 0, y: 0, w: 4, h: 2, minW: 2, minH: 2 },
-      { i: 'mvrv', x: 0, y: 2, w: 4, h: 2, minW: 2, minH: 2 },
-      { i: 'mayerMultiple', x: 0, y: 4, w: 4, h: 2, minW: 2, minH: 2 },
-      { i: 'piCycleTop', x: 0, y: 6, w: 4, h: 2, minW: 2, minH: 2 },
-      { i: 'roiCycleComparison', x: 0, y: 8, w: 4, h: 2, minW: 2, minH: 2 },
-      { i: 'dailyRsi', x: 0, y: 10, w: 4, h: 2, minW: 2, minH: 2 },
-    ],
-  };
+const onChainLayouts = {
+  lg: [
+    { i: 'bitcoinRisk', x: 0, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
+    { i: 'mvrv', x: 3, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
+    { i: 'mayerMultiple', x: 6, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
+    { i: 'piCycleTop', x: 9, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
+    { i: 'roiCycleComparison', x: 0, y: 2, w: 3, h: 2, minW: 2, minH: 2 },
+    { i: 'dailyRsi', x: 3, y: 2, w: 3, h: 2, minW: 2, minH: 2 },
+    { i: 'weeklyRsi', x: 6, y: 2, w: 3, h: 2, minW: 2, minH: 2 },
+  ],
+  md: [
+    { i: 'bitcoinRisk', x: 0, y: 0, w: 4, h: 2, minW: 2, minH: 2 },
+    { i: 'mvrv', x: 4, y: 0, w: 4, h: 2, minW: 2, minH: 2 },
+    { i: 'mayerMultiple', x: 0, y: 2, w: 4, h: 2, minW: 2, minH: 2 },
+    { i: 'piCycleTop', x: 4, y: 2, w: 4, h: 2, minW: 2, minH: 2 },
+    { i: 'roiCycleComparison', x: 0, y: 4, w: 4, h: 2, minW: 2, minH: 2 },
+    { i: 'dailyRsi', x: 4, y: 4, w: 4, h: 2, minW: 2, minH: 2 },
+    { i: 'weeklyRsi', x: 0, y: 6, w: 4, h: 2, minW: 2, minH: 2 },
+  ],
+  sm: [
+    { i: 'bitcoinRisk', x: 0, y: 0, w: 6, h: 2, minW: 2, minH: 2 },
+    { i: 'mvrv', x: 0, y: 2, w: 6, h: 2, minW: 2, minH: 2 },
+    { i: 'mayerMultiple', x: 0, y: 4, w: 6, h: 2, minW: 2, minH: 2 },
+    { i: 'piCycleTop', x: 0, y: 6, w: 6, h: 2, minW: 2, minH: 2 },
+    { i: 'roiCycleComparison', x: 0, y: 8, w: 6, h: 2, minW: 2, minH: 2 },
+    { i: 'dailyRsi', x: 0, y: 10, w: 6, h: 2, minW: 2, minH: 2 },
+    { i: 'weeklyRsi', x: 0, y: 12, w: 6, h: 2, minW: 2, minH: 2 },
+  ],
+  xs: [
+    { i: 'bitcoinRisk', x: 0, y: 0, w: 4, h: 2, minW: 2, minH: 2 },
+    { i: 'mvrv', x: 0, y: 2, w: 4, h: 2, minW: 2, minH: 2 },
+    { i: 'mayerMultiple', x: 0, y: 4, w: 4, h: 2, minW: 2, minH: 2 },
+    { i: 'piCycleTop', x: 0, y: 6, w: 4, h: 2, minW: 2, minH: 2 },
+    { i: 'roiCycleComparison', x: 0, y: 8, w: 4, h: 2, minW: 2, minH: 2 },
+    { i: 'dailyRsi', x: 0, y: 10, w: 4, h: 2, minW: 2, minH: 2 },
+    { i: 'weeklyRsi', x: 0, y: 12, w: 4, h: 2, minW: 2, minH: 2 },
+  ],
+};
   const overallConditionsLayouts = {
     lg: [{ i: 'marketHeat', x: 0, y: 0, w: 12, h: 2, minW: 4, minH: 2 }],
     md: [{ i: 'marketHeat', x: 0, y: 0, w: 8, h: 2, minW: 4, minH: 2 }],
@@ -2271,7 +2275,7 @@ const DailyRsiWidget = memo(() => {
             display: 'inline-block',
           }}
         >
-          Warning: Overbought (potential top).
+          Warning: Overbought
         </Typography>
       )}
       <InfoOverlay
@@ -2282,6 +2286,148 @@ const DailyRsiWidget = memo(() => {
     </Box>
   );
 });
+
+// Weekly RSI Widget
+const WeeklyRsiWidget = memo(() => {
+  const { btcData } = useContext(DataContext);
+  const [latestRsi, setLatestRsi] = useState(null);
+  const [heatScore, setHeatScore] = useState(null);
+
+  const calculateRSI = (data, period) => {
+    let rsiData = [];
+    for (let i = period; i < data.length; i++) {
+      let gains = 0;
+      let losses = 0;
+      for (let j = 1; j <= period; j++) {
+        const diff = data[i - j + 1].value - data[i - j].value;
+        if (diff > 0) gains += diff;
+        else losses -= diff;
+      }
+      const avgGain = gains / period;
+      const avgLoss = losses / period;
+      const rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
+      const rsi = avgLoss === 0 ? 100 : 100 - (100 / (1 + rs));
+      rsiData.push({
+        time: data[i].time,
+        value: rsi,
+      });
+    }
+    return rsiData;
+  };
+
+  useEffect(() => {
+    if (btcData && btcData.length > 98) {
+      const rsiData = calculateRSI(btcData, 98); // Weekly RSI with period=98 (14 weeks)
+      const latestRsiValue = rsiData[rsiData.length - 1]?.value;
+      if (latestRsiValue !== undefined) {
+        const cappedRsi = Math.max(0, Math.min(100, latestRsiValue));
+        setLatestRsi(cappedRsi);
+        setHeatScore(cappedRsi); // Map RSI directly to heat (high RSI = high heat, overbought)
+      }
+    }
+  }, [btcData]);
+
+  const backgroundColor = getBackgroundColor(heatScore || 0);
+  const textColor = getTextColor(backgroundColor);
+  const heatDescription = getHeatDescription(heatScore || 0);
+  const isSignificant = heatScore !== null && heatScore >= 70; // Overbought warning
+  const [isInfoVisible, setIsInfoVisible] = useState(false);
+
+  const handleChartRedirect = (event) => {
+    event.stopPropagation();
+    window.location.href = 'https://www.cryptological.app/bitcoin';
+  };
+
+  return (
+    <Box sx={{
+      ...chartBoxStyle(colors, theme),
+      backgroundColor: backgroundColor,
+      transition: 'background-color 0.3s ease, transform 0.2s ease-in-out',
+      border: isSignificant ? `2px solid ${colors.redAccent[500]}` : 'none',
+      padding: '24px',
+      textAlign: 'center',
+      position: 'relative',
+    }}>
+      <InfoIcon
+        sx={{
+          position: 'absolute',
+          top: '12px',
+          right: '12px',
+          color: textColor,
+          cursor: 'pointer',
+          fontSize: '35px',
+          zIndex: 1001,
+          padding: '4px',
+          borderRadius: '50%',
+          '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+        }}
+        onMouseEnter={() => setIsInfoVisible(true)}
+        onMouseLeave={() => setIsInfoVisible(false)}
+        aria-label="Information"
+      />
+      <ShowChartIcon
+        sx={{
+          position: 'absolute',
+          top: '12px',
+          left: '12px',
+          color: textColor,
+          cursor: 'pointer',
+          fontSize: '35px',
+          zIndex: 1001,
+          padding: '4px',
+          borderRadius: '50%',
+          '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+        }}
+        onMouseDown={handleChartRedirect}
+        aria-label="View chart"
+      />
+      <Typography variant="h4" color={textColor} gutterBottom sx={{ fontWeight: 'bold' }}>
+        Weekly RSI
+      </Typography>
+      <Box
+        sx={{
+          flexGrow: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '8px',
+        }}
+      >
+        <Typography variant="h4" color={textColor} sx={{ fontWeight: 'bold' }}>
+          Current: {latestRsi !== null ? latestRsi.toFixed(2) : 'N/A'}
+        </Typography>
+        <Typography variant="body1" color={textColor}>
+          Heat: {heatDescription}
+        </Typography>
+      </Box>
+      {isSignificant && (
+        <Typography
+          variant="body1"
+          sx={{
+            color: colors.redAccent[500],
+            textAlign: 'center',
+            fontWeight: 'bold',
+            fontSize: '11px',
+            backgroundColor: 'white',
+            borderRadius: '8px',
+            padding: '4px 8px',
+            marginTop: '8px',
+            display: 'inline-block',
+          }}
+        >
+          Warning: Overbought
+        </Typography>
+      )}
+      <InfoOverlay
+        isVisible={isInfoVisible}
+        explanation="Relative Strength Index (RSI) measures momentum on a 14-week period (98 days). Values above 70 suggest overbought conditions (potential top); below 30 indicate oversold (potential bottom)."
+        borderColor={backgroundColor}
+      />
+    </Box>
+  );
+});
+
   return (
     <Box
       sx={{
@@ -2401,6 +2547,7 @@ const DailyRsiWidget = memo(() => {
           <div key="piCycleTop"><PiCycleTopWidget /></div>
           <div key="roiCycleComparison"><RoiCycleComparisonWidget /></div>
           <div key="dailyRsi"><DailyRsiWidget /></div>
+          <div key="weeklyRsi"><WeeklyRsiWidget /></div>
         </ResponsiveGridLayout>
         <Typography
           variant="h4"

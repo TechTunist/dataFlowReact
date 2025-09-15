@@ -15,16 +15,12 @@ const TotalMarketCap = ({ isDashboard = false }) => {
   const theme = useTheme();
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
   const isMobile = useIsMobile();
-  const { marketCapData, fetchMarketCapData, marketCapLastUpdated } =
-    useContext(DataContext);
-
+  const { marketCapData, fetchMarketCapData, marketCapLastUpdated } = useContext(DataContext);
   const [tooltipData, setTooltipData] = useState(null);
   const [isInteractive, setIsInteractive] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-
   const scaleMode = 1; // Fixed to logarithmic
-
   const isNarrowScreen = useMediaQuery('(max-width:600px)');
 
   // Fetch data only if not present in context
@@ -54,10 +50,8 @@ const TotalMarketCap = ({ isDashboard = false }) => {
       (sum, point, index) => sum + Math.log(index + 1) * Math.log(point.value),
       0
     );
-
     const slope = (n * sumLogXLogY - sumLogX * sumY) / (n * sumLogXSquared - sumLogX ** 2);
     const intercept = (sumY - slope * sumLogX) / n;
-
     return { slope, intercept };
   }, []);
 
@@ -85,10 +79,8 @@ const TotalMarketCap = ({ isDashboard = false }) => {
 
   const regressionLines = useMemo(() => {
     if (marketCapData.length === 0) return {};
-
     const extendedData = extendDataForFuture(marketCapData, 156);
     const { slope, intercept } = calculateLogarithmicRegression(marketCapData);
-
     const calculateRegressionPoints = (scale, color, shiftDays = 0, curveAdjustment = 1) => {
       return extendedData.map(({ time }, index) => {
         const x = Math.log(index + 1 - shiftDays + 1);
@@ -99,7 +91,6 @@ const TotalMarketCap = ({ isDashboard = false }) => {
         return { time, value: y };
       });
     };
-
     return {
       logBase2: calculateRegressionPoints(0.0025, 'maroon', -275, 0.999),
       logBase: calculateRegressionPoints(0.008, 'red', -315, 0.991),
@@ -112,44 +103,35 @@ const TotalMarketCap = ({ isDashboard = false }) => {
   // Calculate the percentage difference between current market cap and fair value
   const valuationDifference = useMemo(() => {
     if (marketCapData.length === 0 || !regressionLines.logMid) return null;
-
-    // Get the latest market cap value and its date
     const latestMarketCap = marketCapData[marketCapData.length - 1]?.value;
     const latestMarketCapDate = marketCapData[marketCapData.length - 1]?.time;
-
     if (!latestMarketCap || !latestMarketCapDate) return null;
-
-    // Find the fair value on the latest market cap date
     const fairValueOnLatestDate = regressionLines.logMid.find(
       (point) => point.time === latestMarketCapDate
     )?.value;
-
     if (!fairValueOnLatestDate) return null;
-
-    // Calculate percentage difference: ((current - fair) / fair) * 100
     const difference = ((latestMarketCap - fairValueOnLatestDate) / fairValueOnLatestDate) * 100;
     const isOvervalued = difference > 0;
     const percentage = Math.abs(difference).toFixed(2);
-
+    const currentMarketCapFormatted = latestMarketCap ? `($${(latestMarketCap / 1e12).toFixed(2)}T)` : '';
     return {
       label: isOvervalued ? 'Overvaluation' : 'Undervaluation',
       percentage: `${percentage}%`,
+      currentMarketCap: currentMarketCapFormatted,
     };
   }, [marketCapData, regressionLines]);
 
   useEffect(() => {
     if (marketCapData.length === 0) return;
-
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
       height: chartContainerRef.current.clientHeight,
       layout: { background: { type: 'solid', color: colors.primary[700] }, textColor: colors.primary[100] },
       grid: { vertLines: { color: colors.greenAccent[700] }, horzLines: { color: colors.greenAccent[700] } },
       timeScale: { minBarSpacing: 0.001 },
-      handleScroll: false, // Disable scrolling on initial render
-      handleScale: false, // Disable zooming on initial render
+      handleScroll: false,
+      handleScale: false,
     });
-
     const priceSeries = chart.addLineSeries({
       priceScaleId: 'right',
       lineWidth: 2,
@@ -159,14 +141,12 @@ const TotalMarketCap = ({ isDashboard = false }) => {
     });
     priceSeriesRef.current = priceSeries;
     priceSeries.setData(marketCapData);
-
     chart.priceScale('right').applyOptions({
       mode: scaleMode,
       borderVisible: false,
       scaleMargins: { top: 0.1, bottom: 0.1 },
       priceFormat: { type: 'custom', formatter: compactNumberFormatter },
     });
-
     const logRegression2TopSeries = chart.addLineSeries({
       color: 'lime',
       lineWidth: 2,
@@ -202,13 +182,11 @@ const TotalMarketCap = ({ isDashboard = false }) => {
       lastValueVisible: false,
       priceLineVisible: false,
     });
-
     logRegression2TopSeries.setData(regressionLines.logTop2);
     logRegressionTopSeries.setData(regressionLines.logTop);
     logRegressionMidSeries.setData(regressionLines.logMid);
     logRegressionBaseSeries.setData(regressionLines.logBase);
     logRegressionBase2Series.setData(regressionLines.logBase2);
-
     chart.subscribeCrosshairMove((param) => {
       if (
         !param.time ||
@@ -226,7 +204,6 @@ const TotalMarketCap = ({ isDashboard = false }) => {
         const logMidData = param.seriesData.get(logRegressionMidSeries);
         const logTopData = param.seriesData.get(logRegressionTopSeries);
         const logTop2Data = param.seriesData.get(logRegression2TopSeries);
-
         setTooltipData({
           date: dateStr,
           price: priceData?.value ? compactNumberFormatter(priceData.value) : undefined,
@@ -240,7 +217,6 @@ const TotalMarketCap = ({ isDashboard = false }) => {
         });
       }
     });
-
     const resizeChart = () => {
       chart.applyOptions({
         width: chartContainerRef.current.clientWidth,
@@ -249,10 +225,8 @@ const TotalMarketCap = ({ isDashboard = false }) => {
       chart.timeScale().fitContent();
     };
     window.addEventListener('resize', resizeChart);
-
     chartRef.current = chart;
     resetChartView();
-
     return () => {
       chart.remove();
       window.removeEventListener('resize', resizeChart);
@@ -319,18 +293,19 @@ const TotalMarketCap = ({ isDashboard = false }) => {
       </div>
       <div className="under-chart">
         {!isDashboard && marketCapData.length > 0 && (
-          <div style={{ marginTop: '10px' }}>
+          <div style={{ }}>
             {!isDashboard && <LastUpdated customDate={marketCapLastUpdated} />}
             {valuationDifference && (
               <span
                 style={{
+                  paddingTop: '20px',
                   fontSize: '1.3rem',
                   color: valuationDifference.label === 'Overvaluation' ? '#ff0062' : colors.blueAccent[500],
                   display: 'block',
                   marginTop: '5px',
                 }}
               >
-                {valuationDifference.label}: {valuationDifference.percentage}
+                {valuationDifference.label}: {valuationDifference.percentage} {valuationDifference.currentMarketCap}
               </span>
             )}
           </div>
@@ -348,7 +323,7 @@ const TotalMarketCap = ({ isDashboard = false }) => {
               const tooltipWidth = 200;
               const offset = 10000 / (chartWidth + 300);
               const rightPosition = cursorX + offset + 30;
-              const leftPosition = cursorX - tooltipWidth - offset -20;
+              const leftPosition = cursorX - tooltipWidth - offset - 20;
               return rightPosition + tooltipWidth <= chartWidth
                 ? `${rightPosition}px`
                 : leftPosition >= 0
