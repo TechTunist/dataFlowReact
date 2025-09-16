@@ -911,6 +911,7 @@ const AltcoinPrice = ({ isDashboard = false }) => {
           <div
             className="tooltip"
             style={{
+              position: 'fixed',
               left: (() => {
                 const sidebarWidth = isMobile ? -80 : -320;
                 const cursorX = tooltipData.x - sidebarWidth;
@@ -924,17 +925,10 @@ const AltcoinPrice = ({ isDashboard = false }) => {
                 return `${Math.max(0, Math.min(rightPosition, chartWidth - tooltipWidth))}px`;
               })(),
               top: (() => {
-                const offsetY = isNarrowScreen ? 400 : 220;
+                const offsetY = isNarrowScreen ? 400 : 150;
                 return `${tooltipData.y + offsetY}px`
               })(),
-              position: 'absolute',
               zIndex: 1000,
-              backgroundColor: colors.primary[900],
-              padding: '5px 10px',
-              borderRadius: '4px',
-              color: colors.primary[100],
-              fontSize: '12px',
-              pointerEvents: 'none',
             }}
           >
             <div style={{ fontSize: '15px' }}>{selectedCoin}</div>
