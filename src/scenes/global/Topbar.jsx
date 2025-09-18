@@ -87,6 +87,7 @@ const routeToChartId = {
   "/workbench": "workbench",
   "/sp500-roi": "sp500-roi",
   "/btc-mvrv-z":"mvrv-zscore",
+  "/total2":"total2",
 };
 
 const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
@@ -315,6 +316,8 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
         return { title: "Charts", subtitle: "All available charts on Cryptological" };
       case "/btc-mvrv-z":
         return { title: "Bitcoin MVRV Z-Score", subtitle: isMobile ? "Identify extreme conditions" : "Demonstrates the relationship between market value and realised value" };
+      case "/total2":
+        return { title: "Total2", subtitle: "Total Crypto Market Cap Minus Bitcoin" };
       default:
         return { title: "CryptoLogical", subtitle: "" };
     }

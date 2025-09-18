@@ -70,6 +70,8 @@ import SahmRecessionIndicator from './components/SahmRecessionIndicator';
 import MarketHeatIndexChart from './components/MarketHeatIndexPlotly';
 import restrictToPaidSubscription from './scenes/RestrictToPaid';
 import BitcoinMvrvZScore from "./components/BitcoinMvrvZScore";
+import Total2Chart from "./components/Total2Marketcap";
+import Total3Chart from "./components/Total3Marketcap";
 
 // Stripe Context
 const StripeContext = createContext(null);
@@ -254,6 +256,22 @@ const AppContent = memo(() => {
                         element={
                           <ProtectedRoute>
                             <BasicChart ChartComponent={TotalMarketCap} />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/total2"
+                        element={
+                          <ProtectedRoute>
+                            <BasicChart ChartComponent={Total2Chart} />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/total3"
+                        element={
+                          <ProtectedRoute>
+                            <BasicChart ChartComponent={Total3Chart} />
                           </ProtectedRoute>
                         }
                       />
