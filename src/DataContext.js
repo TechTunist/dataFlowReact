@@ -681,26 +681,29 @@ export const DataProvider = ({ children }) => {
     });
   }, [fetchMvrvData]);
 
-  const fetchDominanceData = useCallback(async () => {
+const fetchDominanceData = useCallback(async () => {
+  if (isDominanceDataFetched) return;
+  if (!preloadComplete) {
+    await new Promise(resolve => setTimeout(resolve, 100));
     if (isDominanceDataFetched) return;
-    if (!preloadComplete) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      if (isDominanceDataFetched) return;
-    }
-    await fetchWithCache({
-      cacheId: 'dominanceData',
-      apiUrl: `${API_BASE_URL}/dominance/`,
-      formatData: (data) =>
-        data.map((item) => ({
-          time: item.date,
-          value: parseFloat(item.btc),
-        })),
-      setData: setDominanceData,
-      setLastUpdated: setDominanceLastUpdated,
-      setIsFetched: setIsDominanceDataFetched,
-      useDateCheck: true,
-    });
-  }, [isDominanceDataFetched, preloadComplete]);
+  }
+  await fetchWithCache({
+    cacheId: 'dominanceData',
+    apiUrl: `${API_BASE_URL}/dominance/`,
+    formatData: (data) =>
+      data.map((item) => ({
+        time: item.date,
+        btc: parseFloat(item.btc),
+        eth: parseFloat(item.eth),
+        alt: parseFloat(item.alt),
+        stable: parseFloat(item.stable),
+      })),
+    setData: setDominanceData,
+    setLastUpdated: setDominanceLastUpdated,
+    setIsFetched: setIsDominanceDataFetched,
+    useDateCheck: true,
+  });
+}, [isDominanceDataFetched, preloadComplete]);
 
   const refreshDominanceData = useCallback(async () => {
     await refreshData({
