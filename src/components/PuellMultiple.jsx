@@ -13,10 +13,12 @@ const PuellMultiple = ({ isDashboard = false }) => {
   const chartRef = useRef(null);
   const puellSeriesRef = useRef(null);
   const priceSeriesRef = useRef(null);
+  const normalizedPuellSeriesRef = useRef(null);
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const { btcData, onchainMetricsData, fetchBtcData, fetchOnchainMetricsData } = useContext(DataContext);
   const [isInteractive, setIsInteractive] = useState(false);
+  const [showNormalizedPuell, setShowNormalizedPuell] = useState(false);
   const [currentBtcPrice, setCurrentBtcPrice] = useState(0);
   const [currentPuellMultiple, setCurrentPuellMultiple] = useState(null);
   const [tooltipData, setTooltipData] = useState(null);
@@ -32,6 +34,31 @@ const PuellMultiple = ({ isDashboard = false }) => {
     { value: 365, label: '1 Year' },
   ];
 
+  // Halving schedule (blocks and dates for reference; rewards auto-calculated)
+  const halvingSchedule = [
+    { blocks: 0, date: '2009-01-03', reward: 50 },
+    { blocks: 210000, date: '2012-11-28', reward: 25 },
+    { blocks: 420000, date: '2016-07-09', reward: 12.5 },
+    { blocks: 630000, date: '2020-05-11', reward: 6.25 },
+    { blocks: 840000, date: '2024-04-19', reward: 3.125 }, // Approximate; adjust if needed
+  ];
+
+  // Target max for normalization (e.g., first cycle's peak ~10; adjust based on your data)
+  const TARGET_MAX_PUELL = 10;
+
+  // Indicators configuration (like MVRV/Mayer Multiple)
+  const indicators = useMemo(() => ({
+    'puell-multiple': {
+      color: '#ff0062',
+      label: 'Puell Multiple'
+    },
+    'normalized-puell': {
+      color: '#00ff88',
+      label: 'Normalized Puell Ratio',
+      description: 'Puell ratio accounting for diminishing returns. Each cycle\'s values are weighted to align peaks with the first cycle\'s reference level, making it easier to compare relative over/undervaluation across Bitcoin\'s halving eras.'
+    }
+  }), []);
+
   // Calculate daily issuance based on block reward schedule
   const calculateDailyIssuance = (date) => {
     const halvingInterval = 210000; // Blocks per halving
@@ -44,6 +71,23 @@ const PuellMultiple = ({ isDashboard = false }) => {
     return reward * blocksPerDay; // Daily issuance in BTC
   };
 
+  // Get reward for a given date (used for cycle scaling)
+  const getCurrentReward = (date) => {
+    const genesisDate = new Date('2009-01-03');
+    const daysSinceGenesis = Math.floor((new Date(date) - genesisDate) / (1000 * 60 * 60 * 24));
+    const blocksPerDay = 144;
+    const blocksMined = daysSinceGenesis * blocksPerDay;
+    const halvingInterval = 210000;
+    const halvingCount = Math.floor(blocksMined / halvingInterval);
+    return 50 / Math.pow(2, Math.min(halvingCount, halvingSchedule.length - 1)); // Cap at last known
+  };
+
+  // Get scaling factor for normalization (current reward / initial reward)
+  const getScalingFactor = (date) => {
+    const currentReward = getCurrentReward(date);
+    return currentReward / 50; // Normalizes to first cycle's issuance level
+  };
+
   // Normalize time to 'YYYY-MM-DD'
   const normalizeTime = (time) => new Date(time).toISOString().split('T')[0];
 
@@ -52,7 +96,7 @@ const PuellMultiple = ({ isDashboard = false }) => {
       console.warn('Invalid input data', { btcData, onchainMetricsData });
       return { priceData: [], issuanceData: [] };
     }
- 
+
     const rawPriceData = btcData
       .map(d => ({
         time: normalizeTime(d.time) || '',
@@ -60,7 +104,7 @@ const PuellMultiple = ({ isDashboard = false }) => {
       }))
       .filter(d => d.time) // Remove invalid time entries
       .sort((a, b) => a.time.localeCompare(b.time));
- 
+
     let issuanceData = onchainMetricsData
       .filter(d => d && d.metric && typeof d.metric === 'string' && d.metric.toLowerCase() === 'isscontusd')
       .map(d => ({
@@ -69,7 +113,7 @@ const PuellMultiple = ({ isDashboard = false }) => {
       }))
       .filter(d => d.time) // Remove invalid time entries
       .sort((a, b) => a.time.localeCompare(b.time));
- 
+
     if (issuanceData.length === 0 && rawPriceData.length > 0) {
       console.warn('IssContUSD data missing, calculating issuance using block reward');
       issuanceData = rawPriceData.map(d => ({
@@ -77,10 +121,9 @@ const PuellMultiple = ({ isDashboard = false }) => {
         value: calculateDailyIssuance(d.time) * d.value,
       }));
     }
- 
+
     const issuanceTimes = new Set(issuanceData.map(d => d.time));
     const priceData = rawPriceData.filter(d => issuanceTimes.has(d.time));
- 
     return { priceData, issuanceData };
   }, [btcData, onchainMetricsData]);
 
@@ -100,6 +143,7 @@ const PuellMultiple = ({ isDashboard = false }) => {
         value: puellMultiple !== null ? parseFloat(puellMultiple.toFixed(2)) : null,
       });
     }
+
     // Apply smoothing based on selected period
     const smoothedPuellData = [];
     for (let i = 0; i < puellData.length; i++) {
@@ -116,12 +160,78 @@ const PuellMultiple = ({ isDashboard = false }) => {
     return smoothedPuellData;
   }, [prepareData, smoothingPeriod]);
 
+  // Manual weight adjustment per cycle
+  const normalizedPuellDataAll = useMemo(() => {
+    const { issuanceData } = prepareData;
+    // Manual scaling factors for each cycle (adjust these values)
+    const cycleWeights = [
+      { start: '2009-01-01', end: '2012-11-27', weight: 1.0 }, // Cycle 1
+      { start: '2012-11-28', end: '2016-07-08', weight: 1.4 }, // Cycle 2
+      { start: '2016-07-09', end: '2020-05-10', weight: 2.0 }, // Cycle 3
+      { start: '2020-05-11', end: '2024-04-18', weight: 2.7 }, // Cycle 4
+      { start: '2024-04-19', end: '2028-01-01', weight: 3.5 }, // Cycle 5
+    ];
+
+    // Compute raw Puell first
+    const rawPuellData = [];
+    for (let i = 0; i < issuanceData.length; i++) {
+      const startIndex = Math.max(0, i - 365);
+      const windowData = issuanceData.slice(startIndex, i + 1);
+      const movingAverage = windowData.length > 0
+        ? windowData.reduce((sum, d) => sum + d.value, 0) / windowData.length
+        : 0;
+      const puellMultiple = movingAverage !== 0 ? issuanceData[i].value / movingAverage : null;
+      rawPuellData.push({
+        time: issuanceData[i].time,
+        value: puellMultiple !== null ? puellMultiple : null,
+      });
+    }
+
+    // Apply manual weights based on cycle
+    const weightedRaw = rawPuellData.map(d => {
+      const date = new Date(d.time);
+      let weight = 1.0;
+      for (const cycle of cycleWeights) {
+        if (date >= new Date(cycle.start) && date <= new Date(cycle.end)) {
+          weight = cycle.weight;
+          break;
+        }
+      }
+      return {
+        time: d.time,
+        value: d.value !== null ? parseFloat((d.value * weight).toFixed(2)) : null,
+      };
+    });
+
+    // Apply smoothing
+    const smoothedWeighted = [];
+    for (let i = 0; i < weightedRaw.length; i++) {
+      const startIndex = Math.max(0, i - smoothingPeriod + 1);
+      const window = weightedRaw.slice(startIndex, i + 1).filter(d => d.value !== null);
+      const smoothedValue = window.length > 0
+        ? window.reduce((sum, d) => sum + d.value, 0) / window.length
+        : null;
+      smoothedWeighted.push({
+        time: weightedRaw[i].time,
+        value: smoothedValue !== null ? parseFloat(smoothedValue.toFixed(2)) : null,
+      });
+    }
+    return smoothedWeighted;
+  }, [prepareData, smoothingPeriod]);
+
   const maxPuell = useMemo(() => {
     if (puellDataAll.length > 0) {
       return Math.max(...puellDataAll.map(d => d.value || 0).filter(v => v !== null)) * 1.1;
     }
     return 5; // Default maximum if no data
   }, [puellDataAll]);
+
+  const maxNormalizedPuell = useMemo(() => {
+    if (normalizedPuellDataAll.length > 0) {
+      return Math.max(...normalizedPuellDataAll.map(d => d.value || 0).filter(v => v !== null)) * 1.1;
+    }
+    return TARGET_MAX_PUELL * 1.1;
+  }, [normalizedPuellDataAll]);
 
   const setInteractivity = () => setIsInteractive(!isInteractive);
 
@@ -168,14 +278,16 @@ const PuellMultiple = ({ isDashboard = false }) => {
       timeScale: { minBarSpacing: 0.001 },
       crosshair: { mode: 0 }, // Normal crosshair mode
     });
+
     const puellSeries = chart.addLineSeries({
-      color: '#ff0062',
+      color: indicators['puell-multiple'].color,
       lastValueVisible: true,
       priceScaleId: 'right',
       lineWidth: 2,
       priceFormat: { type: 'custom', formatter: (value) => value.toFixed(2) },
     });
     puellSeriesRef.current = puellSeries;
+
     const priceSeries = chart.addLineSeries({
       color: 'gray',
       priceScaleId: 'left',
@@ -183,22 +295,37 @@ const PuellMultiple = ({ isDashboard = false }) => {
       priceFormat: { type: 'custom', formatter: compactNumberFormatter },
     });
     priceSeriesRef.current = priceSeries;
+
+    const normalizedPuellSeries = chart.addLineSeries({
+      color: indicators['normalized-puell'].color,
+      lastValueVisible: true,
+      priceScaleId: 'right',
+      lineWidth: 2,
+      priceFormat: { type: 'custom', formatter: (value) => value.toFixed(2) },
+      visible: false, // Start hidden
+    });
+    normalizedPuellSeriesRef.current = normalizedPuellSeries;
+
     chart.applyOptions({ handleScroll: false, handleScale: false });
+
     chart.subscribeCrosshairMove(param => {
       if (!param.point || !param.time || param.point.x < 0 || param.point.x > chartContainerRef.current.clientWidth || param.point.y < 0 || param.point.y > chartContainerRef.current.clientHeight) {
         setTooltipData(null);
       } else {
         const priceData = param.seriesData.get(priceSeriesRef.current);
         const puellData = param.seriesData.get(puellSeriesRef.current);
+        const normalizedData = param.seriesData.get(normalizedPuellSeriesRef.current);
         setTooltipData({
           date: param.time,
           price: priceData?.value,
           puell: puellData?.value,
+          normalizedPuell: showNormalizedPuell ? normalizedData?.value : null,
           x: param.point.x,
           y: param.point.y,
         });
       }
     });
+
     const resizeChart = () => {
       chart.applyOptions({
         width: chartContainerRef.current.clientWidth,
@@ -209,6 +336,7 @@ const PuellMultiple = ({ isDashboard = false }) => {
     window.addEventListener('resize', resizeChart);
     resizeChart();
     chartRef.current = chart;
+
     return () => {
       chart.remove();
       window.removeEventListener('resize', resizeChart);
@@ -243,6 +371,17 @@ const PuellMultiple = ({ isDashboard = false }) => {
     }
   }, [puellDataAll]);
 
+  // Update normalized Puell series data and visibility
+  useEffect(() => {
+    if (normalizedPuellSeriesRef.current && normalizedPuellDataAll.length > 0) {
+      normalizedPuellSeriesRef.current.setData(normalizedPuellDataAll);
+      normalizedPuellSeriesRef.current.applyOptions({ visible: showNormalizedPuell });
+      if (showNormalizedPuell) {
+        chartRef.current?.timeScale().fitContent();
+      }
+    }
+  }, [normalizedPuellDataAll, showNormalizedPuell]);
+
   // Update chart options dynamically
   useEffect(() => {
     if (chartRef.current) {
@@ -250,14 +389,16 @@ const PuellMultiple = ({ isDashboard = false }) => {
         handleScroll: isInteractive,
         handleScale: isInteractive,
       });
+      const rightScaleTitle = `Puell Multiple (${smoothingPeriod}-Day SMA)${showNormalizedPuell ? ' | Normalized' : ''}`;
+      const maxValue = showNormalizedPuell ? maxNormalizedPuell : maxPuell;
       chartRef.current.priceScale('right').applyOptions({
-        title: `Puell Multiple (${smoothingPeriod}-Day SMA)`,
+        title: rightScaleTitle,
         minimum: 0,
-        maximum: maxPuell,
+        maximum: maxValue,
         mode: 1,
       });
     }
-  }, [isInteractive, maxPuell, smoothingPeriod]);
+  }, [isInteractive, maxPuell, maxNormalizedPuell, smoothingPeriod, showNormalizedPuell]);
 
   // Update current price, Puell Multiple, and last updated date
   useEffect(() => {
@@ -273,14 +414,29 @@ const PuellMultiple = ({ isDashboard = false }) => {
     if (!tooltipData) return '0px';
     const chartWidth = chartContainerRef.current.clientWidth;
     const tooltipWidth = 200; // Estimated tooltip width
-    const offset = 10; // Distance from cursor
+    const desiredOffset = 100; // 100px offset from cursor
     const cursorX = tooltipData.x;
-    if (cursorX + offset + tooltipWidth <= chartWidth) {
-      return `${cursorX + offset}px`;
-    } else if (cursorX - offset - tooltipWidth >= 0) {
-      return `${cursorX - offset - tooltipWidth}px`;
-    } else {
-      return `${Math.max(0, Math.min(cursorX, chartWidth - tooltipWidth))}px`;
+    // Calculate positions for both left and right placement
+    const rightPosition = cursorX + desiredOffset;
+    const leftPosition = cursorX - desiredOffset - tooltipWidth + 200;
+    // Try right placement first (preferred)
+    if (rightPosition + tooltipWidth <= chartWidth) {
+      return `${rightPosition}px`;
+    }
+    // If right placement doesn't fit, try left placement
+    else if (leftPosition >= 0) {
+      return `${leftPosition}px`;
+    }
+    // If neither fits, center it or position it as close as possible to the cursor
+    else {
+      // Position it as close as possible to the cursor while staying in bounds
+      const centeredPosition = Math.max(0, Math.min(cursorX, chartWidth - tooltipWidth));
+      // If cursor is in the right half, bias toward right edge
+      if (cursorX > chartWidth / 2) {
+        return `${Math.max(centeredPosition, chartWidth - tooltipWidth)}px`;
+      } else {
+        return `${centeredPosition}px`;
+      }
     }
   };
 
@@ -339,6 +495,24 @@ const PuellMultiple = ({ isDashboard = false }) => {
             </FormControl>
             <Box sx={{ display: 'flex', gap: '10px', marginLeft: 'auto' }}>
               <Button
+                onClick={() => setShowNormalizedPuell(!showNormalizedPuell)}
+                sx={{
+                  backgroundColor: showNormalizedPuell ? '#00ff88' : 'transparent',
+                  color: showNormalizedPuell ? 'black' : '#00ff88',
+                  border: `1px solid ${showNormalizedPuell ? 'violet' : '#00ff88'}`,
+                  borderRadius: '4px',
+                  padding: '8px 16px',
+                  fontSize: '14px',
+                  textTransform: 'none',
+                  '&:hover': {
+                    backgroundColor: '#00cc66',
+                    color: 'black',
+                  },
+                }}
+              >
+                {showNormalizedPuell ? 'Hide Normalized Puell' : 'Show Normalized Puell'}
+              </Button>
+              <Button
                 onClick={setInteractivity}
                 sx={{
                   backgroundColor: isInteractive ? '#4cceac' : 'transparent',
@@ -382,10 +556,16 @@ const PuellMultiple = ({ isDashboard = false }) => {
                 <span style={{ backgroundColor: 'gray', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
                 Bitcoin Price
               </span>
-              <span style={{ display: 'inline-block', color: colors.primary[100] }}>
-                <span style={{ backgroundColor: '#ff0062', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
-                Puell Multiple
+              <span style={{ marginRight: '20px', display: 'inline-block', color: colors.primary[100] }}>
+                <span style={{ backgroundColor: indicators['puell-multiple'].color, height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
+                {indicators['puell-multiple'].label}
               </span>
+              {showNormalizedPuell && (
+                <span style={{ display: 'inline-block', color: colors.primary[100] }}>
+                  <span style={{ backgroundColor: indicators['normalized-puell'].color, height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
+                  {indicators['normalized-puell'].label}
+                </span>
+              )}
             </div>
           </div>
         </>
@@ -422,7 +602,10 @@ const PuellMultiple = ({ isDashboard = false }) => {
           >
             <div style={{ fontSize: '15px' }}>Bitcoin</div>
             {tooltipData.price && <div style={{ fontSize: '20px' }}>${tooltipData.price.toFixed(2)}</div>}
-            {tooltipData.puell && <div style={{ color: '#ff0062' }}>Puell Multiple: {tooltipData.puell.toFixed(2)}</div>}
+            {tooltipData.puell && <div style={{ color: indicators['puell-multiple'].color }}>Puell Multiple: {tooltipData.puell.toFixed(2)}</div>}
+            {tooltipData.normalizedPuell && (
+              <div style={{ color: indicators['normalized-puell'].color }}>Normalized Puell: {tooltipData.normalizedPuell.toFixed(2)}</div>
+            )}
             {tooltipData.date && <div>{tooltipData.date}</div>}
           </div>
         )}
@@ -433,14 +616,26 @@ const PuellMultiple = ({ isDashboard = false }) => {
       </div>
       {!isDashboard && (
         <div>
-          <div style={{ display: 'inline-block', marginTop: '10px', fontSize: '1.2rem', color: colors.primary[100] }}>
+          <div style={{ display: 'inline-block', marginTop: '10px', marginBottom: '10px', fontSize: '1.2rem', color: colors.primary[100] }}>
             Current Puell Multiple: <b>{currentPuellMultiple}</b> (${currentBtcPrice.toFixed(0)}k)
           </div>
-          <p className="chart-info">
-            The Puell Multiple is calculated as the ratio of daily Bitcoin issuance (in USD) to its 365-day moving average. A high Puell Multiple (e.g., above 4) may indicate that miners are earning significantly more than their historical average, often signaling overvaluation or potential price tops. A low Puell Multiple (e.g., below 0.5) suggests miners are earning less, which may indicate undervaluation or potential price bottoms.
-          </p>
+          {/* Show Normalized Puell description when active */}
+          {showNormalizedPuell && (
+            <div style={{ margin: '10px 0', color: colors.grey[100] }}>
+              <p style={{ margin: '5px 0' }}>
+                <strong style={{ color: indicators['normalized-puell'].color }}>
+                  {indicators['normalized-puell'].label}:
+                </strong> {indicators['normalized-puell'].description}
+              </p>
+            </div>
+          )}
         </div>
       )}
+      <div>
+        <p className="chart-info">
+          The Puell Multiple is calculated as the ratio of daily Bitcoin issuance (in USD) to its 365-day moving average. A high Puell Multiple (e.g., above 4) may indicate that miners are earning significantly more than their historical average, often signaling overvaluation or potential price tops. A low Puell Multiple (e.g., below 0.5) suggests miners are earning less, which may indicate undervaluation or potential price bottoms.
+        </p>
+      </div>
     </div>
   );
 };

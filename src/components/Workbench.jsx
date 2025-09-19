@@ -103,7 +103,17 @@ const availableCryptoSeries = {
 };
 // Available Indicator series for selection
 const availableIndicatorSeries = {
-  DOMINANCE: { label: 'Bitcoin Dominance', color: '#FFD700', chartType: 'line', scaleId: 'indicator-shared-scale', dataKey: 'dominanceData', fetchFunction: 'fetchDominanceData', valueKey: 'value', allowLogScale: false },
+  DOMINANCE: { label: 'Bitcoin Dominance', color: '#FFD700', chartType: 'line', scaleId: 'indicator-shared-scale', dataKey: 'dominanceData', fetchFunction: 'fetchDominanceData', valueKey: 'btc', allowLogScale: false },
+  ETH_DOMINANCE: {  // Add this new entry
+    label: 'Ethereum Dominance', 
+    color: '#4169E1', 
+    chartType: 'line', 
+    scaleId: 'indicator-shared-scale', 
+    dataKey: 'dominanceData', 
+    fetchFunction: 'fetchDominanceData', 
+    valueKey: 'eth', 
+    allowLogScale: false 
+  },
   FEAR_GREED: { label: 'Fear and Greed Index', color: '#4169E1', chartType: 'area', scaleId: 'indicator-shared-scale', dataKey: 'fearAndGreedData', fetchFunction: 'fetchFearAndGreedData', valueKey: 'value', allowLogScale: false },
   TOTAL_MARKET_CAP: { label: 'Total Crypto Market Cap', color: '#FF8C00', chartType: 'area', scaleId: 'indicator-shared-scale', dataKey: 'marketCapData', fetchFunction: 'fetchMarketCapData', valueKey: 'value', allowLogScale: true },
   MARKET_CAP_DIFFERENCE: { label: 'Market Cap Difference', color: '#DC143C', chartType: 'line', scaleId: 'indicator-shared-scale', dataKey: 'differenceData', fetchFunction: 'fetchDifferenceData', valueKey: 'value', allowLogScale: false },

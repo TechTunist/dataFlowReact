@@ -38,10 +38,14 @@ const Total3Chart = ({ isDashboard = false }) => {
       const data = await response.json();
       
       // Transform the data to match the expected format for the chart
-      const formattedData = data.map(item => ({
-        time: item.date,
-        value: item.total3
-      }));
+      // Filter to only show data from 2014-01-07 onwards
+      const cutoffDate = new Date('2014-06-21');
+      const formattedData = data
+        .filter(item => new Date(item.date) >= cutoffDate)
+        .map(item => ({
+          time: item.date,
+          value: item.total3
+        }));
       
       setTotal3Data(formattedData);
       setTotal3LastUpdated(new Date());
@@ -127,26 +131,26 @@ const Total3Chart = ({ isDashboard = false }) => {
   const valuationDifference = useMemo(() => {
     if (total3Data.length === 0 || !regressionLines.logMid) return null;
     
-    const latesttotal3 = total3Data[total3Data.length - 1]?.value;
-    const latesttotal3Date = total3Data[total3Data.length - 1]?.time;
+    const latestTotal3 = total3Data[total3Data.length - 1]?.value;
+    const latestTotal3Date = total3Data[total3Data.length - 1]?.time;
     
-    if (!latesttotal3 || !latesttotal3Date) return null;
+    if (!latestTotal3 || !latestTotal3Date) return null;
     
     const fairValueOnLatestDate = regressionLines.logMid.find(
-      (point) => point.time === latesttotal3Date
+      (point) => point.time === latestTotal3Date
     )?.value;
     
     if (!fairValueOnLatestDate) return null;
     
-    const difference = ((latesttotal3 - fairValueOnLatestDate) / fairValueOnLatestDate) * 100;
+    const difference = ((latestTotal3 - fairValueOnLatestDate) / fairValueOnLatestDate) * 100;
     const isOvervalued = difference > 0;
     const percentage = Math.abs(difference).toFixed(2);
-    const currenttotal3Formatted = latesttotal3 ? `($${(latesttotal3 / 1e12).toFixed(2)}T)` : '';
+    const currentTotal3Formatted = latestTotal3 ? `($${(latestTotal3 / 1e12).toFixed(2)}T)` : '';
     
     return {
       label: isOvervalued ? 'Overvaluation' : 'Undervaluation',
       percentage: `${percentage}%`,
-      currenttotal3: currenttotal3Formatted,
+      currentTotal3: currentTotal3Formatted,
     };
   }, [total3Data, regressionLines]);
 
@@ -299,9 +303,7 @@ const Total3Chart = ({ isDashboard = false }) => {
       {!isDashboard && (
         <div className="chart-top-div">
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-            <span className="button-reset">total3 (Logarithmic)</span>
-            {isLoading && <span style={{ color: colors.grey[100] }}>Loading...</span>}
-            {error && <span style={{ color: colors.redAccent[500] }}>{error}</span>}
+
           </div>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
             <button
@@ -352,7 +354,7 @@ const Total3Chart = ({ isDashboard = false }) => {
                   marginTop: '5px',
                 }}
               >
-                {valuationDifference.label}: {valuationDifference.percentage} {valuationDifference.currenttotal3}
+                {valuationDifference.label}: {valuationDifference.percentage} {valuationDifference.currentTotal3}
               </span>
             )}
           </div>
@@ -365,7 +367,7 @@ const Total3Chart = ({ isDashboard = false }) => {
           className="tooltip"
           style={{
             left: (() => {
-              const sidebarWidth = isMobile ? -80 : -300;
+              const sidebarWidth = isMobile ? isNarrowScreen ? -50 : -20 : -290;
               const cursorX = tooltipData.x - sidebarWidth;
               const chartWidth = chartContainerRef.current.clientWidth - sidebarWidth;
               const tooltipWidth = 200;
@@ -407,7 +409,7 @@ const Total3Chart = ({ isDashboard = false }) => {
 
       {!isDashboard && (
         <div className="chart-info">
-          total3 metric displayed over time. The regression bands have been fitted to the absolute lows, 
+          total3 metric displayed over time (from 2014-01-07 onwards). The regression bands have been fitted to the absolute lows, 
           highs, and fair value levels over the total history of the data. The bands are calculated 
           using a logarithmic regression model.
           <br />

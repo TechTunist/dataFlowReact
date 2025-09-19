@@ -39,7 +39,7 @@ const Total2Chart = ({ isDashboard = false }) => {
       
       // Transform the data to match the expected format for the chart
       // Filter to only show data from 2013-11-27 onwards
-      const cutoffDate = new Date('2013-11-27');
+      const cutoffDate = new Date('2014-6-18');
       const filteredData = data
         .filter(item => new Date(item.date) >= cutoffDate)
         .map(item => ({
@@ -303,9 +303,7 @@ const Total2Chart = ({ isDashboard = false }) => {
       {!isDashboard && (
         <div className="chart-top-div">
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-            <span className="button-reset">Total2 (Logarithmic) - From 2013-11-27</span>
-            {isLoading && <span style={{ color: colors.grey[100] }}>Loading...</span>}
-            {error && <span style={{ color: colors.redAccent[500] }}>{error}</span>}
+
           </div>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
             <button
@@ -369,7 +367,7 @@ const Total2Chart = ({ isDashboard = false }) => {
           className="tooltip"
           style={{
             left: (() => {
-              const sidebarWidth = isMobile ? -80 : -300;
+              const sidebarWidth = isMobile ? isNarrowScreen ? -50 : -20 : -290;
               const cursorX = tooltipData.x - sidebarWidth;
               const chartWidth = chartContainerRef.current.clientWidth - sidebarWidth;
               const tooltipWidth = 200;

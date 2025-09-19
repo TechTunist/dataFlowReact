@@ -317,7 +317,9 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
       case "/btc-mvrv-z":
         return { title: "Bitcoin MVRV Z-Score", subtitle: isMobile ? "Identify extreme conditions" : "Demonstrates the relationship between market value and realised value" };
       case "/total2":
-        return { title: "Total2", subtitle: "Total Crypto Market Cap Minus Bitcoin" };
+        return { title: "Total2 Marketcap", subtitle: "Total Crypto Market Cap Minus BTC" };
+      case "/total3": 
+        return { title: "Total3 Marketcap", subtitle: "Total Crypto Market Cap Minus BTC & ETH" };
       default:
         return { title: "CryptoLogical", subtitle: "" };
     }

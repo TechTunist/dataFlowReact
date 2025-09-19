@@ -1,2257 +1,658 @@
-// import React, { useRef, useEffect, useState, useContext, useCallback, useMemo } from 'react';
-// import { createChart } from 'lightweight-charts';
-// import '../styling/bitcoinChart.css';
-// import { tokens } from "../theme";
-// import { useTheme } from "@mui/material";
-// import useIsMobile from '../hooks/useIsMobile';
-// import LastUpdated from '../hooks/LastUpdated';
-// import BitcoinFees from './BitcoinTransactionFees';
-// import { Select, MenuItem, FormControl, InputLabel, Box, Checkbox, useMediaQuery } from '@mui/material';
-// import { DataContext } from '../DataContext';
-// import restrictToPaidSubscription from '../scenes/RestrictToPaid';
-
-// const BitcoinPrice = ({ isDashboard = false }) => {
-//   const chartContainerRef = useRef();
-//   const chartRef = useRef(null);
-//   const priceSeriesRef = useRef(null);
-//   const smaSeriesRefs = useRef({}).current;
-//   const fedBalanceSeriesRef = useRef(null);
-//   const mvrvSeriesRef = useRef(null);
-//   const mayerMultipleSeriesRef = useRef(null);
-//   const rsiSeriesRef = useRef(null);
-//   const mayerPriceLinesRef = useRef([]);
-//   const mvrvPriceLinesRef = useRef([]);
-//   const rsiPriceLinesRef = useRef([]);
-//   const [scaleMode, setScaleMode] = useState(1);
-//   const [tooltipData, setTooltipData] = useState(null);
-//   const [isInteractive, setIsInteractive] = useState(false);
-//   const [activeIndicators, setActiveIndicators] = useState([]);
-//   const [activeSMAs, setActiveSMAs] = useState([]);
-//   const isNarrowScreen = useMediaQuery('(max-width:600px)');
-//   const [activeRsiPeriod, setActiveRsiPeriod] = useState('');
-//   // New state for the current Bitcoin price from localStorage
-//   const [currentBtcPrice, setCurrentBtcPrice] = useState(null);
-//   const theme = useTheme();
-//   const colors = tokens(theme.palette.mode);
-//   const isMobile = useIsMobile();
-//   const {
-//     btcData,
-//     fedBalanceData,
-//     mvrvData,
-//     fetchBtcData,
-//     fetchFedBalanceData,
-//     fetchMvrvData,
-//   } = useContext(DataContext);
-//   const indicators = useMemo(() => ({
-//     'fed-balance': {
-//       color: 'purple',
-//       label: 'Fed Balance (Trillions)',
-//       description: 'The Federal Reserve\'s balance sheet size in trillions of USD, reflecting monetary policy and liquidity in the economy, which may influence Bitcoin\'s price.'
-//     },
-//     'mvrv': {
-//       color: 'orange',
-//       label: 'MVRV Ratio',
-//       description: 'Market Value to Realized Value ratio with projected peak based on historical decreases. Values above 3.7 suggest overvaluation; below 1 indicate undervaluation.'
-//     },
-//     'mayer-multiple': {
-//       color: 'red',
-//       label: 'Mayer Multiple',
-//       description: 'The ratio of Bitcoin\'s current price to its 200-day moving average. Above 2.4 often signals overbought conditions; below 1 may indicate undervaluation.'
-//     }
-//   }), []);
-//   const smaIndicators = useMemo(() => ({
-//     '8w-sma': { period: 8 * 7, color: 'blue', label: '8 Week SMA', type: 'sma' },
-//     '20w-sma': { period: 20 * 7, color: 'limegreen', label: '20 Week SMA', type: 'sma' },
-//     '50w-sma': { period: 50 * 7, color: 'magenta', label: '50 Week SMA', type: 'sma' },
-//     '100w-sma': { period: 100 * 7, color: 'white', label: '100 Week SMA', type: 'sma' },
-//     '200w-sma': { period: 200 * 7, color: 'yellow', label: '200 Week SMA', type: 'sma' },
-//     'bull-market-support': {
-//       sma: { period: 20 * 7, color: 'red', label: '20 Week SMA (Bull Market Support)' },
-//       ema: { period: 21 * 7, color: 'limegreen', label: '21 Week EMA (Bull Market Support)' },
-//       label: 'Bull Market Support Band',
-//       type: 'bull-market-support'
-//     }
-//   }), []);
-//   const rsiPeriods = useMemo(() => ({
-//     'Daily': { days: 14, label: 'Daily RSI' },
-//     'Weekly': { days: 98, label: 'Weekly RSI' }
-//   }), []);
-//   // Simplified functions without useCallback for clarity, as they are lightweight
-//   const setInteractivity = useCallback(() => setIsInteractive(prev => !prev), []);
-//   const toggleScaleMode = useCallback(() => setScaleMode(prev => (prev === 1 ? 0 : 1)), []);
-//   const resetChartView = useCallback(() => chartRef.current?.timeScale().fitContent(), []);
-//   const handleIndicatorChange = useCallback((event) => setActiveIndicators(event.target.value), []);
-//   const handleSMAChange = useCallback((event) => setActiveSMAs(event.target.value), []);
-//   const handleRsiPeriodChange = useCallback((event) => setActiveRsiPeriod(event.target.value), []);
-//   const calculateMovingAverage = useCallback((data, period) => {
-//     let movingAverages = [];
-//     for (let i = period - 1; i < data.length; i++) {
-//       let sum = 0;
-//       for (let j = 0; j < period; j++) {
-//         sum += data[i - j].value;
-//       }
-//       movingAverages.push({
-//         time: data[i].time,
-//         value: sum / period,
-//       });
-//     }
-//     return movingAverages;
-//   }, []);
-//   const calculateExponentialMovingAverage = useCallback((data, period) => {
-//     const k = 2 / (period + 1);
-//     let emaData = [];
-//     let sum = 0;
-//     for (let i = 0; i < period; i++) {
-//       sum += data[i].value;
-//     }
-//     let ema = sum / period;
-//     emaData.push({ time: data[period - 1].time, value: ema });
-//     for (let i = period; i < data.length; i++) {
-//       ema = (data[i].value * k) + (ema * (1 - k));
-//       emaData.push({ time: data[i].time, value: ema });
-//     }
-//     return emaData;
-//   }, []);
-//   const calculateMayerMultiple = useCallback((data) => {
-//     const period = 200;
-//     let mayerMultiples = [];
-//     for (let i = period - 1; i < data.length; i++) {
-//       let sum = 0;
-//       for (let j = 0; j < period; j++) {
-//         sum += data[i - j].value;
-//       }
-//       const ma200 = sum / period;
-//       mayerMultiples.push({
-//         time: data[i].time,
-//         value: data[i].value / ma200,
-//       });
-//     }
-//     return mayerMultiples;
-//   }, []);
-//   const calculateRSI = useCallback((data, period) => {
-//     let rsiData = [];
-//     for (let i = period; i < data.length; i++) {
-//       let gains = 0;
-//       let losses = 0;
-//       for (let j = 1; j <= period; j++) {
-//         const diff = data[i - j + 1].value - data[i - j].value;
-//         if (diff > 0) gains += diff;
-//         else losses -= diff;
-//       }
-//       const avgGain = gains / period;
-//       const avgLoss = losses / period;
-//       const rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
-//       const rsi = avgLoss === 0 ? 100 : 100 - (100 / (1 + rs));
-//       rsiData.push({
-//         time: data[i].time,
-//         value: rsi,
-//       });
-//     }
-//     return rsiData;
-//   }, []);
-//   const calculateMvrvPeakProjection = useCallback((mvrvData) => {
-//     // Smooth MVRV data with a 30-day SMA to reduce noise for better peak detection
-//     const smoothPeriod = 30;
-//     const smoothedMvrv = [];
-//     for (let i = smoothPeriod - 1; i < mvrvData.length; i++) {
-//       let sum = 0;
-//       for (let j = 0; j < smoothPeriod; j++) {
-//         sum += mvrvData[i - j].value;
-//       }
-//       smoothedMvrv.push({
-//         time: mvrvData[i].time,
-//         value: sum / smoothPeriod,
-//       });
-//     }
-//     const peaks = [];
-//     const window = 365; // 1-year window for cycle-level peak detection
-//     for (let i = window; i < smoothedMvrv.length - window; i++) {
-//       const isPeak = smoothedMvrv.slice(i - window, i + window + 1).every(
-//         (item, idx) => item.value <= smoothedMvrv[i].value || idx === window
-//       );
-//       if (isPeak && smoothedMvrv[i].value > 3) { // Filter for significant peaks above 3
-//         peaks.push(smoothedMvrv[i]);
-//       }
-//     }
-//     const decreases = [];
-//     for (let i = 1; i < peaks.length; i++) {
-//       const decrease = (peaks[i - 1].value - peaks[i].value) / peaks[i - 1].value;
-//       decreases.push(decrease);
-//     }
-//     const avgDecrease = decreases.length > 0
-//       ? decreases.reduce((sum, val) => sum + val, 0) / decreases.length
-//       : 0;
-//     const latestPeak = peaks[peaks.length - 1];
-//     const projectedPeak = latestPeak ? latestPeak.value * (1 - avgDecrease) : null;
-//     return { peaks, projectedPeak };
-//   }, []);
-//   // Memoize the peak projection
-//   const mvrvPeakProjection = useMemo(() => {
-//     if (mvrvData.length > 0) {
-//       return calculateMvrvPeakProjection(mvrvData).projectedPeak;
-//     }
-//     return null;
-//   }, [mvrvData, calculateMvrvPeakProjection]);
-
-//   // Binary search function for finding nearest data point <= time
-//   const findNearestData = useCallback((data, targetTime) => {
-//     if (data.length === 0) return null;
-//     let low = 0;
-//     let high = data.length - 1;
-//     while (low <= high) {
-//       const mid = Math.floor((low + high) / 2);
-//       const midTime = new Date(data[mid].time).getTime();
-//       if (midTime === targetTime) {
-//         return data[mid];
-//       } else if (midTime < targetTime) {
-//         low = mid + 1;
-//       } else {
-//         high = mid - 1;
-//       }
-//     }
-//     // After loop, high is the largest index where time <= targetTime
-//     return high >= 0 ? data[high] : null;
-//   }, []);
-
-//   useEffect(() => {
-//     fetchBtcData();
-//   }, [fetchBtcData]);
-//   useEffect(() => {
-//     if (activeIndicators.includes('fed-balance')) {
-//       fetchFedBalanceData();
-//     }
-//   }, [activeIndicators, fetchFedBalanceData]);
-//   useEffect(() => {
-//     if (activeIndicators.includes('mvrv')) {
-//       fetchMvrvData();
-//     }
-//   }, [activeIndicators, fetchMvrvData]);
-//   // New useEffect: Periodically check localStorage for current BTC price (populated by BitcoinFees)
-//   // This is robust to async fetching in BitcoinFees and handles errors gracefully
-//   useEffect(() => {
-//     const checkCurrentPrice = () => {
-//       try {
-//         const cachedPrice = localStorage.getItem('btcPrice');
-//         const cacheTime = localStorage.getItem('cacheTime');
-//         const now = new Date().getTime();
-//         const cacheExpiry = 10 * 60 * 1000; // 10 minutes, matching BitcoinFees
-//         if (cachedPrice && cacheTime && now - parseInt(cacheTime) < cacheExpiry) {
-//           setCurrentBtcPrice(JSON.parse(cachedPrice));
-//         } else {
-//           setCurrentBtcPrice(null); // Clear if expired
-//         }
-//       } catch (error) {
-//         console.error('Error reading current BTC price from localStorage:', error);
-//         setCurrentBtcPrice(null); // Robust fallback: don't crash, just don't show current price
-//       }
-//     };
-//     checkCurrentPrice(); // Initial check
-//     const intervalId = setInterval(checkCurrentPrice, 5000); // Check every 5 seconds to catch async updates
-//     return () => clearInterval(intervalId);
-//   }, []);
-//   // Chart initialization (run once on mount)
-//   useEffect(() => {
-//     const chart = createChart(chartContainerRef.current, {
-//       width: chartContainerRef.current.clientWidth,
-//       height: chartContainerRef.current.clientHeight,
-//       layout: { background: { type: 'solid', color: colors.primary[700] }, textColor: colors.primary[100] },
-//       grid: { vertLines: { color: colors.greenAccent[700] }, horzLines: { color: colors.greenAccent[700] } },
-//       timeScale: { minBarSpacing: 0.001 },
-//       rightPriceScale: {
-//         mode: scaleMode,
-//         borderVisible: false,
-//         scaleMargins: { top: 0.05, bottom: 0.05 },
-//         width: 50,
-//         priceFormat: { type: 'custom', formatter: value => `$${value.toFixed(2)}` },
-//       },
-//       leftPriceScale: {
-//         mode: scaleMode,
-//         borderVisible: false,
-//         scaleMargins: { top: 0.05, bottom: 0.05 },
-//         priceFormat: { type: 'custom', formatter: value => `$${value.toFixed(2)}T` },
-//       },
-//     });
-//     chartRef.current = chart;
-//     const priceSeries = chart.addAreaSeries({
-//       priceScaleId: 'right',
-//       lineWidth: 2,
-//       priceFormat: {
-//         type: 'custom',
-//         minMove: 1,
-//         formatter: (price) => {
-//           if (price >= 1000) return (price / 1000).toFixed(1) + 'K';
-//           else if (price >= 100) return price.toFixed(0);
-//           return price.toFixed(1);
-//         },
-//       },
-//     });
-//     priceSeriesRef.current = priceSeries;
-//     const fedBalanceSeries = chart.addLineSeries({
-//       priceScaleId: 'left',
-//       color: indicators['fed-balance'].color,
-//       lineWidth: 2,
-//       priceLineVisible: false,
-//       visible: false,
-//     });
-//     fedBalanceSeriesRef.current = fedBalanceSeries;
-//     const mvrvSeries = chart.addLineSeries({
-//       priceScaleId: 'mvrv-scale',
-//       color: indicators['mvrv'].color,
-//       lineWidth: 2,
-//       priceLineVisible: false,
-//       visible: false,
-//     });
-//     mvrvSeriesRef.current = mvrvSeries;
-//     const mayerMultipleSeries = chart.addLineSeries({
-//       priceScaleId: 'mayer-multiple-scale',
-//       color: indicators['mayer-multiple'].color,
-//       lineWidth: 2,
-//       priceLineVisible: false,
-//       visible: false,
-//     });
-//     mayerMultipleSeriesRef.current = mayerMultipleSeries;
-//     const rsiSeries = chart.addLineSeries({
-//       priceScaleId: 'rsi-scale',
-//       color: 'green',
-//       lineWidth: 2,
-//       priceLineVisible: false,
-//       visible: false,
-//     });
-//     rsiSeriesRef.current = rsiSeries;
-//     const resizeChart = () => {
-//       if (chart && chartContainerRef.current) {
-//         chart.applyOptions({
-//           width: chartContainerRef.current.clientWidth,
-//           height: chartContainerRef.current.clientHeight,
-//         });
-//         chart.timeScale().fitContent();
-//       }
-//     };
-//     window.addEventListener('resize', resizeChart);
-//     return () => {
-//       // Clear all series references
-//       Object.keys(smaSeriesRefs).forEach(key => delete smaSeriesRefs[key]);
-//       [mayerPriceLinesRef, mvrvPriceLinesRef, rsiPriceLinesRef].forEach(ref => {
-//         ref.current.forEach(priceLine => {
-//           try {
-//             const series = ref === mayerPriceLinesRef ? mayerMultipleSeriesRef.current :
-//               ref === mvrvPriceLinesRef ? mvrvSeriesRef.current :
-//               rsiSeriesRef.current;
-//             series?.removePriceLine(priceLine);
-//           } catch (error) {
-//             console.error('Error removing price line:', error);
-//           }
-//         });
-//         ref.current = [];
-//       });
-//       try {
-//         chart.remove();
-//       } catch (error) {
-//         console.error('Error removing chart:', error);
-//       }
-//       window.removeEventListener('resize', resizeChart);
-//     };
-//   }, []); // Empty dependency array to create chart only once
-
-//   // Separate effect for updating chart layout and grid when colors change
-//   useEffect(() => {
-//     if (chartRef.current) {
-//       chartRef.current.applyOptions({
-//         layout: { background: { type: 'solid', color: colors.primary[700] }, textColor: colors.primary[100] },
-//         grid: { vertLines: { color: colors.greenAccent[700] }, horzLines: { color: colors.greenAccent[700] } },
-//       });
-//     }
-//   }, [colors]);
-
-//   // Separate effect for updating price series colors when RSI period or theme changes
-//   useEffect(() => {
-//     if (priceSeriesRef.current) {
-//       const areaColors = activeRsiPeriod
-//         ? {
-//             topColor: 'rgba(128, 128, 128, 0.3)', // Faint grey when RSI is active
-//             bottomColor: 'rgba(128, 128, 128, 0.1)',
-//             lineColor: 'rgba(128, 128, 128, 0.5)',
-//           }
-//         : theme.palette.mode === 'dark'
-//         ? {
-//             topColor: 'rgba(38, 198, 218, 0.56)',
-//             bottomColor: 'rgba(38, 198, 218, 0.04)',
-//             lineColor: 'rgba(38, 198, 218, 1)',
-//           }
-//         : {
-//             topColor: 'rgba(255, 165, 0, 0.56)',
-//             bottomColor: 'rgba(255, 165, 0, 0.2)',
-//             lineColor: 'rgba(255, 140, 0, 0.8)',
-//           };
-//       priceSeriesRef.current.applyOptions({ topColor: areaColors.topColor, bottomColor: areaColors.bottomColor, lineColor: areaColors.lineColor });
-//     }
-//   }, [activeRsiPeriod, theme.palette.mode]);
-
-//   // Separate effect for updating scale mode
-//   useEffect(() => {
-//     if (chartRef.current) {
-//       chartRef.current.priceScale('right').applyOptions({ mode: scaleMode, borderVisible: false });
-//       chartRef.current.priceScale('left').applyOptions({ mode: scaleMode, borderVisible: false });
-//     }
-//   }, [scaleMode]);
-
-//   // Separate effect for subscribing to crosshair move (throttled)
-//   useEffect(() => {
-//     if (!chartRef.current) return;
-
-//     // Throttle function
-//     const throttle = (func, limit) => {
-//       let lastFunc;
-//       let lastRan;
-//       return function() {
-//         const context = this;
-//         const args = arguments;
-//         if (!lastRan) {
-//           func.apply(context, args);
-//           lastRan = Date.now();
-//         } else {
-//           clearTimeout(lastFunc);
-//           lastFunc = setTimeout(function() {
-//             if ((Date.now() - lastRan) >= limit) {
-//               func.apply(context, args);
-//               lastRan = Date.now();
-//             }
-//           }, limit - (Date.now() - lastRan));
-//         }
-//       };
-//     };
-
-//     const handleCrosshairMove = (param) => {
-//       if (
-//         !param.point ||
-//         !param.time ||
-//         param.point.x < 0 ||
-//         param.point.x > chartContainerRef.current.clientWidth ||
-//         param.point.y < 0 ||
-//         param.point.y > chartContainerRef.current.clientHeight
-//       ) {
-//         setTooltipData(null);
-//       } else {
-//         const dateStr = param.time;
-//         const priceData = param.seriesData.get(priceSeriesRef.current);
-//         const currentTime = new Date(param.time).getTime();
-//         const fedSeriesData = fedBalanceSeriesRef.current?.data() || [];
-//         const nearestFedData = findNearestData(fedSeriesData, currentTime);
-//         const fedBalanceValue = nearestFedData ? nearestFedData.value : null;
-//         const mvrvSeriesData = mvrvSeriesRef.current?.data() || [];
-//         const nearestMvrvData = findNearestData(mvrvSeriesData, currentTime);
-//         const mvrvValue = nearestMvrvData ? nearestMvrvData.value : null;
-//         const mayerMultipleData = mayerMultipleSeriesRef.current?.data() || [];
-//         const nearestMayerData = findNearestData(mayerMultipleData, currentTime);
-//         const mayerMultipleValue = nearestMayerData ? nearestMayerData.value : null;
-//         const rsiSeriesData = rsiSeriesRef.current?.data() || [];
-//         const nearestRsiData = findNearestData(rsiSeriesData, currentTime);
-//         const rsiValue = nearestRsiData ? nearestRsiData.value : null;
-//         setTooltipData({
-//           date: dateStr,
-//           price: priceData?.value,
-//           fedBalance: fedBalanceValue,
-//           mvrv: mvrvValue,
-//           mayerMultiple: mayerMultipleValue,
-//           rsi: rsiValue,
-//           mvrvPeakProjection: mvrvPeakProjection,
-//           x: param.point.x,
-//           y: param.point.y,
-//         });
-//       }
-//     };
-
-//     const throttledHandler = throttle(handleCrosshairMove, 50); // 50ms throttle
-
-//     chartRef.current.subscribeCrosshairMove(throttledHandler);
-
-//     return () => {
-//       if (chartRef.current) {
-//         chartRef.current.unsubscribeCrosshairMove(throttledHandler);
-//       }
-//     };
-//   }, [findNearestData, mvrvPeakProjection]); // Resubscribe when these change
-
-//   // Update Bitcoin price data (modified to include current price update if available)
-//   useEffect(() => {
-//     if (priceSeriesRef.current && btcData.length > 0) {
-//       try {
-//         priceSeriesRef.current.setData(btcData);
-//         if (currentBtcPrice) {
-//           const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
-//           priceSeriesRef.current.update({ time: today, value: currentBtcPrice });
-//         }
-//         if (chartRef.current) chartRef.current.timeScale().fitContent();
-//       } catch (error) {
-//         console.error('Error updating Bitcoin price data on chart:', error);
-//         // Robust fallback: just set historical data without current price
-//         priceSeriesRef.current.setData(btcData);
-//         if (chartRef.current) chartRef.current.timeScale().fitContent();
-//       }
-//     }
-//   }, [btcData, currentBtcPrice]);
-
-//   // Update Fed Balance data
-//   useEffect(() => {
-//     if (fedBalanceSeriesRef.current && btcData.length > 0 && fedBalanceData.length > 0) {
-//       const btcStartTime = new Date(btcData[0].time).getTime();
-//       const btcEndTime = new Date(btcData[btcData.length - 1].time).getTime();
-//       const filteredFedData = fedBalanceData.filter(item => {
-//         const itemTime = new Date(item.time).getTime();
-//         return itemTime >= btcStartTime && itemTime <= btcEndTime;
-//       });
-//       try {
-//         fedBalanceSeriesRef.current.setData(filteredFedData);
-//         fedBalanceSeriesRef.current.applyOptions({ visible: activeIndicators.includes('fed-balance') });
-//       } catch (error) {
-//         console.error('Error setting Fed Balance data:', error);
-//       }
-//     }
-//   }, [fedBalanceData, btcData, activeIndicators]);
-
-//   // Update MVRV data
-//   useEffect(() => {
-//     if (mvrvSeriesRef.current && btcData.length > 0 && mvrvData.length > 0) {
-//       const btcStartTime = new Date(btcData[0].time).getTime();
-//       const btcEndTime = new Date(btcData[btcData.length - 1].time).getTime();
-//       const cutoffDate = new Date('2010-10-08').getTime();
-//       const filteredMvrvData = mvrvData.filter(item => {
-//         const itemTime = new Date(item.time).getTime();
-//         return itemTime >= cutoffDate && itemTime >= btcStartTime && itemTime <= btcEndTime;
-//       });
-//       try {
-//         mvrvSeriesRef.current.setData(filteredMvrvData);
-//         mvrvPriceLinesRef.current.forEach(priceLine => {
-//           try {
-//             mvrvSeriesRef.current.removePriceLine(priceLine);
-//           } catch (error) {
-//             console.error('Error removing MVRV price line:', error);
-//           }
-//         });
-//         mvrvPriceLinesRef.current = [];
-//         if (activeIndicators.includes('mvrv')) {
-//           const overvaluedLine = mvrvSeriesRef.current.createPriceLine({
-//             price: 3.7,
-//             color: indicators['mvrv'].color,
-//             lineWidth: 1,
-//             lineStyle: 2,
-//             axisLabelVisible: true,
-//             title: 'Overvalued',
-//           });
-//           const undervaluedLine = mvrvSeriesRef.current.createPriceLine({
-//             price: 1,
-//             color: indicators['mvrv'].color,
-//             lineWidth: 1,
-//             lineStyle: 2,
-//             axisLabelVisible: true,
-//             title: 'Undervalued',
-//           });
-//           const projectedPeakLine = mvrvPeakProjection ? mvrvSeriesRef.current.createPriceLine({
-//             price: mvrvPeakProjection,
-//             color: 'cyan',
-//             lineWidth: 2,
-//             lineStyle: 1,
-//             axisLabelVisible: true,
-//             title: 'Projected Peak',
-//           }) : null;
-//           mvrvPriceLinesRef.current = [overvaluedLine, undervaluedLine];
-//           if (projectedPeakLine) mvrvPriceLinesRef.current.push(projectedPeakLine);
-//           mvrvSeriesRef.current.applyOptions({ visible: true });
-//         } else {
-//           mvrvSeriesRef.current.applyOptions({ visible: false });
-//         }
-//       } catch (error) {
-//         console.error('Error setting MVRV data:', error);
-//       }
-//     }
-//   }, [mvrvData, btcData, activeIndicators, mvrvPeakProjection, indicators]);
-
-//   // Update Mayer Multiple data
-//   useEffect(() => {
-//     if (mayerMultipleSeriesRef.current && btcData.length > 0) {
-//       try {
-//         const mayerMultipleData = calculateMayerMultiple(btcData);
-//         mayerMultipleSeriesRef.current.setData(mayerMultipleData);
-//         mayerPriceLinesRef.current.forEach(priceLine => {
-//           try {
-//             mayerMultipleSeriesRef.current.removePriceLine(priceLine);
-//           } catch (error) {
-//             console.error('Error removing Mayer Multiple price line:', error);
-//           }
-//         });
-//         mayerPriceLinesRef.current = [];
-//         if (activeIndicators.includes('mayer-multiple')) {
-//           const overboughtLine = mayerMultipleSeriesRef.current.createPriceLine({
-//             price: 2.4,
-//             color: 'darkred',
-//             lineWidth: 1,
-//             lineStyle: 2,
-//             axisLabelVisible: true,
-//             title: 'Overbought',
-//           });
-//           const undervaluedLine = mayerMultipleSeriesRef.current.createPriceLine({
-//             price: 1,
-//             color: 'darkred',
-//             lineWidth: 1,
-//             lineStyle: 2,
-//             axisLabelVisible: true,
-//             title: 'Undervalued',
-//           });
-//           const severelyUndervaluedLine = mayerMultipleSeriesRef.current.createPriceLine({
-//             price: 0.6,
-//             color: 'darkred',
-//             lineWidth: 1,
-//             lineStyle: 2,
-//             axisLabelVisible: true,
-//             title: 'Severely Undervalued',
-//           });
-//           mayerPriceLinesRef.current = [overboughtLine, undervaluedLine, severelyUndervaluedLine];
-//           mayerMultipleSeriesRef.current.applyOptions({ visible: true });
-//         } else {
-//           mayerMultipleSeriesRef.current.applyOptions({ visible: false });
-//         }
-//       } catch (error) {
-//         console.error('Error setting Mayer Multiple data:', error);
-//       }
-//     }
-//   }, [btcData, activeIndicators, calculateMayerMultiple]);
-
-//   // Update RSI data
-//   useEffect(() => {
-//     if (rsiSeriesRef.current && btcData.length > 0 && activeRsiPeriod) {
-//       try {
-//         const period = rsiPeriods[activeRsiPeriod].days;
-//         const rsiData = calculateRSI(btcData, period);
-//         rsiSeriesRef.current.setData(rsiData);
-//         rsiPriceLinesRef.current.forEach(priceLine => {
-//           try {
-//             rsiSeriesRef.current.removePriceLine(priceLine);
-//           } catch (error) {
-//             console.error('Error removing RSI price line:', error);
-//           }
-//         });
-//         rsiPriceLinesRef.current = [];
-//         const overboughtLine = rsiSeriesRef.current.createPriceLine({
-//           price: 70,
-//           color: 'green',
-//           lineWidth: 1,
-//           lineStyle: 2,
-//           axisLabelVisible: true,
-//           title: 'Overbought',
-//         });
-//         const oversoldLine = rsiSeriesRef.current.createPriceLine({
-//           price: 30,
-//           color: 'green',
-//           lineWidth: 1,
-//           lineStyle: 2,
-//           axisLabelVisible: true,
-//           title: 'Oversold',
-//         });
-//         rsiPriceLinesRef.current = [overboughtLine, oversoldLine];
-//         rsiSeriesRef.current.applyOptions({ visible: true });
-//       } catch (error) {
-//         console.error('Error setting RSI data:', error);
-//       }
-//     } else if (rsiSeriesRef.current) {
-//       try {
-//         rsiSeriesRef.current.applyOptions({ visible: false });
-//         rsiPriceLinesRef.current.forEach(priceLine => {
-//           try {
-//             rsiSeriesRef.current.removePriceLine(priceLine);
-//           } catch (error) {
-//             console.error('Error removing RSI price line:', error);
-//           }
-//         });
-//         rsiPriceLinesRef.current = [];
-//       } catch (error) {
-//         console.error('Error hiding RSI series:', error);
-//       }
-//     }
-//   }, [btcData, activeRsiPeriod, calculateRSI, rsiPeriods]);
-
-//   // Update SMA data
-//   useEffect(() => {
-//     if (!chartRef.current || btcData.length === 0) return;
-//     // Remove existing SMA series safely
-//     Object.keys(smaSeriesRefs).forEach(key => {
-//       if (smaSeriesRefs[key]) {
-//         try {
-//           chartRef.current.removeSeries(smaSeriesRefs[key]);
-//         } catch (error) {
-//           console.error('Error removing SMA series:', error);
-//         }
-//         delete smaSeriesRefs[key];
-//       }
-//     });
-//     // Add new SMA series
-//     activeSMAs.forEach(key => {
-//       const indicator = smaIndicators[key];
-//       try {
-//         if (indicator.type === 'sma') {
-//           const series = chartRef.current.addLineSeries({
-//             color: indicator.color,
-//             lineWidth: 2,
-//             priceLineVisible: false,
-//             priceScaleId: 'right',
-//           });
-//           smaSeriesRefs[key] = series;
-//           const data = calculateMovingAverage(btcData, indicator.period);
-//           series.setData(data);
-//         } else if (indicator.type === 'bull-market-support') {
-//           const smaSeries = chartRef.current.addLineSeries({
-//             color: indicator.sma.color,
-//             lineWidth: 2,
-//             priceLineVisible: false,
-//             priceScaleId: 'right',
-//           });
-//           smaSeriesRefs[`${key}-sma`] = smaSeries;
-//           const smaData = calculateMovingAverage(btcData, indicator.sma.period);
-//           smaSeries.setData(smaData);
-//           const emaSeries = chartRef.current.addLineSeries({
-//             color: indicator.ema.color,
-//             lineWidth: 2,
-//             priceLineVisible: false,
-//             priceScaleId: 'right',
-//           });
-//           smaSeriesRefs[`${key}-ema`] = emaSeries;
-//           const emaData = calculateExponentialMovingAverage(btcData, indicator.ema.period);
-//           emaSeries.setData(emaData);
-//         }
-//       } catch (error) {
-//         console.error('Error adding SMA series:', error);
-//       }
-//     });
-//   }, [activeSMAs, btcData, calculateMovingAverage, calculateExponentialMovingAverage, smaIndicators]);
-
-//   // Update interactivity
-//   useEffect(() => {
-//     if (chartRef.current) {
-//       chartRef.current.applyOptions({
-//         handleScroll: isInteractive,
-//         handleScale: isInteractive,
-//       });
-//     }
-//   }, [isInteractive]);
-
-//   return (
-//     <div style={{ height: '100%', position: 'relative' }}>
-//       {!isDashboard && (
-//         <Box
-//           sx={{
-//             display: 'flex',
-//             flexDirection: { xs: 'column', sm: 'row' },
-//             alignItems: 'center',
-//             justifyContent: 'center',
-//             gap: '20px',
-//             marginBottom: '30px',
-//             marginTop: '50px',
-//           }}
-//         >
-//           <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '300px' } }}>
-//             <InputLabel
-//               id="indicators-label"
-//               shrink
-//               sx={{
-//                 color: colors.grey[100],
-//                 '&.Mui-focused': { color: colors.greenAccent[500] },
-//                 top: 0,
-//                 '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' },
-//               }}
-//             >
-//               Indicators
-//             </InputLabel>
-//             <Select
-//               multiple
-//               value={activeIndicators}
-//               onChange={handleIndicatorChange}
-//               labelId="indicators-label"
-//               label="Indicators"
-//               displayEmpty
-//               renderValue={(selected) =>
-//                 selected.length > 0
-//                   ? selected.map((key) => indicators[key].label).join(', ')
-//                   : 'Select Indicators'
-//               }
-//               sx={{
-//                 color: colors.grey[100],
-//                 backgroundColor: colors.primary[500],
-//                 borderRadius: "8px",
-//                 '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
-//                 '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-//                 '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-//                 '& .MuiSelect-select': { py: 1.5, pl: 2 },
-//                 '& .MuiSelect-select:empty': { color: colors.grey[500] },
-//               }}
-//             >
-//               {Object.entries(indicators).map(([key, { label }]) => (
-//                 <MenuItem key={key} value={key}>
-//                   <Checkbox
-//                     checked={activeIndicators.includes(key)}
-//                     sx={{ color: colors.grey[100], '&.Mui-checked': { color: colors.greenAccent[500] } }}
-//                   />
-//                   <span>{label}</span>
-//                 </MenuItem>
-//               ))}
-//             </Select>
-//           </FormControl>
-//           <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '300px' } }}>
-//             <InputLabel
-//               id="sma-label"
-//               shrink
-//               sx={{
-//                 color: colors.grey[100],
-//                 '&.Mui-focused': { color: colors.greenAccent[500] },
-//                 top: 0,
-//                 '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' },
-//               }}
-//             >
-//               Moving Averages
-//             </InputLabel>
-//             <Select
-//               multiple
-//               value={activeSMAs}
-//               onChange={handleSMAChange}
-//               labelId="sma-label"
-//               label="Moving Averages"
-//               displayEmpty
-//               renderValue={(selected) =>
-//                 selected.length > 0
-//                   ? selected.map((key) => smaIndicators[key].label).join(', ')
-//                   : 'Select Moving Averages'
-//               }
-//               sx={{
-//                 color: colors.grey[100],
-//                 backgroundColor: colors.primary[500],
-//                 borderRadius: "8px",
-//                 '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
-//                 '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-//                 '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-//                 '& .MuiSelect-select': { py: 1.5, pl: 2 },
-//                 '& .MuiSelect-select:empty': { color: colors.grey[500] },
-//               }}
-//             >
-//               {Object.entries(smaIndicators).map(([key, { label }]) => (
-//                 <MenuItem key={key} value={key}>
-//                   <Checkbox
-//                     checked={activeSMAs.includes(key)}
-//                     sx={{ color: colors.grey[100], '&.Mui-checked': { color: colors.greenAccent[500] } }}
-//                   />
-//                   <span>{label}</span>
-//                 </MenuItem>
-//               ))}
-//             </Select>
-//           </FormControl>
-//           <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '300px' } }}>
-//             <InputLabel
-//               id="rsi-period-label"
-//               shrink
-//               sx={{
-//                 color: colors.grey[100],
-//                 '&.Mui-focused': { color: colors.greenAccent[500] },
-//                 top: 0,
-//                 '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' },
-//               }}
-//             >
-//               RSI Period
-//             </InputLabel>
-//             <Select
-//               value={activeRsiPeriod}
-//               onChange={handleRsiPeriodChange}
-//               labelId="rsi-period-label"
-//               label="RSI Period"
-//               displayEmpty
-//               renderValue={(selected) =>
-//                 selected ? rsiPeriods[selected].label : 'Select RSI Period'
-//               }
-//               sx={{
-//                 color: colors.grey[100],
-//                 backgroundColor: colors.primary[500],
-//                 borderRadius: "8px",
-//                 '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
-//                 '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-//                 '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-//                 '& .MuiSelect-select': { py: 1.5, pl: 2 },
-//                 '& .MuiSelect-select:empty': { color: colors.grey[500] },
-//               }}
-//             >
-//               <MenuItem value="">
-//                 <span>None</span>
-//               </MenuItem>
-//               {Object.entries(rsiPeriods).map(([key, { label }]) => (
-//                 <MenuItem key={key} value={key}>
-//                   <span>{label}</span>
-//                 </MenuItem>
-//               ))}
-//             </Select>
-//           </FormControl>
-//         </Box>
-//       )}
-//       {!isDashboard && (
-//         <div className="chart-top-div">
-//           <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-//             <label className="switch">
-//               <input type="checkbox" checked={scaleMode === 1} onChange={toggleScaleMode} />
-//               <span className="slider round"></span>
-//             </label>
-//             <span style={{ color: colors.primary[100] }}>
-//               {scaleMode === 1 ? 'Logarithmic' : 'Linear'}
-//             </span>
-//           </div>
-//           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-//             <button
-//               onClick={setInteractivity}
-//               className="button-reset"
-//               style={{
-//                 backgroundColor: isInteractive ? '#4cceac' : 'transparent',
-//                 color: isInteractive ? 'black' : '#31d6aa',
-//                 borderColor: isInteractive ? 'violet' : '#70d8bd',
-//               }}
-//             >
-//               {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
-//             </button>
-//             <button onClick={resetChartView} className="button-reset extra-margin">
-//               Reset Chart
-//             </button>
-//           </div>
-//         </div>
-//       )}
-//       <div
-//         className="chart-container"
-//         style={{
-//           height: isDashboard ? '100%' : 'calc(100% - 40px)',
-//           width: '100%',
-//           border: '2px solid #a9a9a9',
-//           position: 'relative',
-//           zIndex: 1,
-//         }}
-//         onDoubleClick={() => setInteractivity(!isInteractive)}
-//       >
-//         <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
-//         <div
-//           style={{
-//             position: 'absolute',
-//             top: '10px',
-//             left: '10px',
-//             zIndex: 2,
-//             backgroundColor: colors.primary[900],
-//             padding: '5px 10px',
-//             borderRadius: '4px',
-//             color: colors.grey[100],
-//             fontSize: isNarrowScreen ? '8px' : '12px',
-//           }}
-//         >
-//           {!isDashboard && <div>Active Indicators</div>}
-//           <div style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>
-//             <span
-//               style={{
-//                 display: 'inline-block',
-//                 width: '10px',
-//                 height: '10px',
-//                 backgroundColor: activeRsiPeriod
-//                   ? 'rgba(128, 128, 128, 0.5)'
-//                   : theme.palette.mode === 'dark'
-//                   ? 'rgba(38, 198, 218, 1)'
-//                   : 'rgba(255, 140, 0, 0.8)',
-//                 marginRight: '5px',
-//               }}
-//             />
-//             Bitcoin Price
-//           </div>
-//           {activeIndicators.map(key => (
-//             <div key={key} style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>
-//               <span
-//                 style={{
-//                   display: 'inline-block',
-//                   width: '10px',
-//                   height: '10px',
-//                   backgroundColor: indicators[key].color,
-//                   marginRight: '5px',
-//                 }}
-//               />
-//               {indicators[key].label}
-//             </div>
-//           ))}
-//           {activeRsiPeriod && (
-//             <div style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>
-//               <span
-//                 style={{
-//                   display: 'inline-block',
-//                   width: '10px',
-//                   height: '10px',
-//                   backgroundColor: 'green',
-//                   marginRight: '5px',
-//                 }}
-//               />
-//               {rsiPeriods[activeRsiPeriod].label}
-//             </div>
-//           )}
-//           {activeIndicators.includes('mvrv') && (
-//             <div style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>
-//               <span
-//                 style={{
-//                   display: 'inline-block',
-//                   width: '10px',
-//                   height: '10px',
-//                   backgroundColor: 'cyan',
-//                   marginRight: '5px',
-//                 }}
-//               />
-//               MVRV Peak Projection
-//             </div>
-//           )}
-//           {activeSMAs.map(key => {
-//             const indicator = smaIndicators[key];
-//             if (indicator.type === 'bull-market-support') {
-//               return (
-//                 <React.Fragment key={key}>
-//                   <div style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>
-//                     <span
-//                       style={{
-//                         display: 'inline-block',
-//                         width: '10px',
-//                         height: '10px',
-//                         backgroundColor: indicator.sma.color,
-//                         marginRight: '5px',
-//                       }}
-//                     />
-//                     {indicator.sma.label}
-//                   </div>
-//                   <div style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>
-//                     <span
-//                       style={{
-//                         display: 'inline-block',
-//                         width: '10px',
-//                         height: '10px',
-//                         backgroundColor: indicator.ema.color,
-//                         marginRight: '5px',
-//                       }}
-//                     />
-//                     {indicator.ema.label}
-//                   </div>
-//                 </React.Fragment>
-//               );
-//             }
-//             return (
-//               <div key={key} style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>
-//                 <span
-//                   style={{
-//                     display: 'inline-block',
-//                     width: '10px',
-//                     height: '10px',
-//                     backgroundColor: indicator.color,
-//                     marginRight: '5px',
-//                   }}
-//                 />
-//                 {indicator.label}
-//               </div>
-//             );
-//           })}
-//         </div>
-//       </div>
-//       {!isDashboard && (
-//         <div className='under-chart' style={{ padding: '10px 0' }}>
-//           <Box sx={{
-//             display: 'flex',
-//             justifyContent: 'space-between',
-//             width: '100%',
-//             flexWrap: 'wrap',
-//             gap: '10px',
-//             alignItems: 'center',
-//           }}>
-//             <LastUpdated storageKey="btcData" />
-//             <BitcoinFees />
-//           </Box>
-//         </div>
-//       )}
-//       {!isDashboard && (activeIndicators.length > 0 || activeRsiPeriod) && (
-//         <Box sx={{ margin: '10px 0', color: colors.grey[100] }}>
-//           {activeIndicators.map(key => (
-//             <p key={key} style={{ margin: '5px 0' }}>
-//               <strong style={{ color: indicators[key].color }}>
-//                 {indicators[key].label}:
-//               </strong> {indicators[key].description}
-//             </p>
-//           ))}
-//           {activeRsiPeriod && (
-//             <p style={{ margin: '5px 0' }}>
-//               <strong style={{ color: 'green' }}>
-//                 {rsiPeriods[activeRsiPeriod].label}:
-//               </strong> Relative Strength Index measures momentum. Values above 70 suggest overbought conditions; below 30 indicate oversold conditions.
-//             </p>
-//           )}
-//         </Box>
-//       )}
-//       {!isDashboard && tooltipData && (
-//         <div
-//           className="tooltip"
-//           style={{
-//             position: 'fixed',
-//             left: (() => {
-//               const sidebarWidth = isMobile ? -80 : -320;
-//               const cursorX = tooltipData.x - sidebarWidth;
-//               const chartWidth = chartContainerRef.current.clientWidth - sidebarWidth;
-//               const tooltipWidth = 200;
-//               const offset = 1000 / (chartWidth + 300);
-//               const rightPosition = cursorX + offset;
-//               const leftPosition = cursorX - tooltipWidth - offset;
-//               if (rightPosition + tooltipWidth <= chartWidth) return `${rightPosition}px`;
-//               if (leftPosition >= 0) return `${leftPosition}px`;
-//               return `${Math.max(0, Math.min(rightPosition, chartWidth - tooltipWidth))}px`;
-//             })(),
-//             top: (() => {
-//               const offsetY = isNarrowScreen ? 300 : 150;
-//               return `${tooltipData.y + offsetY}px`
-//             })(),
-//             zIndex: 1000,
-//           }}
-//         >
-//           <div style={{ fontSize: '15px' }}>Bitcoin</div>
-//           <div style={{ fontSize: '20px' }}>${tooltipData.price?.toFixed(2)}</div>
-//           {activeIndicators.includes('fed-balance') && tooltipData.fedBalance !== null && (
-//             <div style={{ color: indicators['fed-balance'].color }}>
-//               Fed Balance: ${tooltipData.fedBalance.toFixed(2)}T
-//             </div>
-//           )}
-//           {activeIndicators.includes('mvrv') && tooltipData.mvrv !== null && (
-//             <div style={{ color: indicators['mvrv'].color }}>
-//               MVRV Ratio: {tooltipData.mvrv.toFixed(2)}
-//             </div>
-//           )}
-//           {activeIndicators.includes('mvrv') && tooltipData.mvrvPeakProjection !== null && (
-//             <div style={{ color: 'cyan' }}>
-//               MVRV Peak Projection: {tooltipData.mvrvPeakProjection.toFixed(2)}
-//             </div>
-//           )}
-//           {activeIndicators.includes('mayer-multiple') && tooltipData.mayerMultiple !== null && (
-//             <div style={{ color: indicators['mayer-multiple'].color }}>
-//               Mayer Multiple: {tooltipData.mayerMultiple.toFixed(2)}
-//             </div>
-//           )}
-//           {activeRsiPeriod && tooltipData.rsi !== null && (
-//             <div style={{ color: 'green' }}>
-//               {rsiPeriods[activeRsiPeriod].label}: {tooltipData.rsi.toFixed(2)}
-//             </div>
-//           )}
-//           <div>{tooltipData.date ? tooltipData.date.split('-').reverse().join('-') : ''}</div>
-//         </div>
-//       )}
-//       {!isDashboard && (
-//         <p className='chart-info'>
-//           Bitcoin represents a significant advancement in digital finance. It operates on a globally distributed and permissionless ledger,
-//           secured by a network of miners. This system is designed to be transparent, secure, and resilient. Bitcoin enables the transfer of
-//           value without intermediaries, offering a unique digital asset that can be sent anywhere in the world almost instantly.
-//           As a finite digital currency, it provides a novel way to store and transfer wealth, with potential implications for global finance and value exchange.
-//           <br /><br /><br />
-//         </p>
-//       )}
-//     </div>
-//   );
-// };
-// export default restrictToPaidSubscription(BitcoinPrice);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-import React, { useRef, useEffect, useState, useContext, useCallback, useMemo } from 'react';
+import React, { useRef, useEffect, useState, useContext, useMemo } from 'react';
 import { createChart } from 'lightweight-charts';
-import '../styling/bitcoinChart.css';
 import { tokens } from "../theme";
-import { useTheme } from "@mui/material";
-import useIsMobile from '../hooks/useIsMobile';
+import { useTheme, Button, Box, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
+import '../styling/bitcoinChart.css';
 import LastUpdated from '../hooks/LastUpdated';
 import BitcoinFees from './BitcoinTransactionFees';
-import { Select, MenuItem, FormControl, InputLabel, Box, Checkbox, useMediaQuery } from '@mui/material';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
-const BitcoinPrice = ({ isDashboard = false }) => {
+
+const PuellMultiple = ({ isDashboard = false }) => {
   const chartContainerRef = useRef();
   const chartRef = useRef(null);
+  const puellSeriesRef = useRef(null);
   const priceSeriesRef = useRef(null);
-  const smaSeriesRefs = useRef({}).current;
-  const mvrvSeriesRef = useRef(null);
-  const mayerMultipleSeriesRef = useRef(null);
-  const rsiSeriesRef = useRef(null);
-  const mayerPriceLinesRef = useRef([]);
-  const mvrvPriceLinesRef = useRef([]);
-  const rsiPriceLinesRef = useRef([]);
-  const [scaleMode, setScaleMode] = useState(1);
-  const [tooltipData, setTooltipData] = useState(null);
-  const [isInteractive, setIsInteractive] = useState(false);
-  const [activeIndicators, setActiveIndicators] = useState([]);
-  const [activeSMAs, setActiveSMAs] = useState([]);
-  const isNarrowScreen = useMediaQuery('(max-width:600px)');
-  const [activeRsiPeriod, setActiveRsiPeriod] = useState('');
-  const [currentBtcPrice, setCurrentBtcPrice] = useState(null);
+  const normalizedPuellSeriesRef = useRef(null);
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
-  const isMobile = useIsMobile();
-  const {
-    btcData,
-    mvrvData,
-    fetchBtcData,
-    fetchMvrvData,
-  } = useContext(DataContext);
+  const { btcData, onchainMetricsData, fetchBtcData, fetchOnchainMetricsData } = useContext(DataContext);
+  const [isInteractive, setIsInteractive] = useState(false);
+  const [showNormalizedPuell, setShowNormalizedPuell] = useState(false);
+  const [currentBtcPrice, setCurrentBtcPrice] = useState(0);
+  const [currentPuellMultiple, setCurrentPuellMultiple] = useState(null);
+  const [tooltipData, setTooltipData] = useState(null);
+  const [smoothingPeriod, setSmoothingPeriod] = useState(7); // Default to 7-day smoothing
+  const [lastUpdatedDate, setLastUpdatedDate] = useState(null);
+
+  // Smoothing period options
+  const smoothingOptions = [
+    { value: 7, label: '7 Days' },
+    { value: 28, label: '28 Days' },
+    { value: 90, label: '90 Days' },
+    { value: 180, label: '180 Days' },
+    { value: 365, label: '1 Year' },
+  ];
+
+  // Halving schedule (blocks and dates for reference; rewards auto-calculated)
+  const halvingSchedule = [
+    { blocks: 0, date: '2009-01-03', reward: 50 },
+    { blocks: 210000, date: '2012-11-28', reward: 25 },
+    { blocks: 420000, date: '2016-07-09', reward: 12.5 },
+    { blocks: 630000, date: '2020-05-11', reward: 6.25 },
+    { blocks: 840000, date: '2024-04-19', reward: 3.125 }, // Approximate; adjust if needed
+  ];
+
+  // Target max for normalization (e.g., first cycle's peak ~10; adjust based on your data)
+  const TARGET_MAX_PUELL = 10;
+
+  // Indicators configuration (like MVRV/Mayer Multiple)
   const indicators = useMemo(() => ({
-    'mvrv': {
-      color: 'orange',
-      label: 'MVRV Ratio',
-      description: 'Market Value to Realized Value ratio with projected peak based on historical decreases. Values above 3.7 suggest overvaluation; below 1 indicate undervaluation.'
+    'puell-multiple': {
+      color: '#ff0062',
+      label: 'Puell Multiple',
+      description: 'The ratio of daily Bitcoin issuance (in USD) to its 365-day moving average. A high Puell Multiple (e.g., above 4) may indicate that miners are earning significantly more than their historical average, often signaling overvaluation or potential price tops. A low Puell Multiple (e.g., below 0.5) suggests miners are earning less, which may indicate undervaluation or potential price bottoms.'
     },
-    'mayer-multiple': {
-      color: 'red',
-      label: 'Mayer Multiple',
-      description: 'The ratio of Bitcoin\'s current price to its 200-day moving average. Above 2.4 often signals overbought conditions; below 1 may indicate undervaluation.'
+    'normalized-puell': {
+      color: '#00ff88',
+      label: 'Normalized Puell Ratio',
+      description: 'Puell ratio accounting for diminishing returns. Each cycle\'s values are weighted to align peaks with the first cycle\'s reference level, making it easier to compare relative over/undervaluation across Bitcoin\'s halving eras.'
     }
   }), []);
-  const smaIndicators = useMemo(() => ({
-    '8w-sma': { period: 8 * 7, color: 'blue', label: '8 Week SMA', type: 'sma' },
-    '20w-sma': { period: 20 * 7, color: 'limegreen', label: '20 Week SMA', type: 'sma' },
-    '50w-sma': { period: 50 * 7, color: 'magenta', label: '50 Week SMA', type: 'sma' },
-    '100w-sma': { period: 100 * 7, color: 'white', label: '100 Week SMA', type: 'sma' },
-    '200w-sma': { period: 200 * 7, color: 'yellow', label: '200 Week SMA', type: 'sma' },
-    'bull-market-support': {
-      sma: { period: 20 * 7, color: 'red', label: '20 Week SMA (Bull Market Support)' },
-      ema: { period: 21 * 7, color: 'limegreen', label: '21 Week EMA (Bull Market Support)' },
-      label: 'Bull Market Support Band',
-      type: 'bull-market-support'
+
+  // Calculate daily issuance based on block reward schedule
+  const calculateDailyIssuance = (date) => {
+    const halvingInterval = 210000; // Blocks per halving
+    const blocksPerDay = 144; // Approx. 144 blocks/day
+    const genesisDate = new Date('2009-01-03');
+    const daysSinceGenesis = Math.floor((new Date(date) - genesisDate) / (1000 * 60 * 60 * 24));
+    const blocksMined = daysSinceGenesis * blocksPerDay;
+    const halvingCount = Math.floor(blocksMined / halvingInterval);
+    const reward = 50 / Math.pow(2, halvingCount);
+    return reward * blocksPerDay; // Daily issuance in BTC
+  };
+
+  // Get reward for a given date (used for cycle scaling)
+  const getCurrentReward = (date) => {
+    const genesisDate = new Date('2009-01-03');
+    const daysSinceGenesis = Math.floor((new Date(date) - genesisDate) / (1000 * 60 * 60 * 24));
+    const blocksPerDay = 144;
+    const blocksMined = daysSinceGenesis * blocksPerDay;
+    const halvingInterval = 210000;
+    const halvingCount = Math.floor(blocksMined / halvingInterval);
+    return 50 / Math.pow(2, Math.min(halvingCount, halvingSchedule.length - 1)); // Cap at last known
+  };
+
+  // Get scaling factor for normalization (current reward / initial reward)
+  const getScalingFactor = (date) => {
+    const currentReward = getCurrentReward(date);
+    return currentReward / 50; // Normalizes to first cycle's issuance level
+  };
+
+  // Normalize time to 'YYYY-MM-DD'
+  const normalizeTime = (time) => new Date(time).toISOString().split('T')[0];
+
+  const prepareData = useMemo(() => {
+    if (!btcData || !onchainMetricsData || !Array.isArray(onchainMetricsData)) {
+      console.warn('Invalid input data', { btcData, onchainMetricsData });
+      return { priceData: [], issuanceData: [] };
     }
-  }), []);
-  const rsiPeriods = useMemo(() => ({
-    'Daily': { days: 14, label: 'Daily RSI' },
-    'Weekly': { days: 98, label: 'Weekly RSI' }
-  }), []);
-  const setInteractivity = useCallback(() => setIsInteractive(prev => !prev), []);
-  const toggleScaleMode = useCallback(() => setScaleMode(prev => (prev === 1 ? 0 : 1)), []);
-  const resetChartView = useCallback(() => chartRef.current?.timeScale().fitContent(), []);
-  const handleIndicatorChange = useCallback((event) => setActiveIndicators(event.target.value), []);
-  const handleSMAChange = useCallback((event) => setActiveSMAs(event.target.value), []);
-  const handleRsiPeriodChange = useCallback((event) => setActiveRsiPeriod(event.target.value), []);
-  const calculateMovingAverage = useCallback((data, period) => {
-    let movingAverages = [];
-    for (let i = period - 1; i < data.length; i++) {
-      let sum = 0;
-      for (let j = 0; j < period; j++) {
-        sum += data[i - j].value;
-      }
-      movingAverages.push({
-        time: data[i].time,
-        value: sum / period,
+
+    const rawPriceData = btcData
+      .map(d => ({
+        time: normalizeTime(d.time) || '',
+        value: parseFloat(d.value) || 0,
+      }))
+      .filter(d => d.time) // Remove invalid time entries
+      .sort((a, b) => a.time.localeCompare(b.time));
+
+    let issuanceData = onchainMetricsData
+      .filter(d => d && d.metric && typeof d.metric === 'string' && d.metric.toLowerCase() === 'isscontusd')
+      .map(d => ({
+        time: normalizeTime(d.time) || '',
+        value: parseFloat(d.value) || 0,
+      }))
+      .filter(d => d.time) // Remove invalid time entries
+      .sort((a, b) => a.time.localeCompare(b.time));
+
+    if (issuanceData.length === 0 && rawPriceData.length > 0) {
+      console.warn('IssContUSD data missing, calculating issuance using block reward');
+      issuanceData = rawPriceData.map(d => ({
+        time: d.time,
+        value: calculateDailyIssuance(d.time) * d.value,
+      }));
+    }
+
+    const issuanceTimes = new Set(issuanceData.map(d => d.time));
+    const priceData = rawPriceData.filter(d => issuanceTimes.has(d.time));
+    return { priceData, issuanceData };
+  }, [btcData, onchainMetricsData]);
+
+  // Calculate Puell Multiple with smoothing
+  const puellDataAll = useMemo(() => {
+    const { issuanceData } = prepareData;
+    const puellData = [];
+    for (let i = 0; i < issuanceData.length; i++) {
+      const startIndex = Math.max(0, i - 365);
+      const windowData = issuanceData.slice(startIndex, i + 1);
+      const movingAverage = windowData.length > 0
+        ? windowData.reduce((sum, d) => sum + d.value, 0) / windowData.length
+        : 0;
+      const puellMultiple = movingAverage !== 0 ? issuanceData[i].value / movingAverage : null;
+      puellData.push({
+        time: issuanceData[i].time,
+        value: puellMultiple !== null ? parseFloat(puellMultiple.toFixed(2)) : null,
       });
     }
-    return movingAverages;
-  }, []);
-  const calculateExponentialMovingAverage = useCallback((data, period) => {
-    const k = 2 / (period + 1);
-    let emaData = [];
-    let sum = 0;
-    for (let i = 0; i < period; i++) {
-      sum += data[i].value;
-    }
-    let ema = sum / period;
-    emaData.push({ time: data[period - 1].time, value: ema });
-    for (let i = period; i < data.length; i++) {
-      ema = (data[i].value * k) + (ema * (1 - k));
-      emaData.push({ time: data[i].time, value: ema });
-    }
-    return emaData;
-  }, []);
-  const calculateMayerMultiple = useCallback((data) => {
-    const period = 200;
-    let mayerMultiples = [];
-    for (let i = period - 1; i < data.length; i++) {
-      let sum = 0;
-      for (let j = 0; j < period; j++) {
-        sum += data[i - j].value;
-      }
-      const ma200 = sum / period;
-      mayerMultiples.push({
-        time: data[i].time,
-        value: data[i].value / ma200,
+
+    // Apply smoothing based on selected period
+    const smoothedPuellData = [];
+    for (let i = 0; i < puellData.length; i++) {
+      const startIndex = Math.max(0, i - smoothingPeriod + 1);
+      const window = puellData.slice(startIndex, i + 1).filter(d => d.value !== null);
+      const smoothedValue = window.length > 0
+        ? window.reduce((sum, d) => sum + d.value, 0) / window.length
+        : null;
+      smoothedPuellData.push({
+        time: puellData[i].time,
+        value: smoothedValue !== null ? parseFloat(smoothedValue.toFixed(2)) : null,
       });
     }
-    return mayerMultiples;
-  }, []);
-  const calculateRSI = useCallback((data, period) => {
-    let rsiData = [];
-    for (let i = period; i < data.length; i++) {
-      let gains = 0;
-      let losses = 0;
-      for (let j = 1; j <= period; j++) {
-        const diff = data[i - j + 1].value - data[i - j].value;
-        if (diff > 0) gains += diff;
-        else losses -= diff;
-      }
-      const avgGain = gains / period;
-      const avgLoss = losses / period;
-      const rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
-      const rsi = avgLoss === 0 ? 100 : 100 - (100 / (1 + rs));
-      rsiData.push({
-        time: data[i].time,
-        value: rsi,
+    return smoothedPuellData;
+  }, [prepareData, smoothingPeriod]);
+
+  // Manual weight adjustment per cycle
+  const normalizedPuellDataAll = useMemo(() => {
+    const { issuanceData } = prepareData;
+    // Manual scaling factors for each cycle (adjust these values)
+    const cycleWeights = [
+      { start: '2009-01-01', end: '2012-11-27', weight: 1.0 }, // Cycle 1
+      { start: '2012-11-28', end: '2016-07-08', weight: 1.4 }, // Cycle 2
+      { start: '2016-07-09', end: '2020-05-10', weight: 1.9 }, // Cycle 3
+      { start: '2020-05-11', end: '2024-04-18', weight: 2.9 }, // Cycle 4
+      { start: '2024-04-19', end: '2028-01-01', weight: 3.6 }, // Cycle 5
+    ];
+
+    // Compute raw Puell first
+    const rawPuellData = [];
+    for (let i = 0; i < issuanceData.length; i++) {
+      const startIndex = Math.max(0, i - 365);
+      const windowData = issuanceData.slice(startIndex, i + 1);
+      const movingAverage = windowData.length > 0
+        ? windowData.reduce((sum, d) => sum + d.value, 0) / windowData.length
+        : 0;
+      const puellMultiple = movingAverage !== 0 ? issuanceData[i].value / movingAverage : null;
+      rawPuellData.push({
+        time: issuanceData[i].time,
+        value: puellMultiple !== null ? puellMultiple : null,
       });
     }
-    return rsiData;
-  }, []);
-  const calculateMvrvPeakProjection = useCallback((mvrvData) => {
-    const smoothPeriod = 30;
-    const smoothedMvrv = [];
-    for (let i = smoothPeriod - 1; i < mvrvData.length; i++) {
-      let sum = 0;
-      for (let j = 0; j < smoothPeriod; j++) {
-        sum += mvrvData[i - j].value;
+
+    // Apply manual weights based on cycle
+    const weightedRaw = rawPuellData.map(d => {
+      const date = new Date(d.time);
+      let weight = 1.0;
+      for (const cycle of cycleWeights) {
+        if (date >= new Date(cycle.start) && date <= new Date(cycle.end)) {
+          weight = cycle.weight;
+          break;
+        }
       }
-      smoothedMvrv.push({
-        time: mvrvData[i].time,
-        value: sum / smoothPeriod,
+      return {
+        time: d.time,
+        value: d.value !== null ? parseFloat((d.value * weight).toFixed(2)) : null,
+      };
+    });
+
+    // Apply smoothing
+    const smoothedWeighted = [];
+    for (let i = 0; i < weightedRaw.length; i++) {
+      const startIndex = Math.max(0, i - smoothingPeriod + 1);
+      const window = weightedRaw.slice(startIndex, i + 1).filter(d => d.value !== null);
+      const smoothedValue = window.length > 0
+        ? window.reduce((sum, d) => sum + d.value, 0) / window.length
+        : null;
+      smoothedWeighted.push({
+        time: weightedRaw[i].time,
+        value: smoothedValue !== null ? parseFloat(smoothedValue.toFixed(2)) : null,
       });
     }
-    const peaks = [];
-    const window = 365;
-    for (let i = window; i < smoothedMvrv.length - window; i++) {
-      const isPeak = smoothedMvrv.slice(i - window, i + window + 1).every(
-        (item, idx) => item.value <= smoothedMvrv[i].value || idx === window
-      );
-      if (isPeak && smoothedMvrv[i].value > 3) {
-        peaks.push(smoothedMvrv[i]);
-      }
+    return smoothedWeighted;
+  }, [prepareData, smoothingPeriod]);
+
+  const maxPuell = useMemo(() => {
+    if (puellDataAll.length > 0) {
+      return Math.max(...puellDataAll.map(d => d.value || 0).filter(v => v !== null)) * 1.1;
     }
-    const decreases = [];
-    for (let i = 1; i < peaks.length; i++) {
-      const decrease = (peaks[i - 1].value - peaks[i].value) / peaks[i - 1].value;
-      decreases.push(decrease);
+    return 5; // Default maximum if no data
+  }, [puellDataAll]);
+
+  const maxNormalizedPuell = useMemo(() => {
+    if (normalizedPuellDataAll.length > 0) {
+      return Math.max(...normalizedPuellDataAll.map(d => d.value || 0).filter(v => v !== null)) * 1.1;
     }
-    const avgDecrease = decreases.length > 0
-      ? decreases.reduce((sum, val) => sum + val, 0) / decreases.length
-      : 0;
-    const latestPeak = peaks[peaks.length - 1];
-    const projectedPeak = latestPeak ? latestPeak.value * (1 - avgDecrease) : null;
-    return { peaks, projectedPeak };
-  }, []);
-  const mvrvPeakProjection = useMemo(() => {
-    if (mvrvData.length > 0) {
-      return calculateMvrvPeakProjection(mvrvData).projectedPeak;
-    }
-    return null;
-  }, [mvrvData, calculateMvrvPeakProjection]);
-  const findNearestData = useCallback((data, targetTime) => {
-    if (data.length === 0) return null;
-    let low = 0;
-    let high = data.length - 1;
-    while (low <= high) {
-      const mid = Math.floor((low + high) / 2);
-      const midTime = new Date(data[mid].time).getTime();
-      if (midTime === targetTime) {
-        return data[mid];
-      } else if (midTime < targetTime) {
-        low = mid + 1;
-      } else {
-        high = mid - 1;
-      }
-    }
-    return high >= 0 ? data[high] : null;
-  }, []);
+    return TARGET_MAX_PUELL * 1.1;
+  }, [normalizedPuellDataAll]);
+
+  const setInteractivity = () => setIsInteractive(!isInteractive);
+
+  const compactNumberFormatter = (value) => {
+    if (value >= 1000000) return (value / 1000000).toFixed(0) + 'M';
+    if (value >= 1000) return (value / 1000).toFixed(0) + 'k';
+    return value.toFixed(0);
+  };
+
+  const resetChart = () => {
+    if (chartRef.current) chartRef.current.timeScale().fitContent();
+  };
+
+  // Fetch initial data
   useEffect(() => {
     fetchBtcData();
-  }, [fetchBtcData]);
-  useEffect(() => {
-    if (activeIndicators.includes('mvrv')) {
-      fetchMvrvData();
-    }
-  }, [activeIndicators, fetchMvrvData]);
-  useEffect(() => {
-    const checkCurrentPrice = () => {
-      try {
-        const cachedPrice = localStorage.getItem('btcPrice');
-        const cacheTime = localStorage.getItem('cacheTime');
-        const now = new Date().getTime();
-        const cacheExpiry = 10 * 60 * 1000;
-        if (cachedPrice && cacheTime && now - parseInt(cacheTime) < cacheExpiry) {
-          setCurrentBtcPrice(JSON.parse(cachedPrice));
-        } else {
-          setCurrentBtcPrice(null);
-        }
-      } catch (error) {
-        console.error('Error reading current BTC price from localStorage:', error);
-        setCurrentBtcPrice(null);
-      }
-    };
-    checkCurrentPrice();
-    const intervalId = setInterval(checkCurrentPrice, 5000);
-    return () => clearInterval(intervalId);
-  }, []);
+    fetchOnchainMetricsData();
+  }, [fetchBtcData, fetchOnchainMetricsData]);
+
+  // Initialize chart once
   useEffect(() => {
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
       height: chartContainerRef.current.clientHeight,
-      layout: { background: { type: 'solid', color: colors.primary[700] }, textColor: colors.primary[100] },
-      grid: { vertLines: { color: colors.greenAccent[700] }, horzLines: { color: colors.greenAccent[700] } },
-      timeScale: { minBarSpacing: 0.001 },
+      layout: {
+        background: { type: 'solid', color: colors.primary[700] },
+        textColor: colors.primary[100],
+      },
+      grid: {
+        vertLines: { color: 'rgba(70, 70, 70, 0.5)' },
+        horzLines: { color: 'rgba(70, 70, 70, 0.5)' },
+      },
       rightPriceScale: {
-        mode: scaleMode,
+        scaleMargins: { top: 0.01, bottom: 0.01 },
         borderVisible: false,
-        scaleMargins: { top: 0.05, bottom: 0.05 },
-        width: 50,
-        priceFormat: { type: 'custom', formatter: value => `$${value.toFixed(2)}` },
-        visible: true,
+        mode: 1, // Logarithmic scale for Puell Multiple
       },
       leftPriceScale: {
-        mode: 0,
-        borderVisible: false,
+        visible: true,
+        borderColor: 'rgba(197, 203, 206, 1)',
         scaleMargins: { top: 0.1, bottom: 0.1 },
-        priceFormat: { type: 'price', precision: 2, minMove: 0.01 },
-        visible: !!activeRsiPeriod,
-        autoScale: false,
-        minValue: 0,
-        maxValue: 100,
+        mode: 1, // Logarithmic for price
       },
+      timeScale: { minBarSpacing: 0.001 },
+      crosshair: { mode: 0 }, // Normal crosshair mode
     });
-    chartRef.current = chart;
-    const priceSeries = chart.addAreaSeries({
+
+    const puellSeries = chart.addLineSeries({
+      color: indicators['puell-multiple'].color,
+      lastValueVisible: true,
       priceScaleId: 'right',
       lineWidth: 2,
-      priceFormat: {
-        type: 'custom',
-        minMove: 1,
-        formatter: (price) => {
-          if (price >= 1000) return (price / 1000).toFixed(1) + 'K';
-          else if (price >= 100) return price.toFixed(0);
-          return price.toFixed(1);
-        },
-      },
+      priceFormat: { type: 'custom', formatter: (value) => value.toFixed(2) },
+    });
+    puellSeriesRef.current = puellSeries;
+
+    const priceSeries = chart.addLineSeries({
+      color: 'gray',
+      priceScaleId: 'left',
+      lineWidth: 0.7,
+      priceFormat: { type: 'custom', formatter: compactNumberFormatter },
     });
     priceSeriesRef.current = priceSeries;
-    const mvrvSeries = chart.addLineSeries({
-      priceScaleId: 'mvrv',
-      color: indicators['mvrv'].color,
+
+    const normalizedPuellSeries = chart.addLineSeries({
+      color: indicators['normalized-puell'].color,
+      lastValueVisible: true,
+      priceScaleId: 'right',
       lineWidth: 2,
-      priceLineVisible: false,
-      visible: false,
+      priceFormat: { type: 'custom', formatter: (value) => value.toFixed(2) },
+      visible: false, // Start hidden
     });
-    mvrvSeriesRef.current = mvrvSeries;
-    chart.priceScale('mvrv').applyOptions({
-      visible: false,
-      autoScale: true,
-    });
-    const mayerMultipleSeries = chart.addLineSeries({
-      priceScaleId: 'mayer',
-      color: indicators['mayer-multiple'].color,
-      lineWidth: 2,
-      priceLineVisible: false,
-      visible: false,
-    });
-    mayerMultipleSeriesRef.current = mayerMultipleSeries;
-    chart.priceScale('mayer').applyOptions({
-      visible: false,
-      autoScale: true,
-    });
-    const rsiSeries = chart.addLineSeries({
-      priceScaleId: 'left',
-      color: 'green',
-      lineWidth: 1,
-      priceLineVisible: false,
-      visible: false,
-    });
-    rsiSeriesRef.current = rsiSeries;
-    const resizeChart = () => {
-      if (chart && chartContainerRef.current) {
-        chart.applyOptions({
-          width: chartContainerRef.current.clientWidth,
-          height: chartContainerRef.current.clientHeight,
-        });
-        chart.timeScale().fitContent();
-      }
-    };
-    window.addEventListener('resize', resizeChart);
-    return () => {
-      Object.keys(smaSeriesRefs).forEach(key => delete smaSeriesRefs[key]);
-      [mayerPriceLinesRef, mvrvPriceLinesRef, rsiPriceLinesRef].forEach(ref => {
-        ref.current.forEach(priceLine => {
-          try {
-            const series = ref === mayerPriceLinesRef ? mayerMultipleSeriesRef.current :
-              ref === mvrvPriceLinesRef ? mvrvSeriesRef.current :
-              rsiSeriesRef.current;
-            series?.removePriceLine(priceLine);
-          } catch (error) {
-            console.error('Error removing price line:', error);
-          }
-        });
-        ref.current = [];
-      });
-      try {
-        chart.remove();
-      } catch (error) {
-        console.error('Error removing chart:', error);
-      }
-      window.removeEventListener('resize', resizeChart);
-    };
-  }, []);
-  useEffect(() => {
-    if (chartRef.current) {
-      chartRef.current.applyOptions({
-        layout: { background: { type: 'solid', color: colors.primary[700] }, textColor: colors.primary[100] },
-        grid: { vertLines: { color: colors.greenAccent[700] }, horzLines: { color: colors.greenAccent[700] } },
-      });
-    }
-  }, [colors]);
-  useEffect(() => {
-    if (priceSeriesRef.current) {
-      const areaColors = activeRsiPeriod
-        ? {
-            topColor: 'rgba(128, 128, 128, 0.3)',
-            bottomColor: 'rgba(128, 128, 128, 0.1)',
-            lineColor: 'rgba(128, 128, 128, 0.5)',
-          }
-        : theme.palette.mode === 'dark'
-        ? {
-            topColor: 'rgba(38, 198, 218, 0.56)',
-            bottomColor: 'rgba(38, 198, 218, 0.04)',
-            lineColor: 'rgba(38, 198, 218, 1)',
-          }
-        : {
-            topColor: 'rgba(255, 165, 0, 0.56)',
-            bottomColor: 'rgba(255, 165, 0, 0.2)',
-            lineColor: 'rgba(255, 140, 0, 0.8)',
-          };
-      priceSeriesRef.current.applyOptions({ topColor: areaColors.topColor, bottomColor: areaColors.bottomColor, lineColor: areaColors.lineColor });
-    }
-  }, [activeRsiPeriod, theme.palette.mode]);
-  useEffect(() => {
-    if (chartRef.current) {
-      chartRef.current.priceScale('right').applyOptions({ mode: scaleMode, borderVisible: false });
-      chartRef.current.priceScale('left').applyOptions({
-        mode: 0,
-        borderVisible: false,
-        visible: !!activeRsiPeriod,
-        autoScale: false,
-        minValue: 0,
-        maxValue: 100,
-      });
-    }
-  }, [scaleMode, activeRsiPeriod]);
-  useEffect(() => {
-    if (!chartRef.current) return;
-    const throttle = (func, limit) => {
-      let lastFunc;
-      let lastRan;
-      return function() {
-        const context = this;
-        const args = arguments;
-        if (!lastRan) {
-          func.apply(context, args);
-          lastRan = Date.now();
-        } else {
-          clearTimeout(lastFunc);
-          lastFunc = setTimeout(function() {
-            if ((Date.now() - lastRan) >= limit) {
-              func.apply(context, args);
-              lastRan = Date.now();
-            }
-          }, limit - (Date.now() - lastRan));
-        }
-      };
-    };
-    const handleCrosshairMove = (param) => {
-      if (
-        !param.point ||
-        !param.time ||
-        param.point.x < 0 ||
-        param.point.x > chartContainerRef.current.clientWidth ||
-        param.point.y < 0 ||
-        param.point.y > chartContainerRef.current.clientHeight
-      ) {
+    normalizedPuellSeriesRef.current = normalizedPuellSeries;
+
+    chart.applyOptions({ handleScroll: false, handleScale: false });
+
+    chart.subscribeCrosshairMove(param => {
+      if (!param.point || !param.time || param.point.x < 0 || param.point.x > chartContainerRef.current.clientWidth || param.point.y < 0 || param.point.y > chartContainerRef.current.clientHeight) {
         setTooltipData(null);
       } else {
-        const dateStr = param.time;
         const priceData = param.seriesData.get(priceSeriesRef.current);
-        const currentTime = new Date(param.time).getTime();
-        const mvrvSeriesData = mvrvSeriesRef.current?.data() || [];
-        const nearestMvrvData = findNearestData(mvrvSeriesData, currentTime);
-        const mvrvValue = nearestMvrvData ? nearestMvrvData.value : null;
-        const mayerMultipleData = mayerMultipleSeriesRef.current?.data() || [];
-        const nearestMayerData = findNearestData(mayerMultipleData, currentTime);
-        const mayerMultipleValue = nearestMayerData ? nearestMayerData.value : null;
-        const rsiSeriesData = rsiSeriesRef.current?.data() || [];
-        const nearestRsiData = findNearestData(rsiSeriesData, currentTime);
-        const rsiValue = nearestRsiData ? nearestRsiData.value : null;
+        const puellData = param.seriesData.get(puellSeriesRef.current);
+        const normalizedData = param.seriesData.get(normalizedPuellSeriesRef.current);
         setTooltipData({
-          date: dateStr,
+          date: param.time,
           price: priceData?.value,
-          mvrv: mvrvValue,
-          mayerMultiple: mayerMultipleValue,
-          rsi: rsiValue,
-          mvrvPeakProjection: mvrvPeakProjection,
+          puell: puellData?.value,
+          normalizedPuell: showNormalizedPuell ? normalizedData?.value : null,
           x: param.point.x,
           y: param.point.y,
         });
       }
-    };
-    const throttledHandler = throttle(handleCrosshairMove, 50);
-    chartRef.current.subscribeCrosshairMove(throttledHandler);
-    return () => {
-      if (chartRef.current) {
-        chartRef.current.unsubscribeCrosshairMove(throttledHandler);
-      }
-    };
-  }, [findNearestData, mvrvPeakProjection]);
-  useEffect(() => {
-    if (priceSeriesRef.current && btcData.length > 0) {
-      try {
-        priceSeriesRef.current.setData(btcData);
-        if (currentBtcPrice) {
-          const today = new Date().toISOString().split('T')[0];
-          priceSeriesRef.current.update({ time: today, value: currentBtcPrice });
-        }
-        if (chartRef.current) chartRef.current.timeScale().fitContent();
-      } catch (error) {
-        console.error('Error updating Bitcoin price data on chart:', error);
-        priceSeriesRef.current.setData(btcData);
-        if (chartRef.current) chartRef.current.timeScale().fitContent();
-      }
-    }
-  }, [btcData, currentBtcPrice]);
-  useEffect(() => {
-    if (mvrvSeriesRef.current && btcData.length > 0 && mvrvData.length > 0) {
-      const btcStartTime = new Date(btcData[0].time).getTime();
-      const btcEndTime = new Date(btcData[btcData.length - 1].time).getTime();
-      const cutoffDate = new Date('2010-10-08').getTime();
-      const filteredMvrvData = mvrvData.filter(item => {
-        const itemTime = new Date(item.time).getTime();
-        return itemTime >= cutoffDate && itemTime >= btcStartTime && itemTime <= btcEndTime;
+    });
+
+    const resizeChart = () => {
+      chart.applyOptions({
+        width: chartContainerRef.current.clientWidth,
+        height: chartContainerRef.current.clientHeight,
       });
-      try {
-        mvrvSeriesRef.current.setData(filteredMvrvData);
-        mvrvPriceLinesRef.current.forEach(priceLine => {
-          try {
-            mvrvSeriesRef.current.removePriceLine(priceLine);
-          } catch (error) {
-            console.error('Error removing MVRV price line:', error);
-          }
-        });
-        mvrvPriceLinesRef.current = [];
-        if (activeIndicators.includes('mvrv')) {
-          const overvaluedLine = mvrvSeriesRef.current.createPriceLine({
-            price: 3.7,
-            color: indicators['mvrv'].color,
-            lineWidth: 1,
-            lineStyle: 2,
-            axisLabelVisible: true,
-            title: 'Overvalued',
-          });
-          const undervaluedLine = mvrvSeriesRef.current.createPriceLine({
-            price: 1,
-            color: indicators['mvrv'].color,
-            lineWidth: 1,
-            lineStyle: 2,
-            axisLabelVisible: true,
-            title: 'Undervalued',
-          });
-          const projectedPeakLine = mvrvPeakProjection ? mvrvSeriesRef.current.createPriceLine({
-            price: mvrvPeakProjection,
-            color: 'cyan',
-            lineWidth: 2,
-            lineStyle: 1,
-            axisLabelVisible: true,
-            title: 'Projected Peak',
-          }) : null;
-          mvrvPriceLinesRef.current = [overvaluedLine, undervaluedLine];
-          if (projectedPeakLine) mvrvPriceLinesRef.current.push(projectedPeakLine);
-          mvrvSeriesRef.current.applyOptions({ visible: true });
-        } else {
-          mvrvSeriesRef.current.applyOptions({ visible: false });
-        }
-      } catch (error) {
-        console.error('Error setting MVRV data:', error);
+      chart.timeScale().fitContent();
+    };
+
+    window.addEventListener('resize', resizeChart);
+    resizeChart();
+
+    chartRef.current = chart;
+
+    return () => {
+      chart.remove();
+      window.removeEventListener('resize', resizeChart);
+    };
+  }, []); // Empty dependency array for single initialization
+
+  // Update chart colors on theme change
+  useEffect(() => {
+    if (chartRef.current) {
+      chartRef.current.applyOptions({
+        layout: {
+          background: { type: 'solid', color: colors.primary[700] },
+          textColor: colors.primary[100],
+        },
+      });
+    }
+  }, [colors.primary[700], colors.primary[100]]);
+
+  // Update price series data
+  useEffect(() => {
+    if (priceSeriesRef.current && prepareData.priceData.length > 0) {
+      priceSeriesRef.current.setData(prepareData.priceData);
+      chartRef.current?.timeScale().fitContent();
+    }
+  }, [prepareData.priceData]);
+
+  // Update Puell Multiple series data
+  useEffect(() => {
+    if (puellSeriesRef.current && puellDataAll.length > 0) {
+      puellSeriesRef.current.setData(puellDataAll);
+      chartRef.current?.timeScale().fitContent();
+    }
+  }, [puellDataAll]);
+
+  // Update normalized Puell series data and visibility
+  useEffect(() => {
+    if (normalizedPuellSeriesRef.current && normalizedPuellDataAll.length > 0) {
+      normalizedPuellSeriesRef.current.setData(normalizedPuellDataAll);
+      normalizedPuellSeriesRef.current.applyOptions({ visible: showNormalizedPuell });
+      if (showNormalizedPuell) {
+        chartRef.current?.timeScale().fitContent();
       }
     }
-  }, [mvrvData, btcData, activeIndicators, mvrvPeakProjection, indicators]);
-  useEffect(() => {
-    if (mayerMultipleSeriesRef.current && btcData.length > 0) {
-      try {
-        const mayerMultipleData = calculateMayerMultiple(btcData);
-        mayerMultipleSeriesRef.current.setData(mayerMultipleData);
-        mayerPriceLinesRef.current.forEach(priceLine => {
-          try {
-            mayerMultipleSeriesRef.current.removePriceLine(priceLine);
-          } catch (error) {
-            console.error('Error removing Mayer Multiple price line:', error);
-          }
-        });
-        mayerPriceLinesRef.current = [];
-        if (activeIndicators.includes('mayer-multiple')) {
-          const overboughtLine = mayerMultipleSeriesRef.current.createPriceLine({
-            price: 2.4,
-            color: 'darkred',
-            lineWidth: 1,
-            lineStyle: 2,
-            axisLabelVisible: true,
-            title: 'Overbought',
-          });
-          const undervaluedLine = mayerMultipleSeriesRef.current.createPriceLine({
-            price: 1,
-            color: 'darkred',
-            lineWidth: 1,
-            lineStyle: 2,
-            axisLabelVisible: true,
-            title: 'Undervalued',
-          });
-          const severelyUndervaluedLine = mayerMultipleSeriesRef.current.createPriceLine({
-            price: 0.6,
-            color: 'darkred',
-            lineWidth: 1,
-            lineStyle: 2,
-            axisLabelVisible: true,
-            title: 'Severely Undervalued',
-          });
-          mayerPriceLinesRef.current = [overboughtLine, undervaluedLine, severelyUndervaluedLine];
-          mayerMultipleSeriesRef.current.applyOptions({ visible: true });
-        } else {
-          mayerMultipleSeriesRef.current.applyOptions({ visible: false });
-        }
-      } catch (error) {
-        console.error('Error setting Mayer Multiple data:', error);
-      }
-    }
-  }, [btcData, activeIndicators, calculateMayerMultiple]);
-  useEffect(() => {
-    if (rsiSeriesRef.current && btcData.length > 0 && activeRsiPeriod) {
-      try {
-        const period = rsiPeriods[activeRsiPeriod].days;
-        const rsiData = calculateRSI(btcData, period);
-        rsiSeriesRef.current.setData(rsiData);
-        rsiPriceLinesRef.current.forEach(priceLine => {
-          try {
-            rsiSeriesRef.current.removePriceLine(priceLine);
-          } catch (error) {
-            console.error('Error removing RSI price line:', error);
-          }
-        });
-        rsiPriceLinesRef.current = [];
-        const overboughtLine = rsiSeriesRef.current.createPriceLine({
-          price: 70,
-          color: 'green',
-          lineWidth: 1,
-          lineStyle: 2,
-          axisLabelVisible: true,
-          title: 'Overbought',
-        });
-        const oversoldLine = rsiSeriesRef.current.createPriceLine({
-          price: 30,
-          color: 'green',
-          lineWidth: 1,
-          lineStyle: 2,
-          axisLabelVisible: true,
-          title: 'Oversold',
-        });
-        rsiPriceLinesRef.current = [overboughtLine, oversoldLine];
-        rsiSeriesRef.current.applyOptions({
-          visible: true,
-          autoscaleInfoProvider: () => ({
-            priceRange: {
-              minValue: 0,
-              maxValue: 100,
-            },
-          }),
-        });
-      } catch (error) {
-        console.error('Error setting RSI data:', error);
-      }
-    } else if (rsiSeriesRef.current) {
-      try {
-        rsiSeriesRef.current.applyOptions({ visible: false });
-        rsiPriceLinesRef.current.forEach(priceLine => {
-          try {
-            rsiSeriesRef.current.removePriceLine(priceLine);
-          } catch (error) {
-            console.error('Error removing RSI price line:', error);
-          }
-        });
-        rsiPriceLinesRef.current = [];
-      } catch (error) {
-        console.error('Error hiding RSI series:', error);
-      }
-    }
-  }, [btcData, activeRsiPeriod, calculateRSI, rsiPeriods]);
-  useEffect(() => {
-    if (!chartRef.current || btcData.length === 0) return;
-    Object.keys(smaSeriesRefs).forEach(key => {
-      if (smaSeriesRefs[key]) {
-        try {
-          chartRef.current.removeSeries(smaSeriesRefs[key]);
-        } catch (error) {
-          console.error('Error removing SMA series:', error);
-        }
-        delete smaSeriesRefs[key];
-      }
-    });
-    activeSMAs.forEach(key => {
-      const indicator = smaIndicators[key];
-      try {
-        if (indicator.type === 'sma') {
-          const series = chartRef.current.addLineSeries({
-            color: indicator.color,
-            lineWidth: 2,
-            priceLineVisible: false,
-            priceScaleId: 'right',
-          });
-          smaSeriesRefs[key] = series;
-          const data = calculateMovingAverage(btcData, indicator.period);
-          series.setData(data);
-        } else if (indicator.type === 'bull-market-support') {
-          const smaSeries = chartRef.current.addLineSeries({
-            color: indicator.sma.color,
-            lineWidth: 2,
-            priceLineVisible: false,
-            priceScaleId: 'right',
-          });
-          smaSeriesRefs[`${key}-sma`] = smaSeries;
-          const smaData = calculateMovingAverage(btcData, indicator.sma.period);
-          smaSeries.setData(smaData);
-          const emaSeries = chartRef.current.addLineSeries({
-            color: indicator.ema.color,
-            lineWidth: 2,
-            priceLineVisible: false,
-            priceScaleId: 'right',
-          });
-          smaSeriesRefs[`${key}-ema`] = emaSeries;
-          const emaData = calculateExponentialMovingAverage(btcData, indicator.ema.period);
-          emaSeries.setData(emaData);
-        }
-      } catch (error) {
-        console.error('Error adding SMA series:', error);
-      }
-    });
-  }, [activeSMAs, btcData, calculateMovingAverage, calculateExponentialMovingAverage, smaIndicators]);
+  }, [normalizedPuellDataAll, showNormalizedPuell]);
+
+  // Update chart options dynamically
   useEffect(() => {
     if (chartRef.current) {
       chartRef.current.applyOptions({
         handleScroll: isInteractive,
         handleScale: isInteractive,
       });
+
+      const rightScaleTitle = `Puell Multiple (${smoothingPeriod}-Day SMA)${showNormalizedPuell ? ' | Normalized' : ''}`;
+      const maxValue = showNormalizedPuell ? maxNormalizedPuell : maxPuell;
+
+      chartRef.current.priceScale('right').applyOptions({
+        title: rightScaleTitle,
+        minimum: 0,
+        maximum: maxValue,
+        mode: 1,
+      });
     }
-  }, [isInteractive]);
+  }, [isInteractive, maxPuell, maxNormalizedPuell, smoothingPeriod, showNormalizedPuell]);
+
+  // Update current price, Puell Multiple, and last updated date
+  useEffect(() => {
+    const latestPriceData = prepareData.priceData[prepareData.priceData.length - 1];
+    const latestPuellData = puellDataAll[puellDataAll.length - 1];
+    setCurrentBtcPrice(latestPriceData ? Math.floor(latestPriceData.value / 1000) : 0);
+    setCurrentPuellMultiple(latestPuellData && latestPuellData.value ? latestPuellData.value.toFixed(2) : null);
+    setLastUpdatedDate(latestPuellData ? latestPuellData.time : null);
+  }, [prepareData.priceData, puellDataAll]);
+
+  // Calculate tooltip position
+  const calculateLeftPosition = () => {
+    if (!tooltipData) return '0px';
+    const chartWidth = chartContainerRef.current.clientWidth;
+    const tooltipWidth = 200; // Estimated tooltip width
+    const desiredOffset = 100; // 100px offset from cursor
+    const cursorX = tooltipData.x;
+    // Calculate positions for both left and right placement
+    const rightPosition = cursorX + desiredOffset;
+    const leftPosition = cursorX - desiredOffset - tooltipWidth + 200;
+    // Try right placement first (preferred)
+    if (rightPosition + tooltipWidth <= chartWidth) {
+      return `${rightPosition}px`;
+    }
+    // If right placement doesn't fit, try left placement
+    else if (leftPosition >= 0) {
+      return `${leftPosition}px`;
+    }
+    // If neither fits, center it or position it as close as possible to the cursor
+    else {
+      // Position it as close as possible to the cursor while staying in bounds
+      const centeredPosition = Math.max(0, Math.min(cursorX, chartWidth - tooltipWidth));
+      // If cursor is in the right half, bias toward right edge
+      if (cursorX > chartWidth / 2) {
+        return `${Math.max(centeredPosition, chartWidth - tooltipWidth)}px`;
+      } else {
+        return `${centeredPosition}px`;
+      }
+    }
+  };
+
+  // Active indicators for descriptions
+  const activeIndicators = useMemo(() => {
+    const active = [];
+    if (true) active.push('puell-multiple'); // Always active
+    if (showNormalizedPuell) active.push('normalized-puell');
+    return active;
+  }, [showNormalizedPuell]);
+
   return (
-    <div style={{ height: '100%', position: 'relative' }}>
+    <div style={{ height: '100%' }}>
       {!isDashboard && (
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: { xs: 'column', sm: 'row' },
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '20px',
-            marginBottom: '30px',
-            marginTop: '50px',
-          }}
-        >
-          <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '300px' } }}>
-            <InputLabel
-              id="indicators-label"
-              shrink
-              sx={{
-                color: colors.grey[100],
-                '&.Mui-focused': { color: colors.greenAccent[500] },
-                top: 0,
-                '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' },
-              }}
-            >
-              Indicators
-            </InputLabel>
-            <Select
-              multiple
-              value={activeIndicators}
-              onChange={handleIndicatorChange}
-              labelId="indicators-label"
-              label="Indicators"
-              displayEmpty
-              renderValue={(selected) =>
-                selected.length > 0
-                  ? selected.map((key) => indicators[key].label).join(', ')
-                  : 'Select Indicators'
-              }
-              sx={{
-                color: colors.grey[100],
-                backgroundColor: colors.primary[500],
-                borderRadius: "8px",
-                '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
-                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                '& .MuiSelect-select': { py: 1.5, pl: 2 },
-                '& .MuiSelect-select:empty': { color: colors.grey[500] },
-              }}
-            >
-              {Object.entries(indicators).map(([key, { label }]) => (
-                <MenuItem key={key} value={key}>
-                  <Checkbox
-                    checked={activeIndicators.includes(key)}
-                    sx={{ color: colors.grey[100], '&.Mui-checked': { color: colors.greenAccent[500] } }}
-                  />
-                  <span>{label}</span>
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '300px' } }}>
-            <InputLabel
-              id="sma-label"
-              shrink
-              sx={{
-                color: colors.grey[100],
-                '&.Mui-focused': { color: colors.greenAccent[500] },
-                top: 0,
-                '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' },
-              }}
-            >
-              Moving Averages
-            </InputLabel>
-            <Select
-              multiple
-              value={activeSMAs}
-              onChange={handleSMAChange}
-              labelId="sma-label"
-              label="Moving Averages"
-              displayEmpty
-              renderValue={(selected) =>
-                selected.length > 0
-                  ? selected.map((key) => smaIndicators[key].label).join(', ')
-                  : 'Select Moving Averages'
-              }
-              sx={{
-                color: colors.grey[100],
-                backgroundColor: colors.primary[500],
-                borderRadius: "8px",
-                '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
-                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                '& .MuiSelect-select': { py: 1.5, pl: 2 },
-                '& .MuiSelect-select:empty': { color: colors.grey[500] },
-              }}
-            >
-              {Object.entries(smaIndicators).map(([key, { label }]) => (
-                <MenuItem key={key} value={key}>
-                  <Checkbox
-                    checked={activeSMAs.includes(key)}
-                    sx={{ color: colors.grey[100], '&.Mui-checked': { color: colors.greenAccent[500] } }}
-                  />
-                  <span>{label}</span>
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '300px' } }}>
-            <InputLabel
-              id="rsi-period-label"
-              shrink
-              sx={{
-                color: colors.grey[100],
-                '&.Mui-focused': { color: colors.greenAccent[500] },
-                top: 0,
-                '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' },
-              }}
-            >
-              RSI Period
-            </InputLabel>
-            <Select
-              value={activeRsiPeriod}
-              onChange={handleRsiPeriodChange}
-              labelId="rsi-period-label"
-              label="RSI Period"
-              displayEmpty
-              renderValue={(selected) =>
-                selected ? rsiPeriods[selected].label : 'Select RSI Period'
-              }
-              sx={{
-                color: colors.grey[100],
-                backgroundColor: colors.primary[500],
-                borderRadius: "8px",
-                '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
-                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                '& .MuiSelect-select': { py: 1.5, pl: 2 },
-                '& .MuiSelect-select:empty': { color: colors.grey[500] },
-              }}
-            >
-              <MenuItem value="">
-                <span>None</span>
-              </MenuItem>
-              {Object.entries(rsiPeriods).map(([key, { label }]) => (
-                <MenuItem key={key} value={key}>
-                  <span>{label}</span>
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Box>
-      )}
-      {!isDashboard && (
-        <div className="chart-top-div">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-            <label className="switch">
-              <input type="checkbox" checked={scaleMode === 1} onChange={toggleScaleMode} />
-              <span className="slider round"></span>
-            </label>
-            <span style={{ color: colors.primary[100] }}>
-             {scaleMode === 1 ? 'Logarithmic' : 'Linear'}
-            </span>
+        <>
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: { xs: 'column', sm: 'row' },
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '20px',
+              marginBottom: '30px',
+              marginTop: '50px',
+            }}
+          >
+            <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '200px' } }}>
+              <InputLabel
+                id="smoothing-label"
+                shrink
+                sx={{
+                  color: colors.grey[100],
+                  '&.Mui-focused': { color: colors.greenAccent[500] },
+                  top: 0,
+                  '&.MuiInputLabel-shrink': {
+                    transform: 'translate(14px, -9px) scale(0.75)',
+                  },
+                }}
+              >
+                Smoothing Period
+              </InputLabel>
+              <Select
+                value={smoothingPeriod}
+                onChange={(e) => setSmoothingPeriod(e.target.value)}
+                label="Smoothing Period"
+                labelId="smoothing-label"
+                sx={{
+                  color: colors.grey[100],
+                  backgroundColor: colors.primary[500],
+                  borderRadius: "8px",
+                  '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
+                  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                  '& .MuiSelect-select': { py: 1.5, pl: 2 },
+                  '& .MuiSelect-select:empty': { color: colors.grey[500] },
+                }}
+              >
+                {smoothingOptions.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <Box sx={{ display: 'flex', gap: '10px', marginLeft: 'auto' }}>
+              <Button
+                onClick={() => setShowNormalizedPuell(!showNormalizedPuell)}
+                sx={{
+                  backgroundColor: showNormalizedPuell ? '#00ff88' : 'transparent',
+                  color: showNormalizedPuell ? 'black' : '#00ff88',
+                  border: `1px solid ${showNormalizedPuell ? 'violet' : '#00ff88'}`,
+                  borderRadius: '4px',
+                  padding: '8px 16px',
+                  fontSize: '14px',
+                  textTransform: 'none',
+                  '&:hover': {
+                    backgroundColor: '#00cc66',
+                    color: 'black',
+                  },
+                }}
+              >
+                {showNormalizedPuell ? 'Hide Normalized Puell' : 'Show Normalized Puell'}
+              </Button>
+              <Button
+                onClick={setInteractivity}
+                sx={{
+                  backgroundColor: isInteractive ? '#4cceac' : 'transparent',
+                  color: isInteractive ? 'black' : '#31d6aa',
+                  border: `1px solid ${isInteractive ? 'violet' : '#70d8bd'}`,
+                  borderRadius: '4px',
+                  padding: '8px 16px',
+                  fontSize: '14px',
+                  textTransform: 'none',
+                  '&:hover': {
+                    backgroundColor: colors.greenAccent[400],
+                    color: theme.palette.mode === 'dark' ? colors.grey[900] : colors.grey[100],
+                  },
+                }}
+              >
+                {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
+              </Button>
+              <Button
+                onClick={resetChart}
+                sx={{
+                  backgroundColor: 'transparent',
+                  color: '#31d6aa',
+                  border: `1px solid ${colors.greenAccent[400]}`,
+                  borderRadius: '4px',
+                  padding: '8px 16px',
+                  fontSize: '14px',
+                  textTransform: 'none',
+                  '&:hover': {
+                    backgroundColor: colors.greenAccent[400],
+                    color: theme.palette.mode === 'dark' ? colors.grey[900] : colors.grey[100],
+                  },
+                }}
+              >
+                Reset Chart
+              </Button>
+            </Box>
+          </Box>
+
+          <div className='chart-top-div'>
+            <div className='span-container'>
+              <span style={{ marginRight: '20px', display: 'inline-block', color: colors.primary[100] }}>
+                <span style={{ backgroundColor: 'gray', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
+                Bitcoin Price
+              </span>
+              <span style={{ marginRight: '20px', display: 'inline-block', color: colors.primary[100] }}>
+                <span style={{ backgroundColor: indicators['puell-multiple'].color, height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
+                {indicators['puell-multiple'].label}
+              </span>
+              {showNormalizedPuell && (
+                <span style={{ display: 'inline-block', color: colors.primary[100] }}>
+                  <span style={{ backgroundColor: indicators['normalized-puell'].color, height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
+                  {indicators['normalized-puell'].label}
+                </span>
+              )}
+            </div>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-            <button
-              onClick={setInteractivity}
-              className="button-reset"
-              style={{
-                backgroundColor: isInteractive ? '#4cceac' : 'transparent',
-                color: isInteractive ? 'black' : '#31d6aa',
-                borderColor: isInteractive ? 'violet' : '#70d8bd',
-              }}
-            >
-              {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
-            </button>
-            <button onClick={resetChartView} className="button-reset extra-margin">
-              Reset Chart
-            </button>
-          </div>
-        </div>
+        </>
       )}
+
       <div
         className="chart-container"
         style={{
-          height: isDashboard ? '100%' : 'calc(100% - 40px)',
+          position: 'relative',
+          height: isDashboard ? '100%' : 'calc(100% - 100px)',
           width: '100%',
           border: '2px solid #a9a9a9',
-          position: 'relative',
-          zIndex: 1,
         }}
-        onDoubleClick={() => setInteractivity(!isInteractive)}
+        onDoubleClick={() => {
+          if (!isInteractive && !isDashboard) setInteractivity(true);
+          else setInteractivity(false);
+        }}
       >
         <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
-        <div
-          style={{
-            position: 'absolute',
-            top: '10px',
-            left: '10px',
-            zIndex: 2,
-            backgroundColor: colors.primary[900],
-            padding: '5px 10px',
-            borderRadius: '4px',
-            color: colors.grey[100],
-            fontSize: isNarrowScreen ? '8px' : '12px',
-          }}
-        >
-          {!isDashboard && <div>Active Indicators</div>}
-          <div style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>
-            <span
-              style={{
-                display: 'inline-block',
-                width: '10px',
-                height: '10px',
-                backgroundColor: activeRsiPeriod
-                  ? 'rgba(128, 128, 128, 0.5)'
-                  : theme.palette.mode === 'dark'
-                  ? 'rgba(38, 198, 218, 1)'
-                  : 'rgba(255, 140, 0, 0.8)',
-                marginRight: '5px',
-              }}
-            />
-            Bitcoin Price
+        {!isDashboard && tooltipData && (
+          <div
+            className="tooltip"
+            style={{
+              position: 'absolute',
+              left: calculateLeftPosition(),
+              top: `${tooltipData.y + 10}px`,
+              zIndex: 1000,
+              backgroundColor: colors.primary[900],
+              padding: '5px 10px',
+              borderRadius: '4px',
+              color: colors.primary[100],
+              fontSize: '12px',
+              pointerEvents: 'none',
+            }}
+          >
+            <div style={{ fontSize: '15px' }}>Bitcoin</div>
+            {tooltipData.price && <div style={{ fontSize: '20px' }}>${tooltipData.price.toFixed(2)}</div>}
+            {tooltipData.puell && <div style={{ color: indicators['puell-multiple'].color }}>Puell Multiple: {tooltipData.puell.toFixed(2)}</div>}
+            {tooltipData.normalizedPuell && (
+              <div style={{ color: indicators['normalized-puell'].color }}>Normalized Puell: {tooltipData.normalizedPuell.toFixed(2)}</div>
+            )}
+            {tooltipData.date && <div>{tooltipData.date}</div>}
           </div>
-          {activeIndicators.map(key => (
-            <div key={key} style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>
-              <span
-                style={{
-                  display: 'inline-block',
-                  width: '10px',
-                  height: '10px',
-                  backgroundColor: indicators[key].color,
-                  marginRight: '5px',
-                }}
-              />
-              {indicators[key].label}
-            </div>
-          ))}
-          {activeRsiPeriod && (
-            <div style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>
-              <span
-                style={{
-                  display: 'inline-block',
-                  width: '10px',
-                  height: '10px',
-                  backgroundColor: 'green',
-                  marginRight: '5px',
-                }}
-              />
-              {rsiPeriods[activeRsiPeriod].label}
-            </div>
-          )}
-          {activeIndicators.includes('mvrv') && (
-            <div style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>
-              <span
-                style={{
-                  display: 'inline-block',
-                  width: '10px',
-                  height: '10px',
-                  backgroundColor: 'cyan',
-                  marginRight: '5px',
-                }}
-              />
-              MVRV Peak Projection
-            </div>
-          )}
-          {activeSMAs.map(key => {
-            const indicator = smaIndicators[key];
-            if (indicator.type === 'bull-market-support') {
-              return (
-                <React.Fragment key={key}>
-                  <div style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>
-                    <span
-                      style={{
-                        display: 'inline-block',
-                        width: '10px',
-                        height: '10px',
-                        backgroundColor: indicator.sma.color,
-                        marginRight: '5px',
-                      }}
-                    />
-                    {indicator.sma.label}
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>
-                    <span
-                      style={{
-                        display: 'inline-block',
-                        width: '10px',
-                        height: '10px',
-                        backgroundColor: indicator.ema.color,
-                        marginRight: '5px',
-                      }}
-                    />
-                    {indicator.ema.label}
-                  </div>
-                </React.Fragment>
-              );
-            }
-            return (
-              <div key={key} style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>
-                <span
-                  style={{
-                    display: 'inline-block',
-                    width: '10px',
-                    height: '10px',
-                    backgroundColor: indicator.color,
-                    marginRight: '5px',
-                  }}
-                />
-                {indicator.label}
-              </div>
-            );
-          })}
-        </div>
+        )}
       </div>
+
+      <div className="under-chart">
+        {!isDashboard && <LastUpdated customDate={lastUpdatedDate} />}
+        {!isDashboard && <BitcoinFees />}
+      </div>
+
       {!isDashboard && (
-        <div className='under-chart' style={{ padding: '10px 0' }}>
-          <Box sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            width: '100%',
-            flexWrap: 'wrap',
-            gap: '10px',
-            alignItems: 'center',
-          }}>
-            <LastUpdated storageKey="btcData" />
-            <BitcoinFees />
-          </Box>
+        <div>
+          <div style={{ display: 'inline-block', marginTop: '10px', fontSize: '1.2rem', color: colors.primary[100] }}>
+            Current Puell Multiple: <b>{currentPuellMultiple}</b> (${currentBtcPrice.toFixed(0)}k)
+          </div>
+          
+          {/* Active indicators descriptions - styled like MVRV/Mayer Multiple */}
+          {(activeIndicators.length > 0) && (
+            <Box sx={{ margin: '10px 0', color: colors.grey[100] }}>
+              {activeIndicators.map(key => (
+                <p key={key} style={{ margin: '5px 0' }}>
+                  <strong style={{ color: indicators[key].color }}>
+                    {indicators[key].label}:
+                  </strong> {indicators[key].description}
+                </p>
+              ))}
+            </Box>
+          )}
         </div>
-      )}
-      {!isDashboard && (activeIndicators.length > 0 || activeRsiPeriod) && (
-        <Box sx={{ margin: '10px 0', color: colors.grey[100] }}>
-          {activeIndicators.map(key => (
-            <p key={key} style={{ margin: '5px 0' }}>
-              <strong style={{ color: indicators[key].color }}>
-                {indicators[key].label}:
-              </strong> {indicators[key].description}
-            </p>
-          ))}
-          {activeRsiPeriod && (
-            <p style={{ margin: '5px 0' }}>
-              <strong style={{ color: 'green' }}>
-                {rsiPeriods[activeRsiPeriod].label}:
-              </strong> Relative Strength Index measures momentum. Values above 70 suggest overbought conditions; below 30 indicate oversold conditions.
-            </p>
-          )}
-        </Box>
-      )}
-      {!isDashboard && tooltipData && (
-        <div
-          className="tooltip"
-          style={{
-            position: 'fixed',
-            left: (() => {
-              const sidebarWidth = isMobile ? -80 : -320;
-              const cursorX = tooltipData.x - sidebarWidth;
-              const chartWidth = chartContainerRef.current.clientWidth - sidebarWidth;
-              const tooltipWidth = 200;
-              const offset = 1000 / (chartWidth + 300);
-              const rightPosition = cursorX + offset;
-              const leftPosition = cursorX - tooltipWidth - offset;
-              if (rightPosition + tooltipWidth <= chartWidth) return `${rightPosition}px`;
-              if (leftPosition >= 0) return `${leftPosition}px`;
-              return `${Math.max(0, Math.min(rightPosition, chartWidth - tooltipWidth))}px`;
-            })(),
-            top: (() => {
-              const offsetY = isNarrowScreen ? 300 : 150;
-              return `${tooltipData.y + offsetY}px`
-            })(),
-            zIndex: 1000,
-          }}
-        >
-          <div style={{ fontSize: '15px' }}>Bitcoin</div>
-          <div style={{ fontSize: '20px' }}>${tooltipData.price?.toFixed(2)}</div>
-          {activeIndicators.includes('mvrv') && tooltipData.mvrv !== null && (
-            <div style={{ color: indicators['mvrv'].color }}>
-              MVRV Ratio: {tooltipData.mvrv.toFixed(2)}
-            </div>
-          )}
-          {activeIndicators.includes('mvrv') && tooltipData.mvrvPeakProjection !== null && (
-            <div style={{ color: 'cyan' }}>
-              MVRV Peak Projection: {tooltipData.mvrvPeakProjection.toFixed(2)}
-            </div>
-          )}
-          {activeIndicators.includes('mayer-multiple') && tooltipData.mayerMultiple !== null && (
-            <div style={{ color: indicators['mayer-multiple'].color }}>
-              Mayer Multiple: {tooltipData.mayerMultiple.toFixed(2)}
-            </div>
-          )}
-          {activeRsiPeriod && tooltipData.rsi !== null && (
-            <div style={{ color: 'green' }}>
-              {rsiPeriods[activeRsiPeriod].label}: {tooltipData.rsi.toFixed(2)}
-            </div>
-          )}
-          <div>{tooltipData.date ? tooltipData.date.split('-').reverse().join('-') : ''}</div>
-        </div>
-      )}
-      {!isDashboard && (
-        <p className='chart-info'>
-          Bitcoin represents a significant advancement in digital finance. It operates on a globally distributed and permissionless ledger,
-          secured by a network of miners. This system is designed to be transparent, secure, and resilient. Bitcoin enables the transfer of
-          value without intermediaries, offering a unique digital asset that can be sent anywhere in the world almost instantly.
-          As a finite digital currency, it provides a novel way to store and transfer wealth, with potential implications for global finance and value exchange.
-          <br /><br /><br />
-        </p>
       )}
     </div>
   );
 };
-export default restrictToPaidSubscription(BitcoinPrice);
+
+export default restrictToPaidSubscription(PuellMultiple);

@@ -317,7 +317,7 @@ const TotalMarketCap = ({ isDashboard = false }) => {
           className="tooltip"
           style={{
             left: (() => {
-              const sidebarWidth = isMobile ? -80 : -300;
+              const sidebarWidth = isMobile ? isNarrowScreen ? -50 : -20 : -290;
               const cursorX = tooltipData.x - sidebarWidth;
               const chartWidth = chartContainerRef.current.clientWidth - sidebarWidth;
               const tooltipWidth = 200;

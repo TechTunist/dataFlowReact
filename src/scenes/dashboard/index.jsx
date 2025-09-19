@@ -43,12 +43,16 @@ import FredSeriesChart from "../../components/FredSeriesChart";
 import WorkbenchChart from "../../components/Workbench";
 import SP500ROI from "../../components/SP500ROI";
 import BitcoinMvrvZScoreChart from "../../components/BitcoinMvrvZScore";
+import Total2Chart from "../../components/Total2Marketcap";
+import Total3Chart from "../../components/Total3Marketcap";
 
 const chartConfig = [
   { id: "bitcoin-20-ext", title: "Bitcoin 20 Week Extension", linkTo: "/btc-20-ext", component: (props) => <Bitcoin20WeekExtension isDashboard={true} {...props} />, description: "Bitcoin price with 20-week extension analysis." },
   { id: "bitcoin-price", title: "Bitcoin Price", linkTo: "/bitcoin", component: (props) => <BitcoinPrice isDashboard={true} {...props} />, description: "A simple chart of the entire bitcoin daily close price history." },
   { id: "total-market-cap", title: "Total Crypto Market Cap", linkTo: "/total", component: (props) => <TotalMarketCap isDashboard={true} {...props} />, description: "The market cap of the entire crypto market." },
   { id: "total-difference", title: "Market Cap Difference", linkTo: "/total-difference", component: (props) => <MarketCapDifference isDashboard={true} {...props} />, description: "Difference in market cap across assets." },
+  { id: "total2", title: "Total2 Market Cap", linkTo: "/total2", component: (props) => <Total2Chart isDashboard={true} {...props} />, description: "The market cap of the entire crypto market minus Bitcoin." },
+  { id: "total3", title: "Total3 Market Cap", linkTo: "/total3", component: (props) => <Total3Chart isDashboard={true} {...props} />, description: "The market cap of the entire crypto market minus Bitcoin & Ethereum." },
   { id: "bitcoin-dominance", title: "Bitcoin Dominance", linkTo: "/bitcoin-dominance", component: (props) => <BitcoinDominance isDashboard={true} {...props} />, description: "Bitcoin Dominance chart over all crypto assets." },
   { id: "bitcoin-roi", title: "Bitcoin ROI", linkTo: "/bitcoin-roi", component: (props) => <BitcoinROI isDashboard={true} {...props} />, description: "Annualised ROI for Bitcoin." },
   { id: "running-roi", title: "Running ROI", linkTo: "/running-roi", component: (props) => <RunningROI isDashboard={true} {...props} />, description: "Running return on investment for Bitcoin." },
