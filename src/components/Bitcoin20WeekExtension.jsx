@@ -310,9 +310,9 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
         side: 'right',
         autorange: true,
         automargin: true,
-        zeroline: true,
-        zerolinecolor: colors.primary[100],
-        zerolinewidth: 1,
+        zeroline: showExtensionArea, // Make zeroline conditional
+        zerolinecolor: showExtensionArea ? colors.primary[100] : undefined, // Only set color when visible
+        zerolinewidth: showExtensionArea ? 1 : undefined, // Only set width when visible
         fixedrange: true,
       },
       legend: {
@@ -326,11 +326,11 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
         tracegroupgap: isNarrowScreen ? 2 : 10,
         itemsizing: 'constant',
       },
-      showlegend: isMobile ? false : true,
+      showlegend: true,
       hovermode: 'closest',
       hoverdistance: 10,
     });
-  }, [colors, isDashboard, isMobile, isNarrowScreen]);
+  }, [colors, isDashboard, isMobile, isNarrowScreen, showExtensionArea]); 
 
   const resetChartView = useCallback(() => {
     // Update layout to reset axes
@@ -455,11 +455,15 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
           </div>
         </div>
       )}
-      <div
-        ref={containerRef}
-        className="chart-container"
-        style={{ height: isDashboard ? '100%' : 'calc(100% - 40px)', width: '100%', border: '2px solid #a9a9a9' }}
-      >
+    <div
+      ref={containerRef}
+      className="chart-container"
+      style={{ 
+        height: isDashboard ? '100%' : isNarrowScreen ? 'calc(100% + 250px)' : 'calc(100% - 40px)', 
+        width: '100%', 
+        border: '2px solid #a9a9a9' 
+      }}
+    >
         <Plot
           key={renderKey} // Force re-render when renderKey changes
           ref={plotRef}
