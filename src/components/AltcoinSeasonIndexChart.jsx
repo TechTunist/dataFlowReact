@@ -22,7 +22,10 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
   const [smaPeriod, setSmaPeriod] = useState('28d');
   const [tooltipData, setTooltipData] = useState(null);
   const [error, setError] = useState(null);
+  const [hasUserInteracted, setHasUserInteracted] = useState(false);
   const isNarrowScreen = useMediaQuery('(max-width:600px)');
+  const isInteractiveRef = useRef(false);
+  const hasUserInteractedRef = useRef(false);
 
   const smaPeriods = [
     { value: 'none', label: 'None' },
@@ -65,7 +68,16 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
     });
   }, [fetchAltcoinSeasonTimeseriesData, fetchBtcData]);
 
-  // Initialize chart
+  // Update refs
+  useEffect(() => {
+    isInteractiveRef.current = isInteractive;
+  }, [isInteractive]);
+
+  useEffect(() => {
+    hasUserInteractedRef.current = hasUserInteracted;
+  }, [hasUserInteracted]);
+
+  // Initialize chart (runs only once)
   useEffect(() => {
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
@@ -91,6 +103,7 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
       },
       timeScale: { minBarSpacing: 0.001 },
     });
+
     const btcSeries = chart.addLineSeries({
       color: '#808080',
       priceScaleId: 'left',
@@ -98,6 +111,7 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
       priceFormat: { type: 'custom', formatter: value => value.toFixed(0) },
     });
     btcSeriesRef.current = btcSeries;
+
     const indexSeries = chart.addLineSeries({
       color: colors.greenAccent[400],
       lastValueVisible: true,
@@ -106,6 +120,7 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
       priceFormat: { type: 'custom', formatter: value => value.toFixed(1) },
     });
     indexSeriesRef.current = indexSeries;
+
     indexSeries.createPriceLine({
       price: 75,
       color: 'violet',
@@ -122,7 +137,20 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
       title: 'Bitcoin Season',
       axisLabelColor: 'orange',
     });
-    chart.subscribeCrosshairMove(param => {
+
+    // Track user interactions
+    const handleChartClick = () => {
+      if (isInteractiveRef.current) {
+        setHasUserInteracted(true);
+      }
+    };
+
+    const handleCrosshairMove = (param) => {
+      if (isInteractiveRef.current && !hasUserInteractedRef.current && param.point) {
+        // User is interacting with the chart for the first time
+        setHasUserInteracted(true);
+      }
+     
       if (
         !param.point ||
         !param.time ||
@@ -143,18 +171,24 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
           y: param.point.y,
         });
       }
-    });
+    };
+
+    chart.subscribeCrosshairMove(handleCrosshairMove);
+    chart.subscribeClick(handleChartClick);
+
     const resizeChart = () => {
       chart.applyOptions({
         width: chartContainerRef.current.clientWidth,
         height: chartContainerRef.current.clientHeight,
       });
     };
+
     window.addEventListener('resize', resizeChart);
     chartRef.current = chart;
+   
     return () => {
-      chart.remove();
       window.removeEventListener('resize', resizeChart);
+      chart.remove();
     };
   }, []);
 
@@ -174,24 +208,46 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
     }
   }, [colors.primary[700], colors.primary[100]]);
 
+  // Update series color on theme change
+  useEffect(() => {
+    if (indexSeriesRef.current) {
+      indexSeriesRef.current.applyOptions({
+        color: colors.greenAccent[400],
+      });
+    }
+  }, [colors.greenAccent[400]]);
+
+  // Update smoothed data with conditional fitContent
   useEffect(() => {
     if (indexSeriesRef.current && smoothedData.length > 0) {
       indexSeriesRef.current.setData(
         smoothedData.map(data => ({ time: data.time, value: data.index }))
       );
-      chartRef.current?.timeScale().fitContent();
+      
+      // Only fit content if user hasn't interacted
+      const shouldFitContent = !hasUserInteracted;
+      if (shouldFitContent) {
+        chartRef.current?.timeScale().fitContent();
+      }
     }
   }, [smoothedData]);
 
+  // Update filtered BTC data with conditional fitContent
   useEffect(() => {
     if (btcSeriesRef.current && filteredBtcData.length > 0) {
       btcSeriesRef.current.setData(
         filteredBtcData.map(data => ({ time: data.time, value: data.value }))
       );
-      chartRef.current?.timeScale().fitContent();
+      
+      // Only fit content if user hasn't interacted
+      const shouldFitContent = !hasUserInteracted;
+      if (shouldFitContent) {
+        chartRef.current?.timeScale().fitContent();
+      }
     }
   }, [filteredBtcData]);
 
+  // Update chart interactivity and price scale titles
   useEffect(() => {
     if (chartRef.current) {
       chartRef.current.applyOptions({
@@ -216,9 +272,23 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
   }, [smoothedData]);
 
   const handleSmaPeriodChange = e => setSmaPeriod(e.target.value);
-  const setInteractivity = () => setIsInteractive(!isInteractive);
+
+  const setInteractivity = () => {
+    const newInteractiveState = !isInteractive;
+    setIsInteractive(newInteractiveState);
+    
+    // Only reset interaction state when enabling interactivity for the first time
+    // Don't reset if user has already interacted (to preserve zoom)
+    if (newInteractiveState && !hasUserInteracted) {
+      setHasUserInteracted(false);
+    }
+  };
+
   const resetChartView = () => {
-    if (chartRef.current) chartRef.current.timeScale().fitContent();
+    if (chartRef.current) {
+      chartRef.current.timeScale().fitContent();
+      setHasUserInteracted(false);
+    }
   };
 
   const calculateLeftPosition = () => {
@@ -250,40 +320,13 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
             display: 'flex',
             flexDirection: { xs: 'column', sm: 'row' },
             alignItems: 'center',
-            justifyContent: 'space-between',
+            justifyContent: 'center',
             gap: '20px',
             marginBottom: '10px',
             marginTop: '50px',
-            width: '100%',
           }}
         >
-          <div className="span-container" style={{ marginRight: 'auto' }}>
-            <span style={{ marginRight: '20px', display: 'inline-block', color: colors.primary[100] }}>
-              <span
-                style={{
-                  backgroundColor: colors.greenAccent[400],
-                  height: '10px',
-                  width: '10px',
-                  display: 'inline-block',
-                  marginRight: '5px',
-                }}
-              ></span>
-              {isMobile ? 'Index' : 'Altcoin Season Index'}
-            </span>
-            <span style={{ display: 'inline-block', color: colors.primary[100] }}>
-              <span
-                style={{
-                  backgroundColor: '#808080',
-                  height: '10px',
-                  width: '10px',
-                  display: 'inline-block',
-                  marginRight: '5px',
-                }}
-              ></span>
-              {isMobile ? 'BTC' : 'Bitcoin Price'}
-            </span>
-          </div>
-          <FormControl sx={{ minWidth: '150px', width: { xs: '100%', sm: '200px' }, margin: '0 auto' }}>
+          <FormControl sx={{ minWidth: '150px', width: { xs: '100%', sm: '200px' } }}>
             <InputLabel
               id="sma-period-label"
               shrink
@@ -316,14 +359,45 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
               ))}
             </Select>
           </FormControl>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginLeft: 'auto' }}>
-            <button
-              onClick={setInteractivity}
-              className="button-reset"
-              style={{
-                backgroundColor: isInteractive ? '#4cceac' : 'transparent',
-                color: isInteractive ? 'black' : '#31d6aa',
-                borderColor: isInteractive ? 'violet' : '#70d8bd',
+        </Box>
+      )}
+      
+      {!isDashboard && (
+        <div className='chart-top-div' style={{ marginBottom: '10px' }}>
+          <div className="span-container" style={{ position: 'relative', top: 10, left: 0, zIndex: 2 }}>
+            <span style={{ marginRight: '20px', display: 'inline-block', color: colors.primary[100] }}>
+              <span
+                style={{
+                  backgroundColor: colors.greenAccent[400],
+                  height: '10px',
+                  width: '10px',
+                  display: 'inline-block',
+                  marginRight: '5px',
+                }}
+              ></span>
+              {isMobile ? 'Index' : 'Altcoin Season Index'}
+            </span>
+            <span style={{ display: 'inline-block', color: colors.primary[100] }}>
+              <span
+                style={{
+                  backgroundColor: '#808080',
+                  height: '10px',
+                  width: '10px',
+                  display: 'inline-block',
+                  marginRight: '5px',
+                }}
+              ></span>
+              {isMobile ? 'BTC' : 'Bitcoin Price'}
+            </span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <button 
+              onClick={setInteractivity} 
+              className="button-reset" 
+              style={{ 
+                backgroundColor: isInteractive ? '#4cceac' : 'transparent', 
+                color: isInteractive ? 'black' : '#31d6aa', 
+                borderColor: isInteractive ? 'violet' : '#70d8bd' 
               }}
             >
               {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
@@ -332,8 +406,9 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
               Reset Chart
             </button>
           </div>
-        </Box>
+        </div>
       )}
+
       <div
         className="chart-container"
         style={{
@@ -347,8 +422,12 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
           ref={chartContainerRef}
           style={{ height: '100%', width: '100%', zIndex: 1 }}
           onDoubleClick={() => {
-            if (!isInteractive && !isDashboard) setIsInteractive(true);
-            else setIsInteractive(false);
+            if (!isInteractive && !isDashboard) {
+              setInteractivity();
+            } else {
+              setIsInteractive(false);
+              // When disabling interactivity, don't reset interaction state
+            }
           }}
         />
         {!isDashboard && tooltipData && (
@@ -395,7 +474,7 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
                       fontWeight: 'bold',
                     }}
                   >
-                    {tooltipData.index >= 75 ? 'Altcoin Season' : tooltipData.index <= 25 ? 'Bitcoin Season' : 'Neutral'}
+                    {tooltipData.index >= 75 ? 'Altcoin' : tooltipData.index <= 25 ? 'Bitcoin' : 'Neutral'}
                   </span>
                 </div>
                 {smoothedData.find(d => d.time === tooltipData.date) && (
