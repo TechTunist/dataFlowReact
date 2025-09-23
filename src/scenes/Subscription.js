@@ -246,7 +246,7 @@ const Subscription = memo(() => {
     const query = new URLSearchParams(location.search);
     if (query.get('success')) {
       fetchSubscriptionStatus();
-      navigate('/subscription', { replace: true }); // Changed to /subscription
+      navigate('/subscription', { replace: true });
     } else if (query.get('canceled')) {
       setError('Checkout was canceled. Please try again.');
       navigate('/subscription', { replace: true });
@@ -271,7 +271,7 @@ const Subscription = memo(() => {
           alignItems: 'center',
         }}
       >
-        <Typography variant="h5" sx={{ color: colors.grey[100] }}>
+        <Typography variant="body1" sx={{ color: colors.grey[100] }}>
           Please sign in to view subscription options.
         </Typography>
       </Box>
@@ -323,7 +323,7 @@ const Subscription = memo(() => {
         <Box sx={{ mb: 3 }}>
           <Typography variant="body1" sx={{ color: colors.grey[100], mb: 1 }}>
             <strong>Plan:</strong>{' '}
-            {subscriptionStatus.subscription_status.includes('Access will end') ? (
+            {subscriptionStatus.subscription_status === 'canceling' ? (
               <>
                 {subscriptionStatus.plan} ({subscriptionStatus.billing_interval}) - Retained access until period end
               </>
@@ -336,7 +336,17 @@ const Subscription = memo(() => {
           <Typography variant="body1" sx={{ color: colors.grey[100], mb: 1 }}>
             <strong>Status:</strong> {subscriptionStatus.subscription_status}
           </Typography>
-          {subscriptionStatus.current_period_end && (
+          {subscriptionStatus.current_period_end && ['active', 'past_due', 'canceling'].includes(subscriptionStatus.subscription_status) && (
+            <Typography variant="body1" sx={{ color: colors.grey[100], mb: 1 }}>
+              <strong>Next Payment:</strong>{' '}
+              {subscriptionStatus.subscription_status === 'canceling' ? (
+                'Canceled'
+              ) : (
+                new Date(subscriptionStatus.current_period_end).toLocaleDateString()
+              )}
+            </Typography>
+          )}
+          {subscriptionStatus.subscription_status === 'canceling' && subscriptionStatus.current_period_end && (
             <Typography variant="body1" sx={{ color: colors.grey[100], mb: 1 }}>
               <strong>Access Ends:</strong> {new Date(subscriptionStatus.current_period_end).toLocaleDateString()}
             </Typography>
