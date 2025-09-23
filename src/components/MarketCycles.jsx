@@ -103,12 +103,14 @@ const MarketCycles = ({ isDashboard = false }) => {
   // Process cycle data and compute average
   const cycleDatasets = useMemo(() => {
     if (btcData.length === 0) return [];
+
     const halvingDates = {
       'Cycle 1': '2012-11-28',
       'Cycle 2': '2016-07-09',
       'Cycle 3': '2020-05-11',
       'Cycle 4': '2024-04-19'
     };
+
     const cycleStarts = {
       bottom: {
         'Cycle 1': '2011-11-22',
@@ -123,6 +125,7 @@ const MarketCycles = ({ isDashboard = false }) => {
         'Cycle 3': '2021-11-10'
       }
     };
+
     const legendYears = {
       bottom: {
         'Cycle 1': '(2011-2013)',
@@ -142,6 +145,7 @@ const MarketCycles = ({ isDashboard = false }) => {
         'Cycle 3': '(2021-present)'
       }
     };
+
     const cycleEnds = {
       peak: {
         'Cycle 1': '2017-12-17',
@@ -149,6 +153,7 @@ const MarketCycles = ({ isDashboard = false }) => {
         'Cycle 3': null
       }
     };
+
     const processCycle = (start, end, cycleName, shortName) => {
       const endDate = end || btcData[btcData.length - 1].time;
       const filteredData = btcData.filter(d => new Date(d.time) >= new Date(start) && new Date(d.time) <= new Date(endDate));
@@ -165,15 +170,19 @@ const MarketCycles = ({ isDashboard = false }) => {
         }))
       };
     };
+
     const cycles = [
       processCycle(cycleStarts[startPoint]['Cycle 1'], startPoint === 'peak' ? cycleEnds[startPoint]['Cycle 1'] : '2013-11-30', 'Cycle 1'),
       processCycle(cycleStarts[startPoint]['Cycle 2'], startPoint === 'peak' ? cycleEnds[startPoint]['Cycle 2'] : '2017-12-17', 'Cycle 2'),
       processCycle(cycleStarts[startPoint]['Cycle 3'], startPoint === 'peak' ? cycleEnds[startPoint]['Cycle 3'] : '2021-11-08', 'Cycle 3')
     ];
+
     if (startPoint !== 'peak') {
       cycles.push(processCycle(cycleStarts[startPoint]['Cycle 4'], null, 'Cycle 4'));
     }
+
     const validCycles = cycles.filter(cycle => cycle !== null);
+
     let averageCycle = null;
     if (selectedCycles.length > 0) {
       const selectedCycleData = validCycles.filter(cycle => selectedCycles.includes(cycle.shortName));
@@ -203,6 +212,7 @@ const MarketCycles = ({ isDashboard = false }) => {
         }
       }
     }
+
     return [...validCycles, ...(averageCycle ? [averageCycle] : [])];
   }, [btcData, startPoint, selectedCycles]);
 
@@ -217,6 +227,15 @@ const MarketCycles = ({ isDashboard = false }) => {
       return newVisibility;
     });
   }, [cycleDatasets]);
+
+  // Function to format date as dd/mm/yyyy
+  const formatDate = (dateStr) => {
+    const date = new Date(dateStr);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
 
   // Memoized plot data
   const plotData = useMemo(() => {
@@ -233,10 +252,13 @@ const MarketCycles = ({ isDashboard = false }) => {
         dash: cycle.shortName === 'Average' ? 'dash' : 'solid',
       },
       text: cycle.data.map(
-        (d) =>
-          `<b>${cycle.shortName} ROI: ${d.roi.toFixed(2)}</b> (${new Date(
-            d.date
-          ).toLocaleDateString()})`
+        (d) => {
+          const baseText = `<b>${cycle.shortName} ROI: ${d.roi.toFixed(2)}</b>`;
+          if (cycle.shortName === 'Average') {
+            return baseText;
+          }
+          return `${baseText} (${formatDate(d.date)})`;
+        }
       ),
       hoverinfo: 'text',
       hovertemplate: `%{text}<extra></extra>`,
@@ -254,8 +276,18 @@ const MarketCycles = ({ isDashboard = false }) => {
     return false;
   }, []);
 
+  
   // Handle chart relayout (e.g., zooming)
   const handleRelayout = (event) => {
+    if (event['xaxis.autorange'] || event['yaxis.autorange']) {
+      setCurrentLayout(prev => ({
+        ...prev,
+        xaxis: { ...prev.xaxis, autorange: true, range: undefined },
+        yaxis: { ...prev.yaxis, autorange: true, range: undefined },
+      }));
+      return;
+    }
+
     if (event['xaxis.range[0]'] && event['xaxis.range[1]']) {
       const newXMin = event['xaxis.range[0]'];
       const newXMax = event['xaxis.range[1]'];
