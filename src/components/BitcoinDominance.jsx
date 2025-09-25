@@ -24,10 +24,10 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
   const chartRef = useRef(null);
   const areaSeriesRef = useRef(null);
   const ethSeriesRef = useRef(null);
-  const smaSeriesRefs = useRef({}).current;
+  const smaSeriesRefs = useRef({});
   const [scaleMode, setScaleMode] = useState(1);
   const [tooltipData, setTooltipData] = useState(null);
-  const [isInteractive, setIsInteractive] = useState(true);
+  const [isInteractive, setIsInteractive] = useState(false);
   const [smoothedDominanceData, setSmoothedDominanceData] = useState([]);
   const [activeSMAs, setActiveSMAs] = useState([]);
   const [showEthDominance, setShowEthDominance] = useState(false);
@@ -44,9 +44,9 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
 
   // Define weekly SMA indicators for Bitcoin Dominance with distinct colors
   const smaIndicators = useMemo(() => ({
-    '8w-sma': { period: 8 * 7, color: '#00FF00', label: '8 Week SMA' }, // Bright Green
-    '20w-sma': { period: 20 * 7, color: '#FF00FF', label: '20 Week SMA' }, // Magenta
-    '50w-sma': { period: 50 * 7, color: '#FFD700', label: '50 Week SMA' }, // Gold
+    '8w-sma': { period: 8 * 7, color: '#00FF00', label: '8 Week SMA' },
+    '20w-sma': { period: 20 * 7, color: '#FF00FF', label: '20 Week SMA' },
+    '50w-sma': { period: 50 * 7, color: '#FFD700', label: '50 Week SMA' },
   }), []);
 
   // Filter data to only show from 2013-04-28 onwards and apply 7-day smoothing
@@ -67,7 +67,7 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
       return false;
     });
 
-    // Apply 7-day smoothing to filtered data - transform btc to value for smoothing
+    // Apply 7-day smoothing to filtered data
     const dataForSmoothing = filteredData.map(item => ({
       time: item.time || item.date,
       value: item.btc
@@ -84,8 +84,8 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
 
   // Utility functions
   const setInteractivity = useCallback(() => {
-    setIsInteractive(!isInteractive);
-  }, [isInteractive]);
+    setIsInteractive(prev => !prev);
+  }, []);
 
   const toggleScaleMode = useCallback(() => {
     setScaleMode(prevMode => (prevMode === 1 ? 0 : 1));
@@ -126,7 +126,7 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
     fetchDominanceData();
   }, [fetchDominanceData]);
 
-  // Chart initialization (run once on mount) - REMOVED showEthDominance dependency
+  // Chart initialization (run once on mount)
   useEffect(() => {
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
@@ -157,28 +157,26 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
         scaleMargins: { top: 0.05, bottom: 0.05 },
         width: 70,
         ticksVisible: true,
-        // Left scale is always created but visibility controlled later
+      },
+      handleScroll: {
+        mouseWheel: true,
+        pressedMouseMove: true,
+        horzTouchDrag: true,
+        vertTouchDrag: true,
+      },
+      handleScale: {
+        mouseWheel: true,
+        pinch: true,
+        axisPressedMouseMove: true,
+        axisDoubleClickReset: true,
       },
     });
 
-    // Main plot colors - BTC dominance (green/cyan)
-    const lightThemeColors = {
-      topColor: 'rgba(76, 175, 80, 0.3)', // Green area fill
-      bottomColor: 'rgba(76, 175, 80, 0.1)',
-      lineColor: 'rgba(76, 175, 80, 1)', // Solid green line
-    };
-    const darkThemeColors = {
-      topColor: 'rgba(38, 198, 218, 0.3)', // Cyan area fill
-      bottomColor: 'rgba(38, 198, 218, 0.05)',
-      lineColor: 'rgba(38, 198, 218, 1)', // Solid cyan line
-    };
-    const areaColors = theme.palette.mode === 'dark' ? darkThemeColors : lightThemeColors;
-
     const areaSeries = chart.addAreaSeries({
       priceScaleId: 'right',
-      topColor: areaColors.topColor,
-      bottomColor: areaColors.bottomColor,
-      lineColor: areaColors.lineColor,
+      topColor: theme.palette.mode === 'dark' ? 'rgba(38, 198, 218, 0.3)' : 'rgba(76, 175, 80, 0.3)',
+      bottomColor: theme.palette.mode === 'dark' ? 'rgba(38, 198, 218, 0.05)' : 'rgba(76, 175, 80, 0.1)',
+      lineColor: theme.palette.mode === 'dark' ? 'rgba(38, 198, 218, 1)' : 'rgba(76, 175, 80, 1)',
       lineWidth: 2,
       priceFormat: {
         type: 'price',
@@ -188,13 +186,12 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
     });
     areaSeriesRef.current = areaSeries;
 
-    // ETH dominance line series on left scale - always created but visibility controlled
     const ethSeries = chart.addLineSeries({
       priceScaleId: 'left',
-      color: theme.palette.mode === 'dark' ? '#FF6B6B' : '#FF4757', // Red/Pink for ETH
+      color: theme.palette.mode === 'dark' ? '#FF6B6B' : '#FF4757',
       lineWidth: 2,
       priceLineVisible: false,
-      visible: false, // Initially hidden
+      visible: false,
     });
     ethSeriesRef.current = ethSeries;
 
@@ -215,7 +212,7 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
         setTooltipData({
           date: dateStr,
           btcPrice: btcData?.value,
-          ethPrice: showEthDominance ? ethData?.value : null,
+          ethPrice: ethData?.value,
           x: param.point.x,
           y: param.point.y,
         });
@@ -228,33 +225,30 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
           width: chartContainerRef.current.clientWidth,
           height: chartContainerRef.current.clientHeight,
         });
-        chart.timeScale().fitContent();
       }
     };
     window.addEventListener('resize', resizeChart);
-    chartRef.current = chart;
 
+    chartRef.current = chart;
     return () => {
       window.removeEventListener('resize', resizeChart);
       chart.remove();
     };
-  }, []); // Empty dependencies - chart created only once
+  }, []);
 
   // Update smoothed dominance data (main plot)
   useEffect(() => {
     if (areaSeriesRef.current && smoothedDominanceData.length > 0) {
       areaSeriesRef.current.setData(smoothedDominanceData);
       if (chartRef.current) {
-        chartRef.current.timeScale().fitContent();
+        resetChartView();
       }
     }
-  }, [smoothedDominanceData]);
+  }, [smoothedDominanceData, resetChartView]);
 
-  // Update ETH dominance data and scale visibility// Update ETH dominance data and scale visibility
+  // Update ETH dominance data and scale visibility
   useEffect(() => {
     if (!chartRef.current || !ethSeriesRef.current || rawDominanceData.length === 0) return;
-    
-    // Filter data from ETH launch date (2015-08-07) onwards
     const ethStartDate = new Date('2015-08-07').getTime();
     const ethData = rawDominanceData
       .filter(item => {
@@ -265,15 +259,10 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
         time: item.time || item.date,
         value: item.eth
       }));
-    
-    // Apply 7-day smoothing to ETH data
     const ethSmoothedData = calculateMovingAverage(ethData, 7);
     ethSeriesRef.current.setData(ethSmoothedData);
-    
-    // Toggle ETH series visibility FIRST
     ethSeriesRef.current.applyOptions({ visible: showEthDominance });
-    
-    // Then toggle left scale visibility with proper timing
+
     setTimeout(() => {
       if (chartRef.current) {
         if (showEthDominance) {
@@ -285,49 +274,40 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
         } else {
           chartRef.current.priceScale('left').applyOptions({
             visible: false,
-            width: 0, // Explicitly set width to 0 when hidden
+            width: 0,
           });
         }
       }
-    }, 10); // Small delay to ensure series visibility updates first
+    }, 10);
   }, [rawDominanceData, showEthDominance, calculateMovingAverage, colors]);
-
-  // Fix chart extent when ETH scale visibility changes
-  useEffect(() => {
-    if (chartRef.current && smoothedDominanceData.length > 0) {
-      // Small delay to ensure scale width changes are applied first
-      const timer = setTimeout(() => {
-        if (chartRef.current) {
-          chartRef.current.timeScale().fitContent();
-        }
-      }, 100); // Increased delay to ensure scale changes complete
-      
-      return () => clearTimeout(timer);
-    }
-  }, [showEthDominance, smoothedDominanceData.length]);
 
   // Update SMA indicators
   useEffect(() => {
     if (!chartRef.current || smoothedDominanceData.length === 0) return;
 
-    // Clean up existing SMA series
-    Object.keys(smaSeriesRefs).forEach(key => {
-      if (smaSeriesRefs[key]) {
-        chartRef.current.removeSeries(smaSeriesRefs[key]);
-        delete smaSeriesRefs[key];
+    // Remove existing SMA series safely
+    Object.keys(smaSeriesRefs.current).forEach(key => {
+      if (smaSeriesRefs.current[key] && chartRef.current) {
+        try {
+          chartRef.current.removeSeries(smaSeriesRefs.current[key]);
+        } catch (error) {
+          console.warn(`Failed to remove series for key ${key}:`, error);
+        }
+        delete smaSeriesRefs.current[key];
       }
     });
 
-    // Add new SMA series for active indicators using smoothed data
+    // Add new SMA series for active indicators
     activeSMAs.forEach(key => {
       const indicator = smaIndicators[key];
+      if (!indicator) return; // Skip if indicator is not defined
       const series = chartRef.current.addLineSeries({
-        priceScaleId: 'right', // Always on BTC scale
+        priceScaleId: 'right',
         color: indicator.color,
         lineWidth: 2,
         priceLineVisible: false,
       });
-      smaSeriesRefs[key] = series;
+      smaSeriesRefs.current[key] = series;
       const data = calculateMovingAverage(smoothedDominanceData, indicator.period);
       series.setData(data);
     });
@@ -348,24 +328,26 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
         rightPriceScale: {
           ...chartRef.current.priceScale('right').options(),
           borderColor: colors.greenAccent[500],
+          mode: scaleMode,
         },
         leftPriceScale: {
           ...chartRef.current.priceScale('left').options(),
           borderColor: showEthDominance ? colors.redAccent[500] : colors.greenAccent[700],
+          mode: scaleMode,
         },
       });
     }
+
     if (areaSeriesRef.current) {
-      // Main plot colors - BTC dominance
       const lightThemeColors = {
-        topColor: 'rgba(76, 175, 80, 0.3)', // Green for BTC
+        topColor: 'rgba(76, 175, 80, 0.3)',
         bottomColor: 'rgba(76, 175, 80, 0.1)',
-        lineColor: 'rgba(76, 175, 80, 1)', // Solid green
+        lineColor: 'rgba(76, 175, 80, 1)',
       };
       const darkThemeColors = {
-        topColor: 'rgba(38, 198, 218, 0.3)', // Cyan for BTC
+        topColor: 'rgba(38, 198, 218, 0.3)',
         bottomColor: 'rgba(38, 198, 218, 0.05)',
-        lineColor: 'rgba(38, 198, 218, 1)', // Solid cyan
+        lineColor: 'rgba(38, 198, 218, 1)',
       };
       const areaColors = theme.palette.mode === 'dark' ? darkThemeColors : lightThemeColors;
       areaSeriesRef.current.applyOptions({
@@ -374,42 +356,38 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
         lineColor: areaColors.lineColor,
       });
     }
+
     if (ethSeriesRef.current) {
-      // ETH dominance line color
       ethSeriesRef.current.applyOptions({
-        color: theme.palette.mode === 'dark' ? '#FF6B6B' : '#FF4757', // Red/Pink for ETH
+        color: theme.palette.mode === 'dark' ? '#FF6B6B' : '#FF4757',
       });
     }
-    
-    // Refit chart after theme changes affect scale colors
-    if (chartRef.current && smoothedDominanceData.length > 0) {
-      setTimeout(() => {
-        chartRef.current.timeScale().fitContent();
-      }, 50);
-    }
-  }, [colors, theme.palette.mode, showEthDominance, smoothedDominanceData.length]);
+  }, [colors, theme.palette.mode, showEthDominance, scaleMode]);
 
-  // Update scale mode and interactivity
+  // Update interactivity
   useEffect(() => {
     if (chartRef.current) {
       chartRef.current.applyOptions({
-        handleScroll: isInteractive,
-        handleScale: isInteractive,
-      });
-      chartRef.current.priceScale('right').applyOptions({
-        mode: scaleMode,
-      });
-      chartRef.current.priceScale('left').applyOptions({
-        mode: scaleMode,
+        handleScroll: {
+          mouseWheel: isInteractive,
+          pressedMouseMove: isInteractive,
+          horzTouchDrag: isInteractive,
+          vertTouchDrag: isInteractive,
+        },
+        handleScale: {
+          mouseWheel: isInteractive,
+          pinch: isInteractive,
+          axisPressedMouseMove: isInteractive,
+          axisDoubleClickReset: isInteractive,
+        },
       });
     }
-  }, [scaleMode, isInteractive]);
+  }, [isInteractive]);
 
   return (
     <div style={{ height: '100%' }}>
       {!isDashboard && (
         <>
-          {/* Top Controls Section - Weekly Moving Averages + ETH Toggle */}
           <Box
             sx={{
               display: 'flex',
@@ -421,7 +399,6 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
               marginTop: '50px',
             }}
           >
-            {/* ETH Dominance Toggle */}
             <FormControlLabel
               control={
                 <Switch
@@ -442,16 +419,14 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
                   Show ETH Dominance (Left Scale)
                 </span>
               }
-              sx={{ 
+              sx={{
                 color: colors.primary[100],
-                '& .MuiFormControlLabel-label': { 
+                '& .MuiFormControlLabel-label': {
                   color: colors.primary[100],
                   fontSize: '0.9rem'
                 }
               }}
             />
-
-            {/* Weekly Moving Averages FormControl */}
             <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '300px' } }}>
               <InputLabel
                 id="sma-label"
@@ -503,8 +478,6 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
               </Select>
             </FormControl>
           </Box>
-
-          {/* Chart Header Controls */}
           <div className='chart-top-div'>
             <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
               <label className="switch">
@@ -534,7 +507,6 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
           </div>
         </>
       )}
-      
       <div
         className="chart-container"
         style={{
@@ -543,65 +515,55 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
           width: '100%',
           border: '2px solid #a9a9a9',
         }}
-        onDoubleClick={setInteractivity}
+        onDoubleClick={() => setInteractivity(!isInteractive)}
       >
         <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
       </div>
-      
       <div className='under-chart'>
-  {!isDashboard && smoothedDominanceData.length > 0 && (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-      <LastUpdated storageKey="dominanceData" />
-      
-      {/* BTC Dominance */}
-      {currentDominance && (
-        <span
-          style={{
-            fontSize: '1.3rem',
-            color: colors.blueAccent[500],
-            display: 'block',
-            marginTop: '1.1rem',
-          }}
-        >
-          Bitcoin Dominance: {currentDominance}%
-        </span>
-      )}
-      
-      {/* ETH Dominance - only when selected */}
-      {showEthDominance && rawDominanceData.length > 0 && (
-        (() => {
-          // Find the latest ETH data point
-          const latestEthData = rawDominanceData
-            .filter(item => item.eth > 0)
-            .sort((a, b) => new Date(b.date || b.time) - new Date(a.date || a.time))[0];
-          
-          // Apply 7-day smoothing to latest ETH value (simple average of last 7 days)
-          const recentEthData = rawDominanceData
-            .filter(item => item.eth > 0)
-            .slice(-7)
-            .reduce((sum, item) => sum + item.eth, 0) / 7;
-          
-          return (
-            <span
-              style={{
-                fontSize: '1.2rem',
-                color: theme.palette.mode === 'dark' ? '#FF6B6B' : '#FF4757',
-                display: 'block',
-                fontWeight: 500,
-              }}
-            >
-              Ethereum Dominance: {recentEthData.toFixed(2)}%
-            </span>
-          );
-        })()
-      )}
-    </div>
-  )}
-  {!isDashboard && (
-    <BitcoinFees />
-  )}
-</div>
-      
+        {!isDashboard && smoothedDominanceData.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <LastUpdated storageKey="dominanceData" />
+            {currentDominance && (
+              <span
+                style={{
+                  fontSize: '1.3rem',
+                  color: colors.blueAccent[500],
+                  display: 'block',
+                  marginTop: '1.1rem',
+                }}
+              >
+                Bitcoin Dominance: {currentDominance}%
+              </span>
+            )}
+            {showEthDominance && rawDominanceData.length > 0 && (
+              (() => {
+                const latestEthData = rawDominanceData
+                  .filter(item => item.eth > 0)
+                  .sort((a, b) => new Date(b.date || b.time) - new Date(a.date || a.time))[0];
+                const recentEthData = rawDominanceData
+                  .filter(item => item.eth > 0)
+                  .slice(-7)
+                  .reduce((sum, item) => sum + item.eth, 0) / 7;
+                return (
+                  <span
+                    style={{
+                      fontSize: '1.2rem',
+                      color: theme.palette.mode === 'dark' ? '#FF6B6B' : '#FF4757',
+                      display: 'block',
+                      fontWeight: 500,
+                    }}
+                  >
+                    Ethereum Dominance: {recentEthData.toFixed(2)}%
+                  </span>
+                );
+              })()
+            )}
+          </div>
+        )}
+        {!isDashboard && (
+          <BitcoinFees />
+        )}
+      </div>
       {!isDashboard && (
         <div
           style={{
@@ -616,7 +578,6 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
           }}
         />
       )}
-      
       {!isDashboard && tooltipData && (
         <div
           className="tooltip"
@@ -641,10 +602,12 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
             zIndex: 1000,
           }}
         >
-          <div style={{ fontSize: '15px' }}>Bitcoin Dominance</div>
-          <div style={{ fontSize: '20px', color: theme.palette.mode === 'dark' ? 'rgba(38, 198, 218, 1)' : 'rgba(76, 175, 80, 1)' }}>
-            BTC: {tooltipData.btcPrice?.toFixed(2)}%
-          </div>
+          <div style={{ fontSize: '15px' }}>Market Dominance</div>
+          {tooltipData.btcPrice && (
+            <div style={{ fontSize: '20px', color: theme.palette.mode === 'dark' ? 'rgba(38, 198, 218, 1)' : 'rgba(76, 175, 80, 1)' }}>
+              BTC: {tooltipData.btcPrice.toFixed(2)}%
+            </div>
+          )}
           {showEthDominance && tooltipData.ethPrice && (
             <div style={{ fontSize: '18px', color: theme.palette.mode === 'dark' ? '#FF6B6B' : '#FF4757' }}>
               ETH: {tooltipData.ethPrice.toFixed(2)}%
@@ -653,7 +616,6 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
           <div>{tooltipData.date?.toString()}</div>
         </div>
       )}
-      
       {!isDashboard && (
         <p className='chart-info'>
           This chart shows Bitcoin dominance, which is the percentage of the total cryptocurrency market value that Bitcoin represents. For example, if Bitcoin's market value is $500 billion and the total market value of all cryptocurrencies is $1 trillion, Bitcoin dominance is 50%. This number helps you understand Bitcoin's influence compared to other cryptocurrencies like Ethereum or smaller altcoins.
