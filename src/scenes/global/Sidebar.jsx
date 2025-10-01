@@ -160,7 +160,7 @@ const itemsData = [
   // === ON-CHAIN METRICS ===
   // Category Icon: LinkIcon - Represents blockchain/on-chain data connections
   { title: "Bitcoin Address Balance", to: "/btc-add-balance", category: "On-Chain Metrics", icon: <AccountBalanceWalletIcon />, categoryIcon: <LinkIcon /> }, // AccountBalanceWalletIcon: Wallet/address balances
-  { title: "BTC Transactions to MVRV", to: "/tx-mvrv", category: "On-Chain Metrics", icon: <SwapHorizIcon />, categoryIcon: <LinkIcon /> }, // SwapHorizIcon: Transactions and value ratios
+  { title: "BTC MVRV to Transactions", to: "/tx-mvrv", category: "On-Chain Metrics", icon: <SwapHorizIcon />, categoryIcon: <LinkIcon /> }, // SwapHorizIcon: Transactions and value ratios
   { title: "Puell Multiple", to: "/puell-multiple", category: "On-Chain Metrics", icon: <MultipleStopIcon />, categoryIcon: <LinkIcon /> }, // MultipleStopIcon (alt: CalculateIcon): Multiples calculation
   { title: "MVRV Z-Score", to: "/btc-mvrv-z", category: "On-Chain Metrics", icon: <ScoreIcon />, categoryIcon: <LinkIcon /> }, // ScoreIcon: Z-score metric
   { title: "Bitcoin On-chain Risk", to: "/on-chain-historical-risk", category: "On-Chain Metrics", icon: <HistoryEduIcon />, categoryIcon: <LinkIcon /> }, // HistoryEduIcon: Historical on-chain data

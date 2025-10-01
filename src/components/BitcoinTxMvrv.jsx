@@ -748,7 +748,7 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
   const [tooltipData, setTooltipData] = useState(null);
   const [isInteractive, setIsInteractive] = useState(false);
   const [displayMode, setDisplayMode] = useState('ratio');
-  const [smoothingMode, setSmoothingMode] = useState('ema-28');
+  const [smoothingMode, setSmoothingMode] = useState('sma-7');
   const [showBearTrend, setShowBearTrend] = useState(false);
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);

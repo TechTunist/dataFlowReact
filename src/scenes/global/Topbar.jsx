@@ -235,7 +235,7 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
       case "/puell-multiple":
         return { title: "Puell Multiple", subtitle: isMobile ? "Miner Revenue" : "Current Mined BTC Value to the 365 day Moving Average" };
       case "/tx-mvrv":
-        return { title: "BTC Tx Count to MVRV", subtitle: "Transactions to MVRV Chart" };
+        return { title: "BTC MVRV to Tx Count", subtitle: "MVRV to Transactions Chart" };
       case "/fred/fed-funds-rate":
         return { title: "Federal Funds Rate", subtitle: isMobile ? "Fed Rate" : "Effective Federal Funds Rate" };
       case "/fred/sp500":
@@ -317,9 +317,9 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
       case "/btc-mvrv-z":
         return { title: "Bitcoin MVRV Z-Score", subtitle: isMobile ? "Identify extreme conditions" : "Demonstrates the relationship between market value and realised value" };
       case "/total2":
-        return { title: "Total2 Marketcap", subtitle: "Total Crypto Market Cap Minus BTC" };
+        return { title: "Total2", subtitle: "Total Crypto Market Cap Minus BTC" };
       case "/total3": 
-        return { title: "Total3 Marketcap", subtitle: "Total Crypto Market Cap Minus BTC & ETH" };
+        return { title: "Total3", subtitle: "Total Crypto Market Cap Minus BTC & ETH" };
       default:
         return { title: "CryptoLogical", subtitle: "" };
     }
