@@ -722,10 +722,7 @@
 
 
 
-
-
-
-import React, { useRef, useEffect, useState, useContext } from 'react';
+import React, { useRef, useEffect, useState, useContext, useMemo, useCallback } from 'react';
 import { createChart } from 'lightweight-charts';
 import '../styling/bitcoinChart.css';
 import { tokens } from "../theme";
@@ -733,7 +730,7 @@ import { useTheme } from "@mui/material";
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
 import BitcoinFees from './BitcoinTransactionFees';
-import { Box, FormControl, InputLabel, Select, MenuItem, ToggleButton, ToggleButtonGroup, useMediaQuery } from '@mui/material';
+import { Box, FormControl, InputLabel, Select, MenuItem, ToggleButton, ToggleButtonGroup, useMediaQuery, Checkbox } from '@mui/material';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 
@@ -745,11 +742,14 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
   const priceSeriesRef = useRef(null);
   const ratioSeriesRef = useRef(null);
   const bearTrendSeriesRef = useRef(null);
+  const horizontalLineSeriesRef = useRef(null);
+  const overboughtSeriesRef = useRef(null);
+  const bottomShadedSeriesRef = useRef(null);
   const [tooltipData, setTooltipData] = useState(null);
   const [isInteractive, setIsInteractive] = useState(false);
   const [displayMode, setDisplayMode] = useState('ratio');
   const [smoothingMode, setSmoothingMode] = useState('sma-7');
-  const [showBearTrend, setShowBearTrend] = useState(false);
+  const [activeTrends, setActiveTrends] = useState([]);
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const isMobile = useIsMobile();
@@ -843,6 +843,19 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
     return ratio;
   };
 
+  const trends = useMemo(() => ({
+    'bottom': {
+      color: theme.palette.mode === 'dark' ? colors.greenAccent[400] : colors.greenAccent[500],
+      label: 'Oversold',
+      description: 'Linear trend line through MVRV/Tx ratio at historical bear market bottoms (2015, 2019, 2022), projected forward. Lightly shaded vertical areas highlight periods when the ratio falls below this trend line.',
+    },
+    'threshold': {
+      color: theme.palette.mode === 'dark' ? colors.primary[300] : colors.primary[400],
+      label: 'Overbought',
+      description: 'Horizontal line at ~88% of the historical max MVRV/Tx ratio, indicating potential overbought conditions when peaks break through. Lightly shaded vertical areas highlight periods when the ratio exceeds this threshold.',
+    },
+  }), [theme.palette.mode, colors]);
+
   const getIndicators = (mode, smoothing) => ({
     'tx-count': {
       color: theme.palette.mode === 'dark' ? 'rgba(38, 198, 218, 1)' : 'rgba(255, 140, 0, 0.8)',
@@ -859,19 +872,10 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
       label: `MVRV/Tx Ratio${smoothing === 'none' ? '' : ` (${smoothing === 'ema-7' ? '7-day EMA' : smoothing === 'ema-28' ? '28-day EMA' : smoothing === 'sma-7' ? '7-day SMA' : '28-day SMA'})`}`,
       description: `The ratio of normalized MVRV to normalized transaction count${smoothing === 'none' ? '' : `, smoothed with a ${smoothing === 'ema-7' || smoothing === 'ema-28' ? 'exponential' : 'simple'} moving average`}, dynamically normalized to a rolling maximum. High values may indicate overvaluation (market tops), low values may suggest undervaluation (market bottoms).`,
     },
-    'bear-trend': {
-      color: 'cyan',
-      label: 'Bear Market Bottom Trend',
-      description: 'Linear trend line through MVRV/Tx ratio at historical bear market bottoms (2015, 2019, 2022), projected forward.',
-    },
   });
 
   const setInteractivity = () => {
     setIsInteractive(prev => !prev);
-  };
-
-  const toggleBearTrend = () => {
-    setShowBearTrend(prev => !prev);
   };
 
   const resetChartView = () => {
@@ -884,13 +888,17 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
     if (newMode) {
       setDisplayMode(newMode);
       if (newMode !== 'ratio') {
-        setShowBearTrend(false);
+        setActiveTrends([]);
       }
     }
   };
 
   const handleSmoothingModeChange = (event) => {
     setSmoothingMode(event.target.value);
+  };
+
+  const handleTrendsChange = (event) => {
+    setActiveTrends(event.target.value);
   };
 
   const getBearMarketBottoms = (ratioData, bottomDates) => {
@@ -905,13 +913,9 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
     });
   };
 
-  useEffect(() => {
-    fetchTxMvrvData();
-    fetchBtcData();
-  }, [fetchTxMvrvData, fetchBtcData]);
-
-  useEffect(() => {
-    if (txMvrvData.length === 0 || btcData.length === 0) return;
+  // Memoize processed data to avoid recomputation
+  const processedData = useMemo(() => {
+    if (txMvrvData.length === 0 || btcData.length === 0) return null;
     const cutoffDate = new Date('2014-10-21');
     const filteredTxMvrvData = txMvrvData.filter(
       item => {
@@ -922,8 +926,47 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
       }
     );
     const filteredBtcData = btcData.filter(item => new Date(item.time) >= cutoffDate);
-    if (filteredTxMvrvData.length === 0 || filteredBtcData.length === 0) return;
+    if (filteredTxMvrvData.length === 0 || filteredBtcData.length === 0) return null;
+    let txCountData = filteredTxMvrvData.map(item => ({ time: item.time, value: item.tx_count }));
+    if (smoothingMode === 'ema-7') {
+      txCountData = calculateEMA(txCountData, 7);
+    } else if (smoothingMode === 'ema-28') {
+      txCountData = calculateEMA(txCountData, 28);
+    } else if (smoothingMode === 'sma-7') {
+      txCountData = calculateSMA(txCountData, 7);
+    } else if (smoothingMode === 'sma-28') {
+      txCountData = calculateSMA(txCountData, 28);
+    }
+    const mvrvDataForRatio = filteredTxMvrvData.map(item => ({ time: item.time, mvrv: item.mvrv }));
+    const ratioData = calculateRatio(mvrvDataForRatio, txCountData, smoothingMode);
+    const globalMaxRatio = Math.max(...ratioData.map(d => d.value));
+    const horizontalLineValue = globalMaxRatio * 0.88;
+    // Precompute overbought data only once
+    const overboughtData = ratioData
+      .map(point => ({
+        time: point.time,
+        value: point.value > horizontalLineValue ? 1 : 0,
+      }))
+      .filter(point => point.value === 1);
+    return {
+      filteredTxMvrvData,
+      filteredBtcData,
+      txCountData,
+      ratioData,
+      mvrvDataForRatio,
+      horizontalLineValue,
+      overboughtData,
+    };
+  }, [txMvrvData, btcData, smoothingMode]);
 
+  useEffect(() => {
+    fetchTxMvrvData();
+    fetchBtcData();
+  }, [fetchTxMvrvData, fetchBtcData]);
+
+  // Create chart once, add all series with initial empty data
+  useEffect(() => {
+    if (!chartContainerRef.current) return;
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
       height: chartContainerRef.current.clientHeight,
@@ -945,22 +988,58 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
       leftPriceScale: {
         mode: 0,
         borderVisible: false,
-        scaleMargins: { top: displayMode === 'ratio' ? 0.5 : 0.05, bottom: 0.05 }, // Adjust for ratio mode
+        scaleMargins: { top: displayMode === 'ratio' ? 0.5 : 0.05, bottom: 0.05 },
       },
       rightPriceScale: {
         mode: 1,
         borderVisible: false,
-        scaleMargins: { top: 0.05, bottom: displayMode === 'ratio' ? 0.5 : 0.05 }, // Adjust for ratio mode
+        scaleMargins: { top: 0.05, bottom: displayMode === 'ratio' ? 0.5 : 0.05 },
       },
     });
 
-    chart.priceScale('left').applyOptions({ 
-      mode: 0, 
+    // Add overbought series first to create the scale
+    const overboughtSeries = chart.addHistogramSeries({
+      priceScaleId: 'overbought-scale',
+      color: theme.palette.mode === 'dark' ? 'rgba(255, 99, 71, 0.3)' : 'rgba(255, 140, 0, 0.3)', // Muted red/orange with higher opacity for visibility
+      priceFormat: {
+        type: 'custom',
+        minMove: 0.01,
+        formatter: (value) => (value === 1 ? '' : ''), // Hide labels
+      },
+      visible: false, // Initially hidden
+    });
+    overboughtSeriesRef.current = overboughtSeries;
+    overboughtSeries.setData([]); // Initial empty data
+
+    // Add bottom shaded series
+    const bottomShadedSeries = chart.addHistogramSeries({
+      priceScaleId: 'overbought-scale',
+      color: theme.palette.mode === 'dark' ? 'rgba(38, 198, 218, 0.3)' : 'rgba(0, 128, 0, 0.3)', // Muted cyan/green with higher opacity for visibility
+      priceFormat: {
+        type: 'custom',
+        minMove: 0.01,
+        formatter: (value) => (value === 1 ? '' : ''), // Hide labels
+      },
+      visible: false, // Initially hidden
+    });
+    bottomShadedSeriesRef.current = bottomShadedSeries;
+    bottomShadedSeries.setData([]); // Initial empty data
+
+    // Now configure the overbought scale
+    chart.priceScale('overbought-scale').applyOptions({
+      borderVisible: false,
+      scaleMargins: { top: 0.05, bottom: 0.05 },
+      visible: false, // Invisible scale for overlay
+    });
+
+    // Configure other scales
+    chart.priceScale('left').applyOptions({
+      mode: 0,
       borderVisible: false,
       scaleMargins: { top: displayMode === 'ratio' ? 0.5 : 0.05, bottom: 0.05 },
     });
-    chart.priceScale('right').applyOptions({ 
-      mode: 1, 
+    chart.priceScale('right').applyOptions({
+      mode: 1,
       borderVisible: false,
       scaleMargins: { top: 0.05, bottom: displayMode === 'ratio' ? 0.5 : 0.05 },
     });
@@ -981,14 +1060,12 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
         const mvrvData = param.seriesData.get(mvrvSeriesRef.current);
         const priceData = param.seriesData.get(priceSeriesRef.current);
         const ratioData = param.seriesData.get(ratioSeriesRef.current);
-        const bearTrendData = showBearTrend && displayMode === 'ratio' ? param.seriesData.get(bearTrendSeriesRef.current) : null;
         setTooltipData({
           date: dateStr,
           txCount: txCountData?.value,
           mvrv: mvrvData?.value,
           price: priceData?.value,
           ratio: ratioData?.value,
-          bearTrend: bearTrendData?.value,
           x: param.point.x,
           y: param.point.y,
         });
@@ -1005,6 +1082,7 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
     };
     window.addEventListener('resize', resizeChart);
 
+    // Define colors
     const lightThemeColors = {
       txCount: { lineColor: 'rgba(255, 140, 0, 0.8)' },
       mvrv: { lineColor: 'rgba(0, 128, 0, 1)' },
@@ -1029,17 +1107,7 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
       visible: displayMode === 'tx-mvrv',
     });
     txCountSeriesRef.current = txCountSeries;
-    let txCountData = filteredTxMvrvData.map(item => ({ time: item.time, value: item.tx_count }));
-    if (smoothingMode === 'ema-7') {
-      txCountData = calculateEMA(txCountData, 7);
-    } else if (smoothingMode === 'ema-28') {
-      txCountData = calculateEMA(txCountData, 28);
-    } else if (smoothingMode === 'sma-7') {
-      txCountData = calculateSMA(txCountData, 7);
-    } else if (smoothingMode === 'sma-28') {
-      txCountData = calculateSMA(txCountData, 28);
-    }
-    txCountSeries.setData(txCountData);
+    txCountSeries.setData([]);
 
     // Bitcoin Price Series
     const priceSeries = chart.addLineSeries({
@@ -1052,7 +1120,7 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
       },
     });
     priceSeriesRef.current = priceSeries;
-    priceSeries.setData(filteredBtcData.map(data => ({ time: data.time, value: data.value })));
+    priceSeries.setData([]);
 
     // MVRV Series
     const mvrvSeries = chart.addLineSeries({
@@ -1063,30 +1131,69 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
       visible: displayMode === 'tx-mvrv',
     });
     mvrvSeriesRef.current = mvrvSeries;
-    mvrvSeries.setData(
-      filteredTxMvrvData.map(item => ({ time: item.time, value: item.mvrv * 100000 }))
-    );
+    mvrvSeries.setData([]);
 
     // MVRV/Tx Ratio Series
     const ratioSeries = chart.addLineSeries({
-      priceScaleId: 'left', // Use left scale for ratio
+      priceScaleId: 'left',
       color: ratioColors.lineColor,
       lineWidth: 2,
       priceFormat: { type: 'price', precision: 2, minMove: 0.01 },
       visible: displayMode === 'ratio',
     });
     ratioSeriesRef.current = ratioSeries;
-    const mvrvDataForRatio = filteredTxMvrvData.map(item => ({ time: item.time, mvrv: item.mvrv }));
-    const ratioData = calculateRatio(mvrvDataForRatio, txCountData, smoothingMode);
-    ratioSeries.setData(ratioData);
+    ratioSeries.setData([]);
 
-    // Bear Market Bottom Trend Line
-    if (showBearTrend) {
+    chartRef.current = chart;
+    return () => {
+      chart.remove();
+      window.removeEventListener('resize', resizeChart);
+    };
+  }, []); // Empty deps: create chart only once on mount
+
+  // Update data when processedData changes
+  useEffect(() => {
+    if (!chartRef.current || !processedData) return;
+    const { filteredTxMvrvData, filteredBtcData, txCountData, ratioData, overboughtData } = processedData;
+    // Update core series data
+    txCountSeriesRef.current?.setData(txCountData);
+    priceSeriesRef.current?.setData(filteredBtcData.map(data => ({ time: data.time, value: data.value })));
+    mvrvSeriesRef.current?.setData(filteredTxMvrvData.map(item => ({ time: item.time, value: item.mvrv * 100000 })));
+    ratioSeriesRef.current?.setData(ratioData);
+    // Update overbought series data and visibility
+    overboughtSeriesRef.current?.setData(overboughtData);
+    overboughtSeriesRef.current?.applyOptions({
+      visible: activeTrends.includes('threshold') && displayMode === 'ratio'
+    });
+    // Update visibility for displayMode
+    txCountSeriesRef.current?.applyOptions({ visible: displayMode === 'tx-mvrv' });
+    mvrvSeriesRef.current?.applyOptions({ visible: displayMode === 'tx-mvrv' });
+    ratioSeriesRef.current?.applyOptions({ visible: displayMode === 'ratio' });
+    // Always fit content to ensure full view of data
+    chartRef.current.timeScale().fitContent();
+  }, [processedData, displayMode, activeTrends]);
+
+  // Update trends lines when activeTrends or processedData changes
+  useEffect(() => {
+    if (!chartRef.current || !processedData) return;
+    const { ratioData, horizontalLineValue } = processedData;
+    const msPerDay = 1000 * 60 * 60 * 24;
+    // Remove existing trend series if present
+    if (bearTrendSeriesRef.current) {
+      chartRef.current.removeSeries(bearTrendSeriesRef.current);
+      bearTrendSeriesRef.current = null;
+    }
+    if (horizontalLineSeriesRef.current) {
+      chartRef.current.removeSeries(horizontalLineSeriesRef.current);
+      horizontalLineSeriesRef.current = null;
+    }
+    // Bottom Indicator
+    if (activeTrends.includes('bottom') && displayMode === 'ratio') {
       const bottomDates = ['2015-04-27', '2019-02-07', '2022-10-02'];
       const bearMarketBottoms = getBearMarketBottoms(ratioData, bottomDates);
       const baseDate = new Date('2015-04-27').getTime();
       const days = bearMarketBottoms.map(point => ({
-        x: (new Date(point.time).getTime() - baseDate) / (1000 * 60 * 60 * 24),
+        x: (new Date(point.time).getTime() - baseDate) / msPerDay,
         y: point.value,
       }));
       const n = days.length;
@@ -1096,18 +1203,20 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
       const sumXX = days.reduce((sum, d) => sum + d.x * d.x, 0);
       const m = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
       const c = (sumY - m * sumX) / n;
-      const endDate = new Date('2028-12-31').getTime();
-      const trendData = [];
-      for (let t = new Date('2015-04-27'); t <= endDate; t.setDate(t.getDate() + 1)) {
-        const daysSinceStart = (t.getTime() - baseDate) / (1000 * 60 * 60 * 24);
-        const value = m * daysSinceStart + c;
-        if (value >= 0) {
-          trendData.push({ time: t.toISOString().split('T')[0], value });
-        }
-      }
-      const bearTrendSeries = chart.addLineSeries({
-        priceScaleId: 'left', // Use left scale for bear trend
-        color: 'cyan',
+      const startTime = '2015-04-27';
+      const startDays = 0;
+      const startValue = Math.max(0, c);
+      const endTime = ratioData[ratioData.length - 1].time;
+      const endTimestamp = new Date(endTime).getTime();
+      const endDays = (endTimestamp - baseDate) / msPerDay;
+      const endValue = Math.max(0, m * endDays + c);
+      const trendData = [
+        { time: startTime, value: startValue },
+        { time: endTime, value: endValue }
+      ];
+      const bearTrendSeries = chartRef.current.addLineSeries({
+        priceScaleId: 'left',
+        color: trends['bottom'].color,
         lineWidth: 2,
         lineStyle: 2,
         priceFormat: { type: 'price', precision: 2, minMove: 0.01 },
@@ -1121,32 +1230,61 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
       });
       bearTrendSeriesRef.current = bearTrendSeries;
       bearTrendSeries.setData(trendData);
-    }
-
-    if (showBearTrend && displayMode === 'ratio') {
-      const endDate = new Date('2028-12-31').getTime();
-      chart.timeScale().setVisibleRange({
-        from: new Date('2014-10-21').getTime() / 1000,
-        to: endDate / 1000,
+      // Compute bottom shaded data directly using linear formula
+      const bottomShadedData = ratioData
+        .map(point => {
+          const pointTimestamp = new Date(point.time).getTime();
+          const daysSinceStart = (pointTimestamp - baseDate) / msPerDay;
+          let trendVal;
+          if (daysSinceStart < 0) {
+            trendVal = c; // Use start value for points before base date to match original behavior
+          } else {
+            trendVal = m * daysSinceStart + c;
+          }
+          return {
+            time: point.time,
+            value: point.value < Math.max(0, trendVal) ? 1 : 0,
+          };
+        })
+        .filter(point => point.value === 1);
+      bottomShadedSeriesRef.current?.setData(bottomShadedData);
+      bottomShadedSeriesRef.current?.applyOptions({
+        visible: activeTrends.includes('bottom') && displayMode === 'ratio'
       });
     } else {
-      chart.timeScale().fitContent();
+      // Hide bottom shaded when not active
+      bottomShadedSeriesRef.current?.applyOptions({ visible: false });
+      bottomShadedSeriesRef.current?.setData([]);
     }
+    // Horizontal Threshold Line
+    if (activeTrends.includes('threshold') && displayMode === 'ratio') {
+      const thresholdData = ratioData.map(point => ({ time: point.time, value: horizontalLineValue }));
+      const horizontalLineSeries = chartRef.current.addLineSeries({
+        priceScaleId: 'left',
+        color: trends['threshold'].color,
+        lineWidth: 2,
+        lineStyle: 3,
+        priceFormat: { type: 'price', precision: 2, minMove: 0.01 },
+        visible: displayMode === 'ratio',
+        crosshairMarkerVisible: false,
+        priceLineVisible: false,
+        lastValueVisible: false,
+      });
+      horizontalLineSeriesRef.current = horizontalLineSeries;
+      horizontalLineSeries.setData(thresholdData);
+      horizontalLineSeries.applyOptions({
+        autoscaleInfoProvider: () => null,
+      });
+    }
+  }, [activeTrends, displayMode, processedData, trends]);
 
-    chartRef.current = chart;
-    return () => {
-      chart.remove();
-      window.removeEventListener('resize', resizeChart);
-    };
-  }, [txMvrvData, btcData, isDashboard, theme.palette.mode, displayMode, smoothingMode, showBearTrend]);
-
+  // Update interactivity and scales
   useEffect(() => {
     if (chartRef.current) {
       chartRef.current.applyOptions({
         handleScroll: isInteractive && !isDashboard,
         handleScale: isInteractive && !isDashboard,
       });
-      // Update price scale margins based on display mode
       chartRef.current.priceScale('left').applyOptions({
         scaleMargins: { top: displayMode === 'ratio' ? 0.5 : 0.05, bottom: 0.05 },
       });
@@ -1157,6 +1295,14 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
   }, [isInteractive, isDashboard, displayMode]);
 
   const indicatorsForMode = getIndicators(displayMode, smoothingMode);
+
+  const getBottomShadedColor = () => {
+    return theme.palette.mode === 'dark' ? 'rgba(38, 198, 218, 0.3)' : 'rgba(0, 128, 0, 0.3)';
+  };
+
+  const getOverboughtShadedColor = () => {
+    return theme.palette.mode === 'dark' ? 'rgba(255, 99, 71, 0.3)' : 'rgba(255, 140, 0, 0.3)';
+  };
 
   return (
     <div style={{ height: '100%' }}>
@@ -1234,25 +1380,53 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
             </Select>
           </FormControl>
           {displayMode === 'ratio' && (
-            <ToggleButton
-              value="trend"
-              selected={showBearTrend}
-              onChange={toggleBearTrend}
-              sx={{
-                backgroundColor: colors.primary[500],
-                color: colors.grey[100],
-                borderColor: colors.grey[300],
-                '&.Mui-selected': {
-                  backgroundColor: colors.greenAccent[500],
-                  color: colors.primary[900],
-                },
-                '&:hover': {
-                  backgroundColor: colors.greenAccent[700],
-                },
-              }}
-            >
-              {showBearTrend ? 'Bottom Indicator' : 'Bottom Indicator'}
-            </ToggleButton>
+            <FormControl sx={{ minWidth: isMobile ? '100%' : '200px' }}>
+              <InputLabel
+                id="trends-label"
+                shrink
+                sx={{
+                  color: colors.grey[100],
+                  '&.Mui-focused': { color: colors.greenAccent[500] },
+                  top: 0,
+                  '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' },
+                }}
+              >
+                Trends
+              </InputLabel>
+              <Select
+                multiple
+                value={activeTrends}
+                onChange={handleTrendsChange}
+                labelId="trends-label"
+                label="Trends"
+                displayEmpty
+                renderValue={(selected) =>
+                  selected.length > 0
+                    ? selected.map((key) => trends[key].label).join(', ')
+                    : 'Select Trends'
+                }
+                sx={{
+                  color: colors.grey[100],
+                  backgroundColor: colors.primary[500],
+                  borderRadius: "8px",
+                  '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
+                  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                  '& .MuiSelect-select': { py: 1.5, pl: 2 },
+                  '& .MuiSelect-select:empty': { color: colors.grey[500] },
+                }}
+              >
+                {Object.entries(trends).map(([key, { label }]) => (
+                  <MenuItem key={key} value={key}>
+                    <Checkbox
+                      checked={activeTrends.includes(key)}
+                      sx={{ color: colors.grey[100], '&.Mui-checked': { color: colors.greenAccent[500] } }}
+                    />
+                    <span>{label}</span>
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
           )}
         </Box>
       )}
@@ -1286,7 +1460,7 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
           border: '2px solid #a9a9a9',
           zIndex: 1,
         }}
-        onDoubleClick={() => setInteractivity(prev => !prev)}
+        onDoubleClick={() => setIsInteractive(prev => !prev)}
       >
         <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
         {!isDashboard && (
@@ -1345,19 +1519,61 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
                   />
                   {indicatorsForMode['ratio'].label}
                 </div>
-                {smoothingMode === 'ema-28' && showBearTrend && (
-                  <div style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>
-                    <span
-                      style={{
-                        display: 'inline-block',
-                        width: '10px',
-                        height: '10px',
-                        backgroundColor: indicatorsForMode['bear-trend'].color,
-                        marginRight: '5px',
-                      }}
-                    />
-                    {indicatorsForMode['bear-trend'].label}
-                  </div>
+                {activeTrends.includes('bottom') && (
+                  <>
+                    <div style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>
+                      <span
+                        style={{
+                          display: 'inline-block',
+                          width: '10px',
+                          height: '10px',
+                          backgroundColor: trends['bottom'].color,
+                          marginRight: '5px',
+                        }}
+                      />
+                      {trends['bottom'].label}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>
+                      <span
+                        style={{
+                          display: 'inline-block',
+                          width: '10px',
+                          height: '10px',
+                          backgroundColor: getBottomShadedColor(),
+                          marginRight: '5px',
+                        }}
+                      />
+                      Bottom Shaded Areas
+                    </div>
+                  </>
+                )}
+                {activeTrends.includes('threshold') && (
+                  <>
+                    <div style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>
+                      <span
+                        style={{
+                          display: 'inline-block',
+                          width: '10px',
+                          height: '10px',
+                          backgroundColor: trends['threshold'].color,
+                          marginRight: '5px',
+                        }}
+                      />
+                      {trends['threshold'].label}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>
+                      <span
+                        style={{
+                          display: 'inline-block',
+                          width: '10px',
+                          height: '10px',
+                          backgroundColor: getOverboughtShadedColor(),
+                          marginRight: '5px',
+                        }}
+                      />
+                      Overbought Shaded Areas
+                    </div>
+                  </>
                 )}
               </>
             )}
@@ -1374,12 +1590,29 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
         <Box sx={{ margin: '10px 0', color: colors.grey[100] }}>
           {Object.entries(indicatorsForMode).map(([key, { label, color, description }]) => (
             (displayMode === 'tx-mvrv' ? (key === 'tx-count' || key === 'mvrv') :
-            (key === 'ratio' || (key === 'bear-trend' && smoothingMode === 'ema-28' && showBearTrend))) && (
+              key === 'ratio') && (
               <p key={key} style={{ margin: '5px 0' }}>
                 <strong style={{ color }}>{label}:</strong> {description}
               </p>
             )
           ))}
+          {activeTrends.map(key => (
+            <p key={key} style={{ margin: '5px 0' }}>
+              <strong style={{ color: trends[key].color }}>
+                {trends[key].label}:
+              </strong> {trends[key].description}
+            </p>
+          ))}
+          {activeTrends.includes('bottom') && (
+            <p style={{ margin: '5px 0' }}>
+              <strong style={{ color: getBottomShadedColor() }}>Bottom Shaded Areas:</strong> Lightly shaded vertical areas highlighting periods when the MVRV/Tx ratio falls below the bottom indicator trend line, indicating potential undervaluation.
+            </p>
+          )}
+          {activeTrends.includes('threshold') && (
+            <p style={{ margin: '5px 0' }}>
+              <strong style={{ color: getOverboughtShadedColor() }}>Overbought Shaded Areas:</strong> Lightly shaded vertical areas highlighting periods when the MVRV/Tx ratio exceeds the overbought threshold, indicating potential overvaluation.
+            </p>
+          )}
         </Box>
       )}
       {!isDashboard && tooltipData && (
@@ -1421,11 +1654,6 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
               <div style={{ color: indicatorsForMode['ratio'].color }}>
                 {indicatorsForMode['ratio'].label}: {tooltipData.ratio?.toFixed(2) ?? 'N/A'}
               </div>
-              {showBearTrend && smoothingMode === 'ema-28' && (
-                <div style={{ color: indicatorsForMode['bear-trend'].color }}>
-                  {indicatorsForMode['bear-trend'].label}: {tooltipData.bearTrend?.toFixed(2) ?? 'N/A'}
-                </div>
-              )}
             </>
           )}
           <div>{tooltipData.date?.toString()}</div>
@@ -1433,7 +1661,7 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
       )}
       {!isDashboard && (
         <p className='chart-info'>
-          The Bitcoin Tx Count, Price & MVRV chart shows the {displayMode === 'tx-mvrv' ? `${smoothingMode === 'none' ? 'daily transaction count' : smoothingMode === 'ema-7' ? '7-day EMA' : smoothingMode === 'ema-28' ? '28-day EMA' : smoothingMode === 'sma-7' ? '7-day SMA' : '28-day SMA'} of transaction count and scaled MVRV` : `MVRV-to-transaction-count ratio${smoothingMode === 'none' ? '' : ` with ${smoothingMode === 'ema-7' || smoothingMode === 'ema-28' ? 'exponential' : 'simple'} moving average`}`} and Bitcoin price starting from October 21, 2014, illustrating network activity, price trends, and valuation. {displayMode === 'ratio' ? `The MVRV/Tx Ratio is the normalized MVRV divided by normalized transaction count, dynamically normalized to a rolling maximum and optionally smoothed with a moving average.${smoothingMode === 'ema-28' && showBearTrend ? ' The Bear Market Bottom Trend line projects historical ratio lows forward.' : ''}` : 'MVRV is scaled by 100,000 to fit the linear axis.'}
+          The Bitcoin Tx Count, Price & MVRV chart shows the {displayMode === 'tx-mvrv' ? `${smoothingMode === 'none' ? 'daily transaction count' : smoothingMode === 'ema-7' ? '7-day EMA' : smoothingMode === 'ema-28' ? '28-day EMA' : smoothingMode === 'sma-7' ? '7-day SMA' : '28-day SMA'} of transaction count and scaled MVRV` : `MVRV-to-transaction-count ratio${smoothingMode === 'none' ? '' : ` with ${smoothingMode === 'ema-7' || smoothingMode === 'ema-28' ? 'exponential' : 'simple'} moving average`}`} and Bitcoin price starting from October 21, 2014, illustrating network activity, price trends, and valuation. {displayMode === 'ratio' ? `The MVRV/Tx Ratio is the normalized MVRV divided by normalized transaction count, dynamically normalized to a rolling maximum and optionally smoothed with a moving average.${activeTrends.includes('bottom') ? ' The Bottom Indicator projects historical ratio lows forward.' : ''}${activeTrends.includes('threshold') ? ' The Overbought Threshold is a horizontal line near the historical max, signaling potential tops when breached.' : ''}` : 'MVRV is scaled by 100,000 to fit the linear axis.'}
           <br />
           <br />
           This chart shows the Bitcoin transaction count, Bitcoin price, MVRV ratio, or MVRV/Tx ratio, providing a snapshot of how Bitcoin’s network and value interact over time.
