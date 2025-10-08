@@ -269,6 +269,13 @@ export const DataProvider = ({ children }) => {
   const [isDifferenceDataFetched, setIsDifferenceDataFetched] = useState(false); // New fetch status
   const [differenceLastUpdated, setDifferenceLastUpdated] = useState(null);
 
+  const [total2Data, setTotal2Data] = useState([]);
+  const [isTotal2DataFetched, setIsTotal2DataFetched] = useState(false);
+  const [total2LastUpdated, setTotal2LastUpdated] = useState(null);
+  const [total3Data, setTotal3Data] = useState([]);
+  const [isTotal3DataFetched, setIsTotal3DataFetched] = useState(false);
+  const [total3LastUpdated, setTotal3LastUpdated] = useState(null);
+
   const API_BASE_URL = 'https://vercel-dataflow.vercel.app/api';
   // const API_BASE_URL = 'http://127.0.0.1:8000/api';
 
@@ -305,7 +312,9 @@ export const DataProvider = ({ children }) => {
         { id: 'feeRiskData', setData: setFeeRiskData, setLastUpdated: setFeeRiskLastUpdated, setIsFetched: setIsFeeRiskDataFetched, useDateCheck: true }, // New
         { id: 'soplRiskData', setData: setSoplRiskData, setLastUpdated: setSoplRiskLastUpdated, setIsFetched: setIsSoplRiskDataFetched, useDateCheck: true }, // New
         { id: 'altcoinSeasonTimeseriesData', setData: setAltcoinSeasonTimeseriesData, setLastUpdated: setAltcoinSeasonTimeseriesLastUpdated, setIsFetched: setIsAltcoinSeasonTimeseriesDataFetched, useDateCheck: true },
-        { id: 'differenceData', setData: setDifferenceData, setLastUpdated: setDifferenceLastUpdated, setIsFetched: setIsDifferenceDataFetched, useDateCheck: true }, 
+        { id: 'differenceData', setData: setDifferenceData, setLastUpdated: setDifferenceLastUpdated, setIsFetched: setIsDifferenceDataFetched, useDateCheck: true },
+        { id: 'total2Data', setData: setTotal2Data, setLastUpdated: setTotal2LastUpdated, setIsFetched: setIsTotal2DataFetched, useDateCheck: true },
+        { id: 'total3Data', setData: setTotal3Data, setLastUpdated: setTotal3LastUpdated, setIsFetched: setIsTotal3DataFetched, useDateCheck: true }, 
       ];
 
       // Fetch all data in parallel
@@ -357,6 +366,8 @@ export const DataProvider = ({ children }) => {
             feeRiskData: fetchRiskMetricsData,
             soplRiskData: fetchRiskMetricsData,
             altcoinSeasonTimeseriesData: fetchAltcoinSeasonTimeseriesData,
+            total2Data: fetchTotal2Data,
+            total3Data: fetchTotal3Data,
             // Map other ids to their fetch functions (e.g., 'btcData': fetchBtcData)
             // Add mappings for all cacheIds
           }[id];
@@ -418,6 +429,76 @@ export const DataProvider = ({ children }) => {
       fetchFunction: fetchDifferenceData,
     });
   }, [fetchDifferenceData]);
+
+  const fetchTotal2Data = useCallback(async () => {
+  if (isTotal2DataFetched) return;
+  if (!preloadComplete) {
+    await new Promise(resolve => setTimeout(resolve, 100));
+    if (isTotal2DataFetched) return;
+  }
+  await fetchWithCache({
+    cacheId: 'total2Data',
+    apiUrl: `${API_BASE_URL}/total2/`,
+    formatData: (data) => {
+      const cutoffDate = new Date('2014-06-18');
+      return data
+        .filter(item => new Date(item.date) >= cutoffDate)
+        .map(item => ({
+          time: item.date,
+          value: parseFloat(item.total2)
+        }))
+        .sort((a, b) => new Date(a.time) - new Date(b.time));
+    },
+    setData: setTotal2Data,
+    setLastUpdated: setTotal2LastUpdated,
+    setIsFetched: setIsTotal2DataFetched,
+    useDateCheck: true,
+    });
+  }, [isTotal2DataFetched, preloadComplete]);
+
+  const refreshTotal2Data = useCallback(async () => {
+    await refreshData({
+      cacheId: 'total2Data',
+      setData: setTotal2Data,
+      setIsFetched: setIsTotal2DataFetched,
+      fetchFunction: fetchTotal2Data,
+    });
+  }, [fetchTotal2Data]);
+
+  const fetchTotal3Data = useCallback(async () => {
+    if (isTotal3DataFetched) return;
+    if (!preloadComplete) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      if (isTotal3DataFetched) return;
+    }
+    await fetchWithCache({
+      cacheId: 'total3Data',
+      apiUrl: `${API_BASE_URL}/total3/`,
+      formatData: (data) => {
+        const cutoffDate = new Date('2014-06-21');
+        return data
+          .filter(item => new Date(item.date) >= cutoffDate)
+          .map(item => ({
+            time: item.date,
+            value: parseFloat(item.total3)
+          }))
+          .sort((a, b) => new Date(a.time) - new Date(b.time));
+      },
+      setData: setTotal3Data,
+      setLastUpdated: setTotal3LastUpdated,
+      setIsFetched: setIsTotal3DataFetched,
+      useDateCheck: true,
+    });
+  }, [isTotal3DataFetched, preloadComplete]);
+
+  const refreshTotal3Data = useCallback(async () => {
+    await refreshData({
+      cacheId: 'total3Data',
+      setData: setTotal3Data,
+      setIsFetched: setIsTotal3DataFetched,
+      fetchFunction: fetchTotal3Data,
+    });
+  }, [fetchTotal3Data]);
 
     const fetchAltcoinSeasonTimeseriesData = useCallback(async () => {
       if (isAltcoinSeasonTimeseriesDataFetched) return;
@@ -1507,6 +1588,14 @@ const fetchDominanceData = useCallback(async () => {
       fetchDifferenceData,
       refreshDifferenceData,
       differenceLastUpdated,
+      total2Data,
+      fetchTotal2Data,
+      refreshTotal2Data,
+      total2LastUpdated,
+      total3Data,
+      fetchTotal3Data,
+      refreshTotal3Data,
+      total3LastUpdated,
     }),
     [
       btcData,
@@ -1604,12 +1693,12 @@ const fetchDominanceData = useCallback(async () => {
       mvrvRiskLastUpdated,
       puellRiskLastUpdated,
       minerCapThermoCapRiskLastUpdated,
-      feeRiskData, // New
-      soplRiskData, // New
-      feeRiskLastUpdated, // New
-      soplRiskLastUpdated, // New
-      isFeeRiskDataFetched, // New
-      isSoplRiskDataFetched, // New
+      feeRiskData, 
+      soplRiskData, 
+      feeRiskLastUpdated, 
+      soplRiskLastUpdated, 
+      isFeeRiskDataFetched, 
+      isSoplRiskDataFetched, 
       altcoinSeasonTimeseriesData,
       fetchAltcoinSeasonTimeseriesData,
       refreshAltcoinSeasonTimeseriesData,
@@ -1618,6 +1707,14 @@ const fetchDominanceData = useCallback(async () => {
       fetchDifferenceData,
       refreshDifferenceData,
       differenceLastUpdated,
+      total2Data,
+      fetchTotal2Data,
+      refreshTotal2Data,
+      total2LastUpdated,
+      total3Data,
+      fetchTotal3Data,
+      refreshTotal3Data,
+      total3LastUpdated,
     ]
   );
 

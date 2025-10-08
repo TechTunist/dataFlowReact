@@ -15,6 +15,7 @@ const Total3Chart = ({ isDashboard = false }) => {
   const theme = useTheme();
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
   const isMobile = useIsMobile();
+  const { total3Data, fetchTotal3Data, total3LastUpdated } = useContext(DataContext);
   const [tooltipData, setTooltipData] = useState(null);
   const [isInteractive, setIsInteractive] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -22,48 +23,23 @@ const Total3Chart = ({ isDashboard = false }) => {
   const scaleMode = 1; // Fixed to logarithmic
   const isNarrowScreen = useMediaQuery('(max-width:600px)');
 
-  // New state for total3 data
-  const [total3Data, setTotal3Data] = useState([]);
-  const [total3LastUpdated, setTotal3LastUpdated] = useState(null);
-
-  // Fetch total3 data
-  const fetchTotal3Data = useCallback(async () => {
-    try {
+  // Fetch data only if not present in context
+  useEffect(() => {
+    const fetchData = async () => {
+      if (total3Data.length > 0) return;
       setIsLoading(true);
       setError(null);
-      const response = await fetch('https://vercel-dataflow.vercel.app/api/total3/');
-      if (!response.ok) {
-        throw new Error('Failed to fetch total3 data');
+      try {
+        await fetchTotal3Data();
+      } catch (err) {
+        setError('Failed to fetch total3 data. Please try again later.');
+        console.error('Error fetching data:', err);
+      } finally {
+        setIsLoading(false);
       }
-      const data = await response.json();
-      
-      // Transform the data to match the expected format for the chart
-      // Filter to only show data from 2014-01-07 onwards
-      const cutoffDate = new Date('2014-06-21');
-      const formattedData = data
-        .filter(item => new Date(item.date) >= cutoffDate)
-        .map(item => ({
-          time: item.date,
-          value: item.total3
-        }));
-      
-      setTotal3Data(formattedData);
-      setTotal3LastUpdated(new Date());
-      
-      return formattedData;
-    } catch (err) {
-      setError('Failed to fetch total3 data. Please try again later.');
-      console.error('Error fetching total3 data:', err);
-      return [];
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  // Fetch data on mount
-  useEffect(() => {
-    fetchTotal3Data();
-  }, [fetchTotal3Data]);
+    };
+    fetchData();
+  }, [fetchTotal3Data, total3Data.length]);
 
   const calculateLogarithmicRegression = useCallback((data) => {
     const n = data.length;
@@ -103,10 +79,8 @@ const Total3Chart = ({ isDashboard = false }) => {
 
   const regressionLines = useMemo(() => {
     if (total3Data.length === 0) return {};
-    
     const extendedData = extendDataForFuture(total3Data, 156);
     const { slope, intercept } = calculateLogarithmicRegression(total3Data);
-    
     const calculateRegressionPoints = (scale, color, shiftDays = 0, curveAdjustment = 1) => {
       return extendedData.map(({ time }, index) => {
         const x = Math.log(index + 1 - shiftDays + 1);
@@ -117,36 +91,29 @@ const Total3Chart = ({ isDashboard = false }) => {
         return { time, value: y };
       });
     };
-    
     return {
       logBase2: calculateRegressionPoints(0.0025, 'maroon', -275, 0.999),
       logBase: calculateRegressionPoints(0.008, 'red', -315, 0.991),
-      logMid: calculateRegressionPoints(0.01, 'violet', -370, 0.993),
-      logTop: calculateRegressionPoints(0.05, 'green', -350, 0.993),
-      logTop2: calculateRegressionPoints(0.065, 'lime', -450, 0.995),
+      logMid: calculateRegressionPoints(0.012, 'violet', -370, 0.994),
+      logTop: calculateRegressionPoints(0.059, 'green', -450, 0.993),
+      logTop2: calculateRegressionPoints(0.075, 'lime', -490, 0.994),
     };
   }, [total3Data, calculateLogarithmicRegression, extendDataForFuture]);
 
   // Calculate the percentage difference between current total3 and fair value
   const valuationDifference = useMemo(() => {
     if (total3Data.length === 0 || !regressionLines.logMid) return null;
-    
     const latestTotal3 = total3Data[total3Data.length - 1]?.value;
     const latestTotal3Date = total3Data[total3Data.length - 1]?.time;
-    
     if (!latestTotal3 || !latestTotal3Date) return null;
-    
     const fairValueOnLatestDate = regressionLines.logMid.find(
       (point) => point.time === latestTotal3Date
     )?.value;
-    
     if (!fairValueOnLatestDate) return null;
-    
     const difference = ((latestTotal3 - fairValueOnLatestDate) / fairValueOnLatestDate) * 100;
     const isOvervalued = difference > 0;
     const percentage = Math.abs(difference).toFixed(2);
     const currentTotal3Formatted = latestTotal3 ? `($${(latestTotal3 / 1e12).toFixed(2)}T)` : '';
-    
     return {
       label: isOvervalued ? 'Overvaluation' : 'Undervaluation',
       percentage: `${percentage}%`,
@@ -156,23 +123,21 @@ const Total3Chart = ({ isDashboard = false }) => {
 
   useEffect(() => {
     if (total3Data.length === 0) return;
-
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
       height: chartContainerRef.current.clientHeight,
-      layout: { 
-        background: { type: 'solid', color: colors.primary[700] }, 
-        textColor: colors.primary[100] 
+      layout: {
+        background: { type: 'solid', color: colors.primary[700] },
+        textColor: colors.primary[100]
       },
-      grid: { 
-        vertLines: { color: colors.greenAccent[700] }, 
-        horzLines: { color: colors.greenAccent[700] } 
+      grid: {
+        vertLines: { color: colors.greenAccent[700] },
+        horzLines: { color: colors.greenAccent[700] }
       },
       timeScale: { minBarSpacing: 0.001 },
       handleScroll: false,
       handleScale: false,
     });
-
     const priceSeries = chart.addLineSeries({
       priceScaleId: 'right',
       lineWidth: 2,
@@ -182,14 +147,12 @@ const Total3Chart = ({ isDashboard = false }) => {
     });
     priceSeriesRef.current = priceSeries;
     priceSeries.setData(total3Data);
-
     chart.priceScale('right').applyOptions({
       mode: scaleMode,
       borderVisible: false,
       scaleMargins: { top: 0.1, bottom: 0.1 },
       priceFormat: { type: 'custom', formatter: compactNumberFormatter },
     });
-
     const logRegression2TopSeries = chart.addLineSeries({
       color: 'lime',
       lineWidth: 2,
@@ -225,13 +188,11 @@ const Total3Chart = ({ isDashboard = false }) => {
       lastValueVisible: false,
       priceLineVisible: false,
     });
-
     logRegression2TopSeries.setData(regressionLines.logTop2);
     logRegressionTopSeries.setData(regressionLines.logTop);
     logRegressionMidSeries.setData(regressionLines.logMid);
     logRegressionBaseSeries.setData(regressionLines.logBase);
     logRegressionBase2Series.setData(regressionLines.logBase2);
-
     chart.subscribeCrosshairMove((param) => {
       if (
         !param.time ||
@@ -249,7 +210,6 @@ const Total3Chart = ({ isDashboard = false }) => {
         const logMidData = param.seriesData.get(logRegressionMidSeries);
         const logTopData = param.seriesData.get(logRegressionTopSeries);
         const logTop2Data = param.seriesData.get(logRegression2TopSeries);
-
         setTooltipData({
           date: dateStr,
           price: priceData?.value ? compactNumberFormatter(priceData.value) : undefined,
@@ -263,7 +223,6 @@ const Total3Chart = ({ isDashboard = false }) => {
         });
       }
     });
-
     const resizeChart = () => {
       chart.applyOptions({
         width: chartContainerRef.current.clientWidth,
@@ -271,11 +230,9 @@ const Total3Chart = ({ isDashboard = false }) => {
       });
       chart.timeScale().fitContent();
     };
-
     window.addEventListener('resize', resizeChart);
     chartRef.current = chart;
     resetChartView();
-
     return () => {
       chart.remove();
       window.removeEventListener('resize', resizeChart);
@@ -303,7 +260,9 @@ const Total3Chart = ({ isDashboard = false }) => {
       {!isDashboard && (
         <div className="chart-top-div">
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-
+            <span className="button-reset">Logarithmic</span>
+            {isLoading && <span style={{ color: colors.grey[100] }}>Loading...</span>}
+            {error && <span style={{ color: colors.redAccent[500] }}>{error}</span>}
           </div>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
             <button
@@ -323,7 +282,6 @@ const Total3Chart = ({ isDashboard = false }) => {
           </div>
         </div>
       )}
-
       <div
         className="chart-container"
         style={{
@@ -339,7 +297,6 @@ const Total3Chart = ({ isDashboard = false }) => {
           onDoubleClick={setInteractivity}
         />
       </div>
-
       <div className="under-chart">
         {!isDashboard && total3Data.length > 0 && (
           <div style={{}}>
@@ -361,7 +318,6 @@ const Total3Chart = ({ isDashboard = false }) => {
         )}
         {!isDashboard && <BitcoinFees />}
       </div>
-
       {!isDashboard && tooltipData && (
         <div
           className="tooltip"
@@ -386,7 +342,7 @@ const Total3Chart = ({ isDashboard = false }) => {
           }}
         >
           <b>
-            {tooltipData.price && <div>total3: ${tooltipData.price}</div>}
+            {tooltipData.price && <div>Total3: ${tooltipData.price}</div>}
             {tooltipData.logTop2 && (
               <div style={{ color: 'lime' }}>Upper Band 2: ${tooltipData.logTop2}</div>
             )}
@@ -406,11 +362,10 @@ const Total3Chart = ({ isDashboard = false }) => {
           </b>
         </div>
       )}
-
       {!isDashboard && (
         <div className="chart-info">
-          total3 metric displayed over time (from 2014-01-07 onwards). The regression bands have been fitted to the absolute lows, 
-          highs, and fair value levels over the total history of the data. The bands are calculated 
+          Total3 metric displayed over time (from 2014-06-21 onwards). The regression bands have been fitted to the absolute lows,
+          highs, and fair value levels over the total history of the data. The bands are calculated
           using a logarithmic regression model.
           <br />
           <br />
