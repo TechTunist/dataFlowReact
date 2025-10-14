@@ -1,4 +1,3 @@
-// src/components/BitcoinRisk.js
 import React, { useRef, useEffect, useState, useContext } from 'react';
 import { createChart } from 'lightweight-charts';
 import { tokens } from "../theme";
@@ -10,6 +9,7 @@ import BitcoinFees from './BitcoinTransactionFees';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import { saveBitcoinRisk } from '../utility/idbUtils';
+import { calculateRiskMetric } from '../utility/riskMetric';
 
 const BitcoinRisk = ({ isDashboard = false, riskData: propRiskData }) => {
   const chartContainerRef = useRef();
@@ -57,32 +57,6 @@ const BitcoinRisk = ({ isDashboard = false, riskData: propRiskData }) => {
   });
 
   const { btcData, fetchBtcData } = useContext(DataContext);
-
-  // Function to calculate the risk metric
-  const calculateRiskMetric = (data) => {
-    const movingAverage = data.map((item, index) => {
-      const start = Math.max(index - 373, 0);
-      const subset = data.slice(start, index + 1);
-      const avg = subset.reduce((sum, curr) => sum + parseFloat(curr.value), 0) / subset.length;
-      return { ...item, MA: avg };
-    });
-
-    const movingAverageWithPreavg = movingAverage.map((item, index) => {
-      const preavg = index > 0 ? (Math.log(item.value) - Math.log(item.MA)) * Math.pow(index, 0.395) : 0;
-      return { ...item, Preavg: preavg };
-    });
-
-    const preavgValues = movingAverageWithPreavg.map(item => item.Preavg);
-    const preavgMin = Math.min(...preavgValues);
-    const preavgMax = Math.max(...preavgValues);
-
-    const normalizedRisk = movingAverageWithPreavg.map(item => ({
-      ...item,
-      Risk: (item.Preavg - preavgMin) / (preavgMax - preavgMin),
-    }));
-
-    return normalizedRisk;
-  };
 
   const chartData = propRiskData || (btcData.length > 0 ? calculateRiskMetric(btcData) : []);
 
@@ -153,121 +127,121 @@ const BitcoinRisk = ({ isDashboard = false, riskData: propRiskData }) => {
   }, [fetchBtcData]);
 
   useEffect(() => {
-  if (chartData.length === 0) return;
+    if (chartData.length === 0) return;
 
-  const chart = createChart(chartContainerRef.current, {
-    width: chartContainerRef.current.clientWidth,
-    height: chartContainerRef.current.clientHeight,
-    layout: {
-      background: { type: 'solid', color: colors.primary[700] },
-      textColor: colors.primary[100],
-    },
-    grid: {
-      vertLines: { color: 'rgba(70, 70, 70, 0.5)' },
-      horzLines: { color: 'rgba(70, 70, 70, 0.5)' },
-    },
-    rightPriceScale: {
-      scaleMargins: {
-        top: 0.01,
-        bottom: 0.01,
+    const chart = createChart(chartContainerRef.current, {
+      width: chartContainerRef.current.clientWidth,
+      height: chartContainerRef.current.clientHeight,
+      layout: {
+        background: { type: 'solid', color: colors.primary[700] },
+        textColor: colors.primary[100],
       },
+      grid: {
+        vertLines: { color: 'rgba(70, 70, 70, 0.5)' },
+        horzLines: { color: 'rgba(70, 70, 70, 0.5)' },
+      },
+      rightPriceScale: {
+        scaleMargins: {
+          top: 0.01,
+          bottom: 0.01,
+        },
+        borderVisible: false,
+        title: 'Risk',
+      },
+      leftPriceScale: {
+        visible: true,
+        borderColor: 'rgba(197, 203, 206, 1)',
+        scaleMargins: {
+          top: 0.1,
+          bottom: 0.1,
+        },
+        title: 'Price',
+      },
+      timeScale: {
+        minBarSpacing: 0.001,
+      },
+    });
+
+    const riskSeries = chart.addLineSeries({
+      color: '#ff0062',
+      lastValueVisible: true,
+      priceScaleId: 'right',
+      lineWidth: 2,
+    });
+    riskSeriesRef.current = riskSeries;
+    riskSeries.setData(chartData.map(data => ({ time: data.time, value: data.Risk })));
+
+    const priceSeries = chart.addLineSeries({
+      color: 'gray',
+      priceScaleId: 'left',
+      lineWidth: 0.7,
+      priceFormat: {
+        type: 'custom',
+        formatter: compactNumberFormatter,
+      },
+    });
+    priceSeriesRef.current = priceSeries;
+    priceSeries.setData(chartData.map(data => ({ time: data.time, value: data.value })));
+
+    chart.applyOptions({
+      handleScroll: isInteractive,
+      handleScale: isInteractive,
+    });
+
+    chart.priceScale('left').applyOptions({
+      mode: 1,
       borderVisible: false,
-      title: 'Risk', // Add Risk label
-    },
-    leftPriceScale: {
-      visible: true,
-      borderColor: 'rgba(197, 203, 206, 1)',
-      scaleMargins: {
-        top: 0.1,
-        bottom: 0.1,
+      priceFormat: {
+        type: 'custom',
+        formatter: compactNumberFormatter,
       },
-      title: 'Price', // Add Price label
-    },
-    timeScale: {
-      minBarSpacing: 0.001,
-    },
-  });
+      title: 'Price',
+    });
 
-  const riskSeries = chart.addLineSeries({
-    color: '#ff0062',
-    lastValueVisible: true,
-    priceScaleId: 'right',
-    lineWidth: 2,
-  });
-  riskSeriesRef.current = riskSeries;
-  riskSeries.setData(chartData.map(data => ({ time: data.time, value: data.Risk })));
+    chart.priceScale('right').applyOptions({
+      title: 'Risk',
+    });
 
-  const priceSeries = chart.addLineSeries({
-    color: 'gray',
-    priceScaleId: 'left',
-    lineWidth: 0.7,
-    priceFormat: {
-      type: 'custom',
-      formatter: compactNumberFormatter,
-    },
-  });
-  priceSeriesRef.current = priceSeries;
-  priceSeries.setData(chartData.map(data => ({ time: data.time, value: data.value })));
+    const resizeChart = () => {
+      if (chart && chartContainerRef.current) {
+        chart.applyOptions({
+          width: chartContainerRef.current.clientWidth,
+          height: chartContainerRef.current.clientHeight,
+        });
+      }
+    };
 
-  chart.applyOptions({
-    handleScroll: isInteractive,
-    handleScale: isInteractive,
-  });
+    const price = Math.floor(chartData[chartData.length - 1].value / 1000);
+    setCurrentBtcPrice(price);
 
-  chart.priceScale('left').applyOptions({
-    mode: 1,
-    borderVisible: false,
-    priceFormat: {
-      type: 'custom',
-      formatter: compactNumberFormatter,
-    },
-    title: 'Price', // Ensure Price label persists
-  });
-
-  chart.priceScale('right').applyOptions({
-    title: 'Risk', // Ensure Risk label persists
-  });
-
-  const resizeChart = () => {
-    if (chart && chartContainerRef.current) {
-      chart.applyOptions({
-        width: chartContainerRef.current.clientWidth,
-        height: chartContainerRef.current.clientHeight,
-      });
+    const latestData = chartData[chartData.length - 1];
+    try {
+      const riskLevel = latestData.Risk.toFixed(2);
+      setCurrentRiskLevel(riskLevel);
+      if (typeof indexedDB !== 'undefined') {
+        saveBitcoinRisk(parseFloat(riskLevel)).catch(error => {
+          console.error('Error saving Bitcoin risk level:', error);
+        });
+      } else {
+        console.warn('IndexedDB is not supported in this environment.');
+      }
+    } catch (error) {
+      console.error('Failed to set risk level:', error);
     }
-  };
 
-  const price = Math.floor(chartData[chartData.length - 1].value / 1000);
-  setCurrentBtcPrice(price);
+    window.addEventListener('resize', resizeChart);
+    window.addEventListener('resize', resetChartView);
+    resizeChart();
 
-  const latestData = chartData[chartData.length - 1];
-  try {
-    const riskLevel = latestData.Risk.toFixed(2);
-    setCurrentRiskLevel(riskLevel);
-    if (typeof indexedDB !== 'undefined') {
-      saveBitcoinRisk(parseFloat(riskLevel)).catch(error => {
-        console.error('Error saving Bitcoin risk level:', error);
-      });
-    } else {
-      console.warn('IndexedDB is not supported in this environment.');
-    }
-  } catch (error) {
-    console.error('Failed to set risk level:', error);
-  }
+    chart.timeScale().fitContent();
+    chartRef.current = chart;
 
-  window.addEventListener('resize', resizeChart);
-  window.addEventListener('resize', resetChartView);
-  resizeChart();
-
-  chart.timeScale().fitContent();
-  chartRef.current = chart;
-
-  return () => {
-    chart.remove();
-    window.removeEventListener('resize', resizeChart);
-    window.removeEventListener('resize', resetChartView);
-  };
-}, [chartData, theme.palette.mode, isDashboard]);
+    return () => {
+      chart.remove();
+      window.removeEventListener('resize', resizeChart);
+      window.removeEventListener('resize', resetChartView);
+    };
+  }, [chartData, theme.palette.mode, isDashboard]);
 
   useEffect(() => {
     if (chartRef.current) {
@@ -624,7 +598,7 @@ const BitcoinRisk = ({ isDashboard = false, riskData: propRiskData }) => {
           </div>
 
           <p className='chart-info'>
-            The risk metric assesses Bitcoin's investment risk over time by comparing its daily prices to a 374-day moving average. It does so by calculating the normalized logarithmic difference between the price and the moving average, producing a score between 0 and 1. A higher score indicates higher risk, and a lower score indicates lower risk. This method provides a simplified view of when it might be riskier or safer to invest in Bitcoin based on historical price movements.
+            The risk metric assesses Bitcoin's investment risk over time by comparing its daily prices to a 374-day moving average, incorporating a factor that accounts for sustained periods above the moving average. It calculates a normalized score between 0 and 1, where a higher score indicates higher risk, particularly after prolonged bull markets amplified by higher price levels. A lower score indicates lower risk. This method provides a view of when it might be riskier or safer to invest in Bitcoin based on historical price movements and market maturity.
           </p>
         </div>
       )}

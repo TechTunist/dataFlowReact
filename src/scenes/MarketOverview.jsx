@@ -29,27 +29,9 @@ import { saveCycleDaysData, getCycleDaysData } from '../utility/idbUtils';
 import { useNavigate } from 'react-router-dom';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
+import { calculateRiskMetric } from '../utility/riskMetric';
 
-const calculateRiskMetric = (data) => {
-  const movingAverage = data.map((item, index) => {
-    const start = Math.max(index - 373, 0);
-    const subset = data.slice(start, index + 1);
-    const avg = subset.reduce((sum, curr) => sum + parseFloat(curr.value), 0) / subset.length;
-    return { ...item, MA: avg };
-  });
-  const movingAverageWithPreavg = movingAverage.map((item, index) => {
-    const preavg = index > 0 ? (Math.log(item.value) - Math.log(item.MA)) * Math.pow(index, 0.395) : 0;
-    return { ...item, Preavg: preavg };
-  });
-  const preavgValues = movingAverageWithPreavg.map(item => item.Preavg);
-  const preavgMin = Math.min(...preavgValues);
-  const preavgMax = Math.max(...preavgValues);
-  const normalizedRisk = movingAverageWithPreavg.map(item => ({
-    ...item,
-    Risk: (item.Preavg - preavgMin) / (preavgMax - preavgMin),
-  }));
-  return normalizedRisk;
-};
+
 // Wrap GridLayout with WidthProvider for responsiveness
 const ResponsiveGridLayout = WidthProvider(Responsive);
 const InfoOverlay = ({ explanation, isVisible, borderColor }) => (
@@ -1112,37 +1094,19 @@ const RoiCycleComparisonWidget = memo(() => {
       </Box>
     );
   });
-  // Bitcoin Risk Widget
+
   const BitcoinRiskWidget = memo(() => {
-    const [riskLevel, setRiskLevel] = useState(null);
-    const { btcData } = useContext(DataContext);
- 
-    useEffect(() => {
-      const fetchRiskLevel = async () => {
-        try {
-          const riskData = await getBitcoinRisk();
-          if (riskData && riskData.riskLevel !== undefined) {
-            setRiskLevel(riskData.riskLevel);
-          } else {
-            // No valid cached data, calculate locally
-            if (btcData && btcData.length > 0) {
-              const riskDataArray = calculateRiskMetric(btcData);
-              if (riskDataArray && riskDataArray.length > 0) {
-                const calculatedRisk = riskDataArray[riskDataArray.length - 1].Risk;
-                await saveBitcoinRisk(calculatedRisk);
-                setRiskLevel(calculatedRisk);
-              } else {
-                console.error('Failed to calculate risk level: Invalid risk data');
-                setRiskLevel(0);
-              }
-            } else {
-              console.error('No btcData available for risk calculation');
-              setRiskLevel(0);
-            }
-          }
-        } catch (error) {
-          console.error('Error handling Bitcoin risk level:', error);
-          // Fallback to local calculation
+  const [riskLevel, setRiskLevel] = useState(null);
+  const { btcData } = useContext(DataContext);
+
+  useEffect(() => {
+    const fetchRiskLevel = async () => {
+      try {
+        const riskData = await getBitcoinRisk();
+        if (riskData && riskData.riskLevel !== undefined) {
+          setRiskLevel(riskData.riskLevel);
+        } else {
+          // No valid cached data, calculate locally
           if (btcData && btcData.length > 0) {
             const riskDataArray = calculateRiskMetric(btcData);
             if (riskDataArray && riskDataArray.length > 0) {
@@ -1158,107 +1122,126 @@ const RoiCycleComparisonWidget = memo(() => {
             setRiskLevel(0);
           }
         }
-      };
-      fetchRiskLevel();
-    }, [btcData]);
- 
-    const displayRisk = riskLevel !== null ? Math.max(0, Math.min(100, riskLevel * 100)).toFixed(2) : 0;
-    const backgroundColor = getBackgroundColor(displayRisk);
-    const textColor = getTextColor(backgroundColor);
-    const heatDescription = getHeatDescription(displayRisk);
-    const isSignificant = parseFloat(displayRisk) >= 85;
- 
-    const [isInfoVisible, setIsInfoVisible] = useState(false);
-    
-    const navigate = useNavigate();
-    const handleChartRedirect = (event) => {
-      event.stopPropagation();
-      navigate('/risk');
+      } catch (error) {
+        console.error('Error handling Bitcoin risk level:', error);
+        // Fallback to local calculation
+        if (btcData && btcData.length > 0) {
+          const riskDataArray = calculateRiskMetric(btcData);
+          if (riskDataArray && riskDataArray.length > 0) {
+            const calculatedRisk = riskDataArray[riskDataArray.length - 1].Risk;
+            await saveBitcoinRisk(calculatedRisk);
+            setRiskLevel(calculatedRisk);
+          } else {
+            console.error('Failed to calculate risk level: Invalid risk data');
+            setRiskLevel(0);
+          }
+        } else {
+          console.error('No btcData available for risk calculation');
+          setRiskLevel(0);
+        }
+      }
     };
- 
-    return (
-      <Box sx={{
-        ...chartBoxStyle(colors, theme),
-        backgroundColor: backgroundColor,
-        transition: 'background-color 0.3s ease, transform 0.2s ease-in-out',
-        border: isSignificant ? `2px solid ${colors.redAccent[500]}` : 'none',
-        padding: '24px',
-        textAlign: 'center',
-        position: 'relative',
-      }}>
-        <InfoIcon
-          sx={{
-            position: 'absolute',
-            top: '12px',
-            right: '12px',
-            color: textColor,
-            cursor: 'pointer',
-            fontSize: '35px',
-            zIndex: 1001,
-            padding: '4px',
-            borderRadius: '50%',
-            '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
-          }}
-          onMouseEnter={() => setIsInfoVisible(true)}
-          onMouseLeave={() => setIsInfoVisible(false)}
-          aria-label="Information"
-        />
-        <ShowChartIcon
-          sx={{
-            position: 'absolute',
-            top: '12px',
-            left: '12px',
-            color: textColor,
-            cursor: 'pointer',
-            fontSize: '35px',
-            zIndex: 1001,
-            padding: '4px',
-            borderRadius: '50%',
-            '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
-          }}
-          onMouseDown={handleChartRedirect}
-          aria-label="View chart"
-        />
-        <Typography variant="h4" color={textColor} gutterBottom sx={{ fontWeight: 'bold' }}>
-          Bitcoin Risk Level
+    fetchRiskLevel();
+  }, [btcData]);
+
+  const displayRisk = riskLevel !== null ? Math.max(0, Math.min(100, riskLevel * 100)).toFixed(2) : 0;
+  const backgroundColor = getBackgroundColor(displayRisk);
+  const textColor = getTextColor(backgroundColor);
+  const heatDescription = getHeatDescription(displayRisk);
+  const isSignificant = parseFloat(displayRisk) >= 85;
+
+  const [isInfoVisible, setIsInfoVisible] = useState(false);
+  
+  const navigate = useNavigate();
+  const handleChartRedirect = (event) => {
+    event.stopPropagation();
+    navigate('/risk');
+  };
+
+  return (
+    <Box sx={{
+      ...chartBoxStyle(colors, theme),
+      backgroundColor: backgroundColor,
+      transition: 'background-color 0.3s ease, transform 0.2s ease-in-out',
+      border: isSignificant ? `2px solid ${colors.redAccent[500]}` : 'none',
+      padding: '24px',
+      textAlign: 'center',
+      position: 'relative',
+    }}>
+      <InfoIcon
+        sx={{
+          position: 'absolute',
+          top: '12px',
+          right: '12px',
+          color: textColor,
+          cursor: 'pointer',
+          fontSize: '35px',
+          zIndex: 1001,
+          padding: '4px',
+          borderRadius: '50%',
+          '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+        }}
+        onMouseEnter={() => setIsInfoVisible(true)}
+        onMouseLeave={() => setIsInfoVisible(false)}
+        aria-label="Information"
+      />
+      <ShowChartIcon
+        sx={{
+          position: 'absolute',
+          top: '12px',
+          left: '12px',
+          color: textColor,
+          cursor: 'pointer',
+          fontSize: '35px',
+          zIndex: 1001,
+          padding: '4px',
+          borderRadius: '50%',
+          '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+        }}
+        onMouseDown={handleChartRedirect}
+        aria-label="View chart"
+      />
+      <Typography variant="h4" color={textColor} gutterBottom sx={{ fontWeight: 'bold' }}>
+        Bitcoin Risk Level
+      </Typography>
+      <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Typography variant="h1" color={textColor} sx={{ fontWeight: 'bold' }}>
+          {displayRisk}
         </Typography>
-        <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Typography variant="h1" color={textColor} sx={{ fontWeight: 'bold' }}>
-            {displayRisk}
-          </Typography>
-        </Box>
-        <Typography variant="body1" color={textColor} sx={{ textAlign: 'center', mt: 1 }}>
-          Heat: {heatDescription}
-        </Typography>
-        <Typography variant="body1" color={textColor} sx={{ textAlign: 'center', mt: 1 }}>
-          {parseFloat(displayRisk) <= 30 ? 'Low Risk' : parseFloat(displayRisk) <= 70 ? 'Medium Risk' : 'High Risk'}
-        </Typography>
-        {isSignificant && (
-          <Typography
-            variant="body1"
-            sx={{
-              color: colors.redAccent[500],
-              textAlign: 'center',
-              fontWeight: 'bold',
-              fontSize: '11px',
-              backgroundColor: 'white',
-              borderRadius: '8px',
-              padding: '4px 8px',
-              marginTop: '8px',
-              display: 'inline-block', // Ensures the background wraps tightly around the text
-            }}
-          >
-            Warning: Cycle nearing end.
-          </Typography>
-        )}
-        <InfoOverlay
-          isVisible={isInfoVisible}
-          explanation="The Bitcoin Risk Level assesses the risk of investing in Bitcoin based on historical price patterns and volatility. A higher value indicates higher risk, derived from proprietary risk models."
-          borderColor={backgroundColor}
-        />
       </Box>
-    );
-  });
+      <Typography variant="body1" color={textColor} sx={{ textAlign: 'center', mt: 1 }}>
+        Heat: {heatDescription}
+      </Typography>
+      <Typography variant="body1" color={textColor} sx={{ textAlign: 'center', mt: 1 }}>
+        {parseFloat(displayRisk) <= 30 ? 'Low Risk' : parseFloat(displayRisk) <= 70 ? 'Medium Risk' : 'High Risk'}
+      </Typography>
+      {isSignificant && (
+        <Typography
+          variant="body1"
+          sx={{
+            color: colors.redAccent[500],
+            textAlign: 'center',
+            fontWeight: 'bold',
+            fontSize: '11px',
+            backgroundColor: 'white',
+            borderRadius: '8px',
+            padding: '4px 8px',
+            marginTop: '8px',
+            display: 'inline-block', // Ensures the background wraps tightly around the text
+          }}
+        >
+          Warning: Cycle nearing end.
+        </Typography>
+      )}
+      <InfoOverlay
+        isVisible={isInfoVisible}
+        explanation="The Bitcoin Risk Level assesses Bitcoin's investment risk over time by comparing its daily prices to a 374-day moving average, incorporating a factor that accounts for sustained periods above the moving average. It calculates a normalized score between 0 and 1, where a higher score indicates higher risk, particularly after prolonged bull markets amplified by higher price levels. A lower score indicates lower risk."
+        borderColor={backgroundColor}
+      />
+    </Box>
+  );
+});
+
   // Fear and Greed Gauge
   const FearAndGreedGauge = memo(() => {
     const theme = useTheme();

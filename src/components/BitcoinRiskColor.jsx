@@ -8,6 +8,7 @@ import LastUpdated from '../hooks/LastUpdated';
 import BitcoinFees from './BitcoinTransactionFees';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
+import { calculateRiskMetric } from '../utility/riskMetric';
 
 const altcoins = [
   { label: 'Ethereum', value: 'ETH' },
@@ -66,27 +67,6 @@ const BitcoinRiskColor = ({ isDashboard = false, riskData: propRiskData }) => {
     if (selectedAsset === 'BTC') return btcData;
     return altcoinData[selectedAsset] || [];
   }, [propRiskData, selectedAsset, btcData, altcoinData]);
-
-  const calculateRiskMetric = (data) => {
-    const movingAverage = data.map((item, index) => {
-      const start = Math.max(index - 373, 0);
-      const subset = data.slice(start, index + 1);
-      const avg = subset.reduce((sum, curr) => sum + parseFloat(curr.value), 0) / subset.length;
-      return { ...item, MA: avg };
-    });
-    const movingAverageWithPreavg = movingAverage.map((item, index) => {
-      const preavg = index > 0 ? (Math.log(item.value) - Math.log(item.MA)) * Math.pow(index, 0.395) : 0;
-      return { ...item, Preavg: preavg };
-    });
-    const preavgValues = movingAverageWithPreavg.map(item => item.Preavg);
-    const preavgMin = Math.min(...preavgValues);
-    const preavgMax = Math.max(...preavgValues);
-    const normalizedRisk = movingAverageWithPreavg.map(item => ({
-      ...item,
-      Risk: (item.Preavg - preavgMin) / (preavgMax - preavgMin),
-    }));
-    return normalizedRisk;
-  };
 
   const chartData = useMemo(() => {
     return chartSourceData.length > 0 ? calculateRiskMetric(chartSourceData) : [];
@@ -493,11 +473,7 @@ const BitcoinRiskColor = ({ isDashboard = false, riskData: propRiskData }) => {
       {!isDashboard && (
         <div>
           <p className='chart-info'>
-            The risk metric assesses {selectedAssetLabel}'s investment risk over time by comparing its daily prices to a 374-day moving average.
-            It does so by calculating the normalized logarithmic difference between the price and the moving average,
-            producing a score between 0 and 1. A higher score indicates higher risk, and a lower score indicates lower risk.
-            This method provides a simplified view of when it might be riskier or safer to invest in {selectedAssetLabel} based on historical price movements.
-            <br />
+            The risk metric assesses {selectedAssetLabel}'s investment risk over time by comparing its daily prices to a 374-day moving average, incorporating a factor that accounts for sustained periods above the moving average. It calculates a normalized score between 0 and 1, where a higher score indicates higher risk, particularly after prolonged bull markets amplified by higher price levels. A lower score indicates lower risk. This method provides a view of when it might be riskier or safer to invest in {selectedAssetLabel} based on historical price movements and market maturity.
           </p>
         </div>
       )}
