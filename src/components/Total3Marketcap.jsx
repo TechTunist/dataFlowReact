@@ -15,13 +15,28 @@ const Total3Chart = ({ isDashboard = false }) => {
   const theme = useTheme();
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
   const isMobile = useIsMobile();
-  const { total3Data, fetchTotal3Data, total3LastUpdated } = useContext(DataContext);
+  const { total3Data: contextTotal3Data, fetchTotal3Data, total3LastUpdated } = useContext(DataContext);
   const [tooltipData, setTooltipData] = useState(null);
   const [isInteractive, setIsInteractive] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  const scaleMode = 1; // Fixed to logarithmic
+  const scaleMode = 1;
   const isNarrowScreen = useMediaQuery('(max-width:600px)');
+
+  // ONLY CHANGE: Deduplicate + sort timestamps (fixes Lightweight Charts crash)
+  const total3Data = useMemo(() => {
+    const seen = new Set();
+    return (contextTotal3Data || [])
+      .filter(item => {
+        const time = item.time || item.date;
+        if (!time) return false;
+        const key = typeof time === 'string' ? time : time.toString();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .sort((a, b) => new Date(a.time || a.date) - new Date(b.time || b.date));
+  }, [contextTotal3Data]);
 
   // Fetch data only if not present in context
   useEffect(() => {
@@ -100,7 +115,6 @@ const Total3Chart = ({ isDashboard = false }) => {
     };
   }, [total3Data, calculateLogarithmicRegression, extendDataForFuture]);
 
-  // Calculate the percentage difference between current total3 and fair value
   const valuationDifference = useMemo(() => {
     if (total3Data.length === 0 || !regressionLines.logMid) return null;
     const latestTotal3 = total3Data[total3Data.length - 1]?.value;
@@ -147,6 +161,7 @@ const Total3Chart = ({ isDashboard = false }) => {
     });
     priceSeriesRef.current = priceSeries;
     priceSeries.setData(total3Data);
+
     chart.priceScale('right').applyOptions({
       mode: scaleMode,
       borderVisible: false,

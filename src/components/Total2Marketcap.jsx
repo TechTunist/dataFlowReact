@@ -15,13 +15,27 @@ const Total2Chart = ({ isDashboard = false }) => {
   const theme = useTheme();
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
   const isMobile = useIsMobile();
-  const { total2Data, fetchTotal2Data, total2LastUpdated } = useContext(DataContext);
+  const { total2Data: contextTotal2Data, fetchTotal2Data, total2LastUpdated } = useContext(DataContext);
   const [tooltipData, setTooltipData] = useState(null);
   const [isInteractive, setIsInteractive] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  const scaleMode = 1; // Fixed to logarithmic
+  const scaleMode = 1;
   const isNarrowScreen = useMediaQuery('(max-width:600px)');
+
+const total2Data = useMemo(() => {
+    const seen = new Set();
+    return (contextTotal2Data || [])
+      .filter(item => {
+        const time = item.time || item.date;
+        if (!time) return false;
+        const key = typeof time === 'string' ? time : time.toString();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .sort((a, b) => new Date(a.time || a.date) - new Date(b.time || b.date));
+  }, [contextTotal2Data]);
 
   // Fetch data only if not present in context
   useEffect(() => {

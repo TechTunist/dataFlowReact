@@ -135,10 +135,24 @@ const FredSeriesChart = ({
     if (!chartRef.current || primarySeriesData.length === 0) return;
     const isNewSeries = seriesId !== prevSeriesIdRef.current;
     prevSeriesIdRef.current = seriesId;
+
     // Clean and validate primary series data
     const cleanedPrimaryData = primarySeriesData
-      .filter((item) => item.value != null && !isNaN(item.value) && (scaleModeState === 1 ? item.value > 0 : true))
-      .sort((a, b) => new Date(a.time) - new Date(b.time));
+  .filter((item) => {
+    const value = item.value;
+    if (value == null || isNaN(value)) return false;
+    if (scaleModeState === 1 && value <= 0) return false;
+    // Skip invalid dates like just "2025"
+    const time = item.time;
+    if (!time || typeof time === 'string' && time.length <= 4) return false;
+    return true;
+  })
+  .map(item => ({
+    ...item,
+    time: item.time.includes('-') ? item.time : `${item.time}-01-01` // fallback to Jan 1
+  }))
+  .sort((a, b) => new Date(a.time) - new Date(b.time));
+
     if (cleanedPrimaryData.length === 0) {
       console.warn(`No valid data points for series ${seriesId}`);
       setError(`No valid data available for ${seriesId}.`);

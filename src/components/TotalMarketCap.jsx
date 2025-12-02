@@ -15,13 +15,28 @@ const TotalMarketCap = ({ isDashboard = false }) => {
   const theme = useTheme();
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
   const isMobile = useIsMobile();
-  const { marketCapData, fetchMarketCapData, marketCapLastUpdated } = useContext(DataContext);
+  const { marketCapData: contextMarketCapData, fetchMarketCapData, marketCapLastUpdated } = useContext(DataContext);
   const [tooltipData, setTooltipData] = useState(null);
   const [isInteractive, setIsInteractive] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  const scaleMode = 1; // Fixed to logarithmic
+  const scaleMode = 1;
   const isNarrowScreen = useMediaQuery('(max-width:600px)');
+
+  // ONLY CHANGE: Deduplicate + sort timestamps (fixes Lightweight Charts crash)
+  const marketCapData = useMemo(() => {
+    const seen = new Set();
+    return (contextMarketCapData || [])
+      .filter(item => {
+        const time = item.time || item.date;
+        if (!time) return false;
+        const key = typeof time === 'string' ? time : time.toString();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .sort((a, b) => new Date(a.time || a.date) - new Date(b.time || b.date));
+  }, [contextMarketCapData]);
 
   // Fetch data only if not present in context
   useEffect(() => {
@@ -100,7 +115,6 @@ const TotalMarketCap = ({ isDashboard = false }) => {
     };
   }, [marketCapData, calculateLogarithmicRegression, extendDataForFuture]);
 
-  // Calculate the percentage difference between current market cap and fair value
   const valuationDifference = useMemo(() => {
     if (marketCapData.length === 0 || !regressionLines.logMid) return null;
     const latestMarketCap = marketCapData[marketCapData.length - 1]?.value;
@@ -141,6 +155,7 @@ const TotalMarketCap = ({ isDashboard = false }) => {
     });
     priceSeriesRef.current = priceSeries;
     priceSeries.setData(marketCapData);
+
     chart.priceScale('right').applyOptions({
       mode: scaleMode,
       borderVisible: false,

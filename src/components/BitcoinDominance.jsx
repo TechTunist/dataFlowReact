@@ -42,6 +42,21 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
     return propDominanceData || contextDominanceData || [];
   }, [propDominanceData, contextDominanceData]);
 
+  // ONLY CHANGE: Remove duplicate dates — fixes Lightweight Charts crash
+  const dedupedDominanceData = useMemo(() => {
+    const seen = new Set();
+    return rawDominanceData
+      .filter(item => {
+        const time = item.time || item.date;
+        if (!time) return false;
+        const key = typeof time === 'string' ? time : time.toString();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .sort((a, b) => new Date(a.time || a.date) - new Date(b.time || b.date));
+  }, [rawDominanceData]);
+
   // Define weekly SMA indicators for Bitcoin Dominance with distinct colors
   const smaIndicators = useMemo(() => ({
     '8w-sma': { period: 8 * 7, color: '#00FF00', label: '8 Week SMA' },
@@ -52,7 +67,7 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
   // Filter data to only show from 2013-04-28 onwards and apply 7-day smoothing
   useEffect(() => {
     const startDate = new Date('2013-04-28').getTime();
-    const filteredData = rawDominanceData.filter(item => {
+    const filteredData = dedupedDominanceData.filter(item => {  // ← changed here
       if (item.time && typeof item.time === 'number') {
         return item.time >= startDate;
       }
@@ -67,14 +82,14 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
       return false;
     });
 
-    // Apply 7-day smoothing to filtered data
     const dataForSmoothing = filteredData.map(item => ({
       time: item.time || item.date,
       value: item.btc
     }));
+
     const smoothedData = calculateMovingAverage(dataForSmoothing, 7);
     setSmoothedDominanceData(smoothedData);
-  }, [rawDominanceData]);
+  }, [dedupedDominanceData]); // ← changed here
 
   const currentDominance = useMemo(() => {
     if (smoothedDominanceData.length === 0) return null;
@@ -86,21 +101,17 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
   const setInteractivity = useCallback(() => {
     setIsInteractive(prev => !prev);
   }, []);
-
   const toggleScaleMode = useCallback(() => {
     setScaleMode(prevMode => (prevMode === 1 ? 0 : 1));
   }, []);
-
   const resetChartView = useCallback(() => {
     if (chartRef.current) {
       chartRef.current.timeScale().fitContent();
     }
   }, []);
-
   const handleSMAChange = useCallback((event) => {
     setActiveSMAs(event.target.value);
   }, []);
-
   const toggleEthDominance = useCallback(() => {
     setShowEthDominance(prev => !prev);
   }, []);
@@ -228,8 +239,8 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
       }
     };
     window.addEventListener('resize', resizeChart);
-
     chartRef.current = chart;
+
     return () => {
       window.removeEventListener('resize', resizeChart);
       chart.remove();
@@ -248,9 +259,9 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
 
   // Update ETH dominance data and scale visibility
   useEffect(() => {
-    if (!chartRef.current || !ethSeriesRef.current || rawDominanceData.length === 0) return;
+    if (!chartRef.current || !ethSeriesRef.current || dedupedDominanceData.length === 0) return;  // ← changed here
     const ethStartDate = new Date('2015-08-07').getTime();
-    const ethData = rawDominanceData
+    const ethData = dedupedDominanceData  // ← changed here
       .filter(item => {
         const itemTime = item.time ? new Date(item.time).getTime() : new Date(item.date).getTime();
         return itemTime >= ethStartDate && item.eth > 0;
@@ -262,7 +273,6 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
     const ethSmoothedData = calculateMovingAverage(ethData, 7);
     ethSeriesRef.current.setData(ethSmoothedData);
     ethSeriesRef.current.applyOptions({ visible: showEthDominance });
-
     setTimeout(() => {
       if (chartRef.current) {
         if (showEthDominance) {
@@ -279,13 +289,11 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
         }
       }
     }, 10);
-  }, [rawDominanceData, showEthDominance, calculateMovingAverage, colors]);
+  }, [dedupedDominanceData, showEthDominance, calculateMovingAverage, colors]);  // ← changed here
 
   // Update SMA indicators
   useEffect(() => {
     if (!chartRef.current || smoothedDominanceData.length === 0) return;
-
-    // Remove existing SMA series safely
     Object.keys(smaSeriesRefs.current).forEach(key => {
       if (smaSeriesRefs.current[key] && chartRef.current) {
         try {
@@ -296,11 +304,9 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
         delete smaSeriesRefs.current[key];
       }
     });
-
-    // Add new SMA series for active indicators
     activeSMAs.forEach(key => {
       const indicator = smaIndicators[key];
-      if (!indicator) return; // Skip if indicator is not defined
+      if (!indicator) return;
       const series = chartRef.current.addLineSeries({
         priceScaleId: 'right',
         color: indicator.color,
@@ -337,7 +343,6 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
         },
       });
     }
-
     if (areaSeriesRef.current) {
       const lightThemeColors = {
         topColor: 'rgba(76, 175, 80, 0.3)',
@@ -356,7 +361,6 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
         lineColor: areaColors.lineColor,
       });
     }
-
     if (ethSeriesRef.current) {
       ethSeriesRef.current.applyOptions({
         color: theme.palette.mode === 'dark' ? '#FF6B6B' : '#FF4757',
