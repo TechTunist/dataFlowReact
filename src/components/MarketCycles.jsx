@@ -26,6 +26,10 @@ const MarketCycles = ({ isDashboard = false }) => {
   const plotRef = useRef(null);
   const containerRef = useRef(null);
 
+  // Constants for the new cycle logic
+  const CYCLE4_END_DATE = '2025-10-06';
+  const NEW_CYCLE_START_DATE = '2025-10-07';
+
   // Define the initial layout with useMemo
   const initialLayout = useMemo(() => ({
     title: isDashboard ? '' : 'Market Cycles RoI',
@@ -122,7 +126,8 @@ const MarketCycles = ({ isDashboard = false }) => {
       peak: {
         'Cycle 1': '2013-11-30',
         'Cycle 2': '2017-12-17',
-        'Cycle 3': '2021-11-10'
+        'Cycle 3': '2021-11-10',
+        'Cycle 5': NEW_CYCLE_START_DATE
       }
     };
 
@@ -131,18 +136,19 @@ const MarketCycles = ({ isDashboard = false }) => {
         'Cycle 1': '(2011-2013)',
         'Cycle 2': '(2015-2017)',
         'Cycle 3': '(2018-2021)',
-        'Cycle 4': '(2022-present)'
+        'Cycle 4': '(2022-2025)'
       },
       halving: {
         'Cycle 1': '(2012-2013)',
         'Cycle 2': '(2016-2017)',
         'Cycle 3': '(2020-2021)',
-        'Cycle 4': '(2024-present)'
+        'Cycle 4': '(2024-2025)'
       },
       peak: {
         'Cycle 1': '(2013-2017)',
         'Cycle 2': '(2017-2021)',
-        'Cycle 3': '(2021-present)'
+        'Cycle 3': '(2021-present)',
+        'Cycle 5': '(2025-present)'
       }
     };
 
@@ -154,10 +160,13 @@ const MarketCycles = ({ isDashboard = false }) => {
       }
     };
 
-    const processCycle = (start, end, cycleName, shortName) => {
+    const processCycle = (start, end, cycleName) => {
       const endDate = end || btcData[btcData.length - 1].time;
-      const filteredData = btcData.filter(d => new Date(d.time) >= new Date(start) && new Date(d.time) <= new Date(endDate));
+      const filteredData = btcData.filter(d => 
+        new Date(d.time) >= new Date(start) && new Date(d.time) <= new Date(endDate)
+      );
       if (filteredData.length === 0) return null;
+
       const basePrice = filteredData[0].value;
       return {
         name: `${cycleName} ${legendYears[startPoint][cycleName]}`,
@@ -178,7 +187,11 @@ const MarketCycles = ({ isDashboard = false }) => {
     ];
 
     if (startPoint !== 'peak') {
-      cycles.push(processCycle(cycleStarts[startPoint]['Cycle 4'], null, 'Cycle 4'));
+      // Cut off Cycle 4 at the end of the previous market cycle
+      cycles.push(processCycle(cycleStarts[startPoint]['Cycle 4'], CYCLE4_END_DATE, 'Cycle 4'));
+    } else {
+      // New cycle (Cycle 5) only visible in "From Cycle Peak" view
+      cycles.push(processCycle(cycleStarts[startPoint]['Cycle 5'], null, 'Cycle 5'));
     }
 
     const validCycles = cycles.filter(cycle => cycle !== null);
@@ -276,7 +289,6 @@ const MarketCycles = ({ isDashboard = false }) => {
     return false;
   }, []);
 
-  
   // Handle chart relayout (e.g., zooming)
   const handleRelayout = (event) => {
     if (event['xaxis.autorange'] || event['yaxis.autorange']) {
@@ -291,7 +303,6 @@ const MarketCycles = ({ isDashboard = false }) => {
     if (event['xaxis.range[0]'] && event['xaxis.range[1]']) {
       const newXMin = event['xaxis.range[0]'];
       const newXMax = event['xaxis.range[1]'];
-      // Filter data for visible cycles within the zoomed x-axis range
       const visibleData = cycleDataSets
         .filter(cycle => seriesVisibility[cycle.shortName] !== false)
         .flatMap(cycle =>
@@ -301,7 +312,7 @@ const MarketCycles = ({ isDashboard = false }) => {
         const yValues = visibleData.map(d => d.roi);
         const yMin = Math.min(...yValues);
         const yMax = Math.max(...yValues);
-        const padding = (yMax - yMin) * 0.05; // 5% padding for better visualization
+        const padding = (yMax - yMin) * 0.05;
         setCurrentLayout(prev => ({
           ...prev,
           xaxis: {
@@ -334,7 +345,7 @@ const MarketCycles = ({ isDashboard = false }) => {
     setSelectedCycles(event.target.value);
   };
 
-  // Available cycles for selection
+  // Available cycles for selection (historical completed cycles only)
   const availableCycles = [
     { value: 'Cycle 1', label: 'Cycle 1 (2011-2013)' },
     { value: 'Cycle 2', label: 'Cycle 2 (2015-2017)' },
