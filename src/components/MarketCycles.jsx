@@ -350,6 +350,7 @@ const MarketCycles = ({ isDashboard = false }) => {
     { value: 'Cycle 1', label: 'Cycle 1 (2011-2013)' },
     { value: 'Cycle 2', label: 'Cycle 2 (2015-2017)' },
     { value: 'Cycle 3', label: 'Cycle 3 (2018-2021)' },
+    { value: 'Cycle 4', label: 'Cycle 4 (2022-2025)' },
   ];
 
   // Handle cursor changes on mousedown/mouseup
