@@ -147,8 +147,8 @@ const MarketCycles = ({ isDashboard = false }) => {
       peak: {
         'Cycle 1': '(2013-2017)',
         'Cycle 2': '(2017-2021)',
-        'Cycle 3': '(2021-present)',
-        'Cycle 5': '(2025-present)'
+        'Cycle 3': '(2021-2025)',
+        'Cycle 4': '(2025-present)'
       }
     };
 
