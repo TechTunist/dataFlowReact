@@ -162,7 +162,7 @@ const UsInflationChart = ({ isDashboard = false }) => {
                     top: `${tooltipData.y + 100}px`,
                 }}>
                     <div style={{ fontSize: '15px' }}>Inflation</div>
-                    <div style={{ fontSize: '20px' }}>{tooltipData.price.toFixed(2)}%</div>
+                    <div style={{ fontSize: '20px' }}>{tooltipData.price != null ? tooltipData.price.toFixed(2) : 'N/A'}%</div>
                     <div>{tooltipData.date.toString().substring(0, 4) === currentYear ? `${tooltipData.date.toString().substring(0, 4)} - latest` : tooltipData.date.toString().substring(0, 4)}</div>
                 </div>
             )}

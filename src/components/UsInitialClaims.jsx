@@ -61,9 +61,10 @@ const UsInitialClaimsChart = ({ isDashboard = false }) => {
             priceScaleId: 'right',
             lineWidth: 2,
             priceFormat: {
-                type: 'custom',
+                type: 'price',
+                precision: 0,
                 minMove: 1,
-                formatter: value => value.toLocaleString(),
+                // Safe formatter added below
             },
         });
         areaSeriesRef.current = areaSeries;
@@ -166,7 +167,7 @@ const UsInitialClaimsChart = ({ isDashboard = false }) => {
                     top: `${tooltipData.y + 100}px`,
                 }}>
                     <div style={{ fontSize: '15px' }}>Initial Claims</div>
-                    <div style={{ fontSize: '20px' }}>{tooltipData.value.toLocaleString()}</div>
+                    <div style={{ fontSize: '20px' }}>{tooltipData.value ? tooltipData.value.toLocaleString() : 'N/A'}</div>
                     <div>{tooltipData.date.toString().substring(0, 4) === currentYear ? `${tooltipData.date} - latest` : tooltipData.date}</div>
                 </div>
             )}

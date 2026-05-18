@@ -244,7 +244,7 @@ const SahmRecessionIndicator = ({ isDashboard = false, explanation = '' }) => {
             priceFormat: {
               type: 'custom',
               minMove: 0.01,
-              formatter: (value) => value.toFixed(2),
+              formatter: (value) => (value != null ? value.toFixed(2) : ''),
             },
           });
           // Add recession signal line at 0.5 for Sahm Indicator
@@ -267,7 +267,7 @@ const SahmRecessionIndicator = ({ isDashboard = false, explanation = '' }) => {
             priceFormat: {
               type: 'custom',
               minMove: 0.01,
-              formatter: (value) => value.toFixed(2),
+              formatter: (value) => (value != null ? value.toFixed(2) : ''),
             },
           });
         } else if (chartType === 'histogram') {

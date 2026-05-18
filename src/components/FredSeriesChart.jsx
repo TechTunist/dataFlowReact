@@ -11,7 +11,7 @@ const FredSeriesChart = ({
   seriesId,
   isDashboard = false,
   chartType = 'area',
-  valueFormatter = value => value.toLocaleString(),
+  valueFormatter = value => (value != null ? value.toLocaleString() : ''),
   explanation = '',
   scaleMode = 'linear',
   showSP500Overlay = false, // Prop to enable S&P 500 overlay
@@ -256,7 +256,7 @@ const FredSeriesChart = ({
         priceFormat: {
           type: 'custom',
           minMove: 0.01,
-          formatter: (value) => value.toLocaleString(),
+          formatter: (value) => (value != null ? value.toLocaleString() : ''),
         },
       });
       sp500SeriesRef.current = sp500Series;
