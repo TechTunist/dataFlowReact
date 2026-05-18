@@ -96,7 +96,8 @@ const UsInterestChart = ({ isDashboard = false }) => {
             : { topColor: 'rgba(255, 165, 0, 0.56)', bottomColor: 'rgba(255, 165, 0, 0.2)', lineColor: 'rgba(255, 140, 0, 0.8)' };
 
         areaSeries.applyOptions({ topColor, bottomColor, lineColor });
-        areaSeries.setData(interestData);
+        const sortedData = [...interestData].sort((a, b) => new Date(a.time) - new Date(b.time));
+        areaSeries.setData(sortedData);
 
         chartRef.current = chart;
         resetChartView();
