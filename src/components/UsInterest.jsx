@@ -167,7 +167,7 @@ const UsInterestChart = ({ isDashboard = false }) => {
             )}
             {!isDashboard && (
                 <p className='chart-info'>
-                    This chart shows the historical interest rates of the United States.
+                    This chart shows the historical interest rates of the United States (aligned with UsInflation pattern).
                 </p>
             )}
         </div>
