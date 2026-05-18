@@ -16,7 +16,7 @@ const UsInitialClaimsChart = ({ isDashboard = false }) => {
     const isMobile = useIsMobile();
     const { initialClaimsData, fetchInitialClaimsData } = useContext(DataContext);
 
-    const [scaleMode, setScaleMode] = useState(1); // 1 for logarithmic, 0 for linear
+    const [scaleMode, setScaleMode] = useState(0); // 1 for logarithmic, 0 for linear
     const [tooltipData, setTooltipData] = useState(null);
     const [isInteractive, setIsInteractive] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -64,7 +64,6 @@ const UsInitialClaimsChart = ({ isDashboard = false }) => {
                 type: 'price',
                 precision: 0,
                 minMove: 1,
-                // Safe formatter added below
             },
         });
         areaSeriesRef.current = areaSeries;
@@ -81,7 +80,7 @@ const UsInitialClaimsChart = ({ isDashboard = false }) => {
                 const data = param.seriesData.get(areaSeries);
                 setTooltipData({
                     date: param.time,
-                    value: data?.value,
+                    price: data?.value,
                     x: param.point.x,
                     y: param.point.y,
                 });
@@ -167,7 +166,7 @@ const UsInitialClaimsChart = ({ isDashboard = false }) => {
                     top: `${tooltipData.y + 100}px`,
                 }}>
                     <div style={{ fontSize: '15px' }}>Initial Claims</div>
-                    <div style={{ fontSize: '20px' }}>{tooltipData.value ? tooltipData.value.toLocaleString() : 'N/A'}</div>
+                    <div style={{ fontSize: '20px' }}>{tooltipData.price ? tooltipData.price.toLocaleString() : 'N/A'}</div>
                     <div>{tooltipData.date.toString().substring(0, 4) === currentYear ? `${tooltipData.date} - latest` : tooltipData.date}</div>
                 </div>
             )}
