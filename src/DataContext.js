@@ -924,11 +924,10 @@ const fetchDominanceData = useCallback(async () => {
     await fetchWithCache({
       cacheId: 'inflationData',
       apiUrl: `${API_BASE_URL}/us-inflation/`,
-      formatData: (data) =>
-        data.map((item) => ({
-          time: item.date,
-          value: parseFloat(item.value),
-        })),
+      formatData: (data) => {
+        const mapped = data.map((item) => ({ time: item.date, value: parseFloat(item.value) }));
+        return [...new Map(mapped.map(item => [item.time, item])).values()];
+      },
       setData: setInflationData,
       setLastUpdated: setInflationLastUpdated,
       setIsFetched: setIsInflationDataFetched,
@@ -954,11 +953,10 @@ const fetchDominanceData = useCallback(async () => {
     await fetchWithCache({
       cacheId: 'initialClaimsData',
       apiUrl: `${API_BASE_URL}/initial-claims/`,
-      formatData: (data) =>
-        data.map((item) => ({
-          time: item.date,
-          value: parseInt(item.value, 10),
-        })),
+      formatData: (data) => {
+        const mapped = data.map((item) => ({ time: item.date, value: parseInt(item.value, 10) }));
+        return [...new Map(mapped.map(item => [item.time, item])).values()];
+      },
       setData: setInitialClaimsData,
       setLastUpdated: setInitialClaimsLastUpdated,
       setIsFetched: setIsInitialClaimsDataFetched,
@@ -984,11 +982,10 @@ const fetchDominanceData = useCallback(async () => {
     await fetchWithCache({
       cacheId: 'interestData',
       apiUrl: `${API_BASE_URL}/us-interest/`,
-      formatData: (data) =>
-        data.map((item) => ({
-          time: item.date,
-          value: parseFloat(item.value),
-        })),
+      formatData: (data) => {
+        const mapped = data.map((item) => ({ time: item.date, value: parseFloat(item.value) }));
+        return [...new Map(mapped.map(item => [item.time, item])).values()];
+      },
       setData: setInterestData,
       setLastUpdated: setInterestLastUpdated,
       setIsFetched: setIsInterestDataFetched,
@@ -1014,11 +1011,10 @@ const fetchDominanceData = useCallback(async () => {
     await fetchWithCache({
       cacheId: 'unemploymentData',
       apiUrl: `${API_BASE_URL}/us-unemployment/`,
-      formatData: (data) =>
-        data.map((item) => ({
-          time: item.date,
-          value: parseFloat(item.value),
-        })),
+      formatData: (data) => {
+        const mapped = data.map((item) => ({ time: item.date, value: parseFloat(item.value) }));
+        return [...new Map(mapped.map(item => [item.time, item])).values()];
+      },
       setData: setUnemploymentData,
       setLastUpdated: setUnemploymentLastUpdated,
       setIsFetched: setIsUnemploymentDataFetched,
