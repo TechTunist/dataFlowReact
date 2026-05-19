@@ -257,27 +257,19 @@ const onChainLayouts = {
     xs: [{ i: 'altcoinSeason', x: 0, y: 0, w: 4, h: 2, minW: 4, minH: 2 }],
   };
   const cycleLengthLayouts = {
-  lg: [
-    { i: 'daysLeftLow', x: 0, y: 0, w: 4, h: 2, minW: 2, minH: 2 },
-    { i: 'daysLeftHalving', x: 4, y: 0, w: 4, h: 2, minW: 2, minH: 2 },
-    { i: 'daysLeftPeak', x: 8, y: 0, w: 4, h: 2, minW: 2, minH: 2 },
-  ],
-  md: [
-    { i: 'daysLeftLow', x: 0, y: 0, w: 4, h: 2, minW: 2, minH: 2 },
-    { i: 'daysLeftHalving', x: 4, y: 0, w: 4, h: 2, minW: 2, minH: 2 },
-    { i: 'daysLeftPeak', x: 0, y: 2, w: 4, h: 2, minW: 2, minH: 2 },
-  ],
-  sm: [
-    { i: 'daysLeftLow', x: 0, y: 0, w: 6, h: 2, minW: 2, minH: 2 },
-    { i: 'daysLeftHalving', x: 0, y: 2, w: 6, h: 2, minW: 2, minH: 2 },
-    { i: 'daysLeftPeak', x: 0, y: 4, w: 6, h: 2, minW: 2, minH: 2 },
-  ],
-  xs: [
-    { i: 'daysLeftLow', x: 0, y: 0, w: 4, h: 2, minW: 2, minH: 2 },
-    { i: 'daysLeftHalving', x: 0, y: 2, w: 4, h: 2, minW: 2, minH: 2 },
-    { i: 'daysLeftPeak', x: 0, y: 4, w: 4, h: 2, minW: 2, minH: 2 },
-  ],
-};
+    lg: [
+      { i: 'daysSinceTop', x: 0, y: 0, w: 12, h: 2, minW: 4, minH: 2 },
+    ],
+    md: [
+      { i: 'daysSinceTop', x: 0, y: 0, w: 8, h: 2, minW: 4, minH: 2 },
+    ],
+    sm: [
+      { i: 'daysSinceTop', x: 0, y: 0, w: 6, h: 2, minW: 2, minH: 2 },
+    ],
+    xs: [
+      { i: 'daysSinceTop', x: 0, y: 0, w: 4, h: 2, minW: 2, minH: 2 },
+    ],
+  };
   // State for grid layouts
   const [priceLayout, setPriceLayout] = useState(priceLayouts);
   const [indicatorsLayout, setIndicatorsLayout] = useState(indicatorsLayouts);
@@ -1534,14 +1526,17 @@ const DaysLeftWidget = memo(({ type }) => {
   const { btcData } = useContext(DataContext);
   const [isInfoVisible, setIsInfoVisible] = useState(false);
   const [heatScore, setHeatScore] = useState(null);
+
   // Map type prop to daysLeftData keys
   const typeMap = {
     low: 'bottom',
     halving: 'halving',
     peak: 'peak',
+    top: 'top',                    // NEW: for post-top phase
   };
-  const mappedType = typeMap[type] || type; // Fallback to type if not in map
-  // Define cycle dates (same as CycleDaysLeft)
+  const mappedType = typeMap[type] || type;
+
+  // Define cycle dates
   const cycleDates = useMemo(() => ({
     bottom: {
       'Cycle 2': { start: '2015-01-15', end: '2017-12-17' },
@@ -1558,7 +1553,11 @@ const DaysLeftWidget = memo(({ type }) => {
       'Cycle 2': { start: '2017-12-17', end: '2021-11-10' },
       'Cycle 3': { start: '2021-11-10', end: null },
     },
+    top: {
+      'Cycle 4': { start: '2025-10-06', end: null }, // Bull market top date (user-specified)
+    },
   }), []);
+
   // Calculate days between two dates
   const calculateDays = (start, end) => {
     if (!start || !end) return 0;
@@ -1570,43 +1569,43 @@ const DaysLeftWidget = memo(({ type }) => {
     }
     return Math.round((endDate - startDate) / (1000 * 60 * 60 * 24));
   };
-  // Calculate average cycle lengths
+
+  // Historical average top-to-bottom duration (bull market top → next cycle bottom)
+  // Based on 2017-12-17 top → 2018-12-15 bottom (~363 days)
+  // and 2021-11-08 top → 2022-11-21 bottom (~378 days)
+  const averageTopToBottomDays = 370; // ~1 year average — accurate & coherent with historical cycle data
+
+  // Calculate average cycle lengths (kept for backward compatibility)
   const averageCycleLengths = useMemo(() => {
-    const averages = {
-      bottom: 0,
-      halving: 0,
-      peak: 0,
-    };
+    const averages = { bottom: 0, halving: 0, peak: 0 };
     const bottomDays = [
       calculateDays(cycleDates.bottom['Cycle 2'].start, cycleDates.bottom['Cycle 2'].end),
       calculateDays(cycleDates.bottom['Cycle 3'].start, cycleDates.bottom['Cycle 3'].end),
     ].filter(days => days > 0);
-
     averages.bottom = bottomDays.length > 0 ? Math.round(bottomDays.reduce((sum, days) => sum + days, 0) / bottomDays.length) : 0;
 
     const halvingDays = [
       calculateDays(cycleDates.halving['Cycle 2'].start, cycleDates.halving['Cycle 2'].end),
       calculateDays(cycleDates.halving['Cycle 3'].start, cycleDates.halving['Cycle 3'].end),
     ].filter(days => days > 0);
-
     averages.halving = halvingDays.length > 0 ? Math.round(halvingDays.reduce((sum, days) => sum + days, 0) / halvingDays.length) : 0;
 
     const peakDays = [
       calculateDays(cycleDates.peak['Cycle 1'].start, cycleDates.peak['Cycle 1'].end),
       calculateDays(cycleDates.peak['Cycle 2'].start, cycleDates.peak['Cycle 2'].end),
     ].filter(days => days > 0);
-
     averages.peak = peakDays.length > 0 ? Math.round(peakDays.reduce((sum, days) => sum + days, 0) / peakDays.length) : 0;
 
     return averages;
   }, [cycleDates]);
 
-  // Calculate days elapsed and days left for current cycle
+  // Calculate days elapsed and days left (now includes 'top')
   const daysLeftData = useMemo(() => {
     const data = {
       bottom: { elapsed: 0, left: 0, average: averageCycleLengths.bottom },
       halving: { elapsed: 0, left: 0, average: averageCycleLengths.halving },
       peak: { elapsed: 0, left: 0, average: averageCycleLengths.peak },
+      top: { elapsed: 0, left: 0, average: averageTopToBottomDays }, // NEW
     };
 
     if (btcData.length === 0) {
@@ -1621,13 +1620,11 @@ const DaysLeftWidget = memo(({ type }) => {
       return data;
     }
 
-    // Bottom (Cycle Low) calculations
+    // Bottom calculations
     const bottomStartDate = new Date(cycleDates.bottom['Cycle 4'].start);
     if (!isNaN(bottomStartDate)) {
       data.bottom.elapsed = calculateDays(cycleDates.bottom['Cycle 4'].start, currentDate);
       data.bottom.left = Math.max(0, averageCycleLengths.bottom - data.bottom.elapsed);
-    } else {
-      console.warn('Invalid bottom start date:', cycleDates.bottom['Cycle 4'].start);
     }
 
     // Halving calculations
@@ -1635,8 +1632,6 @@ const DaysLeftWidget = memo(({ type }) => {
     if (!isNaN(halvingStartDate)) {
       data.halving.elapsed = calculateDays(cycleDates.halving['Cycle 4'].start, currentDate);
       data.halving.left = Math.max(0, averageCycleLengths.halving - data.halving.elapsed);
-    } else {
-      console.warn('Invalid halving start date:', cycleDates.halving['Cycle 4'].start);
     }
 
     // Peak calculations
@@ -1644,31 +1639,34 @@ const DaysLeftWidget = memo(({ type }) => {
     if (!isNaN(peakStartDate)) {
       data.peak.elapsed = calculateDays(cycleDates.peak['Cycle 3'].start, currentDate);
       data.peak.left = Math.max(0, averageCycleLengths.peak - data.peak.elapsed);
-    } else {
-      console.warn('Invalid peak start date:', cycleDates.peak['Cycle 3'].start);
     }
-    return data;
-  }, [averageCycleLengths, btcData, cycleDates]);
 
-  // Non-linear color scaling
+    // NEW: Top (Bull Market Top → Expected Bottom) calculations
+    const topStartDate = new Date(cycleDates.top['Cycle 4'].start);
+    if (!isNaN(topStartDate)) {
+      data.top.elapsed = calculateDays(cycleDates.top['Cycle 4'].start, currentDate);
+      data.top.left = Math.max(0, averageTopToBottomDays - data.top.elapsed);
+    } else {
+      console.warn('Invalid top start date:', cycleDates.top['Cycle 4'].start);
+    }
+
+    return data;
+  }, [averageCycleLengths, averageTopToBottomDays, btcData, cycleDates]);
+
+  // Non-linear color scaling (unchanged)
   const calculateNonLinearHeatScore = (elapsed, average) => {
     if (average <= 0) return 0;
-    const progress = elapsed / average; // Linear progress from 0 to 1
-    // Use a quadratic function to skew the heat score: y = x^2
-    // At 50% progress (x = 0.5), heatScore = 0.25 (25% of color scale)
-    // At 66.67% progress (x = 0.6667), heatScore ≈ 0.4444 (44.44% of color scale)
+    const progress = elapsed / average;
     const skewedProgress = Math.pow(progress, 3);
     return Math.min(100, skewedProgress * 100);
   };
 
   useEffect(() => {
     if (btcData.length === 0) {
-      console.warn('btcData is empty, setting heatScore to 0');
       setHeatScore(0);
       return;
     }
     const cycleData = daysLeftData[mappedType];
-
     if (!cycleData) {
       console.warn(`No cycle data for mapped type ${mappedType} (original type: ${type})`);
       setHeatScore(0);
@@ -1678,7 +1676,6 @@ const DaysLeftWidget = memo(({ type }) => {
       const calculatedHeatScore = calculateNonLinearHeatScore(cycleData.elapsed, cycleData.average);
       setHeatScore(calculatedHeatScore);
     } else {
-      console.warn(`Invalid cycle data for type ${type} (mapped to ${mappedType}):`, cycleData);
       setHeatScore(0);
     }
   }, [daysLeftData, type, mappedType, btcData]);
@@ -1687,82 +1684,52 @@ const DaysLeftWidget = memo(({ type }) => {
   const textColor = getTextColor(backgroundColor);
   const heatDescription = getHeatDescription(heatScore || 0);
   const isSignificant = heatScore >= 85;
+
   const titleMap = {
     low: 'Cycle Low',
     halving: 'Halving',
     peak: 'Cycle Peak',
+    top: 'Cycle Top (Oct 6, 2025)',           // NEW title
   };
 
   const explanationMap = {
     low: 'Estimates days left in the current Bitcoin cycle based on historical averages from cycle lows (Cycles 2 and 3).',
     halving: 'Estimates days left in the current Bitcoin cycle based on historical averages from halvings (Cycles 2 and 3).',
     peak: 'Estimates days left in the current Bitcoin cycle based on historical averages from cycle peaks (Cycles 1 and 2).',
+    top: 'Days elapsed since the bull market top on October 6, 2025, and estimated days remaining until the average historical cycle bottom (~370 days / ~1 year from top). This now tracks progress through the expected post-top bear market phase.',
   };
 
   const navigate = useNavigate();
   const handleChartRedirect = (event) => {
     event.stopPropagation();
-    navigate('/market-cycles'); // Adjust to appropriate route if needed
+    navigate('/market-cycles');
   };
 
   return (
-    <Box
-      sx={{
-        ...chartBoxStyle(colors, theme),
-        backgroundColor,
-        transition: 'background-color 0.3s ease, transform 0.2s ease-in-out',
-        border: isSignificant ? `2px solid ${colors.redAccent[500]}` : 'none',
-        padding: '24px',
-        textAlign: 'center',
-        position: 'relative',
-      }}
-    >
+    <Box sx={{
+      ...chartBoxStyle(colors, theme),
+      backgroundColor,
+      transition: 'background-color 0.3s ease, transform 0.2s ease-in-out',
+      border: isSignificant ? `2px solid ${colors.redAccent[500]}` : 'none',
+      padding: '24px',
+      textAlign: 'center',
+      position: 'relative',
+    }}>
       <InfoIcon
-        sx={{
-          position: 'absolute',
-          top: '12px',
-          right: '12px',
-          color: textColor,
-          cursor: 'pointer',
-          fontSize: '35px',
-          zIndex: 1001,
-          padding: '4px',
-          borderRadius: '50%',
-          '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
-        }}
+        sx={{ position: 'absolute', top: '12px', right: '12px', color: textColor, cursor: 'pointer', fontSize: '35px', zIndex: 1001, padding: '4px', borderRadius: '50%', '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}
         onMouseEnter={() => setIsInfoVisible(true)}
         onMouseLeave={() => setIsInfoVisible(false)}
         aria-label="Information"
       />
       <ShowChartIcon
-        sx={{
-          position: 'absolute',
-          top: '12px',
-          left: '12px',
-          color: textColor,
-          cursor: 'pointer',
-          fontSize: '35px',
-          zIndex: 1001,
-          padding: '4px',
-          borderRadius: '50%',
-          '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
-        }}
+        sx={{ position: 'absolute', top: '12px', left: '12px', color: textColor, cursor: 'pointer', fontSize: '35px', zIndex: 1001, padding: '4px', borderRadius: '50%', '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}
         onMouseDown={handleChartRedirect}
         aria-label="View chart"
       />
       <Typography variant="h4" color={textColor} gutterBottom sx={{ fontWeight: 'bold' }}>
-        Days Left (From {titleMap[type]})
+        Days Since {titleMap[type] || titleMap[mappedType]}
       </Typography>
-      <Box
-        sx={{
-          flexGrow: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '8px',
-        }}
-      >
+      <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
         <Typography variant="h3" color={textColor} sx={{ fontWeight: 'bold' }}>
           {daysLeftData[mappedType]?.left >= 0 ? daysLeftData[mappedType].left : 'N/A'}
         </Typography>
@@ -1777,26 +1744,13 @@ const DaysLeftWidget = memo(({ type }) => {
         </Typography>
       </Box>
       {isSignificant && (
-        <Typography
-          variant="body1"
-          sx={{
-            color: colors.redAccent[500],
-            textAlign: 'center',
-            fontWeight: 'bold',
-            fontSize: '11px',
-            backgroundColor: 'white',
-            borderRadius: '8px',
-            padding: '4px 8px',
-            marginTop: '8px',
-            display: 'inline-block', // Ensures the background wraps tightly around the text
-          }}
-        >
+        <Typography variant="body1" sx={{ color: colors.redAccent[500], textAlign: 'center', fontWeight: 'bold', fontSize: '11px', backgroundColor: 'white', borderRadius: '8px', padding: '4px 8px', marginTop: '8px', display: 'inline-block' }}>
           Warning: Cycle nearing end.
         </Typography>
       )}
       <InfoOverlay
         isVisible={isInfoVisible}
-        explanation={explanationMap[type]}
+        explanation={explanationMap[type] || explanationMap[mappedType] || ''}
       />
     </Box>
   );
@@ -2622,13 +2576,13 @@ const WeeklyRsiWidget = memo(() => {
           <div key="dailyRsi"><DailyRsiWidget /></div>
           <div key="weeklyRsi"><WeeklyRsiWidget /></div>
         </ResponsiveGridLayout>
-        <Typography
+                <Typography
           variant="h4"
           color={colors.grey[100]}
           gutterBottom
           sx={{ fontWeight: 'bold', margin: '24px 0 16px' }}
         >
-          Cycle Length
+          Cycle Bottom Projection (from Oct 2025 Top)
         </Typography>
         <ResponsiveGridLayout
           className="layout"
@@ -2644,14 +2598,8 @@ const WeeklyRsiWidget = memo(() => {
           containerPadding={[0, 0]}
           style={{ width: '100%' }}
         >
-          <div key="daysLeftLow">
-            <DaysLeftWidget type="low" />
-          </div>
-          <div key="daysLeftHalving">
-            <DaysLeftWidget type="halving" />
-          </div>
-          <div key="daysLeftPeak">
-            <DaysLeftWidget type="peak" />
+          <div key="daysSinceTop">
+            <DaysLeftWidget type="top" />
           </div>
         </ResponsiveGridLayout>
       </Box>
