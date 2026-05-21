@@ -383,7 +383,7 @@ const FredSeriesChart = ({
       )}
 
       {/* Technical Indicators */}
-      {enableTechnicalIndicators && (
+      {!isDashboard && enableTechnicalIndicators && (
         <Box sx={{ display: 'flex', gap: '20px', justifyContent: 'center', mb: 2 }}>
           <FormControl size="small" sx={{ minWidth: 200 }}>
             <InputLabel>Weekly Moving Averages</InputLabel>

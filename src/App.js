@@ -582,6 +582,7 @@ const AppContent = memo(() => {
                               seriesId="SP500"
                               chartType="area"
                               scaleMode="linear"
+                              enableTechnicalIndicators={true}
                               valueFormatter={(value) => value.toLocaleString()}
                               explanation="This chart displays the daily closing values of the S&P 500 Index."
                             />
@@ -646,6 +647,7 @@ const AppContent = memo(() => {
                               scaleMode="linear"
                               valueFormatter={(value) => `${value.toFixed(2)}%`}
                               showSP500Overlay={true}
+                              enableTechnicalIndicators={true}
                               explanation="The daily 10-Year Treasury Note yield represents the annualized return investors receive for holding a U.S. 10-Year Treasury Note, a key benchmark for interest rates in the global economy. The yield is determined by the note’s price in the bond market, which fluctuates based on supply, demand, and economic conditions. Data is typically reported by the U.S. Department of the Treasury or financial platforms like the Federal Reserve’s FRED database."
                             />
                           </ProtectedRoute>
@@ -710,6 +712,7 @@ const AppContent = memo(() => {
                               scaleMode="linear"
                               valueFormatter={(value) => `$${value.toFixed(2)}`}
                               showSP500Overlay={true}
+                              enableTechnicalIndicators={true}
                               explanation="This chart shows the daily West Texas Intermediate (WTI) crude oil price."
                             />
                           </ProtectedRoute>
