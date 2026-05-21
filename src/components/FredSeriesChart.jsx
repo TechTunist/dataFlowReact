@@ -25,7 +25,8 @@ const FredSeriesChart = ({
   valueFormatter = value => (value != null ? value.toLocaleString() : ''),
   explanation = '',
   scaleMode = 'linear',
-  showSP500Overlay = false, // Prop to enable S&P 500 overlay
+  showSP500Overlay = false,
+  enableTechnicalIndicators = false, // Only enable for price/index charts (SP500, Oil, etc.)
 }) => {
   const chartContainerRef = useRef();
   const chartRef = useRef(null);
