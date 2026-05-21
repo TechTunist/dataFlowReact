@@ -488,10 +488,8 @@ const FredSeriesChart = ({
         }}
         onDoubleClick={setInteractivity}
       >
-        <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
-
-        {/* Moving Averages + RSI Controls - Same style as Bitcoin chart */}
-        {!isDashboard && (
+        {/* Moving Averages + RSI Controls - Only show when prop is true */}
+        {!isDashboard && enableTechnicalIndicators && (
           <Box sx={{
             display: 'flex',
             flexDirection: { xs: 'column', sm: 'row' },
