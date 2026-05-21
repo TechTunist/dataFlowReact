@@ -382,27 +382,103 @@ const FredSeriesChart = ({
         </div>
       )}
 
-      {/* Technical Indicators */}
+      {/* Technical Indicators - Styled to match BitcoinDominance */}
       {!isDashboard && enableTechnicalIndicators && (
-        <Box sx={{ display: 'flex', gap: '20px', justifyContent: 'center', mb: 2 }}>
-          <FormControl size="small" sx={{ minWidth: 200 }}>
-            <InputLabel>Weekly Moving Averages</InputLabel>
-            <Select multiple value={activeSMAs} onChange={handleSMAChange}
-              renderValue={(selected) => selected.length > 0 ? selected.map(k => smaIndicators[k].label).join(', ') : 'Select SMAs'}>
-              {Object.keys(smaIndicators).map(key => (
+        <Box sx={{
+          display: 'flex',
+          flexDirection: { xs: 'column', sm: 'row' },
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '20px',
+          marginBottom: '20px',
+          marginTop: '10px',
+        }}>
+          {/* Moving Averages */}
+          <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '300px' } }}>
+            <InputLabel
+              id="sma-label"
+              shrink
+              sx={{
+                color: colors.grey[100],
+                '&.Mui-focused': { color: colors.greenAccent[500] },
+                top: 0,
+                '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' },
+              }}
+            >
+              Weekly Moving Averages
+            </InputLabel>
+            <Select
+              multiple
+              value={activeSMAs}
+              onChange={handleSMAChange}
+              label="Weekly Moving Averages"
+              labelId="sma-label"
+              displayEmpty
+              renderValue={(selected) =>
+                selected.length > 0
+                  ? selected.map((key) => smaIndicators[key]?.label).join(', ')
+                  : 'Select Moving Averages'
+              }
+              sx={{
+                color: colors.grey[100],
+                backgroundColor: colors.primary[500],
+                borderRadius: "8px",
+                '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
+                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                '& .MuiSelect-select': { py: 1.5, pl: 2 },
+                '& .MuiSelect-select:empty': { color: colors.grey[500] },
+              }}
+            >
+              {Object.entries(smaIndicators).map(([key, { label }]) => (
                 <MenuItem key={key} value={key}>
-                  <Checkbox checked={activeSMAs.includes(key)} /> {smaIndicators[key].label}
+                  <Checkbox
+                    checked={activeSMAs.includes(key)}
+                    sx={{
+                      color: colors.grey[100],
+                      '&.Mui-checked': { color: colors.greenAccent[500] }
+                    }}
+                  />
+                  <span>{label}</span>
                 </MenuItem>
               ))}
             </Select>
           </FormControl>
 
-          <FormControl size="small" sx={{ minWidth: 160 }}>
-            <InputLabel>RSI</InputLabel>
-            <Select value={activeRsiPeriod} onChange={handleRsiPeriodChange}>
-              <MenuItem value="">None</MenuItem>
-              {Object.keys(rsiPeriods).map(key => (
-                <MenuItem key={key} value={key}>{rsiPeriods[key].label}</MenuItem>
+          {/* RSI */}
+          <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '200px' } }}>
+            <InputLabel
+              id="rsi-label"
+              shrink
+              sx={{
+                color: colors.grey[100],
+                '&.Mui-focused': { color: colors.greenAccent[500] },
+                top: 0,
+                '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' },
+              }}
+            >
+              RSI
+            </InputLabel>
+            <Select
+              value={activeRsiPeriod}
+              onChange={handleRsiPeriodChange}
+              label="RSI"
+              labelId="rsi-label"
+              displayEmpty
+              sx={{
+                color: colors.grey[100],
+                backgroundColor: colors.primary[500],
+                borderRadius: "8px",
+                '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
+                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+              }}
+            >
+              <MenuItem value="">
+                <em>None</em>
+              </MenuItem>
+              {Object.entries(rsiPeriods).map(([key, { label }]) => (
+                <MenuItem key={key} value={key}>{label}</MenuItem>
               ))}
             </Select>
           </FormControl>
