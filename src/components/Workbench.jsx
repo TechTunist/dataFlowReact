@@ -272,7 +272,7 @@ const WorkbenchChart = ({
     return [];
   };
   const getNormalizedData = (rawData, valueKey) => {
-    return rawData
+    let normalized = rawData
       .filter(item => item[valueKey] != null && !isNaN(parseFloat(item[valueKey])))
       .map(item => ({
         time: item.time || item.date || item.end_date || (item.timestamp ? new Date(item.timestamp * 1000).toISOString().split('T')[0] : null),
@@ -280,6 +280,15 @@ const WorkbenchChart = ({
       }))
       .filter(item => item.time !== null)
       .sort((a, b) => new Date(a.time) - new Date(b.time));
+
+    // Deduplicate by time (fixes lightweight-charts issues with duplicate dates, e.g. dominance data)
+    const seen = new Set();
+    return normalized.filter(item => {
+      const key = item.time;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
   };
   const computeDerivedData = (d1, d2, op) => {
     const map1 = new Map(d1.map(d => [d.time, d.value]));
@@ -607,6 +616,15 @@ const WorkbenchChart = ({
         }))
         .filter(item => item.time !== null)
         .sort((a, b) => new Date(a.time) - new Date(b.time));
+
+      // Deduplicate by time to prevent lightweight-charts crashes (especially important for dominance data)
+      const seen = new Set();
+      rawData = rawData.filter(item => {
+        const key = item.time;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
       if (rawData.length > 0) {
         try {
           const validData = scaleModeState === 1 && seriesInfo.allowLogScale
@@ -694,6 +712,15 @@ const WorkbenchChart = ({
           }))
           .filter(item => item.time !== null)
           .sort((a, b) => new Date(a.time) - new Date(b.time));
+
+        // Deduplicate by time (dominance data fix)
+        const seen = new Set();
+        raw = raw.filter(item => {
+          const key = item.time;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
         data = getSeriesData(id, raw);
         const value = param.seriesData.get(series)?.value ?? getLatestValue(data, param.time);
         tooltip.values[id] = value;
