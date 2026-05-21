@@ -14,9 +14,6 @@ import {
   InputLabel,
   Checkbox,
   Box,
-  FormControlLabel,
-  Switch,
-  useMediaQuery
 } from '@mui/material';
 
 const FredSeriesChart = ({
@@ -36,6 +33,7 @@ const FredSeriesChart = ({
   const prevSeriesIdRef = useRef(null);
   const smaSeriesRefs = useRef({});
   const rsiSeriesRef = useRef(null);
+
   const theme = useTheme();
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
   const isMobile = useIsMobile();
@@ -70,10 +68,8 @@ const FredSeriesChart = ({
   const primaryDataRef = useRef([]);
   const sp500DataRef = useRef([]);
 
-  const handleSMAChange = useCallback((event) => {
-    setActiveSMAs(event.target.value);
-  }, []);
-
+  // === CALLBACKS ===
+  const handleSMAChange = useCallback((event) => setActiveSMAs(event.target.value), []);
   const handleRsiPeriodChange = useCallback((event) => {
     setActiveRsiPeriod(event.target.value);
     setShowRsi(!!event.target.value);
@@ -84,13 +80,8 @@ const FredSeriesChart = ({
     const movingAverages = [];
     for (let i = period - 1; i < data.length; i++) {
       let sum = 0;
-      for (let j = 0; j < period; j++) {
-        sum += data[i - j].value;
-      }
-      movingAverages.push({
-        time: data[i].time,
-        value: sum / period,
-      });
+      for (let j = 0; j < period; j++) sum += data[i - j].value;
+      movingAverages.push({ time: data[i].time, value: sum / period });
     }
     return movingAverages;
   }, []);
@@ -100,49 +91,56 @@ const FredSeriesChart = ({
     const rsiData = [];
     const gains = [];
     const losses = [];
-
     for (let i = 1; i < data.length; i++) {
       const change = data[i].value - data[i - 1].value;
       gains.push(change > 0 ? change : 0);
       losses.push(change < 0 ? Math.abs(change) : 0);
     }
-
     for (let i = period; i < data.length; i++) {
       const avgGain = gains.slice(i - period, i).reduce((a, b) => a + b, 0) / period;
       const avgLoss = losses.slice(i - period, i).reduce((a, b) => a + b, 0) / period;
       const rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
-      const rsi = 100 - (100 / (1 + rs));
-      rsiData.push({
-        time: data[i].time,
-        value: rsi,
-      });
+      rsiData.push({ time: data[i].time, value: 100 - (100 / (1 + rs)) });
     }
     return rsiData;
   }, []);
 
-  // Fetch data
+  const findNearestData = useCallback((data, targetTime) => {
+    if (data.length === 0) return null;
+    const target = new Date(targetTime).getTime();
+    let left = 0, right = data.length - 1;
+    while (left <= right) {
+      const mid = Math.floor((left + right) / 2);
+      const midTime = new Date(data[mid].time).getTime();
+      if (midTime === target) return data[mid];
+      else if (midTime < target) left = mid + 1;
+      else right = mid - 1;
+    }
+    const prev = right >= 0 ? data[right] : null;
+    const next = left < data.length ? data[left] : null;
+    if (!prev) return next;
+    if (!next) return prev;
+    return Math.abs(new Date(prev.time).getTime() - target) <= Math.abs(new Date(next.time).getTime() - target) ? prev : next;
+  }, []);
+
+  // === FETCH DATA ===
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
       setError(null);
       try {
-        if (primarySeriesData.length === 0) {
-          await fetchFredSeriesData(seriesId);
-        }
-        if (showSP500Overlay && sp500SeriesData.length === 0) {
-          await fetchFredSeriesData('SP500');
-        }
+        if (primarySeriesData.length === 0) await fetchFredSeriesData(seriesId);
+        if (showSP500Overlay && sp500SeriesData.length === 0) await fetchFredSeriesData('SP500');
       } catch (err) {
-        setError(`Failed to fetch data for ${seriesId}${showSP500Overlay ? ' or S&P 500' : ''}.`);
-        console.error(`Error fetching data:`, err);
+        setError(`Failed to fetch data for ${seriesId}`);
       } finally {
         setIsLoading(false);
       }
     };
     fetchData();
-  }, [fetchFredSeriesData, seriesId, primarySeriesData.length, showSP500Overlay, sp500SeriesData.length]);
+  }, [fetchFredSeriesData, seriesId, showSP500Overlay]);
 
-  // Initialize chart
+  // === CREATE CHART ONCE (like BitcoinPrice) ===
   useEffect(() => {
     if (!chartContainerRef.current) return;
 
@@ -163,18 +161,10 @@ const FredSeriesChart = ({
         secondsVisible: false,
         smoothScroll: true,
       },
-      rightPriceScale: {
-        visible: true,
-        borderVisible: false,
-      },
-      leftPriceScale: {
-        visible: showSP500Overlay,
-        borderVisible: false,
-      },
+      rightPriceScale: { visible: true, borderVisible: false },
+      leftPriceScale: { visible: showSP500Overlay, borderVisible: false },
     });
     chartRef.current = chart;
-
-    smaSeriesRefs.current = {};
 
     const resizeChart = () => {
       if (chartRef.current && chartContainerRef.current) {
@@ -188,47 +178,52 @@ const FredSeriesChart = ({
 
     return () => {
       if (chartRef.current) {
-        chartRef.current.remove();
+        try { chartRef.current.remove(); } catch (e) {}
       }
       window.removeEventListener('resize', resizeChart);
     };
-  }, [colors, showSP500Overlay]);
+  }, []); // ← EMPTY DEPENDENCY ARRAY — CREATE ONCE
 
-  const findNearestData = useCallback((data, targetTime) => {
-    if (data.length === 0) return null;
-    const target = new Date(targetTime).getTime();
-    let left = 0;
-    let right = data.length - 1;
-    while (left <= right) {
-      const mid = Math.floor((left + right) / 2);
-      const midTime = new Date(data[mid].time).getTime();
-      if (midTime === target) return data[mid];
-      else if (midTime < target) left = mid + 1;
-      else right = mid - 1;
+  // === UPDATE COLORS/THEME (like BitcoinPrice) ===
+  useEffect(() => {
+    if (chartRef.current) {
+      chartRef.current.applyOptions({
+        layout: {
+          background: { type: 'solid', color: colors.primary[700] },
+          textColor: colors.primary[100],
+        },
+        grid: {
+          vertLines: { color: colors.greenAccent[700] },
+          horzLines: { color: colors.greenAccent[700] },
+        },
+      });
     }
-    const prev = right >= 0 ? data[right] : null;
-    const next = left < data.length ? data[left] : null;
-    if (!prev) return next;
-    if (!next) return prev;
-    const prevDiff = Math.abs(new Date(prev.time).getTime() - target);
-    const nextDiff = Math.abs(new Date(next.time).getTime() - target);
-    return prevDiff <= nextDiff ? prev : next;
-  }, []);
+  }, [colors]);
 
-  // Update series
+  // === UPDATE SCALE MODE & SP500 OVERLAY VISIBILITY ===
+  useEffect(() => {
+    if (!chartRef.current) return;
+    chartRef.current.priceScale('right').applyOptions({ mode: scaleModeState, borderVisible: false });
+    chartRef.current.priceScale('left').applyOptions({
+      visible: showSP500Overlay,
+      borderVisible: false,
+    });
+  }, [scaleModeState, showSP500Overlay]);
+
+  // === UPDATE SERIES + DATA (cleaned up) ===
   useEffect(() => {
     if (!chartRef.current || primarySeriesData.length === 0) return;
 
     const isNewSeries = seriesId !== prevSeriesIdRef.current;
     prevSeriesIdRef.current = seriesId;
 
+    // Clean primary data
     const cleanedPrimaryData = primarySeriesData
-      .filter((item) => {
-        const value = item.value;
-        if (value == null || isNaN(value)) return false;
-        if (scaleModeState === 1 && value <= 0) return false;
-        const time = item.time;
-        if (!time || (typeof time === 'string' && time.length <= 4)) return false;
+      .filter(item => {
+        if (item.value == null || isNaN(item.value)) return false;
+        if (scaleModeState === 1 && item.value <= 0) return false;
+        const t = item.time;
+        if (!t || (typeof t === 'string' && t.length <= 4)) return false;
         return true;
       })
       .map(item => ({
@@ -238,171 +233,105 @@ const FredSeriesChart = ({
       .sort((a, b) => new Date(a.time) - new Date(b.time));
 
     if (cleanedPrimaryData.length === 0) {
-      console.warn(`No valid data points for series ${seriesId}`);
-      setError(`No valid data available for ${seriesId}.`);
+      setError(`No valid data for ${seriesId}`);
       return;
     }
-
     primaryDataRef.current = cleanedPrimaryData;
 
+    // Remove old primary series
     if (primarySeriesRef.current) {
-      try {
-        chartRef.current.removeSeries(primarySeriesRef.current);
-      } catch (err) {
-        console.error(`Error removing primary series for ${seriesId}:`, err);
-      }
+      try { chartRef.current.removeSeries(primarySeriesRef.current); } catch (e) {}
       primarySeriesRef.current = null;
     }
 
     const { topColor, bottomColor, lineColor, color } = theme.palette.mode === 'dark'
-      ? {
-          topColor: 'rgba(38, 198, 218, 0.56)',
-          bottomColor: 'rgba(38, 198, 218, 0.04)',
-          lineColor: 'rgba(38, 198, 218, 1)',
-          color: 'rgba(38, 198, 218, 1)',
-        }
-      : {
-          topColor: 'rgba(255, 165, 0, 0.56)',
-          bottomColor: 'rgba(255, 165, 0, 0.2)',
-          lineColor: 'rgba(255, 140, 0, 0.8)',
-          color: 'rgba(255, 140, 0, 0.8)',
-        };
+      ? { topColor: 'rgba(38, 198, 218, 0.56)', bottomColor: 'rgba(38, 198, 218, 0.04)', lineColor: 'rgba(38, 198, 218, 1)', color: 'rgba(38, 198, 218, 1)' }
+      : { topColor: 'rgba(255, 165, 0, 0.56)', bottomColor: 'rgba(255, 165, 0, 0.2)', lineColor: 'rgba(255, 140, 0, 0.8)', color: 'rgba(255, 140, 0, 0.8)' };
 
     let primarySeries;
     if (chartType === 'area') {
       primarySeries = chartRef.current.addAreaSeries({
-        priceScaleId: 'right',
-        lineWidth: 2,
-        topColor,
-        bottomColor,
-        lineColor,
+        priceScaleId: 'right', lineWidth: 2, topColor, bottomColor, lineColor,
         priceFormat: { type: 'custom', minMove: 0.01, formatter: valueFormatter },
       });
     } else if (chartType === 'line') {
       primarySeries = chartRef.current.addLineSeries({
-        priceScaleId: 'right',
-        lineWidth: 2,
-        color: lineColor,
+        priceScaleId: 'right', lineWidth: 2, color: lineColor,
         priceFormat: { type: 'custom', minMove: 0.01, formatter: valueFormatter },
       });
-    } else if (chartType === 'histogram') {
+    } else {
       primarySeries = chartRef.current.addHistogramSeries({
-        priceScaleId: 'right',
-        color,
+        priceScaleId: 'right', color,
         priceFormat: { type: 'custom', minMove: 0.01, formatter: valueFormatter },
       });
     }
-
     primarySeriesRef.current = primarySeries;
     primarySeries.setData(cleanedPrimaryData);
 
-    chartRef.current.priceScale('right').applyOptions({
-      mode: scaleModeState,
-      borderVisible: false,
-    });
-
     // S&P 500 overlay
     if (showSP500Overlay && sp500SeriesData.length > 0) {
-      const minPrimaryTime = new Date(cleanedPrimaryData[0].time).getTime();
-      const cleanedSP500Data = sp500SeriesData
-        .filter(item => new Date(item.time).getTime() >= minPrimaryTime && item.value != null && !isNaN(item.value) && item.value > 0)
+      const minTime = new Date(cleanedPrimaryData[0].time).getTime();
+      const cleanedSP500 = sp500SeriesData
+        .filter(item => new Date(item.time).getTime() >= minTime && item.value > 0)
         .sort((a, b) => new Date(a.time) - new Date(b.time));
 
-      if (cleanedSP500Data.length === 0) {
-        console.warn('No valid data points for S&P 500');
-        return;
-      }
-
-      sp500DataRef.current = cleanedSP500Data;
-
-      if (sp500SeriesRef.current) {
-        try {
-          chartRef.current.removeSeries(sp500SeriesRef.current);
-        } catch (err) {
-          console.error('Error removing S&P 500 series:', err);
+      if (cleanedSP500.length > 0) {
+        if (sp500SeriesRef.current) {
+          try { chartRef.current.removeSeries(sp500SeriesRef.current); } catch (e) {}
         }
-        sp500SeriesRef.current = null;
+        const sp500Color = theme.palette.mode === 'dark' ? 'rgb(223, 175, 185)' : 'rgba(112, 153, 112, 0.8)';
+        const sp500Series = chartRef.current.addLineSeries({
+          priceScaleId: 'left', lineWidth: 2, color: sp500Color,
+          priceFormat: { type: 'custom', minMove: 0.01, formatter: v => v?.toLocaleString() || '' },
+        });
+        sp500SeriesRef.current = sp500Series;
+        sp500Series.setData(cleanedSP500);
       }
-
-      const sp500Color = theme.palette.mode === 'dark' ? 'rgb(223, 175, 185)' : 'rgba(112, 153, 112, 0.8)';
-
-      const sp500Series = chartRef.current.addLineSeries({
-        priceScaleId: 'left',
-        lineWidth: 2,
-        color: sp500Color,
-        priceFormat: { type: 'custom', minMove: 0.01, formatter: v => v != null ? v.toLocaleString() : '' },
-      });
-      sp500SeriesRef.current = sp500Series;
-      sp500Series.setData(cleanedSP500Data);
-
-      chartRef.current.priceScale('left').applyOptions({
-        mode: 1,
-        borderVisible: false,
-      });
     }
 
-    if (isNewSeries || zoomRange === null) {
+    if (isNewSeries || !zoomRange) {
       chartRef.current.timeScale().fitContent();
-      setZoomRange(null);
     }
+  }, [primarySeriesData, sp500SeriesData, chartType, scaleModeState, valueFormatter, theme.palette.mode, seriesId, showSP500Overlay]);
+
+  // === TOOLTIP (separate effect like BitcoinPrice) ===
+  useEffect(() => {
+    if (!chartRef.current) return;
 
     let tooltipTimeout = null;
-    chartRef.current.subscribeCrosshairMove((param) => {
-      if (!param.point || !param.time || param.point.x < 0 || param.point.x > chartContainerRef.current.clientWidth ||
-          param.point.y < 0 || param.point.y > chartContainerRef.current.clientHeight) {
-        clearTimeout(tooltipTimeout);
+    const handleCrosshair = (param) => {
+      if (!param.point || !param.time) {
         setTooltipData(null);
         return;
       }
-
       let primaryNearest = param.seriesData.get(primarySeriesRef.current);
       if (!primaryNearest) primaryNearest = findNearestData(primaryDataRef.current, param.time);
 
-      let sp500Nearest = showSP500Overlay ? param.seriesData.get(sp500SeriesRef.current) : null;
-      if (showSP500Overlay && !sp500Nearest) sp500Nearest = findNearestData(sp500DataRef.current, param.time);
+      let sp500Nearest = null;
+      if (showSP500Overlay && sp500SeriesRef.current) {
+        sp500Nearest = param.seriesData.get(sp500SeriesRef.current) || findNearestData(sp500DataRef.current, param.time);
+      }
 
       clearTimeout(tooltipTimeout);
       tooltipTimeout = setTimeout(() => {
         setTooltipData({
           date: param.time,
-          primaryValue: primaryNearest ? primaryNearest.value : null,
-          sp500Value: sp500Nearest ? sp500Nearest.value : null,
+          primaryValue: primaryNearest?.value,
+          sp500Value: sp500Nearest?.value,
           x: param.point.x,
           y: param.point.y,
         });
       }, 1);
-    });
-
-    return () => clearTimeout(tooltipTimeout);
-  }, [primarySeriesData, sp500SeriesData, chartType, scaleModeState, valueFormatter, theme.palette.mode, seriesId, showSP500Overlay, findNearestData]);
-
-  // Restore zoom
-  useEffect(() => {
-    if (!chartRef.current || !zoomRange) return;
-    chartRef.current.timeScale().setVisibleLogicalRange(zoomRange);
-  }, [zoomRange]);
-
-  // Save zoom state
-  useEffect(() => {
-    if (!chartRef.current) return;
-    let zoomTimeout = null;
-    const handler = () => {
-      const range = chartRef.current.timeScale().getVisibleLogicalRange();
-      if (range) {
-        clearTimeout(zoomTimeout);
-        zoomTimeout = setTimeout(() => {
-          setZoomRange(prev => (prev && prev.from === range.from && prev.to === range.to) ? prev : range);
-        }, 100);
-      }
     };
-    chartRef.current.timeScale().subscribeVisibleLogicalRangeChange(handler);
+
+    chartRef.current.subscribeCrosshairMove(handleCrosshair);
     return () => {
-      clearTimeout(zoomTimeout);
-      if (chartRef.current) chartRef.current.timeScale().unsubscribeVisibleLogicalRangeChange(handler);
+      clearTimeout(tooltipTimeout);
+      if (chartRef.current) chartRef.current.unsubscribeCrosshairMove(handleCrosshair);
     };
-  }, []);
+  }, [findNearestData, showSP500Overlay]);
 
-  // Update interactivity
+  // === INTERACTIVITY ===
   useEffect(() => {
     if (chartRef.current) {
       chartRef.current.applyOptions({
@@ -428,6 +357,7 @@ const FredSeriesChart = ({
 
   return (
     <div style={{ height: '100%', position: 'relative' }}>
+      {/* Top controls */}
       {!isDashboard && (
         <div className="chart-top-div">
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
@@ -440,35 +370,25 @@ const FredSeriesChart = ({
             {error && <span style={{ color: colors.redAccent[500] }}>{error}</span>}
           </div>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-            <button
-              onClick={setInteractivity}
-              className="button-reset"
-              style={{
-                backgroundColor: isInteractive ? '#4cceac' : 'transparent',
-                color: isInteractive ? 'black' : '#31d6aa',
-                borderColor: isInteractive ? 'violet' : '#70d8bd',
-              }}
-            >
+            <button onClick={setInteractivity} className="button-reset" style={{
+              backgroundColor: isInteractive ? '#4cceac' : 'transparent',
+              color: isInteractive ? 'black' : '#31d6aa',
+              borderColor: isInteractive ? 'violet' : '#70d8bd',
+            }}>
               {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
             </button>
-            <button onClick={resetChartView} className="button-reset extra-margin">
-              Reset Chart
-            </button>
+            <button onClick={resetChartView} className="button-reset extra-margin">Reset Chart</button>
           </div>
         </div>
       )}
 
-      {/* Technical Indicators - Only when enabled */}
+      {/* Technical Indicators */}
       {!isDashboard && enableTechnicalIndicators && (
         <Box sx={{ display: 'flex', gap: '20px', justifyContent: 'center', mb: 2 }}>
           <FormControl size="small" sx={{ minWidth: 200 }}>
             <InputLabel>Weekly Moving Averages</InputLabel>
-            <Select
-              multiple
-              value={activeSMAs}
-              onChange={handleSMAChange}
-              renderValue={(selected) => selected.length > 0 ? selected.map(k => smaIndicators[k].label).join(', ') : 'Select SMAs'}
-            >
+            <Select multiple value={activeSMAs} onChange={handleSMAChange}
+              renderValue={(selected) => selected.length > 0 ? selected.map(k => smaIndicators[k].label).join(', ') : 'Select SMAs'}>
               {Object.keys(smaIndicators).map(key => (
                 <MenuItem key={key} value={key}>
                   <Checkbox checked={activeSMAs.includes(key)} /> {smaIndicators[key].label}
@@ -489,6 +409,7 @@ const FredSeriesChart = ({
         </Box>
       )}
 
+      {/* CHART CONTAINER — now matches BitcoinPrice structure */}
       <div
         className="chart-container"
         style={{
@@ -499,41 +420,16 @@ const FredSeriesChart = ({
         }}
         onDoubleClick={setInteractivity}
       >
-        {/* Legend (absolute positioned inside chart container) */}
+        <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
+
+        {/* Legend */}
         {!isDashboard && isLegendVisible && (
-          <div
-            className="chart-legend"
-            style={{
-              position: 'absolute',
-              top: '10px',
-              left: '10px',
-              background: colors.primary[900],
-              color: colors.primary[100],
-              padding: '25px 10px 10px 10px',
-              borderRadius: '5px',
-              zIndex: 1000,
-              fontSize: '14px',
-            }}
-          >
-            <button
-              onClick={toggleLegend}
-              className="legend-minimize-button"
-              style={{
-                position: 'absolute',
-                top: '5px',
-                left: '5px',
-                background: 'transparent',
-                border: 'none',
-                color: colors.primary[100],
-                fontSize: '16px',
-                cursor: 'pointer',
-                padding: '0',
-                lineHeight: '1',
-              }}
-              title="Minimize Legend"
-            >
-              −
-            </button>
+          <div className="chart-legend" style={{
+            position: 'absolute', top: '10px', left: '10px',
+            background: colors.primary[900], color: colors.primary[100],
+            padding: '25px 10px 10px 10px', borderRadius: '5px', zIndex: 1000, fontSize: '14px'
+          }}>
+            <button onClick={toggleLegend} className="legend-minimize-button" style={{ position: 'absolute', top: '5px', left: '5px', background: 'transparent', border: 'none', color: colors.primary[100], fontSize: '16px', cursor: 'pointer' }}>−</button>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <div style={{ width: '12px', height: '12px', backgroundColor: primaryColor, borderRadius: '2px' }}></div>
               <span>{seriesId}</span>
@@ -548,29 +444,14 @@ const FredSeriesChart = ({
         )}
 
         {!isDashboard && !isLegendVisible && (
-          <button
-            onClick={toggleLegend}
-            className="legend-minimize-button"
-            style={{
-              position: 'absolute',
-              top: '10px',
-              left: '10px',
-              background: colors.primary[900],
-              border: 'none',
-              color: colors.primary[100],
-              fontSize: '16px',
-              cursor: 'pointer',
-              padding: '5px 10px',
-              borderRadius: '5px',
-              zIndex: 1000,
-            }}
-            title="Show Legend"
-          >
-            +
-          </button>
+          <button onClick={toggleLegend} className="legend-minimize-button" style={{
+            position: 'absolute', top: '10px', left: '10px', background: colors.primary[900], border: 'none',
+            color: colors.primary[100], fontSize: '16px', cursor: 'pointer', padding: '5px 10px', borderRadius: '5px', zIndex: 1000
+          }}>+</button>
         )}
       </div>
 
+      {/* Under chart */}
       <div className="under-chart">
         {!isDashboard && primarySeriesData.length > 0 && (
           <div style={{ marginTop: '10px' }}>
@@ -579,44 +460,30 @@ const FredSeriesChart = ({
         )}
       </div>
 
+      {/* Tooltip */}
       {!isDashboard && tooltipData && (
-        <div
-          className="tooltip"
-          style={{
-            left: (() => {
-              const sidebarWidth = isMobile ? -70 : -100;
-              const cursorX = tooltipData.x - sidebarWidth;
-              const chartWidth = chartContainerRef.current.clientWidth - sidebarWidth;
-              const tooltipWidth = 200;
-              const offset = 1000 / (chartWidth + 100);
-              const rightPosition = cursorX + offset;
-              const leftPosition = cursorX - tooltipWidth - offset;
-              return rightPosition + tooltipWidth <= chartWidth
-                ? `${rightPosition}px`
-                : leftPosition >= 0
-                ? `${leftPosition}px`
-                : `${Math.max(0, Math.min(rightPosition, chartWidth - tooltipWidth))}px`;
-            })(),
-            top: `${tooltipData.y + 50}px`,
-          }}
-        >
+        <div className="tooltip" style={{
+          left: (() => {
+            const sidebarWidth = isMobile ? -70 : -100;
+            const cursorX = tooltipData.x - sidebarWidth;
+            const chartWidth = chartContainerRef.current?.clientWidth - sidebarWidth || 800;
+            const tooltipWidth = 200;
+            const offset = 1000 / (chartWidth + 100);
+            const rightPosition = cursorX + offset;
+            const leftPosition = cursorX - tooltipWidth - offset;
+            return rightPosition + tooltipWidth <= chartWidth ? `${rightPosition}px` : leftPosition >= 0 ? `${leftPosition}px` : `${Math.max(0, Math.min(rightPosition, chartWidth - tooltipWidth))}px`;
+          })(),
+          top: `${tooltipData.y + 50}px`,
+        }}>
           <div style={{ fontSize: '15px' }}>{seriesId}</div>
-          <div style={{ fontSize: '20px' }}>
-            {tooltipData.primaryValue ? valueFormatter(tooltipData.primaryValue) : 'N/A'}
-          </div>
+          <div style={{ fontSize: '20px' }}>{tooltipData.primaryValue ? valueFormatter(tooltipData.primaryValue) : 'N/A'}</div>
           {showSP500Overlay && (
             <>
               <div style={{ fontSize: '15px', color: sp500Color }}>S&P 500</div>
-              <div style={{ fontSize: '20px', color: sp500Color }}>
-                {tooltipData.sp500Value ? tooltipData.sp500Value.toLocaleString() : 'N/A'}
-              </div>
+              <div style={{ fontSize: '20px', color: sp500Color }}>{tooltipData.sp500Value ? tooltipData.sp500Value.toLocaleString() : 'N/A'}</div>
             </>
           )}
-          <div>
-            {tooltipData.date.toString().substring(0, 4) === currentYear
-              ? `${tooltipData.date} - latest`
-              : tooltipData.date}
-          </div>
+          <div>{tooltipData.date}</div>
         </div>
       )}
 
