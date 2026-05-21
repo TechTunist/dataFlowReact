@@ -7,6 +7,17 @@ import useIsMobile from '../hooks/useIsMobile';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import LastUpdated from '../hooks/LastUpdated';
+import {
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Checkbox,
+  Box,
+  FormControlLabel,
+  Switch,
+  useMediaQuery
+} from '@mui/material';
 const FredSeriesChart = ({
   seriesId,
   isDashboard = false,
@@ -21,10 +32,25 @@ const FredSeriesChart = ({
   const primarySeriesRef = useRef(null);
   const sp500SeriesRef = useRef(null);
   const prevSeriesIdRef = useRef(null);
+  const smaSeriesRefs = useRef({});
+  const rsiSeriesRef = useRef(null);
   const theme = useTheme();
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
   const isMobile = useIsMobile();
   const { fredSeriesData, fetchFredSeriesData } = useContext(DataContext);
+
+  // Moving Average indicators (same as BitcoinDominance)
+  const smaIndicators = useMemo(() => ({
+    '8w-sma': { period: 8 * 7, color: '#00FF00', label: '8 Week SMA' },
+    '20w-sma': { period: 20 * 7, color: '#FF00FF', label: '20 Week SMA' },
+    '50w-sma': { period: 50 * 7, color: '#FFD700', label: '50 Week SMA' },
+  }), []);
+
+  // RSI periods (same style as Bitcoin chart)
+  const rsiPeriods = useMemo(() => ({
+    'Daily': { days: 14, label: 'Daily RSI (14)' },
+    'Weekly': { days: 98, label: 'Weekly RSI (14)' },
+  }), []);
   const initialScaleMode = scaleMode === 'logarithmic' ? 1 : 0;
   const [scaleModeState, setScaleModeState] = useState(initialScaleMode);
   const [tooltipData, setTooltipData] = useState(null);
@@ -32,6 +58,60 @@ const FredSeriesChart = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [zoomRange, setZoomRange] = useState(null);
+  // Moving Averages & RSI state (matching Bitcoin chart style)
+  const [activeSMAs, setActiveSMAs] = useState([]);
+  const [activeRsiPeriod, setActiveRsiPeriod] = useState('');
+  const [showRsi, setShowRsi] = useState(false);
+
+  const handleSMAChange = useCallback((event) => {
+    setActiveSMAs(event.target.value);
+  }, []);
+
+  const handleRsiPeriodChange = useCallback((event) => {
+    setActiveRsiPeriod(event.target.value);
+    setShowRsi(!!event.target.value);
+  }, []);
+
+  const calculateMovingAverage = useCallback((data, period) => {
+    if (!data || data.length < period) return [];
+    let movingAverages = [];
+    for (let i = period - 1; i < data.length; i++) {
+      let sum = 0;
+      for (let j = 0; j < period; j++) {
+        sum += data[i - j].value;
+      }
+      movingAverages.push({
+        time: data[i].time,
+        value: sum / period,
+      });
+    }
+    return movingAverages;
+  }, []);
+
+  const calculateRSI = useCallback((data, period) => {
+    if (!data || data.length <= period) return [];
+    let rsiData = [];
+    let gains = [];
+    let losses = [];
+
+    for (let i = 1; i < data.length; i++) {
+      const change = data[i].value - data[i - 1].value;
+      gains.push(change > 0 ? change : 0);
+      losses.push(change < 0 ? Math.abs(change) : 0);
+    }
+
+    for (let i = period; i < data.length; i++) {
+      const avgGain = gains.slice(i - period, i).reduce((a, b) => a + b, 0) / period;
+      const avgLoss = losses.slice(i - period, i).reduce((a, b) => a + b, 0) / period;
+      const rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
+      const rsi = 100 - (100 / (1 + rs));
+      rsiData.push({
+        time: data[i].time,
+        value: rsi,
+      });
+    }
+    return rsiData;
+  }, []);
   const [isLegendVisible, setIsLegendVisible] = useState(!isMobile); // Default: hidden on mobile, shown on desktop
   const currentYear = useMemo(() => new Date().getFullYear().toString(), []);
   const primarySeriesData = fredSeriesData[seriesId] || [];
@@ -89,6 +169,9 @@ const FredSeriesChart = ({
       },
     });
     chartRef.current = chart;
+
+    // SMA series refs initialization
+    smaSeriesRefs.current = {};
     const resizeChart = () => {
       if (chartRef.current && chartContainerRef.current) {
         chartRef.current.applyOptions({
@@ -405,6 +488,102 @@ const FredSeriesChart = ({
         onDoubleClick={setInteractivity}
       >
         <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
+
+        {/* Moving Averages + RSI Controls - Same style as Bitcoin chart */}
+        {!isDashboard && (
+          <Box sx={{
+            display: 'flex',
+            flexDirection: { xs: 'column', sm: 'row' },
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '20px',
+            marginBottom: '20px',
+            marginTop: '20px',
+          }}>
+            <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '300px' } }}>
+              <InputLabel
+                id="sma-label"
+                shrink
+                sx={{
+                  color: colors.grey[100],
+                  '&.Mui-focused': { color: colors.greenAccent[500] },
+                  top: 0,
+                  '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' },
+                }}
+              >
+                Weekly Moving Averages
+              </InputLabel>
+              <Select
+                multiple
+                value={activeSMAs}
+                onChange={handleSMAChange}
+                label="Weekly Moving Averages"
+                labelId="sma-label"
+                displayEmpty
+                renderValue={(selected) =>
+                  selected.length > 0
+                    ? selected.map((key) => smaIndicators[key]?.label).join(', ')
+                    : 'Select Moving Averages'
+                }
+                sx={{
+                  color: colors.grey[100],
+                  backgroundColor: colors.primary[500],
+                  borderRadius: "8px",
+                  '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
+                  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                }}
+              >
+                {Object.entries(smaIndicators).map(([key, { label }]) => (
+                  <MenuItem key={key} value={key}>
+                    <Checkbox
+                      checked={activeSMAs.includes(key)}
+                      sx={{
+                        color: colors.grey[100],
+                        '&.Mui-checked': { color: colors.greenAccent[500] }
+                      }}
+                    />
+                    <span>{label}</span>
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '200px' } }}>
+              <InputLabel
+                id="rsi-label"
+                shrink
+                sx={{
+                  color: colors.grey[100],
+                  '&.Mui-focused': { color: colors.greenAccent[500] },
+                  top: 0,
+                  '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' },
+                }}
+              >
+                RSI
+              </InputLabel>
+              <Select
+                value={activeRsiPeriod}
+                onChange={handleRsiPeriodChange}
+                label="RSI"
+                labelId="rsi-label"
+                displayEmpty
+                sx={{
+                  color: colors.grey[100],
+                  backgroundColor: colors.primary[500],
+                  borderRadius: "8px",
+                }}
+              >
+                <MenuItem value="">
+                  <em>None</em>
+                </MenuItem>
+                {Object.entries(rsiPeriods).map(([key, { label }]) => (
+                  <MenuItem key={key} value={key}>{label}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
+        )}
         {!isDashboard && isLegendVisible && (
           <div
             className="chart-legend"
