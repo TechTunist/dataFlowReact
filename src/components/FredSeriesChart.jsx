@@ -478,6 +478,38 @@ const FredSeriesChart = ({
           </div>
         </div>
       )}
+      
+      {/* Technical Indicators - Only when enabled */}
+      {!isDashboard && enableTechnicalIndicators && (
+        <Box sx={{ display: 'flex', gap: '20px', justifyContent: 'center', mb: 2 }}>
+          <FormControl size="small" sx={{ minWidth: 200 }}>
+            <InputLabel>Weekly Moving Averages</InputLabel>
+            <Select
+              multiple
+              value={activeSMAs}
+              onChange={handleSMAChange}
+              renderValue={(selected) => selected.length > 0 ? selected.map(k => smaIndicators[k].label).join(', ') : 'Select SMAs'}
+            >
+              {Object.keys(smaIndicators).map(key => (
+                <MenuItem key={key} value={key}>
+                  <Checkbox checked={activeSMAs.includes(key)} /> {smaIndicators[key].label}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <FormControl size="small" sx={{ minWidth: 160 }}>
+            <InputLabel>RSI</InputLabel>
+            <Select value={activeRsiPeriod} onChange={handleRsiPeriodChange}>
+              <MenuItem value="">None</MenuItem>
+              {Object.keys(rsiPeriods).map(key => (
+                <MenuItem key={key} value={key}>{rsiPeriods[key].label}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Box>
+      )}
+
       <div
         className="chart-container"
         style={{
@@ -488,55 +520,8 @@ const FredSeriesChart = ({
         }}
         onDoubleClick={setInteractivity}
       >
-        {/* Moving Averages + RSI Controls - Only show when prop is true */}
-        {!isDashboard && enableTechnicalIndicators && (
-          <Box sx={{
-            display: 'flex',
-            flexDirection: { xs: 'column', sm: 'row' },
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '20px',
-            marginBottom: '20px',
-            marginTop: '20px',
-          }}>
-            <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '300px' } }}>
-              <InputLabel
-                id="sma-label"
-                shrink
-                sx={{
-                  color: colors.grey[100],
-                  '&.Mui-focused': { color: colors.greenAccent[500] },
-                  top: 0,
-                  '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' },
-                }}
-              >
-                Weekly Moving Averages
-              </InputLabel>
-              <Select
-                multiple
-                value={activeSMAs}
-                onChange={handleSMAChange}
-                label="Weekly Moving Averages"
-                labelId="sma-label"
-                displayEmpty
-                renderValue={(selected) =>
-                  selected.length > 0
-                    ? selected.map((key) => smaIndicators[key]?.label).join(', ')
-                    : 'Select Moving Averages'
-                }
-                sx={{
-                  color: colors.grey[100],
-                  backgroundColor: colors.primary[500],
-                  borderRadius: "8px",
-                  '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
-                  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                }}
-              >
-                {Object.entries(smaIndicators).map(([key, { label }]) => (
-                  <MenuItem key={key} value={key}>
-                    <Checkbox
-                      checked={activeSMAs.includes(key)}
+        {/* Technical Indicators - Only for enabled charts */}
+        
                       sx={{
                         color: colors.grey[100],
                         '&.Mui-checked': { color: colors.greenAccent[500] }
