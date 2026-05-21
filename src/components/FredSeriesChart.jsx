@@ -164,7 +164,86 @@ const FredSeriesChart = ({
       rightPriceScale: { visible: true, borderVisible: false },
       leftPriceScale: { visible: showSP500Overlay, borderVisible: false },
     });
+
     chartRef.current = chart;
+
+    // SMA series refs initialization
+    smaSeriesRefs.current = {};
+  }, [colors, showSP500Overlay]);
+
+  // === MOVING AVERAGES EFFECT ===
+  useEffect(() => {
+    if (!chartRef.current || primarySeriesData.length === 0 || !enableTechnicalIndicators) {
+      // Clean up SMAs if disabled
+      Object.keys(smaSeriesRefs.current).forEach(key => {
+        if (smaSeriesRefs.current[key] && chartRef.current) {
+          try { chartRef.current.removeSeries(smaSeriesRefs.current[key]); } catch (e) {}
+          delete smaSeriesRefs.current[key];
+        }
+      });
+      return;
+    }
+
+    // Remove existing SMA series
+    Object.keys(smaSeriesRefs.current).forEach(key => {
+      if (smaSeriesRefs.current[key] && chartRef.current) {
+        try { chartRef.current.removeSeries(smaSeriesRefs.current[key]); } catch (e) {}
+        delete smaSeriesRefs.current[key];
+      }
+    });
+
+    // Add selected SMAs
+    activeSMAs.forEach(key => {
+      const indicator = smaIndicators[key];
+      if (!indicator) return;
+
+      const series = chartRef.current.addLineSeries({
+        priceScaleId: 'right',
+        color: indicator.color,
+        lineWidth: 2,
+        priceLineVisible: false,
+      });
+
+      smaSeriesRefs.current[key] = series;
+      const smaData = calculateMovingAverage(primarySeriesData, indicator.period);
+      if (smaData.length > 0) series.setData(smaData);
+    });
+  }, [activeSMAs, primarySeriesData, enableTechnicalIndicators, calculateMovingAverage, smaIndicators]);
+
+  // === RSI EFFECT ===
+  useEffect(() => {
+    if (!chartRef.current || primarySeriesData.length === 0 || !enableTechnicalIndicators || !activeRsiPeriod) {
+      if (rsiSeriesRef.current && chartRef.current) {
+        try { chartRef.current.removeSeries(rsiSeriesRef.current); } catch (e) {}
+        rsiSeriesRef.current = null;
+      }
+      return;
+    }
+
+    // Remove existing RSI series
+    if (rsiSeriesRef.current && chartRef.current) {
+      try { chartRef.current.removeSeries(rsiSeriesRef.current); } catch (e) {}
+      rsiSeriesRef.current = null;
+    }
+
+    const rsiConfig = rsiPeriods[activeRsiPeriod];
+    if (!rsiConfig) return;
+
+    const rsiSeries = chartRef.current.addLineSeries({
+      priceScaleId: 'left',
+      color: '#FF6B6B',
+      lineWidth: 2,
+      priceLineVisible: false,
+    });
+
+    rsiSeriesRef.current = rsiSeries;
+
+    const rsiData = calculateRSI(primarySeriesData, rsiConfig.days);
+    if (rsiData.length > 0) {
+      rsiSeries.setData(rsiData);
+    }
+  }, [activeRsiPeriod, primarySeriesData, enableTechnicalIndicators, calculateRSI, rsiPeriods]);
+
 
     const resizeChart = () => {
       if (chartRef.current && chartContainerRef.current) {
