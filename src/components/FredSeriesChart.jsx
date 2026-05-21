@@ -68,7 +68,6 @@ const FredSeriesChart = ({
   const primaryDataRef = useRef([]);
   const sp500DataRef = useRef([]);
 
-  // === CALLBACKS ===
   const handleSMAChange = useCallback((event) => setActiveSMAs(event.target.value), []);
   const handleRsiPeriodChange = useCallback((event) => {
     setActiveRsiPeriod(event.target.value);
@@ -123,7 +122,7 @@ const FredSeriesChart = ({
     return Math.abs(new Date(prev.time).getTime() - target) <= Math.abs(new Date(next.time).getTime() - target) ? prev : next;
   }, []);
 
-  // === FETCH DATA ===
+  // Fetch data
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
@@ -140,7 +139,7 @@ const FredSeriesChart = ({
     fetchData();
   }, [fetchFredSeriesData, seriesId, showSP500Overlay]);
 
-  // === CREATE CHART ONCE (like BitcoinPrice) ===
+  // Create chart once + resize listener
   useEffect(() => {
     if (!chartContainerRef.current) return;
 
@@ -164,86 +163,8 @@ const FredSeriesChart = ({
       rightPriceScale: { visible: true, borderVisible: false },
       leftPriceScale: { visible: showSP500Overlay, borderVisible: false },
     });
-
     chartRef.current = chart;
-
-    // SMA series refs initialization
     smaSeriesRefs.current = {};
-  }, [colors, showSP500Overlay]);
-
-  // === MOVING AVERAGES EFFECT ===
-  useEffect(() => {
-    if (!chartRef.current || primarySeriesData.length === 0 || !enableTechnicalIndicators) {
-      // Clean up SMAs if disabled
-      Object.keys(smaSeriesRefs.current).forEach(key => {
-        if (smaSeriesRefs.current[key] && chartRef.current) {
-          try { chartRef.current.removeSeries(smaSeriesRefs.current[key]); } catch (e) {}
-          delete smaSeriesRefs.current[key];
-        }
-      });
-      return;
-    }
-
-    // Remove existing SMA series
-    Object.keys(smaSeriesRefs.current).forEach(key => {
-      if (smaSeriesRefs.current[key] && chartRef.current) {
-        try { chartRef.current.removeSeries(smaSeriesRefs.current[key]); } catch (e) {}
-        delete smaSeriesRefs.current[key];
-      }
-    });
-
-    // Add selected SMAs
-    activeSMAs.forEach(key => {
-      const indicator = smaIndicators[key];
-      if (!indicator) return;
-
-      const series = chartRef.current.addLineSeries({
-        priceScaleId: 'right',
-        color: indicator.color,
-        lineWidth: 2,
-        priceLineVisible: false,
-      });
-
-      smaSeriesRefs.current[key] = series;
-      const smaData = calculateMovingAverage(primarySeriesData, indicator.period);
-      if (smaData.length > 0) series.setData(smaData);
-    });
-  }, [activeSMAs, primarySeriesData, enableTechnicalIndicators, calculateMovingAverage, smaIndicators]);
-
-  // === RSI EFFECT ===
-  useEffect(() => {
-    if (!chartRef.current || primarySeriesData.length === 0 || !enableTechnicalIndicators || !activeRsiPeriod) {
-      if (rsiSeriesRef.current && chartRef.current) {
-        try { chartRef.current.removeSeries(rsiSeriesRef.current); } catch (e) {}
-        rsiSeriesRef.current = null;
-      }
-      return;
-    }
-
-    // Remove existing RSI series
-    if (rsiSeriesRef.current && chartRef.current) {
-      try { chartRef.current.removeSeries(rsiSeriesRef.current); } catch (e) {}
-      rsiSeriesRef.current = null;
-    }
-
-    const rsiConfig = rsiPeriods[activeRsiPeriod];
-    if (!rsiConfig) return;
-
-    const rsiSeries = chartRef.current.addLineSeries({
-      priceScaleId: 'left',
-      color: '#FF6B6B',
-      lineWidth: 2,
-      priceLineVisible: false,
-    });
-
-    rsiSeriesRef.current = rsiSeries;
-
-    const rsiData = calculateRSI(primarySeriesData, rsiConfig.days);
-    if (rsiData.length > 0) {
-      rsiSeries.setData(rsiData);
-    }
-  }, [activeRsiPeriod, primarySeriesData, enableTechnicalIndicators, calculateRSI, rsiPeriods]);
-
 
     const resizeChart = () => {
       if (chartRef.current && chartContainerRef.current) {
@@ -261,9 +182,74 @@ const FredSeriesChart = ({
       }
       window.removeEventListener('resize', resizeChart);
     };
-  }, []); // ← EMPTY DEPENDENCY ARRAY — CREATE ONCE
+  }, [colors, showSP500Overlay]);
 
-  // === UPDATE COLORS/THEME (like BitcoinPrice) ===
+  // Moving Averages effect
+  useEffect(() => {
+    if (!chartRef.current || primarySeriesData.length === 0 || !enableTechnicalIndicators) {
+      Object.keys(smaSeriesRefs.current).forEach(key => {
+        if (smaSeriesRefs.current[key] && chartRef.current) {
+          try { chartRef.current.removeSeries(smaSeriesRefs.current[key]); } catch (e) {}
+          delete smaSeriesRefs.current[key];
+        }
+      });
+      return;
+    }
+
+    Object.keys(smaSeriesRefs.current).forEach(key => {
+      if (smaSeriesRefs.current[key] && chartRef.current) {
+        try { chartRef.current.removeSeries(smaSeriesRefs.current[key]); } catch (e) {}
+        delete smaSeriesRefs.current[key];
+      }
+    });
+
+    activeSMAs.forEach(key => {
+      const indicator = smaIndicators[key];
+      if (!indicator) return;
+
+      const series = chartRef.current.addLineSeries({
+        priceScaleId: 'right',
+        color: indicator.color,
+        lineWidth: 2,
+        priceLineVisible: false,
+      });
+      smaSeriesRefs.current[key] = series;
+      const smaData = calculateMovingAverage(primarySeriesData, indicator.period);
+      if (smaData.length > 0) series.setData(smaData);
+    });
+  }, [activeSMAs, primarySeriesData, enableTechnicalIndicators, calculateMovingAverage, smaIndicators]);
+
+  // RSI effect
+  useEffect(() => {
+    if (!chartRef.current || primarySeriesData.length === 0 || !enableTechnicalIndicators || !activeRsiPeriod) {
+      if (rsiSeriesRef.current && chartRef.current) {
+        try { chartRef.current.removeSeries(rsiSeriesRef.current); } catch (e) {}
+        rsiSeriesRef.current = null;
+      }
+      return;
+    }
+
+    if (rsiSeriesRef.current && chartRef.current) {
+      try { chartRef.current.removeSeries(rsiSeriesRef.current); } catch (e) {}
+      rsiSeriesRef.current = null;
+    }
+
+    const rsiConfig = rsiPeriods[activeRsiPeriod];
+    if (!rsiConfig) return;
+
+    const rsiSeries = chartRef.current.addLineSeries({
+      priceScaleId: 'left',
+      color: '#FF6B6B',
+      lineWidth: 2,
+      priceLineVisible: false,
+    });
+    rsiSeriesRef.current = rsiSeries;
+
+    const rsiData = calculateRSI(primarySeriesData, rsiConfig.days);
+    if (rsiData.length > 0) rsiSeries.setData(rsiData);
+  }, [activeRsiPeriod, primarySeriesData, enableTechnicalIndicators, calculateRSI, rsiPeriods]);
+
+  // Update colors
   useEffect(() => {
     if (chartRef.current) {
       chartRef.current.applyOptions({
@@ -279,7 +265,7 @@ const FredSeriesChart = ({
     }
   }, [colors]);
 
-  // === UPDATE SCALE MODE & SP500 OVERLAY VISIBILITY ===
+  // Update scale & overlay
   useEffect(() => {
     if (!chartRef.current) return;
     chartRef.current.priceScale('right').applyOptions({ mode: scaleModeState, borderVisible: false });
@@ -289,14 +275,13 @@ const FredSeriesChart = ({
     });
   }, [scaleModeState, showSP500Overlay]);
 
-  // === UPDATE SERIES + DATA (cleaned up) ===
+  // Update main series data
   useEffect(() => {
     if (!chartRef.current || primarySeriesData.length === 0) return;
 
     const isNewSeries = seriesId !== prevSeriesIdRef.current;
     prevSeriesIdRef.current = seriesId;
 
-    // Clean primary data
     const cleanedPrimaryData = primarySeriesData
       .filter(item => {
         if (item.value == null || isNaN(item.value)) return false;
@@ -317,7 +302,6 @@ const FredSeriesChart = ({
     }
     primaryDataRef.current = cleanedPrimaryData;
 
-    // Remove old primary series
     if (primarySeriesRef.current) {
       try { chartRef.current.removeSeries(primarySeriesRef.current); } catch (e) {}
       primarySeriesRef.current = null;
@@ -347,7 +331,6 @@ const FredSeriesChart = ({
     primarySeriesRef.current = primarySeries;
     primarySeries.setData(cleanedPrimaryData);
 
-    // S&P 500 overlay
     if (showSP500Overlay && sp500SeriesData.length > 0) {
       const minTime = new Date(cleanedPrimaryData[0].time).getTime();
       const cleanedSP500 = sp500SeriesData
@@ -373,7 +356,7 @@ const FredSeriesChart = ({
     }
   }, [primarySeriesData, sp500SeriesData, chartType, scaleModeState, valueFormatter, theme.palette.mode, seriesId, showSP500Overlay]);
 
-  // === TOOLTIP (separate effect like BitcoinPrice) ===
+  // Tooltip
   useEffect(() => {
     if (!chartRef.current) return;
 
@@ -410,7 +393,7 @@ const FredSeriesChart = ({
     };
   }, [findNearestData, showSP500Overlay]);
 
-  // === INTERACTIVITY ===
+  // Interactivity
   useEffect(() => {
     if (chartRef.current) {
       chartRef.current.applyOptions({
@@ -436,7 +419,6 @@ const FredSeriesChart = ({
 
   return (
     <div style={{ height: '100%', position: 'relative' }}>
-      {/* Top controls */}
       {!isDashboard && (
         <div className="chart-top-div">
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
@@ -461,7 +443,6 @@ const FredSeriesChart = ({
         </div>
       )}
 
-      {/* Technical Indicators - Styled to match BitcoinDominance */}
       {!isDashboard && enableTechnicalIndicators && (
         <Box sx={{
           display: 'flex',
@@ -472,90 +453,40 @@ const FredSeriesChart = ({
           marginBottom: '20px',
           marginTop: '10px',
         }}>
-          {/* Moving Averages */}
           <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '300px' } }}>
-            <InputLabel
-              id="sma-label"
-              shrink
-              sx={{
-                color: colors.grey[100],
-                '&.Mui-focused': { color: colors.greenAccent[500] },
-                top: 0,
-                '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' },
-              }}
-            >
+            <InputLabel id="sma-label" shrink sx={{ color: colors.grey[100], '&.Mui-focused': { color: colors.greenAccent[500] }, top: 0, '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' } }}>
               Weekly Moving Averages
             </InputLabel>
             <Select
               multiple
               value={activeSMAs}
               onChange={handleSMAChange}
-              label="Weekly Moving Averages"
               labelId="sma-label"
               displayEmpty
-              renderValue={(selected) =>
-                selected.length > 0
-                  ? selected.map((key) => smaIndicators[key]?.label).join(', ')
-                  : 'Select Moving Averages'
-              }
-              sx={{
-                color: colors.grey[100],
-                backgroundColor: colors.primary[500],
-                borderRadius: "8px",
-                '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
-                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                '& .MuiSelect-select': { py: 1.5, pl: 2 },
-                '& .MuiSelect-select:empty': { color: colors.grey[500] },
-              }}
+              renderValue={(selected) => selected.length > 0 ? selected.map((key) => smaIndicators[key]?.label).join(', ') : 'Select Moving Averages'}
+              sx={{ color: colors.grey[100], backgroundColor: colors.primary[500], borderRadius: "8px", '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] }, '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] }, '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] } }}
             >
               {Object.entries(smaIndicators).map(([key, { label }]) => (
                 <MenuItem key={key} value={key}>
-                  <Checkbox
-                    checked={activeSMAs.includes(key)}
-                    sx={{
-                      color: colors.grey[100],
-                      '&.Mui-checked': { color: colors.greenAccent[500] }
-                    }}
-                  />
+                  <Checkbox checked={activeSMAs.includes(key)} sx={{ color: colors.grey[100], '&.Mui-checked': { color: colors.greenAccent[500] } }} />
                   <span>{label}</span>
                 </MenuItem>
               ))}
             </Select>
           </FormControl>
 
-          {/* RSI */}
           <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '200px' } }}>
-            <InputLabel
-              id="rsi-label"
-              shrink
-              sx={{
-                color: colors.grey[100],
-                '&.Mui-focused': { color: colors.greenAccent[500] },
-                top: 0,
-                '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' },
-              }}
-            >
+            <InputLabel id="rsi-label" shrink sx={{ color: colors.grey[100], '&.Mui-focused': { color: colors.greenAccent[500] }, top: 0, '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' } }}>
               RSI
             </InputLabel>
             <Select
               value={activeRsiPeriod}
               onChange={handleRsiPeriodChange}
-              label="RSI"
               labelId="rsi-label"
               displayEmpty
-              sx={{
-                color: colors.grey[100],
-                backgroundColor: colors.primary[500],
-                borderRadius: "8px",
-                '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
-                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-              }}
+              sx={{ color: colors.grey[100], backgroundColor: colors.primary[500], borderRadius: "8px", '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] }, '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] }, '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] } }}
             >
-              <MenuItem value="">
-                <em>None</em>
-              </MenuItem>
+              <MenuItem value=""><em>None</em></MenuItem>
               {Object.entries(rsiPeriods).map(([key, { label }]) => (
                 <MenuItem key={key} value={key}>{label}</MenuItem>
               ))}
@@ -564,26 +495,11 @@ const FredSeriesChart = ({
         </Box>
       )}
 
-      {/* CHART CONTAINER — now matches BitcoinPrice structure */}
-      <div
-        className="chart-container"
-        style={{
-          position: 'relative',
-          height: isDashboard ? '100%' : 'calc(100% - 40px)',
-          width: '100%',
-          border: '2px solid #a9a9a9',
-        }}
-        onDoubleClick={setInteractivity}
-      >
+      <div className="chart-container" style={{ position: 'relative', height: isDashboard ? '100%' : 'calc(100% - 40px)', width: '100%', border: '2px solid #a9a9a9' }} onDoubleClick={setInteractivity}>
         <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
 
-        {/* Legend */}
         {!isDashboard && isLegendVisible && (
-          <div className="chart-legend" style={{
-            position: 'absolute', top: '10px', left: '10px',
-            background: colors.primary[900], color: colors.primary[100],
-            padding: '25px 10px 10px 10px', borderRadius: '5px', zIndex: 1000, fontSize: '14px'
-          }}>
+          <div className="chart-legend" style={{ position: 'absolute', top: '10px', left: '10px', background: colors.primary[900], color: colors.primary[100], padding: '25px 10px 10px 10px', borderRadius: '5px', zIndex: 1000, fontSize: '14px' }}>
             <button onClick={toggleLegend} className="legend-minimize-button" style={{ position: 'absolute', top: '5px', left: '5px', background: 'transparent', border: 'none', color: colors.primary[100], fontSize: '16px', cursor: 'pointer' }}>−</button>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <div style={{ width: '12px', height: '12px', backgroundColor: primaryColor, borderRadius: '2px' }}></div>
@@ -599,14 +515,10 @@ const FredSeriesChart = ({
         )}
 
         {!isDashboard && !isLegendVisible && (
-          <button onClick={toggleLegend} className="legend-minimize-button" style={{
-            position: 'absolute', top: '10px', left: '10px', background: colors.primary[900], border: 'none',
-            color: colors.primary[100], fontSize: '16px', cursor: 'pointer', padding: '5px 10px', borderRadius: '5px', zIndex: 1000
-          }}>+</button>
+          <button onClick={toggleLegend} className="legend-minimize-button" style={{ position: 'absolute', top: '10px', left: '10px', background: colors.primary[900], border: 'none', color: colors.primary[100], fontSize: '16px', cursor: 'pointer', padding: '5px 10px', borderRadius: '5px', zIndex: 1000 }}>+</button>
         )}
       </div>
 
-      {/* Under chart */}
       <div className="under-chart">
         {!isDashboard && primarySeriesData.length > 0 && (
           <div style={{ marginTop: '10px' }}>
@@ -615,7 +527,6 @@ const FredSeriesChart = ({
         )}
       </div>
 
-      {/* Tooltip */}
       {!isDashboard && tooltipData && (
         <div className="tooltip" style={{
           left: (() => {
