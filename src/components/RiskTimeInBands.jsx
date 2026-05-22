@@ -452,9 +452,12 @@ const AssetRiskBandDuration = ({ isDashboard = false, riskData: propRiskData }) 
               hovertemplate: 'Risk Band: %{x}<br>Time in: %{y}%<br>Total Days: %{customdata} days<extra></extra>',
               customdata: riskBandDurations.map(risk => risk.days),
               marker: {
-                color: riskBandDurations.map((_, index) =>
-                  getBandColor(index, riskBandDurations.length)
-                ),
+                color: riskBandDurations.map((risk, index) => {
+                  if (currentRiskLevel !== null && risk.band === currentRiskLevel) {
+                    return "#31d6aa";
+                  }
+                  return getBandColor(index, riskBandDurations.length);
+                }),
               },
             },
           ]}
