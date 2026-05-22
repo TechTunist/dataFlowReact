@@ -1166,8 +1166,6 @@
 
 
 
-
-
 import React, { useRef, useEffect, useState, useContext, useCallback, useMemo } from 'react';
 import { createChart } from 'lightweight-charts';
 import '../styling/bitcoinChart.css';
