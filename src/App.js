@@ -68,6 +68,7 @@ import SP500DivUnrateChart from "./components/SP500DivUnrateChart";
 import SP500ROI from "./components/SP500ROI";
 import SahmRecessionIndicator from './components/SahmRecessionIndicator';
 import MarketHeatIndexChart from './components/MarketHeatIndexPlotly';
+import MarketHeatIndex from './components/MarketHeatIndex';
 import restrictToPaidSubscription from './scenes/RestrictToPaid';
 import BitcoinMvrvZScore from "./components/BitcoinMvrvZScore";
 import Total2Chart from "./components/Total2Marketcap";
@@ -130,7 +131,11 @@ const AppContent = memo(() => {
   // Determine if sidebar and topbar should be rendered
   const userMenuRoutes = ["/profile", "/subscription", "/settings", "/change-password"];
   const isUserMenuPage = userMenuRoutes.includes(location.pathname);
-  const shouldRenderTopbarAndSidebar = !isSplashPage && !isLoginSignupPage && !isUserMenuPage;
+  const fullScreenChartRoutes = ["/market-heat-index"];
+  const isFullScreenChart = fullScreenChartRoutes.includes(location.pathname);
+  const shouldHideTopbar = isFullScreenChart;
+  const shouldRenderTopbarAndSidebar = !isSplashPage && !isLoginSignupPage && !isUserMenuPage && !isFullScreenChart;
+  const shouldRenderTopbar = !isSplashPage && !isLoginSignupPage && !isUserMenuPage && !shouldHideTopbar;
   // Display Stripe initialization error if present
   if (stripeError) {
     return <div>Error loading Stripe: {stripeError}</div>;
@@ -144,7 +149,7 @@ const AppContent = memo(() => {
               <CssBaseline />
               <div className="app" style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
                 {/* Render Topbar or AccountNavBar only if signed in */}
-                {shouldRenderTopbarAndSidebar && (
+                {shouldRenderTopbar && (
                   <Topbar
                     setIsSidebar={setIsSidebar}
                     isSidebar={isSidebar}
@@ -154,7 +159,7 @@ const AppContent = memo(() => {
                 {isUserMenuPage && <AccountNavBar />}
                 <div style={{ display: "flex", flex: 1 }}>
                   {/* Render Sidebar only if signed in */}
-                  {shouldRenderTopbarAndSidebar && (
+                  {!isSplashPage && !isLoginSignupPage && !isUserMenuPage && (
                     <div
                       className="sidebar"
                       style={{
@@ -169,9 +174,11 @@ const AppContent = memo(() => {
                   )}
                   <main className="content" style={{ flex: 1 }}>
                     {/* Adjust spacing for Topbar or AccountNavBar */}
-                    {shouldRenderTopbarAndSidebar && (
+                    {shouldRenderTopbar ? (
                       <div style={{ height: isMobile ? "65px" : "85px" }} />
-                    )}
+                    ) : isFullScreenChart ? (
+                      <div style={{ height: "32px" }} />   
+                    ) : null}
                     {isUserMenuPage && <div style={{ height: "65px" }} />}
                     <Routes>
                       {/* Public routes */}
@@ -247,7 +254,7 @@ const AppContent = memo(() => {
                         path="/market-heat-index"
                         element={
                           <ProtectedRoute>
-                            <BasicChart ChartComponent={MarketHeatIndexChart} />
+                            <BasicChart ChartComponent={MarketHeatIndex} />
                           </ProtectedRoute>
                         }
                       />
