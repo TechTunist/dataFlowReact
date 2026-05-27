@@ -6,6 +6,7 @@ import { useTheme } from "@mui/material";
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
 import BitcoinFees from './BitcoinTransactionFees'; // Replace or remove if not needed
+import { apiUrl } from '../config/api';
 
 const SP500DivUnrateChart = ({ isDashboard = false }) => {
   const chartContainerRef = useRef();
@@ -23,7 +24,7 @@ const SP500DivUnrateChart = ({ isDashboard = false }) => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch('https://vercel-dataflow.vercel.app/api/sp500-div-unrate-squared/');
+        const response = await fetch(apiUrl('/api/sp500-div-unrate-squared/'));
         const jsonData = await response.json();
         const sortedData = jsonData
           .map(item => ({

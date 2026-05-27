@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '@mui/material';
 import { tokens } from "../theme";
+import { EXTERNAL } from '../config/api';
 
 const BitcoinFees = () => {
     const [fees, setFees] = useState(null);
@@ -10,12 +11,12 @@ const BitcoinFees = () => {
 
     const getTransactionFees = async () => {
         try {
-            const response = await fetch('https://api.blockchain.info/mempool/fees');
+            const response = await fetch(EXTERNAL.blockchainMempoolFees());
             if (!response.ok) {
                 throw new Error('Network response was not ok');
             }
             const data = await response.json();
-            return data; // Adjusted to return the entire data
+            return data;
         } catch (error) {
             console.error('Error fetching transaction fees:', error);
             return null;
@@ -24,7 +25,7 @@ const BitcoinFees = () => {
 
     const getBitcoinPrice = async () => {
         try {
-            const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd');
+            const response = await fetch(EXTERNAL.coinGeckoBtcPrice());
             if (!response.ok) {
                 throw new Error('Network response was not ok');
             }

@@ -1,10 +1,10 @@
-import { useState, useEffect, createContext, memo } from "react";
+import { useState, useEffect, createContext, memo, Suspense, lazy } from "react";
+import LoadingFallback from "./components/LoadingFallback";
 import { Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { ClerkProvider, useAuth, useUser } from "@clerk/clerk-react";
 import Topbar from "./scenes/global/Topbar";
 import Sidebar from "./scenes/global/Sidebar";
 import BasicChart from "./scenes/ChartTemplates/BasicChart";
-import Dashboard from "./scenes/dashboard";
 import { CssBaseline, ThemeProvider } from "@mui/material";
 import { ColorModeContext, useMode } from "./theme";
 import BitcoinPrice from "./components/BitcoinPrice";
@@ -29,50 +29,55 @@ import UsInterestChart from "./components/UsInterest";
 import UsInitialClaimsChart from "./components/UsInitialClaims";
 import UsCombinedMacroChart from "./components/UsCombinedMacro";
 import SplashPage from "./scenes/splash";
-import About from "./scenes/About";
 import LoginSignup from "./scenes/LoginSignup";
 import useIsMobile from "./hooks/useIsMobile";
-import BitcoinROI from "./components/BitcoinROI";
-import BitcoinTxCountChart from "./components/BitcoinTxCount";
-import TxCombinedChart from "./components/TxMacroCombined";
-import BitcoinTxMvrvChart from "./components/BitcoinTxMvrv";
 import FredSeriesChart from "./components/FredSeriesChart";
-import Bitcoin10YearChart from "./components/Bitcoin10YearRecession";
-import WorkbenchChart from "./components/Workbench";
-import OnChainHistoricalRisk from "./components/OnChainHistoricalRisk";
 import TestAPI from "./components/TestAPI";
 import ProtectedRoute from "./components/ProtectedRoute";
-import ChangePassword from "./scenes/ChangePassword";
-import Profile from "./scenes/Profile";
-import Settings from "./scenes/Settings";
 import AccountNavBar from "./scenes/global/AccountNavBar";
-import Subscription from "./scenes/Subscription";
 import { loadStripe } from '@stripe/stripe-js';
 import { SubscriptionProvider } from './contexts/SubscriptionContext';
 import FearAndGreedBinaryChart from "./components/FearAndGreedBinaryChart";
 import { FearAndGreedBinaryProvider } from "./FearAndGreedBinaryContext";
-import MarketOverview from "./scenes/MarketOverview";
 import { useMemo } from "react";
-import FearAndGreed3D from "./components/FearAndGreed3D";
-import BitcoinAddressBalancesChart from "./components/BitcoinAddressBalance";
-import RunningROI from "./components/RunningROI";
-import BitcoinMonthlyReturnsTable from "./components/MonthlyReturnsTable";
-import MonthlyAverageROI from "./components/MonthlyAverageROI";
-import Bitcoin20WeekExtension from "./components/Bitcoin20WeekExtension";
-import HistoricalVolatility from "./components/HistoricalVolatility";
-import PuellMultiple from "./components/PuellMultiple";
-import AltcoinSeasonIndexChart from "./components/AltcoinSeasonIndexChart";
 import { FavoritesProvider } from './contexts/FavoritesContext';
-import Charts from "./components/ChartsThumbnails";
-import SP500DivUnrateChart from "./components/SP500DivUnrateChart";
 import SP500ROI from "./components/SP500ROI";
-import SahmRecessionIndicator from './components/SahmRecessionIndicator';
-import MarketHeatIndexChart from './components/MarketHeatIndexPlotly';
-import MarketHeatIndex from './components/MarketHeatIndex';
 import restrictToPaidSubscription from './scenes/RestrictToPaid';
-import BitcoinMvrvZScore from "./components/BitcoinMvrvZScore";
 import Total2Chart from "./components/Total2Marketcap";
 import Total3Chart from "./components/Total3Marketcap";
+
+// Lazy load heavy charting components + scenes (code splitting for performance)
+const Dashboard = lazy(() => import('./scenes/dashboard'));
+const MarketOverview = lazy(() => import('./scenes/MarketOverview'));
+const Subscription = lazy(() => import('./scenes/Subscription'));
+const Profile = lazy(() => import('./scenes/Profile'));
+const Settings = lazy(() => import('./scenes/Settings'));
+const ChangePassword = lazy(() => import('./scenes/ChangePassword'));
+const About = lazy(() => import('./scenes/About'));
+const Charts = lazy(() => import('./components/ChartsThumbnails'));
+
+const Bitcoin10YearChart = lazy(() => import('./components/Bitcoin10YearRecession'));
+const BitcoinAddressBalancesChart = lazy(() => import('./components/BitcoinAddressBalance'));
+const BitcoinROI = lazy(() => import('./components/BitcoinROI'));
+const BitcoinTxCountChart = lazy(() => import('./components/BitcoinTxCount'));
+const RunningROI = lazy(() => import('./components/RunningROI'));
+const MonthlyAverageROI = lazy(() => import('./components/MonthlyAverageROI'));
+const BitcoinMonthlyReturnsTable = lazy(() => import('./components/MonthlyReturnsTable'));
+const Bitcoin20WeekExtension = lazy(() => import('./components/Bitcoin20WeekExtension'));
+const SahmRecessionIndicator = lazy(() => import('./components/SahmRecessionIndicator'));
+const MarketHeatIndex = lazy(() => import('./components/MarketHeatIndex'));
+
+const MarketHeatIndexPlotly = lazy(() => import('./components/MarketHeatIndexPlotly'));
+const FearAndGreed3D = lazy(() => import('./components/FearAndGreed3D'));
+const WorkbenchChart = lazy(() => import('./components/Workbench'));
+const BitcoinMvrvZScore = lazy(() => import('./components/BitcoinMvrvZScore'));
+const SP500DivUnrateChart = lazy(() => import('./components/SP500DivUnrateChart'));
+const HistoricalVolatility = lazy(() => import('./components/HistoricalVolatility'));
+const PuellMultiple = lazy(() => import('./components/PuellMultiple'));
+const AltcoinSeasonIndexChart = lazy(() => import('./components/AltcoinSeasonIndexChart'));
+const OnChainHistoricalRisk = lazy(() => import('./components/OnChainHistoricalRisk'));
+const BitcoinTxMvrvChart = lazy(() => import('./components/BitcoinTxMvrv'));
+const TxCombinedChart = lazy(() => import('./components/TxMacroCombined'));
 
 // Stripe Context
 const StripeContext = createContext(null);
@@ -180,6 +185,7 @@ const AppContent = memo(() => {
                       <div style={{ height: "32px" }} />   
                     ) : null}
                     {isUserMenuPage && <div style={{ height: "65px" }} />}
+                    <Suspense fallback={<LoadingFallback message="Loading chart..." />}>
                     <Routes>
                       {/* Public routes */}
                       <Route path="/splash" element={<SplashPage />} />
@@ -1034,6 +1040,7 @@ const AppContent = memo(() => {
                         element={<Navigate to="/dashboard" replace />}
                       />
                     </Routes>
+                    </Suspense>
                   </main>
                 </div>
               </div>

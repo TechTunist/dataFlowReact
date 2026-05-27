@@ -1,6 +1,7 @@
 // src/DataContext.js
 import React, { createContext, useState, useCallback, useContext, useEffect, useMemo } from 'react';
 import { initDB, cacheData, getCachedData, clearCache } from './utility/idbUtils';
+import { API_BASE_URL, apiUrl } from './config/api';
 
 export const DataContext = createContext();
 
@@ -276,8 +277,7 @@ export const DataProvider = ({ children }) => {
   const [isTotal3DataFetched, setIsTotal3DataFetched] = useState(false);
   const [total3LastUpdated, setTotal3LastUpdated] = useState(null);
 
-  const API_BASE_URL = 'https://vercel-dataflow.vercel.app/api';
-  // const API_BASE_URL = 'http://127.0.0.1:8000/api';
+  // Centralized in src/config/api.js - use apiUrl() helper below
 
   useEffect(() => {
 
@@ -399,7 +399,7 @@ export const DataProvider = ({ children }) => {
     }
     await fetchWithCache({
       cacheId: 'differenceData',
-      apiUrl: `${API_BASE_URL}/total/difference/`,
+      apiUrl: apiUrl('/api/total/difference/'),
       formatData: (data) =>
         data
           .map((item) => {
@@ -438,7 +438,7 @@ export const DataProvider = ({ children }) => {
   }
   await fetchWithCache({
     cacheId: 'total2Data',
-    apiUrl: `${API_BASE_URL}/total2/`,
+    apiUrl: apiUrl('/api/total2/'),
     formatData: (data) => {
       const cutoffDate = new Date('2014-06-18');
       return data
@@ -473,7 +473,7 @@ export const DataProvider = ({ children }) => {
     }
     await fetchWithCache({
       cacheId: 'total3Data',
-      apiUrl: `${API_BASE_URL}/total3/`,
+      apiUrl: apiUrl('/api/total3/'),
       formatData: (data) => {
         const cutoffDate = new Date('2014-06-21');
         return data
@@ -508,7 +508,7 @@ export const DataProvider = ({ children }) => {
       }
       await fetchWithCache({
         cacheId: 'altcoinSeasonTimeseriesData',
-        apiUrl: `${API_BASE_URL}/altcoin-season-index-timeseries/`,
+        apiUrl: apiUrl('/api/altcoin-season-index-timeseries/'),
         formatData: (data) => data.map(item => ({
           index: parseFloat(item.index),
           start_date: item.start_date,
@@ -542,7 +542,7 @@ export const DataProvider = ({ children }) => {
     }
     await fetchWithCache({
       cacheId: 'btcData',
-      apiUrl: `${API_BASE_URL}/btc/price/`,
+      apiUrl: apiUrl('/api/btc/price/'),
       formatData: (data) =>
         data
           .filter((item) => item.close != null && !isNaN(parseFloat(item.close)))
@@ -574,7 +574,7 @@ export const DataProvider = ({ children }) => {
     }
     await fetchWithCache({
       cacheId: 'latestFearAndGreed',
-      apiUrl: `${API_BASE_URL}/fear-and-greed-binary-latest/`,
+      apiUrl: apiUrl('/api/fear-and-greed-binary-latest/'),
       formatData: (data) => ({
         value: parseInt(data.value),
         value_classification: data.value_classification,
@@ -618,8 +618,8 @@ export const DataProvider = ({ children }) => {
         }
       }
 
-      const apiUrl = `${API_BASE_URL}/onchain-metrics/?metric=PriceUSD&metric=IssContUSD&start_time=2010-01-01`;
-      const allData = await fetchAllPages(apiUrl);
+      const onchainUrl = apiUrl(`/api/onchain-metrics/?metric=PriceUSD&metric=IssContUSD&start_time=2010-01-01`);
+      const allData = await fetchAllPages(onchainUrl);
 
       if (!allData || allData.length === 0) {
         throw new Error('No onchain metrics data returned');
@@ -674,8 +674,8 @@ export const DataProvider = ({ children }) => {
         }
       }
 
-      const apiUrl = `${API_BASE_URL}/onchain-address-metrics/?start_time=2010-01-01`;
-      const allData = await fetchAllPages(apiUrl);
+      const addressUrl = apiUrl(`/api/onchain-address-metrics/?start_time=2010-01-01`);
+      const allData = await fetchAllPages(addressUrl);
 
       if (!allData || allData.length === 0) {
         throw new Error('No address metrics data returned');
@@ -708,7 +708,7 @@ export const DataProvider = ({ children }) => {
     }
     await fetchWithCache({
       cacheId: 'fedBalanceData',
-      apiUrl: `${API_BASE_URL}/fed-balance/`,
+      apiUrl: apiUrl('/api/fed-balance/'),
       formatData: (data) =>
         data.map((item) => ({
           time: item.observation_date,
@@ -739,7 +739,7 @@ export const DataProvider = ({ children }) => {
     }
     await fetchWithCache({
       cacheId: 'mvrvData',
-      apiUrl: `${API_BASE_URL}/mvrv/`,
+      apiUrl: apiUrl('/api/mvrv/'),
       formatData: (data) =>
         data.map((item) => ({
           time: item.time.split('T')[0],
@@ -770,7 +770,7 @@ const fetchDominanceData = useCallback(async () => {
   }
   await fetchWithCache({
     cacheId: 'dominanceData',
-    apiUrl: `${API_BASE_URL}/dominance/`,
+    apiUrl: apiUrl('/api/dominance/'),
     formatData: (data) =>
       data.map((item) => ({
         time: item.date,
@@ -803,7 +803,7 @@ const fetchDominanceData = useCallback(async () => {
     }
     await fetchWithCache({
       cacheId: 'ethData',
-      apiUrl: `${API_BASE_URL}/eth/price/`,
+      apiUrl: apiUrl('/api/eth/price/'),
       formatData: (data) =>
         data
           .filter((item) => item.close != null && !isNaN(parseFloat(item.close)))
@@ -835,7 +835,7 @@ const fetchDominanceData = useCallback(async () => {
     }
     await fetchWithCache({
       cacheId: 'fearAndGreedData',
-      apiUrl: `${API_BASE_URL}/fear-and-greed-binary-json/`,
+      apiUrl: apiUrl('/api/fear-and-greed-binary-json/'),
       formatData: (data) =>
         data.map(item => ({
           value: item.value.toString(),
@@ -867,7 +867,7 @@ const fetchDominanceData = useCallback(async () => {
     }
     await fetchWithCache({
       cacheId: 'marketCapData',
-      apiUrl: `${API_BASE_URL}/total/marketcap/`,
+      apiUrl: apiUrl('/api/total/marketcap/'),
       formatData: (data) =>
         data.map((item) => ({
           time: item.date,
@@ -897,7 +897,7 @@ const fetchDominanceData = useCallback(async () => {
     }
     await fetchWithCache({
       cacheId: 'macroData',
-      apiUrl: `${API_BASE_URL}/combined-macro-data/`,
+      apiUrl: apiUrl('/api/combined-macro-data/'),
       formatData: (data) => data,
       setData: setMacroData,
       setLastUpdated: setMacroLastUpdated,
@@ -923,7 +923,7 @@ const fetchDominanceData = useCallback(async () => {
     }
     await fetchWithCache({
       cacheId: 'inflationData',
-      apiUrl: `${API_BASE_URL}/us-inflation/`,
+      apiUrl: apiUrl('/api/us-inflation/'),
       formatData: (data) => {
         const mapped = data.map((item) => ({ time: item.date, value: parseFloat(item.value) }));
         return [...new Map(mapped.map(item => [item.time, item])).values()];
@@ -952,7 +952,7 @@ const fetchDominanceData = useCallback(async () => {
     }
     await fetchWithCache({
       cacheId: 'initialClaimsData',
-      apiUrl: `${API_BASE_URL}/initial-claims/`,
+      apiUrl: apiUrl('/api/initial-claims/'),
       formatData: (data) => {
         const mapped = data.map((item) => ({ time: item.date, value: parseInt(item.value, 10) }));
         return [...new Map(mapped.map(item => [item.time, item])).values()];
@@ -981,7 +981,7 @@ const fetchDominanceData = useCallback(async () => {
     }
     await fetchWithCache({
       cacheId: 'interestData',
-      apiUrl: `${API_BASE_URL}/us-interest/`,
+      apiUrl: apiUrl('/api/us-interest/'),
       formatData: (data) => {
         const mapped = data.map((item) => ({ time: item.date, value: parseFloat(item.value) }));
         return [...new Map(mapped.map(item => [item.time, item])).values()];
@@ -1010,7 +1010,7 @@ const fetchDominanceData = useCallback(async () => {
     }
     await fetchWithCache({
       cacheId: 'unemploymentData',
-      apiUrl: `${API_BASE_URL}/us-unemployment/`,
+      apiUrl: apiUrl('/api/us-unemployment/'),
       formatData: (data) => {
         const mapped = data.map((item) => ({ time: item.date, value: parseFloat(item.value) }));
         return [...new Map(mapped.map(item => [item.time, item])).values()];
@@ -1039,7 +1039,7 @@ const fetchDominanceData = useCallback(async () => {
     }
     await fetchWithCache({
       cacheId: 'txCountData',
-      apiUrl: `${API_BASE_URL}/btc-tx-count/`,
+      apiUrl: apiUrl('/api/btc-tx-count/'),
       formatData: (data) =>
         data
           .map((item) => ({
@@ -1071,7 +1071,7 @@ const fetchDominanceData = useCallback(async () => {
     }
     await fetchWithCache({
       cacheId: 'txCountCombinedData',
-      apiUrl: `${API_BASE_URL}/tx-macro/`,
+      apiUrl: apiUrl('/api/tx-macro/'),
       formatData: (data) => {
         let lastInflation = null;
         let lastUnemployment = null;
@@ -1116,7 +1116,7 @@ const fetchDominanceData = useCallback(async () => {
     }
     await fetchWithCache({
       cacheId: 'txMvrvData',
-      apiUrl: `${API_BASE_URL}/tx-mvrv/`,
+      apiUrl: apiUrl('/api/tx-mvrv/'),
       formatData: (data) =>
         data
           .filter(item => item.date && item.mvrv !== null && !isNaN(parseFloat(item.mvrv)))
@@ -1153,7 +1153,7 @@ const fetchDominanceData = useCallback(async () => {
     setIsAltcoinDataFetched((prev) => ({ ...prev, [coin]: true }));
     const success = await fetchWithCache({
       cacheId: `altcoinData_${coin}`,
-      apiUrl: `${API_BASE_URL}/${coin.toLowerCase()}/price/`,
+      apiUrl: apiUrl(`/api/${coin.toLowerCase()}/price/`),
       formatData: (data) =>
         data
           .filter((item) => item.close != null && !isNaN(parseFloat(item.close)))
@@ -1191,7 +1191,7 @@ const fetchDominanceData = useCallback(async () => {
     }
     await fetchWithCache({
       cacheId: 'altcoinSeasonData',
-      apiUrl: `${API_BASE_URL}/altcoin-season-index/`,
+      apiUrl: apiUrl('/api/altcoin-season-index/'),
       formatData: (data) => ({
         index: parseFloat(data.index),
         start_date: data.start_date,
@@ -1225,7 +1225,7 @@ const fetchDominanceData = useCallback(async () => {
     }
     const success = await fetchWithCache({
       cacheId: `fredSeriesData_${seriesId}`,
-      apiUrl: `${API_BASE_URL}/series/${seriesId}/observations/`,
+      apiUrl: apiUrl(`/api/series/${seriesId}/observations/`),
       formatData: (data) => {
         let lastValidValue = null;
         return data
@@ -1295,15 +1295,15 @@ const fetchDominanceData = useCallback(async () => {
     }
 
     try {
-      const btcResponse = await fetch(`${API_BASE_URL}/btc/price/`);
+      const btcResponse = await fetch(apiUrl('/api/btc/price/'));
       const btcData = await btcResponse.json();
-      const t10y2yResponse = await fetch(`${API_BASE_URL}/series/T10Y2Y/observations/`);
+      const t10y2yResponse = await fetch(apiUrl('/api/series/T10Y2Y/observations/'));
       const t10y2yData = await t10y2yResponse.json();
-      const usrecdResponse = await fetch(`${API_BASE_URL}/series/USRECD/observations/`);
+      const usrecdResponse = await fetch(apiUrl('/api/series/USRECD/observations/'));
       let usrecdData = await usrecdResponse.json();
-      const fedFundsResponse = await fetch(`${API_BASE_URL}/us-interest/`);
+      const fedFundsResponse = await fetch(apiUrl('/api/us-interest/'));
       const fedFundsData = await fedFundsResponse.json();
-      const m2Response = await fetch(`${API_BASE_URL}/series/M2SL/observations/`);
+      const m2Response = await fetch(apiUrl('/api/series/M2SL/observations/'));
       const m2Data = await m2Response.json();
 
       const startDate = '2011-08-19';
@@ -1396,8 +1396,8 @@ const fetchDominanceData = useCallback(async () => {
           }
         }
 
-        const apiUrl = `${API_BASE_URL}/risk-metrics/?metric=${metric}&time__gte=2010-09-05`;
-        const allData = await fetchAllPages(apiUrl);
+        const riskUrl = apiUrl(`/api/risk-metrics/?metric=${metric}&time__gte=2010-09-05`);
+        const allData = await fetchAllPages(riskUrl);
 
         if (!allData || allData.length === 0) {
           throw new Error(`No data returned for ${metric}`);

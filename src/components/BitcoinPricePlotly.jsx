@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import Plot from 'react-plotly.js';
 import { useTheme } from "@mui/material";
 import { tokens } from "../theme"; // Ensure the path matches your project structure
+import { apiUrl } from "../config/api";
 
 const BitcoinPrice = ({ isDashboard = false }) => {
     const [chartData, setChartData] = useState([]);
@@ -12,7 +13,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
     useEffect(() => {
         // Replace the fetch URL with your API endpoint
         // fetch('https://tunist.pythonanywhere.com/api/btc/price/')
-        fetch('https://vercel-dataflow.vercel.app/api/btc/price/')
+        fetch(apiUrl('/api/btc/price/'))
             .then(response => response.json())
             .then(data => {
                 const formattedData = data.map(item => ({

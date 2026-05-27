@@ -1,6 +1,7 @@
 // src/contexts/SubscriptionContext.js
 import React, { createContext, useState, useEffect, useCallback, useContext, useMemo } from 'react';
 import { useUser, useAuth } from '@clerk/clerk-react';
+import { apiUrl } from '../config/api';
 
 const SubscriptionContext = createContext();
 
@@ -16,7 +17,6 @@ export const SubscriptionProvider = ({ children }) => {
   const [subscriptionStatus, setSubscriptionStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://vercel-dataflow.vercel.app';
 
   const fetchSubscriptionStatus = useCallback(async () => {
     if (!isSignedIn || !user) {
@@ -31,7 +31,7 @@ export const SubscriptionProvider = ({ children }) => {
       if (!token) {
         throw new Error('Failed to obtain authentication token');
       }
-      const response = await fetch(`${API_BASE_URL}/api/subscription-status/?t=${Date.now()}`, {  // Cache-bust for fresh data
+      const response = await fetch(apiUrl('/api/subscription-status/'), {  // Cache-bust removed in favor of proper headers later
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
