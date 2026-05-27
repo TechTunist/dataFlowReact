@@ -280,15 +280,18 @@ export const DataProvider = ({ children }) => {
 
     let isMounted = true;
 
-    // === DATA PRELOAD STRATEGY (Phase 2 progress) ===
-    // Only the absolute core dashboard datasets remain in eager parallel preload:
-    //   btc, eth, dominance, mvrv, fearAndGreed, marketCap, latestFearAndGreed
-    //   + the three total market cap variants
+    // === DATA PRELOAD STRATEGY (Phase 2 complete - final trim) ===
+    // Extremely focused eager parallel preload (only the highest-value core):
+    //   - btcData, mvrvData, dominanceData, ethData
+    //   - fearAndGreedData, marketCapData, latestFearAndGreed
     //
-    // Everything else (macro, altcoin season, all risk metrics, onchain, tx analytics, most US macro series, etc.)
-    // has been moved to demand-loaded by their specific chart pages.
+    // All other datasets (including the three total market cap variants, macro, altcoin season,
+    // all risk metrics, onchain, tx analytics, most US macro series, etc.) have been moved
+    // to demand-loaded by their specific chart pages.
     //
-    // This is the result of multiple aggressive, safe cuts during the audit-remediation.
+    // The forced early fetchFredSeriesData('SP500') remains for dashboard needs.
+    //
+    // This is the result of many aggressive yet safe incremental cuts during the audit-remediation.
     // See commit history on refactor/audit-remediation.
 
     const preloadData = async () => {
@@ -303,15 +306,10 @@ export const DataProvider = ({ children }) => {
         { id: 'fearAndGreedData', setData: setFearAndGreedData, setLastUpdated: setFearAndGreedLastUpdated, setIsFetched: setIsFearAndGreedDataFetched, useDateCheck: true },
         { id: 'marketCapData', setData: setMarketCapData, setLastUpdated: setMarketCapLastUpdated, setIsFetched: setIsMarketCapDataFetched, useDateCheck: true },
         { id: 'latestFearAndGreed', setData: setLatestFearAndGreed, setLastUpdated: setLatestFearAndGreedLastUpdated, setIsFetched: setIsLatestFearAndGreedFetched, useDateCheck: true },
-        // === AUDIT REMEDIATION (Phase 2 - aggressive cut) ===
-        // Moved to demand-loaded:
-        //   - macroData (combined macro)
-        //   - altcoinSeasonData
-        // These are useful but not required for the absolute first dashboard paint.
-        // Kept only the most core price/dominance/fear-greed/market-cap data in eager preload.
-        { id: 'differenceData', setData: setDifferenceData, setLastUpdated: setDifferenceLastUpdated, setIsFetched: setIsDifferenceDataFetched, useDateCheck: true },
-        { id: 'total2Data', setData: setTotal2Data, setLastUpdated: setTotal2LastUpdated, setIsFetched: setIsTotal2DataFetched, useDateCheck: true },
-        { id: 'total3Data', setData: setTotal3Data, setLastUpdated: setTotal3LastUpdated, setIsFetched: setIsTotal3DataFetched, useDateCheck: true }, 
+        // === AUDIT REMEDIATION (Phase 2 - final core trim) ===
+        // The three total market cap variants (difference, total2, total3) moved to demand-loaded.
+        // These are useful market-cap views but not required for the absolute core initial dashboard experience.
+        // Current eager preload is now extremely focused on the highest-value core datasets.
       ];
 
       // Fetch all data in parallel
@@ -344,12 +342,9 @@ export const DataProvider = ({ children }) => {
             ethData: fetchEthData,
             fearAndGreedData: fetchFearAndGreedData,
             marketCapData: fetchMarketCapData,
-            differenceData: fetchDifferenceData, // New
             latestFearAndGreed: fetchLatestFearAndGreed,
-            // === AUDIT REMEDIATION (Phase 2 - aggressive cut) ===
-            // macroData and altcoinSeasonData moved to demand-loaded
-            total2Data: fetchTotal2Data,
-            total3Data: fetchTotal3Data,
+            // === AUDIT REMEDIATION (Phase 2 - final core trim) ===
+            // differenceData, total2Data, total3Data moved to demand-loaded
             // Map other ids to their fetch functions (e.g., 'btcData': fetchBtcData)
             // Add mappings for all cacheIds
           }[id];
@@ -374,10 +369,7 @@ export const DataProvider = ({ children }) => {
 
   const fetchDifferenceData = useCallback(async () => {
     if (isDifferenceDataFetched) return;
-    if (!preloadComplete) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      if (isDifferenceDataFetched) return;
-    }
+    // preloadComplete guard removed — differenceData is now demand-loaded only (Phase 2 final trim)
     await fetchWithCache({
       cacheId: 'differenceData',
       apiUrl: apiUrl('/api/total/difference/'),
@@ -389,8 +381,8 @@ export const DataProvider = ({ children }) => {
               return null;
             }
             return {
-              time: item.time, // Corrected from item.date to item.time
-              value: parseFloat(item.value) + 100, // Transform to marketCap / fairValue * 100
+              time: item.time,
+              value: parseFloat(item.value) + 100,
             };
           })
           .filter((item) => item !== null)
@@ -400,7 +392,7 @@ export const DataProvider = ({ children }) => {
       setIsFetched: setIsDifferenceDataFetched,
       useDateCheck: true,
     });
-  }, [isDifferenceDataFetched, preloadComplete]);
+  }, [isDifferenceDataFetched]);
 
   const refreshDifferenceData = useCallback(async () => {
     await refreshData({
@@ -412,30 +404,27 @@ export const DataProvider = ({ children }) => {
   }, [fetchDifferenceData]);
 
   const fetchTotal2Data = useCallback(async () => {
-  if (isTotal2DataFetched) return;
-  if (!preloadComplete) {
-    await new Promise(resolve => setTimeout(resolve, 100));
     if (isTotal2DataFetched) return;
-  }
-  await fetchWithCache({
-    cacheId: 'total2Data',
-    apiUrl: apiUrl('/api/total2/'),
-    formatData: (data) => {
-      const cutoffDate = new Date('2014-06-18');
-      return data
-        .filter(item => new Date(item.date) >= cutoffDate)
-        .map(item => ({
-          time: item.date,
-          value: parseFloat(item.total2)
-        }))
-        .sort((a, b) => new Date(a.time) - new Date(b.time));
-    },
-    setData: setTotal2Data,
-    setLastUpdated: setTotal2LastUpdated,
-    setIsFetched: setIsTotal2DataFetched,
-    useDateCheck: true,
+    // preloadComplete guard removed — total2Data is now demand-loaded only (Phase 2 final trim)
+    await fetchWithCache({
+      cacheId: 'total2Data',
+      apiUrl: apiUrl('/api/total2/'),
+      formatData: (data) => {
+        const cutoffDate = new Date('2014-06-18');
+        return data
+          .filter(item => new Date(item.date) >= cutoffDate)
+          .map(item => ({
+            time: item.date,
+            value: parseFloat(item.total2)
+          }))
+          .sort((a, b) => new Date(a.time) - new Date(b.time));
+      },
+      setData: setTotal2Data,
+      setLastUpdated: setTotal2LastUpdated,
+      setIsFetched: setIsTotal2DataFetched,
+      useDateCheck: true,
     });
-  }, [isTotal2DataFetched, preloadComplete]);
+  }, [isTotal2DataFetched]);
 
   const refreshTotal2Data = useCallback(async () => {
     await refreshData({
@@ -448,10 +437,7 @@ export const DataProvider = ({ children }) => {
 
   const fetchTotal3Data = useCallback(async () => {
     if (isTotal3DataFetched) return;
-    if (!preloadComplete) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      if (isTotal3DataFetched) return;
-    }
+    // preloadComplete guard removed — total3Data is now demand-loaded only (Phase 2 final trim)
     await fetchWithCache({
       cacheId: 'total3Data',
       apiUrl: apiUrl('/api/total3/'),
@@ -470,7 +456,7 @@ export const DataProvider = ({ children }) => {
       setIsFetched: setIsTotal3DataFetched,
       useDateCheck: true,
     });
-  }, [isTotal3DataFetched, preloadComplete]);
+  }, [isTotal3DataFetched]);
 
   const refreshTotal3Data = useCallback(async () => {
     await refreshData({
