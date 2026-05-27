@@ -79,7 +79,7 @@ export const SubscriptionProvider = ({ children }) => {
     [subscriptionStatus, loading, error, fetchSubscriptionStatus]
   );
 
-  console.log('SubscriptionProvider rendered');  // Uncomment for debugging rerenders
+  // console.log('SubscriptionProvider rendered');  // Debug only - left commented
 
   return (
     <SubscriptionContext.Provider value={contextValue}>

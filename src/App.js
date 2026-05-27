@@ -55,10 +55,8 @@ const ChangePassword = lazy(() => import('./scenes/ChangePassword'));
 const About = lazy(() => import('./scenes/About'));
 const Charts = lazy(() => import('./components/ChartsThumbnails'));
 
-const Bitcoin10YearChart = lazy(() => import('./components/Bitcoin10YearRecession'));
 const BitcoinAddressBalancesChart = lazy(() => import('./components/BitcoinAddressBalance'));
 const BitcoinROI = lazy(() => import('./components/BitcoinROI'));
-const BitcoinTxCountChart = lazy(() => import('./components/BitcoinTxCount'));
 const RunningROI = lazy(() => import('./components/RunningROI'));
 const MonthlyAverageROI = lazy(() => import('./components/MonthlyAverageROI'));
 const BitcoinMonthlyReturnsTable = lazy(() => import('./components/MonthlyReturnsTable'));
@@ -66,7 +64,6 @@ const Bitcoin20WeekExtension = lazy(() => import('./components/Bitcoin20WeekExte
 const SahmRecessionIndicator = lazy(() => import('./components/SahmRecessionIndicator'));
 const MarketHeatIndex = lazy(() => import('./components/MarketHeatIndex'));
 
-const MarketHeatIndexPlotly = lazy(() => import('./components/MarketHeatIndexPlotly'));
 const FearAndGreed3D = lazy(() => import('./components/FearAndGreed3D'));
 const WorkbenchChart = lazy(() => import('./components/Workbench'));
 const BitcoinMvrvZScore = lazy(() => import('./components/BitcoinMvrvZScore'));
@@ -76,7 +73,6 @@ const PuellMultiple = lazy(() => import('./components/PuellMultiple'));
 const AltcoinSeasonIndexChart = lazy(() => import('./components/AltcoinSeasonIndexChart'));
 const OnChainHistoricalRisk = lazy(() => import('./components/OnChainHistoricalRisk'));
 const BitcoinTxMvrvChart = lazy(() => import('./components/BitcoinTxMvrv'));
-const TxCombinedChart = lazy(() => import('./components/TxMacroCombined'));
 
 /**
  * Route Configuration for the entire app.
@@ -220,7 +216,6 @@ if (!PUBLISHABLE_KEY) {
 // New AuthWrapper to isolate useAuth and useUser
 const AuthWrapper = memo(() => {
   const { isLoaded, isSignedIn } = useAuth();
-  const { user } = useUser();
   const location = useLocation();
   if (!isLoaded) {
     return <div>Loading...</div>;
@@ -266,7 +261,6 @@ const AppContent = memo(() => {
   const fullScreenChartRoutes = ["/market-heat-index"];
   const isFullScreenChart = fullScreenChartRoutes.includes(location.pathname);
   const shouldHideTopbar = isFullScreenChart;
-  const shouldRenderTopbarAndSidebar = !isSplashPage && !isLoginSignupPage && !isUserMenuPage && !isFullScreenChart;
   const shouldRenderTopbar = !isSplashPage && !isLoginSignupPage && !isUserMenuPage && !shouldHideTopbar;
   // Display Stripe initialization error if present
   if (stripeError) {
