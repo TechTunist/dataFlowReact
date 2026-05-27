@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTheme } from '@mui/material';
 import { tokens } from "../theme";
 import { EXTERNAL } from '../config/api';
+import logger from '../utils/logger';
 
 const BitcoinFees = () => {
     const [fees, setFees] = useState(null);
@@ -18,7 +19,7 @@ const BitcoinFees = () => {
             const data = await response.json();
             return data;
         } catch (error) {
-            console.error('Error fetching transaction fees:', error);
+            logger.error('Error fetching transaction fees:', error);
             return null;
         }
     };
@@ -32,7 +33,7 @@ const BitcoinFees = () => {
             const data = await response.json();
             return data.bitcoin.usd;
         } catch (error) {
-            console.error('Error fetching Bitcoin price:', error);
+            logger.error('Error fetching Bitcoin price:', error);
             return null;
         }
     };

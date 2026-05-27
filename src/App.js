@@ -1,4 +1,5 @@
 import { useState, useEffect, createContext, memo, Suspense, lazy } from "react";
+import ErrorBoundary from "./components/ErrorBoundary";
 import LoadingFallback from "./components/LoadingFallback";
 import { Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { ClerkProvider, useAuth, useUser } from "@clerk/clerk-react";
@@ -306,8 +307,9 @@ const AppContent = memo(() => {
                       <div style={{ height: "32px" }} />   
                     ) : null}
                     {isUserMenuPage && <div style={{ height: "65px" }} />}
-                    <Suspense fallback={<LoadingFallback message="Loading chart..." />}>
-                    <Routes>
+                    <ErrorBoundary fallbackMessage="The main application area failed to load.">
+                      <Suspense fallback={<LoadingFallback message="Loading chart..." />}>
+                      <Routes>
                       {/* All routes are now driven by the appRoutes config + createRouteElement helper above.
                           This replaced ~850 lines of repetitive manual <Route> definitions. */}
                       {appRoutes.map((route) => (
@@ -318,8 +320,9 @@ const AppContent = memo(() => {
                         />
                       ))}
                     </Routes>
-                    </Suspense>
-</main>
+                      </Suspense>
+                    </ErrorBoundary>
+                  </main>
                 </div>
               </div>
             </FavoritesProvider>

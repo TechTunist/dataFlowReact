@@ -1,4 +1,5 @@
 import { openDB } from 'idb';
+import logger from '../utils/logger';
 
 const DB_NAME = 'CryptoDataDB';
 const DATA_STORE_NAME = 'apiData';
@@ -29,7 +30,7 @@ export async function initDB() {
       },
     });
   } catch (error) {
-    console.error('Failed to initialize IndexedDB:', error);
+    logger.error('Failed to initialize IndexedDB:', error);
     throw error;
   }
 }
@@ -39,7 +40,7 @@ export async function cacheData(id, data, timestamp) {
     const db = await initDB();
     await db.put(DATA_STORE_NAME, { id, data, timestamp });
   } catch (error) {
-    console.error(`Failed to cache data for id ${id}:`, error);
+    logger.error(`Failed to cache data for id ${id}:`, error);
     throw error;
   }
 }
