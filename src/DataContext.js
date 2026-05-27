@@ -1,6 +1,6 @@
 // src/DataContext.js
 import React, { createContext, useState, useCallback, useContext, useEffect, useMemo } from 'react';
-import { initDB, cacheData, getCachedData, clearCache } from './utility/idbUtils';
+import { initDB, cacheData, getCachedData, clearCache, isCacheFresh, DEFAULT_CACHE_TTL } from './utility/idbUtils';
 import { API_BASE_URL, apiUrl } from './config/api';
 
 export const DataContext = createContext();
@@ -43,24 +43,21 @@ const fetchWithCache = async ({
 
         if (!latestCachedDate && lastRecord.timestamp) {
           latestCachedDate = new Date(parseInt(lastRecord.timestamp, 10) * 1000).toISOString().split('T')[0];
-          // console.warn(`Missing time field in last record for ${cacheId}, computed from timestamp: ${latestCachedDate}`);
         }
         if (!firstCachedDate && firstRecord.timestamp) {
           firstCachedDate = new Date(parseInt(firstRecord.timestamp, 10) * 1000).toISOString().split('T')[0];
-          // console.warn(`Missing time field in first record for ${cacheId}, computed from timestamp: ${firstCachedDate}`);
         }
 
         let shouldReuseCache = false;
         if (useDateCheck) {
           if (!latestCachedDate) {
-            // console.warn(`latestCachedDate is undefined for ${cacheId}, treating cache as stale`);
             shouldReuseCache = false;
           } else {
             shouldReuseCache = latestCachedDate >= currentDate;
           }
         } else {
-          const timeSinceLastFetch = currentTimestamp - cached.timestamp;
-          shouldReuseCache = timeSinceLastFetch < cacheDuration;
+          // Phase 2 improvement: use the new isCacheFresh helper with configurable TTL
+          shouldReuseCache = isCacheFresh(cached, cacheDuration || DEFAULT_CACHE_TTL);
         }
 
         if (shouldReuseCache) {

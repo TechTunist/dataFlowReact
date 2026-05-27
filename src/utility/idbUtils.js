@@ -1,6 +1,17 @@
 import { openDB } from 'idb';
 import logger from '../utils/logger';
 
+/**
+ * Phase 2 improvement: Simple TTL-aware cache helpers.
+ * These can be expanded later with size limits and versioning.
+ */
+export const DEFAULT_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+
+export function isCacheFresh(cached, ttl = DEFAULT_CACHE_TTL) {
+  if (!cached || !cached.timestamp) return false;
+  return (Date.now() - cached.timestamp) < ttl;
+}
+
 const DB_NAME = 'CryptoDataDB';
 const DATA_STORE_NAME = 'apiData';
 const RISK_STORE_NAME = 'bitcoinRisk';
