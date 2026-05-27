@@ -302,8 +302,6 @@ export const DataProvider = ({ children }) => {
         { id: 'fearAndGreedData', setData: setFearAndGreedData, setLastUpdated: setFearAndGreedLastUpdated, setIsFetched: setIsFearAndGreedDataFetched, useDateCheck: true },
         { id: 'marketCapData', setData: setMarketCapData, setLastUpdated: setMarketCapLastUpdated, setIsFetched: setIsMarketCapDataFetched, useDateCheck: true },
         { id: 'macroData', setData: setMacroData, setLastUpdated: setMacroLastUpdated, setIsFetched: setIsMacroDataFetched, useDateCheck: true },
-        { id: 'inflationData', setData: setInflationData, setLastUpdated: setInflationLastUpdated, setIsFetched: setIsInflationDataFetched, useDateCheck: true },
-        { id: 'txCountData', setData: setTxCountData, setLastUpdated: setTxCountLastUpdated, setIsFetched: setIsTxCountDataFetched, useDateCheck: true },
         { id: 'latestFearAndGreed', setData: setLatestFearAndGreed, setLastUpdated: setLatestFearAndGreedLastUpdated, setIsFetched: setIsLatestFearAndGreedFetched, useDateCheck: true },
         { id: 'altcoinSeasonData', setData: setAltcoinSeasonData, setLastUpdated: setAltcoinSeasonLastUpdated, setIsFetched: setIsAltcoinSeasonDataFetched, useDateCheck: true },
         // === AUDIT REMEDIATION: Larger batch of datasets moved to demand-loaded ===
@@ -358,8 +356,6 @@ export const DataProvider = ({ children }) => {
             marketCapData: fetchMarketCapData,
             differenceData: fetchDifferenceData, // New
             macroData: fetchMacroData,
-            inflationData: fetchInflationData,
-            txCountData: fetchTxCountData,
             latestFearAndGreed: fetchLatestFearAndGreed,
             altcoinSeasonData: fetchAltcoinSeasonData,
             // === AUDIT REMEDIATION (larger batch) ===
@@ -510,10 +506,7 @@ export const DataProvider = ({ children }) => {
 
     const fetchAltcoinSeasonTimeseriesData = useCallback(async () => {
       if (isAltcoinSeasonTimeseriesDataFetched) return;
-      if (!preloadComplete) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        if (isAltcoinSeasonTimeseriesDataFetched) return;
-      }
+      // preloadComplete guard removed — this dataset is now demand-loaded only
       await fetchWithCache({
         cacheId: 'altcoinSeasonTimeseriesData',
         apiUrl: apiUrl('/api/altcoin-season-index-timeseries/'),
@@ -531,7 +524,7 @@ export const DataProvider = ({ children }) => {
         setIsFetched: setIsAltcoinSeasonTimeseriesDataFetched,
         useDateCheck: true,
       });
-    }, [isAltcoinSeasonTimeseriesDataFetched, preloadComplete]);
+    }, [isAltcoinSeasonTimeseriesDataFetched]);
   
     const refreshAltcoinSeasonTimeseriesData = useCallback(async () => {
       await refreshData({
@@ -710,10 +703,7 @@ export const DataProvider = ({ children }) => {
 
   const fetchFedBalanceData = useCallback(async () => {
     if (isFedBalanceDataFetched) return;
-    if (!preloadComplete) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      if (isFedBalanceDataFetched) return;
-    }
+    // preloadComplete guard removed — this dataset is now demand-loaded only
     await fetchWithCache({
       cacheId: 'fedBalanceData',
       apiUrl: apiUrl('/api/fed-balance/'),
@@ -728,7 +718,7 @@ export const DataProvider = ({ children }) => {
       useDateCheck: false,
       cacheDuration: 7 * 24 * 60 * 60 * 1000,
     });
-  }, [isFedBalanceDataFetched, preloadComplete]);
+  }, [isFedBalanceDataFetched]);
 
   const refreshFedBalanceData = useCallback(async () => {
     await refreshData({
@@ -925,10 +915,7 @@ const fetchDominanceData = useCallback(async () => {
 
   const fetchInflationData = useCallback(async () => {
     if (isInflationDataFetched) return;
-    if (!preloadComplete) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      if (isInflationDataFetched) return;
-    }
+    // preloadComplete guard removed — this dataset is now demand-loaded only
     await fetchWithCache({
       cacheId: 'inflationData',
       apiUrl: apiUrl('/api/us-inflation/'),
@@ -941,7 +928,7 @@ const fetchDominanceData = useCallback(async () => {
       setIsFetched: setIsInflationDataFetched,
       useDateCheck: true,
     });
-  }, [isInflationDataFetched, preloadComplete]);
+  }, [isInflationDataFetched]);
 
   const refreshInflationData = useCallback(async () => {
     await refreshData({
@@ -954,10 +941,7 @@ const fetchDominanceData = useCallback(async () => {
 
   const fetchInitialClaimsData = useCallback(async () => {
     if (isInitialClaimsDataFetched) return;
-    if (!preloadComplete) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      if (isInitialClaimsDataFetched) return;
-    }
+    // preloadComplete guard removed — this dataset is now demand-loaded only
     await fetchWithCache({
       cacheId: 'initialClaimsData',
       apiUrl: apiUrl('/api/initial-claims/'),
@@ -970,7 +954,7 @@ const fetchDominanceData = useCallback(async () => {
       setIsFetched: setIsInitialClaimsDataFetched,
       useDateCheck: true,
     });
-  }, [isInitialClaimsDataFetched, preloadComplete]);
+  }, [isInitialClaimsDataFetched]);
 
   const refreshInitialClaimsData = useCallback(async () => {
     await refreshData({
@@ -983,10 +967,7 @@ const fetchDominanceData = useCallback(async () => {
 
   const fetchInterestData = useCallback(async () => {
     if (isInterestDataFetched) return;
-    if (!preloadComplete) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      if (isInterestDataFetched) return;
-    }
+    // preloadComplete guard removed — this dataset is now demand-loaded only
     await fetchWithCache({
       cacheId: 'interestData',
       apiUrl: apiUrl('/api/us-interest/'),
@@ -999,7 +980,7 @@ const fetchDominanceData = useCallback(async () => {
       setIsFetched: setIsInterestDataFetched,
       useDateCheck: true,
     });
-  }, [isInterestDataFetched, preloadComplete]);
+  }, [isInterestDataFetched]);
 
   const refreshInterestData = useCallback(async () => {
     await refreshData({
@@ -1012,10 +993,7 @@ const fetchDominanceData = useCallback(async () => {
 
   const fetchUnemploymentData = useCallback(async () => {
     if (isUnemploymentDataFetched) return;
-    if (!preloadComplete) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      if (isUnemploymentDataFetched) return;
-    }
+    // preloadComplete guard removed — this dataset is now demand-loaded only
     await fetchWithCache({
       cacheId: 'unemploymentData',
       apiUrl: apiUrl('/api/us-unemployment/'),
@@ -1028,7 +1006,7 @@ const fetchDominanceData = useCallback(async () => {
       setIsFetched: setIsUnemploymentDataFetched,
       useDateCheck: true,
     });
-  }, [isUnemploymentDataFetched, preloadComplete]);
+  }, [isUnemploymentDataFetched]);
 
   const refreshUnemploymentData = useCallback(async () => {
     await refreshData({
@@ -1073,10 +1051,7 @@ const fetchDominanceData = useCallback(async () => {
 
   const fetchTxCountCombinedData = useCallback(async () => {
     if (isTxCountCombinedDataFetched) return;
-    if (!preloadComplete) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      if (isTxCountCombinedDataFetched) return;
-    }
+    // preloadComplete guard removed — this dataset is now demand-loaded only
     await fetchWithCache({
       cacheId: 'txCountCombinedData',
       apiUrl: apiUrl('/api/tx-macro/'),
@@ -1105,7 +1080,7 @@ const fetchDominanceData = useCallback(async () => {
       setIsFetched: setIsTxCountCombinedDataFetched,
       useDateCheck: true,
     });
-  }, [isTxCountCombinedDataFetched, preloadComplete]);
+  }, [isTxCountCombinedDataFetched]);
 
   const refreshTxCountCombinedData = useCallback(async () => {
     await refreshData({
@@ -1118,10 +1093,7 @@ const fetchDominanceData = useCallback(async () => {
 
   const fetchTxMvrvData = useCallback(async () => {
     if (isTxMvrvDataFetched) return;
-    if (!preloadComplete) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      if (isTxMvrvDataFetched) return;
-    }
+    // preloadComplete guard removed — this dataset is now demand-loaded only
     await fetchWithCache({
       cacheId: 'txMvrvData',
       apiUrl: apiUrl('/api/tx-mvrv/'),
@@ -1141,7 +1113,7 @@ const fetchDominanceData = useCallback(async () => {
       setIsFetched: setIsTxMvrvDataFetched,
       useDateCheck: true,
     });
-  }, [isTxMvrvDataFetched, preloadComplete]);
+  }, [isTxMvrvDataFetched]);
 
   const refreshTxMvrvData = useCallback(async () => {
     await refreshData({
