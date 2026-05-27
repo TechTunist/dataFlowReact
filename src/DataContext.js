@@ -304,20 +304,10 @@ export const DataProvider = ({ children }) => {
         { id: 'macroData', setData: setMacroData, setLastUpdated: setMacroLastUpdated, setIsFetched: setIsMacroDataFetched, useDateCheck: true },
         { id: 'latestFearAndGreed', setData: setLatestFearAndGreed, setLastUpdated: setLatestFearAndGreedLastUpdated, setIsFetched: setIsLatestFearAndGreedFetched, useDateCheck: true },
         { id: 'altcoinSeasonData', setData: setAltcoinSeasonData, setLastUpdated: setAltcoinSeasonLastUpdated, setIsFetched: setIsAltcoinSeasonDataFetched, useDateCheck: true },
-        // === AUDIT REMEDIATION: Larger batch of datasets moved to demand-loaded ===
-        // Removed from eager preload in this pass:
-        //   - fedBalanceData
-        //   - initialClaimsData, interestData, unemploymentData (US macro series)
-        //   - txCountCombinedData, txMvrvData (specialized tx analytics)
-        //
-        // These are now fetched on-demand by the specific chart components that render them.
-        // This is the second incremental reduction of the original aggressive preload strategy.
-        // Goal: only keep the truly core dashboard datasets in the initial parallel firehose.
-        { id: 'mvrvRiskData', setData: setMvrvRiskData, setLastUpdated: setMvrvRiskLastUpdated, setIsFetched: setIsMvrvRiskDataFetched, useDateCheck: true },
-        { id: 'puellRiskData', setData: setPuellRiskData, setLastUpdated: setPuellRiskLastUpdated, setIsFetched: setIsPuellRiskDataFetched, useDateCheck: true },
-        { id: 'minerCapThermoCapRiskData', setData: setMinerCapThermoCapRiskData, setLastUpdated: setMinerCapThermoCapRiskLastUpdated, setIsFetched: setIsMinerCapThermoCapRiskDataFetched, useDateCheck: true },
-        { id: 'feeRiskData', setData: setFeeRiskData, setLastUpdated: setFeeRiskLastUpdated, setIsFetched: setIsFeeRiskDataFetched, useDateCheck: true }, // New
-        { id: 'soplRiskData', setData: setSoplRiskData, setLastUpdated: setSoplRiskLastUpdated, setIsFetched: setIsSoplRiskDataFetched, useDateCheck: true }, // New
+        // === AUDIT REMEDIATION (Phase 2) ===
+        // Risk metrics group moved to demand-loaded.
+        // These power specialized risk pages but are not needed on initial dashboard load.
+        // Removed: mvrvRisk, puellRisk, minerCapThermoCapRisk, feeRisk, soplRisk
         { id: 'differenceData', setData: setDifferenceData, setLastUpdated: setDifferenceLastUpdated, setIsFetched: setIsDifferenceDataFetched, useDateCheck: true },
         { id: 'total2Data', setData: setTotal2Data, setLastUpdated: setTotal2LastUpdated, setIsFetched: setIsTotal2DataFetched, useDateCheck: true },
         { id: 'total3Data', setData: setTotal3Data, setLastUpdated: setTotal3LastUpdated, setIsFetched: setIsTotal3DataFetched, useDateCheck: true }, 
@@ -358,17 +348,8 @@ export const DataProvider = ({ children }) => {
             macroData: fetchMacroData,
             latestFearAndGreed: fetchLatestFearAndGreed,
             altcoinSeasonData: fetchAltcoinSeasonData,
-            // === AUDIT REMEDIATION (larger batch) ===
-            // The following were removed from eager preload in this pass and are now demand-loaded:
-            //   - fedBalanceData
-            //   - initialClaimsData, interestData, unemploymentData
-            //   - txCountCombinedData, txMvrvData
-            // Their fetch* functions remain fully functional when called by individual charts.
-            mvrvRiskData: fetchRiskMetricsData,
-            puellRiskData: fetchRiskMetricsData,
-            minerCapThermoCapRiskData: fetchRiskMetricsData,
-            feeRiskData: fetchRiskMetricsData,
-            soplRiskData: fetchRiskMetricsData,
+            // === AUDIT REMEDIATION (Phase 2) ===
+            // Risk metrics group removed from eager preload (now demand-loaded by risk chart pages)
             total2Data: fetchTotal2Data,
             total3Data: fetchTotal3Data,
             // Map other ids to their fetch functions (e.g., 'btcData': fetchBtcData)
