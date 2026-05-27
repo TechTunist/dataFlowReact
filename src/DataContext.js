@@ -280,12 +280,16 @@ export const DataProvider = ({ children }) => {
 
     let isMounted = true;
 
-    // === DATA PRELOAD STRATEGY (updated during audit-remediation) ===
-    // We intentionally keep only the "core dashboard" datasets in this eager parallel preload.
-    // Heavy or page-specific datasets (onchain metrics, altcoin season timeseries, etc.)
-    // are now demand-loaded by the individual chart components that actually render them.
-    // This was the #1 performance problem identified in the audit.
-    // See commit history on refactor/audit-remediation for the incremental rollout.
+    // === DATA PRELOAD STRATEGY (Phase 2 progress) ===
+    // Only the absolute core dashboard datasets remain in eager parallel preload:
+    //   btc, eth, dominance, mvrv, fearAndGreed, marketCap, latestFearAndGreed
+    //   + the three total market cap variants
+    //
+    // Everything else (macro, altcoin season, all risk metrics, onchain, tx analytics, most US macro series, etc.)
+    // has been moved to demand-loaded by their specific chart pages.
+    //
+    // This is the result of multiple aggressive, safe cuts during the audit-remediation.
+    // See commit history on refactor/audit-remediation.
 
     const preloadData = async () => {
       await initDB();
