@@ -1,6 +1,7 @@
 
 import React, { useRef, useEffect, useState, useMemo, useCallback, useContext } from 'react';
 import logger from '../utils/logger';
+import ErrorBoundary from './ErrorBoundary';
 import { createChart } from 'lightweight-charts';
 import '../styling/bitcoinChart.css';
 import { tokens } from "../theme";
@@ -787,7 +788,8 @@ const WorkbenchChart = ({
   else if (minWidthNeeded <= 1200) breakpointForRow = 'lg';
   else breakpointForRow = 'xl';
   return (
-    <div style={{ height: '100%' }}>
+    <ErrorBoundary fallbackMessage="The custom indicator workbench failed to load. Try refreshing or selecting different series.">
+      <div style={{ height: '100%' }}>
       {!isDashboard && (
         <Box
           sx={{
@@ -1485,7 +1487,8 @@ const WorkbenchChart = ({
           {explanation}
         </p>
       )}
-    </div>
+      </div>
+    </ErrorBoundary>
   );
 };
 export default restrictToPaidSubscription(WorkbenchChart);
