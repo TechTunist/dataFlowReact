@@ -283,6 +283,13 @@ export const DataProvider = ({ children }) => {
 
     let isMounted = true;
 
+    // === DATA PRELOAD STRATEGY (updated during audit-remediation) ===
+    // We intentionally keep only the "core dashboard" datasets in this eager parallel preload.
+    // Heavy or page-specific datasets (onchain metrics, altcoin season timeseries, etc.)
+    // are now demand-loaded by the individual chart components that actually render them.
+    // This was the #1 performance problem identified in the audit.
+    // See commit history on refactor/audit-remediation for the incremental rollout.
+
     const preloadData = async () => {
       await initDB();
       await fetchFredSeriesData('SP500');
@@ -305,13 +312,14 @@ export const DataProvider = ({ children }) => {
         { id: 'txMvrvData', setData: setTxMvrvData, setLastUpdated: setTxMvrvLastUpdated, setIsFetched: setIsTxMvrvDataFetched, useDateCheck: true },
         { id: 'latestFearAndGreed', setData: setLatestFearAndGreed, setLastUpdated: setLatestFearAndGreedLastUpdated, setIsFetched: setIsLatestFearAndGreedFetched, useDateCheck: true },
         { id: 'altcoinSeasonData', setData: setAltcoinSeasonData, setLastUpdated: setAltcoinSeasonLastUpdated, setIsFetched: setIsAltcoinSeasonDataFetched, useDateCheck: true },
-        { id: 'onchainMetricsData', setData: setOnchainMetricsData, setLastUpdated: setOnchainMetricsLastUpdated, setIsFetched: setIsOnchainMetricsDataFetched, useDateCheck: true },
+        // NOTE (audit-remediation): onchainMetricsData and altcoinSeasonTimeseriesData removed from eager preload.
+        // These are now purely demand-loaded by the specific chart components that need them (OnChainHistoricalRisk, AltcoinSeasonIndexChart, etc.).
+        // This significantly reduces initial load work and network/IndexedDB pressure.
         { id: 'mvrvRiskData', setData: setMvrvRiskData, setLastUpdated: setMvrvRiskLastUpdated, setIsFetched: setIsMvrvRiskDataFetched, useDateCheck: true },
         { id: 'puellRiskData', setData: setPuellRiskData, setLastUpdated: setPuellRiskLastUpdated, setIsFetched: setIsPuellRiskDataFetched, useDateCheck: true },
         { id: 'minerCapThermoCapRiskData', setData: setMinerCapThermoCapRiskData, setLastUpdated: setMinerCapThermoCapRiskLastUpdated, setIsFetched: setIsMinerCapThermoCapRiskDataFetched, useDateCheck: true },
         { id: 'feeRiskData', setData: setFeeRiskData, setLastUpdated: setFeeRiskLastUpdated, setIsFetched: setIsFeeRiskDataFetched, useDateCheck: true }, // New
         { id: 'soplRiskData', setData: setSoplRiskData, setLastUpdated: setSoplRiskLastUpdated, setIsFetched: setIsSoplRiskDataFetched, useDateCheck: true }, // New
-        { id: 'altcoinSeasonTimeseriesData', setData: setAltcoinSeasonTimeseriesData, setLastUpdated: setAltcoinSeasonTimeseriesLastUpdated, setIsFetched: setIsAltcoinSeasonTimeseriesDataFetched, useDateCheck: true },
         { id: 'differenceData', setData: setDifferenceData, setLastUpdated: setDifferenceLastUpdated, setIsFetched: setIsDifferenceDataFetched, useDateCheck: true },
         { id: 'total2Data', setData: setTotal2Data, setLastUpdated: setTotal2LastUpdated, setIsFetched: setIsTotal2DataFetched, useDateCheck: true },
         { id: 'total3Data', setData: setTotal3Data, setLastUpdated: setTotal3LastUpdated, setIsFetched: setIsTotal3DataFetched, useDateCheck: true }, 
@@ -359,13 +367,14 @@ export const DataProvider = ({ children }) => {
             txMvrvData: fetchTxMvrvData,
             latestFearAndGreed: fetchLatestFearAndGreed,
             altcoinSeasonData: fetchAltcoinSeasonData,
-            onchainMetricsData: fetchOnchainMetricsData,
+            // onchainMetricsData and altcoinSeasonTimeseriesData intentionally omitted here.
+            // They are no longer part of the eager preload (see cacheConfigs above).
+            // Their fetch functions are still called on-demand by the charts that need them.
             mvrvRiskData: fetchRiskMetricsData,
             puellRiskData: fetchRiskMetricsData,
             minerCapThermoCapRiskData: fetchRiskMetricsData,
             feeRiskData: fetchRiskMetricsData,
             soplRiskData: fetchRiskMetricsData,
-            altcoinSeasonTimeseriesData: fetchAltcoinSeasonTimeseriesData,
             total2Data: fetchTotal2Data,
             total3Data: fetchTotal3Data,
             // Map other ids to their fetch functions (e.g., 'btcData': fetchBtcData)
@@ -373,6 +382,7 @@ export const DataProvider = ({ children }) => {
           }[id];
           if (fetchFunc && isMounted) await fetchFunc();
         } catch (error) {
+          // onchainMetricsData is no longer eagerly preloaded; on-demand charts handle their own errors.
           if (id === 'onchainMetricsData' && isMounted) setOnchainFetchError(error.message);
         }
       });
