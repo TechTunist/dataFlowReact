@@ -40,6 +40,9 @@ const BitcoinFees = () => {
 
     useEffect(() => {
         const fetchFeesAndPrice = async () => {
+            // This widget uses lightweight localStorage caching (10 min TTL)
+            // because the data is very small and external (blockchain.info + CoinGecko).
+            // For our own API data we use the main IndexedDB system in idbUtils.
             const cachedFees = localStorage.getItem('btcFees');
             const cachedPrice = localStorage.getItem('btcPrice');
             const cacheTime = localStorage.getItem('cacheTime');
@@ -73,7 +76,7 @@ const BitcoinFees = () => {
     };
 
     if (!fees || !btcPrice) {
-        return <div>Loading...</div>;
+        return <div style={{ opacity: 0.7 }}>Loading fees...</div>;
     }
 
     const averageFee = (calculateFeeInUsd(fees.regular) + calculateFeeInUsd(fees.priority)) / 2;

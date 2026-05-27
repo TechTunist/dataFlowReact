@@ -51,7 +51,7 @@ export async function getCachedData(id) {
     const data = await db.get(DATA_STORE_NAME, id);
     return data;
   } catch (error) {
-    console.error(`Failed to get cached data for id ${id}:`, error);
+    logger.error(`Failed to get cached data for id ${id}:`, error);
     throw error;
   }
 }
@@ -61,7 +61,7 @@ export async function clearCache(id) {
     const db = await initDB();
     await db.delete(DATA_STORE_NAME, id);
   } catch (error) {
-    console.error(`Failed to clear cache for id ${id}:`, error);
+    logger.error(`Failed to clear cache for id ${id}:`, error);
     throw error;
   }
 }
@@ -71,7 +71,7 @@ export async function saveBitcoinRisk(riskLevel) {
     const db = await initDB();
     await db.put(RISK_STORE_NAME, { id: 'currentRisk', riskLevel, timestamp: Date.now() });
   } catch (error) {
-    console.error('Failed to save Bitcoin risk level:', error);
+    logger.error('Failed to save Bitcoin risk level:', error);
     throw error;
   }
 }
@@ -91,7 +91,7 @@ export async function getBitcoinRisk() {
     }
     return null;
   } catch (error) {
-    console.error('Failed to get Bitcoin risk level from IndexedDB:', error);
+    logger.error('Failed to get Bitcoin risk level from IndexedDB:', error);
     return null;
   }
 }

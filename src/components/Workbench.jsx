@@ -1,5 +1,6 @@
 
 import React, { useRef, useEffect, useState, useMemo, useCallback, useContext } from 'react';
+import logger from '../utils/logger';
 import { createChart } from 'lightweight-charts';
 import '../styling/bitcoinChart.css';
 import { tokens } from "../theme";
@@ -410,7 +411,7 @@ const WorkbenchChart = ({
           dataContext.fetchFredSeriesData(id)
             .catch(err => {
               setError(`Failed to fetch data for ${id}. Please try again later.`);
-              console.error(`Error fetching ${id}:`, err);
+              logger.error(`Error fetching ${id}:`, err);
             })
             .finally(() => setIsLoading(false));
         }
@@ -421,7 +422,7 @@ const WorkbenchChart = ({
           dataContext[seriesInfo.fetchFunction]()
             .catch(err => {
               setError(`Failed to fetch data for ${id}. Please try again later.`);
-              console.error(`Error fetching ${id}:`, err);
+              logger.error(`Error fetching ${id}:`, err);
             })
             .finally(() => setIsLoading(false));
         }
@@ -441,7 +442,7 @@ const WorkbenchChart = ({
         dataContext.fetchBtcData()
           .catch(err => {
             setError(`Failed to fetch Bitcoin data. Please try again later.`);
-            console.error(`Error fetching Bitcoin data:`, err);
+            logger.error(`Error fetching Bitcoin data:`, err);
           })
           .finally(() => setIsLoading(false));
       } else if (dataKey === 'ethData' && dataContext.ethData.length === 0) {
@@ -450,7 +451,7 @@ const WorkbenchChart = ({
         dataContext.fetchEthData()
           .catch(err => {
             setError(`Failed to fetch Ethereum data. Please try again later.`);
-            console.error(`Error fetching Ethereum data:`, err);
+            logger.error(`Error fetching Ethereum data:`, err);
           })
           .finally(() => setIsLoading(false));
       } else if (dataKey === 'altcoinData' && (!dataContext.altcoinData[coin] || dataContext.altcoinData[coin].length === 0)) {
@@ -459,7 +460,7 @@ const WorkbenchChart = ({
         dataContext.fetchAltcoinData(coin)
           .catch(err => {
             setError(`Failed to fetch ${coin} data. Please try again later.`);
-            console.error(`Error fetching ${coin} data:`, err);
+            logger.error(`Error fetching ${coin} data:`, err);
           })
           .finally(() => setIsLoading(false));
       }
@@ -488,7 +489,7 @@ const WorkbenchChart = ({
   };
   useEffect(() => {
     if (!chartContainerRef.current) {
-      console.error('Chart container is not available');
+      logger.error('Chart container is not available');
       return;
     }
     const chart = createChart(chartContainerRef.current, {
@@ -546,7 +547,7 @@ const WorkbenchChart = ({
         try {
           chartRef.current.removeSeries(seriesRefs.current[id]);
         } catch (err) {
-          console.error(`Error removing series ${id}:`, err);
+          logger.error(`Error removing series ${id}:`, err);
         }
       }
       delete seriesRefs.current[id];
@@ -631,13 +632,13 @@ const WorkbenchChart = ({
             ? rawData.filter(item => item.value > 0)
             : rawData;
           if (validData.length === 0 && scaleModeState === 1 && seriesInfo.allowLogScale) {
-            console.warn(`No valid data for series ${id} in logarithmic scale`);
+            logger.warn(`No valid data for series ${id} in logarithmic scale`);
             setError(`Cannot display ${seriesInfo.label} in logarithmic scale due to non-positive values.`);
           } else {
             series.setData(getSeriesData(id, validData));
           }
         } catch (err) {
-          console.error(`Error setting data for series ${id}:`, err);
+          logger.error(`Error setting data for series ${id}:`, err);
           setError(`Failed to display ${seriesInfo.label}. The data may be incompatible.`);
         }
       }
@@ -659,7 +660,7 @@ const WorkbenchChart = ({
         priceScales: priceScales,
       });
     } catch (err) {
-      console.error('Error applying price scales:', err);
+      logger.error('Error applying price scales:', err);
       setError('Failed to apply chart scales.');
     }
     usedPriceScales.forEach(scaleId => {
@@ -668,7 +669,7 @@ const WorkbenchChart = ({
         const mode = scaleId === 'usrecd-scale' ? 0 : (seriesInfo?.allowLogScale ? scaleModeState : 0);
         chartRef.current.priceScale(scaleId).applyOptions({ mode });
       } catch (err) {
-        console.error(`Failed to apply scale mode for ${scaleId}:`, err);
+        logger.error(`Failed to apply scale mode for ${scaleId}:`, err);
         setError(`Cannot apply ${scaleModeState === 1 ? 'logarithmic' : 'linear'} scale to ${scaleId}.`);
       }
     });
