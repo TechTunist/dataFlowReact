@@ -296,7 +296,6 @@ export const DataProvider = ({ children }) => {
 
       const cacheConfigs = [
         { id: 'btcData', setData: setBtcData, setLastUpdated: setBtcLastUpdated, setIsFetched: setIsBtcDataFetched, useDateCheck: true },
-        { id: 'fedBalanceData', setData: setFedBalanceData, setLastUpdated: setFedLastUpdated, setIsFetched: setIsFedBalanceDataFetched, useDateCheck: false, cacheDuration: 7 * 24 * 60 * 60 * 1000 },
         { id: 'mvrvData', setData: setMvrvData, setLastUpdated: setMvrvLastUpdated, setIsFetched: setIsMvrvDataFetched, useDateCheck: true },
         { id: 'dominanceData', setData: setDominanceData, setLastUpdated: setDominanceLastUpdated, setIsFetched: setIsDominanceDataFetched, useDateCheck: true },
         { id: 'ethData', setData: setEthData, setLastUpdated: setEthLastUpdated, setIsFetched: setIsEthDataFetched, useDateCheck: true },
@@ -304,17 +303,18 @@ export const DataProvider = ({ children }) => {
         { id: 'marketCapData', setData: setMarketCapData, setLastUpdated: setMarketCapLastUpdated, setIsFetched: setIsMarketCapDataFetched, useDateCheck: true },
         { id: 'macroData', setData: setMacroData, setLastUpdated: setMacroLastUpdated, setIsFetched: setIsMacroDataFetched, useDateCheck: true },
         { id: 'inflationData', setData: setInflationData, setLastUpdated: setInflationLastUpdated, setIsFetched: setIsInflationDataFetched, useDateCheck: true },
-        { id: 'initialClaimsData', setData: setInitialClaimsData, setLastUpdated: setInitialClaimsLastUpdated, setIsFetched: setIsInitialClaimsDataFetched, useDateCheck: true },
-        { id: 'interestData', setData: setInterestData, setLastUpdated: setInterestLastUpdated, setIsFetched: setIsInterestDataFetched, useDateCheck: true },
-        { id: 'unemploymentData', setData: setUnemploymentData, setLastUpdated: setUnemploymentLastUpdated, setIsFetched: setIsUnemploymentDataFetched, useDateCheck: true },
         { id: 'txCountData', setData: setTxCountData, setLastUpdated: setTxCountLastUpdated, setIsFetched: setIsTxCountDataFetched, useDateCheck: true },
-        { id: 'txCountCombinedData', setData: setTxCountCombinedData, setLastUpdated: setTxCountCombinedLastUpdated, setIsFetched: setIsTxCountCombinedDataFetched, useDateCheck: true },
-        { id: 'txMvrvData', setData: setTxMvrvData, setLastUpdated: setTxMvrvLastUpdated, setIsFetched: setIsTxMvrvDataFetched, useDateCheck: true },
         { id: 'latestFearAndGreed', setData: setLatestFearAndGreed, setLastUpdated: setLatestFearAndGreedLastUpdated, setIsFetched: setIsLatestFearAndGreedFetched, useDateCheck: true },
         { id: 'altcoinSeasonData', setData: setAltcoinSeasonData, setLastUpdated: setAltcoinSeasonLastUpdated, setIsFetched: setIsAltcoinSeasonDataFetched, useDateCheck: true },
-        // NOTE (audit-remediation): onchainMetricsData and altcoinSeasonTimeseriesData removed from eager preload.
-        // These are now purely demand-loaded by the specific chart components that need them (OnChainHistoricalRisk, AltcoinSeasonIndexChart, etc.).
-        // This significantly reduces initial load work and network/IndexedDB pressure.
+        // === AUDIT REMEDIATION: Larger batch of datasets moved to demand-loaded ===
+        // Removed from eager preload in this pass:
+        //   - fedBalanceData
+        //   - initialClaimsData, interestData, unemploymentData (US macro series)
+        //   - txCountCombinedData, txMvrvData (specialized tx analytics)
+        //
+        // These are now fetched on-demand by the specific chart components that render them.
+        // This is the second incremental reduction of the original aggressive preload strategy.
+        // Goal: only keep the truly core dashboard datasets in the initial parallel firehose.
         { id: 'mvrvRiskData', setData: setMvrvRiskData, setLastUpdated: setMvrvRiskLastUpdated, setIsFetched: setIsMvrvRiskDataFetched, useDateCheck: true },
         { id: 'puellRiskData', setData: setPuellRiskData, setLastUpdated: setPuellRiskLastUpdated, setIsFetched: setIsPuellRiskDataFetched, useDateCheck: true },
         { id: 'minerCapThermoCapRiskData', setData: setMinerCapThermoCapRiskData, setLastUpdated: setMinerCapThermoCapRiskLastUpdated, setIsFetched: setIsMinerCapThermoCapRiskDataFetched, useDateCheck: true },
@@ -359,17 +359,15 @@ export const DataProvider = ({ children }) => {
             differenceData: fetchDifferenceData, // New
             macroData: fetchMacroData,
             inflationData: fetchInflationData,
-            initialClaimsData: fetchInitialClaimsData,
-            interestData: fetchInterestData,
-            unemploymentData: fetchUnemploymentData,
             txCountData: fetchTxCountData,
-            txCountCombinedData: fetchTxCountCombinedData,
-            txMvrvData: fetchTxMvrvData,
             latestFearAndGreed: fetchLatestFearAndGreed,
             altcoinSeasonData: fetchAltcoinSeasonData,
-            // onchainMetricsData and altcoinSeasonTimeseriesData intentionally omitted here.
-            // They are no longer part of the eager preload (see cacheConfigs above).
-            // Their fetch functions are still called on-demand by the charts that need them.
+            // === AUDIT REMEDIATION (larger batch) ===
+            // The following were removed from eager preload in this pass and are now demand-loaded:
+            //   - fedBalanceData
+            //   - initialClaimsData, interestData, unemploymentData
+            //   - txCountCombinedData, txMvrvData
+            // Their fetch* functions remain fully functional when called by individual charts.
             mvrvRiskData: fetchRiskMetricsData,
             puellRiskData: fetchRiskMetricsData,
             minerCapThermoCapRiskData: fetchRiskMetricsData,
