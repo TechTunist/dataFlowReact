@@ -364,7 +364,7 @@ export const DataProvider = ({ children }) => {
         { id: 'mvrvData', setData: setMvrvData, setLastUpdated: setMvrvLastUpdated, setIsFetched: setIsMvrvDataFetched, useDateCheck: true },
         { id: 'dominanceData', setData: setDominanceData, setLastUpdated: setDominanceLastUpdated, setIsFetched: setIsDominanceDataFetched, useDateCheck: true },
         { id: 'ethData', setData: setEthData, setLastUpdated: setEthLastUpdated, setIsFetched: setIsEthDataFetched, useDateCheck: true },
-        { id: 'fearAndGreedData', setData: setFearAndGreedData, setLastUpdated: setFearAndGreedLastUpdated, setIsFetched: setIsFearAndGreedDataFetched, useDateCheck: true },
+        { id: 'fearAndGreedData', setData: setFearAndGreedData, setLastUpdated: setFearAndGreedLastUpdated, setIsFetched: setIsFearAndGreedDataFetched, useDateCheck: false, ttl: 4 * 60 * 60 * 1000 }, // Phase 2: 4h TTL (sentiment changes reasonably fast)
         { id: 'marketCapData', setData: setMarketCapData, setLastUpdated: setMarketCapLastUpdated, setIsFetched: setIsMarketCapDataFetched, useDateCheck: true },
         { id: 'latestFearAndGreed', setData: setLatestFearAndGreed, setLastUpdated: setLatestFearAndGreedLastUpdated, setIsFetched: setIsLatestFearAndGreedFetched, useDateCheck: false, ttl: 60 * 60 * 1000 }, // Phase 2: shorter TTL for volatile "latest" data (1 hour)
         // === AUDIT REMEDIATION (Phase 2 - final core trim) ===
@@ -440,7 +440,7 @@ export const DataProvider = ({ children }) => {
         data
           .map((item) => {
             if (!item.time || typeof item.time !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(item.time) || isNaN(parseFloat(item.value))) {
-              console.warn('Invalid differenceData item:', item);
+              logger.warn('Invalid differenceData item:', item);
               return null;
             }
             return {
@@ -1406,7 +1406,7 @@ const fetchDominanceData = useCallback(async () => {
         const formattedData = allData
           .map((item) => {
             if (!item || !item.time || item.value == null) {
-              console.warn(`Invalid item in ${metric} data:`, item);
+              logger.warn(`Invalid item in ${metric} data:`, item);
               return null;
             }
             return {
