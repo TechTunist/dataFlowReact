@@ -298,13 +298,13 @@ export const DataProvider = ({ children }) => {
         { id: 'ethData', setData: setEthData, setLastUpdated: setEthLastUpdated, setIsFetched: setIsEthDataFetched, useDateCheck: true },
         { id: 'fearAndGreedData', setData: setFearAndGreedData, setLastUpdated: setFearAndGreedLastUpdated, setIsFetched: setIsFearAndGreedDataFetched, useDateCheck: true },
         { id: 'marketCapData', setData: setMarketCapData, setLastUpdated: setMarketCapLastUpdated, setIsFetched: setIsMarketCapDataFetched, useDateCheck: true },
-        { id: 'macroData', setData: setMacroData, setLastUpdated: setMacroLastUpdated, setIsFetched: setIsMacroDataFetched, useDateCheck: true },
         { id: 'latestFearAndGreed', setData: setLatestFearAndGreed, setLastUpdated: setLatestFearAndGreedLastUpdated, setIsFetched: setIsLatestFearAndGreedFetched, useDateCheck: true },
-        { id: 'altcoinSeasonData', setData: setAltcoinSeasonData, setLastUpdated: setAltcoinSeasonLastUpdated, setIsFetched: setIsAltcoinSeasonDataFetched, useDateCheck: true },
-        // === AUDIT REMEDIATION (Phase 2) ===
-        // Risk metrics group moved to demand-loaded.
-        // These power specialized risk pages but are not needed on initial dashboard load.
-        // Removed: mvrvRisk, puellRisk, minerCapThermoCapRisk, feeRisk, soplRisk
+        // === AUDIT REMEDIATION (Phase 2 - aggressive cut) ===
+        // Moved to demand-loaded:
+        //   - macroData (combined macro)
+        //   - altcoinSeasonData
+        // These are useful but not required for the absolute first dashboard paint.
+        // Kept only the most core price/dominance/fear-greed/market-cap data in eager preload.
         { id: 'differenceData', setData: setDifferenceData, setLastUpdated: setDifferenceLastUpdated, setIsFetched: setIsDifferenceDataFetched, useDateCheck: true },
         { id: 'total2Data', setData: setTotal2Data, setLastUpdated: setTotal2LastUpdated, setIsFetched: setIsTotal2DataFetched, useDateCheck: true },
         { id: 'total3Data', setData: setTotal3Data, setLastUpdated: setTotal3LastUpdated, setIsFetched: setIsTotal3DataFetched, useDateCheck: true }, 
@@ -335,18 +335,15 @@ export const DataProvider = ({ children }) => {
           // Trigger fetch for non-cached or stale data
           const fetchFunc = {
             btcData: fetchBtcData,
-            fedBalanceData: fetchFedBalanceData,
             mvrvData: fetchMvrvData,
             dominanceData: fetchDominanceData,
             ethData: fetchEthData,
             fearAndGreedData: fetchFearAndGreedData,
             marketCapData: fetchMarketCapData,
             differenceData: fetchDifferenceData, // New
-            macroData: fetchMacroData,
             latestFearAndGreed: fetchLatestFearAndGreed,
-            altcoinSeasonData: fetchAltcoinSeasonData,
-            // === AUDIT REMEDIATION (Phase 2) ===
-            // Risk metrics group removed from eager preload (now demand-loaded by risk chart pages)
+            // === AUDIT REMEDIATION (Phase 2 - aggressive cut) ===
+            // macroData and altcoinSeasonData moved to demand-loaded
             total2Data: fetchTotal2Data,
             total3Data: fetchTotal3Data,
             // Map other ids to their fetch functions (e.g., 'btcData': fetchBtcData)
@@ -360,9 +357,7 @@ export const DataProvider = ({ children }) => {
       });
 
       await Promise.all(fetchPromises);
-      if (isMounted && !isMvrvRiskDataFetched && !isPuellRiskDataFetched && !isMinerCapThermoCapRiskDataFetched) {
-        await fetchRiskMetricsData();
-      }
+      // Risk metrics are now fully demand-loaded (Phase 2), so no special post-preload fetch needed here.
       if (isMounted) setPreloadComplete(true);
     };
 
@@ -867,10 +862,7 @@ const fetchDominanceData = useCallback(async () => {
 
   const fetchMacroData = useCallback(async () => {
     if (isMacroDataFetched) return;
-    if (!preloadComplete) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      if (isMacroDataFetched) return;
-    }
+    // preloadComplete guard removed — macroData is now demand-loaded only (Phase 2)
     await fetchWithCache({
       cacheId: 'macroData',
       apiUrl: apiUrl('/api/combined-macro-data/'),
@@ -880,7 +872,7 @@ const fetchDominanceData = useCallback(async () => {
       setIsFetched: setIsMacroDataFetched,
       useDateCheck: true,
     });
-  }, [isMacroDataFetched, preloadComplete]);
+  }, [isMacroDataFetched]);
 
   const refreshMacroData = useCallback(async () => {
     await refreshData({
@@ -1143,10 +1135,7 @@ const fetchDominanceData = useCallback(async () => {
 
   const fetchAltcoinSeasonData = useCallback(async () => {
     if (isAltcoinSeasonDataFetched) return;
-    if (!preloadComplete) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      if (isAltcoinSeasonDataFetched) return;
-    }
+    // preloadComplete guard removed — altcoinSeasonData is now demand-loaded only (Phase 2)
     await fetchWithCache({
       cacheId: 'altcoinSeasonData',
       apiUrl: apiUrl('/api/altcoin-season-index/'),
@@ -1164,7 +1153,7 @@ const fetchDominanceData = useCallback(async () => {
       setIsFetched: setIsAltcoinSeasonDataFetched,
       useDateCheck: true,
     });
-  }, [isAltcoinSeasonDataFetched, preloadComplete]);
+  }, [isAltcoinSeasonDataFetched]);
 
   const refreshAltcoinSeasonData = useCallback(async () => {
     await refreshData({
