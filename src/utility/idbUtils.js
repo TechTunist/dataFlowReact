@@ -73,6 +73,39 @@ export async function getFreshCachedData(id, ttl = DEFAULT_CACHE_TTL) {
   }
 }
 
+/**
+ * Phase 2: Basic cache pruning helper.
+ * Removes entries older than the given maxAge (in ms).
+ * Can be called on app start or periodically.
+ */
+export async function pruneOldCache(maxAge = 7 * 24 * 60 * 60 * 1000) { // default 7 days
+  try {
+    const db = await initDB();
+    const tx = db.transaction(DATA_STORE_NAME, 'readwrite');
+    const store = tx.objectStore(DATA_STORE_NAME);
+    const all = await store.getAll();
+
+    const now = Date.now();
+    let pruned = 0;
+
+    for (const entry of all) {
+      if (entry.timestamp && (now - entry.timestamp) > maxAge) {
+        await store.delete(entry.id);
+        pruned++;
+      }
+    }
+
+    await tx.done;
+    if (pruned > 0) {
+      logger.log(`[Cache] Pruned ${pruned} old entries older than ${Math.round(maxAge / (24 * 60 * 60 * 1000))} days`);
+    }
+    return pruned;
+  } catch (error) {
+    logger.error('Failed to prune old cache entries', error);
+    return 0;
+  }
+}
+
 export async function getCachedData(id) {
   try {
     const db = await initDB();

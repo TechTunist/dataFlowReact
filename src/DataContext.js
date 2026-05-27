@@ -1,9 +1,44 @@
 // src/DataContext.js
 import React, { createContext, useState, useCallback, useContext, useEffect, useMemo } from 'react';
-import { initDB, cacheData, getCachedData, clearCache, isCacheFresh, getFreshCachedData, DEFAULT_CACHE_TTL } from './utility/idbUtils';
+import { initDB, cacheData, getCachedData, clearCache, isCacheFresh, getFreshCachedData, DEFAULT_CACHE_TTL, pruneOldCache } from './utility/idbUtils';
 import { API_BASE_URL, apiUrl } from './config/api';
+import logger from './utils/logger';
 
 export const DataContext = createContext();
+
+/**
+ * Phase 2 helper: Background refresh for stale-while-revalidate pattern.
+ * Fetches fresh data and updates state + cache without blocking the UI.
+ */
+const fetchFreshAndUpdate = async ({
+  cacheId,
+  apiUrl,
+  formatData,
+  setData,
+  setLastUpdated,
+  setIsFetched,
+  currentTimestamp,
+}) => {
+  try {
+    const response = await fetch(apiUrl);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+    const data = await response.json();
+    const formattedData = formatData(data);
+    const isArray = Array.isArray(formattedData);
+    const latestFetchedDate = isArray && formattedData.length > 0
+      ? formattedData[formattedData.length - 1].time
+      : formattedData.time || null;
+
+    setData(formattedData);
+    if (latestFetchedDate && setLastUpdated) {
+      setLastUpdated(latestFetchedDate);
+    }
+    await cacheData(cacheId, formattedData, currentTimestamp || Date.now());
+  } catch (err) {
+    logger.error(`Background refresh error for ${cacheId}`, err);
+  }
+};
 
 const fetchWithCache = async ({
   cacheId,
@@ -14,6 +49,7 @@ const fetchWithCache = async ({
   setIsFetched,
   cacheDuration = 24 * 60 * 60 * 1000,
   useDateCheck = true,
+  staleWhileRevalidate = true,   // Phase 2 improvement: serve stale data instantly while refreshing in background
 }) => {
   if (typeof indexedDB === 'undefined') {
     // console.warn('IndexedDB is not supported in this environment.');
@@ -65,6 +101,27 @@ const fetchWithCache = async ({
           if (setLastUpdated) {
             setLastUpdated(latestCachedDate);
           }
+          return true;
+        }
+
+        // Phase 2: Stale-while-revalidate support
+        // If we have stale data and staleWhileRevalidate is enabled, serve it immediately
+        // for great perceived performance, then refresh in the background.
+        if (staleWhileRevalidate && cached && cached.data) {
+          setData(Array.isArray(cached.data) ? cachedData : cached.data);
+          if (setLastUpdated) {
+            setLastUpdated(latestCachedDate);
+          }
+          // Fire-and-forget background refresh (don't await)
+          fetchFreshAndUpdate({
+            cacheId,
+            apiUrl,
+            formatData,
+            setData,
+            setLastUpdated,
+            setIsFetched,
+            currentTimestamp,
+          }).catch(err => logger.error(`Background refresh failed for ${cacheId}`, err));
           return true;
         }
       }
@@ -296,6 +353,10 @@ export const DataProvider = ({ children }) => {
 
     const preloadData = async () => {
       await initDB();
+
+      // Phase 2: Occasional cache maintenance (non-blocking)
+      pruneOldCache().catch(() => {});
+
       await fetchFredSeriesData('SP500');
 
       const cacheConfigs = [
