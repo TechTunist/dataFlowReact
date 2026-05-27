@@ -97,6 +97,7 @@ const fetchWithCache = async ({
         }
 
         if (shouldReuseCache) {
+          logger.log(`[Cache] HIT (fresh) for ${cacheId}`);
           setData(Array.isArray(cached.data) ? cachedData : cached.data);
           if (setLastUpdated) {
             setLastUpdated(latestCachedDate);
@@ -108,6 +109,7 @@ const fetchWithCache = async ({
         // If we have stale data and staleWhileRevalidate is enabled, serve it immediately
         // for great perceived performance, then refresh in the background.
         if (staleWhileRevalidate && cached && cached.data) {
+          logger.log(`[Cache] HIT (stale, revalidating in background) for ${cacheId}`);
           setData(Array.isArray(cached.data) ? cachedData : cached.data);
           if (setLastUpdated) {
             setLastUpdated(latestCachedDate);
@@ -169,6 +171,7 @@ const fetchWithCache = async ({
       setLastUpdated(latestFetchedDate);
     }
     await cacheData(cacheId, formattedData, currentTimestamp);
+    logger.log(`[Cache] MISS (fetched fresh) for ${cacheId}`);
     return true;
   } catch (error) {
     // console.error(`Error fetching or caching data for ${cacheId}:`, error);
