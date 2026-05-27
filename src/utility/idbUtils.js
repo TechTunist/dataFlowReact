@@ -46,13 +46,30 @@ export async function initDB() {
   }
 }
 
-export async function cacheData(id, data, timestamp) {
+export async function cacheData(id, data, timestamp = Date.now()) {
   try {
     const db = await initDB();
     await db.put(DATA_STORE_NAME, { id, data, timestamp });
   } catch (error) {
     logger.error(`Failed to cache data for id ${id}:`, error);
     throw error;
+  }
+}
+
+/**
+ * Phase 2: Enhanced helper that returns cached data only if fresh according to TTL.
+ * Falls back to null if stale or missing.
+ */
+export async function getFreshCachedData(id, ttl = DEFAULT_CACHE_TTL) {
+  try {
+    const cached = await getCachedData(id);
+    if (cached && isCacheFresh(cached, ttl)) {
+      return cached;
+    }
+    return null;
+  } catch (error) {
+    logger.error(`Failed to get fresh cached data for id ${id}:`, error);
+    return null;
   }
 }
 

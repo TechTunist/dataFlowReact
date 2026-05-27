@@ -1,6 +1,6 @@
 // src/DataContext.js
 import React, { createContext, useState, useCallback, useContext, useEffect, useMemo } from 'react';
-import { initDB, cacheData, getCachedData, clearCache, isCacheFresh, DEFAULT_CACHE_TTL } from './utility/idbUtils';
+import { initDB, cacheData, getCachedData, clearCache, isCacheFresh, getFreshCachedData, DEFAULT_CACHE_TTL } from './utility/idbUtils';
 import { API_BASE_URL, apiUrl } from './config/api';
 
 export const DataContext = createContext();
@@ -305,7 +305,7 @@ export const DataProvider = ({ children }) => {
         { id: 'ethData', setData: setEthData, setLastUpdated: setEthLastUpdated, setIsFetched: setIsEthDataFetched, useDateCheck: true },
         { id: 'fearAndGreedData', setData: setFearAndGreedData, setLastUpdated: setFearAndGreedLastUpdated, setIsFetched: setIsFearAndGreedDataFetched, useDateCheck: true },
         { id: 'marketCapData', setData: setMarketCapData, setLastUpdated: setMarketCapLastUpdated, setIsFetched: setIsMarketCapDataFetched, useDateCheck: true },
-        { id: 'latestFearAndGreed', setData: setLatestFearAndGreed, setLastUpdated: setLatestFearAndGreedLastUpdated, setIsFetched: setIsLatestFearAndGreedFetched, useDateCheck: true },
+        { id: 'latestFearAndGreed', setData: setLatestFearAndGreed, setLastUpdated: setLatestFearAndGreedLastUpdated, setIsFetched: setIsLatestFearAndGreedFetched, useDateCheck: false, ttl: 60 * 60 * 1000 }, // Phase 2: shorter TTL for volatile "latest" data (1 hour)
         // === AUDIT REMEDIATION (Phase 2 - final core trim) ===
         // The three total market cap variants (difference, total2, total3) moved to demand-loaded.
         // These are useful market-cap views but not required for the absolute core initial dashboard experience.
@@ -313,17 +313,22 @@ export const DataProvider = ({ children }) => {
       ];
 
       // Fetch all data in parallel
-      const fetchPromises = cacheConfigs.map(async ({ id, setData, setLastUpdated, setIsFetched, useDateCheck }) => {
+      const fetchPromises = cacheConfigs.map(async ({ id, setData, setLastUpdated, setIsFetched, useDateCheck, ttl }) => {
         try {
-          const cached = await getCachedData(id);
-          if (cached && cached.data.length > 0) {
-            const sortedCachedData = [...cached.data].sort((a, b) => new Date(a.time) - new Date(b.time));
+          const effectiveTTL = ttl || DEFAULT_CACHE_TTL;
+          const freshCached = await getFreshCachedData(id, effectiveTTL);
+
+          if (freshCached && freshCached.data) {
+            const sortedCachedData = [...freshCached.data].sort((a, b) => new Date(a.time) - new Date(b.time));
             const latestCachedDate = sortedCachedData[sortedCachedData.length - 1].time;
             const currentDate = new Date().toISOString().split('T')[0];
-            const currentTimestamp = Date.now();
-            const shouldReuseCache = useDateCheck
-              ? latestCachedDate >= currentDate
-              : currentTimestamp - cached.timestamp < (useDateCheck ? 24 : 7) * 24 * 60 * 60 * 1000;
+
+            let shouldReuseCache = false;
+            if (useDateCheck) {
+              shouldReuseCache = latestCachedDate >= currentDate;
+            } else {
+              shouldReuseCache = isCacheFresh(freshCached, effectiveTTL);
+            }
 
             if (shouldReuseCache) {
               if (isMounted) {
@@ -343,10 +348,7 @@ export const DataProvider = ({ children }) => {
             fearAndGreedData: fetchFearAndGreedData,
             marketCapData: fetchMarketCapData,
             latestFearAndGreed: fetchLatestFearAndGreed,
-            // === AUDIT REMEDIATION (Phase 2 - final core trim) ===
-            // differenceData, total2Data, total3Data moved to demand-loaded
-            // Map other ids to their fetch functions (e.g., 'btcData': fetchBtcData)
-            // Add mappings for all cacheIds
+            // Phase 2 note: other items now demand-loaded
           }[id];
           if (fetchFunc && isMounted) await fetchFunc();
         } catch (error) {
