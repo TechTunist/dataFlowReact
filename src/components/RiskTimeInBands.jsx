@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext, useMemo } from 'react';
+import React, { useEffect, useState, useContext, useMemo, useCallback, memo } from 'react';
 import Plot from 'react-plotly.js';
 import { tokens } from "../theme";
 import { useTheme, useMediaQuery } from "@mui/material";
@@ -156,15 +156,15 @@ const AssetRiskBandDuration = ({ isDashboard = false, riskData: propRiskData }) 
     }));
   }, [colors, isDashboard, isMobile, selectedAssetLabel, isNarrowScreen]);
 
-  const resetChartView = () => {
+  const resetChartView = useCallback(() => {
     setLayout(prevLayout => ({
       ...prevLayout,
       xaxis: { ...prevLayout.xaxis, autorange: true },
       yaxis: { ...prevLayout.yaxis, autorange: true },
     }));
-  };
+  }, []);
 
-  const handleRelayout = (event) => {
+  const handleRelayout = useCallback((event) => {
     if (event['xaxis.range[0]'] || event['yaxis.range[0]']) {
       setLayout(prevLayout => ({
         ...prevLayout,
@@ -180,16 +180,16 @@ const AssetRiskBandDuration = ({ isDashboard = false, riskData: propRiskData }) 
         },
       }));
     }
-  };
+  }, []);
 
-  const handleRiskBandModeChange = (event) => {
+  const handleRiskBandModeChange = useCallback((event) => {
     setRiskBandMode(event.target.value);
-  };
+  }, []);
 
-  const handleAssetChange = (event) => {
+  const handleAssetChange = useCallback((event) => {
     setSelectedAsset(event.target.value);
-    resetChartView(); // Reset chart view when asset changes
-  };
+    resetChartView();
+  }, [resetChartView]);
 
   const getBandColor = (index, numBands) => {
     const midPoint = Math.floor(numBands / 2);
@@ -496,4 +496,5 @@ const AssetRiskBandDuration = ({ isDashboard = false, riskData: propRiskData }) 
   );
 };
 
-export default AssetRiskBandDuration;
+const MemoizedAssetRiskBandDuration = memo(AssetRiskBandDuration);
+export default MemoizedAssetRiskBandDuration;

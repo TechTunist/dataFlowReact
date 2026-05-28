@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useContext, useCallback, useMemo } from 'react';
+import React, { useRef, useEffect, useState, useContext, useCallback, useMemo, memo } from 'react';
 import { createChart } from 'lightweight-charts';
 import { tokens } from "../theme";
 import { useTheme, Box, FormControl, InputLabel, Select, MenuItem, Button } from "@mui/material";
@@ -72,17 +72,15 @@ const BitcoinHistoricalVolatility = ({ isDashboard = false }) => {
     return { volatilityData: filteredData, maxVolatility: adjustedMax };
   }, [btcData, timeframe, calculateVolatility]);
 
-  const setInteractivity = () => setIsInteractive(!isInteractive);
-
-  const compactNumberFormatter = (value) => {
+  const setInteractivity = useCallback(() => setIsInteractive(prev => !prev), []);
+  const compactNumberFormatter = useCallback((value) => {
     if (value >= 1000000) return (value / 1000000).toFixed(0) + 'M';
     if (value >= 1000) return (value / 1000).toFixed(0) + 'k';
     return value.toFixed(0);
-  };
-
-  const resetChartView = () => {
+  }, []);
+  const resetChartView = useCallback(() => {
     if (chartRef.current) chartRef.current.timeScale().fitContent();
-  };
+  }, []);
 
   // **Fetch initial data**
   useEffect(() => {
@@ -393,7 +391,8 @@ const BitcoinHistoricalVolatility = ({ isDashboard = false }) => {
   );
 };
 
-export default restrictToPaidSubscription(BitcoinHistoricalVolatility);
+const MemoizedHistoricalVolatility = memo(BitcoinHistoricalVolatility);
+export default restrictToPaidSubscription(MemoizedHistoricalVolatility);
 
 
 
