@@ -143,3 +143,49 @@ The remaining high-priority frontend items from the original audit (in rough pri
 **Good work today. The app is in a noticeably better state on performance, reliability, and maintainability.**
 
 See you tomorrow.
+
+---
+
+## Session: Chart Performance Hardening (Current)
+
+**Date of this update:** Current session (continued from previous)
+
+### Work Completed This Session
+- **Primary focus:** Chart component performance (item #1 in Recommended Next Steps).
+- **Root cause identified:** The very large single `DataContext` value object (one useMemo with 170+ dependencies) + many chart components depending on raw context arrays in heavyweight `useEffect` + `createChart` calls means unrelated data updates anywhere cause expensive full re-renders and chart instance recreation for long time-series charts (lightweight-charts setup is non-trivial).
+- **First targeted fix (committed):** [BitcoinMvrvZScore.jsx](src/components/BitcoinMvrvZScore.jsx)
+  - Added `React.memo` wrapper (before the paid-subscription HOC).
+  - Memoized the expensive client-side MVRV Z-Score calculation (`useCallback`) — also fixed a latent bug where the function mutated its input array.
+  - Memoized filtered data + derived z-score series (`useMemo`).
+  - Changed the main chart creation `useEffect` (the one that does `createChart` + adds multiple series for 10+ years of data) to depend on the stable memoized derived values instead of raw `txMvrvData`/`btcData` from context.
+  - Result: Chart DOM/canvas recreation is now skipped when DataContext causes new array references for unrelated reasons (very common before).
+- Verified: Full production build succeeds cleanly for this change.
+- Git: One focused commit on the branch (`perf(charts): harden BitcoinMvrvZScore...`).
+
+### Approach & Constraints Respected
+- 100% frontend-only (no backend, no new API calls, no data model changes).
+- Preserved exact visual + interactive behavior.
+- Used the existing strengths (lightweight-charts is already an excellent choice for this domain; many charts were already partially memoized and lazy-loaded).
+- Disciplined: small focused change, build verification, clear commit message.
+- Also incidentally improved code quality (removed a mutation side-effect).
+
+### Recommended Continuation (Next Session or Remaining Time)
+Pick 2–4 more high-impact charts with similar patterns and apply the same treatment:
+- PuellMultiple (client-side issuance + Puell + cycle math on long series)
+- OnChainHistoricalRisk (already has some memoization — audit for effect deps)
+- HistoricalVolatility
+- RiskTimeInBands
+- Workbench (highest complexity / most interactive premium component — worth extra care)
+
+After a few more per-chart wins, consider a higher-leverage DataContext refactor:
+- Split data vs actions into two contexts (or provide a stable `actions` sub-object).
+- This would benefit *all* 50+ consuming components at once with less per-file work.
+
+Also worth a quick pass:
+- Route any remaining `console.debug`/`console.warn` inside chart effects through the centralized logger (low effort, high consistency).
+
+When the top 5–6 heaviest charts are hardened, re-evaluate with a fresh `npm run build` + manual smoke test of the premium valuation charts (MVRV Z, Puell, On-Chain Risk, Workbench).
+
+**Current state feels good — the MVRV Z-Score chart is now significantly more resilient to parent/context churn while keeping its rich interactivity and accuracy.**
+
+Ready for the next chart or the context-level improvement when you return.
