@@ -702,6 +702,18 @@ const WorkbenchChart = ({
     if (isNewSeries || zoomRange === null) {
       chartRef.current.timeScale().fitContent();
       setZoomRange(null);
+
+      // When new series are added (especially derived series computed from other series),
+      // lightweight-charts sometimes fails to expand the visible range to include the new data
+      // on the initial fitContent. Doing a second fitContent in the next animation frame
+      // reliably fixes cases where the new series appears as a flat line until the user pans.
+      if (isNewSeries) {
+        requestAnimationFrame(() => {
+          if (chartRef.current) {
+            chartRef.current.timeScale().fitContent();
+          }
+        });
+      }
     }
 
     // === HIGH-PERFORMANCE DIRECT DOM TOOLTIP ===

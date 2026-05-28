@@ -232,7 +232,12 @@ All three follow the same disciplined approach: `React.memo` at the root + `useC
 
 This makes the Workbench significantly more trustworthy when users mix daily financial data with macro releases.
 
-Further Workbench opportunities remain (stabilize the very large series management effect, smarter MA behavior per frequency, etc.).
+Further Workbench opportunities remain (stabilize the very large series management effect, smarter MA behavior per frequency, proper step rendering for low-frequency series without breaking setData, etc.).
+
+**Recent bug fix:**
+- Derived series (e.g. "Consumer Sentiment / Fear & Greed") appearing as flat line until panned left:
+  - Classic lightweight-charts gotcha: `fitContent()` called synchronously before the newly added series' data is fully recognized for range calculation.
+  - Fixed by adding a `requestAnimationFrame` second `fitContent()` when `isNewSeries` is true. This reliably forces the chart to re-evaluate the full data range of all series (including newly computed derived ones).
 
 Strong next candidate for high leverage: DataContext split (data vs actions) for app-wide re-render reduction.
 
