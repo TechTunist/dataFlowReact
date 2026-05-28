@@ -224,9 +224,11 @@ All three follow the same disciplined approach: `React.memo` at the root + `useC
 - Analysis & chosen solution:
   - Root causes: Exact-time map lookups (lost LOCF), naive line connection on sparse points, and `calculateMovingAverage` applied without frequency awareness.
   - Fixes implemented:
-    - Restored robust binary-search "previous value / LOCF" logic using stored original sparse points per series → tooltip now always shows the last known observation.
-    - Automatic low-frequency detection (avg gap > ~15 days) → those series now render with step-like data (value stays perfectly flat between real releases instead of diagonal "stretched" lines).
-  - Trade-offs considered: full daily forward-fill (data bloat), pure step lineType (not ideal in lightweight-charts v4), disabling MA on low-freq series (too restrictive). The combination of step rendering + proper LOCF tooltip is the cleanest pragmatic frontend-only approach.
+    - Restored robust binary-search "previous value / LOCF" logic using stored original sparse points per series → tooltip now always shows the last known observation (even between monthly/quarterly release dates).
+    - (An automatic "step rendering" transformation for low-frequency series was attempted to reduce visual stretching, but it created duplicate timestamps and caused "Failed to display X. The data may be incompatible." errors for series like Unemployment Rate and Consumer Sentiment. It has been removed.)
+  - Additional fixes:
+    - Completely rewrote the direct-DOM tooltip positioning (was using incorrect hardcoded sidebar offsets). It now uses the raw crosshair coordinates (relative to the chart container) + simple, reliable edge detection and small offsets. This fixes the "tooltip too far from cursor" problem, especially on wide/fullscreen views.
+  - Trade-offs: We currently render low-frequency series with their native sparse points (connecting lines between releases). This is stable. A future improvement could add safer step rendering or visual markers on actual data points.
 
 This makes the Workbench significantly more trustworthy when users mix daily financial data with macro releases.
 

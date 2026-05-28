@@ -240,27 +240,6 @@ const WorkbenchChart = ({
     return latestPoint ? latestPoint.value : null;
   };
 
-  /**
-   * For low-frequency series (monthly, quarterly, etc.), convert sparse points into step data.
-   * This prevents long connecting lines that look like "stretched random variation"
-   * between actual release dates. The value stays flat until the next real observation.
-   */
-  const createStepData = useCallback((points) => {
-    if (!points || points.length === 0) return [];
-    const step = [];
-    for (let i = 0; i < points.length; i++) {
-      step.push(points[i]);
-      if (i < points.length - 1) {
-        // Carry the current value forward right up to (but not including) the next observation
-        step.push({
-          time: points[i + 1].time,
-          value: points[i].value,
-        });
-      }
-    }
-    return step;
-  }, []);
-
   const getSeriesColor = (id, type) => {
     if (seriesColors[id]) return seriesColors[id];
     if (type === 'macro') return availableMacroSeries[id]?.color || '#00FFFF';
@@ -668,21 +647,12 @@ const WorkbenchChart = ({
             logger.warn(`No valid data for series ${id} in logarithmic scale`);
             setError(`Cannot display ${seriesInfo.label} in logarithmic scale due to non-positive values.`);
           } else {
-            // Detect low-frequency series (large gaps) → render as steps so value is flat between real observations
-            const gaps = [];
-            for (let i = 1; i < validData.length; i++) {
-              const d1 = new Date(validData[i-1].time).getTime();
-              const d2 = new Date(validData[i].time).getTime();
-              gaps.push(d2 - d1);
-            }
-            const avgGap = gaps.length > 0 ? gaps.reduce((a, b) => a + b, 0) / gaps.length : 0;
-            const isLowFrequency = avgGap > 15 * 24 * 60 * 60 * 1000; // > ~15 days average gap
-
-            let dataForChart = getSeriesData(id, validData);
-            if (isLowFrequency) {
-              dataForChart = createStepData(dataForChart.length > 0 ? dataForChart : validData);
-            }
-
+            // NOTE: We intentionally use the (possibly MA-processed) cleaned sparse points directly here.
+            // Previous attempt to auto-convert low-frequency series to step data caused duplicate timestamps
+            // at transition points, which made lightweight-charts reject the data with "incompatible" errors.
+            // The visual "stretched" appearance for monthly data is a known limitation for now.
+            // We keep the original sparse points + robust LOCF tooltip (see below) as the safer approach.
+            const dataForChart = getSeriesData(id, validData);
             series.setData(dataForChart);
 
             // Build fast lookup map + store original sparse points for robust LOCF on mixed-frequency data
@@ -764,19 +734,41 @@ const WorkbenchChart = ({
         return;
       }
 
-      const sidebarWidth = isMobile ? -80 : -320;
-      const cursorX = tooltipInfo.x - sidebarWidth;
-      const chartWidth = chartContainerRef.current.clientWidth - sidebarWidth;
-      const tooltipWidth = 220;
-      const offset = 10000 / (chartWidth + 300);
-      const rightPosition = cursorX + offset;
-      const leftPosition = cursorX - tooltipWidth - offset;
-      const finalLeft = rightPosition + tooltipWidth <= chartWidth
-        ? rightPosition
-        : (leftPosition >= 0 ? leftPosition : Math.max(0, Math.min(rightPosition, chartWidth - tooltipWidth)));
+      // The tooltip is appended directly to the chart container, so tooltipInfo.x/y are already
+      // relative to it. We only need small, reliable offsets + edge flipping.
+      const container = chartContainerRef.current;
+      const containerWidth = container.clientWidth;
+      const containerHeight = container.clientHeight;
 
-      el.style.left = `${finalLeft}px`;
-      el.style.top = `${tooltipInfo.y + 90}px`;
+      const tooltipWidth = 220;   // approximate, we could measure but this is good enough
+      const tooltipHeight = 80;   // rough estimate; actual height varies with # of series
+
+      const offsetX = 14;         // horizontal gap from cursor
+      const offsetY = -10;        // appear slightly above cursor
+
+      let left = tooltipInfo.x + offsetX;
+      let top = tooltipInfo.y + offsetY;
+
+      // Flip horizontally if it would overflow the right edge
+      if (left + tooltipWidth > containerWidth - 8) {
+        left = tooltipInfo.x - tooltipWidth - offsetX;
+      }
+
+      // Flip vertically if near the top (so it doesn't get cut off or sit under the cursor badly)
+      if (top < 8) {
+        top = tooltipInfo.y + 18; // push below cursor
+      }
+      // Also avoid going off the bottom
+      if (top + tooltipHeight > containerHeight - 8) {
+        top = containerHeight - tooltipHeight - 8;
+      }
+
+      // Ensure we never go negative
+      left = Math.max(4, left);
+      top = Math.max(4, top);
+
+      el.style.left = `${left}px`;
+      el.style.top = `${top}px`;
       el.style.backgroundColor = theme.palette.mode === 'dark' ? colors.primary[900] : colors.primary[200];
       el.style.color = theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900];
       el.style.display = 'block';
