@@ -216,7 +216,21 @@ All three follow the same disciplined approach: `React.memo` at the root + `useC
 
 **All planned per-chart hardenings complete** (5 charts + deep Workbench work).
 
-Further Workbench opportunities remain (stabilize the very large series management effect with its huge dep array, more derived data memoization, etc.).
+**Workbench mixed-frequency handling (important polish delivered):**
+- Problem: Monthly/quarterly series (e.g. UMCSENT consumer sentiment) plotted against daily data (SP500, BTC, etc.) produced two bad effects:
+  1. Tooltip showed "N/A" unless the cursor landed *exactly* on a release date.
+  2. Visual "stretched with random variation" — long connecting lines between sparse points + moving averages on gappy data looked misleading.
+
+- Analysis & chosen solution:
+  - Root causes: Exact-time map lookups (lost LOCF), naive line connection on sparse points, and `calculateMovingAverage` applied without frequency awareness.
+  - Fixes implemented:
+    - Restored robust binary-search "previous value / LOCF" logic using stored original sparse points per series → tooltip now always shows the last known observation.
+    - Automatic low-frequency detection (avg gap > ~15 days) → those series now render with step-like data (value stays perfectly flat between real releases instead of diagonal "stretched" lines).
+  - Trade-offs considered: full daily forward-fill (data bloat), pure step lineType (not ideal in lightweight-charts v4), disabling MA on low-freq series (too restrictive). The combination of step rendering + proper LOCF tooltip is the cleanest pragmatic frontend-only approach.
+
+This makes the Workbench significantly more trustworthy when users mix daily financial data with macro releases.
+
+Further Workbench opportunities remain (stabilize the very large series management effect, smarter MA behavior per frequency, etc.).
 
 Strong next candidate for high leverage: DataContext split (data vs actions) for app-wide re-render reduction.
 
