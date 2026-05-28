@@ -1,5 +1,5 @@
 
-import React, { useRef, useEffect, useState, useMemo, useCallback, useContext } from 'react';
+import React, { useRef, useEffect, useState, useMemo, useCallback, useContext, memo } from 'react';
 import logger from '../utils/logger';
 import ErrorBoundary from './ErrorBoundary';
 import { createChart } from 'lightweight-charts';
@@ -138,6 +138,9 @@ const WorkbenchChart = ({
   const chartContainerRef = useRef();
   const chartRef = useRef(null);
   const seriesRefs = useRef({});
+  // Direct DOM tooltip refs for high-frequency smooth updates (bypasses React re-renders on every mouse move)
+  const tooltipElRef = useRef(null);
+  const rafIdRef = useRef(null);
   const prevSeriesRef = useRef({ macro: [], crypto: [], indicator: [], derived: [] });
   const theme = useTheme();
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
@@ -678,8 +681,76 @@ const WorkbenchChart = ({
       chartRef.current.timeScale().fitContent();
       setZoomRange(null);
     }
-    let tooltipTimeout = null;
+
+    // === HIGH-PERFORMANCE DIRECT DOM TOOLTIP ===
+    // Creates a tooltip element once and updates it via requestAnimationFrame + direct DOM mutation.
+    // This allows smooth, constant (every frame) tooltip updates even with many long series (SP500, macro data, etc.)
+    // without causing React re-renders on every mouse move.
+    if (!tooltipElRef.current && chartContainerRef.current) {
+      const el = document.createElement('div');
+      el.className = 'workbench-tooltip';
+      el.style.position = 'absolute';
+      el.style.pointerEvents = 'none';
+      el.style.zIndex = '1000';
+      el.style.padding = '6px 10px';
+      el.style.borderRadius = '4px';
+      el.style.fontSize = '13px';
+      el.style.lineHeight = '1.3';
+      el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.25)';
+      el.style.whiteSpace = 'nowrap';
+      el.style.display = 'none';
+      chartContainerRef.current.appendChild(el);
+      tooltipElRef.current = el;
+    }
+
+    const updateTooltipDOM = (tooltipInfo) => {
+      const el = tooltipElRef.current;
+      if (!el) return;
+
+      if (!tooltipInfo) {
+        el.style.display = 'none';
+        return;
+      }
+
+      const sidebarWidth = isMobile ? -80 : -320;
+      const cursorX = tooltipInfo.x - sidebarWidth;
+      const chartWidth = chartContainerRef.current.clientWidth - sidebarWidth;
+      const tooltipWidth = 220;
+      const offset = 10000 / (chartWidth + 300);
+      const rightPosition = cursorX + offset;
+      const leftPosition = cursorX - tooltipWidth - offset;
+      const finalLeft = rightPosition + tooltipWidth <= chartWidth
+        ? rightPosition
+        : (leftPosition >= 0 ? leftPosition : Math.max(0, Math.min(rightPosition, chartWidth - tooltipWidth)));
+
+      el.style.left = `${finalLeft}px`;
+      el.style.top = `${tooltipInfo.y + 90}px`;
+      el.style.backgroundColor = theme.palette.mode === 'dark' ? colors.primary[900] : colors.primary[200];
+      el.style.color = theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900];
+      el.style.display = 'block';
+
+      // Build content
+      let html = '';
+      const allActive = [...activeMacroSeries, ...activeCryptoSeries, ...activeIndicatorSeries, ...activeDerivedSeries];
+      allActive.forEach(id => {
+        const info = getSeriesInfo(id, activeMacroSeries.includes(id) ? 'macro' : activeCryptoSeries.includes(id) ? 'crypto' : activeIndicatorSeries.includes(id) ? 'indicator' : 'derived');
+        const color = getSeriesColor(id, activeMacroSeries.includes(id) ? 'macro' : activeCryptoSeries.includes(id) ? 'crypto' : activeIndicatorSeries.includes(id) ? 'indicator' : 'derived');
+        const ma = seriesMovingAverages[id] && seriesMovingAverages[id] !== 'None' ? ` (${seriesMovingAverages[id]} MA)` : '';
+        const val = tooltipInfo.values[id] != null ? valueFormatter(tooltipInfo.values[id]) : 'N/A';
+        html += `<div style="margin: 1px 0;"><span style="color:${color};">${info?.label || id}${ma}: ${val}</span></div>`;
+      });
+      const dateStr = tooltipInfo.date.toString().substring(0, 4) === new Date().getFullYear().toString()
+        ? `${tooltipInfo.date} — latest`
+        : tooltipInfo.date;
+      html += `<div style="margin-top: 4px; opacity: 0.85; font-size: 12px;">${dateStr}</div>`;
+      el.innerHTML = html;
+    };
+
     chartRef.current.subscribeCrosshairMove(param => {
+      if (rafIdRef.current) {
+        cancelAnimationFrame(rafIdRef.current);
+      }
+
       if (
         !param.point ||
         !param.time ||
@@ -688,56 +759,71 @@ const WorkbenchChart = ({
         param.point.y < 0 ||
         param.point.y > chartContainerRef.current.clientHeight
       ) {
-        clearTimeout(tooltipTimeout);
-        setTooltipData(null);
+        rafIdRef.current = requestAnimationFrame(() => updateTooltipDOM(null));
         return;
       }
+
+      // Build tooltip data (still does work per move — further optimization can pre-build lookup maps per series)
       const tooltip = {
         date: param.time,
         values: {},
         x: param.point.x,
         y: param.point.y,
       };
+
       sortedSeries.forEach(({ id, type }) => {
         const series = seriesRefs.current[id];
         if (!series) return;
-        let data = [];
+
+        // Prefer the value lightweight-charts already computed for the highlighted point (very fast)
+        const directValue = param.seriesData.get(series)?.value;
+        if (directValue != null) {
+          tooltip.values[id] = directValue;
+          return;
+        }
+
+        // Fallback (lighter than before — we still process here but at least we use rAF + direct DOM)
         let seriesInfo = getSeriesInfo(id, type);
         let raw = getRawData(id, type);
         let valueKey = getValueKey(id);
         const timeKey = (type === 'indicator' && seriesInfo.dataKey === 'txMvrvData') ? 'date' : 'time';
-        raw = raw
+
+        const processed = raw
           .filter(item => item[valueKey] != null && !isNaN(parseFloat(item[valueKey])))
           .map(item => ({
             time: item[timeKey] || item.date || item.end_date || (item.timestamp ? new Date(item.timestamp * 1000).toISOString().split('T')[0] : null),
             value: parseFloat(item[valueKey]),
           }))
-          .filter(item => item.time !== null)
-          .sort((a, b) => new Date(a.time) - new Date(b.time));
+          .filter(item => item.time !== null);
 
-        // Deduplicate by time (dominance data fix)
+        // Quick dedupe (lighter than full sort every move in hot path)
         const seen = new Set();
-        raw = raw.filter(item => {
-          const key = item.time;
-          if (seen.has(key)) return false;
-          seen.add(key);
+        const deduped = processed.filter(item => {
+          if (seen.has(item.time)) return false;
+          seen.add(item.time);
           return true;
         });
-        data = getSeriesData(id, raw);
-        const value = param.seriesData.get(series)?.value ?? getLatestValue(data, param.time);
-        tooltip.values[id] = value;
+
+        const data = getSeriesData(id, deduped);
+        tooltip.values[id] = getLatestValue(data, param.time);
       });
-      clearTimeout(tooltipTimeout);
-      tooltipTimeout = setTimeout(() => {
-        setTooltipData(tooltip);
-      }, 50);
+
+      rafIdRef.current = requestAnimationFrame(() => updateTooltipDOM(tooltip));
     });
+
     return () => {
+      if (rafIdRef.current) {
+        cancelAnimationFrame(rafIdRef.current);
+      }
       if (chartRef.current) {
         chartRef.current.unsubscribeCrosshairMove();
       }
+      if (tooltipElRef.current && tooltipElRef.current.parentNode) {
+        tooltipElRef.current.parentNode.removeChild(tooltipElRef.current);
+        tooltipElRef.current = null;
+      }
     };
-  }, [dataContext, activeMacroSeries, activeCryptoSeries, activeIndicatorSeries, activeDerivedSeries, derivedSeriesDefs, derivedData, seriesMovingAverages, seriesColors, chartType, valueFormatter, scaleModeState]);
+  }, [dataContext, activeMacroSeries, activeCryptoSeries, activeIndicatorSeries, activeDerivedSeries, derivedSeriesDefs, derivedData, seriesMovingAverages, seriesColors, chartType, valueFormatter, scaleModeState, isMobile, theme.palette.mode, colors]);
   useEffect(() => {
     if (!chartRef.current || !zoomRange) return;
     chartRef.current.timeScale().setVisibleLogicalRange(zoomRange);
@@ -1446,42 +1532,9 @@ const WorkbenchChart = ({
           </div>
         )}
       </div>
-      {!isDashboard && tooltipData && (activeMacroSeries.length > 0 || activeCryptoSeries.length > 0 || activeIndicatorSeries.length > 0 || activeDerivedSeries.length > 0) && (
-        <div
-          className="tooltip"
-          style={{
-            left: (() => {
-              const sidebarWidth = isMobile ? -80 : -320;
-              const cursorX = tooltipData.x - sidebarWidth;
-              const chartWidth = chartContainerRef.current.clientWidth - sidebarWidth;
-              const tooltipWidth = 200;
-              const offset = 10000 / (chartWidth + 300);
-              const rightPosition = cursorX + offset;
-              const leftPosition = cursorX - tooltipWidth - offset;
-              return rightPosition + tooltipWidth <= chartWidth ? `${rightPosition}px` : (leftPosition >= 0 ? `${leftPosition}px` : `${Math.max(0, Math.min(rightPosition, chartWidth - tooltipWidth))}px`);
-            })(),
-            top: `${tooltipData.y + 100}px`,
-            backgroundColor: theme.palette.mode === 'dark' ? colors.primary[900] : colors.primary[200],
-            color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900],
-            padding: '5px',
-            borderRadius: '4px',
-            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
-          }}
-        >
-          {[...activeMacroSeries, ...activeCryptoSeries, ...activeIndicatorSeries, ...activeDerivedSeries].map(id => (
-            <div key={id}>
-              <div style={{ fontSize: '15px' }}>
-                <span style={{ color: getSeriesColor(id, activeMacroSeries.includes(id) ? 'macro' : activeCryptoSeries.includes(id) ? 'crypto' : activeIndicatorSeries.includes(id) ? 'indicator' : 'derived') }}>
-                  {getSeriesInfo(id, activeMacroSeries.includes(id) ? 'macro' : activeCryptoSeries.includes(id) ? 'crypto' : activeIndicatorSeries.includes(id) ? 'indicator' : 'derived')?.label || id}
-                  {seriesMovingAverages[id] && seriesMovingAverages[id] !== 'None' ? ` (${seriesMovingAverages[id]} MA): ` : ': '}
-                  {tooltipData.values[id] != null ? valueFormatter(tooltipData.values[id]) : ' : N/A'}
-                </span>
-              </div>
-            </div>
-          ))}
-          <div>{tooltipData.date.toString().substring(0, 4) === currentYear ? `${tooltipData.date} - latest` : tooltipData.date}</div>
-        </div>
-      )}
+      {/* Old React tooltip disabled — we now use a high-performance direct-DOM tooltip updated via requestAnimationFrame.
+          This enables smooth, constant (per-frame) updates even with heavy long-series data like SP500 + many macros. */}
+      {/* {!isDashboard && tooltipData && ... (old React tooltip removed for perf) } */}
       {!isDashboard && explanation && (
         <p className='chart-info' style={{ color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900] }}>
           {explanation}
@@ -1491,4 +1544,5 @@ const WorkbenchChart = ({
     </ErrorBoundary>
   );
 };
-export default restrictToPaidSubscription(WorkbenchChart);
+const MemoizedWorkbenchChart = memo(WorkbenchChart);
+export default restrictToPaidSubscription(MemoizedWorkbenchChart);
