@@ -198,12 +198,18 @@ When the top 5–6 heaviest charts are hardened, re-evaluate with a fresh `npm r
 
 This continues the pattern: protect expensive or frequently-called pure work and component roots from DataContext identity changes and parent re-renders.
 
-**Next recommended charts (pick any):**
-- OnChainHistoricalRisk
+**Progress this session (3 charts hardened):**
+- BitcoinMvrvZScore (first — heavy Z-score calc + full chart recreation protection)
+- PuellMultiple (second — already strong setData pattern + function stabilization + dead code removal)
+- **OnChainHistoricalRisk (third — multi-metric risk chart; good existing structure with memoized prepare/chartData + targeted updates; now stabilized helpers + React.memo)**
+
+All three follow the same disciplined approach: `React.memo` at the root + `useCallback` for pure helpers/handlers to reduce churn from DataContext updates.
+
+**Remaining high-value charts:**
 - HistoricalVolatility
 - RiskTimeInBands
-- Workbench (biggest win for interactive users)
+- **Workbench** (most complex/interactive premium component — strong candidate for next if you want bigger impact)
 
-Or we can pivot to a DataContext-level improvement if you prefer broader impact over per-chart work.
+Or we can shift to a DataContext refactor (splitting data vs actions) for wider effect across the whole app.
 
 Ready for the next chart or a different direction.
