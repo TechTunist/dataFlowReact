@@ -315,10 +315,10 @@ const WorkbenchChart = ({
           case '+': v = last1 + last2; break;
           case '-': v = last1 - last2; break;
           case '*': v = last1 * last2; break;
-          case '/': v = last2 !== 0 ? last1 / last2 : null; break;
+          case '/': v = (last2 !== 0 && isFinite(last2)) ? last1 / last2 : null; break;
           default: v = null;
         }
-        if (v !== null) {
+        if (v !== null && isFinite(v)) {
           result.push({ time: t, value: v });
         }
       }
@@ -627,7 +627,7 @@ const WorkbenchChart = ({
           time: item[timeKey] || item.date || item.end_date || (item.timestamp ? new Date(item.timestamp * 1000).toISOString().split('T')[0] : null),
           value: parseFloat(item[valueKey]),
         }))
-        .filter(item => item.time !== null)
+        .filter(item => item.time !== null && isFinite(item.value))
         .sort((a, b) => new Date(a.time) - new Date(b.time));
 
       // Deduplicate by time to prevent lightweight-charts crashes (especially important for dominance data)
@@ -708,11 +708,26 @@ const WorkbenchChart = ({
       // on the initial fitContent. Doing a second fitContent in the next animation frame
       // reliably fixes cases where the new series appears as a flat line until the user pans.
       if (isNewSeries) {
+        // Stronger timing fix for derived series visibility.
         requestAnimationFrame(() => {
           if (chartRef.current) {
             chartRef.current.timeScale().fitContent();
           }
         });
+        // User-requested compromise: when derived series are newly activated,
+        // aggressively force fitContent so the derived series is always plotted correctly
+        // instead of appearing as a flat line until manual panning.
+        if (activeDerivedSeries.length > 0) {
+          setTimeout(() => {
+            if (chartRef.current) chartRef.current.timeScale().fitContent();
+          }, 0);
+          setTimeout(() => {
+            if (chartRef.current) chartRef.current.timeScale().fitContent();
+          }, 80);
+          setTimeout(() => {
+            if (chartRef.current) chartRef.current.timeScale().fitContent();
+          }, 180);
+        }
       }
     }
 

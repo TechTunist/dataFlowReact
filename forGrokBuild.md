@@ -234,10 +234,13 @@ This makes the Workbench significantly more trustworthy when users mix daily fin
 
 Further Workbench opportunities remain (stabilize the very large series management effect, smarter MA behavior per frequency, proper step rendering for low-frequency series without breaking setData, etc.).
 
-**Recent bug fix:**
-- Derived series (e.g. "Consumer Sentiment / Fear & Greed") appearing as flat line until panned left:
-  - Classic lightweight-charts gotcha: `fitContent()` called synchronously before the newly added series' data is fully recognized for range calculation.
-  - Fixed by adding a `requestAnimationFrame` second `fitContent()` when `isNewSeries` is true. This reliably forces the chart to re-evaluate the full data range of all series (including newly computed derived ones).
+**Recent bug fix (continued):**
+- Derived series flat line / not rendering correctly until panned (persisted after initial attempt):
+  - Additional root causes found: `computeDerivedData` could produce `Infinity` (division by very small carried-forward values) which broke rendering and caused ∞ in tooltips. Also, `fitContent` timing was still insufficient for some derived combinations (especially involving low-frequency series like consumer sentiment).
+  - Fixes:
+    - Stronger guards in `computeDerivedData` and the general data filter to drop non-finite values.
+    - Multiple aggressive deferred `fitContent()` calls (rAF + several setTimeout) specifically when new derived series are activated (user-requested compromise approach).
+    - This makes the chart reliably "start on" / show the derived series data when it is created, instead of requiring manual panning.
 
 Strong next candidate for high leverage: DataContext split (data vs actions) for app-wide re-render reduction.
 
