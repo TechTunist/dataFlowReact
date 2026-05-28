@@ -205,11 +205,21 @@ This continues the pattern: protect expensive or frequently-called pure work and
 
 All three follow the same disciplined approach: `React.memo` at the root + `useCallback` for pure helpers/handlers to reduce churn from DataContext updates.
 
-**Remaining high-value charts:**
+**Workbench (major win delivered this session):**
+- Tackled the most complex + interactive premium component.
+- Root cause of lag with SP500 + many macros: crosshair handler was doing full filter/map/sort/dedupe of large raw datasets on (nearly) every mouse move + debounced setState + full React tooltip re-render.
+- Solution: Direct-DOM tooltip element (created once) + `requestAnimationFrame` for updates. No React re-renders on mouse move.
+  - Enables true smooth, **constant (per-frame)** tooltip updates even with many long series loaded.
+  - Prefers lightweight-charts' built-in `param.seriesData` values for speed.
+- Also added `React.memo` root wrapper.
+- Result: Significantly smoother interactivity and usable constant tooltip feedback (exactly what was requested).
+
+**Remaining charts from earlier list:**
 - HistoricalVolatility
 - RiskTimeInBands
-- **Workbench** (most complex/interactive premium component — strong candidate for next if you want bigger impact)
 
-Or we can shift to a DataContext refactor (splitting data vs actions) for wider effect across the whole app.
+Further Workbench follow-ups possible (pre-compute lookup maps per series outside the hot path, stabilize the very large chart setup effect, etc.).
+
+Or pivot to DataContext split for app-wide gains.
 
 Ready for the next chart or a different direction.
