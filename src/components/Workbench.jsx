@@ -143,6 +143,8 @@ const WorkbenchChart = ({
   const rafIdRef = useRef(null);
   // Pre-computed fast lookup maps per series (time -> value) for O(1) tooltip lookups
   const seriesDataMapsRef = useRef({});
+  // Original cleaned sparse points per series (for robust "last known value" / LOCF lookups on mixed-frequency data)
+  const seriesPointsRef = useRef({});
   const prevSeriesRef = useRef({ macro: [], crypto: [], indicator: [], derived: [] });
   const theme = useTheme();
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
@@ -237,6 +239,28 @@ const WorkbenchChart = ({
     }
     return latestPoint ? latestPoint.value : null;
   };
+
+  /**
+   * For low-frequency series (monthly, quarterly, etc.), convert sparse points into step data.
+   * This prevents long connecting lines that look like "stretched random variation"
+   * between actual release dates. The value stays flat until the next real observation.
+   */
+  const createStepData = useCallback((points) => {
+    if (!points || points.length === 0) return [];
+    const step = [];
+    for (let i = 0; i < points.length; i++) {
+      step.push(points[i]);
+      if (i < points.length - 1) {
+        // Carry the current value forward right up to (but not including) the next observation
+        step.push({
+          time: points[i + 1].time,
+          value: points[i].value,
+        });
+      }
+    }
+    return step;
+  }, []);
+
   const getSeriesColor = (id, type) => {
     if (seriesColors[id]) return seriesColors[id];
     if (type === 'macro') return availableMacroSeries[id]?.color || '#00FFFF';
@@ -557,7 +581,9 @@ const WorkbenchChart = ({
         }
       }
       delete seriesRefs.current[id];
-      delete seriesDataMapsRef.current[id]; // Clean up lookup map
+      delete seriesDataMapsRef.current[id];
+      delete seriesPointsRef.current[id];
+      // createStepData doesn't need cleanup (pure)
     });
     const allSeries = [
       ...activeMacroSeries.map(id => ({ id, type: 'macro' })),
@@ -642,14 +668,30 @@ const WorkbenchChart = ({
             logger.warn(`No valid data for series ${id} in logarithmic scale`);
             setError(`Cannot display ${seriesInfo.label} in logarithmic scale due to non-positive values.`);
           } else {
-            series.setData(getSeriesData(id, validData));
+            // Detect low-frequency series (large gaps) → render as steps so value is flat between real observations
+            const gaps = [];
+            for (let i = 1; i < validData.length; i++) {
+              const d1 = new Date(validData[i-1].time).getTime();
+              const d2 = new Date(validData[i].time).getTime();
+              gaps.push(d2 - d1);
+            }
+            const avgGap = gaps.length > 0 ? gaps.reduce((a, b) => a + b, 0) / gaps.length : 0;
+            const isLowFrequency = avgGap > 15 * 24 * 60 * 60 * 1000; // > ~15 days average gap
 
-            // Build fast lookup map for tooltip (time string -> value) - done once per series add, not on every mouse move
+            let dataForChart = getSeriesData(id, validData);
+            if (isLowFrequency) {
+              dataForChart = createStepData(dataForChart.length > 0 ? dataForChart : validData);
+            }
+
+            series.setData(dataForChart);
+
+            // Build fast lookup map + store original sparse points for robust LOCF on mixed-frequency data
             const lookup = new Map();
             validData.forEach(d => {
               if (d.time && d.value != null) lookup.set(String(d.time), d.value);
             });
             seriesDataMapsRef.current[id] = lookup;
+            seriesPointsRef.current[id] = [...validData];
           }
         } catch (err) {
           logger.error(`Error setting data for series ${id}:`, err);
@@ -792,24 +834,32 @@ const WorkbenchChart = ({
           return;
         }
 
-        // Ultra-fast fallback using pre-computed lookup map (built once when series was added)
-        const lookup = seriesDataMapsRef.current[id];
-        if (lookup) {
-          const timeStr = String(param.time);
-          if (lookup.has(timeStr)) {
-            tooltip.values[id] = lookup.get(timeStr);
-            return;
-          }
-          // Nearby time fallback (for slight alignment differences)
-          for (const [t, v] of lookup) {
-            if (t.startsWith(timeStr.substring(0, 10))) { // date match
-              tooltip.values[id] = v;
-              return;
+        // Robust previous-value lookup for mixed-frequency data (monthly, etc.)
+        // This fixes tooltip showing N/A when cursor is not exactly on a sparse datapoint.
+        const points = seriesPointsRef.current[id];
+        if (points && points.length > 0) {
+          const targetTime = new Date(param.time).getTime();
+          let left = 0;
+          let right = points.length - 1;
+          let latest = null;
+
+          while (left <= right) {
+            const mid = Math.floor((left + right) / 2);
+            const ptTime = new Date(points[mid].time).getTime();
+            if (ptTime <= targetTime) {
+              latest = points[mid].value;
+              left = mid + 1;
+            } else {
+              right = mid - 1;
             }
+          }
+          if (latest != null) {
+            tooltip.values[id] = latest;
+            return;
           }
         }
 
-        // Last resort (should rarely happen)
+        // Last resort
         tooltip.values[id] = null;
       });
 
