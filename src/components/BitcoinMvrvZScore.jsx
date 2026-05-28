@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useContext } from 'react';
+import React, { useRef, useEffect, useState, useContext, useMemo, useCallback, memo } from 'react';
 import { createChart } from 'lightweight-charts';
 import '../styling/bitcoinChart.css';
 import { tokens } from "../theme";
@@ -21,13 +21,18 @@ const BitcoinMvrvZScoreChart = ({ isDashboard = false, txMvrvData: propTxMvrvDat
   const colors = tokens(theme.palette.mode);
   const isMobile = useIsMobile();
   const { txMvrvData: contextTxMvrvData, fetchTxMvrvData, btcData, fetchBtcData, txMvrvLastUpdated } = useContext(DataContext);
-  const txMvrvData = propTxMvrvData || contextTxMvrvData;
+  const rawTxMvrvData = propTxMvrvData || contextTxMvrvData;
   const isNarrowScreen = useMediaQuery('(max-width:600px)');
 
-  // Calculate running MVRV Z-Score as (marketCap - realizedCap) / running std(marketCap)
-  const calculateMvrvZScore = (data) => {
-    const minWindow = 365; // Minimum number of data points required to start calculating Z-Score
-    const sorted = data.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
+  // Memoize raw data selection for stable references
+  const txMvrvData = useMemo(() => rawTxMvrvData || [], [rawTxMvrvData]);
+  const btcDataForChart = useMemo(() => btcData || [], [btcData]);
+
+  // Memoized expensive Z-Score calculation (pure function, no mutation of input)
+  const calculateMvrvZScore = useCallback((data) => {
+    const minWindow = 365;
+    // Sort a copy to avoid mutating source data (original code mutated input)
+    const sorted = [...data].sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
     const zScores = [];
     const pastMarkets = [];
     for (const item of sorted) {
@@ -46,11 +51,24 @@ const BitcoinMvrvZScoreChart = ({ isDashboard = false, txMvrvData: propTxMvrvDat
         zScores.push({ time: item.time, value: z });
       }
     }
-    console.debug('Calculated MVRV Z-Scores:', zScores);
     return zScores;
-  };
+  }, []);
 
-  const getIndicators = () => ({
+  // Memoize filtered data + z-score derivation so downstream effects only re-run on actual content change
+  const { filteredTxMvrvData, filteredBtcData, zScoreData } = useMemo(() => {
+    const cutoffDate = new Date('2011-04-16');
+    const fTx = txMvrvData.filter(item => {
+      const timeValid = new Date(item.time) >= cutoffDate;
+      const mvrvValid = item.mvrv !== null && !isNaN(item.mvrv);
+      return timeValid && mvrvValid;
+    });
+    const fBtc = btcDataForChart.filter(item => new Date(item.time) >= cutoffDate);
+
+    const zScores = (fTx.length > 0) ? calculateMvrvZScore(fTx) : [];
+    return { filteredTxMvrvData: fTx, filteredBtcData: fBtc, zScoreData: zScores };
+  }, [txMvrvData, btcDataForChart, calculateMvrvZScore]);
+
+  const getIndicators = useMemo(() => ({
     'z-score': {
       color: theme.palette.mode === 'dark' ? 'rgba(255, 99, 71, 1)' : 'rgba(0, 128, 0, 1)',
       label: 'MVRV Z-Score',
@@ -61,7 +79,7 @@ const BitcoinMvrvZScoreChart = ({ isDashboard = false, txMvrvData: propTxMvrvDat
       label: 'Bitcoin Price',
       description: 'The price of Bitcoin over time.',
     },
-  });
+  }), [theme.palette.mode]);
 
   const setInteractivity = () => {
     setIsInteractive(prev => !prev);
@@ -79,25 +97,9 @@ const BitcoinMvrvZScoreChart = ({ isDashboard = false, txMvrvData: propTxMvrvDat
   }, [fetchTxMvrvData, fetchBtcData]);
 
   useEffect(() => {
-    console.debug('txMvrvData:', txMvrvData);
-    console.debug('btcData:', btcData);
-    if (txMvrvData.length === 0 || btcData.length === 0) {
-      console.warn('No data available: txMvrvData or btcData is empty');
-      return;
-    }
-    const cutoffDate = new Date('2011-04-16');
-    const filteredTxMvrvData = txMvrvData.filter(
-      item => {
-        const timeValid = new Date(item.time) >= cutoffDate;
-        const mvrvValid = item.mvrv !== null && !isNaN(item.mvrv);
-        return timeValid && mvrvValid;
-      }
-    );
-    const filteredBtcData = btcData.filter(item => new Date(item.time) >= cutoffDate);
-    console.debug('filteredTxMvrvData:', filteredTxMvrvData);
-    console.debug('filteredBtcData:', filteredBtcData);
+    // Use memoized derived data — prevents expensive chart recreation when DataContext
+    // causes new array references for unrelated data updates elsewhere in the app.
     if (filteredTxMvrvData.length === 0 || filteredBtcData.length === 0) {
-      console.warn('No valid data after filtering');
       return;
     }
     const chart = createChart(chartContainerRef.current, {
@@ -183,8 +185,7 @@ const BitcoinMvrvZScoreChart = ({ isDashboard = false, txMvrvData: propTxMvrvDat
     });
     priceSeriesRef.current = priceSeries;
     priceSeries.setData(filteredBtcData.map(data => ({ time: data.time, value: data.value })));
-    // MVRV Z-Score Series
-    const zScoreData = calculateMvrvZScore(filteredTxMvrvData);
+    // MVRV Z-Score Series — use pre-computed memoized zScoreData
     const zScoreSeries = chart.addLineSeries({
       priceScaleId: 'right',
       color: zScoreColors.lineColor,
@@ -211,7 +212,7 @@ const BitcoinMvrvZScoreChart = ({ isDashboard = false, txMvrvData: propTxMvrvDat
         window.removeEventListener('resize', resizeChart);
       };
     }
-  }, [txMvrvData, btcData, isDashboard, theme.palette.mode]);
+  }, [filteredTxMvrvData, filteredBtcData, zScoreData, isDashboard, theme.palette.mode]);
 
   useEffect(() => {
     if (chartRef.current) {
@@ -222,7 +223,7 @@ const BitcoinMvrvZScoreChart = ({ isDashboard = false, txMvrvData: propTxMvrvDat
     }
   }, [isInteractive, isDashboard]);
 
-  const indicators = getIndicators();
+  const indicators = getIndicators;
 
   return (
     <div style={{ height: '100%' }}>
@@ -353,4 +354,5 @@ const BitcoinMvrvZScoreChart = ({ isDashboard = false, txMvrvData: propTxMvrvDat
   );
 };
 
-export default restrictToPaidSubscription(BitcoinMvrvZScoreChart);
+const MemoizedBitcoinMvrvZScoreChart = memo(BitcoinMvrvZScoreChart);
+export default restrictToPaidSubscription(MemoizedBitcoinMvrvZScoreChart);
