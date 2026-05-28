@@ -141,6 +141,8 @@ const WorkbenchChart = ({
   // Direct DOM tooltip refs for high-frequency smooth updates (bypasses React re-renders on every mouse move)
   const tooltipElRef = useRef(null);
   const rafIdRef = useRef(null);
+  // Pre-computed fast lookup maps per series (time -> value) for O(1) tooltip lookups
+  const seriesDataMapsRef = useRef({});
   const prevSeriesRef = useRef({ macro: [], crypto: [], indicator: [], derived: [] });
   const theme = useTheme();
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
@@ -555,6 +557,7 @@ const WorkbenchChart = ({
         }
       }
       delete seriesRefs.current[id];
+      delete seriesDataMapsRef.current[id]; // Clean up lookup map
     });
     const allSeries = [
       ...activeMacroSeries.map(id => ({ id, type: 'macro' })),
@@ -640,6 +643,13 @@ const WorkbenchChart = ({
             setError(`Cannot display ${seriesInfo.label} in logarithmic scale due to non-positive values.`);
           } else {
             series.setData(getSeriesData(id, validData));
+
+            // Build fast lookup map for tooltip (time string -> value) - done once per series add, not on every mouse move
+            const lookup = new Map();
+            validData.forEach(d => {
+              if (d.time && d.value != null) lookup.set(String(d.time), d.value);
+            });
+            seriesDataMapsRef.current[id] = lookup;
           }
         } catch (err) {
           logger.error(`Error setting data for series ${id}:`, err);
@@ -782,30 +792,25 @@ const WorkbenchChart = ({
           return;
         }
 
-        // Fallback (lighter than before — we still process here but at least we use rAF + direct DOM)
-        let seriesInfo = getSeriesInfo(id, type);
-        let raw = getRawData(id, type);
-        let valueKey = getValueKey(id);
-        const timeKey = (type === 'indicator' && seriesInfo.dataKey === 'txMvrvData') ? 'date' : 'time';
+        // Ultra-fast fallback using pre-computed lookup map (built once when series was added)
+        const lookup = seriesDataMapsRef.current[id];
+        if (lookup) {
+          const timeStr = String(param.time);
+          if (lookup.has(timeStr)) {
+            tooltip.values[id] = lookup.get(timeStr);
+            return;
+          }
+          // Nearby time fallback (for slight alignment differences)
+          for (const [t, v] of lookup) {
+            if (t.startsWith(timeStr.substring(0, 10))) { // date match
+              tooltip.values[id] = v;
+              return;
+            }
+          }
+        }
 
-        const processed = raw
-          .filter(item => item[valueKey] != null && !isNaN(parseFloat(item[valueKey])))
-          .map(item => ({
-            time: item[timeKey] || item.date || item.end_date || (item.timestamp ? new Date(item.timestamp * 1000).toISOString().split('T')[0] : null),
-            value: parseFloat(item[valueKey]),
-          }))
-          .filter(item => item.time !== null);
-
-        // Quick dedupe (lighter than full sort every move in hot path)
-        const seen = new Set();
-        const deduped = processed.filter(item => {
-          if (seen.has(item.time)) return false;
-          seen.add(item.time);
-          return true;
-        });
-
-        const data = getSeriesData(id, deduped);
-        tooltip.values[id] = getLatestValue(data, param.time);
+        // Last resort (should rarely happen)
+        tooltip.values[id] = null;
       });
 
       rafIdRef.current = requestAnimationFrame(() => updateTooltipDOM(tooltip));
