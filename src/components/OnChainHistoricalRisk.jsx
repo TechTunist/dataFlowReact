@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useContext, useMemo } from 'react';
+import React, { useRef, useEffect, useState, useContext, useMemo, useCallback, memo } from 'react';
 import { createChart } from 'lightweight-charts';
 import { tokens } from '../theme';
 import { useTheme, Select, MenuItem, FormControl, InputLabel, Box, Typography } from '@mui/material';
@@ -84,8 +84,8 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
   const lastUpdatedTime = lastUpdatedMap[selectedMetric];
   const isMetricFetched = isFetchedMap[selectedMetric];
 
-  // Normalize time to 'YYYY-MM-DD'
-  const normalizeTime = (time) => new Date(time).toISOString().split('T')[0];
+  // Normalize time to 'YYYY-MM-DD' (stable)
+  const normalizeTime = useCallback((time) => new Date(time).toISOString().split('T')[0], []);
 
   // Prepare price and risk data with alignment
   const prepareData = useMemo(() => {
@@ -160,19 +160,21 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
     return smoothedData.filter((d) => d.value !== null);
   }, [prepareData, selectedSmoothing]);
 
-  const compactNumberFormatter = (value) => {
+  const compactNumberFormatter = useCallback((value) => {
     if (value >= 1000000) return (value / 1000000).toFixed(0) + 'M';
     if (value >= 1000) return (value / 1000).toFixed(0) + 'k';
     return value.toFixed(0);
-  };
+  }, []);
 
-  const setInteractivity = () => setIsInteractive(!isInteractive);
+  const setInteractivity = useCallback(() => {
+    setIsInteractive(prev => !prev);
+  }, []);
 
-  const resetChartView = () => {
+  const resetChartView = useCallback(() => {
     if (chartRef.current) chartRef.current.timeScale().fitContent();
-  };
+  }, []);
 
-  const calculateLeftPosition = () => {
+  const calculateLeftPosition = useCallback(() => {
     if (!tooltipData || !chartContainerRef.current) return '0px';
     const chartWidth = chartContainerRef.current.clientWidth;
     const tooltipWidth = 200;
@@ -187,7 +189,7 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
     } else {
       return `${Math.max(0, Math.min(cursorX, chartWidth - tooltipWidth))}px`;
     }
-  };
+  }, [tooltipData]);
 
   // Fetch data on mount
   useEffect(() => {
@@ -574,4 +576,5 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
   );
 };
 
-export default restrictToPaidSubscription(OnChainHistoricalRisk);
+const MemoizedOnChainHistoricalRisk = memo(OnChainHistoricalRisk);
+export default restrictToPaidSubscription(MemoizedOnChainHistoricalRisk);
