@@ -205,21 +205,19 @@ This continues the pattern: protect expensive or frequently-called pure work and
 
 All three follow the same disciplined approach: `React.memo` at the root + `useCallback` for pure helpers/handlers to reduce churn from DataContext updates.
 
-**Workbench (major win delivered this session):**
+**Workbench (major multi-pass win delivered this session):**
 - Tackled the most complex + interactive premium component.
-- Root cause of lag with SP500 + many macros: crosshair handler was doing full filter/map/sort/dedupe of large raw datasets on (nearly) every mouse move + debounced setState + full React tooltip re-render.
-- Solution: Direct-DOM tooltip element (created once) + `requestAnimationFrame` for updates. No React re-renders on mouse move.
-  - Enables true smooth, **constant (per-frame)** tooltip updates even with many long series loaded.
-  - Prefers lightweight-charts' built-in `param.seriesData` values for speed.
-- Also added `React.memo` root wrapper.
-- Result: Significantly smoother interactivity and usable constant tooltip feedback (exactly what was requested).
+- Pass 1: Direct-DOM tooltip + rAF (no React re-renders on mouse move) → enables true constant per-frame tooltip updates.
+- Pass 2: Pre-computed `Map<time, value>` lookup per series (built once on add, O(1) reads in hot path).
+  - Crosshair handler now does almost zero work even with 10+ long series (SP500 + macros etc.).
+  - Combined with direct DOM, tooltip is now near-zero cost at 60 fps.
+- Added `React.memo`.
+- Result: Dramatically smoother chart feel + the exact "constant tooltip updates" behavior requested.
 
-**Remaining charts from earlier list:**
-- HistoricalVolatility
-- RiskTimeInBands
+**All planned per-chart hardenings complete** (5 charts + deep Workbench work).
 
-Further Workbench follow-ups possible (pre-compute lookup maps per series outside the hot path, stabilize the very large chart setup effect, etc.).
+Further Workbench opportunities remain (stabilize the very large series management effect with its huge dep array, more derived data memoization, etc.).
 
-Or pivot to DataContext split for app-wide gains.
+Strong next candidate for high leverage: DataContext split (data vs actions) for app-wide re-render reduction.
 
-Ready for the next chart or a different direction.
+Ready for the next phase or a different direction.
