@@ -186,6 +186,24 @@ Also worth a quick pass:
 
 When the top 5–6 heaviest charts are hardened, re-evaluate with a fresh `npm run build` + manual smoke test of the premium valuation charts (MVRV Z, Puell, On-Chain Risk, Workbench).
 
-**Current state feels good — the MVRV Z-Score chart is now significantly more resilient to parent/context churn while keeping its rich interactivity and accuracy.**
+**Current state feels good — two core premium valuation charts (MVRV Z-Score + Puell Multiple) are now significantly more resilient to parent/context churn while keeping their rich interactivity, accuracy, and behavior.**
 
-Ready for the next chart or the context-level improvement when you return.
+### Second chart completed this session
+- **PuellMultiple.jsx** (another high-value on-chain miner valuation / cycle indicator)
+  - Already had excellent architecture (main chart created once with `[]` deps, subsequent updates via lightweight `setData()` on series refs driven by `useMemo` derivations for price, puell, and normalized-puell series).
+  - Hardening focused on reducing per-render function churn: all pure helpers and handlers (`calculateDailyIssuance`, `normalizeTime`, `compactNumberFormatter`, `calculateLeftPosition`, `setInteractivity`, `resetChart`) wrapped in `useCallback`.
+  - Removed small amount of dead code (scaling factor helpers that were no longer called after the cycle-weighting implementation).
+  - Added `React.memo` wrapper (consistent with MVRV approach).
+  - Build verified clean.
+
+This continues the pattern: protect expensive or frequently-called pure work and component roots from DataContext identity changes and parent re-renders.
+
+**Next recommended charts (pick any):**
+- OnChainHistoricalRisk
+- HistoricalVolatility
+- RiskTimeInBands
+- Workbench (biggest win for interactive users)
+
+Or we can pivot to a DataContext-level improvement if you prefer broader impact over per-chart work.
+
+Ready for the next chart or a different direction.
