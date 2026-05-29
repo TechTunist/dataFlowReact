@@ -79,6 +79,26 @@ const FredSeriesChart = ({
   const primaryDataRef = useRef([]);
   const sp500DataRef = useRef([]);
 
+  // Cleaned data used for BOTH primary series plotting AND technical indicator (MA/RSI) calculations.
+  // This ensures consistency (same points, same time normalization, same log-scale filtering)
+  // and matches the pattern used in BitcoinPrice / AltcoinPrice / etc.
+  const cleanedPrimaryData = useMemo(() => {
+    if (!primarySeriesData || primarySeriesData.length === 0) return [];
+    return primarySeriesData
+      .filter(item => {
+        if (item.value == null || isNaN(item.value)) return false;
+        if (scaleModeState === 1 && item.value <= 0) return false;
+        const t = item.time;
+        if (!t || (typeof t === 'string' && t.length <= 4)) return false;
+        return true;
+      })
+      .map(item => ({
+        ...item,
+        time: item.time.includes('-') ? item.time : `${item.time}-01-01`
+      }))
+      .sort((a, b) => new Date(a.time) - new Date(b.time));
+  }, [primarySeriesData, scaleModeState]);
+
   const handleSMAChange = useCallback((event) => setActiveSMAs(event.target.value), []);
   const handleRsiPeriodChange = useCallback((event) => {
     setActiveRsiPeriod(event.target.value);
@@ -197,7 +217,7 @@ const FredSeriesChart = ({
 
   // Moving Averages effect
   useEffect(() => {
-    if (!chartRef.current || primarySeriesData.length === 0 || !enableTechnicalIndicators) {
+    if (!chartRef.current || cleanedPrimaryData.length === 0 || !enableTechnicalIndicators) {
       Object.keys(smaSeriesRefs.current).forEach(key => {
         if (smaSeriesRefs.current[key] && chartRef.current) {
           try { chartRef.current.removeSeries(smaSeriesRefs.current[key]); } catch (e) {}
@@ -227,7 +247,7 @@ const FredSeriesChart = ({
             priceLineVisible: false,
           });
           smaSeriesRefs.current[key] = series;
-          const maData = calculateMA(primarySeriesData, indicator);
+          const maData = calculateMA(cleanedPrimaryData, indicator);
           if (maData.length > 0) series.setData(maData);
         } else if (indicator.type === 'composite' && key === BULL_MARKET_SUPPORT_BAND.key) {
           // Bull Market Support Band (SMA + EMA)
@@ -238,7 +258,7 @@ const FredSeriesChart = ({
             priceLineVisible: false,
           });
           smaSeriesRefs.current[`${key}-sma`] = smaSeries;
-          const smaData = calculateMA(primarySeriesData, indicator.sma);
+          const smaData = calculateMA(cleanedPrimaryData, indicator.sma);
           if (smaData.length > 0) smaSeries.setData(smaData);
 
           const emaSeries = chartRef.current.addLineSeries({
@@ -248,18 +268,18 @@ const FredSeriesChart = ({
             priceLineVisible: false,
           });
           smaSeriesRefs.current[`${key}-ema`] = emaSeries;
-          const emaData = calculateMA(primarySeriesData, indicator.ema);
+          const emaData = calculateMA(cleanedPrimaryData, indicator.ema);
           if (emaData.length > 0) emaSeries.setData(emaData);
         }
       } catch (error) {
         console.error('Error adding MA series:', error);
       }
     });
-  }, [activeSMAs, primarySeriesData, enableTechnicalIndicators, maIndicators]);
+  }, [activeSMAs, cleanedPrimaryData, enableTechnicalIndicators, maIndicators, calculateMA]);
 
   // RSI effect
   useEffect(() => {
-    if (!chartRef.current || primarySeriesData.length === 0 || !enableTechnicalIndicators || !activeRsiPeriod) {
+    if (!chartRef.current || cleanedPrimaryData.length === 0 || !enableTechnicalIndicators || !activeRsiPeriod) {
       if (rsiSeriesRef.current && chartRef.current) {
         try { chartRef.current.removeSeries(rsiSeriesRef.current); } catch (e) {}
         rsiSeriesRef.current = null;
@@ -283,9 +303,9 @@ const FredSeriesChart = ({
     });
     rsiSeriesRef.current = rsiSeries;
 
-    const rsiData = calculateRSI(primarySeriesData, rsiConfig.days);
+    const rsiData = calculateRSI(cleanedPrimaryData, rsiConfig.days);
     if (rsiData.length > 0) rsiSeries.setData(rsiData);
-  }, [activeRsiPeriod, primarySeriesData, enableTechnicalIndicators, calculateRSI, rsiPeriods]);
+  }, [activeRsiPeriod, cleanedPrimaryData, enableTechnicalIndicators, calculateRSI, rsiPeriods]);
 
   // Update colors
   useEffect(() => {
@@ -315,24 +335,10 @@ const FredSeriesChart = ({
 
   // Update main series data
   useEffect(() => {
-    if (!chartRef.current || primarySeriesData.length === 0) return;
+    if (!chartRef.current || cleanedPrimaryData.length === 0) return;
 
     const isNewSeries = seriesId !== prevSeriesIdRef.current;
     prevSeriesIdRef.current = seriesId;
-
-    const cleanedPrimaryData = primarySeriesData
-      .filter(item => {
-        if (item.value == null || isNaN(item.value)) return false;
-        if (scaleModeState === 1 && item.value <= 0) return false;
-        const t = item.time;
-        if (!t || (typeof t === 'string' && t.length <= 4)) return false;
-        return true;
-      })
-      .map(item => ({
-        ...item,
-        time: item.time.includes('-') ? item.time : `${item.time}-01-01`
-      }))
-      .sort((a, b) => new Date(a.time) - new Date(b.time));
 
     if (cleanedPrimaryData.length === 0) {
       setError(`No valid data for ${seriesId}`);
@@ -392,7 +398,7 @@ const FredSeriesChart = ({
     if (isNewSeries || !zoomRange) {
       chartRef.current.timeScale().fitContent();
     }
-  }, [primarySeriesData, sp500SeriesData, chartType, scaleModeState, valueFormatter, theme.palette.mode, seriesId, showSP500Overlay]);
+  }, [cleanedPrimaryData, sp500SeriesData, chartType, valueFormatter, theme.palette.mode, seriesId, showSP500Overlay]);
 
   // Tooltip
   useEffect(() => {
