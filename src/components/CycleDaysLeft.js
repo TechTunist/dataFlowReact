@@ -3,7 +3,7 @@ import { Box, Typography, useTheme } from '@mui/material';
 import { tokens } from '../theme';
 import { useData } from '../DataContext';
 
-const CycleDaysLeft = () => {
+const CycleDaysLeft = ({ onlyBottom = false }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const { btcData } = useData();
@@ -25,6 +25,9 @@ const CycleDaysLeft = () => {
       'Cycle 2': { start: '2017-12-17', end: '2021-11-10' },
       'Cycle 3': { start: '2021-11-10', end: null },
     },
+    top: {
+      'Cycle 4': { start: '2025-10-06', end: null }, // Bull market top
+    },
   }), []);
 
   // Calculate days between two dates
@@ -41,6 +44,7 @@ const CycleDaysLeft = () => {
       bottom: 0,
       halving: 0,
       peak: 0,
+      topToBottom: 370, // Historical average from bull market top to next cycle bottom (user-defined, based on 2017→2018 and 2021→2022 cycles)
     };
 
     // From Cycle Low (Cycle 2 and 3)
@@ -74,6 +78,7 @@ const CycleDaysLeft = () => {
       bottom: { elapsed: 0, left: 0 },
       halving: { elapsed: 0, left: 0 },
       peak: { elapsed: 0, left: 0 },
+      topToBottom: { elapsed: 0, left: 0, average: averageCycleLengths.topToBottom },
     };
 
     // From Cycle Low (Cycle 4)
@@ -88,9 +93,48 @@ const CycleDaysLeft = () => {
     data.peak.elapsed = calculateDays(cycleDates.peak['Cycle 3'].start, currentDate.toISOString().split('T')[0]) || 0;
     data.peak.left = Math.max(0, averageCycleLengths.peak - data.peak.elapsed);
 
+    // From Bull Market Top (2025-10-06) → Expected Bottom (using 370-day average)
+    data.topToBottom.elapsed = calculateDays(cycleDates.top['Cycle 4'].start, currentDate.toISOString().split('T')[0]) || 0;
+    data.topToBottom.left = Math.max(0, averageCycleLengths.topToBottom - data.topToBottom.elapsed);
+
     return data;
   }, [averageCycleLengths, btcData, cycleDates]);
 
+  if (onlyBottom) {
+    // Single "Days left til bottom" box — based on average time from bull market top to bottom (matches Market Overview)
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          marginTop: '10px',
+        }}
+      >
+        <Box
+          sx={{
+            backgroundColor: colors.primary[500],
+            padding: '15px',
+            borderRadius: '8px',
+            textAlign: 'center',
+            minWidth: '200px',
+            border: `1px solid ${colors.grey[300]}`,
+          }}
+        >
+          <Typography variant="h6" color={colors.grey[100]}>
+            Days left til bottom
+          </Typography>
+          <Typography variant="h4" color={colors.greenAccent[500]}>
+            {daysLeftData.topToBottom.left}
+          </Typography>
+          <Typography variant="body2" color={colors.grey[300]}>
+            Avg: {averageCycleLengths.topToBottom} days
+          </Typography>
+        </Box>
+      </Box>
+    );
+  }
+
+  // Default: show all 3 boxes
   return (
     <Box
       sx={{

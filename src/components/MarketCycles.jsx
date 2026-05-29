@@ -496,7 +496,7 @@ const MarketCycles = ({ isDashboard = false }) => {
         {!isDashboard && <BitcoinFees />}
       </div>
       <div>
-        {!isDashboard && <CycleDaysLeft />}
+        {!isDashboard && <CycleDaysLeft onlyBottom />}
       </div>
       {!isDashboard && (
         <p className='chart-info'>
