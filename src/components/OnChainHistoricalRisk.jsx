@@ -381,12 +381,9 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
           <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '200px' } }}>
             <InputLabel
               id="metric-label"
-              shrink
               sx={{
                 color: colors.grey[100],
                 '&.Mui-focused': { color: colors.greenAccent[500] },
-                top: 0,
-                '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' },
               }}
             >
               Risk Metric
@@ -416,12 +413,9 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
           <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '200px' } }}>
             <InputLabel
               id="smoothing-label"
-              shrink
               sx={{
                 color: colors.grey[100],
                 '&.Mui-focused': { color: colors.greenAccent[500] },
-                top: 0,
-                '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' },
               }}
             >
               Smoothing

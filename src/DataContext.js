@@ -1,8 +1,9 @@
 // src/DataContext.js
-import React, { createContext, useState, useCallback, useContext, useEffect, useMemo } from 'react';
+import React, { createContext, useState, useCallback, useContext, useEffect, useMemo, useRef } from 'react';
 import { initDB, cacheData, getCachedData, clearCache, isCacheFresh, getFreshCachedData, DEFAULT_CACHE_TTL, pruneOldCache } from './utility/idbUtils';
 import { API_BASE_URL, apiUrl } from './config/api';
 import logger from './utils/logger';
+import { initializeDataService, getBtcPriceSeries, getEthPriceSeries, getMvrvSeries, getMarketCapSeries, getDominanceSeries } from './data'; // New data layer (Phase 1)
 
 export const DataContext = createContext();
 
@@ -570,16 +571,9 @@ export const DataProvider = ({ children }) => {
       await new Promise(resolve => setTimeout(resolve, 100));
       if (isBtcDataFetched) return;
     }
-    await fetchWithCache({
-      cacheId: 'btcData',
-      apiUrl: apiUrl('/api/btc/price/'),
-      formatData: (data) =>
-        data
-          .filter((item) => item.close != null && !isNaN(parseFloat(item.close)))
-          .map((item) => ({
-            time: item.date,
-            value: parseFloat(item.close),
-          })),
+
+    // Delegated to DataService
+    await getBtcPriceSeries({
       setData: setBtcData,
       setLastUpdated: setBtcLastUpdated,
       setIsFetched: setIsBtcDataFetched,
@@ -764,14 +758,9 @@ export const DataProvider = ({ children }) => {
       await new Promise(resolve => setTimeout(resolve, 100));
       if (isMvrvDataFetched) return;
     }
-    await fetchWithCache({
-      cacheId: 'mvrvData',
-      apiUrl: apiUrl('/api/mvrv/'),
-      formatData: (data) =>
-        data.map((item) => ({
-          time: item.time.split('T')[0],
-          value: parseFloat(item.cap_mvrv_cur),
-        })),
+
+    // Delegated to DataService
+    await getMvrvSeries({
       setData: setMvrvData,
       setLastUpdated: setMvrvLastUpdated,
       setIsFetched: setIsMvrvDataFetched,
@@ -795,17 +784,9 @@ const fetchDominanceData = useCallback(async () => {
     await new Promise(resolve => setTimeout(resolve, 100));
     if (isDominanceDataFetched) return;
   }
-  await fetchWithCache({
-    cacheId: 'dominanceData',
-    apiUrl: apiUrl('/api/dominance/'),
-    formatData: (data) =>
-      data.map((item) => ({
-        time: item.date,
-        btc: parseFloat(item.btc),
-        eth: parseFloat(item.eth),
-        alt: parseFloat(item.alt),
-        stable: parseFloat(item.stable),
-      })),
+
+  // Delegated to DataService
+  await getDominanceSeries({
     setData: setDominanceData,
     setLastUpdated: setDominanceLastUpdated,
     setIsFetched: setIsDominanceDataFetched,
@@ -828,16 +809,9 @@ const fetchDominanceData = useCallback(async () => {
       await new Promise(resolve => setTimeout(resolve, 100));
       if (isEthDataFetched) return;
     }
-    await fetchWithCache({
-      cacheId: 'ethData',
-      apiUrl: apiUrl('/api/eth/price/'),
-      formatData: (data) =>
-        data
-          .filter((item) => item.close != null && !isNaN(parseFloat(item.close)))
-          .map((item) => ({
-            time: item.date,
-            value: parseFloat(item.close),
-          })),
+
+    // Delegated to DataService
+    await getEthPriceSeries({
       setData: setEthData,
       setLastUpdated: setEthLastUpdated,
       setIsFetched: setIsEthDataFetched,
@@ -892,14 +866,9 @@ const fetchDominanceData = useCallback(async () => {
       await new Promise(resolve => setTimeout(resolve, 100));
       if (isMarketCapDataFetched) return;
     }
-    await fetchWithCache({
-      cacheId: 'marketCapData',
-      apiUrl: apiUrl('/api/total/marketcap/'),
-      formatData: (data) =>
-        data.map((item) => ({
-          time: item.date,
-          value: parseFloat(item.market_cap),
-        })),
+
+    // Delegated to DataService
+    await getMarketCapSeries({
       setData: setMarketCapData,
       setLastUpdated: setMarketCapLastUpdated,
       setIsFetched: setIsMarketCapDataFetched,
@@ -1716,6 +1685,17 @@ const fetchDominanceData = useCallback(async () => {
       total3LastUpdated,
     ]
   );
+
+  // Initialize the new data layer exactly once (Phase 1).
+  // We use a ref to guarantee this runs only on the first mount.
+  const dataLayerInitialized = useRef(false);
+  if (!dataLayerInitialized.current) {
+    initializeDataService({
+      fetchWithCache,
+      refreshData,
+    });
+    dataLayerInitialized.current = true;
+  }
 
   return (
     <DataContext.Provider value={contextValue}>

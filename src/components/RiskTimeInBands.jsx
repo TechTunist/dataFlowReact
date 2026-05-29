@@ -231,12 +231,9 @@ const AssetRiskBandDuration = ({ isDashboard = false, riskData: propRiskData }) 
               <FormControl sx={{ minWidth: '200px', width: '100%' }}>
                 <InputLabel
                   id="asset-label"
-                  shrink
                   sx={{
                     color: colors.grey[100],
                     '&.Mui-focused': { color: colors.greenAccent[500] },
-                    top: 0,
-                    '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' },
                   }}
                 >
                   Asset
@@ -276,12 +273,9 @@ const AssetRiskBandDuration = ({ isDashboard = false, riskData: propRiskData }) 
                 <FormControl sx={{ minWidth: '200px', flex: 2 }}>
                   <InputLabel
                     id="risk-band-mode-label"
-                    shrink
                     sx={{
                       color: colors.grey[100],
                       '&.Mui-focused': { color: colors.greenAccent[500] },
-                      top: 0,
-                      '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' },
                     }}
                   >
                     Risk Band Size
@@ -348,12 +342,9 @@ const AssetRiskBandDuration = ({ isDashboard = false, riskData: propRiskData }) 
                 <FormControl sx={{ minWidth: '200px', width: '200px' }}>
                   <InputLabel
                     id="asset-label"
-                    shrink
                     sx={{
                       color: colors.grey[100],
                       '&.Mui-focused': { color: colors.greenAccent[500] },
-                      top: 0,
-                      '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' },
                     }}
                   >
                     Asset
@@ -384,12 +375,9 @@ const AssetRiskBandDuration = ({ isDashboard = false, riskData: propRiskData }) 
                 <FormControl sx={{ minWidth: '200px', width: '200px' }}>
                   <InputLabel
                     id="risk-band-mode-label"
-                    shrink
                     sx={{
                       color: colors.grey[100],
                       '&.Mui-focused': { color: colors.greenAccent[500] },
-                      top: 0,
-                      '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' },
                     }}
                   >
                     Risk Band Size
@@ -415,19 +403,7 @@ const AssetRiskBandDuration = ({ isDashboard = false, riskData: propRiskData }) 
                   </Select>
                 </FormControl>
               </Box>
-              <button
-                onClick={resetChartView}
-                className="button-reset"
-                style={{
-                  backgroundColor: 'transparent',
-                  color: '#31d6aa',
-                  border: '1px solid #70d8bd',
-                  padding: '8px 16px',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  flexShrink: 0,
-                }}
-              >
+              <button onClick={resetChartView} className="button-reset extra-margin">
                 Reset Chart
               </button>
             </Box>

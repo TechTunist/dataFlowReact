@@ -1347,12 +1347,9 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
           <FormControl sx={{ minWidth: isMobile ? '100%' : '200px' }}>
             <InputLabel
               id="smoothing-mode-label"
-              shrink
               sx={{
                 color: colors.grey[100],
                 '&.Mui-focused': { color: colors.greenAccent[500] },
-                top: 0,
-                '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' },
               }}
             >
               Smoothing
@@ -1387,8 +1384,6 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
                 sx={{
                   color: colors.grey[100],
                   '&.Mui-focused': { color: colors.greenAccent[500] },
-                  top: 0,
-                  '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' },
                 }}
               >
                 Trends

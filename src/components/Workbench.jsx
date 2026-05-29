@@ -8,6 +8,7 @@ import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
 import useIsMobile from '../hooks/useIsMobile';
 import { DataContext } from '../DataContext';
+import { normalizePriceData, deduplicateByTime } from '../data'; // New data layer (Phase 1)
 import { Box, FormControl, InputLabel, Select, MenuItem, Checkbox, Button, Dialog, DialogTitle, DialogContent, DialogActions, Autocomplete, TextField, Snackbar, Alert } from '@mui/material';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 // Color mapping for named colors to RGB (kept for fallback compatibility)
@@ -281,24 +282,11 @@ const WorkbenchChart = ({
     }
     return [];
   };
+  // Now delegated to the new shared DataService (Phase 1 of frontend data layer cleanup).
+  // This removes duplication and centralizes the normalization logic.
   const getNormalizedData = (rawData, valueKey) => {
-    let normalized = rawData
-      .filter(item => item[valueKey] != null && !isNaN(parseFloat(item[valueKey])))
-      .map(item => ({
-        time: item.time || item.date || item.end_date || (item.timestamp ? new Date(item.timestamp * 1000).toISOString().split('T')[0] : null),
-        value: parseFloat(item[valueKey]),
-      }))
-      .filter(item => item.time !== null)
-      .sort((a, b) => new Date(a.time) - new Date(b.time));
-
-    // Deduplicate by time (fixes lightweight-charts issues with duplicate dates, e.g. dominance data)
-    const seen = new Set();
-    return normalized.filter(item => {
-      const key = item.time;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
+    const normalized = normalizePriceData(rawData, valueKey);
+    return deduplicateByTime(normalized);
   };
   const computeDerivedData = (d1, d2, op) => {
     const map1 = new Map(d1.map(d => [d.time, d.value]));

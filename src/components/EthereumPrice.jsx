@@ -5,7 +5,14 @@ import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
 import useIsMobile from '../hooks/useIsMobile';
 import { DataContext } from '../DataContext';
-import { Select, MenuItem, FormControl, InputLabel, Box, Checkbox } from '@mui/material';
+import { Select, MenuItem, FormControl, InputLabel, Box, Checkbox, ListSubheader } from '@mui/material';
+import { 
+  getAllMovingAverageOptions, 
+  getDailyMAs, 
+  getWeeklyMAs, 
+  BULL_MARKET_SUPPORT_BAND,
+  calculateMovingAverage 
+} from '../utils/technicalIndicators';
 import LastUpdated from '../hooks/LastUpdated';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 
@@ -28,9 +35,14 @@ const EthereumPrice = ({ isDashboard = false }) => {
   const [isInteractive, setIsInteractive] = useState(false);
   const [activeIndicators, setActiveIndicators] = useState([]);
   const [activeSMAs, setActiveSMAs] = useState([]);
+  const [maFilter, setMaFilter] = useState('daily'); // 'daily' | 'weekly'
   const [activeRsiPeriod, setActiveRsiPeriod] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  const clearMovingAverages = useCallback(() => {
+    setActiveSMAs([]);
+  }, []);
 
   const indicators = useMemo(() => ({
     'fed-balance': {
@@ -45,19 +57,8 @@ const EthereumPrice = ({ isDashboard = false }) => {
     },
   }), []);
 
-  const smaIndicators = useMemo(() => ({
-    '8w-sma': { period: 8 * 7, color: 'blue', label: '8 Week SMA', type: 'sma' },
-    '20w-sma': { period: 20 * 7, color: 'limegreen', label: '20 Week SMA', type: 'sma' },
-    '50w-sma': { period: 50 * 7, color: 'magenta', label: '50 Week SMA', type: 'sma' },
-    '100w-sma': { period: 100 * 7, color: 'white', label: '100 Week SMA', type: 'sma' },
-    '200w-sma': { period: 200 * 7, color: 'yellow', label: '200 Week SMA', type: 'sma' },
-    'bull-market-support': {
-      sma: { period: 20 * 7, color: 'red', label: '20 Week SMA (Bull Market Support)' },
-      ema: { period: 21 * 7, color: 'limegreen', label: '21 Week EMA (Bull Market Support)' },
-      label: 'Bull Market Support Band',
-      type: 'bull-market-support',
-    },
-  }), []);
+  // Full power from the shared master list
+  const maIndicators = useMemo(() => getAllMovingAverageOptions(), []);
 
   const rsiPeriods = useMemo(() => ({
     '14-day': { days: 14, label: '14 Day RSI' },
@@ -105,37 +106,6 @@ const EthereumPrice = ({ isDashboard = false }) => {
     };
     fetchIndicatorData();
   }, [activeIndicators, fetchFedBalanceData, fedBalanceData.length]);
-
-  const calculateMovingAverage = useCallback((data, period) => {
-    let movingAverages = [];
-    for (let i = period - 1; i < data.length; i++) {
-      let sum = 0;
-      for (let j = 0; j < period; j++) {
-        sum += data[i - j].value;
-      }
-      movingAverages.push({
-        time: data[i].time,
-        value: sum / period,
-      });
-    }
-    return movingAverages;
-  }, []);
-
-  const calculateExponentialMovingAverage = useCallback((data, period) => {
-    const k = 2 / (period + 1);
-    let emaData = [];
-    let sum = 0;
-    for (let i = 0; i < period; i++) {
-      sum += data[i].value;
-    }
-    let ema = sum / period;
-    emaData.push({ time: data[period - 1].time, value: ema });
-    for (let i = period; i < data.length; i++) {
-      ema = (data[i].value * k) + (ema * (1 - k));
-      emaData.push({ time: data[i].time, value: ema });
-    }
-    return emaData;
-  }, []);
 
   const calculateMayerMultiple = useCallback((data) => {
     const period = 200;
@@ -406,8 +376,9 @@ const EthereumPrice = ({ isDashboard = false }) => {
     });
 
     activeSMAs.forEach(key => {
-      const indicator = smaIndicators[key];
-      if (indicator.type === 'sma') {
+      const indicator = maIndicators[key];
+      if (!indicator) return;
+      if (indicator.type === 'sma' || indicator.type === 'ema') {
         const series = chartRef.current.addLineSeries({
           color: indicator.color,
           lineWidth: 2,
@@ -415,9 +386,9 @@ const EthereumPrice = ({ isDashboard = false }) => {
           priceScaleId: 'right',
         });
         smaSeriesRefs[key] = series;
-        const data = calculateMovingAverage(ethData, indicator.period);
+        const data = calculateMovingAverage(ethData, indicator); // pass full config
         series.setData(data);
-      } else if (indicator.type === 'bull-market-support') {
+      } else if (indicator.type === 'bull-market-support' || indicator.type === 'composite') {
         const smaSeries = chartRef.current.addLineSeries({
           color: indicator.sma.color,
           lineWidth: 2,
@@ -425,7 +396,7 @@ const EthereumPrice = ({ isDashboard = false }) => {
           priceScaleId: 'right',
         });
         smaSeriesRefs[`${key}-sma`] = smaSeries;
-        const smaData = calculateMovingAverage(ethData, indicator.sma.period);
+        const smaData = calculateMovingAverage(ethData, indicator.sma);
         smaSeries.setData(smaData);
 
         const emaSeries = chartRef.current.addLineSeries({
@@ -435,11 +406,11 @@ const EthereumPrice = ({ isDashboard = false }) => {
           priceScaleId: 'right',
         });
         smaSeriesRefs[`${key}-ema`] = emaSeries;
-        const emaData = calculateExponentialMovingAverage(ethData, indicator.ema.period);
+        const emaData = calculateMovingAverage(ethData, indicator.ema);
         emaSeries.setData(emaData);
       }
     });
-  }, [activeSMAs, ethData, calculateMovingAverage, calculateExponentialMovingAverage, smaIndicators]);
+  }, [activeSMAs, ethData, calculateMovingAverage, maIndicators]);
 
   // Update scale mode and interactivity
   useEffect(() => {
@@ -487,8 +458,6 @@ const EthereumPrice = ({ isDashboard = false }) => {
               sx={{
                 color: colors.grey[100],
                 '&.Mui-focused': { color: colors.greenAccent[500] },
-                top: 0,
-                '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' },
               }}
             >
               Indicators
@@ -500,11 +469,12 @@ const EthereumPrice = ({ isDashboard = false }) => {
               labelId="indicators-label"
               label="Indicators"
               displayEmpty
-              renderValue={(selected) =>
-                selected.length > 0
-                  ? selected.map((key) => indicators[key].label).join(', ')
-                  : 'Select Indicators'
-              }
+              renderValue={(selected) => {
+                if (!selected || selected.length === 0) return 'Select Indicators';
+                return selected
+                  .map((key) => indicators[key]?.label || key)
+                  .join(', ');
+              }}
               sx={{
                 color: colors.grey[100],
                 backgroundColor: colors.primary[500],
@@ -534,8 +504,6 @@ const EthereumPrice = ({ isDashboard = false }) => {
               sx={{
                 color: colors.grey[100],
                 '&.Mui-focused': { color: colors.greenAccent[500] },
-                top: 0,
-                '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' },
               }}
             >
               Moving Averages
@@ -547,11 +515,12 @@ const EthereumPrice = ({ isDashboard = false }) => {
               labelId="sma-label"
               label="Moving Averages"
               displayEmpty
-              renderValue={(selected) =>
-                selected.length > 0
-                  ? selected.map((key) => smaIndicators[key].label).join(', ')
-                  : 'Select Moving Averages'
-              }
+              renderValue={(selected) => {
+                if (!selected || selected.length === 0) return 'Select Moving Averages';
+                return selected
+                  .map((key) => maIndicators[key]?.label || key)
+                  .join(', ');
+              }}
               sx={{
                 color: colors.grey[100],
                 backgroundColor: colors.primary[500],
@@ -563,15 +532,77 @@ const EthereumPrice = ({ isDashboard = false }) => {
                 '& .MuiSelect-select:empty': { color: colors.grey[500] },
               }}
             >
-              {Object.entries(smaIndicators).map(([key, { label }]) => (
-                <MenuItem key={key} value={key}>
-                  <Checkbox
-                    checked={activeSMAs.includes(key)}
-                    sx={{ color: colors.grey[100], '&.Mui-checked': { color: colors.greenAccent[500] } }}
-                  />
-                  <span>{label}</span>
-                </MenuItem>
-              ))}
+              {/* Daily / Weekly filter tabs + Clear button at the top of the dropdown */}
+              <Box
+                sx={{
+                  display: 'flex',
+                  borderBottom: '1px solid',
+                  borderColor: 'rgba(255,255,255,0.15)',
+                  mx: 0.5,
+                  mt: 0.5,
+                  mb: 0.5,
+                  alignItems: 'center',
+                }}
+              >
+                <Box
+                  onClick={() => setMaFilter('daily')}
+                  sx={{
+                    flex: 1,
+                    textAlign: 'center',
+                    py: 0.6,
+                    fontSize: '0.78rem',
+                    fontWeight: maFilter === 'daily' ? 600 : 400,
+                    color: maFilter === 'daily' ? colors.greenAccent[400] : colors.grey[300],
+                    cursor: 'pointer',
+                    userSelect: 'none',
+                    borderBottom: maFilter === 'daily' ? `2px solid ${colors.greenAccent[400]}` : '2px solid transparent',
+                  }}
+                >
+                  Daily
+                </Box>
+                <Box
+                  onClick={() => setMaFilter('weekly')}
+                  sx={{
+                    flex: 1,
+                    textAlign: 'center',
+                    py: 0.6,
+                    fontSize: '0.78rem',
+                    fontWeight: maFilter === 'weekly' ? 600 : 400,
+                    color: maFilter === 'weekly' ? colors.greenAccent[400] : colors.grey[300],
+                    cursor: 'pointer',
+                    userSelect: 'none',
+                    borderBottom: maFilter === 'weekly' ? `2px solid ${colors.greenAccent[400]}` : '2px solid transparent',
+                  }}
+                >
+                  Weekly / Cycle
+                </Box>
+                <Box
+                  onClick={clearMovingAverages}
+                  sx={{
+                    fontSize: '0.72rem',
+                    color: colors.grey[400],
+                    cursor: 'pointer',
+                    px: 1,
+                    '&:hover': { color: colors.redAccent ? colors.redAccent[400] : '#ff6b6b' },
+                  }}
+                  title="Clear all selected moving averages"
+                >
+                  ✕ Clear
+                </Box>
+              </Box>
+
+              {/* Filtered list */}
+              {(maFilter === 'daily' ? getDailyMAs() : getWeeklyMAs())
+                .filter(item => maIndicators[item.key])
+                .map(({ key, label }) => (
+                  <MenuItem key={key} value={key}>
+                    <Checkbox
+                      checked={activeSMAs.includes(key)}
+                      sx={{ color: colors.grey[100], '&.Mui-checked': { color: colors.greenAccent[500] } }}
+                    />
+                    <span>{label}</span>
+                  </MenuItem>
+                ))}
             </Select>
           </FormControl>
           <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '300px' } }}>
@@ -581,8 +612,6 @@ const EthereumPrice = ({ isDashboard = false }) => {
               sx={{
                 color: colors.grey[100],
                 '&.Mui-focused': { color: colors.greenAccent[500] },
-                top: 0,
-                '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' },
               }}
             >
               RSI Period
@@ -714,8 +743,9 @@ const EthereumPrice = ({ isDashboard = false }) => {
             </div>
           )}
           {activeSMAs.map(key => {
-            const indicator = smaIndicators[key];
-            if (indicator.type === 'bull-market-support') {
+            const indicator = maIndicators[key];
+            if (!indicator) return null;
+            if (indicator.type === 'bull-market-support' || indicator.type === 'composite') {
               return (
                 <React.Fragment key={key}>
                   <div style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>

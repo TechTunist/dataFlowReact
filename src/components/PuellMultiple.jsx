@@ -437,14 +437,9 @@ const PuellMultiple = ({ isDashboard = false }) => {
             <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '200px' } }}>
               <InputLabel
                 id="smoothing-label"
-                shrink
                 sx={{
                   color: colors.grey[100],
                   '&.Mui-focused': { color: colors.greenAccent[500] },
-                  top: 0,
-                  '&.MuiInputLabel-shrink': {
-                    transform: 'translate(14px, -9px) scale(0.75)',
-                  },
                 }}
               >
                 Smoothing Period
@@ -491,42 +486,20 @@ const PuellMultiple = ({ isDashboard = false }) => {
               >
                 {showNormalizedPuell ? 'Hide Normalized Puell' : 'Show Normalized Puell'}
               </Button>
-              <Button
+              <button
                 onClick={setInteractivity}
-                sx={{
+                className="button-reset"
+                style={{
                   backgroundColor: isInteractive ? '#4cceac' : 'transparent',
                   color: isInteractive ? 'black' : '#31d6aa',
-                  border: `1px solid ${isInteractive ? 'violet' : '#70d8bd'}`,
-                  borderRadius: '4px',
-                  padding: '8px 16px',
-                  fontSize: '14px',
-                  textTransform: 'none',
-                  '&:hover': {
-                    backgroundColor: colors.greenAccent[400],
-                    color: theme.palette.mode === 'dark' ? colors.grey[900] : colors.grey[100],
-                  },
+                  borderColor: isInteractive ? 'violet' : '#70d8bd',
                 }}
               >
                 {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
-              </Button>
-              <Button
-                onClick={resetChart}
-                sx={{
-                  backgroundColor: 'transparent',
-                  color: '#31d6aa',
-                  border: `1px solid ${colors.greenAccent[400]}`,
-                  borderRadius: '4px',
-                  padding: '8px 16px',
-                  fontSize: '14px',
-                  textTransform: 'none',
-                  '&:hover': {
-                    backgroundColor: colors.greenAccent[400],
-                    color: theme.palette.mode === 'dark' ? colors.grey[900] : colors.grey[100],
-                  },
-                }}
-              >
+              </button>
+              <button onClick={resetChart} className="button-reset extra-margin">
                 Reset Chart
-              </Button>
+              </button>
             </Box>
           </Box>
           <div className='chart-top-div'>

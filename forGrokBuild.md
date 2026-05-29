@@ -244,4 +244,44 @@ Further Workbench opportunities remain (stabilize the very large series manageme
 
 Strong next candidate for high leverage: DataContext split (data vs actions) for app-wide re-render reduction.
 
-Ready for the next phase or a different direction.
+---
+
+## Session Handoff - Frontend Data Layer Professionalization
+
+**Date:** Current session (continued Workbench + architecture focus)
+
+### What Was Accomplished
+- Created the foundation for a proper frontend data layer under `src/data/`:
+  - `DataService.js` (with `getBtcPriceSeries`, `getEthPriceSeries`, `getMvrvSeries`, `getMarketCapSeries`, `getDominanceSeries`, plus shared helpers like `normalizePriceData` and `deduplicateByTime`)
+  - `fetchUtils.js`
+  - `index.js`
+- Safely initialized the service from `DataContext.js` (using a ref to run only once).
+- Progressively delegated five core series from the giant `DataContext` to the new service layer (BTC, ETH, MVRV, Market Cap, Dominance).
+- Performed a cleanup pass to standardize the delegation comments in `DataContext.js`.
+- All changes were small, incremental, and kept the existing behavior 100% intact.
+- Multiple clean production builds verified throughout the session.
+
+### Key Documents Created Today (for context)
+- `SYSTEM_COUPLING_MAP.md` — Detailed mapping of frontend data access to backend endpoints.
+- `SAFE_FRONTEND_DATA_LAYER_EVOLUTION_PROPOSAL.md` — The guiding proposal for this work.
+- `JOINT_PROFESSIONALIZATION_PLAN.md` + `BACKEND_DATA_PIPELINE_SAFETY_RUNBOOK.md` — Emphasize extremely conservative approach to anything touching the backend/data ingestion.
+- `QUALITY_PROFESSIONALIZATION_ROADMAP.md`
+
+### Current State
+- `DataContext.js` is starting to thin out on the data-fetching side.
+- The new `DataService` is the single place that should eventually own "how we fetch and shape raw data".
+- Backend remains completely untouched (as per your strong preference). All work so far is strictly additive on the frontend.
+
+### Recommended First Action Tomorrow
+Pick up with the next small, reviewable step in the Data Layer work. Good candidates:
+1. Extract the repeated "preload guard" pattern into a small helper (biggest remaining duplication in the delegated functions).
+2. Delegate one or two more series (e.g. Fear & Greed or a macro series) to further prove the pattern.
+3. Begin using the service inside the Workbench for raw data access (bigger but high-value win).
+
+The main guiding documents are now `SAFE_FRONTEND_DATA_LAYER_EVOLUTION_PROPOSAL.md` and `SYSTEM_COUPLING_MAP.md`.
+
+---
+
+**Repo is in a clean, buildable state.** All recent changes are in the working tree (new files + modifications to DataContext and Workbench). You can review the diff tomorrow morning.
+
+Ready when you are. Good night — we'll pick up exactly where we left off.
