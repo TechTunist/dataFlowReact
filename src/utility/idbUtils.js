@@ -1,4 +1,16 @@
 import { openDB } from 'idb';
+import logger from '../utils/logger';
+
+/**
+ * Phase 2 improvement: Simple TTL-aware cache helpers.
+ * These can be expanded later with size limits and versioning.
+ */
+export const DEFAULT_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+
+export function isCacheFresh(cached, ttl = DEFAULT_CACHE_TTL) {
+  if (!cached || !cached.timestamp) return false;
+  return (Date.now() - cached.timestamp) < ttl;
+}
 
 const DB_NAME = 'CryptoDataDB';
 const DATA_STORE_NAME = 'apiData';
@@ -29,18 +41,68 @@ export async function initDB() {
       },
     });
   } catch (error) {
-    console.error('Failed to initialize IndexedDB:', error);
+    logger.error('Failed to initialize IndexedDB:', error);
     throw error;
   }
 }
 
-export async function cacheData(id, data, timestamp) {
+export async function cacheData(id, data, timestamp = Date.now()) {
   try {
     const db = await initDB();
     await db.put(DATA_STORE_NAME, { id, data, timestamp });
   } catch (error) {
-    console.error(`Failed to cache data for id ${id}:`, error);
+    logger.error(`Failed to cache data for id ${id}:`, error);
     throw error;
+  }
+}
+
+/**
+ * Phase 2: Enhanced helper that returns cached data only if fresh according to TTL.
+ * Falls back to null if stale or missing.
+ */
+export async function getFreshCachedData(id, ttl = DEFAULT_CACHE_TTL) {
+  try {
+    const cached = await getCachedData(id);
+    if (cached && isCacheFresh(cached, ttl)) {
+      return cached;
+    }
+    return null;
+  } catch (error) {
+    logger.error(`Failed to get fresh cached data for id ${id}:`, error);
+    return null;
+  }
+}
+
+/**
+ * Phase 2: Basic cache pruning helper.
+ * Removes entries older than the given maxAge (in ms).
+ * Can be called on app start or periodically.
+ */
+export async function pruneOldCache(maxAge = 7 * 24 * 60 * 60 * 1000) { // default 7 days
+  try {
+    const db = await initDB();
+    const tx = db.transaction(DATA_STORE_NAME, 'readwrite');
+    const store = tx.objectStore(DATA_STORE_NAME);
+    const all = await store.getAll();
+
+    const now = Date.now();
+    let pruned = 0;
+
+    for (const entry of all) {
+      if (entry.timestamp && (now - entry.timestamp) > maxAge) {
+        await store.delete(entry.id);
+        pruned++;
+      }
+    }
+
+    await tx.done;
+    if (pruned > 0) {
+      logger.log(`[Cache] Pruned ${pruned} old entries older than ${Math.round(maxAge / (24 * 60 * 60 * 1000))} days`);
+    }
+    return pruned;
+  } catch (error) {
+    logger.error('Failed to prune old cache entries', error);
+    return 0;
   }
 }
 
@@ -50,7 +112,7 @@ export async function getCachedData(id) {
     const data = await db.get(DATA_STORE_NAME, id);
     return data;
   } catch (error) {
-    console.error(`Failed to get cached data for id ${id}:`, error);
+    logger.error(`Failed to get cached data for id ${id}:`, error);
     throw error;
   }
 }
@@ -60,7 +122,7 @@ export async function clearCache(id) {
     const db = await initDB();
     await db.delete(DATA_STORE_NAME, id);
   } catch (error) {
-    console.error(`Failed to clear cache for id ${id}:`, error);
+    logger.error(`Failed to clear cache for id ${id}:`, error);
     throw error;
   }
 }
@@ -70,7 +132,7 @@ export async function saveBitcoinRisk(riskLevel) {
     const db = await initDB();
     await db.put(RISK_STORE_NAME, { id: 'currentRisk', riskLevel, timestamp: Date.now() });
   } catch (error) {
-    console.error('Failed to save Bitcoin risk level:', error);
+    logger.error('Failed to save Bitcoin risk level:', error);
     throw error;
   }
 }
@@ -90,7 +152,7 @@ export async function getBitcoinRisk() {
     }
     return null;
   } catch (error) {
-    console.error('Failed to get Bitcoin risk level from IndexedDB:', error);
+    logger.error('Failed to get Bitcoin risk level from IndexedDB:', error);
     return null;
   }
 }

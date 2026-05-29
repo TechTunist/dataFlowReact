@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '@mui/material';
 import { tokens } from "../theme";
+import { EXTERNAL } from '../config/api';
+import logger from '../utils/logger';
 
 const BitcoinFees = () => {
     const [fees, setFees] = useState(null);
@@ -10,34 +12,37 @@ const BitcoinFees = () => {
 
     const getTransactionFees = async () => {
         try {
-            const response = await fetch('https://api.blockchain.info/mempool/fees');
+            const response = await fetch(EXTERNAL.blockchainMempoolFees());
             if (!response.ok) {
                 throw new Error('Network response was not ok');
             }
             const data = await response.json();
-            return data; // Adjusted to return the entire data
+            return data;
         } catch (error) {
-            console.error('Error fetching transaction fees:', error);
+            logger.error('Error fetching transaction fees:', error);
             return null;
         }
     };
 
     const getBitcoinPrice = async () => {
         try {
-            const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd');
+            const response = await fetch(EXTERNAL.coinGeckoBtcPrice());
             if (!response.ok) {
                 throw new Error('Network response was not ok');
             }
             const data = await response.json();
             return data.bitcoin.usd;
         } catch (error) {
-            console.error('Error fetching Bitcoin price:', error);
+            logger.error('Error fetching Bitcoin price:', error);
             return null;
         }
     };
 
     useEffect(() => {
         const fetchFeesAndPrice = async () => {
+            // This widget uses lightweight localStorage caching (10 min TTL)
+            // because the data is very small and external (blockchain.info + CoinGecko).
+            // For our own API data we use the main IndexedDB system in idbUtils.
             const cachedFees = localStorage.getItem('btcFees');
             const cachedPrice = localStorage.getItem('btcPrice');
             const cacheTime = localStorage.getItem('cacheTime');
@@ -71,7 +76,7 @@ const BitcoinFees = () => {
     };
 
     if (!fees || !btcPrice) {
-        return <div>Loading...</div>;
+        return <div style={{ opacity: 0.7 }}>Loading fees...</div>;
     }
 
     const averageFee = (calculateFeeInUsd(fees.regular) + calculateFeeInUsd(fees.priority)) / 2;

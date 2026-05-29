@@ -13,6 +13,7 @@ import { useClerk, useUser } from "@clerk/clerk-react";
 import PersonOutlinedIcon from "@mui/icons-material/PersonOutlined";
 import PaymentOutlinedIcon from "@mui/icons-material/PaymentOutlined";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
+import { apiUrl } from "../../config/api";
 import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import StarBorderIcon from "@mui/icons-material/StarBorder";
@@ -106,7 +107,6 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
   const currentChartId = routeToChartId[location.pathname];
   const isChartPage = !!currentChartId;
   const isFavorite = isChartPage && favoriteCharts.includes(currentChartId);
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://vercel-dataflow.vercel.app';
 
   // Fetch subscription status to get the user's plan
   useEffect(() => {
@@ -114,7 +114,7 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
       const fetchSubscriptionStatus = async () => {
         try {
           const token = await user.getToken();
-          const response = await fetch(`${API_BASE_URL}/api/subscription-status/?t=${Date.now()}`, {
+          const response = await fetch(apiUrl('/api/subscription-status/'), {
             method: 'GET',
             headers: {
               'Authorization': `Bearer ${token}`,

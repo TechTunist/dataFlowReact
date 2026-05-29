@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useContext, useMemo } from 'react';
+import React, { useRef, useEffect, useState, useContext, useMemo, useCallback, memo } from 'react';
 import { createChart } from 'lightweight-charts';
 import { tokens } from "../theme";
 import { useTheme, Button, Box, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
@@ -59,8 +59,8 @@ const PuellMultiple = ({ isDashboard = false }) => {
     }
   }), []);
 
-  // Calculate daily issuance based on block reward schedule
-  const calculateDailyIssuance = (date) => {
+  // Calculate daily issuance based on block reward schedule (stable)
+  const calculateDailyIssuance = useCallback((date) => {
     const halvingInterval = 210000; // Blocks per halving
     const blocksPerDay = 144; // Approx. 144 blocks/day
     const genesisDate = new Date('2009-01-03');
@@ -69,27 +69,12 @@ const PuellMultiple = ({ isDashboard = false }) => {
     const halvingCount = Math.floor(blocksMined / halvingInterval);
     const reward = 50 / Math.pow(2, halvingCount);
     return reward * blocksPerDay; // Daily issuance in BTC
-  };
+  }, []);
 
-  // Get reward for a given date (used for cycle scaling)
-  const getCurrentReward = (date) => {
-    const genesisDate = new Date('2009-01-03');
-    const daysSinceGenesis = Math.floor((new Date(date) - genesisDate) / (1000 * 60 * 60 * 24));
-    const blocksPerDay = 144;
-    const blocksMined = daysSinceGenesis * blocksPerDay;
-    const halvingInterval = 210000;
-    const halvingCount = Math.floor(blocksMined / halvingInterval);
-    return 50 / Math.pow(2, Math.min(halvingCount, halvingSchedule.length - 1)); // Cap at last known
-  };
-
-  // Get scaling factor for normalization (current reward / initial reward)
-  const getScalingFactor = (date) => {
-    const currentReward = getCurrentReward(date);
-    return currentReward / 50; // Normalizes to first cycle's issuance level
-  };
-
-  // Normalize time to 'YYYY-MM-DD'
-  const normalizeTime = (time) => new Date(time).toISOString().split('T')[0];
+  // Normalize time to 'YYYY-MM-DD' (stable)
+  const normalizeTime = useCallback((time) => {
+    return new Date(time).toISOString().split('T')[0];
+  }, []);
 
   const prepareData = useMemo(() => {
     if (!btcData || !onchainMetricsData || !Array.isArray(onchainMetricsData)) {
@@ -233,17 +218,19 @@ const PuellMultiple = ({ isDashboard = false }) => {
     return TARGET_MAX_PUELL * 1.1;
   }, [normalizedPuellDataAll]);
 
-  const setInteractivity = () => setIsInteractive(!isInteractive);
+  const setInteractivity = useCallback(() => {
+    setIsInteractive(prev => !prev);
+  }, []);
 
-  const compactNumberFormatter = (value) => {
+  const compactNumberFormatter = useCallback((value) => {
     if (value >= 1000000) return (value / 1000000).toFixed(0) + 'M';
     if (value >= 1000) return (value / 1000).toFixed(0) + 'k';
     return value.toFixed(0);
-  };
+  }, []);
 
-  const resetChart = () => {
+  const resetChart = useCallback(() => {
     if (chartRef.current) chartRef.current.timeScale().fitContent();
-  };
+  }, []);
 
   // Fetch initial data
   useEffect(() => {
@@ -409,36 +396,28 @@ const PuellMultiple = ({ isDashboard = false }) => {
     setLastUpdatedDate(latestPuellData ? latestPuellData.time : null);
   }, [prepareData.priceData, puellDataAll]);
 
-  // Calculate tooltip position
-  const calculateLeftPosition = () => {
+  // Calculate tooltip position (stable)
+  const calculateLeftPosition = useCallback(() => {
     if (!tooltipData) return '0px';
-    const chartWidth = chartContainerRef.current.clientWidth;
-    const tooltipWidth = 200; // Estimated tooltip width
-    const desiredOffset = 100; // 100px offset from cursor
+    const chartWidth = chartContainerRef.current?.clientWidth || 800;
+    const tooltipWidth = 200;
+    const desiredOffset = 100;
     const cursorX = tooltipData.x;
-    // Calculate positions for both left and right placement
     const rightPosition = cursorX + desiredOffset;
     const leftPosition = cursorX - desiredOffset - tooltipWidth + 200;
-    // Try right placement first (preferred)
     if (rightPosition + tooltipWidth <= chartWidth) {
       return `${rightPosition}px`;
-    }
-    // If right placement doesn't fit, try left placement
-    else if (leftPosition >= 0) {
+    } else if (leftPosition >= 0) {
       return `${leftPosition}px`;
-    }
-    // If neither fits, center it or position it as close as possible to the cursor
-    else {
-      // Position it as close as possible to the cursor while staying in bounds
+    } else {
       const centeredPosition = Math.max(0, Math.min(cursorX, chartWidth - tooltipWidth));
-      // If cursor is in the right half, bias toward right edge
       if (cursorX > chartWidth / 2) {
         return `${Math.max(centeredPosition, chartWidth - tooltipWidth)}px`;
       } else {
         return `${centeredPosition}px`;
       }
     }
-  };
+  }, [tooltipData]);
 
   return (
     <div style={{ height: '100%' }}>
@@ -458,14 +437,9 @@ const PuellMultiple = ({ isDashboard = false }) => {
             <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '200px' } }}>
               <InputLabel
                 id="smoothing-label"
-                shrink
                 sx={{
                   color: colors.grey[100],
                   '&.Mui-focused': { color: colors.greenAccent[500] },
-                  top: 0,
-                  '&.MuiInputLabel-shrink': {
-                    transform: 'translate(14px, -9px) scale(0.75)',
-                  },
                 }}
               >
                 Smoothing Period
@@ -512,42 +486,20 @@ const PuellMultiple = ({ isDashboard = false }) => {
               >
                 {showNormalizedPuell ? 'Hide Normalized Puell' : 'Show Normalized Puell'}
               </Button>
-              <Button
+              <button
                 onClick={setInteractivity}
-                sx={{
+                className="button-reset"
+                style={{
                   backgroundColor: isInteractive ? '#4cceac' : 'transparent',
                   color: isInteractive ? 'black' : '#31d6aa',
-                  border: `1px solid ${isInteractive ? 'violet' : '#70d8bd'}`,
-                  borderRadius: '4px',
-                  padding: '8px 16px',
-                  fontSize: '14px',
-                  textTransform: 'none',
-                  '&:hover': {
-                    backgroundColor: colors.greenAccent[400],
-                    color: theme.palette.mode === 'dark' ? colors.grey[900] : colors.grey[100],
-                  },
+                  borderColor: isInteractive ? 'violet' : '#70d8bd',
                 }}
               >
                 {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
-              </Button>
-              <Button
-                onClick={resetChart}
-                sx={{
-                  backgroundColor: 'transparent',
-                  color: '#31d6aa',
-                  border: `1px solid ${colors.greenAccent[400]}`,
-                  borderRadius: '4px',
-                  padding: '8px 16px',
-                  fontSize: '14px',
-                  textTransform: 'none',
-                  '&:hover': {
-                    backgroundColor: colors.greenAccent[400],
-                    color: theme.palette.mode === 'dark' ? colors.grey[900] : colors.grey[100],
-                  },
-                }}
-              >
+              </button>
+              <button onClick={resetChart} className="button-reset extra-margin">
                 Reset Chart
-              </Button>
+              </button>
             </Box>
           </Box>
           <div className='chart-top-div'>
@@ -640,4 +592,5 @@ const PuellMultiple = ({ isDashboard = false }) => {
   );
 };
 
-export default restrictToPaidSubscription(PuellMultiple);
+const MemoizedPuellMultiple = memo(PuellMultiple);
+export default restrictToPaidSubscription(MemoizedPuellMultiple);

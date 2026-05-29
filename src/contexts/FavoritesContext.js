@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth, useUser } from '@clerk/clerk-react';
+import { API_BASE_URL, apiUrl } from '../config/api';
 
 export const FavoritesContext = createContext({
   favoriteCharts: [],
@@ -16,7 +17,6 @@ export const FavoritesProvider = ({ children }) => {
   const [favoriteCharts, setFavoriteCharts] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://vercel-dataflow.vercel.app';
 
   const fetchFavorites = useCallback(async () => {
     if (!isSignedIn || !user) return;
@@ -27,7 +27,7 @@ export const FavoritesProvider = ({ children }) => {
       if (!token) {
         throw new Error('Failed to obtain authentication token');
       }
-      const response = await fetch(`${API_BASE_URL}/api/favorite-charts/?t=${Date.now()}`, {
+      const response = await fetch(apiUrl('/api/favorite-charts/'), {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -63,7 +63,7 @@ export const FavoritesProvider = ({ children }) => {
       if (!token) {
         throw new Error('Failed to obtain authentication token');
       }
-      const response = await fetch(`${API_BASE_URL}/api/favorite-charts/add/`, {
+      const response = await fetch(apiUrl('/api/favorite-charts/add/'), {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -102,7 +102,7 @@ export const FavoritesProvider = ({ children }) => {
       if (!token) {
         throw new Error('Failed to obtain authentication token');
       }
-      const response = await fetch(`${API_BASE_URL}/api/favorite-charts/remove/`, {
+      const response = await fetch(apiUrl('/api/favorite-charts/remove/'), {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

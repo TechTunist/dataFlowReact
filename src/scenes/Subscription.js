@@ -16,6 +16,7 @@ import {
 import { tokens } from '../theme';
 import Header from '../components/Header';
 import { StripeContext } from '../App';
+import { apiUrl } from '../config/api';
 
 const Subscription = memo(() => {
   const theme = useTheme();
@@ -42,7 +43,6 @@ const Subscription = memo(() => {
   const [success, setSuccess] = useState('');
   const [openCancelDialog, setOpenCancelDialog] = useState(false);
   const [selectedCurrency, setSelectedCurrency] = useState('USD');
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://vercel-dataflow.vercel.app';
   const plans = [
     { id: 11, name: 'Full Access (Beta)', billing_interval: 'MONTHLY', price_gbp: 10.00, price_usd: 13.45 },
   ];
@@ -60,7 +60,7 @@ const Subscription = memo(() => {
       if (!token) {
         throw new Error('Failed to obtain authentication token');
       }
-      const response = await fetch(`${API_BASE_URL}/api/subscription-status/`, {
+      const response = await fetch(apiUrl('/api/subscription-status/'), {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -124,7 +124,7 @@ const Subscription = memo(() => {
       if (!token) {
         throw new Error('Failed to obtain authentication token');
       }
-      const response = await fetch(`${API_BASE_URL}/api/create-checkout-session/`, {
+      const response = await fetch(apiUrl('/api/create-checkout-session/'), {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -165,7 +165,7 @@ const Subscription = memo(() => {
       if (!token) {
         throw new Error('Failed to obtain authentication token');
       }
-      const response = await fetch(`${API_BASE_URL}/api/create-portal-session/`, {
+      const response = await fetch(apiUrl('/api/create-portal-session/'), {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -203,7 +203,7 @@ const Subscription = memo(() => {
       if (!token) {
         throw new Error('Failed to obtain authentication token');
       }
-      const response = await fetch(`${API_BASE_URL}/api/cancel-subscription/`, {
+      const response = await fetch(apiUrl('/api/cancel-subscription/'), {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

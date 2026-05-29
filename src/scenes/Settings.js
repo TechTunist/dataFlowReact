@@ -4,6 +4,7 @@ import { Box, Typography, useTheme, FormControlLabel, Switch, Button } from "@mu
 import { tokens } from "../theme";
 import Header from "../components/Header";
 import { useNavigate } from "react-router-dom";
+import { apiUrl } from "../config/api";
 
 const Settings = () => {
   const theme = useTheme();
@@ -22,7 +23,7 @@ const Settings = () => {
       setLoading(true);
       try {
         const token = await getToken();
-        const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/user-settings/get/`, {
+        const response = await fetch(apiUrl('/api/user-settings/get/'), {
           method: "GET",
           headers: {
             Authorization: `Bearer ${token}`,
@@ -48,7 +49,7 @@ const Settings = () => {
     setError("");
     try {
       const token = await getToken();
-      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/user-settings/`, {
+      const response = await fetch(apiUrl('/api/user-settings/'), {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

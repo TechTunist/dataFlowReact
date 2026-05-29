@@ -1,6 +1,7 @@
 // src/components/TestAPI.js
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { apiUrl } from '../config/api';
 
 const TestAPI = () => {
   const [response, setResponse] = useState(null);
@@ -9,7 +10,7 @@ const TestAPI = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await axios.get('https://vercel-dataflow.vercel.app/api/test/');
+        const res = await axios.get(apiUrl('/api/test/'));
         setResponse(res.data);
       } catch (err) {
         setError(err.message);

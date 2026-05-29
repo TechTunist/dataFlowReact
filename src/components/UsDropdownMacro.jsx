@@ -4,6 +4,7 @@ import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
 import '../styling/bitcoinChart.css';
 import useIsMobile from '../hooks/useIsMobile';
+import { apiUrl } from '../config/api';
 import LastUpdated from '../hooks/LastUpdated';
 
 const UsCombinedMacroChart = ({ isDashboard = false }) => {
@@ -30,7 +31,7 @@ const UsCombinedMacroChart = ({ isDashboard = false }) => {
         const fetchData = async () => {
             try {
                 // const response = await fetch('https://tunist.pythonanywhere.com/api/combined-macro-data/');
-                const response = await fetch('https://vercel-dataflow.vercel.app/api/combined-macro-data/');
+                const response = await fetch(apiUrl('/api/combined-macro-data/'));
                 const data = await response.json();
                 let lastKnownInflation = null;
                 const formattedData = data.map(item => {

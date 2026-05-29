@@ -14,7 +14,16 @@ import {
   InputLabel,
   Checkbox,
   Box,
+  ListSubheader,
 } from '@mui/material';
+
+import {
+  getAllMovingAverageOptions,
+  getDailyMAs,
+  getWeeklyMAs,
+  calculateMovingAverage as calculateMA,
+  BULL_MARKET_SUPPORT_BAND,
+} from '../utils/technicalIndicators';
 
 const FredSeriesChart = ({
   seriesId,
@@ -39,11 +48,8 @@ const FredSeriesChart = ({
   const isMobile = useIsMobile();
   const { fredSeriesData, fetchFredSeriesData } = useContext(DataContext);
 
-  const smaIndicators = useMemo(() => ({
-    '8w-sma': { period: 8 * 7, color: '#00FF00', label: '8 Week SMA' },
-    '20w-sma': { period: 20 * 7, color: '#FF00FF', label: '20 Week SMA' },
-    '50w-sma': { period: 50 * 7, color: '#FFD700', label: '50 Week SMA' },
-  }), []);
+  // Full power from the shared master list (daily/weekly tabs make the long list easy to use)
+  const maIndicators = useMemo(() => getAllMovingAverageOptions(), []);
 
   const rsiPeriods = useMemo(() => ({
     'Daily': { days: 14, label: 'Daily RSI (14)' },
@@ -58,7 +64,12 @@ const FredSeriesChart = ({
   const [error, setError] = useState(null);
   const [zoomRange, setZoomRange] = useState(null);
   const [activeSMAs, setActiveSMAs] = useState([]);
+  const [maFilter, setMaFilter] = useState('daily'); // 'daily' | 'weekly' — defaults to daily as requested
   const [activeRsiPeriod, setActiveRsiPeriod] = useState('');
+
+  const clearMovingAverages = useCallback(() => {
+    setActiveSMAs([]);
+  }, []);
   const [showRsi, setShowRsi] = useState(false);
   const [isLegendVisible, setIsLegendVisible] = useState(!isMobile);
 
@@ -204,20 +215,47 @@ const FredSeriesChart = ({
     });
 
     activeSMAs.forEach(key => {
-      const indicator = smaIndicators[key];
+      const indicator = maIndicators[key];
       if (!indicator) return;
 
-      const series = chartRef.current.addLineSeries({
-        priceScaleId: 'right',
-        color: indicator.color,
-        lineWidth: 2,
-        priceLineVisible: false,
-      });
-      smaSeriesRefs.current[key] = series;
-      const smaData = calculateMovingAverage(primarySeriesData, indicator.period);
-      if (smaData.length > 0) series.setData(smaData);
+      try {
+        if (indicator.type === 'sma' || indicator.type === 'ema') {
+          const series = chartRef.current.addLineSeries({
+            priceScaleId: 'right',
+            color: indicator.color,
+            lineWidth: 2,
+            priceLineVisible: false,
+          });
+          smaSeriesRefs.current[key] = series;
+          const maData = calculateMA(primarySeriesData, indicator);
+          if (maData.length > 0) series.setData(maData);
+        } else if (indicator.type === 'composite' && key === BULL_MARKET_SUPPORT_BAND.key) {
+          // Bull Market Support Band (SMA + EMA)
+          const smaSeries = chartRef.current.addLineSeries({
+            priceScaleId: 'right',
+            color: indicator.sma.color,
+            lineWidth: 2,
+            priceLineVisible: false,
+          });
+          smaSeriesRefs.current[`${key}-sma`] = smaSeries;
+          const smaData = calculateMA(primarySeriesData, indicator.sma);
+          if (smaData.length > 0) smaSeries.setData(smaData);
+
+          const emaSeries = chartRef.current.addLineSeries({
+            priceScaleId: 'right',
+            color: indicator.ema.color,
+            lineWidth: 2,
+            priceLineVisible: false,
+          });
+          smaSeriesRefs.current[`${key}-ema`] = emaSeries;
+          const emaData = calculateMA(primarySeriesData, indicator.ema);
+          if (emaData.length > 0) emaSeries.setData(emaData);
+        }
+      } catch (error) {
+        console.error('Error adding MA series:', error);
+      }
     });
-  }, [activeSMAs, primarySeriesData, enableTechnicalIndicators, calculateMovingAverage, smaIndicators]);
+  }, [activeSMAs, primarySeriesData, enableTechnicalIndicators, maIndicators]);
 
   // RSI effect
   useEffect(() => {
@@ -419,6 +457,169 @@ const FredSeriesChart = ({
 
   return (
     <div style={{ height: '100%', position: 'relative' }}>
+      {!isDashboard && enableTechnicalIndicators && (
+        <Box sx={{
+          display: 'flex',
+          flexDirection: { xs: 'column', sm: 'row' },
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '20px',
+          marginBottom: '30px',
+          marginTop: '50px',
+        }}>
+          <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '300px' } }}>
+            <InputLabel
+              id="sma-label"
+              shrink
+              sx={{
+                color: colors.grey[100],
+                '&.Mui-focused': { color: colors.greenAccent[500] },
+              }}
+            >
+              Moving Averages
+            </InputLabel>
+            <Select
+              multiple
+              value={activeSMAs}
+              onChange={handleSMAChange}
+              labelId="sma-label"
+              label="Moving Averages"
+              displayEmpty
+              renderValue={(selected) => {
+                if (!selected || selected.length === 0) return 'Select Moving Averages';
+                return selected
+                  .map((key) => maIndicators[key]?.label || key)
+                  .join(', ');
+              }}
+              sx={{
+                color: colors.grey[100],
+                backgroundColor: colors.primary[500],
+                borderRadius: "8px",
+                '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
+                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                '& .MuiSelect-select': { py: 1.5, pl: 2 },
+                '& .MuiSelect-select:empty': { color: colors.grey[500] },
+              }}
+            >
+              {/* Daily / Weekly filter tabs + Clear button at the top of the dropdown (defaults to daily) */}
+              <Box
+                sx={{
+                  display: 'flex',
+                  borderBottom: '1px solid',
+                  borderColor: 'rgba(255,255,255,0.15)',
+                  mx: 0.5,
+                  mt: 0.5,
+                  mb: 0.5,
+                  alignItems: 'center',
+                }}
+              >
+                <Box
+                  onClick={() => setMaFilter('daily')}
+                  sx={{
+                    flex: 1,
+                    textAlign: 'center',
+                    py: 0.6,
+                    fontSize: '0.78rem',
+                    fontWeight: maFilter === 'daily' ? 600 : 400,
+                    color: maFilter === 'daily' ? colors.greenAccent[400] : colors.grey[300],
+                    cursor: 'pointer',
+                    userSelect: 'none',
+                    borderBottom: maFilter === 'daily' ? `2px solid ${colors.greenAccent[400]}` : '2px solid transparent',
+                  }}
+                >
+                  Daily
+                </Box>
+                <Box
+                  onClick={() => setMaFilter('weekly')}
+                  sx={{
+                    flex: 1,
+                    textAlign: 'center',
+                    py: 0.6,
+                    fontSize: '0.78rem',
+                    fontWeight: maFilter === 'weekly' ? 600 : 400,
+                    color: maFilter === 'weekly' ? colors.greenAccent[400] : colors.grey[300],
+                    cursor: 'pointer',
+                    userSelect: 'none',
+                    borderBottom: maFilter === 'weekly' ? `2px solid ${colors.greenAccent[400]}` : '2px solid transparent',
+                  }}
+                >
+                  Weekly / Cycle
+                </Box>
+                <Box
+                  onClick={clearMovingAverages}
+                  sx={{
+                    fontSize: '0.72rem',
+                    color: colors.grey[400],
+                    cursor: 'pointer',
+                    px: 1,
+                    '&:hover': { color: colors.redAccent ? colors.redAccent[400] : '#ff6b6b' },
+                  }}
+                  title="Clear all selected moving averages"
+                >
+                  ✕ Clear
+                </Box>
+              </Box>
+
+              {/* Filtered list */}
+              {(maFilter === 'daily' ? getDailyMAs() : getWeeklyMAs())
+                .filter(item => maIndicators[item.key])
+                .map(({ key, label }) => (
+                  <MenuItem key={key} value={key}>
+                    <Checkbox
+                      checked={activeSMAs.includes(key)}
+                      sx={{ color: colors.grey[100], '&.Mui-checked': { color: colors.greenAccent[500] } }}
+                    />
+                    <span>{label}</span>
+                  </MenuItem>
+                ))}
+            </Select>
+          </FormControl>
+
+          <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '200px' } }}>
+            <InputLabel
+              id="rsi-label"
+              shrink
+              sx={{
+                color: colors.grey[100],
+                '&.Mui-focused': { color: colors.greenAccent[500] },
+              }}
+            >
+              RSI
+            </InputLabel>
+            <Select
+              value={activeRsiPeriod}
+              onChange={handleRsiPeriodChange}
+              labelId="rsi-label"
+              label="RSI"
+              displayEmpty
+              renderValue={(selected) =>
+                selected ? rsiPeriods[selected]?.label : 'Select RSI Period'
+              }
+              sx={{
+                color: colors.grey[100],
+                backgroundColor: colors.primary[500],
+                borderRadius: "8px",
+                '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
+                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                '& .MuiSelect-select': { py: 1.5, pl: 2 },
+                '& .MuiSelect-select:empty': { color: colors.grey[500] },
+              }}
+            >
+              <MenuItem value="">
+                <span>None</span>
+              </MenuItem>
+              {Object.entries(rsiPeriods).map(([key, { label }]) => (
+                <MenuItem key={key} value={key}>
+                  <span>{label}</span>
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Box>
+      )}
+
       {!isDashboard && (
         <div className="chart-top-div">
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
@@ -441,58 +642,6 @@ const FredSeriesChart = ({
             <button onClick={resetChartView} className="button-reset extra-margin">Reset Chart</button>
           </div>
         </div>
-      )}
-
-      {!isDashboard && enableTechnicalIndicators && (
-        <Box sx={{
-          display: 'flex',
-          flexDirection: { xs: 'column', sm: 'row' },
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '20px',
-          marginBottom: '20px',
-          marginTop: '10px',
-        }}>
-          <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '300px' } }}>
-            <InputLabel id="sma-label" shrink sx={{ color: colors.grey[100], '&.Mui-focused': { color: colors.greenAccent[500] }, top: 0, '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' } }}>
-              Weekly Moving Averages
-            </InputLabel>
-            <Select
-              multiple
-              value={activeSMAs}
-              onChange={handleSMAChange}
-              labelId="sma-label"
-              displayEmpty
-              renderValue={(selected) => selected.length > 0 ? selected.map((key) => smaIndicators[key]?.label).join(', ') : 'Select Moving Averages'}
-              sx={{ color: colors.grey[100], backgroundColor: colors.primary[500], borderRadius: "8px", '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] }, '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] }, '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] } }}
-            >
-              {Object.entries(smaIndicators).map(([key, { label }]) => (
-                <MenuItem key={key} value={key}>
-                  <Checkbox checked={activeSMAs.includes(key)} sx={{ color: colors.grey[100], '&.Mui-checked': { color: colors.greenAccent[500] } }} />
-                  <span>{label}</span>
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '200px' } }}>
-            <InputLabel id="rsi-label" shrink sx={{ color: colors.grey[100], '&.Mui-focused': { color: colors.greenAccent[500] }, top: 0, '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' } }}>
-              RSI
-            </InputLabel>
-            <Select
-              value={activeRsiPeriod}
-              onChange={handleRsiPeriodChange}
-              labelId="rsi-label"
-              displayEmpty
-              sx={{ color: colors.grey[100], backgroundColor: colors.primary[500], borderRadius: "8px", '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] }, '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] }, '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] } }}
-            >
-              <MenuItem value=""><em>None</em></MenuItem>
-              {Object.entries(rsiPeriods).map(([key, { label }]) => (
-                <MenuItem key={key} value={key}>{label}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Box>
       )}
 
       <div className="chart-container" style={{ position: 'relative', height: isDashboard ? '100%' : 'calc(100% - 40px)', width: '100%', border: '2px solid #a9a9a9' }} onDoubleClick={setInteractivity}>

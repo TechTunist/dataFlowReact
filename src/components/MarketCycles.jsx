@@ -392,10 +392,6 @@ const MarketCycles = ({ isDashboard = false }) => {
                 sx={{
                   color: colors.grey[100],
                   '&.Mui-focused': { color: colors.greenAccent[500] },
-                  top: 0,
-                  '&.MuiInputLabel-shrink': {
-                    transform: 'translate(14px, -9px) scale(0.75)',
-                  },
                 }}
               >
                 Start Point
@@ -428,10 +424,6 @@ const MarketCycles = ({ isDashboard = false }) => {
                 sx={{
                   color: colors.grey[100],
                   '&.Mui-focused': { color: colors.greenAccent[500] },
-                  top: 0,
-                  '&.MuiInputLabel-shrink': {
-                    transform: 'translate(14px, -9px) scale(0.75)',
-                  },
                 }}
               >
                 Cycles to Average

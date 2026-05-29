@@ -1,11 +1,14 @@
 
-import React, { useRef, useEffect, useState, useMemo, useCallback, useContext } from 'react';
+import React, { useRef, useEffect, useState, useMemo, useCallback, useContext, memo } from 'react';
+import logger from '../utils/logger';
+import ErrorBoundary from './ErrorBoundary';
 import { createChart } from 'lightweight-charts';
 import '../styling/bitcoinChart.css';
 import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
 import useIsMobile from '../hooks/useIsMobile';
 import { DataContext } from '../DataContext';
+import { normalizePriceData, deduplicateByTime } from '../data'; // New data layer (Phase 1)
 import { Box, FormControl, InputLabel, Select, MenuItem, Checkbox, Button, Dialog, DialogTitle, DialogContent, DialogActions, Autocomplete, TextField, Snackbar, Alert } from '@mui/material';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 // Color mapping for named colors to RGB (kept for fallback compatibility)
@@ -136,6 +139,13 @@ const WorkbenchChart = ({
   const chartContainerRef = useRef();
   const chartRef = useRef(null);
   const seriesRefs = useRef({});
+  // Direct DOM tooltip refs for high-frequency smooth updates (bypasses React re-renders on every mouse move)
+  const tooltipElRef = useRef(null);
+  const rafIdRef = useRef(null);
+  // Pre-computed fast lookup maps per series (time -> value) for O(1) tooltip lookups
+  const seriesDataMapsRef = useRef({});
+  // Original cleaned sparse points per series (for robust "last known value" / LOCF lookups on mixed-frequency data)
+  const seriesPointsRef = useRef({});
   const prevSeriesRef = useRef({ macro: [], crypto: [], indicator: [], derived: [] });
   const theme = useTheme();
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
@@ -230,6 +240,7 @@ const WorkbenchChart = ({
     }
     return latestPoint ? latestPoint.value : null;
   };
+
   const getSeriesColor = (id, type) => {
     if (seriesColors[id]) return seriesColors[id];
     if (type === 'macro') return availableMacroSeries[id]?.color || '#00FFFF';
@@ -271,24 +282,11 @@ const WorkbenchChart = ({
     }
     return [];
   };
+  // Now delegated to the new shared DataService (Phase 1 of frontend data layer cleanup).
+  // This removes duplication and centralizes the normalization logic.
   const getNormalizedData = (rawData, valueKey) => {
-    let normalized = rawData
-      .filter(item => item[valueKey] != null && !isNaN(parseFloat(item[valueKey])))
-      .map(item => ({
-        time: item.time || item.date || item.end_date || (item.timestamp ? new Date(item.timestamp * 1000).toISOString().split('T')[0] : null),
-        value: parseFloat(item[valueKey]),
-      }))
-      .filter(item => item.time !== null)
-      .sort((a, b) => new Date(a.time) - new Date(b.time));
-
-    // Deduplicate by time (fixes lightweight-charts issues with duplicate dates, e.g. dominance data)
-    const seen = new Set();
-    return normalized.filter(item => {
-      const key = item.time;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
+    const normalized = normalizePriceData(rawData, valueKey);
+    return deduplicateByTime(normalized);
   };
   const computeDerivedData = (d1, d2, op) => {
     const map1 = new Map(d1.map(d => [d.time, d.value]));
@@ -305,10 +303,10 @@ const WorkbenchChart = ({
           case '+': v = last1 + last2; break;
           case '-': v = last1 - last2; break;
           case '*': v = last1 * last2; break;
-          case '/': v = last2 !== 0 ? last1 / last2 : null; break;
+          case '/': v = (last2 !== 0 && isFinite(last2)) ? last1 / last2 : null; break;
           default: v = null;
         }
-        if (v !== null) {
+        if (v !== null && isFinite(v)) {
           result.push({ time: t, value: v });
         }
       }
@@ -410,7 +408,7 @@ const WorkbenchChart = ({
           dataContext.fetchFredSeriesData(id)
             .catch(err => {
               setError(`Failed to fetch data for ${id}. Please try again later.`);
-              console.error(`Error fetching ${id}:`, err);
+              logger.error(`Error fetching ${id}:`, err);
             })
             .finally(() => setIsLoading(false));
         }
@@ -421,7 +419,7 @@ const WorkbenchChart = ({
           dataContext[seriesInfo.fetchFunction]()
             .catch(err => {
               setError(`Failed to fetch data for ${id}. Please try again later.`);
-              console.error(`Error fetching ${id}:`, err);
+              logger.error(`Error fetching ${id}:`, err);
             })
             .finally(() => setIsLoading(false));
         }
@@ -441,7 +439,7 @@ const WorkbenchChart = ({
         dataContext.fetchBtcData()
           .catch(err => {
             setError(`Failed to fetch Bitcoin data. Please try again later.`);
-            console.error(`Error fetching Bitcoin data:`, err);
+            logger.error(`Error fetching Bitcoin data:`, err);
           })
           .finally(() => setIsLoading(false));
       } else if (dataKey === 'ethData' && dataContext.ethData.length === 0) {
@@ -450,7 +448,7 @@ const WorkbenchChart = ({
         dataContext.fetchEthData()
           .catch(err => {
             setError(`Failed to fetch Ethereum data. Please try again later.`);
-            console.error(`Error fetching Ethereum data:`, err);
+            logger.error(`Error fetching Ethereum data:`, err);
           })
           .finally(() => setIsLoading(false));
       } else if (dataKey === 'altcoinData' && (!dataContext.altcoinData[coin] || dataContext.altcoinData[coin].length === 0)) {
@@ -459,7 +457,7 @@ const WorkbenchChart = ({
         dataContext.fetchAltcoinData(coin)
           .catch(err => {
             setError(`Failed to fetch ${coin} data. Please try again later.`);
-            console.error(`Error fetching ${coin} data:`, err);
+            logger.error(`Error fetching ${coin} data:`, err);
           })
           .finally(() => setIsLoading(false));
       }
@@ -488,7 +486,7 @@ const WorkbenchChart = ({
   };
   useEffect(() => {
     if (!chartContainerRef.current) {
-      console.error('Chart container is not available');
+      logger.error('Chart container is not available');
       return;
     }
     const chart = createChart(chartContainerRef.current, {
@@ -546,10 +544,13 @@ const WorkbenchChart = ({
         try {
           chartRef.current.removeSeries(seriesRefs.current[id]);
         } catch (err) {
-          console.error(`Error removing series ${id}:`, err);
+          logger.error(`Error removing series ${id}:`, err);
         }
       }
       delete seriesRefs.current[id];
+      delete seriesDataMapsRef.current[id];
+      delete seriesPointsRef.current[id];
+      // createStepData doesn't need cleanup (pure)
     });
     const allSeries = [
       ...activeMacroSeries.map(id => ({ id, type: 'macro' })),
@@ -614,7 +615,7 @@ const WorkbenchChart = ({
           time: item[timeKey] || item.date || item.end_date || (item.timestamp ? new Date(item.timestamp * 1000).toISOString().split('T')[0] : null),
           value: parseFloat(item[valueKey]),
         }))
-        .filter(item => item.time !== null)
+        .filter(item => item.time !== null && isFinite(item.value))
         .sort((a, b) => new Date(a.time) - new Date(b.time));
 
       // Deduplicate by time to prevent lightweight-charts crashes (especially important for dominance data)
@@ -631,13 +632,27 @@ const WorkbenchChart = ({
             ? rawData.filter(item => item.value > 0)
             : rawData;
           if (validData.length === 0 && scaleModeState === 1 && seriesInfo.allowLogScale) {
-            console.warn(`No valid data for series ${id} in logarithmic scale`);
+            logger.warn(`No valid data for series ${id} in logarithmic scale`);
             setError(`Cannot display ${seriesInfo.label} in logarithmic scale due to non-positive values.`);
           } else {
-            series.setData(getSeriesData(id, validData));
+            // NOTE: We intentionally use the (possibly MA-processed) cleaned sparse points directly here.
+            // Previous attempt to auto-convert low-frequency series to step data caused duplicate timestamps
+            // at transition points, which made lightweight-charts reject the data with "incompatible" errors.
+            // The visual "stretched" appearance for monthly data is a known limitation for now.
+            // We keep the original sparse points + robust LOCF tooltip (see below) as the safer approach.
+            const dataForChart = getSeriesData(id, validData);
+            series.setData(dataForChart);
+
+            // Build fast lookup map + store original sparse points for robust LOCF on mixed-frequency data
+            const lookup = new Map();
+            validData.forEach(d => {
+              if (d.time && d.value != null) lookup.set(String(d.time), d.value);
+            });
+            seriesDataMapsRef.current[id] = lookup;
+            seriesPointsRef.current[id] = [...validData];
           }
         } catch (err) {
-          console.error(`Error setting data for series ${id}:`, err);
+          logger.error(`Error setting data for series ${id}:`, err);
           setError(`Failed to display ${seriesInfo.label}. The data may be incompatible.`);
         }
       }
@@ -659,7 +674,7 @@ const WorkbenchChart = ({
         priceScales: priceScales,
       });
     } catch (err) {
-      console.error('Error applying price scales:', err);
+      logger.error('Error applying price scales:', err);
       setError('Failed to apply chart scales.');
     }
     usedPriceScales.forEach(scaleId => {
@@ -668,16 +683,133 @@ const WorkbenchChart = ({
         const mode = scaleId === 'usrecd-scale' ? 0 : (seriesInfo?.allowLogScale ? scaleModeState : 0);
         chartRef.current.priceScale(scaleId).applyOptions({ mode });
       } catch (err) {
-        console.error(`Failed to apply scale mode for ${scaleId}:`, err);
+        logger.error(`Failed to apply scale mode for ${scaleId}:`, err);
         setError(`Cannot apply ${scaleModeState === 1 ? 'logarithmic' : 'linear'} scale to ${scaleId}.`);
       }
     });
     if (isNewSeries || zoomRange === null) {
       chartRef.current.timeScale().fitContent();
       setZoomRange(null);
+
+      // When new series are added (especially derived series computed from other series),
+      // lightweight-charts sometimes fails to expand the visible range to include the new data
+      // on the initial fitContent. Doing a second fitContent in the next animation frame
+      // reliably fixes cases where the new series appears as a flat line until the user pans.
+      if (isNewSeries) {
+        // Stronger timing fix for derived series visibility.
+        requestAnimationFrame(() => {
+          if (chartRef.current) {
+            chartRef.current.timeScale().fitContent();
+          }
+        });
+        // User-requested compromise: when derived series are newly activated,
+        // aggressively force fitContent so the derived series is always plotted correctly
+        // instead of appearing as a flat line until manual panning.
+        if (activeDerivedSeries.length > 0) {
+          setTimeout(() => {
+            if (chartRef.current) chartRef.current.timeScale().fitContent();
+          }, 0);
+          setTimeout(() => {
+            if (chartRef.current) chartRef.current.timeScale().fitContent();
+          }, 80);
+          setTimeout(() => {
+            if (chartRef.current) chartRef.current.timeScale().fitContent();
+          }, 180);
+        }
+      }
     }
-    let tooltipTimeout = null;
+
+    // === HIGH-PERFORMANCE DIRECT DOM TOOLTIP ===
+    // Creates a tooltip element once and updates it via requestAnimationFrame + direct DOM mutation.
+    // This allows smooth, constant (every frame) tooltip updates even with many long series (SP500, macro data, etc.)
+    // without causing React re-renders on every mouse move.
+    if (!tooltipElRef.current && chartContainerRef.current) {
+      const el = document.createElement('div');
+      el.className = 'workbench-tooltip';
+      el.style.position = 'absolute';
+      el.style.pointerEvents = 'none';
+      el.style.zIndex = '1000';
+      el.style.padding = '6px 10px';
+      el.style.borderRadius = '4px';
+      el.style.fontSize = '13px';
+      el.style.lineHeight = '1.3';
+      el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.25)';
+      el.style.whiteSpace = 'nowrap';
+      el.style.display = 'none';
+      chartContainerRef.current.appendChild(el);
+      tooltipElRef.current = el;
+    }
+
+    const updateTooltipDOM = (tooltipInfo) => {
+      const el = tooltipElRef.current;
+      if (!el) return;
+
+      if (!tooltipInfo) {
+        el.style.display = 'none';
+        return;
+      }
+
+      // The tooltip is appended directly to the chart container, so tooltipInfo.x/y are already
+      // relative to it. We only need small, reliable offsets + edge flipping.
+      const container = chartContainerRef.current;
+      const containerWidth = container.clientWidth;
+      const containerHeight = container.clientHeight;
+
+      const tooltipWidth = 220;   // approximate, we could measure but this is good enough
+      const tooltipHeight = 80;   // rough estimate; actual height varies with # of series
+
+      const offsetX = 14;         // horizontal gap from cursor
+      const offsetY = -10;        // appear slightly above cursor
+
+      let left = tooltipInfo.x + offsetX;
+      let top = tooltipInfo.y + offsetY;
+
+      // Flip horizontally if it would overflow the right edge
+      if (left + tooltipWidth > containerWidth - 8) {
+        left = tooltipInfo.x - tooltipWidth - offsetX;
+      }
+
+      // Flip vertically if near the top (so it doesn't get cut off or sit under the cursor badly)
+      if (top < 8) {
+        top = tooltipInfo.y + 18; // push below cursor
+      }
+      // Also avoid going off the bottom
+      if (top + tooltipHeight > containerHeight - 8) {
+        top = containerHeight - tooltipHeight - 8;
+      }
+
+      // Ensure we never go negative
+      left = Math.max(4, left);
+      top = Math.max(4, top);
+
+      el.style.left = `${left}px`;
+      el.style.top = `${top}px`;
+      el.style.backgroundColor = theme.palette.mode === 'dark' ? colors.primary[900] : colors.primary[200];
+      el.style.color = theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900];
+      el.style.display = 'block';
+
+      // Build content
+      let html = '';
+      const allActive = [...activeMacroSeries, ...activeCryptoSeries, ...activeIndicatorSeries, ...activeDerivedSeries];
+      allActive.forEach(id => {
+        const info = getSeriesInfo(id, activeMacroSeries.includes(id) ? 'macro' : activeCryptoSeries.includes(id) ? 'crypto' : activeIndicatorSeries.includes(id) ? 'indicator' : 'derived');
+        const color = getSeriesColor(id, activeMacroSeries.includes(id) ? 'macro' : activeCryptoSeries.includes(id) ? 'crypto' : activeIndicatorSeries.includes(id) ? 'indicator' : 'derived');
+        const ma = seriesMovingAverages[id] && seriesMovingAverages[id] !== 'None' ? ` (${seriesMovingAverages[id]} MA)` : '';
+        const val = tooltipInfo.values[id] != null ? valueFormatter(tooltipInfo.values[id]) : 'N/A';
+        html += `<div style="margin: 1px 0;"><span style="color:${color};">${info?.label || id}${ma}: ${val}</span></div>`;
+      });
+      const dateStr = tooltipInfo.date.toString().substring(0, 4) === new Date().getFullYear().toString()
+        ? `${tooltipInfo.date} — latest`
+        : tooltipInfo.date;
+      html += `<div style="margin-top: 4px; opacity: 0.85; font-size: 12px;">${dateStr}</div>`;
+      el.innerHTML = html;
+    };
+
     chartRef.current.subscribeCrosshairMove(param => {
+      if (rafIdRef.current) {
+        cancelAnimationFrame(rafIdRef.current);
+      }
+
       if (
         !param.point ||
         !param.time ||
@@ -686,56 +818,74 @@ const WorkbenchChart = ({
         param.point.y < 0 ||
         param.point.y > chartContainerRef.current.clientHeight
       ) {
-        clearTimeout(tooltipTimeout);
-        setTooltipData(null);
+        rafIdRef.current = requestAnimationFrame(() => updateTooltipDOM(null));
         return;
       }
+
+      // Build tooltip data (still does work per move — further optimization can pre-build lookup maps per series)
       const tooltip = {
         date: param.time,
         values: {},
         x: param.point.x,
         y: param.point.y,
       };
+
       sortedSeries.forEach(({ id, type }) => {
         const series = seriesRefs.current[id];
         if (!series) return;
-        let data = [];
-        let seriesInfo = getSeriesInfo(id, type);
-        let raw = getRawData(id, type);
-        let valueKey = getValueKey(id);
-        const timeKey = (type === 'indicator' && seriesInfo.dataKey === 'txMvrvData') ? 'date' : 'time';
-        raw = raw
-          .filter(item => item[valueKey] != null && !isNaN(parseFloat(item[valueKey])))
-          .map(item => ({
-            time: item[timeKey] || item.date || item.end_date || (item.timestamp ? new Date(item.timestamp * 1000).toISOString().split('T')[0] : null),
-            value: parseFloat(item[valueKey]),
-          }))
-          .filter(item => item.time !== null)
-          .sort((a, b) => new Date(a.time) - new Date(b.time));
 
-        // Deduplicate by time (dominance data fix)
-        const seen = new Set();
-        raw = raw.filter(item => {
-          const key = item.time;
-          if (seen.has(key)) return false;
-          seen.add(key);
-          return true;
-        });
-        data = getSeriesData(id, raw);
-        const value = param.seriesData.get(series)?.value ?? getLatestValue(data, param.time);
-        tooltip.values[id] = value;
+        // Prefer the value lightweight-charts already computed for the highlighted point (very fast)
+        const directValue = param.seriesData.get(series)?.value;
+        if (directValue != null) {
+          tooltip.values[id] = directValue;
+          return;
+        }
+
+        // Robust previous-value lookup for mixed-frequency data (monthly, etc.)
+        // This fixes tooltip showing N/A when cursor is not exactly on a sparse datapoint.
+        const points = seriesPointsRef.current[id];
+        if (points && points.length > 0) {
+          const targetTime = new Date(param.time).getTime();
+          let left = 0;
+          let right = points.length - 1;
+          let latest = null;
+
+          while (left <= right) {
+            const mid = Math.floor((left + right) / 2);
+            const ptTime = new Date(points[mid].time).getTime();
+            if (ptTime <= targetTime) {
+              latest = points[mid].value;
+              left = mid + 1;
+            } else {
+              right = mid - 1;
+            }
+          }
+          if (latest != null) {
+            tooltip.values[id] = latest;
+            return;
+          }
+        }
+
+        // Last resort
+        tooltip.values[id] = null;
       });
-      clearTimeout(tooltipTimeout);
-      tooltipTimeout = setTimeout(() => {
-        setTooltipData(tooltip);
-      }, 50);
+
+      rafIdRef.current = requestAnimationFrame(() => updateTooltipDOM(tooltip));
     });
+
     return () => {
+      if (rafIdRef.current) {
+        cancelAnimationFrame(rafIdRef.current);
+      }
       if (chartRef.current) {
         chartRef.current.unsubscribeCrosshairMove();
       }
+      if (tooltipElRef.current && tooltipElRef.current.parentNode) {
+        tooltipElRef.current.parentNode.removeChild(tooltipElRef.current);
+        tooltipElRef.current = null;
+      }
     };
-  }, [dataContext, activeMacroSeries, activeCryptoSeries, activeIndicatorSeries, activeDerivedSeries, derivedSeriesDefs, derivedData, seriesMovingAverages, seriesColors, chartType, valueFormatter, scaleModeState]);
+  }, [dataContext, activeMacroSeries, activeCryptoSeries, activeIndicatorSeries, activeDerivedSeries, derivedSeriesDefs, derivedData, seriesMovingAverages, seriesColors, chartType, valueFormatter, scaleModeState, isMobile, theme.palette.mode, colors]);
   useEffect(() => {
     if (!chartRef.current || !zoomRange) return;
     chartRef.current.timeScale().setVisibleLogicalRange(zoomRange);
@@ -786,7 +936,8 @@ const WorkbenchChart = ({
   else if (minWidthNeeded <= 1200) breakpointForRow = 'lg';
   else breakpointForRow = 'xl';
   return (
-    <div style={{ height: '100%' }}>
+    <ErrorBoundary fallbackMessage="The custom indicator workbench failed to load. Try refreshing or selecting different series.">
+      <div style={{ height: '100%' }}>
       {!isDashboard && (
         <Box
           sx={{
@@ -1443,48 +1594,17 @@ const WorkbenchChart = ({
           </div>
         )}
       </div>
-      {!isDashboard && tooltipData && (activeMacroSeries.length > 0 || activeCryptoSeries.length > 0 || activeIndicatorSeries.length > 0 || activeDerivedSeries.length > 0) && (
-        <div
-          className="tooltip"
-          style={{
-            left: (() => {
-              const sidebarWidth = isMobile ? -80 : -320;
-              const cursorX = tooltipData.x - sidebarWidth;
-              const chartWidth = chartContainerRef.current.clientWidth - sidebarWidth;
-              const tooltipWidth = 200;
-              const offset = 10000 / (chartWidth + 300);
-              const rightPosition = cursorX + offset;
-              const leftPosition = cursorX - tooltipWidth - offset;
-              return rightPosition + tooltipWidth <= chartWidth ? `${rightPosition}px` : (leftPosition >= 0 ? `${leftPosition}px` : `${Math.max(0, Math.min(rightPosition, chartWidth - tooltipWidth))}px`);
-            })(),
-            top: `${tooltipData.y + 100}px`,
-            backgroundColor: theme.palette.mode === 'dark' ? colors.primary[900] : colors.primary[200],
-            color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900],
-            padding: '5px',
-            borderRadius: '4px',
-            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
-          }}
-        >
-          {[...activeMacroSeries, ...activeCryptoSeries, ...activeIndicatorSeries, ...activeDerivedSeries].map(id => (
-            <div key={id}>
-              <div style={{ fontSize: '15px' }}>
-                <span style={{ color: getSeriesColor(id, activeMacroSeries.includes(id) ? 'macro' : activeCryptoSeries.includes(id) ? 'crypto' : activeIndicatorSeries.includes(id) ? 'indicator' : 'derived') }}>
-                  {getSeriesInfo(id, activeMacroSeries.includes(id) ? 'macro' : activeCryptoSeries.includes(id) ? 'crypto' : activeIndicatorSeries.includes(id) ? 'indicator' : 'derived')?.label || id}
-                  {seriesMovingAverages[id] && seriesMovingAverages[id] !== 'None' ? ` (${seriesMovingAverages[id]} MA): ` : ': '}
-                  {tooltipData.values[id] != null ? valueFormatter(tooltipData.values[id]) : ' : N/A'}
-                </span>
-              </div>
-            </div>
-          ))}
-          <div>{tooltipData.date.toString().substring(0, 4) === currentYear ? `${tooltipData.date} - latest` : tooltipData.date}</div>
-        </div>
-      )}
+      {/* Old React tooltip disabled — we now use a high-performance direct-DOM tooltip updated via requestAnimationFrame.
+          This enables smooth, constant (per-frame) updates even with heavy long-series data like SP500 + many macros. */}
+      {/* {!isDashboard && tooltipData && ... (old React tooltip removed for perf) } */}
       {!isDashboard && explanation && (
         <p className='chart-info' style={{ color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900] }}>
           {explanation}
         </p>
       )}
-    </div>
+      </div>
+    </ErrorBoundary>
   );
 };
-export default restrictToPaidSubscription(WorkbenchChart);
+const MemoizedWorkbenchChart = memo(WorkbenchChart);
+export default restrictToPaidSubscription(MemoizedWorkbenchChart);

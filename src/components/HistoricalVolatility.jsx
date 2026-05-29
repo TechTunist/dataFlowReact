@@ -1,7 +1,7 @@
-import React, { useRef, useEffect, useState, useContext, useCallback, useMemo } from 'react';
+import React, { useRef, useEffect, useState, useContext, useCallback, useMemo, memo } from 'react';
 import { createChart } from 'lightweight-charts';
 import { tokens } from "../theme";
-import { useTheme, Box, FormControl, InputLabel, Select, MenuItem, Button } from "@mui/material";
+import { useTheme, Box, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
 import '../styling/bitcoinChart.css';
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
@@ -72,17 +72,15 @@ const BitcoinHistoricalVolatility = ({ isDashboard = false }) => {
     return { volatilityData: filteredData, maxVolatility: adjustedMax };
   }, [btcData, timeframe, calculateVolatility]);
 
-  const setInteractivity = () => setIsInteractive(!isInteractive);
-
-  const compactNumberFormatter = (value) => {
+  const setInteractivity = useCallback(() => setIsInteractive(prev => !prev), []);
+  const compactNumberFormatter = useCallback((value) => {
     if (value >= 1000000) return (value / 1000000).toFixed(0) + 'M';
     if (value >= 1000) return (value / 1000).toFixed(0) + 'k';
     return value.toFixed(0);
-  };
-
-  const resetChartView = () => {
+  }, []);
+  const resetChartView = useCallback(() => {
     if (chartRef.current) chartRef.current.timeScale().fitContent();
-  };
+  }, []);
 
   // **Fetch initial data**
   useEffect(() => {
@@ -282,42 +280,20 @@ const BitcoinHistoricalVolatility = ({ isDashboard = false }) => {
             </Select>
           </FormControl>
           <Box sx={{ display: 'flex', gap: '10px', marginLeft: 'auto' }}>
-            <Button
+            <button
               onClick={setInteractivity}
-              sx={{
+              className="button-reset"
+              style={{
                 backgroundColor: isInteractive ? '#4cceac' : 'transparent',
                 color: isInteractive ? 'black' : '#31d6aa',
-                border: `1px solid ${isInteractive ? 'violet' : '#70d8bd'}`,
-                borderRadius: '4px',
-                padding: '8px 16px',
-                fontSize: '14px',
-                textTransform: 'none',
-                '&:hover': {
-                  backgroundColor: colors.greenAccent[400],
-                  color: theme.palette.mode === 'dark' ? colors.grey[900] : colors.grey[100],
-                },
+                borderColor: isInteractive ? 'violet' : '#70d8bd',
               }}
             >
               {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
-            </Button>
-            <Button
-              onClick={resetChartView}
-              sx={{
-                backgroundColor: 'transparent',
-                color: '#31d6aa',
-                border: `1px solid ${colors.greenAccent[400]}`,
-                borderRadius: '4px',
-                padding: '8px 16px',
-                fontSize: '14px',
-                textTransform: 'none',
-                '&:hover': {
-                  backgroundColor: colors.greenAccent[400],
-                  color: theme.palette.mode === 'dark' ? colors.grey[900] : colors.grey[100],
-                },
-              }}
-            >
+            </button>
+            <button onClick={resetChartView} className="button-reset extra-margin">
               Reset Chart
-            </Button>
+            </button>
           </Box>
         </Box>
       )}
@@ -393,7 +369,8 @@ const BitcoinHistoricalVolatility = ({ isDashboard = false }) => {
   );
 };
 
-export default restrictToPaidSubscription(BitcoinHistoricalVolatility);
+const MemoizedHistoricalVolatility = memo(BitcoinHistoricalVolatility);
+export default restrictToPaidSubscription(MemoizedHistoricalVolatility);
 
 
 

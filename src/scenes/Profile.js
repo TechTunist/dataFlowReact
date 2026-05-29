@@ -3,6 +3,7 @@ import { useUser, useAuth } from '@clerk/clerk-react';
 import { Box, Typography, useTheme } from '@mui/material';
 import { tokens } from '../theme';
 import Header from '../components/Header';
+import { apiUrl } from '../config/api';
 
 const Profile = memo(() => {
   const theme = useTheme();
@@ -24,8 +25,6 @@ const Profile = memo(() => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://vercel-dataflow.vercel.app';
-
   const fetchSubscriptionStatus = async () => {
     if (!isSignedIn || !user) {
       setError('Please sign in to view your profile.');
@@ -40,7 +39,7 @@ const Profile = memo(() => {
         throw new Error('Failed to obtain authentication token');
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/subscription-status/`, {
+      const response = await fetch(apiUrl('/api/subscription-status/'), {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,

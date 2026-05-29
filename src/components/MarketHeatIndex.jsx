@@ -470,12 +470,9 @@ const MarketHeatIndex = ({ isDashboard = false }) => {
           <FormControl sx={{ minWidth: '150px', width: { xs: '100%', sm: '200px' }, margin: '0 auto' }}>
             <InputLabel
               id="sma-period-label"
-              shrink
               sx={{
                 color: colors.grey[100],
                 '&.Mui-focused': { color: colors.greenAccent[500] },
-                top: 0,
-                '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' },
               }}
             >
               Smoothing
