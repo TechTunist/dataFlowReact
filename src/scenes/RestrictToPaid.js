@@ -5,6 +5,10 @@ import { tokens } from '../theme';
 import { Link } from 'react-router-dom';
 import { useSubscription } from '../contexts/SubscriptionContext';
 
+// Dev bypass: when REACT_APP_DEV_BYPASS_AUTH=true, premium charts render fully
+// without any Clerk sign-in or subscription checks. Useful for local development.
+const DEV_BYPASS_AUTH = process.env.REACT_APP_DEV_BYPASS_AUTH === 'true';
+
 const DEFAULT_FREE_FEATURES = {
   basic_charts: true,
   advanced_charts: false,
@@ -80,10 +84,17 @@ const restrictToPaidSubscription = (
   fallbackMessage = 'Please upgrade to a paid subscription to view this chart.'
 ) => {
   return (props) => {
+    // Hooks must be called unconditionally (rules-of-hooks compliance).
     const { user, isSignedIn } = useUser();
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
     const { subscriptionStatus, loading, error } = useSubscription();
+
+    if (DEV_BYPASS_AUTH) {
+      // In local dev bypass mode, render the real premium component directly.
+      return <WrappedComponent {...props} />;
+    }
+
     return (
       <RestrictedComponent
         WrappedComponent={WrappedComponent}

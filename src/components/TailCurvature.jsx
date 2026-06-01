@@ -35,11 +35,27 @@ const QUANTILE_PARAMS = [
   { tau: 0.99, label: '99%', c: 4.028, a: 1.904, b: -0.3259, color: '#b91c1c' },
 ];
 
+// Helper: days since Bitcoin genesis block
+function getDaysSinceGenesis(dateStr) {
+  const genesis = new Date(GENESIS_DATE);
+  const d = new Date(dateStr);
+  return Math.max(1, Math.floor((d - genesis) / (1000 * 60 * 60 * 24)));
+}
+
+// Core model function: returns projected price for a given date and quantile parameters
+function computeProjectedPrice(dateStr, param) {
+  const t = getDaysSinceGenesis(dateStr);
+  const x = Math.log(t) - MU;
+  const log10P = param.c + param.a * x + param.b * x * x;
+  return Math.pow(10, log10P);
+}
+
 const TailCurvature = ({ isDashboard = false }) => {
   const chartContainerRef = useRef();
   const chartRef = useRef(null);
   const priceSeriesRef = useRef(null);
   const quantileSeriesRefs = useRef({});
+  const projectionTableRef = useRef(null);
   const theme = useTheme();
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
   const isMobile = useIsMobile();
@@ -51,6 +67,7 @@ const TailCurvature = ({ isDashboard = false }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showQuantiles, setShowQuantiles] = useState(true);
+  const [showProjectionTable, setShowProjectionTable] = useState(false);
 
   // Use BTC daily close data from context (already authenticated via DataContext)
   const btcData = useMemo(() => {
@@ -67,7 +84,7 @@ const TailCurvature = ({ isDashboard = false }) => {
       .sort((a, b) => new Date(a.time || a.date) - new Date(b.time || b.date));
   }, [contextBtcData]);
 
-  // Compute model quantile values for the historical data + some future extension
+  // Compute model quantile values for the historical data
   const modelData = useMemo(() => {
     if (btcData.length === 0) return {};
 
@@ -91,6 +108,43 @@ const TailCurvature = ({ isDashboard = false }) => {
 
     return result;
   }, [btcData]);
+
+  // Determine the quantile model line that Bitcoin's current price is closest to
+  const currentQuantile = useMemo(() => {
+    if (!btcData.length || Object.keys(modelData).length === 0) {
+      return 'N/A';
+    }
+
+    const latestPoint = btcData[btcData.length - 1];
+    const latestPrice = latestPoint.value || latestPoint.close;
+    if (!latestPrice) return 'N/A';
+
+    // Get the model value for each quantile at the latest historical point
+    const latestModelValues = {};
+    QUANTILE_PARAMS.forEach(param => {
+      const arr = modelData[param.label];
+      if (arr && arr.length > 0) {
+        latestModelValues[param.label] = arr[arr.length - 1].value;
+      }
+    });
+
+    // Find the closest quantile line by absolute price difference
+    let closestLabel = null;
+    let minDiff = Infinity;
+
+    Object.keys(latestModelValues).forEach(label => {
+      const modelVal = latestModelValues[label];
+      if (modelVal == null) return;
+
+      const diff = Math.abs(latestPrice - modelVal);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestLabel = label;
+      }
+    });
+
+    return closestLabel || 'N/A';
+  }, [btcData, modelData]);
 
   // Fetch is handled by parent DataContext (JWT is sent automatically)
   useEffect(() => {
@@ -157,6 +211,8 @@ const TailCurvature = ({ isDashboard = false }) => {
       color: colors.greenAccent[500],
       lineWidth: 2,
       title: 'BTC Price',
+      lastValueVisible: false,
+      priceLineVisible: false,
     });
     priceSeriesRef.current = priceSeries;
 
@@ -209,48 +265,52 @@ const TailCurvature = ({ isDashboard = false }) => {
     };
   }, [btcData, colors]);
 
-  // Dynamically manage quantile series without destroying the main chart
-  // This prevents zoom resets when toggling showQuantiles
+  // Dynamically manage quantile series (historical only - no forward projections on chart)
   useEffect(() => {
     const chart = chartRef.current;
     if (!chart || btcData.length === 0) return;
 
-    // Clear any previous quantile series
+    // Clear previous quantile series
     Object.keys(quantileSeriesRefs.current).forEach(key => {
       const series = quantileSeriesRefs.current[key];
-      if (series) {
-        chart.removeSeries(series);
-      }
+      if (series) chart.removeSeries(series);
     });
     quantileSeriesRefs.current = {};
 
     if (showQuantiles && Object.keys(modelData).length > 0) {
-      // Save current visible range before adding series
-      const visibleRange = chart.timeScale().getVisibleRange();
-
       QUANTILE_PARAMS.forEach((param) => {
         const seriesData = modelData[param.label];
         if (!seriesData || seriesData.length === 0) return;
 
         const qSeries = chart.addLineSeries({
           color: param.color,
-          lineWidth: 1,           // Thinner to reduce clutter
-          lineStyle: 2,
+          lineWidth: 1,
+          lineStyle: 0, // solid
           title: param.label,
+          lastValueVisible: false,
+          priceLineVisible: false,
         });
 
         qSeries.setData(seriesData);
         quantileSeriesRefs.current[param.label] = qSeries;
       });
-
-      // Restore previous visible range to avoid unwanted zoom
-      if (visibleRange) {
-        chart.timeScale().setVisibleRange(visibleRange);
-      } else {
-        chart.timeScale().fitContent();
-      }
     }
-  }, [showQuantiles, modelData, btcData, colors]);
+  }, [showQuantiles, modelData, btcData]);
+
+  // Auto-scroll to the projections table when it is opened
+  useEffect(() => {
+    if (showProjectionTable && projectionTableRef.current) {
+      // Use a small timeout so the table has time to render before scrolling
+      const timer = setTimeout(() => {
+        projectionTableRef.current.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+      }, 50);
+
+      return () => clearTimeout(timer);
+    }
+  }, [showProjectionTable]);
 
   const compactNumberFormatter = useCallback((value) => {
     if (value >= 1e6) return (value / 1e6).toFixed(1) + 'M';
@@ -258,81 +318,177 @@ const TailCurvature = ({ isDashboard = false }) => {
     return value.toFixed(0);
   }, []);
 
+  // Generate projection table data (yearly into the 2050s)
+  const projectionTableData = useMemo(() => {
+    const years = [];
+    const startYear = new Date().getFullYear() + 1;
+
+    // Yearly from next year to 2035, then every 5 years to 2055
+    for (let y = startYear; y <= 2035; y++) {
+      years.push(y);
+    }
+    for (let y = 2040; y <= 2055; y += 5) {
+      years.push(y);
+    }
+
+    return years.map(year => {
+      const dateStr = `${year}-01-01`;
+      const row = { year };
+
+      QUANTILE_PARAMS.forEach(param => {
+        row[param.label] = computeProjectedPrice(dateStr, param);
+      });
+
+      return row;
+    });
+  }, []);
+
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      {!isDashboard && (
-        <div className="chart-top-div">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-            {/* Show/Hide Quantiles button - restored */}
-            <button
-              onClick={() => setShowQuantiles(!showQuantiles)}
-              className="button-reset"
-              style={{
-                backgroundColor: showQuantiles ? '#4cceac' : 'transparent',
-                color: showQuantiles ? 'black' : '#31d6aa',
-                borderColor: showQuantiles ? 'violet' : '#70d8bd',
-              }}
-            >
-              {showQuantiles ? 'Hide Quantiles' : 'Show Quantiles'}
-            </button>
+    <>
+      {/* Chart area - fills the full height allocated by the parent container (BasicChart) */}
+      <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        {!isDashboard && (
+          <div className="chart-top-div">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+              {/* Show/Hide Quantiles button */}
+              <button
+                onClick={() => setShowQuantiles(!showQuantiles)}
+                className="button-reset"
+                style={{
+                  backgroundColor: showQuantiles ? '#4cceac' : 'transparent',
+                  color: showQuantiles ? 'black' : '#31d6aa',
+                  borderColor: showQuantiles ? 'violet' : '#70d8bd',
+                }}
+              >
+                {showQuantiles ? 'Hide Quantiles' : 'Show Quantiles'}
+              </button>
+              {error && <span style={{ color: colors.redAccent[500] }}>{error}</span>}
+            </div>
 
-            <span style={{ color: colors.grey[100], fontSize: '13px' }}>
-              Asymmetric Tail Curvature (Cowen 2026)
-            </span>
-            {isLoading && <span style={{ color: colors.grey[100] }}>Loading...</span>}
-            {error && <span style={{ color: colors.redAccent[500] }}>{error}</span>}
-          </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button
+                onClick={() => setShowProjectionTable(!showProjectionTable)}
+                className="button-reset"
+                style={{
+                  backgroundColor: showProjectionTable ? '#4cceac' : 'transparent',
+                  color: showProjectionTable ? 'black' : '#31d6aa',
+                  borderColor: showProjectionTable ? 'violet' : '#70d8bd',
+                }}
+              >
+                {showProjectionTable ? 'Hide Table' : 'Show Projections'}
+              </button>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-            <button
-              onClick={setInteractivity}
-              className="button-reset"
-              style={{
-                backgroundColor: isInteractive ? '#4cceac' : 'transparent',
-                color: isInteractive ? 'black' : '#31d6aa',
-                borderColor: isInteractive ? 'violet' : '#70d8bd',
-              }}
-            >
-              {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
-            </button>
-            <button onClick={resetChartView} className="button-reset extra-margin">
-              Reset Chart
-            </button>
+              <button
+                onClick={setInteractivity}
+                className="button-reset"
+                style={{
+                  backgroundColor: isInteractive ? '#4cceac' : 'transparent',
+                  color: isInteractive ? 'black' : '#31d6aa',
+                  borderColor: isInteractive ? 'violet' : '#70d8bd',
+                }}
+              >
+                {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
+              </button>
+              <button onClick={resetChartView} className="button-reset extra-margin">
+                Reset Chart
+              </button>
+            </div>
           </div>
+        )}
+
+        <div
+          className="chart-container"
+          style={{
+            flex: 1,
+            minHeight: 0,
+            overflow: 'hidden',
+            width: '100%',
+            border: '2px solid #a9a9a9',
+            position: 'relative',
+            zIndex: 1,
+          }}
+          onDoubleClick={() => setInteractivity(!isInteractive)}
+        >
+          <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
         </div>
-      )}
 
-      <div
-        className="chart-container"
-        style={{
-          height: isDashboard ? '100%' : 'calc(100% - 40px)', 
-          width: '100%',
-          border: '2px solid #a9a9a9',
-          position: 'relative',
-          zIndex: 1,
-        }}
-        onDoubleClick={() => setInteractivity(!isInteractive)}
-      >
-        <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
+        {!isDashboard && (
+          <div className='under-chart' style={{ padding: '10px 0', display: 'block' }}>
+            <div style={{ marginBottom: '6px' }}>
+              <LastUpdated storageKey="btcData" />
+            </div>
+
+            {/* Current Quantile - updates live as BTC price crosses model lines */}
+            <div style={{ 
+              marginBottom: '10px', 
+              color: colors.grey[100], 
+              fontSize: '15px',
+              fontWeight: 500
+            }}>
+              Current Quantile: <span style={{ 
+                color: colors.greenAccent[400], 
+                fontWeight: 600 
+              }}>{currentQuantile}</span>
+            </div>
+
+            <div style={{ color: colors.grey[100], fontSize: '16px' }}>
+              Benjamin Cowen’s 2026 model of Bitcoin price quantiles. The green lines show lower price paths with relatively steady structural growth. The upper lines (yellow to red) curve downward, showing that extreme upside gains become less probable over time.
+            </div>
+          </div>
+        )}
       </div>
 
-      {!isDashboard && (
-      <div className='under-chart' style={{ padding: '10px 0', display: 'block' }}>
-          {/* Last Updated on its own row on the left */}
-          <div style={{ marginBottom: '6px' }}>
-            <LastUpdated storageKey="btcData" />
+      {/* Table appears BELOW the chart (outside the height-constrained box) */}
+      {!isDashboard && showProjectionTable && (
+        <div 
+          ref={projectionTableRef}
+          style={{ 
+            marginTop: '16px', 
+            padding: '0 10px',
+            maxHeight: '380px',
+            overflow: 'auto',
+            borderTop: '1px solid #444'
+          }}
+        >
+          <div style={{ color: colors.grey[100], fontSize: '14px', margin: '10px 0 6px', fontWeight: 'bold' }}>
+            Projected Quantile Values — Model Only (through 2050s)
           </div>
-          <div style={{ color: colors.grey[100], fontSize: '14px' }}>
-            Visualization of the asymmetric quadratic quantile regression model from{' '}
-            <a href="https://benjamincowen.com" target="_blank" rel="noopener noreferrer" style={{ color: colors.greenAccent[500] }}>
-              Benjamin Cowen (2026)
-            </a>
-            . Lower tail near-linear (structural), upper tail has significant negative curvature (speculative).{' '}
-            <strong>Note:</strong> Full caching improvements in DataContext still pending.
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ 
+              width: '100%', 
+              borderCollapse: 'collapse', 
+              fontSize: '13px',
+              color: colors.grey[100],
+              backgroundColor: 'rgba(0,0,0,0.2)'
+            }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid #444' }}>
+                  <th style={{ padding: '6px 8px', textAlign: 'left' }}>Year</th>
+                  {QUANTILE_PARAMS.map(p => (
+                    <th key={p.label} style={{ padding: '6px 8px', textAlign: 'right' }}>{p.label}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {projectionTableData.map((row, idx) => (
+                  <tr key={idx} style={{ borderBottom: '1px solid #333' }}>
+                    <td style={{ padding: '5px 8px', fontWeight: 'bold' }}>{row.year}</td>
+                    {QUANTILE_PARAMS.map(p => (
+                      <td key={p.label} style={{ padding: '5px 8px', textAlign: 'right', fontFamily: 'monospace' }}>
+                        ${compactNumberFormatter(row[p.label])}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div style={{ fontSize: '11px', color: '#888', margin: '6px 0 4px' }}>
+            Values are pure model projections (no actual BTC price data).
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 };
 

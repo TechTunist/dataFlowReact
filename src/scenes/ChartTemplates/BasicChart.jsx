@@ -1,17 +1,21 @@
 import { Box } from "@mui/material";
 
-const BasicChart = ({ ChartComponent, seriesId, indicatorId, chartType, explanation, ...props }) => {
+const BasicChart = ({ ChartComponent, seriesId, indicatorId, chartType, explanation, height, ...props }) => {
+  // Allow individual charts (especially those with tall under-chart explanations
+  // like TailCurvature) to request more vertical space.
+  const chartHeight = height || "75vh";
+  const responsiveMax = height
+    ? { xs: "50vh", sm: "80vh" } // when a custom taller height is requested, be a bit more generous on mobile
+    : { xs: "35vh", sm: "70vh" };
+
   return (
     <Box m="20px" mt="10px">
       <Box
-        height="75vh"
+        height={chartHeight}
         sx={{
-          height: "75vh",
-          maxHeight: {
-            xs: "35vh",
-            sm: "70vh",
-          },
-          zIndex: 1, // Ensure the chart container is below the sidebar (zIndex: 5000)
+          height: chartHeight,
+          maxHeight: responsiveMax,
+          zIndex: 1,
         }}
       >
         <ChartComponent seriesId={seriesId} indicatorId={indicatorId} explanation={explanation} {...props} />

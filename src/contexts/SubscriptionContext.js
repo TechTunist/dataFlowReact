@@ -4,6 +4,8 @@ import { useUser, useAuth, useClerk } from '@clerk/clerk-react';
 import { apiUrl } from '../config/api';
 import { setClerkTokenGetter } from '../utils/clerkAuth';
 
+const DEV_BYPASS_AUTH = process.env.REACT_APP_DEV_BYPASS_AUTH === 'true';
+
 const SubscriptionContext = createContext();
 
 const DEFAULT_FREE_FEATURES = {
@@ -17,10 +19,15 @@ export const SubscriptionProvider = ({ children }) => {
   const { getToken } = useAuth();
   const clerk = useClerk();
 
+  // All hooks must be called unconditionally and in the same order on every render.
+  // This is required by react-hooks/rules-of-hooks.
+
   // Register a robust token getter as soon as Clerk is available.
   // We prefer using the Clerk instance directly for better reliability
   // in non-component code (DataContext, etc.).
   useEffect(() => {
+    if (DEV_BYPASS_AUTH) return; // dev bypass: do nothing
+
     if (clerk?.session) {
       // Register a getter that uses the Clerk instance (most reliable)
       setClerkTokenGetter(() => clerk.session.getToken());
@@ -29,11 +36,14 @@ export const SubscriptionProvider = ({ children }) => {
       setClerkTokenGetter(getToken);
     }
   }, [clerk, getToken]);
+
   const [subscriptionStatus, setSubscriptionStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   const fetchSubscriptionStatus = useCallback(async () => {
+    if (DEV_BYPASS_AUTH) return; // dev bypass: no-op
+
     if (!isSignedIn || !user) {
       setError('Please sign in to view this chart.');
       setLoading(false);
@@ -77,11 +87,12 @@ export const SubscriptionProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [isSignedIn, user, getToken]);
+  }, [isSignedIn, user, getToken, DEV_BYPASS_AUTH]);
 
   useEffect(() => {
+    if (DEV_BYPASS_AUTH) return; // dev bypass: do nothing
     fetchSubscriptionStatus();
-  }, [fetchSubscriptionStatus]);  // Run on mount and when dependencies change
+  }, [fetchSubscriptionStatus]);
 
   // Memoize the context value to prevent unnecessary rerenders
   const contextValue = useMemo(
@@ -94,8 +105,33 @@ export const SubscriptionProvider = ({ children }) => {
     [subscriptionStatus, loading, error, fetchSubscriptionStatus]
   );
 
-  // console.log('SubscriptionProvider rendered');  // Debug only - left commented
+  // === Render decision (after ALL hooks have been called) ===
+  if (DEV_BYPASS_AUTH) {
+    // Provide a fake full-access subscription so every premium chart and
+    // component that uses useSubscription() sees "Full" access.
+    const devFullAccess = {
+      plan: 'Premium',
+      subscription_status: 'active',
+      current_period_end: new Date(Date.now() + 1000 * 60 * 60 * 24 * 365),
+      features: { basic_charts: true, advanced_charts: true, custom_indicators: true },
+      access: 'Full',
+    };
 
+    return (
+      <SubscriptionContext.Provider
+        value={{
+          subscriptionStatus: devFullAccess,
+          loading: false,
+          error: '',
+          fetchSubscriptionStatus: () => {}, // no-op
+        }}
+      >
+        {children}
+      </SubscriptionContext.Provider>
+    );
+  }
+
+  // Normal (production / real auth) path
   return (
     <SubscriptionContext.Provider value={contextValue}>
       {children}

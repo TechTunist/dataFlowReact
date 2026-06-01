@@ -37,7 +37,13 @@ const fetchFreshAndUpdate = async ({
     }
 
     const response = await fetch(apiUrl, { headers });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    if (!response.ok) {
+      if (response.status === 401 || response.status === 403) {
+        logger.warn(`[Auth] Background refresh got ${response.status} on ${cacheId}`);
+        return; // graceful — use whatever is in state/cache
+      }
+      throw new Error(`HTTP ${response.status}`);
+    }
 
     const data = await response.json();
     const formattedData = formatData(data);
@@ -168,6 +174,12 @@ const fetchWithCache = async ({
       try {
         response = await fetch(apiUrl, { headers });
         if (response.ok) break;
+        if (response.status === 401 || response.status === 403) {
+          // Common during local dev before Clerk is ready or with backend DEBUG bypass.
+          logger.warn(`[Auth] ${response.status} on ${apiUrl} — token not yet available or dev bypass not active`);
+          // Do not retry auth errors aggressively; let caller use cache or fail gracefully
+          throw new Error(`HTTP ${response.status} (auth)`);
+        }
         throw new Error(`HTTP error! Status: ${response.status}`);
       } catch (err) {
         attempts++;

@@ -47,6 +47,10 @@ import SP500ROI from "./components/SP500ROI";
 import Total2Chart from "./components/Total2Marketcap";
 import Total3Chart from "./components/Total3Marketcap";
 
+// Dev escape hatch - set REACT_APP_DEV_BYPASS_AUTH=true in .env.local
+// (or .env) to develop charts and data features without any Clerk authentication.
+const DEV_BYPASS_AUTH = process.env.REACT_APP_DEV_BYPASS_AUTH === 'true';
+
 // Lazy load heavy charting components + scenes (code splitting for performance)
 const Dashboard = lazy(() => import('./scenes/dashboard'));
 const MarketOverview = lazy(() => import('./scenes/MarketOverview'));
@@ -104,7 +108,13 @@ const appRoutes = [
   { path: "/total2", component: Total2Chart, useBasicChart: true, protected: true },
   { path: "/total3", component: Total3Chart, useBasicChart: true, protected: true },
   { path: "/total-difference", component: MarketCapDifference, useBasicChart: true, protected: true },
-  { path: "/tail-curvature", component: TailCurvature, useBasicChart: true, protected: true },
+  { 
+    path: "/tail-curvature", 
+    component: TailCurvature, 
+    useBasicChart: true, 
+    protected: true,
+    basicChartProps: { height: "88vh" }   // taller to accommodate long explanation + give the canvas breathing room
+  },
   { path: "/bitcoin-fees", component: BitcoinTransactionFees, useBasicChart: true, protected: true },
   { path: "/bitcoin-dominance", component: BitcoinDominance, useBasicChart: true, protected: true },
   { path: "/bitcoin-roi", component: BitcoinROI, useBasicChart: true, protected: true },
@@ -218,8 +228,17 @@ if (!PUBLISHABLE_KEY) {
 
 // New AuthWrapper to isolate useAuth and useUser
 const AuthWrapper = memo(() => {
+  // Hooks must always be called unconditionally (top of component, same order every render)
+  // to satisfy react-hooks/rules-of-hooks. We call them first, then decide what to render.
   const { isLoaded, isSignedIn } = useAuth();
   const location = useLocation();
+
+  if (DEV_BYPASS_AUTH) {
+    // Dev escape hatch: run the entire app (including all protected charts)
+    // without any Clerk authentication. Perfect for local chart/data work.
+    return <AppContent />;
+  }
+
   if (!isLoaded) {
     return <div>Loading...</div>;
   }
@@ -266,7 +285,9 @@ const AppContent = memo(() => {
   const shouldHideTopbar = isFullScreenChart;
   const shouldRenderTopbar = !isSplashPage && !isLoginSignupPage && !isUserMenuPage && !shouldHideTopbar;
   // Display Stripe initialization error if present
-  if (stripeError) {
+  // In dev bypass mode we don't want Stripe failures (e.g. tracking blockers in Firefox private mode)
+  // to prevent the rest of the app from working.
+  if (stripeError && !DEV_BYPASS_AUTH) {
     return <div>Error loading Stripe: {stripeError}</div>;
   }
   return (
@@ -276,6 +297,19 @@ const AppContent = memo(() => {
           <SubscriptionProvider> {/* Removed user and isSignedIn props */}
             <FavoritesProvider> {/* Removed user and isSignedIn props */}
               <CssBaseline />
+              {DEV_BYPASS_AUTH && (
+                <div style={{
+                  background: '#1e3a2f',
+                  color: '#4ade80',
+                  textAlign: 'center',
+                  padding: '4px 8px',
+                  fontSize: '12px',
+                  fontFamily: 'monospace',
+                  borderBottom: '1px solid #166534'
+                }}>
+                  DEV MODE: Clerk + subscription checks bypassed (REACT_APP_DEV_BYPASS_AUTH=true). All charts (including premium) available locally.
+                </div>
+              )}
               <div className="app" style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
                 {/* Render Topbar or AccountNavBar only if signed in */}
                 {shouldRenderTopbar && (
@@ -336,8 +370,15 @@ const AppContent = memo(() => {
 });
 
 const App = memo(() => {
+  // Only pass the custom domain prop when using a production/live Clerk key.
+  // Dev/test keys (pk_test_*) work better without it (or with their accounts.dev domain).
+  const isProdKey = PUBLISHABLE_KEY && PUBLISHABLE_KEY.startsWith('pk_live_');
+  const clerkProps = {
+    publishableKey: PUBLISHABLE_KEY,
+    ...(isProdKey ? { domain: 'clerk.cryptological.app' } : {}),
+  };
   return (
-    <ClerkProvider publishableKey={PUBLISHABLE_KEY} domain="clerk.cryptological.app">
+    <ClerkProvider {...clerkProps}>
       <AuthWrapper />
     </ClerkProvider>
   );
