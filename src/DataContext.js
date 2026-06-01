@@ -4,6 +4,8 @@ import { initDB, cacheData, getCachedData, clearCache, isCacheFresh, getFreshCac
 import { API_BASE_URL, apiUrl } from './config/api';
 import logger from './utils/logger';
 import { initializeDataService, getBtcPriceSeries, getEthPriceSeries, getMvrvSeries, getMarketCapSeries, getDominanceSeries } from './data'; // New data layer (Phase 1)
+import { waitForPreloadIfNeeded } from './utils/waitForPreloadIfNeeded'; // Phase 1: extracted preload guard helper
+import { getClerkToken } from './utils/clerkAuth';
 
 export const DataContext = createContext();
 
@@ -21,7 +23,13 @@ const fetchFreshAndUpdate = async ({
   currentTimestamp,
 }) => {
   try {
-    const response = await fetch(apiUrl);
+    const headers = {};
+    const token = await getClerkToken();
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(apiUrl, { headers });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
     const data = await response.json();
@@ -133,9 +141,17 @@ const fetchWithCache = async ({
     const maxRetries = 2;
     let attempts = 0;
     let response;
+
+    // Attach Clerk JWT if available (for protected endpoints)
+    const headers = {};
+    const token = await getClerkToken();
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
     while (attempts < maxRetries) {
       try {
-        response = await fetch(apiUrl);
+        response = await fetch(apiUrl, { headers });
         if (response.ok) break;
         throw new Error(`HTTP error! Status: ${response.status}`);
       } catch (err) {
@@ -567,9 +583,10 @@ export const DataProvider = ({ children }) => {
 
   const fetchBtcData = useCallback(async () => {
     if (isBtcDataFetched) return;
-    if (!preloadComplete) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      if (isBtcDataFetched) return;
+
+    // Phase 1: Use shared helper to avoid duplicate work during preload
+    if (await waitForPreloadIfNeeded(preloadComplete, () => isBtcDataFetched)) {
+      return;
     }
 
     // Delegated to DataService
@@ -592,9 +609,10 @@ export const DataProvider = ({ children }) => {
 
   const fetchLatestFearAndGreed = useCallback(async () => {
     if (isLatestFearAndGreedFetched) return;
-    if (!preloadComplete) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      if (isLatestFearAndGreedFetched) return;
+
+    // Phase 1: Use shared helper to avoid duplicate work during preload
+    if (await waitForPreloadIfNeeded(preloadComplete, () => isLatestFearAndGreedFetched)) {
+      return;
     }
     await fetchWithCache({
       cacheId: 'latestFearAndGreed',
@@ -754,9 +772,10 @@ export const DataProvider = ({ children }) => {
 
   const fetchMvrvData = useCallback(async () => {
     if (isMvrvDataFetched) return;
-    if (!preloadComplete) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      if (isMvrvDataFetched) return;
+
+    // Phase 1: Use shared helper to avoid duplicate work during preload
+    if (await waitForPreloadIfNeeded(preloadComplete, () => isMvrvDataFetched)) {
+      return;
     }
 
     // Delegated to DataService
@@ -780,9 +799,10 @@ export const DataProvider = ({ children }) => {
 
 const fetchDominanceData = useCallback(async () => {
   if (isDominanceDataFetched) return;
-  if (!preloadComplete) {
-    await new Promise(resolve => setTimeout(resolve, 100));
-    if (isDominanceDataFetched) return;
+
+  // Phase 1: Use shared helper to avoid duplicate work during preload
+  if (await waitForPreloadIfNeeded(preloadComplete, () => isDominanceDataFetched)) {
+    return;
   }
 
   // Delegated to DataService
@@ -805,9 +825,10 @@ const fetchDominanceData = useCallback(async () => {
 
   const fetchEthData = useCallback(async () => {
     if (isEthDataFetched) return;
-    if (!preloadComplete) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      if (isEthDataFetched) return;
+
+    // Phase 1: Use shared helper to avoid duplicate work during preload
+    if (await waitForPreloadIfNeeded(preloadComplete, () => isEthDataFetched)) {
+      return;
     }
 
     // Delegated to DataService
@@ -830,9 +851,10 @@ const fetchDominanceData = useCallback(async () => {
 
   const fetchFearAndGreedData = useCallback(async () => {
     if (isFearAndGreedDataFetched) return;
-    if (!preloadComplete) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      if (isFearAndGreedDataFetched) return;
+
+    // Phase 1: Use shared helper to avoid duplicate work during preload
+    if (await waitForPreloadIfNeeded(preloadComplete, () => isFearAndGreedDataFetched)) {
+      return;
     }
     await fetchWithCache({
       cacheId: 'fearAndGreedData',
@@ -862,9 +884,10 @@ const fetchDominanceData = useCallback(async () => {
 
   const fetchMarketCapData = useCallback(async () => {
     if (isMarketCapDataFetched) return;
-    if (!preloadComplete) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      if (isMarketCapDataFetched) return;
+
+    // Phase 1: Use shared helper to avoid duplicate work during preload
+    if (await waitForPreloadIfNeeded(preloadComplete, () => isMarketCapDataFetched)) {
+      return;
     }
 
     // Delegated to DataService
@@ -1014,9 +1037,10 @@ const fetchDominanceData = useCallback(async () => {
 
   const fetchTxCountData = useCallback(async () => {
     if (isTxCountDataFetched) return;
-    if (!preloadComplete) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      if (isTxCountDataFetched) return;
+
+    // Phase 1: Use shared helper to avoid duplicate work during preload
+    if (await waitForPreloadIfNeeded(preloadComplete, () => isTxCountDataFetched)) {
+      return;
     }
     await fetchWithCache({
       cacheId: 'txCountData',
@@ -1121,9 +1145,10 @@ const fetchDominanceData = useCallback(async () => {
 
   const fetchAltcoinData = useCallback(async (coin) => {
     if (isAltcoinDataFetched[coin]) return;
-    if (!preloadComplete) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      if (isAltcoinDataFetched[coin]) return;
+
+    // Phase 1: Use shared helper to avoid duplicate work during preload
+    if (await waitForPreloadIfNeeded(preloadComplete, () => isAltcoinDataFetched[coin])) {
+      return;
     }
     setIsAltcoinDataFetched((prev) => ({ ...prev, [coin]: true }));
     const success = await fetchWithCache({
@@ -1191,9 +1216,10 @@ const fetchDominanceData = useCallback(async () => {
 
   const fetchFredSeriesData = useCallback(async (seriesId) => {
     if (fredSeriesData[seriesId]?.length > 0) return;
-    if (!preloadComplete) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      if (fredSeriesData[seriesId]?.length > 0) return;
+
+    // Phase 1: Use shared helper to avoid duplicate work during preload
+    if (await waitForPreloadIfNeeded(preloadComplete, () => fredSeriesData[seriesId]?.length > 0)) {
+      return;
     }
     const success = await fetchWithCache({
       cacheId: `fredSeriesData_${seriesId}`,
@@ -1239,9 +1265,10 @@ const fetchDominanceData = useCallback(async () => {
   const fetchIndicatorData = useCallback(async (indicatorId) => {
     if (indicatorId !== 'btc-yield-recession') return;
     if (isIndicatorDataFetched[indicatorId]) return;
-    if (!preloadComplete) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      if (isIndicatorDataFetched[indicatorId]) return;
+
+    // Phase 1: Use shared helper to avoid duplicate work during preload
+    if (await waitForPreloadIfNeeded(preloadComplete, () => isIndicatorDataFetched[indicatorId])) {
+      return;
     }
 
     setIsIndicatorDataFetched((prev) => ({ ...prev, [indicatorId]: true }));

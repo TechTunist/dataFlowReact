@@ -2,6 +2,7 @@
 import React, { createContext, useState, useEffect, useCallback, useContext, useMemo } from 'react';
 import { useUser, useAuth } from '@clerk/clerk-react';
 import { apiUrl } from '../config/api';
+import { setClerkTokenGetter } from '../utils/clerkAuth';
 
 const SubscriptionContext = createContext();
 
@@ -14,6 +15,13 @@ const DEFAULT_FREE_FEATURES = {
 export const SubscriptionProvider = ({ children }) => {
   const { user, isSignedIn } = useUser();  // Use hook inside, no props needed
   const { getToken } = useAuth();
+
+  // Register token getter so DataContext and other non-component code can send JWT
+  useEffect(() => {
+    if (getToken) {
+      setClerkTokenGetter(getToken);
+    }
+  }, [getToken]);
   const [subscriptionStatus, setSubscriptionStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
