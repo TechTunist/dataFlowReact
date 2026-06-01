@@ -89,6 +89,7 @@ const routeToChartId = {
   "/sp500-roi": "sp500-roi",
   "/btc-mvrv-z":"mvrv-zscore",
   "/total2":"total2",
+  "/tail-curvature": "tail-curvature",
 };
 
 const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
@@ -320,6 +321,8 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
         return { title: "Total2", subtitle: "Total Crypto Market Cap Minus BTC" };
       case "/total3": 
         return { title: "Total3", subtitle: "Total Crypto Market Cap Minus BTC & ETH" };
+      case "/tail-curvature":
+        return { title: "Tail Curvature", subtitle: isMobile ? "Asymmetric Quantiles" : "Asymmetric Tail Curvature in Bitcoin Price Quantiles — Cowen (2026)" };
       default:
         return { title: "CryptoLogical", subtitle: "" };
     }

@@ -23,6 +23,7 @@ import restrictToPaidSubscription from './scenes/RestrictToPaid';
 import BitcoinPrice from "./components/BitcoinPrice";
 import TotalMarketCap from "./components/TotalMarketCap";
 import MarketCapDifference from "./components/TotalMarketCapDifference";
+import TailCurvature from "./components/TailCurvature";
 import BitcoinTransactionFees from "./components/BitcoinTransactionFees";
 import BitcoinDominance from "./components/BitcoinDominance";
 import Risk from "./components/BitcoinRisk";
@@ -103,6 +104,7 @@ const appRoutes = [
   { path: "/total2", component: Total2Chart, useBasicChart: true, protected: true },
   { path: "/total3", component: Total3Chart, useBasicChart: true, protected: true },
   { path: "/total-difference", component: MarketCapDifference, useBasicChart: true, protected: true },
+  { path: "/tail-curvature", component: TailCurvature, useBasicChart: true, protected: true },
   { path: "/bitcoin-fees", component: BitcoinTransactionFees, useBasicChart: true, protected: true },
   { path: "/bitcoin-dominance", component: BitcoinDominance, useBasicChart: true, protected: true },
   { path: "/bitcoin-roi", component: BitcoinROI, useBasicChart: true, protected: true },

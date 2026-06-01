@@ -221,6 +221,9 @@ const itemsData = [
   // === TOOLS ===
   // Category Icon: BuildIcon - Represents tools and building/analysis
   { title: "Workbench (beta)", to: "/workbench", category: "Tools", icon: <BuildIcon />, categoryIcon: <BuildIcon /> }, // BuildIcon: Workbench for building charts
+
+  // New research visualization from Cowen (2026) paper
+  { title: "Tail Curvature (Asymmetric Quantiles)", to: "/tail-curvature", category: "Advanced Models", icon: <ShowChartIcon />, categoryIcon: <AssessmentIcon /> },
 ];
 
   const filteredItems = useMemo(() =>
