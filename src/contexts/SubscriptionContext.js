@@ -1,6 +1,6 @@
 // src/contexts/SubscriptionContext.js
 import React, { createContext, useState, useEffect, useCallback, useContext, useMemo } from 'react';
-import { useUser, useAuth } from '@clerk/clerk-react';
+import { useUser, useAuth, useClerk } from '@clerk/clerk-react';
 import { apiUrl } from '../config/api';
 import { setClerkTokenGetter } from '../utils/clerkAuth';
 
@@ -13,15 +13,22 @@ const DEFAULT_FREE_FEATURES = {
 };
 
 export const SubscriptionProvider = ({ children }) => {
-  const { user, isSignedIn } = useUser();  // Use hook inside, no props needed
+  const { user, isSignedIn } = useUser();
   const { getToken } = useAuth();
+  const clerk = useClerk();
 
-  // Register token getter so DataContext and other non-component code can send JWT
+  // Register a robust token getter as soon as Clerk is available.
+  // We prefer using the Clerk instance directly for better reliability
+  // in non-component code (DataContext, etc.).
   useEffect(() => {
-    if (getToken) {
+    if (clerk?.session) {
+      // Register a getter that uses the Clerk instance (most reliable)
+      setClerkTokenGetter(() => clerk.session.getToken());
+    } else if (getToken) {
+      // Fallback to useAuth's getToken if Clerk instance isn't ready yet
       setClerkTokenGetter(getToken);
     }
-  }, [getToken]);
+  }, [clerk, getToken]);
   const [subscriptionStatus, setSubscriptionStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

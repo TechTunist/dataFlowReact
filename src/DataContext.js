@@ -24,7 +24,14 @@ const fetchFreshAndUpdate = async ({
 }) => {
   try {
     const headers = {};
-    const token = await getClerkToken();
+    let token = await getClerkToken();
+
+    // Give Clerk a moment if it's still initializing
+    if (!token) {
+      await new Promise(resolve => setTimeout(resolve, 300));
+      token = await getClerkToken();
+    }
+
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
@@ -143,8 +150,16 @@ const fetchWithCache = async ({
     let response;
 
     // Attach Clerk JWT if available (for protected endpoints)
+    // Be patient on first load — Clerk can take a moment to initialize
     const headers = {};
-    const token = await getClerkToken();
+    let token = await getClerkToken();
+
+    // If no token yet and this is the first attempt, wait a bit for Clerk to load
+    if (!token && attempts === 0) {
+      await new Promise(resolve => setTimeout(resolve, 400));
+      token = await getClerkToken();
+    }
+
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
