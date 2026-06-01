@@ -6,6 +6,8 @@ import { useTheme } from "@mui/material";
 import useIsMobile from '../hooks/useIsMobile';
 import { DataContext } from '../DataContext';
 import BitcoinFees from './BitcoinTransactionFees';
+import { useAuth } from '@clerk/clerk-react';
+import { apiUrl } from '../config/api';
 
 const UsInitialClaimsChart = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
@@ -14,7 +16,7 @@ const UsInitialClaimsChart = ({ isDashboard = false }) => {
     const theme = useTheme();
     const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
     const isMobile = useIsMobile();
-    const { initialClaimsData, fetchInitialClaimsData } = useContext(DataContext);
+    const { getToken, isSignedIn } = useAuth();
 
     const [scaleMode, setScaleMode] = useState(0); // 1 for logarithmic, 0 for linear
     const [tooltipData, setTooltipData] = useState(null);
@@ -23,14 +25,40 @@ const UsInitialClaimsChart = ({ isDashboard = false }) => {
     const [error, setError] = useState(null);
     const currentYear = useMemo(() => new Date().getFullYear().toString(), []);
 
-    // Fetch data only if not present in context
+    // Local state for this test (JWT-protected endpoint)
+    const [localInitialClaimsData, setLocalInitialClaimsData] = useState([]);
+
+    // Fetch data with JWT token (test for /api/initial-claims protection)
     useEffect(() => {
         const fetchData = async () => {
-            if (initialClaimsData.length > 0) return;
+            // Use local data if we already have it
+            if (localInitialClaimsData.length > 0) return;
+
             setIsLoading(true);
             setError(null);
             try {
-                await fetchInitialClaimsData();
+                let headers = {};
+                if (isSignedIn) {
+                    const token = await getToken();
+                    if (token) {
+                        headers['Authorization'] = `Bearer ${token}`;
+                    }
+                }
+
+                const response = await fetch(apiUrl('/api/initial-claims/'), { headers });
+
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        setError('Authentication required. Please sign in to view this data.');
+                        return;
+                    }
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const jsonData = await response.json();
+                const mapped = jsonData.map((item) => ({ time: item.date, value: parseInt(item.value, 10) }));
+                const deduped = [...new Map(mapped.map(item => [item.time, item])).values()];
+                setLocalInitialClaimsData(deduped);
             } catch (err) {
                 setError('Failed to fetch initial claims data. Please try again later.');
                 console.error('Error fetching data:', err);
@@ -39,7 +67,7 @@ const UsInitialClaimsChart = ({ isDashboard = false }) => {
             }
         };
         fetchData();
-    }, [fetchInitialClaimsData, initialClaimsData.length]);
+    }, [getToken, isSignedIn, localInitialClaimsData.length]);
 
     const setInteractivity = useCallback(() => setIsInteractive(prev => !prev), []);
     const toggleScaleMode = useCallback(() => setScaleMode(prev => (prev === 1 ? 0 : 1)), []);
@@ -47,7 +75,7 @@ const UsInitialClaimsChart = ({ isDashboard = false }) => {
 
     // Initialize chart
     useEffect(() => {
-        if (initialClaimsData.length === 0) return;
+        if (localInitialClaimsData.length === 0) return;
 
         const chart = createChart(chartContainerRef.current, {
             width: chartContainerRef.current.clientWidth,
@@ -101,7 +129,7 @@ const UsInitialClaimsChart = ({ isDashboard = false }) => {
             : { topColor: 'rgba(255, 165, 0, 0.56)', bottomColor: 'rgba(255, 165, 0, 0.2)', lineColor: 'rgba(255, 140, 0, 0.8)' };
 
         areaSeries.applyOptions({ topColor, bottomColor, lineColor });
-        areaSeries.setData(initialClaimsData);
+        areaSeries.setData(localInitialClaimsData);
 
         chartRef.current = chart;
         resetChartView();
@@ -110,7 +138,7 @@ const UsInitialClaimsChart = ({ isDashboard = false }) => {
             chart.remove();
             window.removeEventListener('resize', resizeChart);
         };
-    }, [initialClaimsData, colors, scaleMode, theme.palette.mode]);
+    }, [localInitialClaimsData, colors, scaleMode, theme.palette.mode]);
 
     // Update interactivity
     useEffect(() => {
@@ -144,9 +172,9 @@ const UsInitialClaimsChart = ({ isDashboard = false }) => {
                 <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
             </div>
             <div className='under-chart'>
-                {!isDashboard && initialClaimsData.length > 0 && (
+                {!isDashboard && localInitialClaimsData.length > 0 && (
                     <div style={{ marginTop: '10px' }}>
-                        <span style={{ color: colors.greenAccent[500] }}>Last Updated: {initialClaimsData[initialClaimsData.length - 1].time}</span>
+                        <span style={{ color: colors.greenAccent[500] }}>Last Updated: {localInitialClaimsData[localInitialClaimsData.length - 1].time}</span>
                     </div>
                 )}
                 {!isDashboard && <BitcoinFees />}
