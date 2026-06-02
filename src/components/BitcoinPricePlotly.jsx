@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import Plot from 'react-plotly.js';
 import { useTheme } from "@mui/material";
 import { tokens } from "../theme"; // Ensure the path matches your project structure
-import { apiUrl } from "../config/api";
+import { DataContext } from '../DataContext';
 
 const BitcoinPrice = ({ isDashboard = false }) => {
     const [chartData, setChartData] = useState([]);
@@ -10,22 +10,20 @@ const BitcoinPrice = ({ isDashboard = false }) => {
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
 
+    const { btcData, fetchBtcData } = useContext(DataContext);
+
+    // Consume from central (IDB cached + auth). Map to Plotly x/y shape for visual parity.
     useEffect(() => {
-        // Replace the fetch URL with your API endpoint
-        // fetch('https://tunist.pythonanywhere.com/api/btc/price/')
-        fetch(apiUrl('/api/btc/price/'))
-            .then(response => response.json())
-            .then(data => {
-                const formattedData = data.map(item => ({
-                    x: item.date,
-                    y: parseFloat(item.close)
-                }));
-                setChartData(formattedData);
-            })
-            .catch(error => {
-                console.error('Error fetching data: ', error);
-            });
-    }, []);
+        if (!btcData || btcData.length === 0) {
+            fetchBtcData?.();
+            return;
+        }
+        const formattedData = btcData.map(item => ({
+            x: item.time || item.date,
+            y: item.value != null ? item.value : (item.close != null ? parseFloat(item.close) : null),
+        })).filter(d => d.y != null);
+        setChartData(formattedData);
+    }, [btcData, fetchBtcData]);
 
     const toggleScaleMode = () => {
         setScaleMode(prevMode => (prevMode === 'log' ? 'linear' : 'log'));

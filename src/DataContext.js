@@ -1,13 +1,75 @@
 // src/DataContext.js
 import React, { createContext, useState, useCallback, useContext, useEffect, useMemo, useRef } from 'react';
 import { initDB, cacheData, getCachedData, clearCache, isCacheFresh, getFreshCachedData, DEFAULT_CACHE_TTL, pruneOldCache } from './utility/idbUtils';
-import { API_BASE_URL, apiUrl } from './config/api';
+import { apiUrl } from './config/api';
 import logger from './utils/logger';
 import { initializeDataService, getBtcPriceSeries, getEthPriceSeries, getMvrvSeries, getMarketCapSeries, getDominanceSeries } from './data'; // New data layer (Phase 1)
 import { waitForPreloadIfNeeded } from './utils/waitForPreloadIfNeeded'; // Phase 1: extracted preload guard helper
-import { getClerkToken } from './utils/clerkAuth';
+import { getAuthHeaders } from './utils/clerkAuth';
 
 export const DataContext = createContext();
+
+/**
+ * Centralized per-cacheId freshness policy.
+ * Primary mechanism: TTL (avoids the old "always re-hit on day rollover or lagged data" problem).
+ * useDateCheck kept as a *strong* hit booster for daily series (if we literally have a point dated today, serve it even if entry ts is old).
+ * This is the core of making IndexedDB actually prevent unnecessary API/DB roundtrips.
+ */
+const CACHE_CONFIG = {
+  // Core daily series (prices, dominance, mcap, tx etc): 6h TTL is plenty; dateCheck as booster
+  btcData: { ttl: 6 * 60 * 60 * 1000, useDateCheck: true },
+  mvrvData: { ttl: 12 * 60 * 60 * 1000, useDateCheck: false }, // was using 7d in delegation; longer TTL + no strict date is better
+  ethData: { ttl: 6 * 60 * 60 * 1000, useDateCheck: true },
+  dominanceData: { ttl: 6 * 60 * 60 * 1000, useDateCheck: true },
+  marketCapData: { ttl: 6 * 60 * 60 * 1000, useDateCheck: true },
+  differenceData: { ttl: 6 * 60 * 60 * 1000, useDateCheck: true },
+  total2Data: { ttl: 6 * 60 * 60 * 1000, useDateCheck: true },
+  total3Data: { ttl: 6 * 60 * 60 * 1000, useDateCheck: true },
+  txCountData: { ttl: 6 * 60 * 60 * 1000, useDateCheck: true },
+  txCountCombinedData: { ttl: 6 * 60 * 60 * 1000, useDateCheck: true },
+  txMvrvData: { ttl: 6 * 60 * 60 * 1000, useDateCheck: true },
+  altcoinData_SOL: { ttl: 6 * 60 * 60 * 1000, useDateCheck: true }, // example; dynamic ones use default
+  // Macro / slower: longer
+  macroData: { ttl: 12 * 60 * 60 * 1000, useDateCheck: false },
+  inflationData: { ttl: 24 * 60 * 60 * 1000, useDateCheck: false },
+  initialClaimsData: { ttl: 12 * 60 * 60 * 1000, useDateCheck: false },
+  interestData: { ttl: 12 * 60 * 60 * 1000, useDateCheck: false },
+  unemploymentData: { ttl: 24 * 60 * 60 * 1000, useDateCheck: false },
+  fedBalanceData: { ttl: 24 * 60 * 60 * 1000, useDateCheck: false },
+  // Sentiment / faster moving
+  fearAndGreedData: { ttl: 4 * 60 * 60 * 1000, useDateCheck: false },
+  latestFearAndGreed: { ttl: 60 * 60 * 1000, useDateCheck: false },
+  // Risk / onchain (heavy; cache hard)
+  mvrvRiskData: { ttl: 24 * 60 * 60 * 1000, useDateCheck: false },
+  puellRiskData: { ttl: 24 * 60 * 60 * 1000, useDateCheck: false },
+  minerCapThermoCapRiskData: { ttl: 24 * 60 * 60 * 1000, useDateCheck: false },
+  feeRiskData: { ttl: 24 * 60 * 60 * 1000, useDateCheck: false },
+  soplRiskData: { ttl: 24 * 60 * 60 * 1000, useDateCheck: false },
+  onchainMetricsData: { ttl: 12 * 60 * 60 * 1000, useDateCheck: false },
+  addressMetricsData: { ttl: 12 * 60 * 60 * 1000, useDateCheck: false },
+  // Others
+  altcoinSeasonData: { ttl: 6 * 60 * 60 * 1000, useDateCheck: true },
+  altcoinSeasonTimeseriesData: { ttl: 6 * 60 * 60 * 1000, useDateCheck: true },
+  sp500DivUnrateData: { ttl: 24 * 60 * 60 * 1000, useDateCheck: true },
+  fearAndGreedBinaryData: { ttl: 15 * 60 * 1000, useDateCheck: false }, // short for "live" feel
+  // FRED etc: long
+  'fredSeriesData_SP500': { ttl: 24 * 60 * 60 * 1000, useDateCheck: false },
+  // Default for anything not listed (including dynamic altcoin_* and fred_*)
+  _default: { ttl: DEFAULT_CACHE_TTL, useDateCheck: false },
+};
+
+function getCacheConfig(cacheId) {
+  // Support dynamic like fredSeriesData_XXX or altcoinData_XXX
+  if (CACHE_CONFIG[cacheId]) return CACHE_CONFIG[cacheId];
+  if (cacheId && cacheId.startsWith('fredSeriesData_')) return CACHE_CONFIG['fredSeriesData_SP500'] || CACHE_CONFIG._default;
+  if (cacheId && cacheId.startsWith('altcoinData_')) return { ttl: 6 * 60 * 60 * 1000, useDateCheck: true };
+  if (cacheId && cacheId.startsWith('fredSeriesData_')) return { ttl: 24 * 60 * 60 * 1000, useDateCheck: false };
+  return CACHE_CONFIG._default;
+}
+
+// Simple module-level inflight guard (Phase 4) to reduce duplicate concurrent nets for the same cacheId
+// (complements the per-render isFetched guards which can have closure/timing races).
+const inflightFetches = new Set();
 
 /**
  * Phase 2 helper: Background refresh for stale-while-revalidate pattern.
@@ -23,18 +85,10 @@ const fetchFreshAndUpdate = async ({
   currentTimestamp,
 }) => {
   try {
-    const headers = {};
-    let token = await getClerkToken();
-
-    // Give Clerk a moment if it's still initializing
-    if (!token) {
-      await new Promise(resolve => setTimeout(resolve, 300));
-      token = await getClerkToken();
-    }
-
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
+    // Use centralized auth helper (robust retries + waits inside). This ensures
+    // authenticated requests succeed so cacheData can populate IndexedDB for all
+    // paths (including those reaching bg reval).
+    const headers = await getAuthHeaders({ maxRetries: 2, delayMs: 300 });
 
     const response = await fetch(apiUrl, { headers });
     if (!response.ok) {
@@ -69,16 +123,25 @@ const fetchWithCache = async ({
   setData,
   setLastUpdated,
   setIsFetched,
-  cacheDuration = 24 * 60 * 60 * 1000,
-  useDateCheck = true,
-  staleWhileRevalidate = true,   // Phase 2 improvement: serve stale data instantly while refreshing in background
+  cacheDuration, // now ignored in favor of CACHE_CONFIG (Phase 3 fix)
+  useDateCheck,  // now merged from config
+  staleWhileRevalidate = true,
 }) => {
   if (typeof indexedDB === 'undefined') {
-    // console.warn('IndexedDB is not supported in this environment.');
     return false;
   }
 
+  const cfg = getCacheConfig(cacheId);
+  const effectiveTTL = cacheDuration || cfg.ttl || DEFAULT_CACHE_TTL;
+  const effectiveUseDateCheck = (typeof useDateCheck === 'boolean') ? useDateCheck : cfg.useDateCheck;
+
   try {
+    if (inflightFetches.has(cacheId)) {
+      // Another caller (or preload vs chart) is already fetching this; let it finish + populate cache/state.
+      return true;
+    }
+    inflightFetches.add(cacheId);
+
     setIsFetched(true);
     const currentDate = new Date().toISOString().split('T')[0];
     const currentTimestamp = Date.now();
@@ -106,16 +169,16 @@ const fetchWithCache = async ({
           firstCachedDate = new Date(parseInt(firstRecord.timestamp, 10) * 1000).toISOString().split('T')[0];
         }
 
+        // Phase 3: TTL is now primary (via getFreshCachedData + isCacheFresh).
+        // useDateCheck (from config or caller) acts as a *strong* early hit if we literally cover "today".
+        // This + longer/consistent TTLs stops the "re-hit API every load or every new day" behavior.
         let shouldReuseCache = false;
-        if (useDateCheck) {
-          if (!latestCachedDate) {
-            shouldReuseCache = false;
-          } else {
-            shouldReuseCache = latestCachedDate >= currentDate;
-          }
-        } else {
-          // Phase 2 improvement: use the new isCacheFresh helper with configurable TTL
-          shouldReuseCache = isCacheFresh(cached, cacheDuration || DEFAULT_CACHE_TTL);
+        // Always prefer a fresh-by-TTL check first (prevents unnecessary bg nets for lagged dailies)
+        if (isCacheFresh(cached, effectiveTTL)) {
+          shouldReuseCache = true;
+        } else if (effectiveUseDateCheck && latestCachedDate && latestCachedDate >= currentDate) {
+          // Strong date booster: even if entry ts old, if data includes today we treat as fresh
+          shouldReuseCache = true;
         }
 
         if (shouldReuseCache) {
@@ -127,25 +190,26 @@ const fetchWithCache = async ({
           return true;
         }
 
-        // Phase 2: Stale-while-revalidate support
-        // If we have stale data and staleWhileRevalidate is enabled, serve it immediately
-        // for great perceived performance, then refresh in the background.
+        // Stale-while-revalidate: serve instantly, but only bg-revalidate if the *entry* is older than half TTL
+        // (reduces pointless re-fetches compared to always-reval on any !date-hit).
         if (staleWhileRevalidate && cached && cached.data) {
+          const shouldRevalidate = !isCacheFresh(cached, Math.floor(effectiveTTL / 2));
           logger.log(`[Cache] HIT (stale, revalidating in background) for ${cacheId}`);
           setData(Array.isArray(cached.data) ? cachedData : cached.data);
           if (setLastUpdated) {
             setLastUpdated(latestCachedDate);
           }
-          // Fire-and-forget background refresh (don't await)
-          fetchFreshAndUpdate({
-            cacheId,
-            apiUrl,
-            formatData,
-            setData,
-            setLastUpdated,
-            setIsFetched,
-            currentTimestamp,
-          }).catch(err => logger.error(`Background refresh failed for ${cacheId}`, err));
+          if (shouldRevalidate) {
+            fetchFreshAndUpdate({
+              cacheId,
+              apiUrl,
+              formatData,
+              setData,
+              setLastUpdated,
+              setIsFetched,
+              currentTimestamp,
+            }).catch(err => logger.error(`Background refresh failed for ${cacheId}`, err));
+          }
           return true;
         }
       }
@@ -155,20 +219,10 @@ const fetchWithCache = async ({
     let attempts = 0;
     let response;
 
-    // Attach Clerk JWT if available (for protected endpoints)
-    // Be patient on first load — Clerk can take a moment to initialize
-    const headers = {};
-    let token = await getClerkToken();
-
-    // If no token yet and this is the first attempt, wait a bit for Clerk to load
-    if (!token && attempts === 0) {
-      await new Promise(resolve => setTimeout(resolve, 400));
-      token = await getClerkToken();
-    }
-
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
+    // Attach Clerk JWT via centralized helper (robust + retries inside).
+    // Critical for protected endpoints so that successful fetches reach cacheData
+    // and populate IndexedDB (the root cause of the "always hit API" bug).
+    const headers = await getAuthHeaders({ maxRetries: 2, delayMs: 350 });
 
     while (attempts < maxRetries) {
       try {
@@ -221,6 +275,8 @@ const fetchWithCache = async ({
     // console.error(`Error fetching or caching data for ${cacheId}:`, error);
     setIsFetched(false);
     return false;
+  } finally {
+    inflightFetches.delete(cacheId);
   }
 };
 
@@ -252,9 +308,13 @@ const refreshData = async ({
 async function fetchAllPages(url) {
   let results = [];
   let nextUrl = url;
+  // Always attach auth for our data endpoints. This is essential for risk-metrics,
+  // onchain, address metrics etc. so fetches succeed and we can cache in IndexedDB
+  // instead of hammering the backend on every load.
+  const headers = await getAuthHeaders({ maxRetries: 1, delayMs: 250 });
   while (nextUrl) {
     try {
-      const response = await fetch(nextUrl, { signal: AbortSignal.timeout(15000) });
+      const response = await fetch(nextUrl, { headers, signal: AbortSignal.timeout(15000) });
       if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
       const data = await response.json();
       // Handle both flat array and paginated responses
@@ -378,6 +438,11 @@ export const DataProvider = ({ children }) => {
   const [isTotal3DataFetched, setIsTotal3DataFetched] = useState(false);
   const [total3LastUpdated, setTotal3LastUpdated] = useState(null);
 
+  // SP500 / div-unrate (migrated from direct bypass in SP500DivUnrateChart to ensure IDB caching + auth)
+  const [sp500DivUnrateData, setSp500DivUnrateData] = useState([]);
+  const [isSp500DivUnrateDataFetched, setIsSp500DivUnrateDataFetched] = useState(false);
+  const [sp500DivUnrateLastUpdated, setSp500DivUnrateLastUpdated] = useState(null);
+
   // Centralized in src/config/api.js - use apiUrl() helper below
 
   useEffect(() => {
@@ -421,9 +486,11 @@ export const DataProvider = ({ children }) => {
       ];
 
       // Fetch all data in parallel
-      const fetchPromises = cacheConfigs.map(async ({ id, setData, setLastUpdated, setIsFetched, useDateCheck, ttl }) => {
+      const fetchPromises = cacheConfigs.map(async ({ id, setData, setLastUpdated, setIsFetched }) => {
         try {
-          const effectiveTTL = ttl || DEFAULT_CACHE_TTL;
+          const cfg = getCacheConfig(id);
+          const effectiveTTL = cfg.ttl || DEFAULT_CACHE_TTL;
+          const effectiveUseDateCheck = cfg.useDateCheck;
           const freshCached = await getFreshCachedData(id, effectiveTTL);
 
           if (freshCached && freshCached.data) {
@@ -431,11 +498,12 @@ export const DataProvider = ({ children }) => {
             const latestCachedDate = sortedCachedData[sortedCachedData.length - 1].time;
             const currentDate = new Date().toISOString().split('T')[0];
 
+            // Phase 3: same unified rule as fetchWithCache (TTL primary + date booster)
             let shouldReuseCache = false;
-            if (useDateCheck) {
-              shouldReuseCache = latestCachedDate >= currentDate;
-            } else {
-              shouldReuseCache = isCacheFresh(freshCached, effectiveTTL);
+            if (isCacheFresh(freshCached, effectiveTTL)) {
+              shouldReuseCache = true;
+            } else if (effectiveUseDateCheck && latestCachedDate && latestCachedDate >= currentDate) {
+              shouldReuseCache = true;
             }
 
             if (shouldReuseCache) {
@@ -576,6 +644,35 @@ export const DataProvider = ({ children }) => {
       fetchFunction: fetchTotal3Data,
     });
   }, [fetchTotal3Data]);
+
+  // SP500DivUnrate (demand-loaded; uses central fetchWithCache so it gets IDB + auth + freshness)
+  const fetchSp500DivUnrateData = useCallback(async () => {
+    if (isSp500DivUnrateDataFetched) return;
+    await fetchWithCache({
+      cacheId: 'sp500DivUnrateData',
+      apiUrl: apiUrl('/api/sp500-div-unrate-squared/'),
+      formatData: (data) =>
+        data
+          .map((item) => ({
+            time: item.time,
+            value: parseFloat(item.value),
+          }))
+          .sort((a, b) => new Date(a.time) - new Date(b.time)),
+      setData: setSp500DivUnrateData,
+      setLastUpdated: setSp500DivUnrateLastUpdated,
+      setIsFetched: setIsSp500DivUnrateDataFetched,
+      useDateCheck: true,
+    });
+  }, [isSp500DivUnrateDataFetched]);
+
+  const refreshSp500DivUnrateData = useCallback(async () => {
+    await refreshData({
+      cacheId: 'sp500DivUnrateData',
+      setData: setSp500DivUnrateData,
+      setIsFetched: setIsSp500DivUnrateDataFetched,
+      fetchFunction: fetchSp500DivUnrateData,
+    });
+  }, [fetchSp500DivUnrateData]);
 
     const fetchAltcoinSeasonTimeseriesData = useCallback(async () => {
       if (isAltcoinSeasonTimeseriesDataFetched) return;
@@ -1321,15 +1418,20 @@ const fetchDominanceData = useCallback(async () => {
     }
 
     try {
-      const btcResponse = await fetch(apiUrl('/api/btc/price/'));
+      // Attach auth to these direct sub-fetches too (indicator is derived but hits our API).
+      // Prevents 401s that would skip the cacheData at the end of this path.
+      const indHeaders = await getAuthHeaders({ maxRetries: 1, delayMs: 200 });
+      const fetchOpts = { headers: indHeaders };
+
+      const btcResponse = await fetch(apiUrl('/api/btc/price/'), fetchOpts);
       const btcData = await btcResponse.json();
-      const t10y2yResponse = await fetch(apiUrl('/api/series/T10Y2Y/observations/'));
+      const t10y2yResponse = await fetch(apiUrl('/api/series/T10Y2Y/observations/'), fetchOpts);
       const t10y2yData = await t10y2yResponse.json();
-      const usrecdResponse = await fetch(apiUrl('/api/series/USRECD/observations/'));
+      const usrecdResponse = await fetch(apiUrl('/api/series/USRECD/observations/'), fetchOpts);
       let usrecdData = await usrecdResponse.json();
-      const fedFundsResponse = await fetch(apiUrl('/api/us-interest/'));
+      const fedFundsResponse = await fetch(apiUrl('/api/us-interest/'), fetchOpts);
       const fedFundsData = await fedFundsResponse.json();
-      const m2Response = await fetch(apiUrl('/api/series/M2SL/observations/'));
+      const m2Response = await fetch(apiUrl('/api/series/M2SL/observations/'), fetchOpts);
       const m2Data = await m2Response.json();
 
       const startDate = '2011-08-19';
@@ -1618,6 +1720,11 @@ const fetchDominanceData = useCallback(async () => {
       fetchTotal3Data,
       refreshTotal3Data,
       total3LastUpdated,
+      // SP500 migrated for central caching
+      sp500DivUnrateData,
+      fetchSp500DivUnrateData,
+      refreshSp500DivUnrateData,
+      sp500DivUnrateLastUpdated,
     }),
     [
       btcData,
@@ -1737,6 +1844,11 @@ const fetchDominanceData = useCallback(async () => {
       fetchTotal3Data,
       refreshTotal3Data,
       total3LastUpdated,
+      // SP500 migrated for central caching
+      sp500DivUnrateData,
+      fetchSp500DivUnrateData,
+      refreshSp500DivUnrateData,
+      sp500DivUnrateLastUpdated,
     ]
   );
 
@@ -1759,3 +1871,7 @@ const fetchDominanceData = useCallback(async () => {
 };
 
 export const useData = () => useContext(DataContext);
+
+// Re-export the core fetch primitives for the data layer (fetchUtils + future DataService evolution).
+// This allows the thin wrappers to exist without import hacks and keeps the "single central path" promise.
+export { fetchWithCache, refreshData };

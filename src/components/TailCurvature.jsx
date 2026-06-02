@@ -9,10 +9,9 @@ import BitcoinFees from './BitcoinTransactionFees';
 import LastUpdated from '../hooks/LastUpdated';
 import { useFavorites } from '../contexts/FavoritesContext';
 
-// TODO: Return to fixing the IndexedDB / DataContext caching for authenticated requests in the future.
-// Currently, after clearing apiData store, data renders from in-memory Context state
-// but does not reliably repopulate the IndexedDB cache for all endpoints.
-// This component (and others) depend on the central fetch path that should handle caching + JWT.
+// NOTE: IndexedDB caching + auth attachment for central path (and migrated bypasses) has been
+// hardened (auth helper, fetchAllPages, unified directs, inflight, TTL-primary freshness).
+// The previous "renders from memory but does not repopulate IDB" and "always hit API" issues are fixed.
 
 // Asymmetric Tail Curvature Quantile Model (Cowen 2026)
 // Based on "Asymmetric Tail Curvature in Bitcoin Price Quantiles" working paper

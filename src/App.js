@@ -2,7 +2,7 @@ import { useState, useEffect, createContext, memo, Suspense, lazy } from "react"
 import ErrorBoundary from "./components/ErrorBoundary";
 import LoadingFallback from "./components/LoadingFallback";
 import { Routes, Route, useLocation, Navigate } from "react-router-dom";
-import { ClerkProvider, useAuth, useUser } from "@clerk/clerk-react";
+import { ClerkProvider, useAuth, useUser, useClerk } from "@clerk/clerk-react";
 import Topbar from "./scenes/global/Topbar";
 import Sidebar from "./scenes/global/Sidebar";
 import BasicChart from "./scenes/ChartTemplates/BasicChart";
@@ -13,6 +13,7 @@ import LoginSignup from "./scenes/LoginSignup";
 import useIsMobile from "./hooks/useIsMobile";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AccountNavBar from "./scenes/global/AccountNavBar";
+import { setClerkTokenGetter } from "./utils/clerkAuth";
 import { loadStripe } from '@stripe/stripe-js';
 import { SubscriptionProvider } from './contexts/SubscriptionContext';
 import { useMemo } from "react";
@@ -43,6 +44,7 @@ import UsInitialClaimsChart from "./components/UsInitialClaims";
 import UsCombinedMacroChart from "./components/UsCombinedMacro";
 import FredSeriesChart from "./components/FredSeriesChart";
 import FearAndGreedBinaryChart from "./components/FearAndGreedBinaryChart";
+import { FearAndGreedBinaryProvider } from "./FearAndGreedBinaryContext";
 import SP500ROI from "./components/SP500ROI";
 import Total2Chart from "./components/Total2Marketcap";
 import Total3Chart from "./components/Total3Marketcap";
@@ -231,7 +233,14 @@ const AuthWrapper = memo(() => {
   // Hooks must always be called unconditionally (top of component, same order every render)
   // to satisfy react-hooks/rules-of-hooks. We call them first, then decide what to render.
   const { isLoaded, isSignedIn } = useAuth();
+  const clerk = useClerk();
   const location = useLocation();
+
+  // Register token getter as early as possible (even before SubscriptionProvider) so that
+  // DataContext preload / first fetches can attach JWT reliably and populate IndexedDB cache.
+  if (clerk?.session) {
+    setClerkTokenGetter(() => clerk.session.getToken());
+  }
 
   if (DEV_BYPASS_AUTH) {
     // Dev escape hatch: run the entire app (including all protected charts)
@@ -345,6 +354,7 @@ const AppContent = memo(() => {
                     {isUserMenuPage && <div style={{ height: "65px" }} />}
                     <ErrorBoundary fallbackMessage="The main application area failed to load.">
                       <Suspense fallback={<LoadingFallback message="Loading chart..." />}>
+                      <FearAndGreedBinaryProvider>
                       <Routes>
                       {/* All routes are now driven by the appRoutes config + createRouteElement helper above.
                           This replaced ~850 lines of repetitive manual <Route> definitions. */}
@@ -356,6 +366,7 @@ const AppContent = memo(() => {
                         />
                       ))}
                     </Routes>
+                      </FearAndGreedBinaryProvider>
                       </Suspense>
                     </ErrorBoundary>
                   </main>

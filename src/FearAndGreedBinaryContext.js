@@ -1,4 +1,5 @@
 import React, { createContext, useState, useEffect, useCallback } from 'react';
+import { getCachedData, cacheData } from './utility/idbUtils'; // Use main IDB so binary F&G benefits from the caching layer too (prevents repeat API hits)
 
 export const FearAndGreedBinaryContext = createContext();
 
@@ -16,21 +17,36 @@ export const FearAndGreedBinaryProvider = ({ children }) => {
   };
 
   const fetchData = useCallback(async (retryCount = 0) => {
+    const cacheId = 'fearAndGreedBinaryData';
+    const currentDate = new Date().toISOString().split('T')[0];
+
+    // Check IDB first (the central cache). This stops the "always hit API + no-store" behavior
+    // for this provider (now that it's mounted). Falls back to net only if missing/stale.
+    try {
+      const cached = await getCachedData(cacheId);
+      if (cached && cached.data && cached.data.length > 0) {
+        const latest = cached.data[cached.data.length - 1];
+        const latestDate = latest && latest.date ? new Date(latest.date).toISOString().split('T')[0] : null;
+        // If we have data covering "today" (or recent), serve from cache and skip net.
+        if (latestDate && latestDate >= currentDate) {
+          setFearAndGreedBinaryData(cached.data);
+          setLoading(false);
+          setError(null);
+          return;
+        }
+      }
+    } catch (e) {
+      // ignore IDB errors; fall to net
+    }
+
     try {
       setLoading(true);
       const timestamp = new Date().getTime();
-      const response = await fetch(`/api/fear-and-greed-binary/?_=${timestamp}`, {
-        cache: 'no-store',
-        headers: {
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'If-Modified-Since': '0' // Force server to revalidate
-        }
-      });
+      // Note: removed aggressive no-store (defeats our IDB). IDB + short re-fetch on demand is sufficient.
+      const response = await fetch(`/api/fear-and-greed-binary/?_=${timestamp}`);
 
       if (response.status === 304 && retryCount < 3) {
-        // console.log('304 Not Modified, retrying...', retryCount + 1);
-        return fetchData(retryCount + 1); // Retry on 304
+        return fetchData(retryCount + 1);
       }
 
       if (!response.ok) {
@@ -38,14 +54,12 @@ export const FearAndGreedBinaryProvider = ({ children }) => {
       }
 
       const arrayBuffer = await response.arrayBuffer();
-      // console.log('Raw Buffer Length:', arrayBuffer.byteLength);
       if (arrayBuffer.byteLength < 4) {
         throw new Error('Response too short to contain record count');
       }
 
       const view = new DataView(arrayBuffer);
       const numRecords = view.getUint32(0, false);
-      // console.log('Number of Records:', numRecords);
 
       if (arrayBuffer.byteLength < 4 + numRecords * 6) {
         throw new Error('Incomplete data: buffer too short for records');
@@ -54,20 +68,25 @@ export const FearAndGreedBinaryProvider = ({ children }) => {
       const records = [];
       for (let i = 0; i < numRecords; i++) {
         const offset = 4 + i * 6;
-        const timestamp = view.getUint32(offset, false);
+        const ts = view.getUint32(offset, false);
         const category = view.getInt8(offset + 4);
         const value = view.getInt8(offset + 5);
 
         records.push({
-          date: new Date(timestamp * 1000),
+          date: new Date(ts * 1000),
           category: CATEGORY_MAP[category] || 'Unknown',
           value: value
         });
       }
 
-      // console.log('Parsed Records:', records.slice(0, 5));
       setFearAndGreedBinaryData(records);
       setLoading(false);
+      setError(null);
+
+      // Populate IDB so next load/mount hits cache (the fix for this bypass path).
+      if (records.length > 0) {
+        cacheData(cacheId, records, Date.now()).catch(() => {});
+      }
     } catch (err) {
       console.error('Fetch Error:', err);
       setError(err.message);

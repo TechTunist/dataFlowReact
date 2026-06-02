@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useContext } from 'react';
 import { createChart } from 'lightweight-charts';
 import '../styling/bitcoinChart.css';
 import { tokens } from "../theme";
@@ -6,13 +6,12 @@ import { useTheme } from "@mui/material";
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
 import BitcoinFees from './BitcoinTransactionFees'; // Replace or remove if not needed
-import { apiUrl } from '../config/api';
+import { DataContext } from '../DataContext';
 
 const SP500DivUnrateChart = ({ isDashboard = false }) => {
   const chartContainerRef = useRef();
   const chartRef = useRef(null);
   const priceSeriesRef = useRef(null);
-  const [data, setData] = useState([]);
   const [scaleMode, setScaleMode] = useState(1);
   const [tooltipData, setTooltipData] = useState(null);
   const [isInteractive, setIsInteractive] = useState(false);
@@ -20,25 +19,20 @@ const SP500DivUnrateChart = ({ isDashboard = false }) => {
   const colors = tokens(theme.palette.mode);
   const isMobile = useIsMobile();
 
-  // Fetch data from the API
+  const {
+    sp500DivUnrateData: contextSp500Data,
+    fetchSp500DivUnrateData,
+  } = useContext(DataContext);
+
+  // Use central cached data (guarantees IndexedDB + auth + no direct API bypass)
+  const data = contextSp500Data || [];
+
+  // Trigger central fetch (it will hit IDB cache when fresh; only nets when needed)
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await fetch(apiUrl('/api/sp500-div-unrate-squared/'));
-        const jsonData = await response.json();
-        const sortedData = jsonData
-          .map(item => ({
-            time: item.time,
-            value: parseFloat(item.value)
-          }))
-          .sort((a, b) => new Date(a.time) - new Date(b.time));
-        setData(sortedData);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      }
-    };
-    fetchData();
-  }, []);
+    if (data.length === 0) {
+      fetchSp500DivUnrateData?.();
+    }
+  }, [data.length, fetchSp500DivUnrateData]);
 
   // Function to format numbers to match BitcoinLogRegression
   const compactNumberFormatter = (value) => {

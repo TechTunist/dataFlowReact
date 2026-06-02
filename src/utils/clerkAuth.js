@@ -18,26 +18,35 @@ export function setClerkTokenGetter(fn) {
 /**
  * Gets a fresh Clerk JWT token.
  * Returns null if the user is not signed in or Clerk is not ready.
+ * Supports optional retries for robustness during Clerk init races (used by data caching layer).
  */
-export async function getClerkToken() {
-  // Preferred path: registered getter from React context
-  if (typeof getTokenFn === 'function') {
-    try {
-      const token = await getTokenFn();
-      if (token) return token;
-    } catch (err) {
-      // Fall through to window.Clerk fallback
-    }
-  }
+export async function getClerkToken(options = {}) {
+  const { maxRetries = 1, delayMs = 300 } = options;
 
-  // Very reliable fallback once Clerk has loaded
-  try {
-    if (window.Clerk?.session) {
-      const token = await window.Clerk.session.getToken();
-      return token || null;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    // Preferred path: registered getter from React context
+    if (typeof getTokenFn === 'function') {
+      try {
+        const token = await getTokenFn();
+        if (token) return token;
+      } catch (err) {
+        // Fall through to window.Clerk fallback
+      }
     }
-  } catch (err) {
-    // Clerk not ready or no session
+
+    // Very reliable fallback once Clerk has loaded
+    try {
+      if (window.Clerk?.session) {
+        const token = await window.Clerk.session.getToken();
+        if (token) return token;
+      }
+    } catch (err) {
+      // Clerk not ready or no session
+    }
+
+    if (attempt < maxRetries) {
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
   }
 
   return null;
@@ -49,4 +58,19 @@ export async function getClerkToken() {
  */
 export function hasClerkTokenGetter() {
   return typeof getTokenFn === 'function' || !!window.Clerk?.session;
+}
+
+/**
+ * Builds Authorization headers for our backend API calls.
+ * Always attempts to include a fresh Clerk JWT so that protected (and future-locked)
+ * data endpoints succeed and allow the IndexedDB cache layer to populate.
+ * Falls back to {} (no auth) — backend may still allow via dev bypass.
+ * This is the single source for attaching auth to *all* our data fetches (central + customs).
+ */
+export async function getAuthHeaders(options = {}) {
+  const token = await getClerkToken(options);
+  if (token) {
+    return { Authorization: `Bearer ${token}` };
+  }
+  return {};
 }

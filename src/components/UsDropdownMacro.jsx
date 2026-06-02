@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import Plot from 'react-plotly.js';
 import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
 import '../styling/bitcoinChart.css';
 import useIsMobile from '../hooks/useIsMobile';
-import { apiUrl } from '../config/api';
 import LastUpdated from '../hooks/LastUpdated';
+import { DataContext } from '../DataContext';
 
 const UsCombinedMacroChart = ({ isDashboard = false }) => {
     const theme = useTheme();
@@ -23,48 +23,30 @@ const UsCombinedMacroChart = ({ isDashboard = false }) => {
         });
     };
 
+    const { macroData, fetchMacroData } = useContext(DataContext);
+
+    // Use central macroData (guaranteed IDB cache via fetchWithCache + auth attachment).
+    // Local re-format preserves exact chart visuals + behavior.
     useEffect(() => {
-        const cacheKey = 'combinedMacroData';
-        const cachedData = localStorage.getItem(cacheKey);
-        const today = new Date();
-
-        const fetchData = async () => {
-            try {
-                // const response = await fetch('https://tunist.pythonanywhere.com/api/combined-macro-data/');
-                const response = await fetch(apiUrl('/api/combined-macro-data/'));
-                const data = await response.json();
-                let lastKnownInflation = null;
-                const formattedData = data.map(item => {
-                    if (item.inflation_rate !== null) {
-                        lastKnownInflation = parseFloat(item.inflation_rate);
-                    }
-                    return {
-                        time: item.date,
-                        inflation_value: lastKnownInflation,
-                        unemployment_value: item.unemployment_rate ? parseFloat(item.unemployment_rate) : null,
-                        interest_value: item.interest_rate ? parseFloat(item.interest_rate) : null,
-                    };
-                });
-
-                localStorage.setItem(cacheKey, JSON.stringify(formattedData));
-                setChartData(formattedData);
-            } catch (error) {
-                console.error('Error fetching data:', error);
-            }
-        };
-
-        if (cachedData) {
-            const parsedData = JSON.parse(cachedData);
-            const lastCachedDate = new Date(parsedData[parsedData.length - 1].time);
-            if (lastCachedDate.setHours(0, 0, 0, 0) === today.setHours(0, 0, 0, 0)) {
-                setChartData(parsedData);
-            } else {
-                fetchData();
-            }
-        } else {
-            fetchData();
+        if (!macroData || macroData.length === 0) {
+            fetchMacroData?.();
+            return;
         }
-    }, []);
+        let lastKnownInflation = null;
+        const formattedData = macroData.map(item => {
+            const inf = item.inflation_value != null ? item.inflation_value : (item.inflation_rate != null ? parseFloat(item.inflation_rate) : null);
+            if (inf != null) {
+                lastKnownInflation = inf;
+            }
+            return {
+                time: item.time || item.date,
+                inflation_value: lastKnownInflation,
+                unemployment_value: item.unemployment_value != null ? item.unemployment_value : (item.unemployment_rate != null ? parseFloat(item.unemployment_rate) : null),
+                interest_value: item.interest_value != null ? item.interest_value : (item.interest_rate != null ? parseFloat(item.interest_rate) : null),
+            };
+        });
+        setChartData(formattedData);
+    }, [macroData, fetchMacroData]);
 
     return (
         <div style={{ height: '100%' }}>
