@@ -8,7 +8,6 @@ import useIsMobile from '../hooks/useIsMobile';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import LastUpdated from '../hooks/LastUpdated';
-import { useFavorites } from '../contexts/FavoritesContext';
 
 const SahmRecessionIndicator = ({ isDashboard = false, explanation = '' }) => {
   const chartContainerRef = useRef();
@@ -18,23 +17,11 @@ const SahmRecessionIndicator = ({ isDashboard = false, explanation = '' }) => {
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
   const isMobile = useIsMobile();
   const { fredSeriesData, fetchFredSeriesData } = useContext(DataContext);
-  const { favoriteCharts, addFavoriteChart, removeFavoriteChart } = useFavorites();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [isInteractive, setIsInteractive] = useState(false);
   const [tooltipData, setTooltipData] = useState(null);
   const [zoomRange, setZoomRange] = useState(null);
-
-  const chartId = 'sahm-recession-indicator';
-  const isFavorite = favoriteCharts.includes(chartId);
-
-  const toggleFavorite = () => {
-    if (isFavorite) {
-      removeFavoriteChart(chartId);
-    } else {
-      addFavoriteChart(chartId);
-    }
-  };
 
   const setInteractivity = useCallback(() => setIsInteractive((prev) => !prev), []);
 

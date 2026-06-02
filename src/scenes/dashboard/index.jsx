@@ -45,6 +45,8 @@ import SP500ROI from "../../components/SP500ROI";
 import BitcoinMvrvZScoreChart from "../../components/BitcoinMvrvZScore";
 import Total2Chart from "../../components/Total2Marketcap";
 import Total3Chart from "../../components/Total3Marketcap";
+import TailCurvature from "../../components/TailCurvature";
+import SahmRecessionIndicator from "../../components/SahmRecessionIndicator";
 
 const chartConfig = [
   { id: "bitcoin-20-ext", title: "Bitcoin 20 Week Extension", linkTo: "/btc-20-ext", component: (props) => <Bitcoin20WeekExtension isDashboard={true} {...props} />, description: "Bitcoin price with 20-week extension analysis." },
@@ -111,6 +113,8 @@ const chartConfig = [
   { id: "fred-german-bond-yield", title: "German 10-Year Bond Yield", linkTo: "/fred/german-bond-yield", component: (props) => <FredSeriesChart isDashboard={true} seriesId="IRLTLT01DEM156N" chartType="line" scaleMode="linear" valueFormatter={(value) => `${value.toFixed(2)}%`} {...props} />, description: "Monthly German 10-Year Government Bond Yield." },
   { id: "workbench", title: "Workbench Chart", linkTo: "/workbench", component: (props) => <WorkbenchChart isDashboard={true} seriesId="UMCSENT" chartType="area" valueFormatter={(value) => value.toLocaleString()} {...props} />, description: "Custom indicator chart for comparing data series." },
   { id: "sp500-roi", title: "S&P 500 ROI", linkTo: "/sp500-roi", component: (props) => <SP500ROI isDashboard={true} {...props} />, description: "Annualised ROI of the S&P 500." },
+  { id: "tail-curvature", title: "Tail Curvature", linkTo: "/tail-curvature", component: (props) => <TailCurvature isDashboard={true} {...props} />, description: "Asymmetric Tail Curvature Quantile Model for Bitcoin price quantiles (Cowen 2026)." },
+  { id: "sahm-recession-indicator", title: "Sahm Recession Indicator", linkTo: "/fred/sahm-recession-indicator", component: (props) => <SahmRecessionIndicator isDashboard={true} {...props} />, description: "Sahm Rule recession indicator based on unemployment rate changes." },
 ];
 
 const DashboardCard = memo(({ title, component, description, linkTo, chartId, isMobile, chartsVisible, colors, isFavorite, toggleFavorite }) => {

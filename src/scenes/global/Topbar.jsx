@@ -85,6 +85,7 @@ const routeToChartId = {
   "/fred/case-shiller": "fred-case-shiller",
   "/fred/nikkei-225": "fred-nikkei-225",
   "/fred/german-bond-yield": "fred-german-bond-yield",
+  "/fred/sahm-recession-indicator": "sahm-recession-indicator",
   "/workbench": "workbench",
   "/sp500-roi": "sp500-roi",
   "/btc-mvrv-z":"mvrv-zscore",

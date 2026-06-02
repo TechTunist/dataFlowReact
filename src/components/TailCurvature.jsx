@@ -7,7 +7,6 @@ import useIsMobile from '../hooks/useIsMobile';
 import { DataContext } from '../DataContext';
 import BitcoinFees from './BitcoinTransactionFees';
 import LastUpdated from '../hooks/LastUpdated';
-import { useFavorites } from '../contexts/FavoritesContext';
 
 // NOTE: IndexedDB caching + auth attachment for central path (and migrated bypasses) has been
 // hardened (auth helper, fetchAllPages, unified directs, inflight, TTL-primary freshness).
@@ -395,7 +394,7 @@ const TailCurvature = ({ isDashboard = false }) => {
           className="chart-container"
           style={{
             flex: '1 1 auto',           // better flex behavior
-            minHeight: '660px',         // ← this is now the only minHeight (adjust to taste)
+            minHeight: isDashboard ? '400px' : '660px',         // ← this is now the only minHeight (adjust to taste)
             overflow: 'hidden',
             width: '100%',
             border: '2px solid #a9a9a9',
