@@ -580,130 +580,88 @@ const RoiCycleComparisonWidget = memo(() => {
   const [avgRoi, setAvgRoi] = useState(null);
   const [zScore, setZScore] = useState(null);
   const [heatScore, setHeatScore] = useState(null);
-  const [currentDays, setCurrentDays] = useState(null);
   const { btcData } = useContext(DataContext);
+  const [isInfoVisible, setIsInfoVisible] = useState(false);
+
   useEffect(() => {
-    const calculateRoiData = async () => {
+    const calculateRoiFromPeak = async () => {
       if (!btcData || btcData.length === 0) return;
-      const cycleStarts = {
-        'Cycle 2': '2015-01-15',
-        'Cycle 3': '2018-12-15',
-        'Cycle 4': '2022-11-21',
-      };
-      const cycleEnds = {
+
+      const peakStarts = {
         'Cycle 2': '2017-12-17',
-        'Cycle 3': '2021-11-08',
-        'Cycle 4': btcData[btcData.length - 1].time,
+        'Cycle 3': '2021-11-10',
+        'Cycle 5': '2025-10-07',
       };
-      const processCycle = (start, end, cycleName) => {
-        const filteredData = btcData.filter(
-          d => new Date(d.time) >= new Date(start) && new Date(d.time) <= new Date(end)
-        );
+
+      const processCycleFromPeak = (start, cycleName) => {
+        const filteredData = btcData.filter(d => new Date(d.time) >= new Date(start));
         if (filteredData.length === 0) return null;
+
         const basePrice = filteredData[0].value;
         return filteredData.map((item, index) => ({
           day: index,
-          roi: Math.log10(item.value / basePrice) + 1, // Updated ROI calculation
+          roi: Math.log10(item.value / basePrice) + 1,
           date: item.time,
           cycle: cycleName,
         }));
       };
-      const cycle2 = processCycle(cycleStarts['Cycle 2'], cycleEnds['Cycle 2'], 'Cycle 2');
-      const cycle3 = processCycle(cycleStarts['Cycle 3'], cycleEnds['Cycle 3'], 'Cycle 3');
-      const cycle4 = processCycle(cycleStarts['Cycle 4'], cycleEnds['Cycle 4'], 'Cycle 4');
-      if (!cycle2 || !cycle3 || !cycle4) return;
-      try {
-        await saveRoiData({ cycle2, cycle3, cycle4 });
-      } catch (error) {
-        console.error('Failed to cache ROI data:', error);
-      }
-      const days = cycle4.length;
-      const currentRoiValue = cycle4[cycle4.length - 1].roi;
+
+      const cycle2 = processCycleFromPeak(peakStarts['Cycle 2'], 'Cycle 2');
+      const cycle3 = processCycleFromPeak(peakStarts['Cycle 3'], 'Cycle 3');
+      const cycle5 = processCycleFromPeak(peakStarts['Cycle 5'], 'Cycle 5');
+
+      if (!cycle2 || !cycle3 || !cycle5) return;
+
+      const days = cycle5.length;
+      const currentRoiValue = cycle5[cycle5.length - 1].roi;
+
       const maxDays = Math.min(cycle2.length, cycle3.length, days);
       const avgRois = [];
+
       for (let day = 0; day < maxDays; day++) {
         const rois = [cycle2[day]?.roi, cycle3[day]?.roi].filter(roi => roi !== undefined);
         if (rois.length > 0) {
           avgRois.push(rois.reduce((sum, roi) => sum + roi, 0) / rois.length);
         }
       }
+
       if (avgRois.length > 0) {
         const latestAvgRoi = avgRois[avgRois.length - 1];
+
         setCurrentRoi(currentRoiValue);
         setAvgRoi(latestAvgRoi);
-        setCurrentDays(days);
+
+        // Z-score
         const mean = avgRois.reduce((sum, val) => sum + val, 0) / avgRois.length;
         const variance = avgRois.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / avgRois.length;
         const stdDev = Math.sqrt(variance);
         const z = stdDev > 0 ? (currentRoiValue - latestAvgRoi) / stdDev : 0;
         setZScore(z);
-        let heat = stdDev === 0 ? 60 : Math.max(0, Math.min(100, 60 + (z * 20)));
+
+        // Heat calculation (skewed toward lower values)
+        const avgPostPeakDays = 370;
+        const timeProgress = Math.min(1, days / avgPostPeakDays);
+        const performancePenalty = z < 0 ? Math.abs(z) : 0;
+
+        let heat = (timeProgress * 35) + (performancePenalty * 30);
+
+        if (timeProgress > 0.75 && z < -0.5) {
+          heat += 20;
+        }
+
+        heat = Math.max(0, Math.min(100, heat));
         setHeatScore(heat);
       }
     };
-    const loadCachedData = async () => {
-      try {
-        const cachedRoiData = await getRoiData();
-        if (cachedRoiData && cachedRoiData.cycle4 && btcData && btcData.length > 0) {
-          const lastCachedDate = cachedRoiData.cycle4[cachedRoiData.cycle4.length - 1].date;
-          const lastBtcDate = btcData[btcData.length - 1].time;
-          if (lastCachedDate === lastBtcDate) {
-            const currentRoiValue = cachedRoiData.cycle4[cachedRoiData.cycle4.length - 1].roi;
-            const days = cachedRoiData.cycle4.length;
-            const avgRois = [];
-            const maxDays = Math.min(cachedRoiData.cycle2.length, cachedRoiData.cycle3.length, days);
-            for (let day = 0; day < maxDays; day++) {
-              const rois = [
-                cachedRoiData.cycle2[day]?.roi,
-                cachedRoiData.cycle3[day]?.roi,
-              ].filter(roi => roi !== undefined);
-              if (rois.length > 0) {
-                avgRois.push(rois.reduce((sum, roi) => sum + roi, 0) / rois.length);
-              }
-            }
-            if (avgRois.length > 0) {
-              const latestAvgRoi = avgRois[avgRois.length - 1];
-              setCurrentRoi(currentRoiValue);
-              setAvgRoi(latestAvgRoi);
-              setCurrentDays(days);
-              const mean = avgRois.reduce((sum, val) => sum + val, 0) / avgRois.length;
-              const variance = avgRois.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / avgRois.length;
-              const stdDev = Math.sqrt(variance);
-              const z = stdDev > 0 ? (currentRoiValue - latestAvgRoi) / stdDev : 0;
-              setZScore(z);
-              let heat = stdDev === 0 ? 60 : Math.max(0, Math.min(100, 60 + (z * 20)));
-              setHeatScore(heat);
-              return true;
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Failed to load cached ROI data:', error);
-      }
-      return false;
-    };
-    // const initialize = async () => {
-    // const usedCache = await loadCachedData();
-    // if (!usedCache) {
-    // await calculateRoiData();
-    // }
-    // };
-    const initialize = async () => {
-      await clearRoiData(); // Add this line temporarily
-      const usedCache = await loadCachedData();
-      if (!usedCache) {
-        await calculateRoiData();
-      }
-    };
 
-    initialize();
-
+    calculateRoiFromPeak();
   }, [btcData]);
+
   const backgroundColor = getBackgroundColor(heatScore || 0);
   const textColor = getTextColor(backgroundColor);
+  const heatDescription = getHeatDescription(heatScore || 0);
   const isSignificant = heatScore !== null && heatScore >= 85;
   const roiDifference = currentRoi !== null && avgRoi !== null ? currentRoi - avgRoi : null;
-  const [isInfoVisible, setIsInfoVisible] = useState(false);
 
   const navigate = useNavigate();
   const handleChartRedirect = (event) => {
@@ -712,17 +670,15 @@ const RoiCycleComparisonWidget = memo(() => {
   };
 
   return (
-    <Box
-      sx={{
-        ...chartBoxStyle(colors, theme),
-        backgroundColor: backgroundColor,
-        transition: 'background-color 0.3s ease, transform 0.2s ease-in-out',
-        border: isSignificant ? `2px solid ${colors.redAccent[500]}` : 'none',
-        padding: '24px',
-        textAlign: 'center',
-        position: 'relative',
-      }}
-    >
+    <Box sx={{
+      ...chartBoxStyle(colors, theme),
+      backgroundColor: backgroundColor,
+      transition: 'background-color 0.3s ease, transform 0.2s ease-in-out',
+      border: isSignificant ? `2px solid ${colors.redAccent[500]}` : 'none',
+      padding: '24px',
+      textAlign: 'center',
+      position: 'relative',
+    }}>
       <InfoIcon
         sx={{
           position: 'absolute',
@@ -756,19 +712,19 @@ const RoiCycleComparisonWidget = memo(() => {
         onMouseDown={handleChartRedirect}
         aria-label="View chart"
       />
+
       <Typography variant="h4" color={textColor} gutterBottom sx={{ fontWeight: 'bold' }}>
-        ROI Cycle Comparison
+        ROI Cycle Comparison (from Peak)
       </Typography>
-      <Box
-        sx={{
-          flexGrow: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '8px',
-        }}
-      >
+
+      <Box sx={{
+        flexGrow: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '8px',
+      }}>
         <Typography variant="h3" color={textColor} sx={{ fontWeight: 'bold', mt: 1 }}>
           Difference: {roiDifference !== null ? (roiDifference >= 0 ? '+' : '') + roiDifference.toFixed(2) : 'N/A'}
         </Typography>
@@ -776,12 +732,15 @@ const RoiCycleComparisonWidget = memo(() => {
           Current: {currentRoi !== null ? currentRoi.toFixed(2) : 'N/A'}
         </Typography>
         <Typography variant="h5" color={textColor} sx={{ fontWeight: 'bold' }}>
-          Avg (Cycles 2 & 3): {avgRoi !== null ? avgRoi.toFixed(2) : 'N/A'}
+          Avg (Cycles 2 & 3 from Peak): {avgRoi !== null ? avgRoi.toFixed(2) : 'N/A'}
         </Typography>
+
+        {/* Heat Score - Now Displayed */}
         <Typography variant="body1" color={textColor}>
-          Days in Cycle: {currentDays !== null ? currentDays : 'N/A'}
+          Heat: {heatDescription}
         </Typography>
       </Box>
+
       {isSignificant && (
         <Typography
           variant="body1"
@@ -794,20 +753,22 @@ const RoiCycleComparisonWidget = memo(() => {
             borderRadius: '8px',
             padding: '4px 8px',
             marginTop: '8px',
-            display: 'inline-block', // Ensures the background wraps tightly around the text
+            display: 'inline-block',
           }}
         >
           Warning: Cycle nearing end.
         </Typography>
       )}
+
       <InfoOverlay
         isVisible={isInfoVisible}
-        explanation="This helps identify how the current market performance compares to historical trends. The ROI Cycle Comparison widget shows the current ROI (return on investment) of Bitcoin compared to the average ROI of previous cycles (Cycle 2 and Cycle ). ROI is calculated as a shifted logarithmic scale (log10(price / basePrice) + 1), where 1 indicates no change, above 1 indicates positive returns, and below 1 indicates negative returns."
+        explanation="ROI is now calculated from each cycle's peak. This shows how the current post-peak bear market compares to previous cycles after their tops. Heat stays low unless we are both deep into the bear market phase and performing significantly worse than historical averages."
         borderColor={backgroundColor}
       />
     </Box>
   );
 });
+
 // MVRV Ratio Widget
   const MvrvRatioWidget = memo(() => {
     const [currentMvrv, setCurrentMvrv] = useState(null);
@@ -1204,9 +1165,6 @@ const RoiCycleComparisonWidget = memo(() => {
       <Typography variant="body1" color={textColor} sx={{ textAlign: 'center', mt: 1 }}>
         Heat: {heatDescription}
       </Typography>
-      <Typography variant="body1" color={textColor} sx={{ textAlign: 'center', mt: 1 }}>
-        {parseFloat(displayRisk) <= 30 ? 'Low Risk' : parseFloat(displayRisk) <= 70 ? 'Medium Risk' : 'High Risk'}
-      </Typography>
       {isSignificant && (
         <Typography
           variant="body1"
@@ -1405,13 +1363,21 @@ const RoiCycleComparisonWidget = memo(() => {
         const predictedRatio = m * targetDate + b;
         setPredictedPeak(predictedRatio);
  
-        if (latestRatio && predictedRatio) {
-          const buffer = 1.0;
-          const minRatio = 0;
-          const heatOffset = 0.28;
-          const heat = Math.max(0, Math.min(100, (((latestRatio - minRatio) / buffer) * 100) + heatOffset));
-          setHeatScore(heat);
+      if (latestRatio !== null) {
+        let heat;
+
+        if (latestRatio < 0.65) {
+          // Strongly skewed toward Cold below 0.65
+          heat = 1;
+        } else {
+          // Exponential ramp between 0.65 and 0.75
+          const t = Math.min(1, (latestRatio - 0.65) / 0.10); // normalize 0.65→0.75 to 0→1
+          heat = Math.pow(t, 3.5) * 100; // exponent 3.5 = fast exponential rise
         }
+
+        heat = Math.max(0, Math.min(100, heat));
+        setHeatScore(heat);
+      }
       }
     }, [btcData]);
  
@@ -1705,6 +1671,22 @@ const DaysLeftWidget = memo(({ type }) => {
     navigate('/market-cycles');
   };
 
+  const projectedBottomDate = useMemo(() => {
+    if (!daysLeftData[mappedType] || daysLeftData[mappedType].left <= 0) return null;
+
+    const startDate = new Date(cycleDates.top?.['Cycle 4']?.start || '2025-10-06');
+    if (isNaN(startDate)) return null;
+
+    const projected = new Date(startDate);
+    projected.setDate(projected.getDate() + daysLeftData[mappedType].average);
+    return projected.toISOString().split('T')[0];
+  }, [daysLeftData, mappedType, cycleDates]);
+
+  const formatDate = (dateStr) => {
+  const date = new Date(dateStr);
+    return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  };
+
   return (
     <Box sx={{
       ...chartBoxStyle(colors, theme),
@@ -1739,6 +1721,11 @@ const DaysLeftWidget = memo(({ type }) => {
         <Typography variant="body1" color={textColor}>
           Elapsed: {daysLeftData[mappedType]?.elapsed >= 0 ? daysLeftData[mappedType].elapsed : 'N/A'} days
         </Typography>
+        {projectedBottomDate && (
+          <Typography variant="body1" color={textColor} sx={{ mt: 1, fontWeight: 500 }}>
+            Projected Bottom: ~{formatDate(projectedBottomDate)}
+          </Typography>
+        )}
         <Typography variant="body1" color={textColor}>
           Heat: {heatDescription}
         </Typography>

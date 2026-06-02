@@ -55,7 +55,6 @@ const TailCurvature = ({ isDashboard = false }) => {
   const chartRef = useRef(null);
   const priceSeriesRef = useRef(null);
   const quantileSeriesRefs = useRef({});
-  const projectionTableRef = useRef(null);
   const theme = useTheme();
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
   const isMobile = useIsMobile();
@@ -167,6 +166,14 @@ const TailCurvature = ({ isDashboard = false }) => {
       chartRef.current.timeScale().fitContent();
     }
   }, []);
+
+  useEffect(() => {
+    const handleEsc = (e) => {
+      if (e.key === 'Escape' && showProjectionTable) setShowProjectionTable(false);
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [showProjectionTable]);
 
   // Apply interactivity setting to the chart when it changes
   useEffect(() => {
@@ -297,20 +304,6 @@ const TailCurvature = ({ isDashboard = false }) => {
     }
   }, [showQuantiles, modelData, btcData]);
 
-  // Auto-scroll to the projections table when it is opened
-  useEffect(() => {
-    if (showProjectionTable && projectionTableRef.current) {
-      // Use a small timeout so the table has time to render before scrolling
-      const timer = setTimeout(() => {
-        projectionTableRef.current.scrollIntoView({
-          behavior: 'smooth',
-          block: 'start',
-        });
-      }, 50);
-
-      return () => clearTimeout(timer);
-    }
-  }, [showProjectionTable]);
 
   const compactNumberFormatter = useCallback((value) => {
     if (value >= 1e6) return (value / 1e6).toFixed(1) + 'M';
@@ -348,7 +341,10 @@ const TailCurvature = ({ isDashboard = false }) => {
       {/* Chart area - fills the full height allocated by the parent container (BasicChart) */}
       <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
         {!isDashboard && (
-          <div className="chart-top-div">
+          <div 
+            className="chart-top-div"
+            style={{ flexShrink: 0 }}   // ← prevents top bar from shrinking
+          >
             <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
               {/* Show/Hide Quantiles button */}
               <button
@@ -396,11 +392,11 @@ const TailCurvature = ({ isDashboard = false }) => {
           </div>
         )}
 
-        <div
+        <div    
           className="chart-container"
           style={{
-            flex: 1,
-            minHeight: 0,
+            flex: '1 1 auto',           // better flex behavior
+            minHeight: '660px',         // ← this is now the only minHeight (adjust to taste)
             overflow: 'hidden',
             width: '100%',
             border: '2px solid #a9a9a9',
@@ -408,12 +404,19 @@ const TailCurvature = ({ isDashboard = false }) => {
             zIndex: 1,
           }}
           onDoubleClick={() => setInteractivity(!isInteractive)}
-        >
+          >
           <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
         </div>
 
         {!isDashboard && (
-          <div className='under-chart' style={{ padding: '10px 0', display: 'block' }}>
+                <div 
+                  className='under-chart' 
+                  style={{
+                    flexShrink: 0,                    // ← critical
+                    padding: '10px 0 20px 0',
+                    display: 'block',                 // overrides the CSS flex
+                  }}
+                >
             <div style={{ marginBottom: '6px' }}>
               <LastUpdated storageKey="btcData" />
             </div>
@@ -422,7 +425,7 @@ const TailCurvature = ({ isDashboard = false }) => {
             <div style={{ 
               marginBottom: '10px', 
               color: colors.grey[100], 
-              fontSize: '15px',
+              fontSize: '20px',
               fontWeight: 500
             }}>
               Current Quantile: <span style={{ 
@@ -432,59 +435,74 @@ const TailCurvature = ({ isDashboard = false }) => {
             </div>
 
             <div style={{ color: colors.grey[100], fontSize: '16px' }}>
-              Benjamin Cowen’s 2026 model of Bitcoin price quantiles. The green lines show lower price paths with relatively steady structural growth. The upper lines (yellow to red) curve downward, showing that extreme upside gains become less probable over time.
+              Benjamin Cowen’s 2026 model of Bitcoin price quantiles. The green lines show lower price paths with relatively steady structural growth.
+              The upper lines (yellow to red) show a flattening of the curve, showing that diminishing returns over time is the indicated way forward.
+              Throughout the history of Bitcoin's price action, the lower quantile has up to this point represented a good buying opportunity,
+              while the upper quantiles have represented areas of overextension. <br/> The model's curvature suggests that as time goes on, the potential
+              for extreme overextension (upper tail) grows more limited compared to the steady growth path (lower tail). This implies that while Bitcoin
+              may continue to grow, the likelihood of it reaching extremely high valuations diminishes over time, reinforcing the idea of diminishing
+              returns as the asset matures.
             </div>
           </div>
         )}
       </div>
 
-      {/* Table appears BELOW the chart (outside the height-constrained box) */}
-      {!isDashboard && showProjectionTable && (
+{/* NEW POPUP MODAL */}
+      {showProjectionTable && (
         <div 
-          ref={projectionTableRef}
-          style={{ 
-            marginTop: '16px', 
-            padding: '0 10px',
-            maxHeight: '380px',
-            overflow: 'auto',
-            borderTop: '1px solid #444'
-          }}
+          className="modal-overlay" 
+          onClick={() => setShowProjectionTable(false)}
         >
-          <div style={{ color: colors.grey[100], fontSize: '14px', margin: '10px 0 6px', fontWeight: 'bold' }}>
-            Projected Quantile Values — Model Only (through 2050s)
-          </div>
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ 
-              width: '100%', 
-              borderCollapse: 'collapse', 
-              fontSize: '13px',
-              color: colors.grey[100],
-              backgroundColor: 'rgba(0,0,0,0.2)'
-            }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid #444' }}>
-                  <th style={{ padding: '6px 8px', textAlign: 'left' }}>Year</th>
-                  {QUANTILE_PARAMS.map(p => (
-                    <th key={p.label} style={{ padding: '6px 8px', textAlign: 'right' }}>{p.label}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {projectionTableData.map((row, idx) => (
-                  <tr key={idx} style={{ borderBottom: '1px solid #333' }}>
-                    <td style={{ padding: '5px 8px', fontWeight: 'bold' }}>{row.year}</td>
-                    {QUANTILE_PARAMS.map(p => (
-                      <td key={p.label} style={{ padding: '5px 8px', textAlign: 'right', fontFamily: 'monospace' }}>
-                        ${compactNumberFormatter(row[p.label])}
-                      </td>
+          <div 
+            className="modal-content"
+            onClick={(e) => e.stopPropagation()}   
+          >
+            <div className="modal-header">
+              <h3>Projected Quantile Values — Model Only (through 2050s)</h3>
+              <button 
+                className="close-button"
+                onClick={() => setShowProjectionTable(false)}
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="modal-body">
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{
+                  width: '100%',
+                  borderCollapse: 'collapse',
+                  fontSize: '13px',
+                  color: colors.grey[100],
+                  backgroundColor: 'rgba(0,0,0,0.2)'
+                }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid #444' }}>
+                      <th style={{ padding: '6px 8px', textAlign: 'left' }}>Year</th>
+                      {QUANTILE_PARAMS.map(p => (
+                        <th key={p.label} style={{ padding: '6px 8px', textAlign: 'right' }}>{p.label}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {projectionTableData.map((row, idx) => (
+                      <tr key={idx} style={{ borderBottom: '1px solid #333' }}>
+                        <td style={{ padding: '5px 8px', fontWeight: 'bold' }}>{row.year}</td>
+                        {QUANTILE_PARAMS.map(p => (
+                          <td key={p.label} style={{ padding: '5px 8px', textAlign: 'right', fontFamily: 'monospace' }}>
+                            ${compactNumberFormatter(row[p.label])}
+                          </td>
+                        ))}
+                      </tr>
                     ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div style={{ fontSize: '11px', color: '#888', margin: '6px 0 4px' }}>
-            Values are pure model projections (no actual BTC price data).
+                  </tbody>
+                </table>
+              </div>
+
+              <div style={{ fontSize: '11px', color: '#888', margin: '12px 0 4px', textAlign: 'center' }}>
+                Values are pure model projections (no actual BTC price data).
+              </div>
+            </div>
           </div>
         </div>
       )}

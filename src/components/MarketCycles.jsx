@@ -127,7 +127,7 @@ const MarketCycles = ({ isDashboard = false }) => {
         'Cycle 1': '2013-11-30',
         'Cycle 2': '2017-12-17',
         'Cycle 3': '2021-11-10',
-        'Cycle 5': NEW_CYCLE_START_DATE
+        'Cycle 4': '2025-10-07',
       }
     };
 
@@ -156,7 +156,7 @@ const MarketCycles = ({ isDashboard = false }) => {
       peak: {
         'Cycle 1': '2017-12-17',
         'Cycle 2': '2021-11-10',
-        'Cycle 3': null
+        'Cycle 3': '2025-10-06',
       }
     };
 
@@ -183,16 +183,15 @@ const MarketCycles = ({ isDashboard = false }) => {
     const cycles = [
       processCycle(cycleStarts[startPoint]['Cycle 1'], startPoint === 'peak' ? cycleEnds[startPoint]['Cycle 1'] : '2013-11-30', 'Cycle 1'),
       processCycle(cycleStarts[startPoint]['Cycle 2'], startPoint === 'peak' ? cycleEnds[startPoint]['Cycle 2'] : '2017-12-17', 'Cycle 2'),
-      processCycle(cycleStarts[startPoint]['Cycle 3'], startPoint === 'peak' ? cycleEnds[startPoint]['Cycle 3'] : '2021-11-08', 'Cycle 3')
+      processCycle(cycleStarts[startPoint]['Cycle 3'], startPoint === 'peak' ? cycleEnds[startPoint]['Cycle 3'] : '2021-11-08', 'Cycle 3'),
     ];
 
-    if (startPoint !== 'peak') {
-      // Cut off Cycle 4 at the end of the previous market cycle
-      cycles.push(processCycle(cycleStarts[startPoint]['Cycle 4'], CYCLE4_END_DATE, 'Cycle 4'));
-    } else {
-      // New cycle (Cycle 5) only visible in "From Cycle Peak" view
-      cycles.push(processCycle(cycleStarts[startPoint]['Cycle 5'], null, 'Cycle 5'));
-    }
+    // Always add Cycle 4
+    // In "From Cycle Peak" mode, Cycle 4 starts after the 2025 peak
+    const cycle4Start = cycleStarts[startPoint]['Cycle 4'];
+    const cycle4End = startPoint === 'peak' ? null : CYCLE4_END_DATE;
+
+    cycles.push(processCycle(cycle4Start, cycle4End, 'Cycle 4'));
 
     const validCycles = cycles.filter(cycle => cycle !== null);
 
