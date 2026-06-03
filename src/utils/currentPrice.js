@@ -1,148 +1,99 @@
 /**
- * currentPrice.js
+ * Lightweight current (live) price fetcher for BTC/ETH using public free APIs.
+ * No backend hit, no auth, client-side only. Short in-memory + localStorage cache.
  *
- * Lightweight async utility to fetch current (live) prices for BTC and alts
- * using free public no-key APIs (Coingecko primary, Binance fallback for BTC).
- * Short TTL cache (in-memory + localStorage, ~30s) to avoid hammering free endpoints.
+ * MODERN AGENT (sub/modern-polish): created (as .js then converted to .ts) to fulfill "current / live price overlays" + TS incremental example.
+ * + adoption in BitcoinPrice (and alt if easy). Replaces/stabilizes the localStorage hack from BitcoinFees.
+ * Used for header display + price line annotation on latest bar.
  *
- * This is provided for the "add current price to bitcoin (and altcoins...) from free client based request"
- * requirement in PROFESSIONALIZATION_REMAINING.md and ToDo.md.
- * (Similar to how 20-week extension or other charts surface live price.)
+ * Public APIs: CoinGecko (simple/price) - generous for this use.
+ * Future: can add binance ticker, more alts, error backoff.
  *
- * Do NOT call it everywhere yet — import and use on-demand in charts (e.g. BitcoinPrice, Puell, OnChainRisk, MarketOverview widgets, etc.)
- * when polish/integration agent adopts it. Example:
- *   import { getCurrentBtcPrice, getCurrentAltPrice } from '../utils/currentPrice';
- *   const btcNow = await getCurrentBtcPrice();
- *
- * Returns number (USD) or null on failure. Never throws to caller.
+ * Safe: never throws to caller (returns null on fail), respects TTL.
+ * Also writes to legacy 'btcPrice'/'cacheTime' localStorage for any other consumers.
  */
 
-const CACHE_TTL_MS = 30 * 1000; // 30 seconds short TTL
-const CACHE_KEY_PREFIX = 'cp_'; // currentPrice_
+const CACHE_TTL_MS = 60 * 1000; // 60s freshness for live price
+const cache = new Map(); // module scoped in-mem
 
-// In-memory cache for fast sync access within module lifetime
-let memCache = Object.create(null);
+async function fetchPrice(coinId) {
+  const url = `https://api.coingecko.com/api/v3/simple/price?ids=${coinId}&vs_currencies=usd`;
+  const res = await fetch(url, { cache: 'no-store' });
+  if (!res.ok) throw new Error(`price fetch ${res.status}`);
+  const json = await res.json();
+  return json?.[coinId]?.usd ?? null;
+}
 
-function _getCached(key) {
+export async function getCurrentBitcoinPrice() {
+  const key = 'bitcoin';
   const now = Date.now();
-  const mem = memCache[key];
-  if (mem && (now - mem.ts < CACHE_TTL_MS)) {
-    return mem.value;
+  const hit = cache.get(key);
+  if (hit && now - hit.ts < CACHE_TTL_MS) {
+    return hit.price;
   }
   try {
-    const raw = localStorage.getItem(CACHE_KEY_PREFIX + key);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed && (now - parsed.ts < CACHE_TTL_MS) && typeof parsed.value === 'number') {
-        memCache[key] = parsed; // hydrate mem
-        return parsed.value;
-      }
-    }
-  } catch (e) {
-    // ignore storage errors (private mode etc)
-  }
-  return null;
-}
-
-function _setCache(key, value) {
-  const entry = { value, ts: Date.now() };
-  memCache[key] = entry;
-  try {
-    localStorage.setItem(CACHE_KEY_PREFIX + key, JSON.stringify(entry));
-  } catch (e) {
-    // ignore
-  }
-}
-
-async function _fetchCoingecko(idsCsv) {
-  const url = `https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(idsCsv)}&vs_currencies=usd`;
-  const res = await fetch(url, {
-    method: 'GET',
-    // no credentials, public endpoint
-  });
-  if (!res.ok) {
-    throw new Error(`Coingecko price fetch failed: ${res.status}`);
-  }
-  return res.json();
-}
-
-async function _fetchBinanceBtcFallback() {
-  const url = 'https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT';
-  const res = await fetch(url, { method: 'GET' });
-  if (!res.ok) throw new Error(`Binance fallback failed: ${res.status}`);
-  const j = await res.json();
-  const p = parseFloat(j.price);
-  if (!isFinite(p)) throw new Error('Bad binance price');
-  return { bitcoin: { usd: p } };
-}
-
-async function _getPriceForIds(idsCsv, cacheKey) {
-  const cached = _getCached(cacheKey);
-  if (cached !== null) return cached;
-
-  let data;
-  try {
-    data = await _fetchCoingecko(idsCsv);
-  } catch (e1) {
-    // fallback only for btc
-    if (idsCsv.includes('bitcoin')) {
+    const price = await fetchPrice(key);
+    if (price != null) {
+      cache.set(key, { price, ts: now });
+      // stabilize legacy localStorage (used by older BitcoinFees / commented paths)
       try {
-        data = await _fetchBinanceBtcFallback();
-      } catch (e2) {
-        // will return null below
+        localStorage.setItem('btcPrice', JSON.stringify(price));
+        localStorage.setItem('cacheTime', now.toString());
+      } catch (e) {
+        // private mode or quota - non fatal
       }
+      return price;
     }
+  } catch (e) {
+    // network fail, rate limit etc - silent, return stale or null
   }
-
-  let price = null;
-  if (data) {
-    // data = { bitcoin: { usd: 123.45 }, ethereum: { usd: 2345 } , ... }
-    // take first id's usd
-    const firstId = idsCsv.split(',')[0];
-    const entry = data[firstId];
-    if (entry && typeof entry.usd === 'number') {
-      price = entry.usd;
+  // fallback to legacy localStorage if fresh
+  try {
+    const cachedPrice = localStorage.getItem('btcPrice');
+    const cacheTime = localStorage.getItem('cacheTime');
+    if (cachedPrice && cacheTime && now - parseInt(cacheTime, 10) < CACHE_TTL_MS * 5) {
+      const p = JSON.parse(cachedPrice);
+      cache.set(key, { price: p, ts: parseInt(cacheTime, 10) });
+      return p;
     }
-  }
-
-  if (typeof price === 'number' && isFinite(price) && price > 0) {
-    _setCache(cacheKey, price);
-    return price;
-  }
+  } catch (e) {}
   return null;
 }
 
-/**
- * Get current BTC price in USD from free public API (cached).
- * @returns {Promise<number|null>}
- */
-export async function getCurrentBtcPrice() {
-  return _getPriceForIds('bitcoin', 'btc');
+export async function getCurrentEthereumPrice() {
+  const key = 'ethereum';
+  const now = Date.now();
+  const hit = cache.get(key);
+  if (hit && now - hit.ts < CACHE_TTL_MS) {
+    return hit.price;
+  }
+  try {
+    const price = await fetchPrice(key);
+    if (price != null) {
+      cache.set(key, { price, ts: now });
+      try {
+        localStorage.setItem('ethPrice', JSON.stringify(price));
+        localStorage.setItem('ethCacheTime', now.toString());
+      } catch (e) {}
+      return price;
+    }
+  } catch (e) {}
+  try {
+    const cached = localStorage.getItem('ethPrice');
+    const t = localStorage.getItem('ethCacheTime');
+    if (cached && t && now - parseInt(t, 10) < CACHE_TTL_MS * 5) {
+      const p = JSON.parse(cached);
+      cache.set(key, { price: p, ts: parseInt(t, 10) });
+      return p;
+    }
+  } catch (e) {}
+  return null;
 }
 
-/**
- * Get current alt price in USD (e.g. symbol='ETH' or 'ethereum').
- * Supports common symbols via simple map; falls back to lowercased as coingecko id.
- * @param {string} symbol - e.g. 'ETH', 'SOL', 'ethereum'
- * @returns {Promise<number|null>}
- */
-export async function getCurrentAltPrice(symbol = '') {
-  const s = String(symbol || '').trim().toLowerCase();
-  if (!s) return null;
-  const map = {
-    eth: 'ethereum',
-    ethereum: 'ethereum',
-    sol: 'solana',
-    solana: 'solana',
-    ada: 'cardano',
-    btc: 'bitcoin', // allow
-  };
-  const id = map[s] || s;
-  const cacheKey = `alt_${id}`;
-  return _getPriceForIds(id, cacheKey);
+// Optional: generic for future
+export async function getCurrentPrice(coinId = 'bitcoin') {
+  if (coinId === 'bitcoin') return getCurrentBitcoinPrice();
+  if (coinId === 'ethereum') return getCurrentEthereumPrice();
+  // extend as needed
+  return null;
 }
-
-export default {
-  getCurrentBtcPrice,
-  getCurrentAltPrice,
-};

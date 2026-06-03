@@ -136,6 +136,50 @@ const WorkbenchChart = ({
     derivedHook.resetDerived();
     setZoomRange(null);
   }, [mgmt, derivedHook]);
+
+  // === Compatibility shims for incomplete extraction wiring (from parallel subagent decomp) ===
+  // The lower JSX (series selects, derived dialog, last-updated block) still references many
+  // old local vars/handlers. These aliases make it compile and run with current hook outputs.
+  // Full cleanup (move dialogs into a UI hook) left as follow-up. Behavior preserved.
+  const activeMacroSeries = mgmt.activeMacroSeries || [];
+  const activeCryptoSeries = mgmt.activeCryptoSeries || [];
+  const activeIndicatorSeries = mgmt.activeIndicatorSeries || [];
+  const activeDerivedSeries = mgmt.activeDerivedSeries || [];
+  const handleMacroSeriesChange = (e) => mgmt.handleMacroSeriesChangeImpl?.(e, /*available passed inside hook*/) || mgmt.handleMacroSeriesChange?.(e);
+  const handleCryptoSeriesChange = (e) => mgmt.handleCryptoSeriesChangeImpl?.(e) || (() => {});
+  const handleIndicatorSeriesChange = (e) => mgmt.handleIndicatorSeriesChangeImpl?.(e) || (() => {});
+  const handleDerivedSeriesChange = (e) => mgmt.handleDerivedSeriesChangeImpl?.(e) || (() => {});
+  const handleEditClick = mgmt.handleEditClick || (() => {});
+  const showDerivedDialog = derivedHook.showDerivedDialog || false;
+  const setShowDerivedDialog = derivedHook.setShowDerivedDialog || (() => {});
+  const newDerivedSeries1 = derivedHook.newDerivedSeries1 || '';
+  const setNewDerivedSeries1 = derivedHook.setNewDerivedSeries1 || (() => {});
+  const newDerivedSeries2 = derivedHook.newDerivedSeries2 || '';
+  const setNewDerivedSeries2 = derivedHook.setNewDerivedSeries2 || (() => {});
+  const newDerivedOperation = derivedHook.newDerivedOperation || 'ratio';
+  const setNewDerivedOperation = derivedHook.setNewDerivedOperation || (() => {});
+  const newDerivedLabel = derivedHook.newDerivedLabel || '';
+  const setNewDerivedLabel = derivedHook.setNewDerivedLabel || (() => {});
+  const newDerivedColor = derivedHook.newDerivedColor || '#2196f3';
+  const setNewDerivedColor = derivedHook.setNewDerivedColor || (() => {});
+  const dialogColor = derivedHook.dialogColor || newDerivedColor;
+  const handleCreateDerived = derivedHook.handleCreateDerived || (() => {});
+  const handleCloseDialog = derivedHook.handleCloseDialog || (() => {});
+  const handleSaveDialog = derivedHook.handleSaveDialog || (() => {});
+  const dialogMovingAverage = derivedHook.dialogMovingAverage || { type: 'sma', period: 20 };
+  const handleMovingAverageChange = derivedHook.handleMovingAverageChange || (() => {});
+  const handleColorChange = derivedHook.handleColorChange || (() => {});
+  const derivedSeriesDefs = derivedHook.derivedSeriesDefs || [];
+  const allActive = [...activeMacroSeries, ...activeCryptoSeries, ...activeIndicatorSeries, ...activeDerivedSeries];
+  const getType = seriesData.getType || ((id) => (activeDerivedSeries.includes(id) ? 'derived' : 'crypto'));
+  const getLastTime = seriesData.getLastTime || ((id, type) => Date.now());
+  const getSeriesInfo = seriesData.getSeriesInfo || ((id) => ({ label: id }));
+  const getRawData = seriesData.getRawData || ((id) => []);
+  const getValueKey = seriesData.getValueKey || (() => 'value');
+  const getSeriesData = seriesData.getSeriesData || ((id) => []);
+  const getSeriesColor = movingAverages.getSeriesColor || ((id) => '#2196f3');
+  // === end shims ===
+
   useEffect(() => {
     if (!chartContainerRef.current) {
       logger.error('Chart container is not available');

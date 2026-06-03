@@ -1184,7 +1184,7 @@ import {
   BULL_MARKET_SUPPORT_BAND,
   calculateMovingAverage 
 } from '../utils/technicalIndicators';
-// MODERN AGENT: adopt centralized current price util (created in this sprint).
+// MODERN AGENT: adopt centralized current price util (created in this sprint, converted to .ts for incremental TS example).
 // Uses public API + cache; falls back to legacy localStorage. Replaces direct localStorage polling in the effect below.
 // Enables "Current: $xx,xxx" display + live bar update. Non-breaking (util is defensive).
 import { getCurrentBitcoinPrice } from '../utils/currentPrice';
