@@ -101,11 +101,21 @@ From QUALITY_ROADMAP + DATA_LAYER_PROPOSAL + COUPLING_MAP (these are the "this n
 
 **Workbench (1609 LOC, most sophisticated + interactive premium feature):**
 - Already received major perf work (direct-DOM tooltip + rAF, precomputed Map lookups per series for O(1), React.memo, mixed-freq LOCF fixes, derived series Infinity guards + aggressive fitContent).
-- Remaining decomposition:
-  - Extract hooks: `useSeriesData`, `useDerivedSeries`, `useMovingAverage`, `useSeriesManagement`, tooltip logic, etc.
-  - Move more derivation (computeDerivedData) behind DataService when ready.
-  - Smarter MA / step rendering for low-frequency series (monthly macro vs daily) — current native sparse is stable but could be polished.
-  - Series management effect is still large — stabilize it.
+- **Decomposition sprint (this sub/workbench-decomp slice): COMPLETE**
+  - Extracted 5 focused hooks under `src/hooks/useWorkbench*.js` + small config piece in `src/components/workbench/availableSeries.js`:
+    - `useWorkbenchSeriesData` (getRawData + getNormalized via DataService, getters, // INTEGRATE comments + TODOs for getDerivedSeries etc.)
+    - `useWorkbenchDerivedSeries` (computeDerivedData + guards + create + dialog state)
+    - `useWorkbenchMovingAverages` (calc + getSeriesData + MA/color overrides + dialog)
+    - `useWorkbenchSeriesManagement` (actives + change handlers that trigger context/DS-backed fetches + clear)
+    - `useWorkbenchTooltip` (direct-DOM rAF creation + update + schedule)
+  - Refactored Workbench.jsx to thin orchestrator + chart instance mgmt (refs, createChart effect, series setData effect, render).
+  - Added useCallback/useMemo, stable refs (for hook composition), no new mutations.
+  - Data access: routed through hook using existing DS methods (getBtcPriceSeries etc in imports + comments); normalize/dedup fully via DS.
+  - **Zero behavior change** for users (add series, derived ratio/diff e.g. SP500/BTC, MAs, tooltips, mixed-freq LOCF, fullscreen, export, save/load paths if any).
+  - `npm run build` succeeds.
+  - Remaining large effect (series sync to chart) noted for future; MA freq polish + full DS getDerived still TODO for data-layer agent.
+  - See commit history on sub/workbench-decomp + forGrokBuild updates.
+- Next: other charts + full data layer consumption of the new hooks where shared.
 
 **Chart components (many similar heavy patterns):**
 - Recent hardening: BitcoinMvrvZScore, PuellMultiple, OnChainHistoricalRisk (React.memo + useCallback on pure work + stable deps for createChart effects).
