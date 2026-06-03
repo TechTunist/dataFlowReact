@@ -15,8 +15,6 @@ import {
 } from '../utils/technicalIndicators';
 import LastUpdated from '../hooks/LastUpdated';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
-// MODERN AGENT: adopted current price util for ETH too (easy alt adoption; util is now .ts per TS starter).
-// Display only for polish (live "Current:"); full series overlay omitted to keep change minimal/non-breaking.
 import { getCurrentEthereumPrice } from '../utils/currentPrice';
 
 const EthereumPrice = ({ isDashboard = false }) => {
@@ -111,16 +109,16 @@ const EthereumPrice = ({ isDashboard = false }) => {
     fetchIndicatorData();
   }, [activeIndicators, fetchFedBalanceData, fedBalanceData.length]);
 
-  // MODERN AGENT: poll ETH current price via util (display only for this alt adoption).
+  // Fetch current ETH price from CoinGecko ONCE after chart data is available.
+  const currentPriceFetched = useRef(false);
   useEffect(() => {
-    const update = async () => {
-      const p = await getCurrentEthereumPrice();
-      if (p != null) setCurrentEthPrice(p);
-    };
-    update();
-    const id = setInterval(update, 45000);
-    return () => clearInterval(id);
-  }, []);
+    if (ethData.length > 0 && !currentPriceFetched.current) {
+      currentPriceFetched.current = true;
+      getCurrentEthereumPrice().then(price => {
+        if (price != null) setCurrentEthPrice(price);
+      }).catch(() => {});
+    }
+  }, [ethData.length]);
 
   const calculateMayerMultiple = useCallback((data) => {
     const period = 200;
@@ -314,6 +312,19 @@ const EthereumPrice = ({ isDashboard = false }) => {
       resetChartView();
     }
   }, [ethData, resetChartView]);
+
+  // Update price series with live current price (from CoinGecko, fetched once).
+  // Use update() only - do NOT call fitContent/resetChartView here to preserve user zoom.
+  useEffect(() => {
+    if (priceSeriesRef.current && currentEthPrice != null) {
+      const today = new Date().toISOString().split('T')[0];
+      try {
+        priceSeriesRef.current.update({ time: today, value: currentEthPrice });
+      } catch (error) {
+        console.error('Error updating current ETH price on chart:', error);
+      }
+    }
+  }, [currentEthPrice]);
 
   useEffect(() => {
     if (fedBalanceSeriesRef.current && ethData.length > 0 && fedBalanceData.length > 0) {
@@ -728,11 +739,6 @@ const EthereumPrice = ({ isDashboard = false }) => {
               }}
             />
             Ethereum Price
-            {currentEthPrice != null && (
-              <div style={{ color: colors.greenAccent[500], fontWeight: 600, marginTop: 2 }}>
-                Current: ${Number(currentEthPrice).toLocaleString()}
-              </div>
-            )}
           </div>
           {activeIndicators.map(key => (
             <div key={key} style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>

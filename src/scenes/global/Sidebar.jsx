@@ -130,7 +130,7 @@ const itemsData = [
   // === NAVIGATION ===
   { title: "Dashboard", to: "/dashboard", icon: <DashboardIcon />, category: null },
   { title: "Overview", to: "/market-overview", icon: <DashboardIcon />, category: null },
-  { title: "Charts (free + premium)", to: "/charts", icon: <BarChartIcon />, category: null },
+  { title: "Charts", to: "/charts", icon: <BarChartIcon />, category: null },
   
   // === BITCOIN ===
   // Category Icon: CurrencyBitcoinIcon - Directly represents Bitcoin as the primary cryptocurrency
@@ -289,7 +289,7 @@ const itemsData = [
   const buttonData = [
     { title: "Dashboard", to: "/dashboard" },
     { title: "Overview", to: "/market-overview" },
-    { title: "Charts (free + premium)", to: "/charts" },
+    { title: "Charts", to: "/charts" },
   ];
 
   return (
@@ -373,6 +373,9 @@ const itemsData = [
             >
               {buttonOrder.map((title, index) => {
                 const button = buttonData.find(b => b.title === title);
+                if (!button) {
+                  return null; // safety: skip if title mismatch (should not happen if buttonOrder matches buttonData titles)
+                }
                 // Fixed isActive for carousel: exact for Dashboard/Overview; for Charts only if exactly /charts
                 // OR current path matches a categorized chart item (e.g. /bitcoin, /workbench, /risk etc).
                 // This eliminates the fragile "any non-dash/overview = Charts" special case that wrongly

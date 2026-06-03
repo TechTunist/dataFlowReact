@@ -1184,9 +1184,6 @@ import {
   BULL_MARKET_SUPPORT_BAND,
   calculateMovingAverage 
 } from '../utils/technicalIndicators';
-// MODERN AGENT: adopt centralized current price util (created in this sprint, converted to .ts for incremental TS example).
-// Uses public API + cache; falls back to legacy localStorage. Replaces direct localStorage polling in the effect below.
-// Enables "Current: $xx,xxx" display + live bar update. Non-breaking (util is defensive).
 import { getCurrentBitcoinPrice } from '../utils/currentPrice';
 const BitcoinPrice = ({ isDashboard = false }) => {
   const chartContainerRef = useRef();
@@ -1348,28 +1345,22 @@ const BitcoinPrice = ({ isDashboard = false }) => {
       fetchMvrvData();
     }
   }, [activeIndicators, fetchMvrvData]);
+
+  // Fetch current BTC price from CoinGecko ONCE after chart data is available.
+  // Called only once per chart load (no polling) so it does not interfere with zoom or re-renders.
+  // Updates the price series point for "today" and legend.
+  const currentPriceFetched = useRef(false);
   useEffect(() => {
-    // MODERN AGENT: switched to util for live price (with internal cache + legacy LS fallback).
-    // Fetches from CoinGecko (free, public). Shows as "Current: ..." and annotates latest bar.
-    // Still writes LS for backward compat with any other widgets.
-    const updateCurrentPrice = async () => {
-      try {
-        const price = await getCurrentBitcoinPrice();
+    if (btcData.length > 0 && !currentPriceFetched.current) {
+      currentPriceFetched.current = true;
+      getCurrentBitcoinPrice().then(price => {
         if (price != null) {
           setCurrentBtcPrice(price);
-        } else {
-          // keep prior or clear; util already tried LS fallback
-          // do not overwrite with null if we have a recent one from chart data
         }
-      } catch (error) {
-        // never break the chart
-        console.error('Error fetching current BTC price via util:', error);
-      }
-    };
-    updateCurrentPrice();
-    const intervalId = setInterval(updateCurrentPrice, 30000); // 30s poll (util caches 60s)
-    return () => clearInterval(intervalId);
-  }, []);
+      }).catch(() => {});
+    }
+  }, [btcData.length]);
+
   useEffect(() => {
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
@@ -1588,10 +1579,6 @@ const BitcoinPrice = ({ isDashboard = false }) => {
     if (priceSeriesRef.current && btcData.length > 0) {
       try {
         priceSeriesRef.current.setData(btcData);
-        if (currentBtcPrice) {
-          const today = new Date().toISOString().split('T')[0];
-          priceSeriesRef.current.update({ time: today, value: currentBtcPrice });
-        }
         if (chartRef.current) chartRef.current.timeScale().fitContent();
       } catch (error) {
         console.error('Error updating Bitcoin price data on chart:', error);
@@ -1599,7 +1586,22 @@ const BitcoinPrice = ({ isDashboard = false }) => {
         if (chartRef.current) chartRef.current.timeScale().fitContent();
       }
     }
-  }, [btcData, currentBtcPrice]);
+  }, [btcData]);
+
+  // Update price series with live current price (from CoinGecko, fetched once).
+  // Use update() only - do NOT call fitContent() here, as that would reset user zoom.
+  // This ensures the chart shows up-to-date price without interfering with interactions.
+  useEffect(() => {
+    if (priceSeriesRef.current && currentBtcPrice != null) {
+      const today = new Date().toISOString().split('T')[0];
+      try {
+        priceSeriesRef.current.update({ time: today, value: currentBtcPrice });
+      } catch (error) {
+        console.error('Error updating current BTC price on chart:', error);
+      }
+    }
+  }, [currentBtcPrice]);
+
   useEffect(() => {
     if (mvrvSeriesRef.current && btcData.length > 0 && mvrvData.length > 0) {
       const btcStartTime = new Date(btcData[0].time).getTime();
@@ -2102,11 +2104,6 @@ const BitcoinPrice = ({ isDashboard = false }) => {
               }}
             />
             Bitcoin Price
-            {currentBtcPrice != null && (
-              <div style={{ color: colors.greenAccent[500], fontWeight: 600, marginTop: 2 }}>
-                Current: ${Number(currentBtcPrice).toLocaleString()}
-              </div>
-            )}
           </div>
           {activeIndicators.map(key => (
             <div key={key} style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>

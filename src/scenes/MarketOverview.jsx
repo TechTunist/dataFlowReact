@@ -1060,14 +1060,26 @@ const RoiCycleComparisonWidget = memo(() => {
     const fetchRiskLevel = async () => {
       let level = null;
 
-      // 1. Prefer fresh latest from backend risk endpoint (precomputed) using similar-to-fetchWithCache direct fetch + auth.
-      // /api/risk-metrics/ (see DataContext + config/api + BE RiskMetricListView). We take a recent value only if
-      // it looks normalized 0-1 (our price risk scale); falls back safely otherwise. Ready for when price-risk is
-      // also stored precomputed (e.g. metric='price_risk' or 'risk_level'). Uses logger.
+      // 1. IDB first for instant non-zero value from previous visit/calc (fixes "stays at 0 too long")
+      try {
+        const riskData = await getBitcoinRisk();
+        if (riskData && riskData.riskLevel !== undefined) {
+          level = riskData.riskLevel;
+          logger.info('BitcoinRiskWidget: using IDB cached risk level');
+        }
+      } catch (e) {
+        logger.error('BitcoinRiskWidget: error reading IDB risk', e);
+      }
+
+      if (level !== null) {
+        setRiskLevel(level);
+        // still continue to try backend/calc for fresher
+      }
+
+      // 2. Try fresh precomputed from backend (may be price risk or other 0-1 risk)
       try {
         const token = await getToken();
         if (token) {
-          // Try a recent one; if its value in 0-1 range treat as our risk level (onchain ones usually >0.1 but we gate)
           const url = apiUrl('/api/risk-metrics/?ordering=-time&page_size=1');
           const resp = await fetch(url, {
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -1090,44 +1102,24 @@ const RoiCycleComparisonWidget = memo(() => {
         logger.warn('BitcoinRiskWidget: backend /api/risk-metrics/ fetch failed or no suitable 0-1 value (fallback to IDB/calc)', e && e.message ? e.message : e);
       }
 
-      if (level !== null) {
-        setRiskLevel(level);
-        return;
-      }
-
-      // 2. IDB (today's cached from prior good calc) -- the "precomputed" local latest
-      try {
-        const riskData = await getBitcoinRisk();
-        if (riskData && riskData.riskLevel !== undefined) {
-          level = riskData.riskLevel;
-          logger.info('BitcoinRiskWidget: using IDB cached risk level');
-        }
-      } catch (e) {
-        logger.error('BitcoinRiskWidget: error reading IDB risk', e);
-      }
-
-      if (level === null) {
-        // 3. Calc from btcData ONLY if we have sufficient history for reliable normalization (374d MA + global min/max).
-        // Prevents bad values when DataContext btcData preload is minimized (per bulletproofing).
-        if (btcData && btcData.length > 400) {
-          try {
-            const riskDataArray = calculateRiskMetric(btcData);
-            if (riskDataArray && riskDataArray.length > 0) {
-              const calculatedRisk = riskDataArray[riskDataArray.length - 1].Risk;
-              if (isFinite(calculatedRisk)) {
-                await saveBitcoinRisk(calculatedRisk);
-                level = calculatedRisk;
-                logger.info('BitcoinRiskWidget: calculated fresh risk from full btcData');
-              }
-            } else {
-              logger.error('BitcoinRiskWidget: calculateRiskMetric returned no usable data');
+      // 3. Always calc from current btcData if available (ensures widget matches the risk chart's latest value exactly)
+      // Do this even if we have IDB/backend, to get the current calc.
+      if (btcData && btcData.length > 0) {
+        try {
+          const riskDataArray = calculateRiskMetric(btcData);
+          if (riskDataArray && riskDataArray.length > 0) {
+            const calculatedRisk = riskDataArray[riskDataArray.length - 1].Risk;
+            if (isFinite(calculatedRisk)) {
+              await saveBitcoinRisk(calculatedRisk);
+              level = calculatedRisk;
+              logger.info('BitcoinRiskWidget: calculated fresh risk from btcData (to match chart)');
             }
-          } catch (e) {
-            logger.error('BitcoinRiskWidget: error during local calc', e);
           }
-        } else {
-          logger.warn('BitcoinRiskWidget: no IDB and insufficient btcData (>400) for reliable calc; leaving null->0');
+        } catch (e) {
+          logger.error('BitcoinRiskWidget: error during local calc', e);
         }
+      } else {
+        logger.warn('BitcoinRiskWidget: insufficient btcData for calc');
       }
 
       setRiskLevel(level !== null ? level : 0);
@@ -1234,9 +1226,11 @@ const RoiCycleComparisonWidget = memo(() => {
   const FearAndGreedGauge = memo(() => {
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
-    const { fearAndGreedData, fetchFearAndGreedData } = useContext(DataContext);
+    const { fearAndGreedData, fetchFearAndGreedData, latestFearAndGreed, fetchLatestFearAndGreed } = useContext(DataContext);
     const [isInfoVisible, setIsInfoVisible] = useState(false);
-    const latestValue = fearAndGreedData && fearAndGreedData.length > 0 ? Math.max(0, Math.min(100, fearAndGreedData[fearAndGreedData.length - 1].value)) : 0;
+    // Prefer the freshest latestFearAndGreed (from binary-latest endpoint) over last of full fearAndGreedData
+    const latestFg = latestFearAndGreed || (fearAndGreedData && fearAndGreedData.length > 0 ? fearAndGreedData[fearAndGreedData.length - 1] : null);
+    const latestValue = latestFg ? Math.max(0, Math.min(100, Number(latestFg.value))) : 0;
     const backgroundColor = getBackgroundColor(latestValue);
     const textColor = getTextColor(backgroundColor);
     const heatDescription = getHeatDescription(latestValue);
@@ -1263,10 +1257,13 @@ const RoiCycleComparisonWidget = memo(() => {
     const gaugeColor = getGaugeColor(latestValue);
 
     useEffect(() => {
-      if (!fearAndGreedData) {
+      if (!fearAndGreedData || fearAndGreedData.length === 0) {
         fetchFearAndGreedData();
       }
-    }, [fearAndGreedData, fetchFearAndGreedData]);
+      if (!latestFearAndGreed) {
+        fetchLatestFearAndGreed();
+      }
+    }, [fearAndGreedData, fetchFearAndGreedData, latestFearAndGreed, fetchLatestFearAndGreed]);
 
     const navigate = useNavigate();
     const handleChartRedirect = (event) => {
@@ -1787,7 +1784,7 @@ const MarketHeatGaugeWidget = memo(() => {
   const [heatScore, setHeatScore] = useState(null);
   const [debugScores, setDebugScores] = useState({});
   const [debugInputs, setDebugInputs] = useState({});
-  const { mvrvData, btcData, fearAndGreedData } = useContext(DataContext);
+  const { mvrvData, btcData, fearAndGreedData, latestFearAndGreed } = useContext(DataContext);
   const [openSnackbar, setOpenSnackbar] = useState(false); // Added for Snackbar state
 
   useEffect(() => {
@@ -1823,8 +1820,9 @@ const MarketHeatGaugeWidget = memo(() => {
           logger.error('Error fetching risk in heat calc (non-widget):', error);
           riskHeat = 0;
         }
-        const fearGreedValueRaw = fearAndGreedData[fearAndGreedData.length - 1].value;
-        const fearGreedValue = Math.max(0, Math.min(100, fearGreedValueRaw));
+        const fearGreedLatest = latestFearAndGreed || (fearAndGreedData && fearAndGreedData.length > 0 ? fearAndGreedData[fearAndGreedData.length - 1] : null);
+        const fearGreedValueRaw = fearGreedLatest ? fearGreedLatest.value : 0;
+        const fearGreedValue = Math.max(0, Math.min(100, Number(fearGreedValueRaw)));
         const ratioData = calculateRatioSeries(btcData);
         const latestRatioRaw = ratioData[ratioData.length - 1]?.value;
         const latestRatio = latestRatioRaw ? Math.max(0, Math.min(100, latestRatioRaw)) : 0;

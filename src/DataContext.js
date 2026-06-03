@@ -181,6 +181,13 @@ const fetchWithCache = async ({
           shouldReuseCache = true;
         }
 
+        // Address data freshness on sprint: for useDateCheck series (core dailies), if cached latest < today,
+        // force a fresh fetch instead of serving stale "yesterday" data (even if within TTL).
+        // This makes sprint branch behave like main deployment for current-day data visibility.
+        if (effectiveUseDateCheck && latestCachedDate && latestCachedDate < currentDate) {
+          shouldReuseCache = false;
+        }
+
         if (shouldReuseCache) {
           logger.log(`[Cache] HIT (fresh) for ${cacheId}`);
           setData(Array.isArray(cached.data) ? cachedData : cached.data);
@@ -506,6 +513,11 @@ export const DataProvider = ({ children }) => {
               shouldReuseCache = true;
             }
 
+            // Address data freshness on sprint: for useDateCheck series, if cached latest < today, force fetch.
+            if (effectiveUseDateCheck && latestCachedDate && latestCachedDate < currentDate) {
+              shouldReuseCache = false;
+            }
+
             if (shouldReuseCache) {
               if (isMounted) {
                 setData(sortedCachedData);
@@ -732,7 +744,9 @@ export const DataProvider = ({ children }) => {
   }, [fetchBtcData]);
 
   const fetchLatestFearAndGreed = useCallback(async () => {
-    if (isLatestFearAndGreedFetched) return;
+    // Removed isLatestFearAndGreedFetched guard so that we can re-fetch the latest (volatile) data
+    // when needed (e.g. daily updates). fetchWithCache will still short-circuit on fresh cache (1h TTL).
+    // This fixes the widget showing stale "last calculated" value.
 
     // Phase 1: Use shared helper to avoid duplicate work during preload
     if (await waitForPreloadIfNeeded(preloadComplete, () => isLatestFearAndGreedFetched)) {
