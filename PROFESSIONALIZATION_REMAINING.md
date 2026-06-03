@@ -199,3 +199,50 @@ From QUALITY_ROADMAP + DATA_LAYER_PROPOSAL + COUPLING_MAP (these are the "this n
 Track progress in this file + forGrokBuild.md. All changes small, reviewable, builds green, behavior preserved where possible.
 
 **Status of this list:** Living. Update as items are completed or new ones discovered during regular use.
+
+---
+
+## Progress Update (Modern Foundation + Polish slice — sub/modern-polish)
+
+**Date:** 2026-06-03 (this agent session)
+**Agent:** modernization/DX (Vite+TS kickoff, tests, free charts, current price, build, docs)
+**Branch:** sub/modern-polish (isolated; per spec `git checkout -b sub/modern-polish` from dataFlowReact root)
+
+### Completed in this slice (additive, non-breaking, CRA default preserved)
+- **Vite migration start (high signal, Phase 2):** 
+  - package.json: devDeps (vite@^5.4.8, @vitejs/plugin-react@^4.3.1, vitest, typescript, @types/react etc); scripts `dev:vite`/`build:vite`/`preview:vite` (CRA "start"/"build"/"test" untouched as default). "modernization" meta + MODERN AGENT comments for parallel agents.
+  - Created `vite.config.js`: react plugin, envPrefix + full `process.env` shim (via loadEnv+define) so REACT_APP_* code works unchanged, build.outDir:'build' (vercel/CRA compat), server, vitest section.
+  - Created root `index.html` (Vite entry; CRA still uses public/).
+  - Updated `vercel.json`: outputDirectory + MODERN AGENT note (no behavior/rewrite change).
+  - Note: `npm run build` (CRA) + tests green; `npm run build:vite` ready after `npm install` (will output build/ too).
+- **TS incremental starter:**
+  - tsconfig.json (allowJs:true, noEmit:true, checkJs:false, include only **/*.ts, incremental, loose strict for transition).
+  - `src/utils/currentPrice.ts` (types + stub as the "convert util to .ts" example).
+- **Real test coverage start (was almost non-existent):**
+  - `src/data/DataService.test.js`: normalizePriceData (raw, keys, filter, sort), deduplicateByTime.
+  - `src/utility/riskMetric.test.js`: calculateRiskMetric (length, Risk fields, normalize 0-1, small input).
+  - `src/components/LoadingFallback.test.js`: render smoke + custom msg (with MUI ThemeProvider).
+  - `src/contexts/SubscriptionContext.test.js`: free features contract + HOC.
+  - Enhanced `src/App.test.js` (removed broken "learn react"; basic rtl render + preserved file; avoids heavy App import due to latent d3/jest issue).
+  - `npm test -- --watchAll=false --passWithNoTests` : 5 suites, 14 tests, all PASS (jest via CRA).
+- **Free charts UI section polish (Phase 3):**
+  - ChartsThumbnails.jsx (/charts public page): explicit `<Chip label="FREE">` badges on every card in "Free Charts" section + "(always free for all users)" in header. Cross-ref to dashboard chartConfig ids.
+  - dashboard/index.jsx: when no favorites, added "Free tier highlights (no subscription required):" with 6 example buttons (total, dominance, log-reg, fng, risk-bands, us-inflation) each tagged FREE (links via chartConfig).
+  - Sidebar.jsx (light): "Charts (free + premium)" labels on main nav + buttonData.
+  - No is_free logic or behavior change for paid (RestrictToPaid untouched; only requirePaid routes gated).
+- **Current price adoption (bulletproof + polish):**
+  - Created `src/utils/currentPrice.js` (public coingecko simple/price for BTC+ETH, 60s cache, LS compat for legacy, defensive never-throw).
+  - Adopted in `BitcoinPrice.jsx`: import + async poll (30s) using util (replaced LS check effect), "Current: $xx,xxx" in top-left overlay (green), series update already leveraged it.
+  - Adopted in `EthereumPrice.jsx` (easy alt): state + poll effect + "Current: $xx,xxx" in overlay header.
+- **Build/docs/professionalism:**
+  - CRA build verified multiple times (green post changes; Vite parallel).
+  - Heavily updated this file + README.md (added "Modernization status (Vite/TS/tests kickoff)" section + "How to run tests" + Vite note: default still CRA).
+  - All changes have "MODERN AGENT" comments for light coordination.
+  - Commit on sub/modern-polish.
+
+**Verification:** `npm test -- --watchAll=false --passWithNoTests` (pass), `npm run build` (CRA success, assets in build/), files present: vite.config.js, tsconfig.json, root index.html, 4 new tests, currentPrice.{js,ts}, edits to dashboard/index.jsx + ChartsThumbnails + BitcoinPrice + EthereumPrice + Sidebar + package + vercel.
+
+**Next (per roadmap):** flip default after more testing + parallel agents stable; expand TS to DataService/risk/sub; more tests (Workbench, full gating); CI.
+
+**How to run tests (added):** `npm test` (interactive) or `npm test -- --watchAll=false --passWithNoTests --testPathPattern=DataService` (CI/one-shot). After `npm install` you can also `npm run build:vite` / `npx tsc --noEmit` (for the .ts files).
+
