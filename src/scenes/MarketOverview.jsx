@@ -27,8 +27,6 @@ import ShowChartIcon from '@mui/icons-material/ShowChart';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import { saveCycleDaysData, getCycleDaysData } from '../utility/idbUtils';
 import { useNavigate } from 'react-router-dom';
-import Snackbar from '@mui/material/Snackbar';
-import Alert from '@mui/material/Alert';
 import { calculateRiskMetric } from '../utility/riskMetric';
 import logger from '../utils/logger';
 import { apiUrl } from '../config/api';
@@ -1785,7 +1783,6 @@ const MarketHeatGaugeWidget = memo(() => {
   const [debugScores, setDebugScores] = useState({});
   const [debugInputs, setDebugInputs] = useState({});
   const { mvrvData, btcData, fearAndGreedData, latestFearAndGreed } = useContext(DataContext);
-  const [openSnackbar, setOpenSnackbar] = useState(false); // Added for Snackbar state
 
   useEffect(() => {
     if (mvrvData?.length > 0 && btcData?.length > 350 && fearAndGreedData?.length > 0) {
@@ -1884,16 +1881,10 @@ const MarketHeatGaugeWidget = memo(() => {
   const gaugeColor = getGaugeColor(heatScore);
   const [isInfoVisible, setIsInfoVisible] = useState(false);
 
+  const navigate = useNavigate();
   const handleChartRedirect = (event) => {
     event.stopPropagation();
-    setOpenSnackbar(true); // Show the Snackbar
-  };
-
-  const handleCloseSnackbar = (event, reason) => {
-    if (reason === 'clickaway') {
-      return;
-    }
-    setOpenSnackbar(false);
+    navigate('/market-heat-index');
   };
 
   return (
@@ -1992,20 +1983,6 @@ const MarketHeatGaugeWidget = memo(() => {
         isVisible={isInfoVisible}
         explanation="The Market Heat Index combines multiple indicators (MVRV, Mayer Multiple, Fear and Greed, etc.) to assess overall market conditions. A higher score indicates an overheated market, calculated as a weighted average of individual indicator scores."
       />
-      <Snackbar
-        open={openSnackbar}
-        autoHideDuration={6000}
-        onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-      >
-        <Alert
-          onClose={handleCloseSnackbar}
-          severity="info"
-          sx={{ width: '100%', backgroundColor: colors.primary[400], color: colors.grey[100] }}
-        >
-          The Market Heat Index chart is currently under construction. Please check back later for updates.
-        </Alert>
-      </Snackbar>
     </Box>
   );
 });

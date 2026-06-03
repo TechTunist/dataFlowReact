@@ -428,6 +428,14 @@ const Charts = () => {
         image: '../../assets/german10year.png',
       },
     ],
+    "Advanced Models": [
+      {
+        path: "/market-heat-index",
+        title: "Market Heat Index",
+        description: "Interactive Market Heat Index with tunable weights and range stretch for historic analysis",
+        image: placeholderImage,
+      },
+    ],
     Workbench: [
       {
         path: "/workbench",

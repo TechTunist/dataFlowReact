@@ -91,6 +91,7 @@ const routeToChartId = {
   "/btc-mvrv-z":"mvrv-zscore",
   "/total2":"total2",
   "/tail-curvature": "tail-curvature",
+  "/market-heat-index": "market-heat-index",
 };
 
 const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
@@ -196,6 +197,8 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
         return { title: "Ethereum", subtitle: "Risk Metric" };
       case "/pi-cycle":
         return { title: "PiCycle Top", subtitle: "Top Calling Indicator" };
+      case "/market-heat-index":
+        return { title: "Market Heat Index", subtitle: isMobile ? "Tunable multi-factor market heat" : "Live tunable composite of MVRV, Mayer, Risk, F&G, PiCycle, Alt Season" };
       case "/fear-and-greed":
         return { title: "Fear & Greed", subtitle: "Market Sentiment" };
       case "/logarithmic-regression":

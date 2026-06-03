@@ -156,6 +156,7 @@ const itemsData = [
   { title: "Total 3 Market Cap", to: "/total3", category: "Market Metrics", icon: <AttachMoneyIcon />, categoryIcon: <AnalyticsIcon /> }, // AttachMoneyIcon: Variant of market cap
   { title: "Total Cap to Fair Value", to: "/total-difference", category: "Market Metrics", icon: <BalanceIcon />, categoryIcon: <AnalyticsIcon /> }, // BalanceIcon: Fair value comparison
   { title: "PiCycleTop Indicator", to: "/pi-cycle", category: "Market Metrics", icon: <CurrencyExchangeIcon />, categoryIcon: <AnalyticsIcon /> }, // CycleIcon (assuming import; alt: AutorenewIcon): Cycle-based indicator
+  { title: "Market Heat Index", to: "/market-heat-index", category: "Market Metrics", icon: <AnalyticsIcon />, categoryIcon: <AnalyticsIcon /> }, // Added for market heat index feature
   
   // === ON-CHAIN METRICS ===
   // Category Icon: LinkIcon - Represents blockchain/on-chain data connections
