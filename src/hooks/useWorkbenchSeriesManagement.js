@@ -32,22 +32,8 @@ export function useWorkbenchSeriesManagement({ dataContext, setIsLoading, setErr
   const [activeIndicatorSeries, setActiveIndicatorSeries] = useState([]);
   const [activeDerivedSeries, setActiveDerivedSeries] = useState([]);
 
-  const handleMacroSeriesChange = useCallback((event) => {
-    const selected = event.target.value;
-    setActiveMacroSeries(selected);
-    selected.forEach(id => {
-      const seriesInfo = /* will be injected or global, but for now we duplicate minimal lookup */
-        // To avoid circular, we accept a lookup or hardcode minimal here? Better: pass the available or use from data hook.
-        // For extraction cleanliness, the caller can pre-resolve or we accept a getSeriesMeta.
-        // Simpler for v1: keep the lookup inside but since config moved, we import here (allowed).
-        null; // placeholder, actual impl will use injected meta or re-import config for the check
-    });
-  }, []);
-
-  // NOTE: Because the original lookups use the large available* objects (now in workbench/availableSeries),
-  // we import them here for the change handlers. This is fine (small dependency).
-  // To keep this file focused we will perform the actual data presence + fetch inside the impl below.
-  // The skeleton above was illustrative; real code follows.
+  // NOTE: The real handler impls are below. We import the config in the caller and pass the maps
+  // (avoids large duplication of the 100+ series objects inside this hook).
 
   // Re-implement the handlers fully (moved verbatim logic + logger routing, with stable callbacks)
   const handleMacroSeriesChangeImpl = useCallback((event, availableMacro) => {

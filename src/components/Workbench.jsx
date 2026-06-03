@@ -8,9 +8,13 @@ import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
 import useIsMobile from '../hooks/useIsMobile';
 import { DataContext } from '../DataContext';
-// Data layer: normalize/dedup now primarily used via useWorkbenchSeriesData (which imports from DataService).
-// We keep the direct import only for any transitional direct use; prefer the hook.
-import { normalizePriceData, deduplicateByTime, getBtcPriceSeries, getEthPriceSeries } from '../data';
+// Data layer integration (per SAFE_FRONTEND_DATA_LAYER... and this sprint):
+// - normalize/dedup fully routed through useWorkbenchSeriesData (which re-exports + uses DataService's).
+// - We import specific getters (getBtcPriceSeries etc) here + in the hook to begin "routing" references
+//   through the service (even while reads still come from DataContext state populated by DS inside context).
+//   // INTEGRATE WITH DATA LAYER
+//   TODO: expand to use dataService.get* for triggering/reading when service grows read APIs (parallel agent).
+import { getBtcPriceSeries, getEthPriceSeries } from '../data';
 import { Box, FormControl, InputLabel, Select, MenuItem, Checkbox, Button, Dialog, DialogTitle, DialogContent, DialogActions, Autocomplete, TextField, Snackbar, Alert } from '@mui/material';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 
@@ -137,48 +141,37 @@ const WorkbenchChart = ({
     setZoomRange(null);
   }, [mgmt, derivedHook]);
 
-  // === Compatibility shims for incomplete extraction wiring (from parallel subagent decomp) ===
-  // The lower JSX (series selects, derived dialog, last-updated block) still references many
-  // old local vars/handlers. These aliases make it compile and run with current hook outputs.
-  // Full cleanup (move dialogs into a UI hook) left as follow-up. Behavior preserved.
-  const activeMacroSeries = mgmt.activeMacroSeries || [];
-  const activeCryptoSeries = mgmt.activeCryptoSeries || [];
-  const activeIndicatorSeries = mgmt.activeIndicatorSeries || [];
-  const activeDerivedSeries = mgmt.activeDerivedSeries || [];
-  const handleMacroSeriesChange = (e) => mgmt.handleMacroSeriesChangeImpl?.(e, /*available passed inside hook*/) || mgmt.handleMacroSeriesChange?.(e);
-  const handleCryptoSeriesChange = (e) => mgmt.handleCryptoSeriesChangeImpl?.(e) || (() => {});
-  const handleIndicatorSeriesChange = (e) => mgmt.handleIndicatorSeriesChangeImpl?.(e) || (() => {});
-  const handleDerivedSeriesChange = (e) => mgmt.handleDerivedSeriesChangeImpl?.(e) || (() => {});
-  const handleEditClick = mgmt.handleEditClick || (() => {});
-  const showDerivedDialog = derivedHook.showDerivedDialog || false;
-  const setShowDerivedDialog = derivedHook.setShowDerivedDialog || (() => {});
-  const newDerivedSeries1 = derivedHook.newDerivedSeries1 || '';
-  const setNewDerivedSeries1 = derivedHook.setNewDerivedSeries1 || (() => {});
-  const newDerivedSeries2 = derivedHook.newDerivedSeries2 || '';
-  const setNewDerivedSeries2 = derivedHook.setNewDerivedSeries2 || (() => {});
-  const newDerivedOperation = derivedHook.newDerivedOperation || 'ratio';
-  const setNewDerivedOperation = derivedHook.setNewDerivedOperation || (() => {});
-  const newDerivedLabel = derivedHook.newDerivedLabel || '';
-  const setNewDerivedLabel = derivedHook.setNewDerivedLabel || (() => {});
-  const newDerivedColor = derivedHook.newDerivedColor || '#2196f3';
-  const setNewDerivedColor = derivedHook.setNewDerivedColor || (() => {});
-  const dialogColor = derivedHook.dialogColor || newDerivedColor;
-  const handleCreateDerived = derivedHook.handleCreateDerived || (() => {});
-  const handleCloseDialog = derivedHook.handleCloseDialog || (() => {});
-  const handleSaveDialog = derivedHook.handleSaveDialog || (() => {});
-  const dialogMovingAverage = derivedHook.dialogMovingAverage || { type: 'sma', period: 20 };
-  const handleMovingAverageChange = derivedHook.handleMovingAverageChange || (() => {});
-  const handleColorChange = derivedHook.handleColorChange || (() => {});
-  const derivedSeriesDefs = derivedHook.derivedSeriesDefs || [];
-  const allActive = [...activeMacroSeries, ...activeCryptoSeries, ...activeIndicatorSeries, ...activeDerivedSeries];
-  const getType = seriesData.getType || ((id) => (activeDerivedSeries.includes(id) ? 'derived' : 'crypto'));
-  const getLastTime = seriesData.getLastTime || ((id, type) => Date.now());
-  const getSeriesInfo = seriesData.getSeriesInfo || ((id) => ({ label: id }));
-  const getRawData = seriesData.getRawData || ((id) => []);
-  const getValueKey = seriesData.getValueKey || (() => 'value');
-  const getSeriesData = seriesData.getSeriesData || ((id) => []);
-  const getSeriesColor = movingAverages.getSeriesColor || ((id) => '#2196f3');
-  // === end shims ===
+  // Local thin wrappers for edit/save dialog that delegate to useWorkbenchMovingAverages
+  // (keeps the openDialog/editClicked local state + the click flash effect in the original UI).
+  const handleEditClick = useCallback((event, seriesId, type) => {
+    event.stopPropagation();
+    event.preventDefault();
+    setEditClicked(prev => ({ ...prev, [seriesId]: true }));
+    const curMA = movingAverages.seriesMovingAverages[seriesId] || 'None';
+    const baseCol = seriesData.getSeriesColorBase(seriesId, type);
+    const curCol = movingAverages.seriesColors[seriesId] || baseCol;
+    movingAverages.openEditDialogForMA(seriesId, curMA, curCol, baseCol);
+    setOpenDialog({ open: true, seriesId, type });
+    setTimeout(() => {
+      setEditClicked(prev => ({ ...prev, [seriesId]: false }));
+    }, 300);
+  }, [movingAverages, seriesData]);
+
+  const handleMovingAverageChange = movingAverages.handleMovingAverageChange;
+  const handleColorChange = movingAverages.handleColorChange;
+
+  const handleSaveDialog = useCallback(() => {
+    if (openDialog.seriesId) {
+      movingAverages.applyDialogToSeries(openDialog.seriesId);
+    }
+    setOpenDialog({ open: false, seriesId: null, type: null });
+    movingAverages.closeDialogMA();
+  }, [openDialog.seriesId, movingAverages]);
+
+  const handleCloseDialog = useCallback(() => {
+    setOpenDialog({ open: false, seriesId: null, type: null });
+    movingAverages.closeDialogMA();
+  }, [movingAverages]);
 
   useEffect(() => {
     if (!chartContainerRef.current) {
@@ -644,6 +637,8 @@ const WorkbenchChart = ({
   const rActInd = mgmt.activeIndicatorSeries || [];
   const rActDer = mgmt.activeDerivedSeries || [];
   const allActiveForCalc = [...rActMacro, ...rActCrypto, ...rActInd];
+  // allActive for derived create dialog (only base series, no derived-to-derived yet)
+  const allActive = [...rActMacro, ...rActCrypto, ...rActInd];
   const hasDerived = (derivedHook.derivedSeriesDefs || []).length > 0;
   const numSelectors = hasDerived ? 4 : 3;
   const minWidthNeeded = numSelectors * 250 + (numSelectors - 1) * 20;
@@ -694,20 +689,20 @@ const WorkbenchChart = ({
                 <Box sx={{ ml: 'auto' }}>
                   <Button
                     onClick={(e) => handleEditClick(e, option.id, 'macro')}
-                    disabled={!activeMacroSeries.includes(option.id)}
+                    disabled={!(mgmt.activeMacroSeries || []).includes(option.id)}
                     sx={{
                       textTransform: 'none',
                       fontSize: '12px',
-                      color: activeMacroSeries.includes(option.id) ? (theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900]) : (theme.palette.mode === 'dark' ? colors.grey[500] : colors.grey[600]),
-                      border: `1px solid ${activeMacroSeries.includes(option.id) ? (theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[700]) : (theme.palette.mode === 'dark' ? colors.grey[500] : colors.grey[600])}`,
+                      color: (mgmt.activeMacroSeries || []).includes(option.id) ? (theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900]) : (theme.palette.mode === 'dark' ? colors.grey[500] : colors.grey[600]),
+                      border: `1px solid ${(mgmt.activeMacroSeries || []).includes(option.id) ? (theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[700]) : (theme.palette.mode === 'dark' ? colors.grey[500] : colors.grey[600])}`,
                       borderRadius: '4px',
                       padding: '2px 8px',
                       minWidth: '50px',
                       backgroundColor: editClicked[option.id] ? '#4cceac' : 'transparent',
                       ...(editClicked[option.id] && { color: 'black', borderColor: 'violet' }),
                       '&:hover': {
-                        borderColor: activeMacroSeries.includes(option.id) ? colors.greenAccent[500] : (theme.palette.mode === 'dark' ? colors.grey[500] : colors.grey[600]),
-                        backgroundColor: activeMacroSeries.includes(option.id) && !editClicked[option.id] ? (theme.palette.mode === 'dark' ? colors.primary[600] : colors.primary[300]) : 'transparent',
+                        borderColor: (mgmt.activeMacroSeries || []).includes(option.id) ? colors.greenAccent[500] : (theme.palette.mode === 'dark' ? colors.grey[500] : colors.grey[600]),
+                        backgroundColor: (mgmt.activeMacroSeries || []).includes(option.id) && !editClicked[option.id] ? (theme.palette.mode === 'dark' ? colors.primary[600] : colors.primary[300]) : 'transparent',
                       },
                       '&.Mui-disabled': {
                         pointerEvents: 'none',
@@ -746,8 +741,8 @@ const WorkbenchChart = ({
             id="crypto-series"
             options={Object.entries(availableCryptoSeries).map(([id, { label }]) => ({ id, label }))}
             getOptionLabel={(option) => option.label}
-            value={activeCryptoSeries.map(id => ({ id, label: availableCryptoSeries[id].label }))}
-            onChange={(event, newValue) => handleCryptoSeriesChange({ target: { value: newValue.map(v => v.id) } })}
+            value={(mgmt.activeCryptoSeries || []).map(id => ({ id, label: availableCryptoSeries[id].label }))}
+            onChange={(event, newValue) => mgmt.handleCryptoSeriesChange({ target: { value: newValue.map(v => v.id) } }, availableCryptoSeries)}
             isOptionEqualToValue={(option, value) => option.id === value.id}
             renderTags={(tagValue) => (
               <Box sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -765,20 +760,20 @@ const WorkbenchChart = ({
                 <Box sx={{ ml: 'auto' }}>
                   <Button
                     onClick={(e) => handleEditClick(e, option.id, 'crypto')}
-                    disabled={!activeCryptoSeries.includes(option.id)}
+                    disabled={!(mgmt.activeCryptoSeries || []).includes(option.id)}
                     sx={{
                       textTransform: 'none',
                       fontSize: '12px',
-                      color: activeCryptoSeries.includes(option.id) ? (theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900]) : (theme.palette.mode === 'dark' ? colors.grey[500] : colors.grey[600]),
-                      border: `1px solid ${activeCryptoSeries.includes(option.id) ? (theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[700]) : (theme.palette.mode === 'dark' ? colors.grey[500] : colors.grey[600])}`,
+                      color: (mgmt.activeCryptoSeries || []).includes(option.id) ? (theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900]) : (theme.palette.mode === 'dark' ? colors.grey[500] : colors.grey[600]),
+                      border: `1px solid ${(mgmt.activeCryptoSeries || []).includes(option.id) ? (theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[700]) : (theme.palette.mode === 'dark' ? colors.grey[500] : colors.grey[600])}`,
                       borderRadius: '4px',
                       padding: '2px 8px',
                       minWidth: '50px',
                       backgroundColor: editClicked[option.id] ? '#4cceac' : 'transparent',
                       ...(editClicked[option.id] && { color: 'black', borderColor: 'violet' }),
                       '&:hover': {
-                        borderColor: activeCryptoSeries.includes(option.id) ? colors.greenAccent[500] : (theme.palette.mode === 'dark' ? colors.grey[500] : colors.grey[600]),
-                        backgroundColor: activeCryptoSeries.includes(option.id) && !editClicked[option.id] ? (theme.palette.mode === 'dark' ? colors.primary[600] : colors.primary[300]) : 'transparent',
+                        borderColor: (mgmt.activeCryptoSeries || []).includes(option.id) ? colors.greenAccent[500] : (theme.palette.mode === 'dark' ? colors.grey[500] : colors.grey[600]),
+                        backgroundColor: (mgmt.activeCryptoSeries || []).includes(option.id) && !editClicked[option.id] ? (theme.palette.mode === 'dark' ? colors.primary[600] : colors.primary[300]) : 'transparent',
                       },
                       '&.Mui-disabled': {
                         pointerEvents: 'none',
@@ -817,8 +812,8 @@ const WorkbenchChart = ({
             id="indicator-series"
             options={Object.entries(availableIndicatorSeries).map(([id, { label }]) => ({ id, label }))}
             getOptionLabel={(option) => option.label}
-            value={activeIndicatorSeries.map(id => ({ id, label: availableIndicatorSeries[id].label }))}
-            onChange={(event, newValue) => handleIndicatorSeriesChange({ target: { value: newValue.map(v => v.id) } })}
+            value={(mgmt.activeIndicatorSeries || []).map(id => ({ id, label: availableIndicatorSeries[id].label }))}
+            onChange={(event, newValue) => mgmt.handleIndicatorSeriesChange({ target: { value: newValue.map(v => v.id) } }, availableIndicatorSeries)}
             isOptionEqualToValue={(option, value) => option.id === value.id}
             renderTags={(tagValue) => (
               <Box sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -836,20 +831,20 @@ const WorkbenchChart = ({
                 <Box sx={{ ml: 'auto' }}>
                   <Button
                     onClick={(e) => handleEditClick(e, option.id, 'indicator')}
-                    disabled={!activeIndicatorSeries.includes(option.id)}
+                    disabled={!(mgmt.activeIndicatorSeries || []).includes(option.id)}
                     sx={{
                       textTransform: 'none',
                       fontSize: '12px',
-                      color: activeIndicatorSeries.includes(option.id) ? (theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900]) : (theme.palette.mode === 'dark' ? colors.grey[500] : colors.grey[600]),
-                      border: `1px solid ${activeIndicatorSeries.includes(option.id) ? (theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[700]) : (theme.palette.mode === 'dark' ? colors.grey[500] : colors.grey[600])}`,
+                      color: (mgmt.activeIndicatorSeries || []).includes(option.id) ? (theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900]) : (theme.palette.mode === 'dark' ? colors.grey[500] : colors.grey[600]),
+                      border: `1px solid ${(mgmt.activeIndicatorSeries || []).includes(option.id) ? (theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[700]) : (theme.palette.mode === 'dark' ? colors.grey[500] : colors.grey[600])}`,
                       borderRadius: '4px',
                       padding: '2px 8px',
                       minWidth: '50px',
                       backgroundColor: editClicked[option.id] ? '#4cceac' : 'transparent',
                       ...(editClicked[option.id] && { color: 'black', borderColor: 'violet' }),
                       '&:hover': {
-                        borderColor: activeIndicatorSeries.includes(option.id) ? colors.greenAccent[500] : (theme.palette.mode === 'dark' ? colors.grey[500] : colors.grey[600]),
-                        backgroundColor: activeIndicatorSeries.includes(option.id) && !editClicked[option.id] ? (theme.palette.mode === 'dark' ? colors.primary[600] : colors.primary[300]) : 'transparent',
+                        borderColor: (mgmt.activeIndicatorSeries || []).includes(option.id) ? colors.greenAccent[500] : (theme.palette.mode === 'dark' ? colors.grey[500] : colors.grey[600]),
+                        backgroundColor: (mgmt.activeIndicatorSeries || []).includes(option.id) && !editClicked[option.id] ? (theme.palette.mode === 'dark' ? colors.primary[600] : colors.primary[300]) : 'transparent',
                       },
                       '&.Mui-disabled': {
                         pointerEvents: 'none',
@@ -887,10 +882,10 @@ const WorkbenchChart = ({
               multiple
               disableCloseOnSelect={true}
               id="derived-series"
-              options={derivedSeriesDefs.map(d => ({ id: d.id, label: d.label }))}
+              options={(derivedHook.derivedSeriesDefs || []).map(d => ({ id: d.id, label: d.label }))}
               getOptionLabel={(option) => option.label}
-              value={activeDerivedSeries.map(id => ({ id, label: derivedSeriesDefs.find(d => d.id === id).label }))}
-              onChange={(event, newValue) => handleDerivedSeriesChange({ target: { value: newValue.map(v => v.id) } })}
+              value={(mgmt.activeDerivedSeries || []).map(id => ({ id, label: (derivedHook.derivedSeriesDefs || []).find(d => d.id === id)?.label }))}
+              onChange={(event, newValue) => mgmt.handleDerivedSeriesChange({ target: { value: newValue.map(v => v.id) } })}
               isOptionEqualToValue={(option, value) => option.id === value.id}
               renderTags={(tagValue) => (
                 <Box sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -908,20 +903,20 @@ const WorkbenchChart = ({
                   <Box sx={{ ml: 'auto' }}>
                     <Button
                       onClick={(e) => handleEditClick(e, option.id, 'derived')}
-                      disabled={!activeDerivedSeries.includes(option.id)}
+                      disabled={!(mgmt.activeDerivedSeries || []).includes(option.id)}
                       sx={{
                         textTransform: 'none',
                         fontSize: '12px',
-                        color: activeDerivedSeries.includes(option.id) ? (theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900]) : (theme.palette.mode === 'dark' ? colors.grey[500] : colors.grey[600]),
-                        border: `1px solid ${activeDerivedSeries.includes(option.id) ? (theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[700]) : (theme.palette.mode === 'dark' ? colors.grey[500] : colors.grey[600])}`,
+                        color: (mgmt.activeDerivedSeries || []).includes(option.id) ? (theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900]) : (theme.palette.mode === 'dark' ? colors.grey[500] : colors.grey[600]),
+                        border: `1px solid ${(mgmt.activeDerivedSeries || []).includes(option.id) ? (theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[700]) : (theme.palette.mode === 'dark' ? colors.grey[500] : colors.grey[600])}`,
                         borderRadius: '4px',
                         padding: '2px 8px',
                         minWidth: '50px',
                         backgroundColor: editClicked[option.id] ? '#4cceac' : 'transparent',
                         ...(editClicked[option.id] && { color: 'black', borderColor: 'violet' }),
                         '&:hover': {
-                          borderColor: activeDerivedSeries.includes(option.id) ? colors.greenAccent[500] : (theme.palette.mode === 'dark' ? colors.grey[500] : colors.grey[600]),
-                          backgroundColor: activeDerivedSeries.includes(option.id) && !editClicked[option.id] ? (theme.palette.mode === 'dark' ? colors.primary[600] : colors.primary[300]) : 'transparent',
+                          borderColor: (mgmt.activeDerivedSeries || []).includes(option.id) ? colors.greenAccent[500] : (theme.palette.mode === 'dark' ? colors.grey[500] : colors.grey[600]),
+                          backgroundColor: (mgmt.activeDerivedSeries || []).includes(option.id) && !editClicked[option.id] ? (theme.palette.mode === 'dark' ? colors.primary[600] : colors.primary[300]) : 'transparent',
                         },
                         '&.Mui-disabled': {
                           pointerEvents: 'none',
@@ -958,8 +953,8 @@ const WorkbenchChart = ({
         </Box>
       )}
       <Dialog
-        open={showDerivedDialog}
-        onClose={() => setShowDerivedDialog(false)}
+        open={derivedHook.showDerivedDialog}
+        onClose={() => derivedHook.closeDerivedDialog()}
         maxWidth="xs"
         fullWidth
         sx={{
@@ -979,8 +974,8 @@ const WorkbenchChart = ({
             <Select
               labelId="derived-series1-label"
               label="Series 1"
-              value={newDerivedSeries1}
-              onChange={(e) => setNewDerivedSeries1(e.target.value)}
+              value={derivedHook.newDerivedSeries1}
+              onChange={(e) => derivedHook.setNewDerivedSeries1(e.target.value)}
               sx={{
                 color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900],
                 backgroundColor: theme.palette.mode === 'dark' ? colors.primary[600] : colors.primary[300],
@@ -1002,8 +997,8 @@ const WorkbenchChart = ({
             <Select
               labelId="derived-operation-label"
               label="Operation"
-              value={newDerivedOperation}
-              onChange={(e) => setNewDerivedOperation(e.target.value)}
+              value={derivedHook.newDerivedOperation}
+              onChange={(e) => derivedHook.setNewDerivedOperation(e.target.value)}
               sx={{
                 color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900],
                 backgroundColor: theme.palette.mode === 'dark' ? colors.primary[600] : colors.primary[300],
@@ -1024,8 +1019,8 @@ const WorkbenchChart = ({
             <Select
               labelId="derived-series2-label"
               label="Series 2"
-              value={newDerivedSeries2}
-              onChange={(e) => setNewDerivedSeries2(e.target.value)}
+              value={derivedHook.newDerivedSeries2}
+              onChange={(e) => derivedHook.setNewDerivedSeries2(e.target.value)}
               sx={{
                 color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900],
                 backgroundColor: theme.palette.mode === 'dark' ? colors.primary[600] : colors.primary[300],
@@ -1045,16 +1040,16 @@ const WorkbenchChart = ({
           <TextField
             fullWidth
             label="Label"
-            value={newDerivedLabel}
-            onChange={(e) => setNewDerivedLabel(e.target.value)}
+            value={derivedHook.newDerivedLabel}
+            onChange={(e) => derivedHook.setNewDerivedLabel(e.target.value)}
             sx={{ mt: 2 }}
           />
           <FormControl fullWidth sx={{ mt: 2 }}>
             <InputLabel id="derived-color-label">Color</InputLabel>
             <input
               type="color"
-              value={newDerivedColor}
-              onChange={(e) => setNewDerivedColor(e.target.value)}
+              value={derivedHook.newDerivedColor}
+              onChange={(e) => derivedHook.setNewDerivedColor(e.target.value)}
               style={{
                 width: '100%',
                 height: '40px',
@@ -1068,7 +1063,7 @@ const WorkbenchChart = ({
         </DialogContent>
         <DialogActions>
           <Button 
-            onClick={() => setShowDerivedDialog(false)}
+            onClick={() => derivedHook.closeDerivedDialog()}
             sx={{
               backgroundColor: colors.greenAccent[500],
               color: 'white',
@@ -1081,7 +1076,7 @@ const WorkbenchChart = ({
             Cancel
           </Button>
           <Button 
-            onClick={handleCreateDerived}
+            onClick={derivedHook.handleCreateDerived}
             sx={{
               backgroundColor: colors.greenAccent[500],
               color: 'white',
@@ -1109,7 +1104,7 @@ const WorkbenchChart = ({
         }}
       >
         <DialogTitle sx={{ color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900], fontSize: '18px' }}>
-          {openDialog.seriesId ? getSeriesInfo(openDialog.seriesId, openDialog.type)?.label : ''}
+          {openDialog.seriesId ? seriesData.getSeriesInfo(openDialog.seriesId, openDialog.type)?.label : ''}
         </DialogTitle>
         <DialogContent>
           <FormControl fullWidth sx={{ mt: 2 }}>
@@ -1117,7 +1112,7 @@ const WorkbenchChart = ({
             <Select
               labelId="moving-average-label"
               label="Moving Averages"
-              value={dialogMovingAverage}
+              value={movingAverages.dialogMovingAverage}
               onChange={handleMovingAverageChange}
               sx={{
                 color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900],
@@ -1138,7 +1133,7 @@ const WorkbenchChart = ({
             <InputLabel id="color-label">Color</InputLabel>
             <input
               type="color"
-              value={dialogColor}
+              value={movingAverages.dialogColor}
               onChange={handleColorChange}
               style={{
                 width: '100%',
@@ -1211,7 +1206,7 @@ const WorkbenchChart = ({
               Clear All
             </button>
             <button
-              onClick={() => setShowDerivedDialog(true)}
+              onClick={() => derivedHook.openDerivedDialog()}
               className="button-reset"
               style={{
                 color: theme.palette.mode === 'dark' ? '#31d6aa' : colors.grey[900],
@@ -1225,7 +1220,7 @@ const WorkbenchChart = ({
       )}
       <div className="chart-container" style={{ position: 'relative', height: isDashboard ? '100%' : 'calc(100% - 40px)', width: '100%', border: `2px solid ${theme.palette.mode === 'dark' ? '#a9a9a9' : colors.grey[700]}` }} onDoubleClick={setInteractivity}>
         <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
-        {(activeMacroSeries.length === 0 && activeCryptoSeries.length === 0 && activeIndicatorSeries.length === 0 && activeDerivedSeries.length === 0) && !isDashboard && (
+        {((mgmt.activeMacroSeries || []).length === 0 && (mgmt.activeCryptoSeries || []).length === 0 && (mgmt.activeIndicatorSeries || []).length === 0 && (mgmt.activeDerivedSeries || []).length === 0) && !isDashboard && (
           <div
             style={{
               position: 'absolute',
@@ -1254,29 +1249,30 @@ const WorkbenchChart = ({
           }}
         >
           {!isDashboard && <div>Active Series</div>}
-          {[...activeMacroSeries, ...activeCryptoSeries, ...activeIndicatorSeries, ...activeDerivedSeries].map(id => (
+          {[...(mgmt.activeMacroSeries || []), ...(mgmt.activeCryptoSeries || []), ...(mgmt.activeIndicatorSeries || []), ...(mgmt.activeDerivedSeries || [])].map(id => (
             <div key={id} style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>
               <span
                 style={{
                   display: 'inline-block',
                   width: '10px',
                   height: '10px',
-                  backgroundColor: getSeriesColor(id, activeMacroSeries.includes(id) ? 'macro' : activeCryptoSeries.includes(id) ? 'crypto' : activeIndicatorSeries.includes(id) ? 'indicator' : 'derived'),
+                  backgroundColor: movingAverages.getSeriesColor(id, (mgmt.activeMacroSeries || []).includes(id) ? 'macro' : (mgmt.activeCryptoSeries || []).includes(id) ? 'crypto' : (mgmt.activeIndicatorSeries || []).includes(id) ? 'indicator' : 'derived', seriesData.getSeriesColorBase),
                   marginRight: '5px',
                 }}
               />
-              {(availableMacroSeries[id] || availableCryptoSeries[id] || availableIndicatorSeries[id] || derivedSeriesDefs.find(d => d.id === id))?.label || id}
+              {(availableMacroSeries[id] || availableCryptoSeries[id] || availableIndicatorSeries[id] || (derivedHook.derivedSeriesDefs || []).find(d => d.id === id))?.label || id}
             </div>
           ))}
         </div>
       </div>
       <div className='under-chart'>
-        {!isDashboard && [...activeMacroSeries, ...activeCryptoSeries, ...activeIndicatorSeries, ...activeDerivedSeries].some(id => {
+        {!isDashboard && [...(mgmt.activeMacroSeries || []), ...(mgmt.activeCryptoSeries || []), ...(mgmt.activeIndicatorSeries || []), ...(mgmt.activeDerivedSeries || [])].some(id => {
           let data = [];
-          const type = getType(id) || (activeDerivedSeries.includes(id) ? 'derived' : null);
-          const raw = getRawData(id, type);
-          const valueKey = getValueKey(id);
-          const timeKey = (type === 'indicator' && getSeriesInfo(type, type)?.dataKey === 'txMvrvData') ? 'date' : 'time';
+          const type = seriesData.getSeriesType ? seriesData.getSeriesType(id, mgmt.activeDerivedSeries) : (seriesData.getType(id) || ((mgmt.activeDerivedSeries || []).includes(id) ? 'derived' : null));
+          const raw = seriesData.getRawData(id, type);
+          const valueKey = seriesData.getValueKey(id);
+          const infoForTimeKey = seriesData.getSeriesInfo(id, type);
+          const timeKey = (type === 'indicator' && infoForTimeKey?.dataKey === 'txMvrvData') ? 'date' : 'time';
           const norm = raw
             .filter(item => item[valueKey] != null && !isNaN(parseFloat(item[valueKey])))
             .map(item => ({
@@ -1285,7 +1281,7 @@ const WorkbenchChart = ({
             }))
             .filter(item => item.time !== null)
             .sort((a, b) => new Date(a.time) - new Date(b.time));
-          data = getSeriesData(id, norm);
+          data = movingAverages.getSeriesData(id, norm);
           return data?.length > 0;
         }) && (
           <div style={{ marginTop: '10px' }}>
@@ -1293,16 +1289,16 @@ const WorkbenchChart = ({
               Last Updated:{' '}
               {new Date(
                 Math.max(
-                  ...[...activeMacroSeries, ...activeCryptoSeries, ...activeIndicatorSeries, ...activeDerivedSeries].map(id => {
-                    const type = getType(id) || (activeDerivedSeries.includes(id) ? 'derived' : null);
+                  ...[...(mgmt.activeMacroSeries || []), ...(mgmt.activeCryptoSeries || []), ...(mgmt.activeIndicatorSeries || []), ...(mgmt.activeDerivedSeries || [])].map(id => {
+                    const type = seriesData.getSeriesType ? seriesData.getSeriesType(id, mgmt.activeDerivedSeries) : (seriesData.getType(id) || ((mgmt.activeDerivedSeries || []).includes(id) ? 'derived' : null));
                     if (type === 'derived') {
-                      const def = derivedSeriesDefs.find(d => d.id === id);
+                      const def = (derivedHook.derivedSeriesDefs || []).find(d => d.id === id);
                       if (def) {
-                        return Math.max(getLastTime(def.series1, getType(def.series1)), getLastTime(def.series2, getType(def.series2)));
+                        return Math.max(seriesData.getLastTime(def.series1, seriesData.getType(def.series1)), seriesData.getLastTime(def.series2, seriesData.getType(def.series2)));
                       }
                       return 0;
                     } else {
-                      return getLastTime(id, type);
+                      return seriesData.getLastTime(id, type);
                     }
                   })
                 )
