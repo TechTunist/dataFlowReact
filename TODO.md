@@ -50,3 +50,5 @@
 
 - Enable signup / login
 - Create Membership Tiers
+
+**Note:** See PROFESSIONALIZATION_REMAINING.md (in this directory) for the current detailed, prioritized remaining work list focused on professionalization, maintainability, bulletproofing for regular use, efficiency, and making the app sale-ready. The old phase list is largely historical; active tracking happens in the professionalization doc + forGrokBuild.md.

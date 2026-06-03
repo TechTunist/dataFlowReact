@@ -209,7 +209,7 @@ Backend:
 - Daily automated data refresh in production.
 - Some legacy code paths (two Clerk webhook endpoints) exist from iterative security hardening.
 
-See `TODO.md` (frontend) and `ToDo.md` (backend) for remaining tasks.
+See `PROFESSIONALIZATION_REMAINING.md` (the current living consolidated list for professionalization, efficiency, bulletproofing, and sale-readiness work across FE+BE). Older `TODO.md` / backend `ToDo.md` now point to it. Also see `forGrokBuild.md` for session history.
 
 ---
 
