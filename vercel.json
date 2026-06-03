@@ -1,6 +1,5 @@
 {
   "outputDirectory": "build",
-  "// MODERN AGENT (sub/modern-polish)": "outputDirectory explicitly 'build' for compat during Vite migration (vite.config.js forces outDir:'build' too; CRA uses build/). rewrites unchanged (api proxy + SPA fallback). When flipping default builder later, may change to 'dist' + update here + package.json build script. Vite migration in progress; default build still CRA for stability. See vite.config.js and PROFESSIONALIZATION_REMAINING.md.",
   "rewrites": [
     {
       "source": "/api/(.*)",

@@ -5,7 +5,6 @@
   "engines": {
     "node": "20.x"
   },
-  "// MODERN AGENT (professionalization-sprint sub/modern-polish)": "Vite + TS incremental + real tests started. See vite.config.js, tsconfig.json, new tests. Default scripts/build still CRA/react-scripts for zero risk to ongoing work by parallel agents. After `npm install`, parallel scripts: dev:vite / build:vite (configured to output to build/ like CRA for vercel compat). Other agents: edits to package.json should be additive; comment 'MODERN AGENT' in configs if touching. Vite migration in progress - do not flip default yet.",
   "modernization": {
     "status": "Vite/TS/tests foundation kickoff",
     "defaultBuilder": "CRA (react-scripts)",
@@ -52,7 +51,6 @@
     "eject": "react-scripts eject",
     "preinstall": "npx npm-force-resolutions",
     "build": "GENERATE_SOURCEMAP=false CI=false react-scripts build",
-    "// MODERN AGENT NOTE (Vite incremental)": "Vite migration started in parallel for DX/sale signal. Default remains CRA (react-scripts) for stability during transition. Other agents: after `npm install`, you may experiment with `npm run dev:vite` or `npm run build:vite` (outputs to build/ for vercel compat). Do not change default build yet.",
     "dev:vite": "vite",
     "build:vite": "vite build",
     "preview:vite": "vite preview"
