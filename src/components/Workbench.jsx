@@ -16,6 +16,8 @@ import { DataContext } from '../DataContext';
 //   TODO: expand to use dataService.get* for triggering/reading when service grows read APIs (parallel agent).
 import { getBtcPriceSeries, getEthPriceSeries } from '../data';
 import { Box, FormControl, InputLabel, Select, MenuItem, Checkbox, Button, Dialog, DialogTitle, DialogContent, DialogActions, Autocomplete, TextField, Snackbar, Alert } from '@mui/material';
+import { useAuth, useUser } from '@clerk/clerk-react';
+import { apiUrl } from '../config/api';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 
 // === Extracted for decomposition (professionalization) ===
@@ -80,6 +82,18 @@ const WorkbenchChart = ({
   const [zoomRange, setZoomRange] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '' });
 
+  // === Persistence (Clerk user-settings, like marketHeatIndexSettings) ===
+  // Only active for !isDashboard. Auto-load on mount (if signed in), debounced auto-save on changes,
+  // explicit Save button support, and unmount save if dirty.
+  // Persists: active series selections (all categories) + derivedSeriesDefs (arith + trend lines) + MA/color overrides + scale.
+  const { isSignedIn, getToken } = useAuth();
+  const { user } = useUser();
+  const hasLoadedWorkbench = useRef(false);
+  const saveTimeoutRef = useRef(null);
+  const isDirtyRef = useRef(false);
+  const saveFnRef = useRef(null);
+  const latestWorkbenchStateRef = useRef(null);
+
   // === Hook orchestration (the decomposition) ===
   // Order chosen to satisfy deps + ref for cycle:
   const movingAverages = useWorkbenchMovingAverages();
@@ -138,8 +152,189 @@ const WorkbenchChart = ({
   const clearAllSeries = useCallback(() => {
     mgmt.clearAllSeries();
     derivedHook.resetDerived();
+    movingAverages.resetAllOverrides();
+    setScaleModeState(0);
     setZoomRange(null);
-  }, [mgmt, derivedHook]);
+    setError(null);
+  }, [mgmt, derivedHook, movingAverages]);
+
+  // ========== Workbench persistence helpers (Clerk-backed via /api/user-settings) ==========
+  // Mirrors pattern from MarketHeatIndex (debounce + unmount + load-once). Explicit Save button also supported.
+  const getCurrentWorkbenchState = useCallback(() => ({
+    activeMacroSeries: mgmt.activeMacroSeries || [],
+    activeCryptoSeries: mgmt.activeCryptoSeries || [],
+    activeIndicatorSeries: mgmt.activeIndicatorSeries || [],
+    activeDerivedSeries: mgmt.activeDerivedSeries || [],
+    derivedSeriesDefs: derivedHook.derivedSeriesDefs || [],
+    seriesMovingAverages: movingAverages.seriesMovingAverages || {},
+    seriesColors: movingAverages.seriesColors || {},
+    scaleMode: scaleModeState,
+  }), [
+    mgmt.activeMacroSeries, mgmt.activeCryptoSeries, mgmt.activeIndicatorSeries, mgmt.activeDerivedSeries,
+    derivedHook.derivedSeriesDefs,
+    movingAverages.seriesMovingAverages, movingAverages.seriesColors,
+    scaleModeState,
+  ]);
+
+  const saveWorkbenchState = useCallback(async (state) => {
+    if (!state || isDashboard || !isSignedIn) return;
+    try {
+      const token = await getToken();
+      const resp = await fetch(apiUrl('/api/user-settings/'), {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ workbenchState: state }),
+      });
+      if (!resp.ok) {
+        console.warn('Save workbenchState responded not ok:', resp.status);
+      }
+    } catch (err) {
+      console.warn('Failed to persist workbenchState (non-fatal):', err);
+    }
+  }, [isDashboard, isSignedIn, getToken]);
+
+  // Keep latest + saveFnRef in sync
+  useEffect(() => {
+    latestWorkbenchStateRef.current = getCurrentWorkbenchState();
+  }, [getCurrentWorkbenchState]);
+
+  useEffect(() => {
+    saveFnRef.current = saveWorkbenchState;
+  }, [saveWorkbenchState]);
+
+  // Load persisted state once (if signed in, not dashboard). Uses handles for bases to trigger fetches.
+  // After sets, attempt recompute for derived (may be re-called by effect below as data arrives).
+  useEffect(() => {
+    const loadWorkbench = async () => {
+      if (hasLoadedWorkbench.current || isDashboard || !isSignedIn || !user) {
+        hasLoadedWorkbench.current = true;
+        return;
+      }
+      try {
+        const token = await getToken();
+        const response = await fetch(apiUrl('/api/user-settings/get/'), {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.workbenchState) {
+            const ws = data.workbenchState;
+            // Restore actives via handlers (triggers data loads for bases)
+            if (Array.isArray(ws.activeMacroSeries)) {
+              if (ws.activeMacroSeries.length > 0) {
+                mgmt.handleMacroSeriesChange({ target: { value: ws.activeMacroSeries } }, availableMacroSeries);
+              } else {
+                mgmt.setActiveMacroSeries([]);
+              }
+            }
+            if (Array.isArray(ws.activeCryptoSeries)) {
+              if (ws.activeCryptoSeries.length > 0) {
+                mgmt.handleCryptoSeriesChange({ target: { value: ws.activeCryptoSeries } }, availableCryptoSeries);
+              } else {
+                mgmt.setActiveCryptoSeries([]);
+              }
+            }
+            if (Array.isArray(ws.activeIndicatorSeries)) {
+              if (ws.activeIndicatorSeries.length > 0) {
+                mgmt.handleIndicatorSeriesChange({ target: { value: ws.activeIndicatorSeries } }, availableIndicatorSeries);
+              } else {
+                mgmt.setActiveIndicatorSeries([]);
+              }
+            }
+            if (Array.isArray(ws.activeDerivedSeries)) {
+              mgmt.setActiveDerivedSeries(ws.activeDerivedSeries);
+            }
+            if (Array.isArray(ws.derivedSeriesDefs)) {
+              derivedHook.setDerivedSeriesDefs(ws.derivedSeriesDefs);
+            }
+            if (ws.seriesMovingAverages && typeof ws.seriesMovingAverages === 'object') {
+              movingAverages.setSeriesMovingAverages(ws.seriesMovingAverages);
+            }
+            if (ws.seriesColors && typeof ws.seriesColors === 'object') {
+              movingAverages.setSeriesColors(ws.seriesColors);
+            }
+            if (typeof ws.scaleMode === 'number') {
+              setScaleModeState(ws.scaleMode);
+            }
+            // Initial recompute attempt (bases may still be loading async)
+            setTimeout(() => {
+              if (derivedHook.recomputeAllDerived) derivedHook.recomputeAllDerived();
+            }, 250);
+          }
+        }
+      } catch (err) {
+        console.warn('Could not load workbench state (using current):', err);
+      } finally {
+        hasLoadedWorkbench.current = true;
+      }
+    };
+    loadWorkbench();
+  }, [isDashboard, isSignedIn, user, getToken]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Recompute derived (for restored defs) whenever base data may have arrived.
+  // Cheap/no-op if already populated or no defs. Depends on key data lengths to re-fire on arrivals.
+  useEffect(() => {
+    if (!hasLoadedWorkbench.current || isDashboard) return;
+    const defs = derivedHook.derivedSeriesDefs || [];
+    if (defs.length === 0) return;
+    const dData = derivedHook.derivedData || {};
+    const needs = defs.some(d => !dData[d.id] || (dData[d.id] || []).length === 0);
+    if (needs && derivedHook.recomputeAllDerived) {
+      derivedHook.recomputeAllDerived();
+    }
+  }, [
+    derivedHook.derivedSeriesDefs,
+    (dataContext?.btcData || []).length,
+    (dataContext?.ethData || []).length,
+    Object.keys(dataContext?.fredSeriesData || {}).length,
+    (dataContext?.fearAndGreedData || []).length,
+    (dataContext?.dominanceData || []).length,
+    (dataContext?.marketCapData || []).length,
+  ]);
+
+  // Debounced auto-save on any relevant state change (after initial load). 800ms.
+  useEffect(() => {
+    if (!hasLoadedWorkbench.current || isDashboard) return;
+    isDirtyRef.current = true;
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    const snapshot = { ... (latestWorkbenchStateRef.current || getCurrentWorkbenchState()) };
+    saveTimeoutRef.current = setTimeout(() => {
+      if (saveFnRef.current) saveFnRef.current(snapshot);
+    }, 800);
+  }, [
+    isDashboard,
+    mgmt.activeMacroSeries, mgmt.activeCryptoSeries, mgmt.activeIndicatorSeries, mgmt.activeDerivedSeries,
+    derivedHook.derivedSeriesDefs,
+    movingAverages.seriesMovingAverages, movingAverages.seriesColors,
+    scaleModeState,
+    getCurrentWorkbenchState,
+  ]);
+
+  // Unmount save if dirty (best effort)
+  useEffect(() => {
+    return () => {
+      if (isDirtyRef.current && saveFnRef.current && latestWorkbenchStateRef.current) {
+        try { saveFnRef.current(latestWorkbenchStateRef.current); } catch (_) {}
+      }
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    };
+  }, []);
+
+  const handleSaveWorkbench = useCallback(() => {
+    if (isDashboard) return;
+    const state = getCurrentWorkbenchState();
+    if (saveWorkbenchState) {
+      saveWorkbenchState(state);
+    }
+    setSnackbar({ open: true, message: 'Workbench state saved (will persist across log out / login).' });
+  }, [isDashboard, getCurrentWorkbenchState, saveWorkbenchState, setSnackbar]);
 
   // Local thin wrappers for edit/save dialog that delegate to useWorkbenchMovingAverages
   // (keeps the openDialog/editClicked local state + the click flash effect in the original UI).
@@ -637,8 +832,9 @@ const WorkbenchChart = ({
   const rActInd = mgmt.activeIndicatorSeries || [];
   const rActDer = mgmt.activeDerivedSeries || [];
   const allActiveForCalc = [...rActMacro, ...rActCrypto, ...rActInd];
-  // allActive for derived create dialog (only base series, no derived-to-derived yet)
-  const allActive = [...rActMacro, ...rActCrypto, ...rActInd];
+  // allActive now includes created derived so Create Derived dialog can use prior derived as base (for trends or even arith)
+  const allActive = [...rActMacro, ...rActCrypto, ...rActInd, ...rActDer];
+  const createDialogSeriesIds = Array.from(new Set(allActive)); // deduped for selects
   const hasDerived = (derivedHook.derivedSeriesDefs || []).length > 0;
   const numSelectors = hasDerived ? 4 : 3;
   const minWidthNeeded = numSelectors * 250 + (numSelectors - 1) * 20;
@@ -647,6 +843,15 @@ const WorkbenchChart = ({
   else if (minWidthNeeded <= 900) breakpointForRow = 'md';
   else if (minWidthNeeded <= 1200) breakpointForRow = 'lg';
   else breakpointForRow = 'xl';
+
+  // Unified label lookup (supports base series + derived defs created in this session)
+  const getSeriesLabel = (id) => {
+    if (!id) return id;
+    const d = (derivedHook.derivedSeriesDefs || []).find(dd => dd.id === id);
+    if (d) return d.label;
+    return (availableMacroSeries[id] || availableCryptoSeries[id] || availableIndicatorSeries[id])?.label || id;
+  };
+
   return (
     <ErrorBoundary fallbackMessage="The custom indicator workbench failed to load. Try refreshing or selecting different series.">
       <div style={{ height: '100%' }}>
@@ -899,7 +1104,12 @@ const WorkbenchChart = ({
                     checked={selected}
                     sx={{ color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900], '&.Mui-checked': { color: colors.greenAccent[500] } }}
                   />
-                  {option.label}
+                  <span>{option.label}</span>
+                  {(() => {
+                    const d = (derivedHook.derivedSeriesDefs || []).find(dd => dd.id === option.id);
+                    const desc = d && derivedHook.getDerivedDescription ? derivedHook.getDerivedDescription(d) : '';
+                    return desc ? <span style={{ marginLeft: 8, fontSize: '10px', opacity: 0.6 }}>({desc})</span> : null;
+                  })()}
                   <Box sx={{ ml: 'auto' }}>
                     <Button
                       onClick={(e) => handleEditClick(e, option.id, 'derived')}
@@ -969,13 +1179,14 @@ const WorkbenchChart = ({
           Create Derived Series
         </DialogTitle>
         <DialogContent>
+          {/* Mode selector: keeps arithmetic simple for ratios/diffs while exposing powerful user-friendly trend fits */}
           <FormControl fullWidth sx={{ mt: 2 }}>
-            <InputLabel id="derived-series1-label">Series 1</InputLabel>
+            <InputLabel id="derived-mode-label">Creation Mode</InputLabel>
             <Select
-              labelId="derived-series1-label"
-              label="Series 1"
-              value={derivedHook.newDerivedSeries1}
-              onChange={(e) => derivedHook.setNewDerivedSeries1(e.target.value)}
+              labelId="derived-mode-label"
+              label="Creation Mode"
+              value={derivedHook.newDerivedMode || 'arithmetic'}
+              onChange={(e) => derivedHook.setNewDerivedMode(e.target.value)}
               sx={{
                 color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900],
                 backgroundColor: theme.palette.mode === 'dark' ? colors.primary[600] : colors.primary[300],
@@ -985,64 +1196,171 @@ const WorkbenchChart = ({
                 '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
               }}
             >
-              {allActive.map(id => (
-                <MenuItem key={id} value={id}>
-                  {(availableMacroSeries[id] || availableCryptoSeries[id] || availableIndicatorSeries[id])?.label}
-                </MenuItem>
-              ))}
+              <MenuItem value="arithmetic">Arithmetic Operation (combine two series)</MenuItem>
+              <MenuItem value="trendline">Trendline Fit (plot line on one series)</MenuItem>
             </Select>
           </FormControl>
-          <FormControl fullWidth sx={{ mt: 2 }}>
-            <InputLabel id="derived-operation-label">Operation</InputLabel>
-            <Select
-              labelId="derived-operation-label"
-              label="Operation"
-              value={derivedHook.newDerivedOperation}
-              onChange={(e) => derivedHook.setNewDerivedOperation(e.target.value)}
-              sx={{
-                color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900],
-                backgroundColor: theme.palette.mode === 'dark' ? colors.primary[600] : colors.primary[300],
-                borderRadius: '4px',
-                '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[700] },
-                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-              }}
-            >
-              <MenuItem value="+">Addition (+)</MenuItem>
-              <MenuItem value="-">Subtraction (-)</MenuItem>
-              <MenuItem value="*">Multiplication (*)</MenuItem>
-              <MenuItem value="/">Division (/)</MenuItem>
-            </Select>
-          </FormControl>
-          <FormControl fullWidth sx={{ mt: 2 }}>
-            <InputLabel id="derived-series2-label">Series 2</InputLabel>
-            <Select
-              labelId="derived-series2-label"
-              label="Series 2"
-              value={derivedHook.newDerivedSeries2}
-              onChange={(e) => derivedHook.setNewDerivedSeries2(e.target.value)}
-              sx={{
-                color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900],
-                backgroundColor: theme.palette.mode === 'dark' ? colors.primary[600] : colors.primary[300],
-                borderRadius: '4px',
-                '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[700] },
-                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-              }}
-            >
-              {allActive.map(id => (
-                <MenuItem key={id} value={id}>
-                  {(availableMacroSeries[id] || availableCryptoSeries[id] || availableIndicatorSeries[id])?.label}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+
+          {(derivedHook.newDerivedMode || 'arithmetic') === 'arithmetic' ? (
+            <>
+              <FormControl fullWidth sx={{ mt: 2 }}>
+                <InputLabel id="derived-series1-label">Series 1</InputLabel>
+                <Select
+                  labelId="derived-series1-label"
+                  label="Series 1"
+                  value={derivedHook.newDerivedSeries1}
+                  onChange={(e) => derivedHook.setNewDerivedSeries1(e.target.value)}
+                  sx={{
+                    color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900],
+                    backgroundColor: theme.palette.mode === 'dark' ? colors.primary[600] : colors.primary[300],
+                    borderRadius: '4px',
+                    '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[700] },
+                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                  }}
+                >
+                  {createDialogSeriesIds.map(id => (
+                    <MenuItem key={id} value={id}>
+                      {getSeriesLabel(id)}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <FormControl fullWidth sx={{ mt: 2 }}>
+                <InputLabel id="derived-operation-label">Operation</InputLabel>
+                <Select
+                  labelId="derived-operation-label"
+                  label="Operation"
+                  value={derivedHook.newDerivedOperation}
+                  onChange={(e) => derivedHook.setNewDerivedOperation(e.target.value)}
+                  sx={{
+                    color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900],
+                    backgroundColor: theme.palette.mode === 'dark' ? colors.primary[600] : colors.primary[300],
+                    borderRadius: '4px',
+                    '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[700] },
+                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                  }}
+                >
+                  <MenuItem value="+">Addition (+)</MenuItem>
+                  <MenuItem value="-">Subtraction (−)</MenuItem>
+                  <MenuItem value="*">Multiplication (×)</MenuItem>
+                  <MenuItem value="/">Division (÷)</MenuItem>
+                </Select>
+              </FormControl>
+              <FormControl fullWidth sx={{ mt: 2 }}>
+                <InputLabel id="derived-series2-label">Series 2</InputLabel>
+                <Select
+                  labelId="derived-series2-label"
+                  label="Series 2"
+                  value={derivedHook.newDerivedSeries2}
+                  onChange={(e) => derivedHook.setNewDerivedSeries2(e.target.value)}
+                  sx={{
+                    color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900],
+                    backgroundColor: theme.palette.mode === 'dark' ? colors.primary[600] : colors.primary[300],
+                    borderRadius: '4px',
+                    '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[700] },
+                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                  }}
+                >
+                  {createDialogSeriesIds.map(id => (
+                    <MenuItem key={id} value={id}>
+                      {getSeriesLabel(id)}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </>
+          ) : (
+            <>
+              <FormControl fullWidth sx={{ mt: 2 }}>
+                <InputLabel id="derived-base-label">Base Series</InputLabel>
+                <Select
+                  labelId="derived-base-label"
+                  label="Base Series"
+                  value={derivedHook.newDerivedBaseSeries}
+                  onChange={(e) => derivedHook.setNewDerivedBaseSeries(e.target.value)}
+                  sx={{
+                    color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900],
+                    backgroundColor: theme.palette.mode === 'dark' ? colors.primary[600] : colors.primary[300],
+                    borderRadius: '4px',
+                    '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[700] },
+                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                  }}
+                >
+                  {createDialogSeriesIds.map(id => (
+                    <MenuItem key={id} value={id}>
+                      {getSeriesLabel(id)}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <FormControl fullWidth sx={{ mt: 2 }}>
+                <InputLabel id="derived-trend-type-label">Trend Type</InputLabel>
+                <Select
+                  labelId="derived-trend-type-label"
+                  label="Trend Type"
+                  value={derivedHook.newDerivedTrendType || 'linear'}
+                  onChange={(e) => derivedHook.setNewDerivedTrendType(e.target.value)}
+                  sx={{
+                    color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900],
+                    backgroundColor: theme.palette.mode === 'dark' ? colors.primary[600] : colors.primary[300],
+                    borderRadius: '4px',
+                    '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[700] },
+                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                  }}
+                >
+                  <MenuItem value="linear">Linear — straight line (y = a + b·x)</MenuItem>
+                  <MenuItem value="logarithmic">Logarithmic — slow growth/decline (y = a + b·ln(x))</MenuItem>
+                  <MenuItem value="polynomial">Polynomial — smooth curve with bends</MenuItem>
+                  <MenuItem value="power">Power — scaling relationship (y = a · x^b)</MenuItem>
+                  <MenuItem value="exponential">Exponential — compound growth (y = a · e^(b·x))</MenuItem>
+                </Select>
+              </FormControl>
+              {(derivedHook.newDerivedTrendType || 'linear') === 'polynomial' && (
+                <FormControl fullWidth sx={{ mt: 2 }}>
+                  <InputLabel id="derived-poly-degree-label">Polynomial Degree</InputLabel>
+                  <Select
+                    labelId="derived-poly-degree-label"
+                    label="Polynomial Degree"
+                    value={derivedHook.newDerivedPolyDegree || 2}
+                    onChange={(e) => derivedHook.setNewDerivedPolyDegree(parseInt(e.target.value, 10))}
+                    sx={{
+                      color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900],
+                      backgroundColor: theme.palette.mode === 'dark' ? colors.primary[600] : colors.primary[300],
+                      borderRadius: '4px',
+                      '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[700] },
+                      '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                    }}
+                  >
+                    <MenuItem value={2}>Degree 2 — quadratic (one bend)</MenuItem>
+                    <MenuItem value={3}>Degree 3 — cubic (two bends)</MenuItem>
+                    <MenuItem value={4}>Degree 4 — quartic (more flexible)</MenuItem>
+                  </Select>
+                </FormControl>
+              )}
+              {/* Tiny user-friendly hint (no math required) */}
+              <Box sx={{ mt: 1, fontSize: '12px', opacity: 0.85, color: theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[700] }}>
+                {(derivedHook.newDerivedTrendType || 'linear') === 'linear' && 'Fits the straight line that best matches the overall direction.'}
+                {(derivedHook.newDerivedTrendType || 'linear') === 'logarithmic' && 'Good for series that rise or fall quickly at first then level off.'}
+                {(derivedHook.newDerivedTrendType || 'linear') === 'polynomial' && 'Captures curves and turns in the data. Higher degree = wigglier fit.'}
+                {(derivedHook.newDerivedTrendType || 'linear') === 'power' && 'Useful for relationships that scale (e.g. super-linear or diminishing).'}
+                {(derivedHook.newDerivedTrendType || 'linear') === 'exponential' && 'Models compound growth or decay (requires positive values).'}
+              </Box>
+            </>
+          )}
+
           <TextField
             fullWidth
             label="Label"
             value={derivedHook.newDerivedLabel}
             onChange={(e) => derivedHook.setNewDerivedLabel(e.target.value)}
             sx={{ mt: 2 }}
+            placeholder="Auto-filled if left blank"
           />
           <FormControl fullWidth sx={{ mt: 2 }}>
             <InputLabel id="derived-color-label">Color</InputLabel>
@@ -1206,6 +1524,16 @@ const WorkbenchChart = ({
               Clear All
             </button>
             <button
+              onClick={handleSaveWorkbench}
+              className="button-reset"
+              style={{
+                color: theme.palette.mode === 'dark' ? '#31d6aa' : colors.grey[900],
+                borderColor: theme.palette.mode === 'dark' ? '#70d8bd' : colors.grey[700],
+              }}
+            >
+              Save
+            </button>
+            <button
               onClick={() => derivedHook.openDerivedDialog()}
               className="button-reset"
               style={{
@@ -1249,20 +1577,33 @@ const WorkbenchChart = ({
           }}
         >
           {!isDashboard && <div>Active Series</div>}
-          {[...(mgmt.activeMacroSeries || []), ...(mgmt.activeCryptoSeries || []), ...(mgmt.activeIndicatorSeries || []), ...(mgmt.activeDerivedSeries || [])].map(id => (
-            <div key={id} style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>
-              <span
-                style={{
-                  display: 'inline-block',
-                  width: '10px',
-                  height: '10px',
-                  backgroundColor: movingAverages.getSeriesColor(id, (mgmt.activeMacroSeries || []).includes(id) ? 'macro' : (mgmt.activeCryptoSeries || []).includes(id) ? 'crypto' : (mgmt.activeIndicatorSeries || []).includes(id) ? 'indicator' : 'derived', seriesData.getSeriesColorBase),
-                  marginRight: '5px',
-                }}
-              />
-              {(availableMacroSeries[id] || availableCryptoSeries[id] || availableIndicatorSeries[id] || (derivedHook.derivedSeriesDefs || []).find(d => d.id === id))?.label || id}
-            </div>
-          ))}
+          {[...(mgmt.activeMacroSeries || []), ...(mgmt.activeCryptoSeries || []), ...(mgmt.activeIndicatorSeries || []), ...(mgmt.activeDerivedSeries || [])].map(id => {
+            const isDer = (mgmt.activeDerivedSeries || []).includes(id);
+            const def = isDer ? (derivedHook.derivedSeriesDefs || []).find(d => d.id === id) : null;
+            const label = (availableMacroSeries[id] || availableCryptoSeries[id] || availableIndicatorSeries[id] || def)?.label || id;
+            const desc = isDer && derivedHook.getDerivedDescription ? derivedHook.getDerivedDescription(id) : '';
+            return (
+              <div key={id} style={{ display: 'flex', alignItems: 'flex-start', marginTop: '5px' }}>
+                <span
+                  style={{
+                    display: 'inline-block',
+                    width: '10px',
+                    height: '10px',
+                    backgroundColor: movingAverages.getSeriesColor(id, (mgmt.activeMacroSeries || []).includes(id) ? 'macro' : (mgmt.activeCryptoSeries || []).includes(id) ? 'crypto' : (mgmt.activeIndicatorSeries || []).includes(id) ? 'indicator' : 'derived', seriesData.getSeriesColorBase),
+                    marginRight: '5px',
+                    marginTop: '3px',
+                    flexShrink: 0,
+                  }}
+                />
+                <div style={{ lineHeight: 1.15 }}>
+                  <div>{label}</div>
+                  {desc && (
+                    <div style={{ fontSize: '10px', opacity: 0.7, marginTop: '1px' }}>{desc}</div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
       <div className='under-chart'>
@@ -1292,9 +1633,14 @@ const WorkbenchChart = ({
                   ...[...(mgmt.activeMacroSeries || []), ...(mgmt.activeCryptoSeries || []), ...(mgmt.activeIndicatorSeries || []), ...(mgmt.activeDerivedSeries || [])].map(id => {
                     const type = seriesData.getSeriesType ? seriesData.getSeriesType(id, mgmt.activeDerivedSeries) : (seriesData.getType(id) || ((mgmt.activeDerivedSeries || []).includes(id) ? 'derived' : null));
                     if (type === 'derived') {
-                      const def = (derivedHook.derivedSeriesDefs || []).find(d => d.id === id);
-                      if (def) {
-                        return Math.max(seriesData.getLastTime(def.series1, seriesData.getType(def.series1)), seriesData.getLastTime(def.series2, seriesData.getType(def.series2)));
+                      const inputIds = derivedHook.getDerivedInputIds ? derivedHook.getDerivedInputIds(id) : [];
+                      if (inputIds.length > 0) {
+                        const actDer = mgmt.activeDerivedSeries || [];
+                        return Math.max(0, ...inputIds.map(sid => {
+                          const st = seriesData.getSeriesType ? seriesData.getSeriesType(sid, actDer) : seriesData.getType(sid);
+                          const effType = st || (actDer.includes(sid) ? 'derived' : null);
+                          return seriesData.getLastTime(sid, effType);
+                        }));
                       }
                       return 0;
                     } else {
