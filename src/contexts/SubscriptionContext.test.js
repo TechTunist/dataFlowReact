@@ -6,14 +6,10 @@
  */
 
 // Note: DEFAULT_FREE_FEATURES is module-private in SubscriptionContext.js (and duplicated in RestrictToPaid.js).
-// We assert the documented contract instead of fragile import.
+// We assert the documented contract instead of fragile import that can pull d3/esm and break jest parse (latent CRA issue).
 
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 
-<<<<<<< HEAD
-// We test the constant shape used across files (dupe in files but same intent)
-=======
->>>>>>> 6ed6cb0 (fix(charts): route last remaining consoles to logger in MarketHeatIndex, FredSeriesChart, TotalMarketCap (assigned to cancelled chart-perf subagent; other agents + this cleanup complete the perf+cleanup slice). Build green.)
 const EXPECTED_FREE = {
   basic_charts: true,
   advanced_charts: false,
@@ -22,10 +18,6 @@ const EXPECTED_FREE = {
 
 describe('Subscription gating basics (professionalization coverage)', () => {
   test('DEFAULT_FREE_FEATURES shape matches expected (used in RestrictToPaid + SubscriptionContext)', () => {
-<<<<<<< HEAD
-    // Since not exported from context in this snapshot, we hard-assert the contract
-=======
->>>>>>> 6ed6cb0 (fix(charts): route last remaining consoles to logger in MarketHeatIndex, FredSeriesChart, TotalMarketCap (assigned to cancelled chart-perf subagent; other agents + this cleanup complete the perf+cleanup slice). Build green.)
     expect(EXPECTED_FREE.basic_charts).toBe(true);
     expect(EXPECTED_FREE.advanced_charts).toBe(false);
     expect(EXPECTED_FREE.custom_indicators).toBe(false);
