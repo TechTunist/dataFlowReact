@@ -7,6 +7,7 @@ import useIsMobile from '../hooks/useIsMobile';
 import { DataContext } from '../DataContext';
 import BitcoinFees from './BitcoinTransactionFees';
 import LastUpdated from '../hooks/LastUpdated';
+import logger from '../utils/logger';
 
 const TotalMarketCap = ({ isDashboard = false }) => {
   const chartContainerRef = useRef();
@@ -48,7 +49,7 @@ const TotalMarketCap = ({ isDashboard = false }) => {
         await fetchMarketCapData();
       } catch (err) {
         setError('Failed to fetch market cap data. Please try again later.');
-        console.error('Error fetching data:', err);
+        logger.error('Error fetching data:', err);
       } finally {
         setIsLoading(false);
       }

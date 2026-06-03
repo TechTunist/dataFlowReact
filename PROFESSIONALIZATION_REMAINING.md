@@ -1,7 +1,9 @@
 # Cryptological Professionalization — Remaining Work
 
-**Date:** Current (post recent audit remediation, data layer foundation, caching, perf, auth hardening)
+**Date:** Current (post parallel subagent professionalization sprint on feat/professionalization-sprint)
 **Goal:** Bulletproof for regular users + efficient + sale-ready (premium, maintainable codebase that signals quality to buyers/acquirers).
+
+**SPRINT STATUS (parallel subagents):** Major progress across slices. See git log on feat branch and subagent outputs. Workbench decomp (hooks) integrated with shims; DataService expanded with formatters; multiple charts hardened; bulletproof emails/sub/sidebar/widget/currentPrice util + tests/Vite starter/free charts; backend new logging + dominance json command (additive). Build green on FE, imports OK on BE. Remaining: full DataContext delegations using new service, complete hook wiring in Workbench (stubs in place), more test coverage, Vite as default, full current price rollout, real email dedup testing. Update this file as items close.
 **Guiding Docs:** JOINT_PROFESSIONALIZATION_PLAN.md, QUALITY_PROFESSIONALIZATION_ROADMAP.md, SAFE_FRONTEND_DATA_LAYER_EVOLUTION_PROPOSAL.md, SYSTEM_COUPLING_MAP.md, BACKEND_DATA_PIPELINE_SAFETY_RUNBOOK.md, forGrokBuild.md, backend ToDo.md + frontend TODO.md (older).
 
 **Core Principles (from prior work):**

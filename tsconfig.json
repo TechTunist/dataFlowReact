@@ -21,12 +21,8 @@
   "include": [
     "src/**/*.ts",
     "src/**/*.tsx"
-    // NOTE: .js/.jsx not included by default for full check (incremental TS strategy).
-    // New .ts files (e.g. utils) will be type-checked. Use tsc --noEmit for manual check.
-    // allowJs:true allows importing .js from .ts during transition.
   ],
   "exclude": [
     "node_modules"
-  ],
-  "// MODERN AGENT (professionalization-sprint, sub/modern-polish)": "TS foundation for incremental adoption (per QUALITY_ROADMAP + REMAINING.md). Not flipping whole app yet. Pair with vite for future (vite handles ts natively). Other agents: new critical files (DataService, risk, sub logic) can be .ts or .tsx; leave .js alone. Run `npx tsc --noEmit` after npm install to typecheck new files only. See tsconfig + package modernization key."
+  ]
 }

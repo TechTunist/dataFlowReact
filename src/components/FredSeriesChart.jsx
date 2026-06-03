@@ -6,6 +6,7 @@ import { useTheme } from '@mui/material';
 import useIsMobile from '../hooks/useIsMobile';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
+import logger from '../utils/logger';
 import LastUpdated from '../hooks/LastUpdated';
 import {
   Select,
@@ -272,7 +273,7 @@ const FredSeriesChart = ({
           if (emaData.length > 0) emaSeries.setData(emaData);
         }
       } catch (error) {
-        console.error('Error adding MA series:', error);
+        logger.error('Error adding MA series:', error);
       }
     });
   }, [activeSMAs, cleanedPrimaryData, enableTechnicalIndicators, maIndicators, calculateMA]);
