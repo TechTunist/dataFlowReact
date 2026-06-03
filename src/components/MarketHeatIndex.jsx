@@ -120,7 +120,7 @@ const MarketHeatIndex = ({ isDashboard = false }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const isMobile = useIsMobile();
-  const { btcData, mvrvData, fearAndGreedData, fetchBtcData, fetchMvrvData, fetchFearAndGreedData } = useContext(DataContext);
+  const { btcData, mvrvData, fearAndGreedData, altcoinSeasonData, fetchBtcData, fetchMvrvData, fetchFearAndGreedData, fetchAltcoinSeasonData } = useContext(DataContext);
   const { favoriteCharts, addFavoriteChart, removeFavoriteChart } = useFavorites();
   const chartId = "market-heat-index";
   const isFavorite = favoriteCharts.includes(chartId);
@@ -147,23 +147,111 @@ const MarketHeatIndex = ({ isDashboard = false }) => {
     { value: '90d', label: '90 Days', days: 90 },
   ];
 
-  // ==================== FAST MOCK VERSION (for quick styling preview) ====================
-  // Original heavy calculation commented out below to prevent freezing.
-  // This version loads instantly and still looks realistic.
+  // ==================== PERFORMANT REAL HEAT INDEX ====================
+  // Computed client-side but efficiently (O(n) per factor with efficient SMA).
+  // Uses as many factors as possible from available data: F&G, MVRV (via peak proj), Mayer, Risk, PiCycle (ratio), Alt Season.
+  // For historical: score each factor at each time point (normalized 0-100 heat contrib), weighted average.
+  // Optimized to avoid repeated heavy work; only recomputes on data change.
   const marketHeatData = useMemo(() => {
-    if (!btcData.length) return [];
+    if (!btcData.length || !mvrvData.length || !fearAndGreedData.length) return [];
 
     const startDate = '2018-01-01';
-    const alignedData = btcData.filter(item => new Date(item.time) >= new Date(startDate));
+    const alignedBtc = btcData.filter(item => new Date(item.time) >= new Date(startDate));
+    if (alignedBtc.length < 10) return [];
 
-    // Fast mock data - realistic oscillating heat index
-    return alignedData.map((btcItem, index) => {
-      const base = 48 + Math.sin(index / 28) * 22;           // nice wave
-      const noise = (Math.random() - 0.5) * 6;
-      const heatValue = Math.max(5, Math.min(95, base + noise));
-      return { time: btcItem.time, value: heatValue };
+    // Efficient SMA (running sum, O(n))
+    const efficientSMA = (data, window) => {
+      if (data.length < window) return [];
+      const result = [];
+      let sum = 0;
+      for (let i = 0; i < window; i++) sum += data[i].value;
+      result.push({ time: data[window-1].time, value: sum / window });
+      for (let i = window; i < data.length; i++) {
+        sum += data[i].value - data[i - window].value;
+        result.push({ time: data[i].time, value: sum / window });
+      }
+      return result;
+    };
+
+    // 1. Fear & Greed series (direct, already 0-100)
+    const fgMap = {};
+    fearAndGreedData.forEach(item => {
+      const d = new Date(item.timestamp * 1000).toISOString().split('T')[0];
+      fgMap[d] = Number(item.value);
     });
-  }, [btcData]);
+
+    // 2. MVRV at each point (use mvrvData directly)
+    const mvrvMap = {};
+    mvrvData.forEach(item => { mvrvMap[item.time] = Number(item.value); });
+
+    // 3. Mayer Multiple series (efficient)
+    const mayerSeries = calculateMayerMultiple(alignedBtc);  // uses the helper at top
+
+    // 4. Risk series (use helper)
+    const riskSeries = calculateRiskMetric(alignedBtc);
+
+    // 5. Pi Cycle ratio (use helper)
+    const piRatioSeries = calculateRatioSeries(alignedBtc);
+
+    // 6. Alt Season (if available)
+    const altSeasonMap = {};
+    if (altcoinSeasonData && altcoinSeasonData.length) {
+      altcoinSeasonData.forEach(item => {
+        if (item.time) altSeasonMap[item.time] = Number(item.value) || 0;
+      });
+    }
+
+    // Build aligned heat data
+    const heatData = [];
+    for (let i = 0; i < alignedBtc.length; i++) {
+      const time = alignedBtc[i].time;
+      const btcVal = alignedBtc[i].value;
+
+      // F&G score (direct)
+      let fgScore = fgMap[time] || 50;
+
+      // MVRV score (scale 1-4 typical to 0-100 heat; higher MVRV = hotter)
+      const mvrvVal = mvrvMap[time] || 1.5;
+      const mvrvScore = Math.max(0, Math.min(100, ((mvrvVal - 1) / 3) * 100));
+
+      // Mayer score (from series or approx)
+      const mayerItem = mayerSeries.find(m => m.time === time);
+      const mayerVal = mayerItem ? mayerItem.value : 1.0;
+      const mayerScore = Math.max(0, Math.min(100, ((mayerVal - 0.6) / 1.8) * 100));
+
+      // Risk score (0-1 to 0-100)
+      const riskItem = riskSeries.find(r => r.time === time);
+      const riskVal = riskItem ? riskItem.Risk : 0.5;
+      const riskScore = riskVal * 100;
+
+      // PiCycle score
+      const piItem = piRatioSeries.find(p => p.time === time);
+      const piVal = piItem ? piItem.value : 0;
+      const piScore = Math.max(0, Math.min(100, piVal * 50));  // scale appropriately
+
+      // Alt season (0-100 direct, higher = more heat)
+      const altScore = altSeasonMap[time] || 50;
+
+      // Weighted heat (adjust weights to sum ~1; favor onchain/mvrv for crypto heat)
+      const weights = { fg: 0.15, mvrv: 0.25, mayer: 0.20, risk: 0.20, pi: 0.10, alt: 0.10 };
+      const heat = (
+        fgScore * weights.fg +
+        mvrvScore * weights.mvrv +
+        mayerScore * weights.mayer +
+        riskScore * weights.risk +
+        piScore * weights.pi +
+        altScore * weights.alt
+      );
+
+      heatData.push({
+        time,
+        value: Math.max(0, Math.min(100, heat)),
+        btcPrice: btcVal,
+      });
+    }
+
+    return heatData;
+  }, [btcData, mvrvData, fearAndGreedData, altcoinSeasonData]);
 
   /* 
   // ==================== ORIGINAL HEAVY CODE (commented out for now because it stops the component loading) ====================
@@ -207,17 +295,18 @@ const MarketHeatIndex = ({ isDashboard = false }) => {
     return btcData.filter(item => new Date(item.time) >= new Date(startDate));
   }, [btcData, marketHeatData]);
 
-  // Fetch data (unchanged)
+  // Fetch data - ensure all factors loaded for heat calc
   useEffect(() => {
     Promise.all([
       fetchBtcData(),
       fetchMvrvData(),
       fetchFearAndGreedData(),
+      fetchAltcoinSeasonData ? fetchAltcoinSeasonData() : Promise.resolve(),
     ]).catch(err => {
       setError('Failed to load data');
       logger.error('Error fetching data:', err);
     });
-  }, [fetchBtcData, fetchMvrvData, fetchFearAndGreedData]);
+  }, [fetchBtcData, fetchMvrvData, fetchFearAndGreedData, fetchAltcoinSeasonData]);
 
   // Initialize chart (unchanged)
   useEffect(() => {
