@@ -7,6 +7,7 @@ import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
+import logger from '../utils/logger';
 import { useFavorites } from '../contexts/FavoritesContext';
 import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
@@ -214,7 +215,7 @@ const MarketHeatIndex = ({ isDashboard = false }) => {
       fetchFearAndGreedData(),
     ]).catch(err => {
       setError('Failed to load data');
-      console.error('Error fetching data:', err);
+      logger.error('Error fetching data:', err);
     });
   }, [fetchBtcData, fetchMvrvData, fetchFearAndGreedData]);
 
