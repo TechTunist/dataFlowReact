@@ -6,7 +6,7 @@
  */
 
 // Note: DEFAULT_FREE_FEATURES is module-private in SubscriptionContext.js (and duplicated in RestrictToPaid.js).
-// We assert the documented contract instead of fragile import that can pull d3/esm and break jest parse (latent CRA issue).
+// We assert the documented contract instead of fragile import.
 
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 
