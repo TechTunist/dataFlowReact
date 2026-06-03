@@ -2,7 +2,7 @@
  * Lightweight current (live) price fetcher for BTC/ETH using public free APIs.
  * No backend hit, no auth, client-side only. Short in-memory + localStorage cache.
  *
- * MODERN AGENT (sub/modern-polish): created (as .js then converted to .ts) to fulfill "current / live price overlays" + TS incremental example.
+ * MODERN AGENT (sub/modern-polish): created to fulfill "current / live price overlays" bulletproof item
  * + adoption in BitcoinPrice (and alt if easy). Replaces/stabilizes the localStorage hack from BitcoinFees.
  * Used for header display + price line annotation on latest bar.
  *
