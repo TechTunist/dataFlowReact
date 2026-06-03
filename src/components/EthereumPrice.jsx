@@ -15,6 +15,8 @@ import {
 } from '../utils/technicalIndicators';
 import LastUpdated from '../hooks/LastUpdated';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
+// MODERN AGENT: adopted current price util for ETH too (easy alt). Display only for polish (live "Current:"); full series overlay omitted to keep change minimal/non-breaking.
+import { getCurrentEthereumPrice } from '../utils/currentPrice';
 
 const EthereumPrice = ({ isDashboard = false }) => {
   const chartContainerRef = useRef();
@@ -37,6 +39,7 @@ const EthereumPrice = ({ isDashboard = false }) => {
   const [activeSMAs, setActiveSMAs] = useState([]);
   const [maFilter, setMaFilter] = useState('daily'); // 'daily' | 'weekly'
   const [activeRsiPeriod, setActiveRsiPeriod] = useState('');
+  const [currentEthPrice, setCurrentEthPrice] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 

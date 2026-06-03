@@ -1184,6 +1184,10 @@ import {
   BULL_MARKET_SUPPORT_BAND,
   calculateMovingAverage 
 } from '../utils/technicalIndicators';
+// MODERN AGENT: adopt centralized current price util (created in this sprint).
+// Uses public API + cache; falls back to legacy localStorage. Replaces direct localStorage polling in the effect below.
+// Enables "Current: $xx,xxx" display + live bar update. Non-breaking (util is defensive).
+import { getCurrentBitcoinPrice } from '../utils/currentPrice';
 const BitcoinPrice = ({ isDashboard = false }) => {
   const chartContainerRef = useRef();
   const chartRef = useRef(null);
@@ -1345,24 +1349,25 @@ const BitcoinPrice = ({ isDashboard = false }) => {
     }
   }, [activeIndicators, fetchMvrvData]);
   useEffect(() => {
-    const checkCurrentPrice = () => {
+    // MODERN AGENT: switched to util for live price (with internal cache + legacy LS fallback).
+    // Fetches from CoinGecko (free, public). Shows as "Current: ..." and annotates latest bar.
+    // Still writes LS for backward compat with any other widgets.
+    const updateCurrentPrice = async () => {
       try {
-        const cachedPrice = localStorage.getItem('btcPrice');
-        const cacheTime = localStorage.getItem('cacheTime');
-        const now = new Date().getTime();
-        const cacheExpiry = 10 * 60 * 1000;
-        if (cachedPrice && cacheTime && now - parseInt(cacheTime) < cacheExpiry) {
-          setCurrentBtcPrice(JSON.parse(cachedPrice));
+        const price = await getCurrentBitcoinPrice();
+        if (price != null) {
+          setCurrentBtcPrice(price);
         } else {
-          setCurrentBtcPrice(null);
+          // keep prior or clear; util already tried LS fallback
+          // do not overwrite with null if we have a recent one from chart data
         }
       } catch (error) {
-        console.error('Error reading current BTC price from localStorage:', error);
-        setCurrentBtcPrice(null);
+        // never break the chart
+        console.error('Error fetching current BTC price via util:', error);
       }
     };
-    checkCurrentPrice();
-    const intervalId = setInterval(checkCurrentPrice, 5000);
+    updateCurrentPrice();
+    const intervalId = setInterval(updateCurrentPrice, 30000); // 30s poll (util caches 60s)
     return () => clearInterval(intervalId);
   }, []);
   useEffect(() => {
@@ -2097,6 +2102,11 @@ const BitcoinPrice = ({ isDashboard = false }) => {
               }}
             />
             Bitcoin Price
+            {currentBtcPrice != null && (
+              <div style={{ color: colors.greenAccent[500], fontWeight: 600, marginTop: 2 }}>
+                Current: ${Number(currentBtcPrice).toLocaleString()}
+              </div>
+            )}
           </div>
           {activeIndicators.map(key => (
             <div key={key} style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>

@@ -316,6 +316,31 @@ const Dashboard = memo(({ isMobile, isSidebar }) => {
               Browse Charts Here
             </Button>
           </Link>
+
+          {/* MODERN AGENT: free charts polish - surface free tier explicitly in dashboard (for users who haven't favorited yet).
+              These match items from the "Free Charts" section in ChartsThumbnails + chartConfig ids (cross-ref: total-market-cap, bitcoin-dominance, logarithmic-regression, fear-and-greed, risk-bands, us-inflation etc).
+              Always visible here promotes free tier value; no gating change (these routes are non-requirePaid).
+              See also enhanced badges in /charts page. */}
+          <Box mt={4}>
+            <Typography variant="h6" color={colors.grey[100]} mb={1}>
+              Free tier highlights (no subscription required):
+            </Typography>
+            <Box display="flex" flexWrap="wrap" justifyContent="center" gap={1}>
+              {[
+                { id: 'total-market-cap', label: 'Total Market Cap' },
+                { id: 'bitcoin-dominance', label: 'Bitcoin Dominance' },
+                { id: 'logarithmic-regression', label: 'Log Regression' },
+                { id: 'fear-and-greed', label: 'Fear & Greed' },
+                { id: 'risk-bands', label: 'Risk Bands' },
+                { id: 'us-inflation', label: 'US Inflation' },
+              ].map(f => (
+                <Button key={f.id} component={Link} to={chartConfig.find(c => c.id === f.id)?.linkTo || '/charts'} size="small" variant="outlined" sx={{ borderColor: colors.greenAccent[500], color: colors.greenAccent[500] }}>
+                  {f.label} <Box component="span" sx={{ ml: 0.5, fontSize: '0.7em', bgcolor: colors.greenAccent[500], color: colors.grey[900], px: 0.5, borderRadius: 0.5 }}>FREE</Box>
+                </Button>
+              ))}
+            </Box>
+            <Typography variant="caption" color={colors.grey[400]}>More free charts on the Charts page (public access)</Typography>
+          </Box>
         </Box>
       ) : (
         <Grid container spacing={4}>

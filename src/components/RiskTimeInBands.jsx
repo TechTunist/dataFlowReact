@@ -49,7 +49,12 @@ const AssetRiskBandDuration = ({ isDashboard = false, riskData: propRiskData }) 
   const theme = useTheme();
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
   const isMobile = useIsMobile();
-  const { btcData, fetchBtcData, altcoinData, fetchAltcoinData } = useContext(DataContext);
+  const { btcData: contextBtcData, fetchBtcData, altcoinData: contextAltcoinData, fetchAltcoinData } = useContext(DataContext);
+
+  // Memoize raw data for stable references (resilience to DataContext array/object churn)
+  const btcData = useMemo(() => contextBtcData || [], [contextBtcData]);
+  const altcoinData = useMemo(() => contextAltcoinData || {}, [contextAltcoinData]);
+
   const [selectedAsset, setSelectedAsset] = useState('BTC');
   const [riskBandDurations, setRiskBandDurations] = useState([]);
   const [currentRiskLevel, setCurrentRiskLevel] = useState(null);
@@ -94,7 +99,7 @@ const AssetRiskBandDuration = ({ isDashboard = false, riskData: propRiskData }) 
     showlegend: false,
   });
 
-  const calculateRiskBandDurations = (data, bandSize) => {
+  const calculateRiskBandDurations = useCallback((data, bandSize) => {
     const numBands = Math.ceil(1.0 / bandSize);
     const bandCounts = Array(numBands).fill(0);
     for (let i = 0; i < data.length; i++) {
@@ -112,7 +117,7 @@ const AssetRiskBandDuration = ({ isDashboard = false, riskData: propRiskData }) 
         days: count,
       };
     });
-  };
+  }, []);
 
   useEffect(() => {
     if (selectedAsset === 'BTC') {
@@ -191,7 +196,7 @@ const AssetRiskBandDuration = ({ isDashboard = false, riskData: propRiskData }) 
     resetChartView();
   }, [resetChartView]);
 
-  const getBandColor = (index, numBands) => {
+  const getBandColor = useCallback((index, numBands) => {
     const midPoint = Math.floor(numBands / 2);
     const blueShades = [colors.redAccent[100], colors.redAccent[300], colors.redAccent[500], colors.redAccent[700], colors.redAccent[800]];
     const redShades = [colors.blueAccent[800], colors.blueAccent[700], colors.blueAccent[500], colors.blueAccent[300], colors.blueAccent[100]];
@@ -209,7 +214,28 @@ const AssetRiskBandDuration = ({ isDashboard = false, riskData: propRiskData }) 
       const shadeIndex = Math.floor((adjustedIndex / (numBands - midPoint)) * maxShades);
       return blueShades[Math.min(shadeIndex, blueShades.length - 1)];
     }
-  };
+  }, [colors]);
+
+  // Memoize the Plotly bar trace data (derived from state but stable ref when inputs unchanged)
+  // This reduces re-render work for the heavy Plotly component.
+  const plotData = useMemo(() => ([
+    {
+      type: 'bar',
+      x: riskBandDurations.map(risk => risk.band),
+      y: riskBandDurations.map(risk => parseFloat(risk.percentage)),
+      hoverinfo: 'text+x',
+      hovertemplate: 'Risk Band: %{x}<br>Time in: %{y}%<br>Total Days: %{customdata} days<extra></extra>',
+      customdata: riskBandDurations.map(risk => risk.days),
+      marker: {
+        color: riskBandDurations.map((risk, index) => {
+          if (currentRiskLevel !== null && risk.band === currentRiskLevel) {
+            return "#31d6aa";
+          }
+          return getBandColor(index, riskBandDurations.length);
+        }),
+      },
+    },
+  ]), [riskBandDurations, currentRiskLevel, getBandColor]);
 
   return (
     <div style={{ height: '100%', width: '100%' }}>
@@ -419,24 +445,7 @@ const AssetRiskBandDuration = ({ isDashboard = false, riskData: propRiskData }) 
         }}
       >
         <Plot
-          data={[
-            {
-              type: 'bar',
-              x: riskBandDurations.map(risk => risk.band),
-              y: riskBandDurations.map(risk => parseFloat(risk.percentage)),
-              hoverinfo: 'text+x',
-              hovertemplate: 'Risk Band: %{x}<br>Time in: %{y}%<br>Total Days: %{customdata} days<extra></extra>',
-              customdata: riskBandDurations.map(risk => risk.days),
-              marker: {
-                color: riskBandDurations.map((risk, index) => {
-                  if (currentRiskLevel !== null && risk.band === currentRiskLevel) {
-                    return "#31d6aa";
-                  }
-                  return getBandColor(index, riskBandDurations.length);
-                }),
-              },
-            },
-          ]}
+          data={plotData}
           layout={layout}
           config={{
             displayModeBar: false,

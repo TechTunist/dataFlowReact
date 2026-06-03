@@ -130,7 +130,7 @@ const itemsData = [
   // === NAVIGATION ===
   { title: "Dashboard", to: "/dashboard", icon: <DashboardIcon />, category: null },
   { title: "Overview", to: "/market-overview", icon: <DashboardIcon />, category: null },
-  { title: "Charts", to: "/charts", icon: <BarChartIcon />, category: null },
+  { title: "Charts (free + premium)", to: "/charts", icon: <BarChartIcon />, category: null },
   
   // === BITCOIN ===
   // Category Icon: CurrencyBitcoinIcon - Directly represents Bitcoin as the primary cryptocurrency
@@ -289,7 +289,7 @@ const itemsData = [
   const buttonData = [
     { title: "Dashboard", to: "/dashboard" },
     { title: "Overview", to: "/market-overview" },
-    { title: "Charts", to: "/charts" },
+    { title: "Charts (free + premium)", to: "/charts" },
   ];
 
   return (
@@ -373,8 +373,20 @@ const itemsData = [
             >
               {buttonOrder.map((title, index) => {
                 const button = buttonData.find(b => b.title === title);
-                const isActive = location.pathname === button.to ||
-                  (button.title === "Charts" && !["/dashboard", "/market-overview"].includes(location.pathname));
+                // Fixed isActive for carousel: exact for Dashboard/Overview; for Charts only if exactly /charts
+                // OR current path matches a categorized chart item (e.g. /bitcoin, /workbench, /risk etc).
+                // This eliminates the fragile "any non-dash/overview = Charts" special case that wrongly
+                // highlighted on /subscription, /profile, etc. Simplified per bulletproofing.
+                const currentPath = location.pathname;
+                let isActive = false;
+                if (button.title === "Dashboard") {
+                  isActive = currentPath === button.to;
+                } else if (button.title === "Overview") {
+                  isActive = currentPath === button.to;
+                } else if (button.title === "Charts") {
+                  isActive = currentPath === button.to ||
+                    itemsData.some(item => item.category && item.to === currentPath);
+                }
                 const buttonWidth = 80; // Fixed width for each button (adjust as needed)
                 const gap = 4; // Gap between buttons
                 const totalWidth = buttonWidth * 3 + gap * 2; // Total width of buttons + gaps

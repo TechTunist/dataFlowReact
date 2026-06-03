@@ -30,6 +30,9 @@ import { useNavigate } from 'react-router-dom';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
 import { calculateRiskMetric } from '../utility/riskMetric';
+import logger from '../utils/logger';
+import { apiUrl } from '../config/api';
+import { useAuth } from '@clerk/clerk-react';
 
 
 // Wrap GridLayout with WidthProvider for responsiveness
@@ -1051,51 +1054,86 @@ const RoiCycleComparisonWidget = memo(() => {
   const BitcoinRiskWidget = memo(() => {
   const [riskLevel, setRiskLevel] = useState(null);
   const { btcData } = useContext(DataContext);
+  const { getToken } = useAuth();
 
   useEffect(() => {
     const fetchRiskLevel = async () => {
+      let level = null;
+
+      // 1. Prefer fresh latest from backend risk endpoint (precomputed) using similar-to-fetchWithCache direct fetch + auth.
+      // /api/risk-metrics/ (see DataContext + config/api + BE RiskMetricListView). We take a recent value only if
+      // it looks normalized 0-1 (our price risk scale); falls back safely otherwise. Ready for when price-risk is
+      // also stored precomputed (e.g. metric='price_risk' or 'risk_level'). Uses logger.
+      try {
+        const token = await getToken();
+        if (token) {
+          // Try a recent one; if its value in 0-1 range treat as our risk level (onchain ones usually >0.1 but we gate)
+          const url = apiUrl('/api/risk-metrics/?ordering=-time&page_size=1');
+          const resp = await fetch(url, {
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            signal: AbortSignal.timeout(8000),
+          });
+          if (resp.ok) {
+            const data = await resp.json();
+            const items = (data && data.results) || (Array.isArray(data) ? data : []);
+            if (items.length > 0) {
+              const candidate = parseFloat(items[0].value);
+              if (isFinite(candidate) && candidate >= 0 && candidate <= 1.0001) {
+                level = candidate;
+                await saveBitcoinRisk(level).catch(() => {});
+                logger.info('BitcoinRiskWidget: using fresh precomputed risk from /api/risk-metrics/');
+              }
+            }
+          }
+        }
+      } catch (e) {
+        logger.warn('BitcoinRiskWidget: backend /api/risk-metrics/ fetch failed or no suitable 0-1 value (fallback to IDB/calc)', e && e.message ? e.message : e);
+      }
+
+      if (level !== null) {
+        setRiskLevel(level);
+        return;
+      }
+
+      // 2. IDB (today's cached from prior good calc) -- the "precomputed" local latest
       try {
         const riskData = await getBitcoinRisk();
         if (riskData && riskData.riskLevel !== undefined) {
-          setRiskLevel(riskData.riskLevel);
-        } else {
-          // No valid cached data, calculate locally
-          if (btcData && btcData.length > 0) {
+          level = riskData.riskLevel;
+          logger.info('BitcoinRiskWidget: using IDB cached risk level');
+        }
+      } catch (e) {
+        logger.error('BitcoinRiskWidget: error reading IDB risk', e);
+      }
+
+      if (level === null) {
+        // 3. Calc from btcData ONLY if we have sufficient history for reliable normalization (374d MA + global min/max).
+        // Prevents bad values when DataContext btcData preload is minimized (per bulletproofing).
+        if (btcData && btcData.length > 400) {
+          try {
             const riskDataArray = calculateRiskMetric(btcData);
             if (riskDataArray && riskDataArray.length > 0) {
               const calculatedRisk = riskDataArray[riskDataArray.length - 1].Risk;
-              await saveBitcoinRisk(calculatedRisk);
-              setRiskLevel(calculatedRisk);
+              if (isFinite(calculatedRisk)) {
+                await saveBitcoinRisk(calculatedRisk);
+                level = calculatedRisk;
+                logger.info('BitcoinRiskWidget: calculated fresh risk from full btcData');
+              }
             } else {
-              console.error('Failed to calculate risk level: Invalid risk data');
-              setRiskLevel(0);
+              logger.error('BitcoinRiskWidget: calculateRiskMetric returned no usable data');
             }
-          } else {
-            console.error('No btcData available for risk calculation');
-            setRiskLevel(0);
-          }
-        }
-      } catch (error) {
-        console.error('Error handling Bitcoin risk level:', error);
-        // Fallback to local calculation
-        if (btcData && btcData.length > 0) {
-          const riskDataArray = calculateRiskMetric(btcData);
-          if (riskDataArray && riskDataArray.length > 0) {
-            const calculatedRisk = riskDataArray[riskDataArray.length - 1].Risk;
-            await saveBitcoinRisk(calculatedRisk);
-            setRiskLevel(calculatedRisk);
-          } else {
-            console.error('Failed to calculate risk level: Invalid risk data');
-            setRiskLevel(0);
+          } catch (e) {
+            logger.error('BitcoinRiskWidget: error during local calc', e);
           }
         } else {
-          console.error('No btcData available for risk calculation');
-          setRiskLevel(0);
+          logger.warn('BitcoinRiskWidget: no IDB and insufficient btcData (>400) for reliable calc; leaving null->0');
         }
       }
+
+      setRiskLevel(level !== null ? level : 0);
     };
     fetchRiskLevel();
-  }, [btcData]);
+  }, [btcData, getToken]);
 
   const displayRisk = riskLevel !== null ? Math.max(0, Math.min(100, riskLevel * 100)).toFixed(2) : 0;
   const backgroundColor = getBackgroundColor(displayRisk);
@@ -1782,7 +1820,7 @@ const MarketHeatGaugeWidget = memo(() => {
           riskData = await getBitcoinRisk();
           riskHeat = riskData && riskData.riskLevel !== undefined ? Math.min(100, riskData.riskLevel * 100) : 0;
         } catch (error) {
-          console.error('Error fetching risk:', error);
+          logger.error('Error fetching risk in heat calc (non-widget):', error);
           riskHeat = 0;
         }
         const fearGreedValueRaw = fearAndGreedData[fearAndGreedData.length - 1].value;
