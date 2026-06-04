@@ -81,6 +81,18 @@ const PuellMultiple = lazy(() => import('./components/PuellMultiple'));
 const AltcoinSeasonIndexChart = lazy(() => import('./components/AltcoinSeasonIndexChart'));
 const OnChainHistoricalRisk = lazy(() => import('./components/OnChainHistoricalRisk'));
 const BitcoinTxMvrvChart = lazy(() => import('./components/BitcoinTxMvrv'));
+const UKUnemploymentChart = lazy(() => import('./components/UKUnemployment'));
+const UKClaimantCountChart = lazy(() => import('./components/UKClaimantCount'));
+const UKEarningsChart = lazy(() => import('./components/UKEarnings'));
+const UKPopulationChart = lazy(() => import('./components/UKPopulation'));
+const UKWorkforceJobsChart = lazy(() => import('./components/UKWorkforceJobs'));
+const UKBusinessCountsChart = lazy(() => import('./components/UKBusinessCounts'));
+const UKJSAByAgeChart = lazy(() => import('./components/UKJSAByAge'));
+const UKJSAByEthnicityChart = lazy(() => import('./components/UKJSAByEthnicity'));
+const UKLabourByAgeChart = lazy(() => import('./components/UKLabourByAge'));
+const UKPublicPrivateChart = lazy(() => import('./components/UKPublicPrivateEmployment'));
+const UKAPSWorkplaceChart = lazy(() => import('./components/UKApsWorkplace'));
+const UKEsaClaimantsChart = lazy(() => import('./components/UKEsaClaimants'));
 
 /**
  * Route Configuration for the entire app.
@@ -145,6 +157,18 @@ const appRoutes = [
   { path: "/us-interest", component: UsInterestChart, useBasicChart: true, protected: true },
   { path: "/us-combined-macro", component: UsCombinedMacroChart, useBasicChart: true, protected: true },
   { path: "/us-initial-claims", component: UsInitialClaimsChart, useBasicChart: true, protected: true },
+  { path: "/uk-unemployment", component: UKUnemploymentChart, useBasicChart: true, protected: true },
+  { path: "/uk-claimants", component: UKClaimantCountChart, useBasicChart: true, protected: true },
+  { path: "/uk-earnings", component: UKEarningsChart, useBasicChart: true, protected: true },
+  { path: "/uk-population", component: UKPopulationChart, useBasicChart: true, protected: true },
+  { path: "/uk-workforce-jobs", component: UKWorkforceJobsChart, useBasicChart: true, protected: true },
+  { path: "/uk-business-counts", component: UKBusinessCountsChart, useBasicChart: true, protected: true },
+  { path: "/uk-jsa-age", component: UKJSAByAgeChart, useBasicChart: true, protected: true },
+  { path: "/uk-jsa-ethnicity", component: UKJSAByEthnicityChart, useBasicChart: true, protected: true },
+  { path: "/uk-labour-by-age", component: UKLabourByAgeChart, useBasicChart: true, protected: true },
+  { path: "/uk-public-private", component: UKPublicPrivateChart, useBasicChart: true, protected: true },
+  { path: "/uk-aps-workplace", component: UKAPSWorkplaceChart, useBasicChart: true, protected: true },
+  { path: "/uk-esa-claimants", component: UKEsaClaimantsChart, useBasicChart: true, protected: true },
   { path: "/tx-mvrv", component: BitcoinTxMvrvChart, useBasicChart: true, protected: true },
   { path: "/on-chain-historical-risk", component: OnChainHistoricalRisk, useBasicChart: true, protected: true },
   { path: "/altcoin-season-index", component: AltcoinSeasonIndexChart, useBasicChart: true, protected: true },

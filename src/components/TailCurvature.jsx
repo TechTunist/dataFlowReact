@@ -14,7 +14,11 @@ import LastUpdated from '../hooks/LastUpdated';
 
 // Asymmetric Tail Curvature Quantile Model (Cowen 2026)
 // Based on "Asymmetric Tail Curvature in Bitcoin Price Quantiles" working paper
-// Coefficients from Table 3 (full sample, rearranged asymmetric quadratic quantile regression)
+// Coefficients from Table 3 (full sample, rearranged asymmetric quadratic quantile regression) for the core quantiles.
+// Additional ultra-low "dislocation lines" / golden pocket quantiles (below the 1%) were added to match
+// Ben Cowen's full indicator/chart. These represent rare excursions (<<1% of time) that have historically
+// marked exceptional "golden opportunity" accumulation zones for Bitcoin.
+// b is shared within the lower tail group (~-0.0241) per the asymmetric specification.
 // Time: days since 2009-01-03 (genesis block), centered with μ ≈ 7.9914
 // Formula (log10 price space): Qτ(log10 P(t)) = cτ + aτ·x + b(τ)·x² where x = ln(t) - μ
 
@@ -22,15 +26,20 @@ const GENESIS_DATE = '2009-01-03';
 const MU = 7.9914; // centering constant from the paper
 
 // Quantile parameters (τ, c, a, b)
-// b is shared within tail groups per the asymmetric specification
+// Lower tail (incl. golden pocket) share shallow curvature b=-0.0241.
+// The four extra below 1% (0.5% and lower) model the "golden pocket" dislocation zones.
 const QUANTILE_PARAMS = [
-  { tau: 0.01, label: '1%',  c: 2.837, a: 2.578, b: -0.0241, color: '#4ade80' },
-  { tau: 0.10, label: '10%', c: 2.933, a: 2.552, b: -0.0241, color: '#22c55e' },
-  { tau: 0.25, label: '25%', c: 3.004, a: 2.554, b: -0.0241, color: '#16a34a' },
-  { tau: 0.50, label: '50% (Median)', c: 3.214, a: 2.482, b: -0.1126, color: '#eab308' },
-  { tau: 0.75, label: '75%', c: 3.562, a: 2.283, b: -0.3259, color: '#f97316' },
-  { tau: 0.95, label: '95%', c: 3.897, a: 1.964, b: -0.3259, color: '#ef4444' },
-  { tau: 0.99, label: '99%', c: 4.028, a: 1.904, b: -0.3259, color: '#b91c1c' },
+  { tau: 0.0005, label: '0.05%', c: 2.621, a: 2.605, b: -0.0241, color: '#facc15' },
+  { tau: 0.001,  label: '0.1%', c: 2.707, a: 2.595, b: -0.0241, color: '#dde022ff' },
+  { tau: 0.002,  label: '0.2%', c: 2.738, a: 2.59,  b: -0.0241, color: '#d7e611ff' },
+  { tau: 0.005,  label: '0.5%', c: 2.797, a: 2.585, b: -0.0241, color: '#d4eb0aff' },
+  { tau: 0.01,   label: '1%',  c: 2.837, a: 2.578, b: -0.0241, color: '#4ade80' },
+  { tau: 0.10,   label: '10%', c: 2.933, a: 2.552, b: -0.0241, color: '#22c55e' },
+  { tau: 0.25,   label: '25%', c: 3.004, a: 2.554, b: -0.0241, color: '#16a34a' },
+  { tau: 0.50,   label: '50% (Median)', c: 3.214, a: 2.482, b: -0.1126, color: '#08ead7ff' },
+  { tau: 0.75,   label: '75%', c: 3.562, a: 2.283, b: -0.3259, color: '#f97316' },
+  { tau: 0.95,   label: '95%', c: 3.897, a: 1.964, b: -0.3259, color: '#ef4444' },
+  { tau: 0.99,   label: '99%', c: 4.028, a: 1.904, b: -0.3259, color: '#b91c1c' },
 ];
 
 // Helper: days since Bitcoin genesis block
@@ -287,10 +296,11 @@ const TailCurvature = ({ isDashboard = false }) => {
         const seriesData = modelData[param.label];
         if (!seriesData || seriesData.length === 0) return;
 
+        const isGolden = param.label.includes('Golden');
         const qSeries = chart.addLineSeries({
           color: param.color,
-          lineWidth: 1,
-          lineStyle: 0, // solid
+          lineWidth: isGolden ? 1.5 : 1,
+          lineStyle: isGolden ? 1 : 0, // dashed for golden pocket dislocation lines
           title: param.label,
           lastValueVisible: false,
           priceLineVisible: false,
@@ -435,11 +445,14 @@ const TailCurvature = ({ isDashboard = false }) => {
             <div style={{ color: colors.grey[100], fontSize: '16px' }}>
               Benjamin Cowen’s 2026 model of Bitcoin price quantiles. The green lines show lower price paths with relatively steady structural growth.
               The upper lines (yellow to red) show a flattening of the curve, showing that diminishing returns over time is the indicated way forward.
-              Throughout the history of Bitcoin's price action, the lower quantile has up to this point represented a good buying opportunity,
+              Throughout the history of Bitcoin's price action, the lower quantiles have represented good buying opportunities,
               while the upper quantiles have represented areas of overextension. <br/> The model's curvature suggests that as time goes on, the potential
               for extreme overextension (upper tail) grows more limited compared to the steady growth path (lower tail). This implies that while Bitcoin
               may continue to grow, the likelihood of it reaching extremely high valuations diminishes over time, reinforcing the idea of diminishing
               returns as the asset matures.
+              <br/><br/>
+              <strong>Golden Pocket (below 1%):</strong> The four additional quantiles below the 1% line (shown in gold/lime with dashed for the deepest) model Ben Cowen's "golden pocket" / dislocation zones.
+              These are rare zones (historically visited &lt;&lt;1% of the time) that have marked exceptional accumulation opportunities when price has briefly traded there.
             </div>
           </div>
         )}

@@ -37,6 +37,18 @@ import UsInterestChart from "../../components/UsInterest";
 import UsCombinedMacroChart from "../../components/UsCombinedMacro";
 import UsInitialClaimsChart from "../../components/UsInitialClaims";
 import BitcoinTxMvrvChart from "../../components/BitcoinTxMvrv";
+import UKUnemploymentChart from "../../components/UKUnemployment";
+import UKClaimantCountChart from "../../components/UKClaimantCount";
+import UKEarningsChart from "../../components/UKEarnings";
+import UKPopulationChart from "../../components/UKPopulation";
+import UKWorkforceJobsChart from "../../components/UKWorkforceJobs";
+import UKBusinessCountsChart from "../../components/UKBusinessCounts";
+import UKJSAByAgeChart from "../../components/UKJSAByAge";
+import UKJSAByEthnicityChart from "../../components/UKJSAByEthnicity";
+import UKLabourByAgeChart from "../../components/UKLabourByAge";
+import UKPublicPrivateChart from "../../components/UKPublicPrivateEmployment";
+import UKAPSWorkplaceChart from "../../components/UKApsWorkplace";
+import UKEsaClaimantsChart from "../../components/UKEsaClaimants";
 import OnChainHistoricalRisk from "../../components/OnChainHistoricalRisk";
 import AltcoinSeasonIndexChart from "../../components/AltcoinSeasonIndexChart";
 import FredSeriesChart from "../../components/FredSeriesChart";
@@ -80,6 +92,18 @@ const chartConfig = [
   { id: "us-interest", title: "US Interest Rates", linkTo: "/us-interest", component: (props) => <UsInterestChart isDashboard={true} {...props} />, description: "US interest rates over time." },
   { id: "us-combined-macro", title: "US Combined Macro", linkTo: "/us-combined-macro", component: (props) => <UsCombinedMacroChart isDashboard={true} {...props} />, description: "Combined US macroeconomic indicators." },
   { id: "us-initial-claims", title: "US Initial Claims", linkTo: "/us-initial-claims", component: (props) => <UsInitialClaimsChart isDashboard={true} {...props} />, description: "US initial jobless claims." },
+  { id: "uk-unemployment", title: "UK Unemployment (LFS)", linkTo: "/uk-unemployment", component: (props) => <UKUnemploymentChart isDashboard={true} {...props} />, description: "Official UK unemployment & employment rates (broad LFS measure). A key signal of whether the UK jobs market is healthy or under pressure — important real-world context for risk sentiment." },
+  { id: "uk-claimants", title: "UK Claimant Count", linkTo: "/uk-claimants", component: (props) => <UKClaimantCountChart isDashboard={true} {...props} />, description: "Fast monthly % of people claiming unemployment benefits. A timely early warning of labour market stress (like US jobless claims)." },
+  { id: "uk-earnings", title: "UK Earnings (ASHE)", linkTo: "/uk-earnings", component: (props) => <UKEarningsChart isDashboard={true} {...props} />, description: "Median weekly pay in the UK by gender. Tracks wage growth and ordinary household income strength." },
+  { id: "uk-population", title: "UK Population Estimates", linkTo: "/uk-population", component: (props) => <UKPopulationChart isDashboard={true} {...props} />, description: "UK population size and gender split. Long-term foundation for labour supply, consumers and economic scale." },
+  { id: "uk-workforce-jobs", title: "UK Workforce Jobs", linkTo: "/uk-workforce-jobs", component: (props) => <UKWorkforceJobsChart isDashboard={true} {...props} />, description: "Total jobs in the UK economy. Direct read on employment levels and whether the economy is creating work." },
+  { id: "uk-business-counts", title: "UK Business Counts", linkTo: "/uk-business-counts", component: (props) => <UKBusinessCountsChart isDashboard={true} {...props} />, description: "Number of UK businesses. Indicator of entrepreneurship, company formation and private-sector health." },
+  { id: "uk-jsa-age", title: "UK JSA by Age/Duration", linkTo: "/uk-jsa-age", component: (props) => <UKJSAByAgeChart isDashboard={true} {...props} />, description: "Unemployment benefit claimants split by age and how long they have been claiming. Shows who is hit hardest and whether problems are becoming entrenched." },
+  { id: "uk-jsa-ethnicity", title: "UK JSA by Ethnicity", linkTo: "/uk-jsa-ethnicity", component: (props) => <UKJSAByEthnicityChart isDashboard={true} {...props} />, description: "Claimants broken down by ethnic group. Reveals whether labour market pain is evenly spread or concentrated in particular communities." },
+  { id: "uk-labour-by-age", title: "UK Labour by Age", linkTo: "/uk-labour-by-age", component: (props) => <UKLabourByAgeChart isDashboard={true} {...props} />, description: "Employment, unemployment and inactivity rates by age band. Shows how different generations are faring in the jobs market." },
+  { id: "uk-public-private", title: "UK Public/Private Employment", linkTo: "/uk-public-private", component: (props) => <UKPublicPrivateChart isDashboard={true} {...props} />, description: "UK employment levels (public vs private proxy). Core measure of overall labour market strength and economic activity." },
+  { id: "uk-aps-workplace", title: "UK APS Workplace", linkTo: "/uk-aps-workplace", component: (props) => <UKAPSWorkplaceChart isDashboard={true} {...props} />, description: "Workplace-based employment counts. Complements residence-based views and shows where jobs are actually located." },
+  { id: "uk-esa-claimants", title: "UK ESA Claimants", linkTo: "/uk-esa-claimants", component: (props) => <UKEsaClaimantsChart isDashboard={true} {...props} />, description: "People on disability/illness-related benefits (ESA proxy). Signals health-related labour market exclusion and broader economic hardship." },
   { id: "tx-mvrv", title: "Bitcoin Transaction MVRV", linkTo: "/tx-mvrv", component: (props) => <BitcoinTxMvrvChart isDashboard={true} {...props} />, description: "Bitcoin MVRV ratio for transactions." },
   { id: "on-chain-historical-risk", title: "On-Chain Historical Risk", linkTo: "/on-chain-historical-risk", component: (props) => <OnChainHistoricalRisk isDashboard={true} {...props} />, description: "Historical risk based on on-chain data." },
   { id: "altcoin-season-index", title: "Altcoin Season Index", linkTo: "/altcoin-season-index", component: (props) => <AltcoinSeasonIndexChart isDashboard={true} {...props} />, description: "Index indicating altcoin season trends." },
@@ -113,7 +137,7 @@ const chartConfig = [
   { id: "fred-german-bond-yield", title: "German 10-Year Bond Yield", linkTo: "/fred/german-bond-yield", component: (props) => <FredSeriesChart isDashboard={true} seriesId="IRLTLT01DEM156N" chartType="line" scaleMode="linear" valueFormatter={(value) => `${value.toFixed(2)}%`} {...props} />, description: "Monthly German 10-Year Government Bond Yield." },
   { id: "workbench", title: "Workbench Chart", linkTo: "/workbench", component: (props) => <WorkbenchChart isDashboard={true} seriesId="UMCSENT" chartType="area" valueFormatter={(value) => value.toLocaleString()} {...props} />, description: "Custom indicator chart for comparing data series." },
   { id: "sp500-roi", title: "S&P 500 ROI", linkTo: "/sp500-roi", component: (props) => <SP500ROI isDashboard={true} {...props} />, description: "Annualised ROI of the S&P 500." },
-  { id: "tail-curvature", title: "Tail Curvature", linkTo: "/tail-curvature", component: (props) => <TailCurvature isDashboard={true} {...props} />, description: "Asymmetric Tail Curvature Quantile Model for Bitcoin price quantiles (Cowen 2026)." },
+  { id: "tail-curvature", title: "Tail Curvature", linkTo: "/tail-curvature", component: (props) => <TailCurvature isDashboard={true} {...props} />, description: "Asymmetric Tail Curvature Quantile Model (Cowen 2026) — includes golden pocket / dislocation quantiles below 1%." },
   { id: "sahm-recession-indicator", title: "Sahm Recession Indicator", linkTo: "/fred/sahm-recession-indicator", component: (props) => <SahmRecessionIndicator isDashboard={true} {...props} />, description: "Sahm Rule recession indicator based on unemployment rate changes." },
 ];
 
