@@ -4,6 +4,7 @@ import { Box, Typography, useTheme } from '@mui/material';
 import { tokens } from '../theme';
 import Header from '../components/Header';
 import { apiUrl } from '../config/api';
+import { useSubscription } from '../contexts/SubscriptionContext';
 
 const Profile = memo(() => {
   const theme = useTheme();

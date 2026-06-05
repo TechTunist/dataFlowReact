@@ -17,6 +17,7 @@ import { tokens } from '../theme';
 import Header from '../components/Header';
 import { StripeContext } from '../App';
 import { apiUrl } from '../config/api';
+import { useSubscription } from '../contexts/SubscriptionContext';
 
 const Subscription = memo(() => {
   const theme = useTheme();
@@ -26,7 +27,26 @@ const Subscription = memo(() => {
   const location = useLocation();
   const navigate = useNavigate();
   const stripe = useContext(StripeContext);
-  const [subscriptionStatus, setSubscriptionStatus] = useState({
+  const {
+    subscriptionStatus: ctxSubscriptionStatus,
+    loading: ctxLoading,
+    error: ctxError,
+    fetchSubscriptionStatus: ctxFetchSubscriptionStatus,
+  } = useSubscription();
+
+  // Local UI state only (for errors/success/dialog/currency during this session's actions)
+  // Use context for the actual subscription data (single source of truth, avoids duplication with Profile/Context)
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [openCancelDialog, setOpenCancelDialog] = useState(false);
+  const [selectedCurrency, setSelectedCurrency] = useState('USD');
+  const plans = [
+    { id: 11, name: 'Full Access (Beta)', billing_interval: 'MONTHLY', price_gbp: 10.00, price_usd: 13.45 },
+  ];
+
+  // Prefer context values; fall back to sensible defaults if not yet loaded
+  const subscriptionStatus = ctxSubscriptionStatus || {
     plan: 'Free',
     billing_interval: 'NONE',
     subscription_status: 'free',
@@ -37,16 +57,10 @@ const Subscription = memo(() => {
     display_name: 'User',
     access: 'Limited',
     previous_plan: null,
-  });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [openCancelDialog, setOpenCancelDialog] = useState(false);
-  const [selectedCurrency, setSelectedCurrency] = useState('USD');
-  const plans = [
-    { id: 11, name: 'Full Access (Beta)', billing_interval: 'MONTHLY', price_gbp: 10.00, price_usd: 13.45 },
-  ];
+  };
 
+  // Delegate to context fetch for single source of truth (reduces duplication across Subscription/Profile/Context)
+  // Local loading/error/success are for action-specific UI feedback only.
   const fetchSubscriptionStatus = async () => {
     if (!isSignedIn || !user) {
       setError('Please sign in to view subscription status.');
@@ -56,52 +70,10 @@ const Subscription = memo(() => {
     setError('');
     setSuccess('');
     try {
-      const token = await getToken();
-      if (!token) {
-        throw new Error('Failed to obtain authentication token');
-      }
-      const response = await fetch(apiUrl('/api/subscription-status/'), {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-      let data;
-      try {
-        data = await response.json();
-      } catch {
-        throw new Error('Invalid response format');
-      }
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}, message: ${data.error || 'Unknown error'}`);
-      }
-      setSubscriptionStatus({
-        plan: data.plan || 'Free',
-        billing_interval: data.billing_interval || 'NONE',
-        subscription_status: data.subscription_status || 'free',
-        current_period_end: data.current_period_end ? new Date(data.current_period_end) : null,
-        last_payment_date: data.last_payment_date ? new Date(data.last_payment_date) : null,
-        payment_method: data.payment_method || null,
-        subscription_start_date: data.subscription_start_date ? new Date(data.subscription_start_date) : null,
-        display_name: data.display_name || 'User',
-        access: data.access || (data.features && data.features.access) || 'Limited',
-        previous_plan: data.previous_plan || null,
-      });
+      await ctxFetchSubscriptionStatus();
+      // Context will have updated; any ctxError will surface via the hook value below if needed
     } catch (err) {
       setError(`Failed to fetch subscription status: ${err.message}`);
-      setSubscriptionStatus({
-        plan: 'Free',
-        billing_interval: 'NONE',
-        subscription_status: 'free',
-        current_period_end: null,
-        last_payment_date: null,
-        payment_method: null,
-        subscription_start_date: null,
-        display_name: 'User',
-        access: 'Limited',
-        previous_plan: null,
-      });
     } finally {
       setLoading(false);
     }

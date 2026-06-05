@@ -45,14 +45,16 @@ const RestrictedComponent = memo(
         </Box>
       );
     }
-    // Check if user has premium access or a canceled/canceling subscription with valid current_period_end (grace)
-    // Strengthened per bulletproofing (keeps legitimate users in grace; no lockout of free).
+    // Check if user has premium access (authoritative from backend, which includes grace period logic)
+    // or fallback canceled/canceling with valid current_period_end + grace (1 day buffer to match backend GRACE_PERIOD).
+    // This prevents clock skew / race conditions from prematurely revoking access.
     const hasPremiumAccess = subscriptionStatus.access === 'Full';
     const rawStatus = (subscriptionStatus.subscription_status || '').toLowerCase();
+    const GRACE_MS = 24 * 60 * 60 * 1000; // 1 day, matching backend
     const isCancelledButValid =
       (rawStatus === 'canceled' || rawStatus === 'canceling') &&
       subscriptionStatus.current_period_end &&
-      subscriptionStatus.current_period_end > new Date();
+      subscriptionStatus.current_period_end > new Date(Date.now() - GRACE_MS);
     if (hasPremiumAccess || isCancelledButValid) {
       return <WrappedComponent {...props} />;
     }
