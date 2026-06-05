@@ -120,7 +120,7 @@ const UKJSAByAge = ({ isDashboard = false }) => {
           <div style={{ color: colors.grey[100], fontSize: '15px', lineHeight: 1.4, textAlign: 'left' }}>
             This breaks down Jobseeker&apos;s Allowance claimants by age group and how long they have been claiming (duration). Use the selectors to zoom into e.g. young people or long-term unemployed.
             <br /><br />
-            For a layperson: it tells you which parts of the population are most affected by unemployment — e.g. are young people or older workers struggling more, and is it short-term or becoming long-term? Long-term unemployment is especially damaging for skills and the economy. In the app these details help you understand the depth and shape of UK labour-market problems beyond the headline number.
+            Explanation: it tells you which parts of the population are most affected by unemployment — e.g. are young people or older workers struggling more, and is it short-term or becoming long-term? Long-term unemployment is especially damaging for skills and the economy. In the app these details help you understand the depth and shape of UK labour-market problems beyond the headline number.
           </div>
           <div style={{ marginTop: '6px', fontSize: '12px', color: '#888', textAlign: 'left' }}>Source: Nomis (ONS). Consistent monthly series with proportions.</div>
         </div>

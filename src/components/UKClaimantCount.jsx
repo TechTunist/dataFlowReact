@@ -227,7 +227,7 @@ const UKClaimantCount = ({ isDashboard = false }) => {
           <div style={{ color: colors.grey[100], fontSize: '15px', lineHeight: 1.4, textAlign: 'left' }}>
             This tracks the percentage of the UK workforce claiming Jobseeker&apos;s Allowance (or equivalent unemployment-related benefits). It&apos;s a narrow but very fast monthly signal of how many people are out of work and applying for support.
             <br /><br />
-            For a layperson: when this number rises, it usually means the jobs market is cooling and more people are struggling to find work — an early warning for economic slowdown. In this app it acts like the UK version of US Initial Claims: a high-frequency read on labour stress that helps you understand the real-world backdrop for risk assets and crypto sentiment.
+            Explanation: when this number rises, it usually means the jobs market is cooling and more people are struggling to find work — an early warning for economic slowdown. In this app it acts like the UK version of US Initial Claims: a high-frequency read on labour stress that helps you understand the real-world backdrop for risk assets and crypto sentiment.
           </div>
 
           <div style={{ marginTop: '6px', fontSize: '12px', color: '#888', textAlign: 'left' }}>

@@ -110,7 +110,7 @@ const UKPublicPrivateEmployment = ({ isDashboard = false }) => {
           <div style={{ color: colors.grey[100], fontSize: '15px', lineHeight: 1.4, textAlign: 'left' }}>
             This shows UK employment levels (currently using workforce jobs total as a timely proxy; true public vs private sector splits come from the Business Register and Employment Survey which can lag).
             <br /><br />
-            For a layperson: total employment tells you how many people have jobs in the economy. Growth here is generally good for spending and confidence; contraction is bad. Public vs private split matters because government jobs are more stable while private sector jobs reflect business health. In the app this is core UK labour-market health data that feeds your view on whether the economic backdrop is supportive or risky for markets and crypto.
+            Explanation: total employment tells you how many people have jobs in the economy. Growth here is generally good for spending and confidence; contraction is bad. Public vs private split matters because government jobs are more stable while private sector jobs reflect business health. In the app this is core UK labour-market health data that feeds your view on whether the economic backdrop is supportive or risky for markets and crypto.
           </div>
           <div style={{ marginTop: '6px', fontSize: '12px', color: '#888', textAlign: 'left' }}>Source: Nomis (ONS). Consistent annual series.</div>
         </div>

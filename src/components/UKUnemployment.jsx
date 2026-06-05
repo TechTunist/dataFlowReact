@@ -302,7 +302,7 @@ const UKUnemployment = ({ isDashboard = false }) => {
           <div style={{ color: colors.grey[100], fontSize: '15px', lineHeight: 1.4, textAlign: 'left' }}>
             This shows the official UK unemployment rate (ILO definition) and the employment rate for working-age people (16-64). Both come from the Labour Force Survey / Annual Population Survey — the gold-standard broad measure of the jobs market.
             <br /><br />
-            For a layperson: unemployment rate = % of people who want work but don&apos;t have it. Employment rate = % who actually have jobs. When unemployment goes up or employment goes down it usually means the economy is losing steam; the reverse is a sign of strength. This is the wide, reliable view (unlike the faster but narrower Claimant Count chart). In this app these UK rates are key macro context — a weakening UK labour market often coincides with lower risk appetite across global assets including crypto.
+            Explanation: unemployment rate = % of people who want work but don&apos;t have it. Employment rate = % who actually have jobs. When unemployment goes up or employment goes down it usually means the economy is losing steam; the reverse is a sign of strength. This is the wide, reliable view (unlike the faster but narrower Claimant Count chart). In this app these UK rates are key macro context — a weakening UK labour market often coincides with lower risk appetite across global assets including crypto.
           </div>
 
           <div style={{ marginTop: '6px', fontSize: '12px', color: '#888', textAlign: 'left' }}>

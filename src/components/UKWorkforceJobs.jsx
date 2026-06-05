@@ -109,7 +109,7 @@ const UKWorkforceJobs = ({ isDashboard = false }) => {
           <div style={{ color: colors.grey[100], fontSize: '15px', lineHeight: 1.4, textAlign: 'left' }}>
             This shows the total number of jobs in the UK economy (workforce jobs, seasonally adjusted). It counts positions filled across all industries.
             <br /><br />
-            For a layperson: more jobs overall = more people working and earning, which fuels spending and economic growth. Drops can foreshadow rising unemployment. In this app, strong UK employment numbers are a positive macro backdrop that generally supports risk-on sentiment (including for crypto), while weakness is a caution sign.
+            Explanation: more jobs overall = more people working and earning, which fuels spending and economic growth. Drops can foreshadow rising unemployment. In this app, strong UK employment numbers are a positive macro backdrop that generally supports risk-on sentiment (including for crypto), while weakness is a caution sign.
           </div>
           <div style={{ marginTop: '6px', fontSize: '12px', color: '#888', textAlign: 'left' }}>Source: Nomis (ONS). Consistent quarterly series.</div>
         </div>
