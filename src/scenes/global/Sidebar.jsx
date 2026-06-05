@@ -48,6 +48,7 @@ import LayersIcon from "@mui/icons-material/Layers";
 import HistoryIcon from "@mui/icons-material/History";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
+import PeopleIcon from "@mui/icons-material/People";
 import TableChartIcon from "@mui/icons-material/TableChart";
 import CalculateIcon from "@mui/icons-material/Calculate";
 import SentimentSatisfiedIcon from "@mui/icons-material/SentimentSatisfied";
@@ -156,6 +157,7 @@ const itemsData = [
   { title: "Total 3 Market Cap", to: "/total3", category: "Market Metrics", icon: <AttachMoneyIcon />, categoryIcon: <AnalyticsIcon /> }, // AttachMoneyIcon: Variant of market cap
   { title: "Total Cap to Fair Value", to: "/total-difference", category: "Market Metrics", icon: <BalanceIcon />, categoryIcon: <AnalyticsIcon /> }, // BalanceIcon: Fair value comparison
   { title: "PiCycleTop Indicator", to: "/pi-cycle", category: "Market Metrics", icon: <CurrencyExchangeIcon />, categoryIcon: <AnalyticsIcon /> }, // CycleIcon (assuming import; alt: AutorenewIcon): Cycle-based indicator
+  { title: "Market Heat Index", to: "/market-heat-index", category: "Market Metrics", icon: <AnalyticsIcon />, categoryIcon: <AnalyticsIcon /> }, // Added for market heat index feature
   
   // === ON-CHAIN METRICS ===
   // Category Icon: LinkIcon - Represents blockchain/on-chain data connections
@@ -217,13 +219,24 @@ const itemsData = [
   { title: "Case-Shiller Home Price Index", to: "/fred/case-shiller", category: "Macro Charts", icon: <HomeWorkIcon />, categoryIcon: <AssessmentIcon /> }, // HomeWorkIcon: Home prices
   { title: "Nikkei 225 Index", to: "/fred/nikkei-225", category: "Macro Charts", icon: <CandlestickChartIcon />, categoryIcon: <AssessmentIcon /> }, // CandlestickChartIcon: Stock index
   { title: "German 10-Year Bond Yield", to: "/fred/german-bond-yield", category: "Macro Charts", icon: <PercentIcon />, categoryIcon: <AssessmentIcon /> }, // PercentIcon: Bond yields
-  
+  // UK Macro - direct from Nomisweb API (labour market data)
+  { title: "UK Unemployment (LFS)", to: "/uk-unemployment", category: "UK Macro", icon: <PeopleIcon />, categoryIcon: <AssessmentIcon /> },
+  { title: "UK Claimant Count", to: "/uk-claimants", category: "UK Macro", icon: <WorkIcon />, categoryIcon: <AssessmentIcon /> },
+  { title: "UK Earnings (ASHE)", to: "/uk-earnings", category: "UK Macro", icon: <AttachMoneyIcon />, categoryIcon: <AssessmentIcon /> },
+  { title: "UK Population Estimates", to: "/uk-population", category: "UK Macro", icon: <PeopleIcon />, categoryIcon: <AssessmentIcon /> },
+  { title: "UK Workforce Jobs", to: "/uk-workforce-jobs", category: "UK Macro", icon: <WorkIcon />, categoryIcon: <AssessmentIcon /> },
+  { title: "UK Business Counts", to: "/uk-business-counts", category: "UK Macro", icon: <FactoryIcon />, categoryIcon: <AssessmentIcon /> },
+  { title: "UK JSA by Age/Duration", to: "/uk-jsa-age", category: "UK Macro", icon: <TimelineIcon />, categoryIcon: <AssessmentIcon /> },
+  { title: "UK JSA by Ethnicity", to: "/uk-jsa-ethnicity", category: "UK Macro", icon: <PeopleIcon />, categoryIcon: <AssessmentIcon /> },
+  { title: "UK Labour by Age", to: "/uk-labour-by-age", category: "UK Macro", icon: <WorkIcon />, categoryIcon: <AssessmentIcon /> },
+  { title: "UK Public/Private Employment", to: "/uk-public-private", category: "UK Macro", icon: <ApartmentIcon />, categoryIcon: <AssessmentIcon /> },
+  { title: "UK APS Workplace", to: "/uk-aps-workplace", category: "UK Macro", icon: <BarChartIcon />, categoryIcon: <AssessmentIcon /> },
+  { title: "UK ESA Claimants", to: "/uk-esa-claimants", category: "UK Macro", icon: <WarningIcon />, categoryIcon: <AssessmentIcon /> },
+  // New research visualization from Cowen (2026) paper + golden pocket dislocation levels
+  { title: "Tail Curvature (Asymmetric Quantiles)", to: "/tail-curvature", category: "Advanced Models", icon: <ShowChartIcon />, categoryIcon: <AssessmentIcon /> },
   // === TOOLS ===
   // Category Icon: BuildIcon - Represents tools and building/analysis
   { title: "Workbench (beta)", to: "/workbench", category: "Tools", icon: <BuildIcon />, categoryIcon: <BuildIcon /> }, // BuildIcon: Workbench for building charts
-
-  // New research visualization from Cowen (2026) paper
-  { title: "Tail Curvature (Asymmetric Quantiles)", to: "/tail-curvature", category: "Advanced Models", icon: <ShowChartIcon />, categoryIcon: <AssessmentIcon /> },
 ];
 
   const filteredItems = useMemo(() =>
@@ -373,8 +386,23 @@ const itemsData = [
             >
               {buttonOrder.map((title, index) => {
                 const button = buttonData.find(b => b.title === title);
-                const isActive = location.pathname === button.to ||
-                  (button.title === "Charts" && !["/dashboard", "/market-overview"].includes(location.pathname));
+                if (!button) {
+                  return null; // safety: skip if title mismatch (should not happen if buttonOrder matches buttonData titles)
+                }
+                // Fixed isActive for carousel: exact for Dashboard/Overview; for Charts only if exactly /charts
+                // OR current path matches a categorized chart item (e.g. /bitcoin, /workbench, /risk etc).
+                // This eliminates the fragile "any non-dash/overview = Charts" special case that wrongly
+                // highlighted on /subscription, /profile, etc. Simplified per bulletproofing.
+                const currentPath = location.pathname;
+                let isActive = false;
+                if (button.title === "Dashboard") {
+                  isActive = currentPath === button.to;
+                } else if (button.title === "Overview") {
+                  isActive = currentPath === button.to;
+                } else if (button.title === "Charts") {
+                  isActive = currentPath === button.to ||
+                    itemsData.some(item => item.category && item.to === currentPath);
+                }
                 const buttonWidth = 80; // Fixed width for each button (adjust as needed)
                 const gap = 4; // Gap between buttons
                 const totalWidth = buttonWidth * 3 + gap * 2; // Total width of buttons + gaps

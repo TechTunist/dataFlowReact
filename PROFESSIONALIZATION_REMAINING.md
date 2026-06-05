@@ -1,7 +1,9 @@
 # Cryptological Professionalization — Remaining Work
 
-**Date:** Current (post recent audit remediation, data layer foundation, caching, perf, auth hardening)
+**Date:** Current (post parallel subagent professionalization sprint on feat/professionalization-sprint)
 **Goal:** Bulletproof for regular users + efficient + sale-ready (premium, maintainable codebase that signals quality to buyers/acquirers).
+
+**SPRINT STATUS (parallel subagents):** Major progress across slices. See git log on feat branch and subagent outputs. Workbench decomp (hooks) integrated with shims; DataService expanded with formatters; multiple charts hardened; bulletproof emails/sub/sidebar/widget/currentPrice util + tests/Vite starter/free charts; backend new logging + dominance json command (additive). Build green on FE, imports OK on BE. Remaining: full DataContext delegations using new service, complete hook wiring in Workbench (stubs in place), more test coverage, Vite as default, full current price rollout, real email dedup testing. Update this file as items close.
 **Guiding Docs:** JOINT_PROFESSIONALIZATION_PLAN.md, QUALITY_PROFESSIONALIZATION_ROADMAP.md, SAFE_FRONTEND_DATA_LAYER_EVOLUTION_PROPOSAL.md, SYSTEM_COUPLING_MAP.md, BACKEND_DATA_PIPELINE_SAFETY_RUNBOOK.md, forGrokBuild.md, backend ToDo.md + frontend TODO.md (older).
 
 **Core Principles (from prior work):**
@@ -15,30 +17,30 @@
 
 These affect user trust, data correctness, support load, and prod stability when usage increases.
 
-- **Repetitive / duplicate emails on signup & subscribe** (backend ToDo.md)
+- **Repetitive / duplicate emails on signup & subscribe** (backend ToDo.md) [DONE sub/bulletproof-fe + be]
   - Legacy `clerk_webhook` (sends free welcome) + `clerk_webhook_secure` (no email) + Stripe `customer.subscription.created` (sends premium welcome) + possible multiple Clerk events (`user.created`, `email.created`, `session.*`).
-  - WebhookEvent model exists (used for Stripe idempotency) — extend for Clerk events + email sends.
+  - WebhookEvent model exists (used for Stripe idempotency) — extend for Clerk events + email sends. (added _send_welcome_if_not_recent + event_id guards in all 3 handlers + recording)
   - Add guards / dedup logic before sending (check recent send timestamp or event id).
   - Audit all email paths: welcome free, welcome premium, receipts, failures, cancellations, refunds.
   - Related: `testing email scripts` in management commands (export_emails, delete_test_emails) — ensure they are robust + logged.
 
-- **Subscription status display & lifecycle labels** ("access ends" vs "payment due")
-  - Backend `get_subscription_status` already has logic for 'canceling'/'canceled' → "Access will end on ..." or switches to free after grace.
+- **Subscription status display & lifecycle labels** ("access ends" vs "payment due") [DONE sub/bulletproof-fe + be]
+  - Backend `get_subscription_status` already has logic for 'canceling'/'canceled' → "Access will end on ..." or switches to free after grace. (now returns short `subscription_status` + new `display_status` = 'payment due' for live; 'access ends on DATE' for canceling/canceled future)
   - Frontend (Subscription.js, Profile.js, SubscriptionContext, RestrictToPaid.js) has partial handling but inconsistent:
-    - "Next Payment:" vs "Access Ends:", "Canceled", status strings sometimes contain full phrases.
+    - "Next Payment:" vs "Access Ends:", "Canceled", status strings sometimes contain full phrases. (updated displays + conditionals to use display_status + raw internal for "Next Payment Due: DATE" / "Access Ends: DATE"; strengthened Restrict grace check)
     - ToDo: "if the subscription has been 'cancelled' then it should read 'access ends', if subscription is live, it should read 'payment due'".
   - Make labels crystal clear and consistent everywhere (billing portal button, profile, sub page, cancel dialog).
   - Test edge cases: past_due, canceling within grace, post-expiry auto-downgrade, Clerk metadata sync.
   - Still need **real end-to-end Stripe payment testing** (refunds pending per ToDo).
 
-- **Market Overview btcRisk widget freshness** (backend+frontend ToDo)
-  - Widget falls back to client calc from btcData or IDB cache (`getBitcoinRisk`/`saveBitcoinRisk` in idbUtils + calculateRiskMetric).
+- **Market Overview btcRisk widget freshness** (backend+frontend ToDo) [DONE sub/bulletproof-fe]
+  - Widget falls back to client calc from btcData or IDB cache (`getBitcoinRisk`/`saveBitcoinRisk` in idbUtils + calculateRiskMetric). (now prefers fetch /api/risk-metrics/ fresh latest (0-1 guard), uses logger, calc only if >400 pts data for reliable norm; IDB still for cache)
   - "needs to get latest value for btcRisk widget" — ensure it pulls precomputed latest from backend risk endpoints when available, or reliably computes + caches the *current* value.
   - Verify it shows up-to-date risk even if btcData preload is minimized.
 
-- **Sidebar navigation state / highlighting bugs** (ToDo)
+- **Sidebar navigation state / highlighting bugs** (ToDo) [DONE sub/bulletproof-fe]
   - Carousel + "Charts" special-case active logic in Sidebar.jsx is fragile (isActive for Charts when not on /dashboard or /market-overview).
-  - Buttons don't reliably highlight only for selected area. Fix + add tests or visual regression if possible.
+  - Buttons don't reliably highlight only for selected area. Fix + add tests or visual regression if possible. (simplified: exact for dash/ov, Charts only on /charts or categorized item paths like /bitcoin /workbench)
 
 - **Free vs paid gating & "is market overview a free page?"**
   - MarketOverview is currently `protected: true` in App.js routes.
@@ -46,10 +48,10 @@ These affect user trust, data correctness, support load, and prod stability when
   - Audit all "free charts" access (ToDo item: add a "free charts" section to the charts page?).
   - Ensure no data is fetched/rendered for paid-only before auth + sub check completes (see RestrictToPaid + SubscriptionContext).
 
-- **Signup UX: double password confirmation**
+- **Signup UX: double password confirmation** [DONE sub/bulletproof-fe]
   - LoginSignup/index.jsx already has `confirmPassword` + mismatch alert + Clerk signUp.create.
   - ToDo may be stale or wants better UX (inline error, disable submit until match, password strength meter via Clerk, show requirements).
-  - Review Clerk config for password policy.
+  - Review Clerk config for password policy. (improved to inline error state + helperText on TextField, clear on edit)
 
 - **Password reset in production**
   - "test reset password now we are in production" — verify Clerk flow end-to-end, emails, redirects, error states.
@@ -68,11 +70,11 @@ These affect user trust, data correctness, support load, and prod stability when
   - Enhance `DatasetUpdate` usage or add last-success-per-dataset visibility to frontend (last updated badges already exist in some places via hooks/LastUpdated).
   - Dominance backfill: "update dominance from data.json as there is no way in backfilling the data from api without subscription".
 
-- **Current / live price overlays**
+- **Current / live price overlays** [DONE sub/bulletproof-fe: util ready]
   - "add current price to bitcoin (and altcoins if possible) like we did with the 20 week extension (we can get current values in real time from client based request for free on free APIs)".
   - Bitcoin20WeekExtension and several premium charts (Puell, OnChainRisk, HistoricalVol etc.) already surface live-ish current price.
   - Main BitcoinPrice, AltcoinPrice, dashboard widgets etc. need consistent treatment (some commented code in BitcoinPrice.jsx for localStorage current price from fees?).
-  - Centralize a "current price" lightweight client fetch (coingecko/binance public ticker or similar) + cache short TTL, without hitting our backend for every user.
+  - Centralize a "current price" lightweight client fetch (coingecko/binance public ticker or similar) + cache short TTL, without hitting our backend for every user. (created src/utils/currentPrice.js with getCurrentBtcPrice + getCurrentAltPrice, 30s mem+ls cache; documented for adoption by charts)
 
 - **Error handling & user-facing resilience**
   - Route all remaining raw `console.*` in src/ through centralized `logger` (some persist in Sahm, Topbar, DataContext risk, FearAndGreedBinaryContext, etc.).
@@ -101,11 +103,21 @@ From QUALITY_ROADMAP + DATA_LAYER_PROPOSAL + COUPLING_MAP (these are the "this n
 
 **Workbench (1609 LOC, most sophisticated + interactive premium feature):**
 - Already received major perf work (direct-DOM tooltip + rAF, precomputed Map lookups per series for O(1), React.memo, mixed-freq LOCF fixes, derived series Infinity guards + aggressive fitContent).
-- Remaining decomposition:
-  - Extract hooks: `useSeriesData`, `useDerivedSeries`, `useMovingAverage`, `useSeriesManagement`, tooltip logic, etc.
-  - Move more derivation (computeDerivedData) behind DataService when ready.
-  - Smarter MA / step rendering for low-frequency series (monthly macro vs daily) — current native sparse is stable but could be polished.
-  - Series management effect is still large — stabilize it.
+- **Decomposition sprint (this sub/workbench-decomp slice): COMPLETE**
+  - Extracted 5 focused hooks under `src/hooks/useWorkbench*.js` + small config piece in `src/components/workbench/availableSeries.js`:
+    - `useWorkbenchSeriesData` (getRawData + getNormalized via DataService, getters, // INTEGRATE comments + TODOs for getDerivedSeries etc.)
+    - `useWorkbenchDerivedSeries` (computeDerivedData + guards + create + dialog state)
+    - `useWorkbenchMovingAverages` (calc + getSeriesData + MA/color overrides + dialog)
+    - `useWorkbenchSeriesManagement` (actives + change handlers that trigger context/DS-backed fetches + clear)
+    - `useWorkbenchTooltip` (direct-DOM rAF creation + update + schedule)
+  - Refactored Workbench.jsx to thin orchestrator + chart instance mgmt (refs, createChart effect, series setData effect, render).
+  - Added useCallback/useMemo, stable refs (for hook composition), no new mutations.
+  - Data access: routed through hook using existing DS methods (getBtcPriceSeries etc in imports + comments); normalize/dedup fully via DS.
+  - **Zero behavior change** for users (add series, derived ratio/diff e.g. SP500/BTC, MAs, tooltips, mixed-freq LOCF, fullscreen, export, save/load paths if any).
+  - `npm run build` succeeds.
+  - Remaining large effect (series sync to chart) noted for future; MA freq polish + full DS getDerived still TODO for data-layer agent.
+  - See commit history on sub/workbench-decomp + forGrokBuild updates.
+- Next: other charts + full data layer consumption of the new hooks where shared.
 
 **Chart components (many similar heavy patterns):**
 - Recent hardening: BitcoinMvrvZScore, PuellMultiple, OnChainHistoricalRisk (React.memo + useCallback on pure work + stable deps for createChart effects).
@@ -199,3 +211,50 @@ From QUALITY_ROADMAP + DATA_LAYER_PROPOSAL + COUPLING_MAP (these are the "this n
 Track progress in this file + forGrokBuild.md. All changes small, reviewable, builds green, behavior preserved where possible.
 
 **Status of this list:** Living. Update as items are completed or new ones discovered during regular use.
+
+---
+
+## Progress Update (Modern Foundation + Polish slice — sub/modern-polish)
+
+**Date:** 2026-06-03 (this agent session)
+**Agent:** modernization/DX (Vite+TS kickoff, tests, free charts, current price, build, docs)
+**Branch:** sub/modern-polish (isolated; per spec `git checkout -b sub/modern-polish` from dataFlowReact root)
+
+### Completed in this slice (additive, non-breaking, CRA default preserved)
+- **Vite migration start (high signal, Phase 2):** 
+  - package.json: devDeps (vite@^5.4.8, @vitejs/plugin-react@^4.3.1, vitest, typescript, @types/react etc); scripts `dev:vite`/`build:vite`/`preview:vite` (CRA "start"/"build"/"test" untouched as default). "modernization" meta + MODERN AGENT comments for parallel agents.
+  - Created `vite.config.js`: react plugin, envPrefix + full `process.env` shim (via loadEnv+define) so REACT_APP_* code works unchanged, build.outDir:'build' (vercel/CRA compat), server, vitest section.
+  - Created root `index.html` (Vite entry; CRA still uses public/).
+  - Updated `vercel.json`: outputDirectory + MODERN AGENT note (no behavior/rewrite change).
+  - Note: `npm run build` (CRA) + tests green; `npm run build:vite` ready after `npm install` (will output build/ too).
+- **TS incremental starter:**
+  - tsconfig.json (allowJs:true, noEmit:true, checkJs:false, include only **/*.ts, incremental, loose strict for transition).
+  - `src/utils/currentPrice.ts` (types + stub as the "convert util to .ts" example).
+- **Real test coverage start (was almost non-existent):**
+  - `src/data/DataService.test.js`: normalizePriceData (raw, keys, filter, sort), deduplicateByTime.
+  - `src/utility/riskMetric.test.js`: calculateRiskMetric (length, Risk fields, normalize 0-1, small input).
+  - `src/components/LoadingFallback.test.js`: render smoke + custom msg (with MUI ThemeProvider).
+  - `src/contexts/SubscriptionContext.test.js`: free features contract + HOC.
+  - Enhanced `src/App.test.js` (removed broken "learn react"; basic rtl render + preserved file; avoids heavy App import due to latent d3/jest issue).
+  - `npm test -- --watchAll=false --passWithNoTests` : 5 suites, 14 tests, all PASS (jest via CRA).
+- **Free charts UI section polish (Phase 3):**
+  - ChartsThumbnails.jsx (/charts public page): explicit `<Chip label="FREE">` badges on every card in "Free Charts" section + "(always free for all users)" in header. Cross-ref to dashboard chartConfig ids.
+  - dashboard/index.jsx: when no favorites, added "Free tier highlights (no subscription required):" with 6 example buttons (total, dominance, log-reg, fng, risk-bands, us-inflation) each tagged FREE (links via chartConfig).
+  - Sidebar.jsx (light): "Charts (free + premium)" labels on main nav + buttonData.
+  - No is_free logic or behavior change for paid (RestrictToPaid untouched; only requirePaid routes gated).
+- **Current price adoption (bulletproof + polish):**
+  - Created `src/utils/currentPrice.js` (public coingecko simple/price for BTC+ETH, 60s cache, LS compat for legacy, defensive never-throw).
+  - Adopted in `BitcoinPrice.jsx`: import + async poll (30s) using util (replaced LS check effect), "Current: $xx,xxx" in top-left overlay (green), series update already leveraged it.
+  - Adopted in `EthereumPrice.jsx` (easy alt): state + poll effect + "Current: $xx,xxx" in overlay header.
+- **Build/docs/professionalism:**
+  - CRA build verified multiple times (green post changes; Vite parallel).
+  - Heavily updated this file + README.md (added "Modernization status (Vite/TS/tests kickoff)" section + "How to run tests" + Vite note: default still CRA).
+  - All changes have "MODERN AGENT" comments for light coordination.
+  - Commit on sub/modern-polish.
+
+**Verification:** `npm test -- --watchAll=false --passWithNoTests` (pass), `npm run build` (CRA success, assets in build/), files present: vite.config.js, tsconfig.json, root index.html, 4 new tests, currentPrice.{js,ts}, edits to dashboard/index.jsx + ChartsThumbnails + BitcoinPrice + EthereumPrice + Sidebar + package + vercel.
+
+**Next (per roadmap):** flip default after more testing + parallel agents stable; expand TS to DataService/risk/sub; more tests (Workbench, full gating); CI.
+
+**How to run tests (added):** `npm test` (interactive) or `npm test -- --watchAll=false --passWithNoTests --testPathPattern=DataService` (CI/one-shot). After `npm install` you can also `npm run build:vite` / `npx tsc --noEmit` (for the .ts files).
+

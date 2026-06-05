@@ -48,7 +48,7 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
   const theme = useTheme();
   const isMobile = useIsMobile();
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
-  const { btcData, fetchBtcData, fearAndGreedData, fetchFearAndGreedData } = useContext(DataContext);
+  const { btcData, fetchBtcData, fearAndGreedData, fetchFearAndGreedData, latestFearAndGreed, fetchLatestFearAndGreed } = useContext(DataContext);
   const plotRef = useRef(null);
   const containerRef = useRef(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -109,7 +109,7 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
 
   // Memoized datasets
   const datasets = useMemo(() => {
-    if (btcData.length === 0 || fearAndGreedData.length === 0) return [];
+    if (btcData.length === 0 || (fearAndGreedData.length === 0 && !latestFearAndGreed)) return [];
     const startDate = new Date('2018-02-01');
     const btcFormattedData = btcData.filter(item => new Date(item.time) >= startDate);
     const fearGreedMap = {};
@@ -120,6 +120,17 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
         fearGreedMap[date] = { value, classification: item.value_classification };
       }
     });
+    // Ensure latest F&G (from separate latest endpoint) is available for most recent price points
+    // even if full fearAndGreedData hasn't been refreshed yet or dates don't exactly align.
+    if (latestFearAndGreed && latestFearAndGreed.time) {
+      const ld = latestFearAndGreed.time;
+      if (!fearGreedMap[ld]) {
+        fearGreedMap[ld] = {
+          value: Number(latestFearAndGreed.value),
+          classification: latestFearAndGreed.value_classification,
+        };
+      }
+    }
     const btcPriceLine = {
       x: btcFormattedData.map(d => d.time),
       y: btcFormattedData.map(d => d.value),
@@ -155,6 +166,26 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
           btcPrice: btcFormattedData.find(btc => btc.time === date)?.value || null,
         });
       });
+      // Include latest from latestFearAndGreed if it's newer or not in the main data, so colored point appears in scatter
+      if (latestFearAndGreed && latestFearAndGreed.time) {
+        const ld = latestFearAndGreed.time;
+        const lval = Number(latestFearAndGreed.value);
+        const lclass = latestFearAndGreed.value_classification;
+        if (!fearGreedGroups[lclass]) fearGreedGroups[lclass] = [];
+        const exists = fearGreedGroups[lclass].some(d => d.time === ld);
+        if (!exists) {
+          let btcP = btcFormattedData.find(btc => btc.time === ld)?.value || null;
+          if (btcP === null && btcFormattedData.length > 0) {
+            // fallback to latest btc price so the colored marker appears on the current price line
+            btcP = btcFormattedData[btcFormattedData.length - 1].value;
+          }
+          fearGreedGroups[lclass].push({
+            time: ld,
+            value: lval,
+            btcPrice: btcP,
+          });
+        }
+      }
       const classificationOrder = ['Extreme Fear', 'Fear', 'Neutral', 'Greed', 'Extreme Greed'];
       const fearGreedDataset = Object.keys(fearGreedGroups)
         .sort((a, b) => classificationOrder.indexOf(a) - classificationOrder.indexOf(b))
@@ -220,12 +251,19 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
       return [btcPriceLine, ...btcPriceTooltipDatasets, ...fearGreedDataset];
     } else {
       // Line view: Align BTC and Fear and Greed data by date
+      // Use latest F&G for any recent points without exact match in full data (so latest price point shows FG value)
       const alignedData = btcFormattedData
-        .map(item => ({
-          time: item.time,
-          btcPrice: item.value,
-          fgValue: fearGreedMap[item.time]?.value ?? null,
-        }))
+        .map(item => {
+          let fg = fearGreedMap[item.time];
+          if (!fg && latestFearAndGreed && item.time >= latestFearAndGreed.time) {
+            fg = { value: Number(latestFearAndGreed.value) };
+          }
+          return {
+            time: item.time,
+            btcPrice: item.value,
+            fgValue: fg?.value ?? null,
+          };
+        })
         .filter(d => d.fgValue != null && !isNaN(d.fgValue));
       let fgValues = alignedData.map(d => d.fgValue);
       let traceName = 'Fear and Greed Index';
@@ -263,13 +301,15 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
   // Fetch data
   useEffect(() => {
     const fetchData = async () => {
-      if (btcData.length > 0 && fearAndGreedData.length > 0) return;
+      const hasFg = fearAndGreedData.length > 0 || !!latestFearAndGreed;
+      if (btcData.length > 0 && hasFg) return;
       setIsLoading(true);
       setError(null);
       try {
         await Promise.all([
           btcData.length === 0 && fetchBtcData(),
           fearAndGreedData.length === 0 && fetchFearAndGreedData(),
+          !latestFearAndGreed && fetchLatestFearAndGreed(),
         ]);
       } catch (err) {
         setError('Failed to fetch data. Please try again later.');
@@ -279,7 +319,7 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
       }
     };
     fetchData();
-  }, [fetchBtcData, fetchFearAndGreedData, btcData.length, fearAndGreedData.length]);
+  }, [fetchBtcData, fetchFearAndGreedData, btcData.length, fearAndGreedData.length, latestFearAndGreed]);
 
   const resetChartView = useCallback(() => {
     setLayoutState({

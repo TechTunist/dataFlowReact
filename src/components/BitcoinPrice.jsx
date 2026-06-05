@@ -1184,6 +1184,7 @@ import {
   BULL_MARKET_SUPPORT_BAND,
   calculateMovingAverage 
 } from '../utils/technicalIndicators';
+import { getCurrentBitcoinPrice } from '../utils/currentPrice';
 const BitcoinPrice = ({ isDashboard = false }) => {
   const chartContainerRef = useRef();
   const chartRef = useRef(null);
@@ -1344,27 +1345,22 @@ const BitcoinPrice = ({ isDashboard = false }) => {
       fetchMvrvData();
     }
   }, [activeIndicators, fetchMvrvData]);
+
+  // Fetch current BTC price from CoinGecko ONCE after chart data is available.
+  // Called only once per chart load (no polling) so it does not interfere with zoom or re-renders.
+  // Updates the price series point for "today" and legend.
+  const currentPriceFetched = useRef(false);
   useEffect(() => {
-    const checkCurrentPrice = () => {
-      try {
-        const cachedPrice = localStorage.getItem('btcPrice');
-        const cacheTime = localStorage.getItem('cacheTime');
-        const now = new Date().getTime();
-        const cacheExpiry = 10 * 60 * 1000;
-        if (cachedPrice && cacheTime && now - parseInt(cacheTime) < cacheExpiry) {
-          setCurrentBtcPrice(JSON.parse(cachedPrice));
-        } else {
-          setCurrentBtcPrice(null);
+    if (btcData.length > 0 && !currentPriceFetched.current) {
+      currentPriceFetched.current = true;
+      getCurrentBitcoinPrice().then(price => {
+        if (price != null) {
+          setCurrentBtcPrice(price);
         }
-      } catch (error) {
-        console.error('Error reading current BTC price from localStorage:', error);
-        setCurrentBtcPrice(null);
-      }
-    };
-    checkCurrentPrice();
-    const intervalId = setInterval(checkCurrentPrice, 5000);
-    return () => clearInterval(intervalId);
-  }, []);
+      }).catch(() => {});
+    }
+  }, [btcData.length]);
+
   useEffect(() => {
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
@@ -1583,10 +1579,6 @@ const BitcoinPrice = ({ isDashboard = false }) => {
     if (priceSeriesRef.current && btcData.length > 0) {
       try {
         priceSeriesRef.current.setData(btcData);
-        if (currentBtcPrice) {
-          const today = new Date().toISOString().split('T')[0];
-          priceSeriesRef.current.update({ time: today, value: currentBtcPrice });
-        }
         if (chartRef.current) chartRef.current.timeScale().fitContent();
       } catch (error) {
         console.error('Error updating Bitcoin price data on chart:', error);
@@ -1594,7 +1586,22 @@ const BitcoinPrice = ({ isDashboard = false }) => {
         if (chartRef.current) chartRef.current.timeScale().fitContent();
       }
     }
-  }, [btcData, currentBtcPrice]);
+  }, [btcData]);
+
+  // Update price series with live current price (from CoinGecko, fetched once).
+  // Use update() only - do NOT call fitContent() here, as that would reset user zoom.
+  // This ensures the chart shows up-to-date price without interfering with interactions.
+  useEffect(() => {
+    if (priceSeriesRef.current && currentBtcPrice != null) {
+      const today = new Date().toISOString().split('T')[0];
+      try {
+        priceSeriesRef.current.update({ time: today, value: currentBtcPrice });
+      } catch (error) {
+        console.error('Error updating current BTC price on chart:', error);
+      }
+    }
+  }, [currentBtcPrice]);
+
   useEffect(() => {
     if (mvrvSeriesRef.current && btcData.length > 0 && mvrvData.length > 0) {
       const btcStartTime = new Date(btcData[0].time).getTime();

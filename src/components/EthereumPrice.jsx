@@ -15,6 +15,7 @@ import {
 } from '../utils/technicalIndicators';
 import LastUpdated from '../hooks/LastUpdated';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
+import { getCurrentEthereumPrice } from '../utils/currentPrice';
 
 const EthereumPrice = ({ isDashboard = false }) => {
   const chartContainerRef = useRef();
@@ -37,6 +38,7 @@ const EthereumPrice = ({ isDashboard = false }) => {
   const [activeSMAs, setActiveSMAs] = useState([]);
   const [maFilter, setMaFilter] = useState('daily'); // 'daily' | 'weekly'
   const [activeRsiPeriod, setActiveRsiPeriod] = useState('');
+  const [currentEthPrice, setCurrentEthPrice] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -106,6 +108,17 @@ const EthereumPrice = ({ isDashboard = false }) => {
     };
     fetchIndicatorData();
   }, [activeIndicators, fetchFedBalanceData, fedBalanceData.length]);
+
+  // Fetch current ETH price from CoinGecko ONCE after chart data is available.
+  const currentPriceFetched = useRef(false);
+  useEffect(() => {
+    if (ethData.length > 0 && !currentPriceFetched.current) {
+      currentPriceFetched.current = true;
+      getCurrentEthereumPrice().then(price => {
+        if (price != null) setCurrentEthPrice(price);
+      }).catch(() => {});
+    }
+  }, [ethData.length]);
 
   const calculateMayerMultiple = useCallback((data) => {
     const period = 200;
@@ -299,6 +312,19 @@ const EthereumPrice = ({ isDashboard = false }) => {
       resetChartView();
     }
   }, [ethData, resetChartView]);
+
+  // Update price series with live current price (from CoinGecko, fetched once).
+  // Use update() only - do NOT call fitContent/resetChartView here to preserve user zoom.
+  useEffect(() => {
+    if (priceSeriesRef.current && currentEthPrice != null) {
+      const today = new Date().toISOString().split('T')[0];
+      try {
+        priceSeriesRef.current.update({ time: today, value: currentEthPrice });
+      } catch (error) {
+        console.error('Error updating current ETH price on chart:', error);
+      }
+    }
+  }, [currentEthPrice]);
 
   useEffect(() => {
     if (fedBalanceSeriesRef.current && ethData.length > 0 && fedBalanceData.length > 0) {

@@ -1,4 +1,4 @@
-import { Box, Typography, Grid, Card, CardContent, CardMedia, useTheme } from "@mui/material";
+import { Box, Typography, Grid, Card, CardContent, CardMedia, useTheme, Chip } from "@mui/material";
 import { Link } from "react-router-dom";
 import { tokens } from "../theme";
 // Placeholder image (replace with actual chart images later)
@@ -428,6 +428,14 @@ const Charts = () => {
         image: '../../assets/german10year.png',
       },
     ],
+    "Advanced Models": [
+      {
+        path: "/market-heat-index",
+        title: "Market Heat Index",
+        description: "Interactive Market Heat Index with tunable weights and range stretch for historic analysis",
+        image: placeholderImage,
+      },
+    ],
     Workbench: [
       {
         path: "/workbench",
@@ -439,10 +447,19 @@ const Charts = () => {
   };
   return (
     <Box m="20px" maxWidth="1200px" mx="auto">
+      {/* MODERN AGENT: enhanced free charts UI section for professionalization-sprint.
+          - Explicit "FREE" Chip badges on all items in Free Charts (high visibility for free tier).
+          - Updated header to clarify "always available".
+          - Cross-refs the free list here + dashboard chartConfig (e.g. total, dominance, risk-bands, us-* , log-regression, fear-and-greed etc are free).
+          - /charts route is public (see App.js), so visible pre/post auth for free tier.
+          - No is_free prop yet (hardcoded section); future can derive from a shared FREE_CHART_PATHS const or backend VALID_CHART_IDS.
+          - Some free items duplicated in other sections (Price etc) for discovery; that's ok.
+          - Polish: free tier now obviously signaled without affecting paid routes (requirePaid only on workbench/fred premium).
+      */}
       {Object.entries(chartSections).filter(([section]) => section === "Free Charts").map(([section, charts]) => (
         <Box key={section} mb={6}>
           <Typography variant="h3" color={colors.grey[100]} mb={1} mt={10} textAlign="left" ml={'45%'} >
-            {section}
+            {section} <Typography component="span" variant="body2" sx={{ color: colors.greenAccent[500], ml:1 }}>(always free for all users)</Typography>
           </Typography>
           <Grid
             container
@@ -468,13 +485,26 @@ const Charts = () => {
                   }}
                 >
                   <CardContent>
-                    <Typography
-                      variant="h5"
-                      color={colors.grey[100]}
-                      textAlign="center"
-                    >
-                      {title}
-                    </Typography>
+                    <Box display="flex" alignItems="center" justifyContent="center" gap={1}>
+                      <Typography
+                        variant="h5"
+                        color={colors.grey[100]}
+                        textAlign="center"
+                      >
+                        {title}
+                      </Typography>
+                      <Chip
+                        label="FREE"
+                        size="small"
+                        sx={{
+                          backgroundColor: colors.greenAccent[500],
+                          color: colors.grey[900],
+                          fontWeight: 'bold',
+                          fontSize: '0.65rem',
+                          height: 20,
+                        }}
+                      />
+                    </Box>
                   </CardContent>
                   <CardMedia
                     sx={{

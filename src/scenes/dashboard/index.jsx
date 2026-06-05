@@ -37,6 +37,18 @@ import UsInterestChart from "../../components/UsInterest";
 import UsCombinedMacroChart from "../../components/UsCombinedMacro";
 import UsInitialClaimsChart from "../../components/UsInitialClaims";
 import BitcoinTxMvrvChart from "../../components/BitcoinTxMvrv";
+import UKUnemploymentChart from "../../components/UKUnemployment";
+import UKClaimantCountChart from "../../components/UKClaimantCount";
+import UKEarningsChart from "../../components/UKEarnings";
+import UKPopulationChart from "../../components/UKPopulation";
+import UKWorkforceJobsChart from "../../components/UKWorkforceJobs";
+import UKBusinessCountsChart from "../../components/UKBusinessCounts";
+import UKJSAByAgeChart from "../../components/UKJSAByAge";
+import UKJSAByEthnicityChart from "../../components/UKJSAByEthnicity";
+import UKLabourByAgeChart from "../../components/UKLabourByAge";
+import UKPublicPrivateChart from "../../components/UKPublicPrivateEmployment";
+import UKAPSWorkplaceChart from "../../components/UKApsWorkplace";
+import UKEsaClaimantsChart from "../../components/UKEsaClaimants";
 import OnChainHistoricalRisk from "../../components/OnChainHistoricalRisk";
 import AltcoinSeasonIndexChart from "../../components/AltcoinSeasonIndexChart";
 import FredSeriesChart from "../../components/FredSeriesChart";
@@ -65,8 +77,8 @@ const chartConfig = [
   { id: "ethereum-price", title: "Ethereum Price", linkTo: "/ethereum", component: (props) => <EthereumPrice isDashboard={true} {...props} />, description: "A simple chart of the entire Ethereum daily close price history." },
   { id: "puell-multiple", title: "Puell Multiple", linkTo: "/puell-multiple", component: (props) => <PuellMultiple isDashboard={true} {...props} />, description: "Puell Multiple indicator for Bitcoin mining." },
   { id: "mvrv-zscore", title: "Bitcoin Mvrv Z-Score", linkTo: "/btc-mvrv-z", component: (props) => <BitcoinMvrvZScoreChart isDashboard={true} {...props} />, description: "Pick out extremes between the market value and realised value of Bitcoin." },
-  { id: "bitcoin-risk", title: "Bitcoin Risk Metric", linkTo: "/risk", component: (props) => <BitcoinRisk isDashboard={true} {...props} />, description: "The risk metric demonstrates the risk of holding bitcoin at any given time." },
-  { id: "ethereum-risk", title: "Ethereum Risk Metric", linkTo: "/risk-eth", component: (props) => <EthereumRisk isDashboard={true} {...props} />, description: "The risk metric demonstrates the risk of holding Eth at any given time." },
+  { id: "bitcoin-risk", title: "Bitcoin Risk Metric", linkTo: "/risk", component: (props) => <BitcoinRisk isDashboard={true} {...props} />, description: "The risk metric demonstrates the risk of holding bitcoin." },
+  { id: "ethereum-risk", title: "Ethereum Risk Metric", linkTo: "/risk-eth", component: (props) => <EthereumRisk isDashboard={true} {...props} />, description: "The risk metric demonstrates the risk of holding Eth." },
   { id: "pi-cycle-top", title: "PiCycle Top Indicator", linkTo: "/pi-cycle", component: (props) => <PiCycleTop isDashboard={true} {...props} />, description: "The PiCycle Top Indicator for Bitcoin market tops." },
   { id: "fear-and-greed", title: "Fear and Greed Indicator", linkTo: "/fear-and-greed", component: (props) => <FearAndGreed isDashboard={true} {...props} />, description: "The Fear and Greed index measures market sentiment." },
   { id: "logarithmic-regression", title: "Bitcoin Logarithmic Regression", linkTo: "/logarithmic-regression", component: (props) => <BitcoinLogRegression isDashboard={true} {...props} />, description: "Logarithmic Regression trend lines for Bitcoin." },
@@ -80,6 +92,18 @@ const chartConfig = [
   { id: "us-interest", title: "US Interest Rates", linkTo: "/us-interest", component: (props) => <UsInterestChart isDashboard={true} {...props} />, description: "US interest rates over time." },
   { id: "us-combined-macro", title: "US Combined Macro", linkTo: "/us-combined-macro", component: (props) => <UsCombinedMacroChart isDashboard={true} {...props} />, description: "Combined US macroeconomic indicators." },
   { id: "us-initial-claims", title: "US Initial Claims", linkTo: "/us-initial-claims", component: (props) => <UsInitialClaimsChart isDashboard={true} {...props} />, description: "US initial jobless claims." },
+  { id: "uk-unemployment", title: "UK Unemployment (LFS)", linkTo: "/uk-unemployment", component: (props) => <UKUnemploymentChart isDashboard={true} {...props} />, description: "Official UK unemployment & employment rates (broad LFS measure). A key signal of whether the UK jobs market is healthy or under pressure — important real-world context for risk sentiment." },
+  { id: "uk-claimants", title: "UK Claimant Count", linkTo: "/uk-claimants", component: (props) => <UKClaimantCountChart isDashboard={true} {...props} />, description: "Fast monthly % of people claiming unemployment benefits. A timely early warning of labour market stress (like US jobless claims)." },
+  { id: "uk-earnings", title: "UK Earnings (ASHE)", linkTo: "/uk-earnings", component: (props) => <UKEarningsChart isDashboard={true} {...props} />, description: "Median weekly pay in the UK by gender. Tracks wage growth and ordinary household income strength." },
+  { id: "uk-population", title: "UK Population Estimates", linkTo: "/uk-population", component: (props) => <UKPopulationChart isDashboard={true} {...props} />, description: "UK population size and gender split. Long-term foundation for labour supply, consumers and economic scale." },
+  { id: "uk-workforce-jobs", title: "UK Workforce Jobs", linkTo: "/uk-workforce-jobs", component: (props) => <UKWorkforceJobsChart isDashboard={true} {...props} />, description: "Total jobs in the UK economy. Direct read on employment levels and whether the economy is creating work." },
+  { id: "uk-business-counts", title: "UK Business Counts", linkTo: "/uk-business-counts", component: (props) => <UKBusinessCountsChart isDashboard={true} {...props} />, description: "Number of UK businesses. Indicator of entrepreneurship, company formation and private-sector health." },
+  { id: "uk-jsa-age", title: "UK JSA by Age/Duration", linkTo: "/uk-jsa-age", component: (props) => <UKJSAByAgeChart isDashboard={true} {...props} />, description: "Unemployment benefit claimants split by age and how long they have been claiming. Shows who is hit hardest and whether problems are becoming entrenched." },
+  { id: "uk-jsa-ethnicity", title: "UK JSA by Ethnicity", linkTo: "/uk-jsa-ethnicity", component: (props) => <UKJSAByEthnicityChart isDashboard={true} {...props} />, description: "Claimants broken down by ethnic group. Reveals whether labour market pain is evenly spread or concentrated in particular communities." },
+  { id: "uk-labour-by-age", title: "UK Labour by Age", linkTo: "/uk-labour-by-age", component: (props) => <UKLabourByAgeChart isDashboard={true} {...props} />, description: "Employment, unemployment and inactivity rates by age band. Shows how different generations are faring in the jobs market." },
+  { id: "uk-public-private", title: "UK Public/Private Employment", linkTo: "/uk-public-private", component: (props) => <UKPublicPrivateChart isDashboard={true} {...props} />, description: "UK employment levels (public vs private proxy). Core measure of overall labour market strength and economic activity." },
+  { id: "uk-aps-workplace", title: "UK APS Workplace", linkTo: "/uk-aps-workplace", component: (props) => <UKAPSWorkplaceChart isDashboard={true} {...props} />, description: "Workplace-based employment counts. Complements residence-based views and shows where jobs are actually located." },
+  { id: "uk-esa-claimants", title: "UK ESA Claimants", linkTo: "/uk-esa-claimants", component: (props) => <UKEsaClaimantsChart isDashboard={true} {...props} />, description: "People on disability/illness-related benefits (ESA proxy). Signals health-related labour market exclusion and broader economic hardship." },
   { id: "tx-mvrv", title: "Bitcoin Transaction MVRV", linkTo: "/tx-mvrv", component: (props) => <BitcoinTxMvrvChart isDashboard={true} {...props} />, description: "Bitcoin MVRV ratio for transactions." },
   { id: "on-chain-historical-risk", title: "On-Chain Historical Risk", linkTo: "/on-chain-historical-risk", component: (props) => <OnChainHistoricalRisk isDashboard={true} {...props} />, description: "Historical risk based on on-chain data." },
   { id: "altcoin-season-index", title: "Altcoin Season Index", linkTo: "/altcoin-season-index", component: (props) => <AltcoinSeasonIndexChart isDashboard={true} {...props} />, description: "Index indicating altcoin season trends." },
@@ -113,7 +137,7 @@ const chartConfig = [
   { id: "fred-german-bond-yield", title: "German 10-Year Bond Yield", linkTo: "/fred/german-bond-yield", component: (props) => <FredSeriesChart isDashboard={true} seriesId="IRLTLT01DEM156N" chartType="line" scaleMode="linear" valueFormatter={(value) => `${value.toFixed(2)}%`} {...props} />, description: "Monthly German 10-Year Government Bond Yield." },
   { id: "workbench", title: "Workbench Chart", linkTo: "/workbench", component: (props) => <WorkbenchChart isDashboard={true} seriesId="UMCSENT" chartType="area" valueFormatter={(value) => value.toLocaleString()} {...props} />, description: "Custom indicator chart for comparing data series." },
   { id: "sp500-roi", title: "S&P 500 ROI", linkTo: "/sp500-roi", component: (props) => <SP500ROI isDashboard={true} {...props} />, description: "Annualised ROI of the S&P 500." },
-  { id: "tail-curvature", title: "Tail Curvature", linkTo: "/tail-curvature", component: (props) => <TailCurvature isDashboard={true} {...props} />, description: "Asymmetric Tail Curvature Quantile Model for Bitcoin price quantiles (Cowen 2026)." },
+  { id: "tail-curvature", title: "Tail Curvature", linkTo: "/tail-curvature", component: (props) => <TailCurvature isDashboard={true} {...props} />, description: "Asymmetric Tail Curvature Quantile Model (Cowen 2026) — includes golden pocket / dislocation quantiles below 1%." },
   { id: "sahm-recession-indicator", title: "Sahm Recession Indicator", linkTo: "/fred/sahm-recession-indicator", component: (props) => <SahmRecessionIndicator isDashboard={true} {...props} />, description: "Sahm Rule recession indicator based on unemployment rate changes." },
 ];
 
@@ -316,6 +340,31 @@ const Dashboard = memo(({ isMobile, isSidebar }) => {
               Browse Charts Here
             </Button>
           </Link>
+
+          {/* MODERN AGENT: free charts polish - surface free tier explicitly in dashboard (for users who haven't favorited yet).
+              These match items from the "Free Charts" section in ChartsThumbnails + chartConfig ids (cross-ref: total-market-cap, bitcoin-dominance, logarithmic-regression, fear-and-greed, risk-bands, us-inflation etc).
+              Always visible here promotes free tier value; no gating change (these routes are non-requirePaid).
+              See also enhanced badges in /charts page. */}
+          <Box mt={4}>
+            <Typography variant="h6" color={colors.grey[100]} mb={1}>
+              Free tier highlights (no subscription required):
+            </Typography>
+            <Box display="flex" flexWrap="wrap" justifyContent="center" gap={1}>
+              {[
+                { id: 'total-market-cap', label: 'Total Market Cap' },
+                { id: 'bitcoin-dominance', label: 'Bitcoin Dominance' },
+                { id: 'logarithmic-regression', label: 'Log Regression' },
+                { id: 'fear-and-greed', label: 'Fear & Greed' },
+                { id: 'risk-bands', label: 'Risk Bands' },
+                { id: 'us-inflation', label: 'US Inflation' },
+              ].map(f => (
+                <Button key={f.id} component={Link} to={chartConfig.find(c => c.id === f.id)?.linkTo || '/charts'} size="small" variant="outlined" sx={{ borderColor: colors.greenAccent[500], color: colors.greenAccent[500] }}>
+                  {f.label} <Box component="span" sx={{ ml: 0.5, fontSize: '0.7em', bgcolor: colors.greenAccent[500], color: colors.grey[900], px: 0.5, borderRadius: 0.5 }}>FREE</Box>
+                </Button>
+              ))}
+            </Box>
+            <Typography variant="caption" color={colors.grey[400]}>More free charts on the Charts page (public access)</Typography>
+          </Box>
         </Box>
       ) : (
         <Grid container spacing={4}>

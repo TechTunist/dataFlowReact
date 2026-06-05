@@ -27,9 +27,10 @@ import ShowChartIcon from '@mui/icons-material/ShowChart';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import { saveCycleDaysData, getCycleDaysData } from '../utility/idbUtils';
 import { useNavigate } from 'react-router-dom';
-import Snackbar from '@mui/material/Snackbar';
-import Alert from '@mui/material/Alert';
 import { calculateRiskMetric } from '../utility/riskMetric';
+import logger from '../utils/logger';
+import { apiUrl } from '../config/api';
+import { useAuth } from '@clerk/clerk-react';
 
 
 // Wrap GridLayout with WidthProvider for responsiveness
@@ -1051,51 +1052,78 @@ const RoiCycleComparisonWidget = memo(() => {
   const BitcoinRiskWidget = memo(() => {
   const [riskLevel, setRiskLevel] = useState(null);
   const { btcData } = useContext(DataContext);
+  const { getToken } = useAuth();
 
   useEffect(() => {
     const fetchRiskLevel = async () => {
+      let level = null;
+
+      // 1. IDB first for instant non-zero value from previous visit/calc (fixes "stays at 0 too long")
       try {
         const riskData = await getBitcoinRisk();
         if (riskData && riskData.riskLevel !== undefined) {
-          setRiskLevel(riskData.riskLevel);
-        } else {
-          // No valid cached data, calculate locally
-          if (btcData && btcData.length > 0) {
-            const riskDataArray = calculateRiskMetric(btcData);
-            if (riskDataArray && riskDataArray.length > 0) {
-              const calculatedRisk = riskDataArray[riskDataArray.length - 1].Risk;
-              await saveBitcoinRisk(calculatedRisk);
-              setRiskLevel(calculatedRisk);
-            } else {
-              console.error('Failed to calculate risk level: Invalid risk data');
-              setRiskLevel(0);
+          level = riskData.riskLevel;
+          logger.info('BitcoinRiskWidget: using IDB cached risk level');
+        }
+      } catch (e) {
+        logger.error('BitcoinRiskWidget: error reading IDB risk', e);
+      }
+
+      if (level !== null) {
+        setRiskLevel(level);
+        // still continue to try backend/calc for fresher
+      }
+
+      // 2. Try fresh precomputed from backend (may be price risk or other 0-1 risk)
+      try {
+        const token = await getToken();
+        if (token) {
+          const url = apiUrl('/api/risk-metrics/?ordering=-time&page_size=1');
+          const resp = await fetch(url, {
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            signal: AbortSignal.timeout(8000),
+          });
+          if (resp.ok) {
+            const data = await resp.json();
+            const items = (data && data.results) || (Array.isArray(data) ? data : []);
+            if (items.length > 0) {
+              const candidate = parseFloat(items[0].value);
+              if (isFinite(candidate) && candidate >= 0 && candidate <= 1.0001) {
+                level = candidate;
+                await saveBitcoinRisk(level).catch(() => {});
+                logger.info('BitcoinRiskWidget: using fresh precomputed risk from /api/risk-metrics/');
+              }
             }
-          } else {
-            console.error('No btcData available for risk calculation');
-            setRiskLevel(0);
           }
         }
-      } catch (error) {
-        console.error('Error handling Bitcoin risk level:', error);
-        // Fallback to local calculation
-        if (btcData && btcData.length > 0) {
+      } catch (e) {
+        logger.warn('BitcoinRiskWidget: backend /api/risk-metrics/ fetch failed or no suitable 0-1 value (fallback to IDB/calc)', e && e.message ? e.message : e);
+      }
+
+      // 3. Always calc from current btcData if available (ensures widget matches the risk chart's latest value exactly)
+      // Do this even if we have IDB/backend, to get the current calc.
+      if (btcData && btcData.length > 0) {
+        try {
           const riskDataArray = calculateRiskMetric(btcData);
           if (riskDataArray && riskDataArray.length > 0) {
             const calculatedRisk = riskDataArray[riskDataArray.length - 1].Risk;
-            await saveBitcoinRisk(calculatedRisk);
-            setRiskLevel(calculatedRisk);
-          } else {
-            console.error('Failed to calculate risk level: Invalid risk data');
-            setRiskLevel(0);
+            if (isFinite(calculatedRisk)) {
+              await saveBitcoinRisk(calculatedRisk);
+              level = calculatedRisk;
+              logger.info('BitcoinRiskWidget: calculated fresh risk from btcData (to match chart)');
+            }
           }
-        } else {
-          console.error('No btcData available for risk calculation');
-          setRiskLevel(0);
+        } catch (e) {
+          logger.error('BitcoinRiskWidget: error during local calc', e);
         }
+      } else {
+        logger.warn('BitcoinRiskWidget: insufficient btcData for calc');
       }
+
+      setRiskLevel(level !== null ? level : 0);
     };
     fetchRiskLevel();
-  }, [btcData]);
+  }, [btcData, getToken]);
 
   const displayRisk = riskLevel !== null ? Math.max(0, Math.min(100, riskLevel * 100)).toFixed(2) : 0;
   const backgroundColor = getBackgroundColor(displayRisk);
@@ -1196,9 +1224,11 @@ const RoiCycleComparisonWidget = memo(() => {
   const FearAndGreedGauge = memo(() => {
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
-    const { fearAndGreedData, fetchFearAndGreedData } = useContext(DataContext);
+    const { fearAndGreedData, fetchFearAndGreedData, latestFearAndGreed, fetchLatestFearAndGreed } = useContext(DataContext);
     const [isInfoVisible, setIsInfoVisible] = useState(false);
-    const latestValue = fearAndGreedData && fearAndGreedData.length > 0 ? Math.max(0, Math.min(100, fearAndGreedData[fearAndGreedData.length - 1].value)) : 0;
+    // Prefer the freshest latestFearAndGreed (from binary-latest endpoint) over last of full fearAndGreedData
+    const latestFg = latestFearAndGreed || (fearAndGreedData && fearAndGreedData.length > 0 ? fearAndGreedData[fearAndGreedData.length - 1] : null);
+    const latestValue = latestFg ? Math.max(0, Math.min(100, Number(latestFg.value))) : 0;
     const backgroundColor = getBackgroundColor(latestValue);
     const textColor = getTextColor(backgroundColor);
     const heatDescription = getHeatDescription(latestValue);
@@ -1225,10 +1255,13 @@ const RoiCycleComparisonWidget = memo(() => {
     const gaugeColor = getGaugeColor(latestValue);
 
     useEffect(() => {
-      if (!fearAndGreedData) {
+      if (!fearAndGreedData || fearAndGreedData.length === 0) {
         fetchFearAndGreedData();
       }
-    }, [fearAndGreedData, fetchFearAndGreedData]);
+      if (!latestFearAndGreed) {
+        fetchLatestFearAndGreed();
+      }
+    }, [fearAndGreedData, fetchFearAndGreedData, latestFearAndGreed, fetchLatestFearAndGreed]);
 
     const navigate = useNavigate();
     const handleChartRedirect = (event) => {
@@ -1749,8 +1782,7 @@ const MarketHeatGaugeWidget = memo(() => {
   const [heatScore, setHeatScore] = useState(null);
   const [debugScores, setDebugScores] = useState({});
   const [debugInputs, setDebugInputs] = useState({});
-  const { mvrvData, btcData, fearAndGreedData } = useContext(DataContext);
-  const [openSnackbar, setOpenSnackbar] = useState(false); // Added for Snackbar state
+  const { mvrvData, btcData, fearAndGreedData, latestFearAndGreed } = useContext(DataContext);
 
   useEffect(() => {
     if (mvrvData?.length > 0 && btcData?.length > 350 && fearAndGreedData?.length > 0) {
@@ -1782,11 +1814,12 @@ const MarketHeatGaugeWidget = memo(() => {
           riskData = await getBitcoinRisk();
           riskHeat = riskData && riskData.riskLevel !== undefined ? Math.min(100, riskData.riskLevel * 100) : 0;
         } catch (error) {
-          console.error('Error fetching risk:', error);
+          logger.error('Error fetching risk in heat calc (non-widget):', error);
           riskHeat = 0;
         }
-        const fearGreedValueRaw = fearAndGreedData[fearAndGreedData.length - 1].value;
-        const fearGreedValue = Math.max(0, Math.min(100, fearGreedValueRaw));
+        const fearGreedLatest = latestFearAndGreed || (fearAndGreedData && fearAndGreedData.length > 0 ? fearAndGreedData[fearAndGreedData.length - 1] : null);
+        const fearGreedValueRaw = fearGreedLatest ? fearGreedLatest.value : 0;
+        const fearGreedValue = Math.max(0, Math.min(100, Number(fearGreedValueRaw)));
         const ratioData = calculateRatioSeries(btcData);
         const latestRatioRaw = ratioData[ratioData.length - 1]?.value;
         const latestRatio = latestRatioRaw ? Math.max(0, Math.min(100, latestRatioRaw)) : 0;
@@ -1848,16 +1881,10 @@ const MarketHeatGaugeWidget = memo(() => {
   const gaugeColor = getGaugeColor(heatScore);
   const [isInfoVisible, setIsInfoVisible] = useState(false);
 
+  const navigate = useNavigate();
   const handleChartRedirect = (event) => {
     event.stopPropagation();
-    setOpenSnackbar(true); // Show the Snackbar
-  };
-
-  const handleCloseSnackbar = (event, reason) => {
-    if (reason === 'clickaway') {
-      return;
-    }
-    setOpenSnackbar(false);
+    navigate('/market-heat-index');
   };
 
   return (
@@ -1956,20 +1983,6 @@ const MarketHeatGaugeWidget = memo(() => {
         isVisible={isInfoVisible}
         explanation="The Market Heat Index combines multiple indicators (MVRV, Mayer Multiple, Fear and Greed, etc.) to assess overall market conditions. A higher score indicates an overheated market, calculated as a weighted average of individual indicator scores."
       />
-      <Snackbar
-        open={openSnackbar}
-        autoHideDuration={6000}
-        onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-      >
-        <Alert
-          onClose={handleCloseSnackbar}
-          severity="info"
-          sx={{ width: '100%', backgroundColor: colors.primary[400], color: colors.grey[100] }}
-        >
-          The Market Heat Index chart is currently under construction. Please check back later for updates.
-        </Alert>
-      </Snackbar>
     </Box>
   );
 });

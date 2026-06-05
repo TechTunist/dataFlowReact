@@ -15,6 +15,7 @@ import {
   BULL_MARKET_SUPPORT_BAND,
   calculateMovingAverage 
 } from '../utils/technicalIndicators';
+import { getCurrentPrice } from '../utils/currentPrice';
 
 const AltcoinPrice = ({ isDashboard = false }) => {
   const chartContainerRef = useRef();
@@ -25,6 +26,7 @@ const AltcoinPrice = ({ isDashboard = false }) => {
   const mayerMultipleSeriesRef = useRef(null);
   const rsiSeriesRef = useRef(null);
   const rsiPriceLinesRef = useRef([]);
+  const currentPriceFetched = useRef(false);
   const [chartData, setChartData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [scaleMode, setScaleMode] = useState(0); // 0: linear, 1: logarithmic
@@ -36,6 +38,7 @@ const AltcoinPrice = ({ isDashboard = false }) => {
   const [activeSMAs, setActiveSMAs] = useState([]);
   const [maFilter, setMaFilter] = useState('daily'); // 'daily' | 'weekly'
   const [activeRsiPeriod, setActiveRsiPeriod] = useState('');
+  const [currentAltPrice, setCurrentAltPrice] = useState(null);
   const clearMovingAverages = useCallback(() => {
     setActiveSMAs([]);
   }, []);
@@ -204,6 +207,22 @@ const AltcoinPrice = ({ isDashboard = false }) => {
       setIsLoading(false);
     }
   }, [denominator, altcoinData, selectedCoin, btcData, activeIndicators, fedBalanceData]);
+
+  // Fetch current price for the selected altcoin from CoinGecko ONCE after its data is loaded.
+  // Only once per coin load to avoid interference with chart zoom.
+  useEffect(() => {
+    currentPriceFetched.current = false; // reset on coin change
+  }, [selectedCoin]);
+
+  useEffect(() => {
+    const altDataForCoin = altcoinData[selectedCoin] || [];
+    if (altDataForCoin.length > 0 && !currentPriceFetched.current) {
+      currentPriceFetched.current = true;
+      getCurrentPrice(selectedCoin).then(price => {
+        if (price != null) setCurrentAltPrice(price);
+      }).catch(() => {});
+    }
+  }, [selectedCoin, altcoinData]);
 
   // Initialize chart
   useEffect(() => {
@@ -374,6 +393,20 @@ const AltcoinPrice = ({ isDashboard = false }) => {
       chartRef.current.timeScale().fitContent();
     }
   }, [chartData]);
+
+  // Update price series with live current price (from CoinGecko, fetched once per coin load).
+  // Use update() ONLY - never fitContent here, to avoid resetting user zoom/pan.
+  // Only update series point when in USD denominator (to keep units consistent); USD current always shown in legend.
+  useEffect(() => {
+    if (priceSeriesRef.current && currentAltPrice != null && chartData.length > 0 && denominator === 'USD') {
+      const today = new Date().toISOString().split('T')[0];
+      try {
+        priceSeriesRef.current.update({ time: today, value: currentAltPrice });
+      } catch (error) {
+        console.error('Error updating current alt price on chart:', error);
+      }
+    }
+  }, [currentAltPrice, denominator]);
 
   // Update Fed balance series data
   useEffect(() => {

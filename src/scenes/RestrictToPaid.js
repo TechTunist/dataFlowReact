@@ -45,10 +45,12 @@ const RestrictedComponent = memo(
         </Box>
       );
     }
-    // Check if user has premium access or a canceled subscription with valid current_period_end
+    // Check if user has premium access or a canceled/canceling subscription with valid current_period_end (grace)
+    // Strengthened per bulletproofing (keeps legitimate users in grace; no lockout of free).
     const hasPremiumAccess = subscriptionStatus.access === 'Full';
+    const rawStatus = (subscriptionStatus.subscription_status || '').toLowerCase();
     const isCancelledButValid =
-      subscriptionStatus.subscription_status === 'canceled' &&
+      (rawStatus === 'canceled' || rawStatus === 'canceling') &&
       subscriptionStatus.current_period_end &&
       subscriptionStatus.current_period_end > new Date();
     if (hasPremiumAccess || isCancelledButValid) {

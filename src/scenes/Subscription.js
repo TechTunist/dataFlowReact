@@ -323,7 +323,7 @@ const Subscription = memo(() => {
         <Box sx={{ mb: 3 }}>
           <Typography variant="body1" sx={{ color: colors.grey[100], mb: 1 }}>
             <strong>Plan:</strong>{' '}
-            {subscriptionStatus.subscription_status === 'canceling' ? (
+            {['canceling', 'canceled'].includes(subscriptionStatus.subscription_status) || (subscriptionStatus.display_status || '').toLowerCase().includes('access ends') ? (
               <>
                 {subscriptionStatus.plan} ({subscriptionStatus.billing_interval}) - Retained access until period end
               </>
@@ -334,19 +334,17 @@ const Subscription = memo(() => {
             )}
           </Typography>
           <Typography variant="body1" sx={{ color: colors.grey[100], mb: 1 }}>
-            <strong>Status:</strong> {subscriptionStatus.subscription_status}
+            <strong>Status:</strong> {subscriptionStatus.display_status || subscriptionStatus.subscription_status}
           </Typography>
-          {subscriptionStatus.current_period_end && ['active', 'past_due', 'canceling'].includes(subscriptionStatus.subscription_status) && (
+          {/* For live subs: show Next Payment Due using raw internal status + date */}
+          {subscriptionStatus.current_period_end && ['active', 'past_due'].includes(subscriptionStatus.subscription_status) && (
             <Typography variant="body1" sx={{ color: colors.grey[100], mb: 1 }}>
-              <strong>Next Payment:</strong>{' '}
-              {subscriptionStatus.subscription_status === 'canceling' ? (
-                'Canceled'
-              ) : (
-                new Date(subscriptionStatus.current_period_end).toLocaleDateString()
-              )}
+              <strong>Next Payment Due:</strong>{' '}
+              {new Date(subscriptionStatus.current_period_end).toLocaleDateString()}
             </Typography>
           )}
-          {subscriptionStatus.subscription_status === 'canceling' && subscriptionStatus.current_period_end && (
+          {/* For canceling/canceled + future: Access Ends (per ToDo: if cancelled read "access ends") */}
+          {['canceling', 'canceled'].includes(subscriptionStatus.subscription_status) && subscriptionStatus.current_period_end && (
             <Typography variant="body1" sx={{ color: colors.grey[100], mb: 1 }}>
               <strong>Access Ends:</strong> {new Date(subscriptionStatus.current_period_end).toLocaleDateString()}
             </Typography>

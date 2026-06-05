@@ -136,7 +136,7 @@ const Profile = memo(() => {
         <Box sx={{ mb: 3 }}>
           <Typography variant="body1" sx={{ color: colors.grey[100], mb: 1 }}>
             <strong>Plan:</strong>{' '}
-            {subscriptionStatus.subscription_status.includes('Access will end') ? (
+            {['canceling', 'canceled'].includes(subscriptionStatus.subscription_status) || (subscriptionStatus.display_status || '').toLowerCase().includes('access') ? (
               <>
                 {subscriptionStatus.plan} ({subscriptionStatus.billing_interval}) - Retained access until period end
               </>
@@ -147,11 +147,14 @@ const Profile = memo(() => {
             )}
           </Typography>
           <Typography variant="body1" sx={{ color: colors.grey[100], mb: 1 }}>
-            <strong>Status:</strong> {subscriptionStatus.subscription_status}
+            <strong>Status:</strong> {subscriptionStatus.display_status || subscriptionStatus.subscription_status}
           </Typography>
+          {/* Use raw subscription_status for logic; display_status or presence of period_end for label.
+             If live: Next Payment Due; if canceling/canceled future: Access Ends (per exact ToDo). */}
           {subscriptionStatus.current_period_end && (
             <Typography variant="body1" sx={{ color: colors.grey[100], mb: 1 }}>
-              <strong>Access Ends:</strong> {subscriptionStatus.current_period_end.toLocaleDateString()}
+              <strong>{['canceling', 'canceled'].includes(subscriptionStatus.subscription_status) || (subscriptionStatus.display_status || '').toLowerCase().includes('access') ? 'Access Ends' : 'Next Payment Due'}:</strong>{' '}
+              {subscriptionStatus.current_period_end.toLocaleDateString()}
             </Typography>
           )}
           {subscriptionStatus.payment_method && (

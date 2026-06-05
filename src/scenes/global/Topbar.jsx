@@ -54,6 +54,18 @@ const routeToChartId = {
   "/us-interest": "us-interest",
   "/us-combined-macro": "us-combined-macro",
   "/us-initial-claims": "us-initial-claims",
+  "/uk-unemployment": "uk-unemployment",
+  "/uk-claimants": "uk-claimants",
+  "/uk-earnings": "uk-earnings",
+  "/uk-population": "uk-population",
+  "/uk-workforce-jobs": "uk-workforce-jobs",
+  "/uk-business-counts": "uk-business-counts",
+  "/uk-jsa-age": "uk-jsa-age",
+  "/uk-jsa-ethnicity": "uk-jsa-ethnicity",
+  "/uk-labour-by-age": "uk-labour-by-age",
+  "/uk-public-private": "uk-public-private",
+  "/uk-aps-workplace": "uk-aps-workplace",
+  "/uk-esa-claimants": "uk-esa-claimants",
   "/tx-mvrv": "tx-mvrv",
   "/on-chain-historical-risk": "on-chain-historical-risk",
   "/altcoin-season-index": "altcoin-season-index",
@@ -91,6 +103,7 @@ const routeToChartId = {
   "/btc-mvrv-z":"mvrv-zscore",
   "/total2":"total2",
   "/tail-curvature": "tail-curvature",
+  "/market-heat-index": "market-heat-index",
 };
 
 const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
@@ -196,6 +209,8 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
         return { title: "Ethereum", subtitle: "Risk Metric" };
       case "/pi-cycle":
         return { title: "PiCycle Top", subtitle: "Top Calling Indicator" };
+      case "/market-heat-index":
+        return { title: "Market Heat Index", subtitle: isMobile ? "Tunable multi-factor market heat" : "Live tunable composite of MVRV, Mayer, Risk, F&G, PiCycle, Alt Season" };
       case "/fear-and-greed":
         return { title: "Fear & Greed", subtitle: "Market Sentiment" };
       case "/logarithmic-regression":
@@ -234,6 +249,30 @@ const Topbar = ({ setIsSidebar, isSidebar, isDashboardTopbar }) => {
         return { title: "US Macro Information", subtitle: "Compare US Macro Data" };
       case "/us-initial-claims":
         return { title: "US Initial Claims", subtitle: "Jobless Claims" };
+      case "/uk-unemployment":
+        return { title: "UK Unemployment (LFS)", subtitle: isMobile ? "UK Unemp Rate" : "UK ILO Unemployment + Employment Rates (16-64, consistent Nomis LFS data)" };
+      case "/uk-claimants":
+        return { title: "UK Claimant Count", subtitle: isMobile ? "UK Claimants" : "UK Jobseeker's Allowance Claimant Rate (timely, consistent monthly Nomis data)" };
+      case "/uk-earnings":
+        return { title: "UK Earnings (ASHE)", subtitle: isMobile ? "UK Earnings" : "UK Median Earnings by Gender (ASHE, consistent Nomis data)" };
+      case "/uk-population":
+        return { title: "UK Population Estimates", subtitle: isMobile ? "UK Population" : "UK Population by Age and Gender (Nomis, consistent annual data)" };
+      case "/uk-workforce-jobs":
+        return { title: "UK Workforce Jobs", subtitle: isMobile ? "UK Jobs" : "UK Workforce Jobs by Industry (consistent Nomis data)" };
+      case "/uk-business-counts":
+        return { title: "UK Business Counts", subtitle: isMobile ? "UK Businesses" : "UK Business Enterprises by Industry/Size (Nomis, consistent data)" };
+      case "/uk-jsa-age":
+        return { title: "UK JSA by Age/Duration", subtitle: isMobile ? "UK JSA Age" : "UK JSA Claimant by Age and Duration (consistent Nomis breakdowns)" };
+      case "/uk-jsa-ethnicity":
+        return { title: "UK JSA by Ethnicity", subtitle: isMobile ? "UK JSA Ethnicity" : "UK JSA by Ethnicity, Age, Gender (detailed Nomis breakdowns)" };
+      case "/uk-labour-by-age":
+        return { title: "UK Labour by Age", subtitle: isMobile ? "UK Labour Age" : "UK Labour Market Status by Age (APS, consistent Nomis data)" };
+      case "/uk-public-private":
+        return { title: "UK Public/Private Employment", subtitle: isMobile ? "UK Pub/Priv Jobs" : "UK Employment by Public/Private Sector (BRES, consistent data)" };
+      case "/uk-aps-workplace":
+        return { title: "UK APS Workplace", subtitle: isMobile ? "UK Workplace" : "UK APS Workplace Analysis (consistent Nomis data)" };
+      case "/uk-esa-claimants":
+        return { title: "UK ESA Claimants", subtitle: isMobile ? "UK ESA" : "UK ESA Claimants by Gender/Age (Nomis, consistent data)" };
       case "/puell-multiple":
         return { title: "Puell Multiple", subtitle: isMobile ? "Miner Revenue" : "Current Mined BTC Value to the 365 day Moving Average" };
       case "/tx-mvrv":

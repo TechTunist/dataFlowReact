@@ -19,12 +19,8 @@ function CryptoFearAndGreedIndex({ isDashboard }) {
         let isMounted = true;
 
         const fetchData = async () => {
-            if (isLatestFearAndGreedFetched || latestFearAndGreed) {
-                // console.log('Latest Fear and Greed data already fetched or available, skipping fetch');
-                setIsLoading(false);
-                return;
-            }
-
+            // Always attempt fetch (or cache-hit) for latest; removed stale guard so widget gets current value
+            // after daily F&G update. fetchWithCache handles 1h freshness.
             setIsLoading(true);
             setError(null);
             try {
@@ -43,8 +39,14 @@ function CryptoFearAndGreedIndex({ isDashboard }) {
 
         fetchData();
 
+        // Periodic refresh so widget doesn't stay on old calculated value after daily update
+        const interval = setInterval(() => {
+            if (isMounted) fetchLatestFearAndGreed();
+        }, 15 * 60 * 1000); // every 15 min
+
         return () => {
             isMounted = false;
+            clearInterval(interval);
         };
     }, [fetchLatestFearAndGreed, isLatestFearAndGreedFetched]);
 

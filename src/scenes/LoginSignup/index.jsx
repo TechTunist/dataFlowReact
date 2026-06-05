@@ -22,6 +22,7 @@ export default function LoginSignup() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState(''); // inline instead of alert for double-pw confirm (bulletproof UX)
   const { signUp, setActive } = useSignUp();
   const { signIn } = useSignIn();
   const navigate = useNavigate();
@@ -68,9 +69,10 @@ export default function LoginSignup() {
     const trimmedPassword = password.trim();
     const trimmedConfirmPassword = confirmPassword.trim();
     if (trimmedPassword !== trimmedConfirmPassword) {
-      alert("Passwords do not match");
+      setPasswordError("Passwords do not match");
       return;
     }
+    setPasswordError('');
     setIsLoading(true);
     try {
       await signUp.create({
@@ -377,7 +379,12 @@ export default function LoginSignup() {
                 type={showConfirmPassword ? "text" : "password"}
                 value={confirmPassword}
                 placeholder="Confirm password"
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                onChange={(e) => {
+                  setConfirmPassword(e.target.value);
+                  if (passwordError) setPasswordError(''); // clear inline mismatch on edit
+                }}
+                error={!!passwordError}
+                helperText={passwordError}
                 variant="outlined"
                 InputProps={{
                   endAdornment: (
