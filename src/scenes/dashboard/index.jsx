@@ -32,6 +32,9 @@ import BitcoinAddressBalancesChart from "../../components/BitcoinAddressBalance"
 import PuellMultiple from "../../components/PuellMultiple";
 import BitcoinRisk from "../../components/BitcoinRisk";
 import FearAndGreedChart from "../../components/FearAndGreedChart";
+import FearAndGreed3D from "../../components/FearAndGreed3D";
+import FearAndGreedBinaryChart from "../../components/FearAndGreedBinaryChart";
+import BitcoinTransactionFees from "../../components/BitcoinTransactionFees";
 import UsInflationChart from "../../components/UsInflation";
 import UsInterestChart from "../../components/UsInterest";
 import UsCombinedMacroChart from "../../components/UsCombinedMacro";
@@ -49,6 +52,7 @@ import UKLabourByAgeChart from "../../components/UKLabourByAge";
 import UKPublicPrivateChart from "../../components/UKPublicPrivateEmployment";
 import UKAPSWorkplaceChart from "../../components/UKApsWorkplace";
 import UKEsaClaimantsChart from "../../components/UKEsaClaimants";
+import MarketHeatIndex from "../../components/MarketHeatIndex";
 import OnChainHistoricalRisk from "../../components/OnChainHistoricalRisk";
 import AltcoinSeasonIndexChart from "../../components/AltcoinSeasonIndexChart";
 import FredSeriesChart from "../../components/FredSeriesChart";
@@ -63,6 +67,7 @@ import SahmRecessionIndicator from "../../components/SahmRecessionIndicator";
 const chartConfig = [
   { id: "bitcoin-20-ext", title: "Bitcoin 20 Week Extension", linkTo: "/btc-20-ext", component: (props) => <Bitcoin20WeekExtension isDashboard={true} {...props} />, description: "Bitcoin price with 20-week extension analysis." },
   { id: "bitcoin-price", title: "Bitcoin Price", linkTo: "/bitcoin", component: (props) => <BitcoinPrice isDashboard={true} {...props} />, description: "A simple chart of the entire bitcoin daily close price history." },
+  { id: "bitcoin-fees", title: "Bitcoin Transaction Fees", linkTo: "/bitcoin-fees", component: (props) => <BitcoinTransactionFees isDashboard={true} {...props} />, description: "Bitcoin transaction fees over time." },
   { id: "total-market-cap", title: "Total Crypto Market Cap", linkTo: "/total", component: (props) => <TotalMarketCap isDashboard={true} {...props} />, description: "The market cap of the entire crypto market." },
   { id: "total-difference", title: "Market Cap Difference", linkTo: "/total-difference", component: (props) => <MarketCapDifference isDashboard={true} {...props} />, description: "Difference in market cap across assets." },
   { id: "total2", title: "Total2 Market Cap", linkTo: "/total2", component: (props) => <Total2Chart isDashboard={true} {...props} />, description: "The market cap of the entire crypto market minus Bitcoin." },
@@ -88,6 +93,8 @@ const chartConfig = [
   { id: "altcoin-risk", title: "Altcoin Risk", linkTo: "/altcoin-risk", component: (props) => <AltcoinRisk isDashboard={true} {...props} />, description: "Risk metrics for altcoins." },
   { id: "market-cycles", title: "Bitcoin Market Cycles", linkTo: "/market-cycles", component: (props) => <MarketCycles isDashboard={true} {...props} />, description: "Compare previous crypto market cycles." },
   { id: "fear-and-greed-chart", title: "Fear and Greed Chart", linkTo: "/fear-and-greed-chart", component: (props) => <FearAndGreedChart isDashboard={true} {...props} />, description: "Chart of Fear and Greed index over time." },
+  { id: "fear-and-greed-3d", title: "Fear and Greed 3D", linkTo: "/fear-and-greed-3d", component: (props) => <FearAndGreed3D isDashboard={true} {...props} />, description: "3D visualization of Fear and Greed." },
+  { id: "fear-and-greed-binary", title: "Fear and Greed Binary", linkTo: "/fear-and-greed-binary-chart", component: (props) => <FearAndGreedBinaryChart isDashboard={true} {...props} />, description: "Binary Fear and Greed states over time." },
   { id: "us-inflation", title: "US Inflation", linkTo: "/us-inflation", component: (props) => <UsInflationChart isDashboard={true} {...props} />, description: "US inflation rates over time." },
   { id: "us-interest", title: "US Interest Rates", linkTo: "/us-interest", component: (props) => <UsInterestChart isDashboard={true} {...props} />, description: "US interest rates over time." },
   { id: "us-combined-macro", title: "US Combined Macro", linkTo: "/us-combined-macro", component: (props) => <UsCombinedMacroChart isDashboard={true} {...props} />, description: "Combined US macroeconomic indicators." },
@@ -107,6 +114,7 @@ const chartConfig = [
   { id: "tx-mvrv", title: "Bitcoin Transaction MVRV", linkTo: "/tx-mvrv", component: (props) => <BitcoinTxMvrvChart isDashboard={true} {...props} />, description: "Bitcoin MVRV ratio for transactions." },
   { id: "on-chain-historical-risk", title: "On-Chain Historical Risk", linkTo: "/on-chain-historical-risk", component: (props) => <OnChainHistoricalRisk isDashboard={true} {...props} />, description: "Historical risk based on on-chain data." },
   { id: "altcoin-season-index", title: "Altcoin Season Index", linkTo: "/altcoin-season-index", component: (props) => <AltcoinSeasonIndexChart isDashboard={true} {...props} />, description: "Index indicating altcoin season trends." },
+  { id: "market-heat-index", title: "Market Heat Index", linkTo: "/market-heat-index", component: (props) => <MarketHeatIndex isDashboard={true} {...props} />, description: "Interactive Market Heat Index with tunable weights for MVRV, Mayer, Risk, F&G, PiCycle, AltSeason factors." },
   { id: "fred-fed-funds-rate", title: "Federal Funds Rate", linkTo: "/fred/fed-funds-rate", component: (props) => <FredSeriesChart isDashboard={true} seriesId="DFF" chartType="line" scaleMode="linear" valueFormatter={(value) => `${value.toFixed(2)}%`} {...props} />, description: "Daily Effective Federal Funds Rate in the US." },
   { id: "fred-sp500", title: "S&P 500 Index", linkTo: "/fred/sp500", component: (props) => <FredSeriesChart isDashboard={true} seriesId="SP500" chartType="area" scaleMode="linear" valueFormatter={(value) => value.toLocaleString()} enableTechnicalIndicators={true} {...props} />, description: "Daily closing values of the S&P 500 Index." },
   { id: "fred-recession-indicator", title: "US Recession Indicator", linkTo: "/fred/recession-indicator", component: (props) => <FredSeriesChart isDashboard={true} seriesId="USRECD" chartType="histogram" valueFormatter={(value) => (value === 1 ? "Recession" : "No Recession")} defaultScaleMode={0} {...props} />, description: "Periods of recession in the US." },

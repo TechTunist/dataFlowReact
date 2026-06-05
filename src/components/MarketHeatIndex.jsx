@@ -815,9 +815,11 @@ const MarketHeatIndex = ({ isDashboard = false }) => {
         </IconButton>
       )}
 
-      <Typography variant="h4" color={colors.grey[100]} gutterBottom>
-        Market Heat Index
-      </Typography>
+      {!isDashboard && (
+        <Typography variant="h4" color={colors.grey[100]} gutterBottom>
+          Market Heat Index
+        </Typography>
+      )}
       {!isDashboard && (
         <Box
           sx={{
