@@ -1,5 +1,7 @@
 # Cryptological Professionalization — Remaining Work
 
+**Checkpoint (2026-06-05):** Live Stripe checkout + `customer.subscription.created` webhook E2E **working in production**. Backend fixes on `SaaS` `main` (`6378457`…`21180d2`); see `vercelDataFlow/SaaS/HANDOFF.md` for clone/env/debug notes.
+
 **Date:** Current (post parallel subagent professionalization sprint on feat/professionalization-sprint)
 **Goal:** Bulletproof for regular users + efficient + sale-ready (premium, maintainable codebase that signals quality to buyers/acquirers).
 
@@ -31,7 +33,7 @@ These affect user trust, data correctness, support load, and prod stability when
     - ToDo: "if the subscription has been 'cancelled' then it should read 'access ends', if subscription is live, it should read 'payment due'".
   - Make labels crystal clear and consistent everywhere (billing portal button, profile, sub page, cancel dialog).
   - Test edge cases: past_due, canceling within grace, post-expiry auto-downgrade, Clerk metadata sync.
-  - Still need **real end-to-end Stripe payment testing** (refunds pending per ToDo).
+  - **Real end-to-end Stripe payment testing** — DONE 2026-06-05 (see backend `HANDOFF.md`). Still test cancel/refund paths.
 
 - **Market Overview btcRisk widget freshness** (backend+frontend ToDo) [DONE sub/bulletproof-fe]
   - Widget falls back to client calc from btcData or IDB cache (`getBitcoinRisk`/`saveBitcoinRisk` in idbUtils + calculateRiskMetric). (now prefers fetch /api/risk-metrics/ fresh latest (0-1 guard), uses logger, calc only if >400 pts data for reliable norm; IDB still for cache)
