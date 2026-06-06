@@ -107,7 +107,10 @@ const appRoutes = [
 
   // Core protected scenes (not using BasicChart wrapper)
   { path: "/dashboard", component: Dashboard, protected: true, props: (ctx) => ({ isMobile: ctx.isMobile, isSidebar: ctx.isSidebar }) },
-  { path: "/market-overview", component: MarketOverview, protected: true },
+  // MarketOverview is a premium (paid) page. requirePaid ensures the restrictToPaidSubscription HOC
+  // is applied at route level (consistent with workbench + premium FRED routes). The individual
+  // data fetches it triggers (mvrv, altcoin-season-index, sp500-div-unrate) are also premium-only.
+  { path: "/market-overview", component: MarketOverview, protected: true, requirePaid: true },
   { path: "/about", component: About, protected: true },
   { path: "/profile", component: Profile, protected: true },
   { path: "/subscription", component: Subscription, protected: true },

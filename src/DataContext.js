@@ -236,9 +236,14 @@ const fetchWithCache = async ({
         response = await fetch(apiUrl, { headers });
         if (response.ok) break;
         if (response.status === 401 || response.status === 403) {
-          // Common during local dev before Clerk is ready or with backend DEBUG bypass.
-          logger.warn(`[Auth] ${response.status} on ${apiUrl} — token not yet available or dev bypass not active`);
-          // Do not retry auth errors aggressively; let caller use cache or fail gracefully
+          // 401/403 can happen for:
+          // - token not ready yet (Clerk session / getAuthHeaders race on initial load)
+          // - dev without bypass
+          // - free-tier user hitting a premium-only endpoint (e.g. mvrv, altcoin-season, sp500-div-unrate when MarketOverview or other paid pages are involved)
+          // The backend PremiumDataGateMiddleware returns 403 with code 'subscription_required' for the latter.
+          // We treat them as non-retriable here; callers (esp. preload vs on-demand premium components) should handle gracefully.
+          logger.warn(`[Auth] ${response.status} on ${apiUrl} — token not yet available, dev bypass inactive, or subscription gate (free user on premium data)`);
+          // Do not retry auth/subscription errors aggressively; let caller use cache or fail gracefully
           throw new Error(`HTTP ${response.status} (auth)`);
         }
         throw new Error(`HTTP error! Status: ${response.status}`);
@@ -457,13 +462,14 @@ export const DataProvider = ({ children }) => {
     let isMounted = true;
 
     // === DATA PRELOAD STRATEGY (Phase 2 complete - final trim) ===
-    // Extremely focused eager parallel preload (only the highest-value core):
-    //   - btcData, mvrvData, dominanceData, ethData
+    // Extremely focused eager parallel preload (only the highest-value *free tier* core):
+    //   - btcData, dominanceData, ethData
     //   - fearAndGreedData, marketCapData, latestFearAndGreed
     //
-    // All other datasets (including the three total market cap variants, macro, altcoin season,
-    // all risk metrics, onchain, tx analytics, most US macro series, etc.) have been moved
-    // to demand-loaded by their specific chart pages.
+    // Premium datasets (mvrvData, altcoinSeason*, sp500-div-unrate-squared, onchain risk metrics,
+    // workbench, most FRED, etc.) are demand-loaded only by their premium pages/components
+    // (e.g. MarketOverview which is itself a paid-only view). This prevents 403 Forbidden
+    // from the backend PremiumDataGateMiddleware for free users.
     //
     // The forced early fetchFredSeriesData('SP500') remains for dashboard needs.
     //
@@ -480,16 +486,16 @@ export const DataProvider = ({ children }) => {
 
       const cacheConfigs = [
         { id: 'btcData', setData: setBtcData, setLastUpdated: setBtcLastUpdated, setIsFetched: setIsBtcDataFetched, useDateCheck: true },
-        { id: 'mvrvData', setData: setMvrvData, setLastUpdated: setMvrvLastUpdated, setIsFetched: setIsMvrvDataFetched, useDateCheck: true },
         { id: 'dominanceData', setData: setDominanceData, setLastUpdated: setDominanceLastUpdated, setIsFetched: setIsDominanceDataFetched, useDateCheck: true },
         { id: 'ethData', setData: setEthData, setLastUpdated: setEthLastUpdated, setIsFetched: setIsEthDataFetched, useDateCheck: true },
         { id: 'fearAndGreedData', setData: setFearAndGreedData, setLastUpdated: setFearAndGreedLastUpdated, setIsFetched: setIsFearAndGreedDataFetched, useDateCheck: false, ttl: 4 * 60 * 60 * 1000 }, // Phase 2: 4h TTL (sentiment changes reasonably fast)
         { id: 'marketCapData', setData: setMarketCapData, setLastUpdated: setMarketCapLastUpdated, setIsFetched: setIsMarketCapDataFetched, useDateCheck: true },
         { id: 'latestFearAndGreed', setData: setLatestFearAndGreed, setLastUpdated: setLatestFearAndGreedLastUpdated, setIsFetched: setIsLatestFearAndGreedFetched, useDateCheck: false, ttl: 60 * 60 * 1000 }, // Phase 2: shorter TTL for volatile "latest" data (1 hour)
         // === AUDIT REMEDIATION (Phase 2 - final core trim) ===
-        // The three total market cap variants (difference, total2, total3) moved to demand-loaded.
-        // These are useful market-cap views but not required for the absolute core initial dashboard experience.
-        // Current eager preload is now extremely focused on the highest-value core datasets.
+        // mvrvData (and other premium datasets like altcoinSeason, sp500 div-unrate) moved to demand-loaded only.
+        // They are used exclusively by premium pages (e.g. MarketOverview) and would cause 403s for free-tier users.
+        // The three total market cap variants (difference, total2, total3) are also demand-loaded.
+        // Current eager preload is now extremely focused on the highest-value *free-tier* core datasets.
       ];
 
       // Fetch all data in parallel
@@ -530,13 +536,13 @@ export const DataProvider = ({ children }) => {
           // Trigger fetch for non-cached or stale data
           const fetchFunc = {
             btcData: fetchBtcData,
-            mvrvData: fetchMvrvData,
             dominanceData: fetchDominanceData,
             ethData: fetchEthData,
             fearAndGreedData: fetchFearAndGreedData,
             marketCapData: fetchMarketCapData,
             latestFearAndGreed: fetchLatestFearAndGreed,
-            // Phase 2 note: other items now demand-loaded
+            // Phase 2 note: mvrvData + other premium (altcoin season, sp500 etc.) now purely demand-loaded
+            // to avoid 403s for free-tier users (those endpoints are not in FREE_TIER_API_PREFIXES).
           }[id];
           if (fetchFunc && isMounted) await fetchFunc();
         } catch (error) {

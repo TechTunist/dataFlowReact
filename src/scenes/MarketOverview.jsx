@@ -24,7 +24,6 @@ import useIsMobile from '../hooks/useIsMobile';
 import { getBitcoinRisk, saveRoiData, getRoiData, clearRoiData, saveBitcoinRisk } from '../utility/idbUtils';
 import InfoIcon from '@mui/icons-material/Info';
 import ShowChartIcon from '@mui/icons-material/ShowChart';
-import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import { saveCycleDaysData, getCycleDaysData } from '../utility/idbUtils';
 import { useNavigate } from 'react-router-dom';
 import { calculateRiskMetric } from '../utility/riskMetric';
@@ -2574,5 +2573,6 @@ const WeeklyRsiWidget = memo(() => {
     </Box>
   );
 });
-// Export MarketOverview wrapped with React.memo
-export default restrictToPaidSubscription(memo(MarketOverview));
+// Export the plain component. The route config in App.js applies restrictToPaidSubscription
+// via requirePaid (centralized, avoids module-level wrapper confusion).
+export default memo(MarketOverview);
