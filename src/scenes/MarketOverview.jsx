@@ -91,28 +91,36 @@ const MarketOverview = memo(() => {
   // State for loading
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  // Fetch all data and manage loading state
+  // Fetch all data and manage loading state.
+  // Use allSettled + never fatal error for the whole page so that transient issues
+  // on individual premium endpoints (mvrv, altcoin-season, sp500 etc.) or token timing
+  // do not block premium users from seeing the Market Overview widgets.
+  // Individual widgets handle missing/partial data gracefully.
   useEffect(() => {
     let isMounted = true;
     const fetchAllData = async () => {
-      try {
-        setIsLoading(true);
-        await Promise.all([
-          fetchBtcData(),
-          fetchEthData(),
-          fetchFearAndGreedData(),
-          fetchInflationData(),
-          fetchMarketCapData(),
-          fetchMvrvData(),
-          fetchAltcoinSeasonData(),
-        ]);
-        if (isMounted) setIsLoading(false);
-      } catch (err) {
-        console.error('Error fetching data:', err);
-        if (isMounted) {
-          setError('Failed to load market data. Please try again later.');
-          setIsLoading(false);
+      setIsLoading(true);
+      // Fire all; don't let one rejection (e.g. a 403 during initial token propagation
+      // for a premium data fetch) kill the entire view.
+      const results = await Promise.allSettled([
+        fetchBtcData(),
+        fetchEthData(),
+        fetchFearAndGreedData(),
+        fetchInflationData(),
+        fetchMarketCapData(),
+        fetchMvrvData(),
+        fetchAltcoinSeasonData(),
+      ]);
+      // Log any rejections for debugging (these were previously turning into hard
+      // "Failed to load market data" errors that hid all widgets).
+      results.forEach((r, i) => {
+        if (r.status === 'rejected') {
+          console.warn('MarketOverview data fetch rejected (non-fatal):', i, r.reason);
         }
+      });
+      if (isMounted) {
+        setIsLoading(false);
+        // Do not setError here — let the grids/widgets render; they tolerate empty data.
       }
     };
     fetchAllData();

@@ -229,12 +229,15 @@ function createRouteElement(route, context = {}) {
       const ChartComp = route.requirePaid ? restrictToPaidSubscription(Comp) : Comp;
       el = <BasicChart ChartComponent={ChartComp} {...(route.basicChartProps || {})} {...props} />;
     } else {
-      el = <Comp {...props} />;
+      // For non-basic-chart routes, apply paid restriction (if any) to the *component*
+      // before creating the element. This fixes the previous bug where we were
+      // passing an already-created element to restrictToPaidSubscription().
+      let CompToUse = Comp;
+      if (route.requirePaid) {
+        CompToUse = restrictToPaidSubscription(Comp);
+      }
+      el = <CompToUse {...props} />;
     }
-  }
-
-  if (route.requirePaid && !route.useBasicChart) {
-    el = restrictToPaidSubscription(el);
   }
 
   if (route.protected && !route.public) {
