@@ -341,6 +341,50 @@ const itemsData = [
             color: "#fff !important",
             backgroundColor: "transparent !important",
           },
+
+          /* === Quality custom scrollbar for the sidebar ===
+           * Modern dashboards hide or heavily stylize scrollbars to reduce visual noise.
+           * We use a very thin (5px) always-visible bar using the brand greenAccent.
+           * This gives a subtle "green dot" position indicator without the thick ugly default OS bar.
+           * - Still fully scrollable (wheel, trackpad, keyboard, touch all work).
+           * - Firefox + WebKit covered.
+           * - Matches the existing green border on the sidebar.
+           */
+          scrollbarWidth: "thin",
+          scrollbarColor: `${colors.greenAccent[500]}44 ${colors.primary[400]}`,
+
+          "&::-webkit-scrollbar": {
+            width: "5px",
+            height: "5px",
+          },
+          "&::-webkit-scrollbar-track": {
+            background: "transparent",
+          },
+          "&::-webkit-scrollbar-thumb": {
+            backgroundColor: colors.greenAccent[500],
+            borderRadius: "20px",
+            border: `1px solid ${colors.primary[400]}`,
+          },
+          "&::-webkit-scrollbar-thumb:hover": {
+            backgroundColor: colors.greenAccent[400],
+          },
+
+          /* Also style the internal scroller that react-pro-sidebar actually uses */
+          "& .pro-sidebar-layout, & .pro-sidebar-content": {
+            scrollbarWidth: "thin",
+            scrollbarColor: `${colors.greenAccent[500]}44 ${colors.primary[400]}`,
+          },
+          "& .pro-sidebar-layout::-webkit-scrollbar, & .pro-sidebar-content::-webkit-scrollbar": {
+            width: "5px",
+          },
+          "& .pro-sidebar-layout::-webkit-scrollbar-track, & .pro-sidebar-content::-webkit-scrollbar-track": {
+            background: "transparent",
+          },
+          "& .pro-sidebar-layout::-webkit-scrollbar-thumb, & .pro-sidebar-content::-webkit-scrollbar-thumb": {
+            backgroundColor: colors.greenAccent[500],
+            borderRadius: "20px",
+          },
+
           position: isMobile ? "fixed" : "sticky",
           top: 0,
           left: 0,

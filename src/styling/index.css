@@ -26,7 +26,33 @@ body,
   display: flex;
   top: 0;
   /* position: sticky; */
-   
+
+  /* Quality thin custom scrollbar (matches the one in Sidebar.jsx sx).
+     Very thin green accent "dot" instead of a big chunky grey bar.
+     This is the recommended modern approach for long nav sidebars:
+     - Clean and premium looking
+     - Still shows scroll position subtly
+     - Works in dark theme against primary[400]
+     Alternative (if you prefer zero visual scrollbar):
+       scrollbar-width: none;
+       &::-webkit-scrollbar { display: none; }
+  */
+  scrollbar-width: thin;
+  scrollbar-color: #4cceac44 #1F2A40;
+}
+
+.sidebar::-webkit-scrollbar {
+  width: 5px;
+}
+.sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sidebar::-webkit-scrollbar-thumb {
+  background-color: #4cceac;
+  border-radius: 20px;
+}
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background-color: #70d8bd;
 }
 
 
