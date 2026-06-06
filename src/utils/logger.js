@@ -13,6 +13,9 @@ export const logger = {
   log: (...args) => {
     if (isDev) console.log(...args);
   },
+  info: (...args) => {
+    if (isDev) console.log(...args);
+  },
   warn: (...args) => {
     console.warn(...args);
   },

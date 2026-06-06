@@ -29,8 +29,6 @@ import { saveCycleDaysData, getCycleDaysData } from '../utility/idbUtils';
 import { useNavigate } from 'react-router-dom';
 import { calculateRiskMetric } from '../utility/riskMetric';
 import logger from '../utils/logger';
-import { apiUrl } from '../config/api';
-import { useAuth } from '@clerk/clerk-react';
 
 
 // Wrap GridLayout with WidthProvider for responsiveness
@@ -1052,78 +1050,48 @@ const RoiCycleComparisonWidget = memo(() => {
   const BitcoinRiskWidget = memo(() => {
   const [riskLevel, setRiskLevel] = useState(null);
   const { btcData } = useContext(DataContext);
-  const { getToken } = useAuth();
 
+  // 1. Load IDB cached risk once on mount for instant non-zero display (before btcData arrives)
   useEffect(() => {
-    const fetchRiskLevel = async () => {
-      let level = null;
-
-      // 1. IDB first for instant non-zero value from previous visit/calc (fixes "stays at 0 too long")
+    (async () => {
       try {
         const riskData = await getBitcoinRisk();
         if (riskData && riskData.riskLevel !== undefined) {
-          level = riskData.riskLevel;
-          logger.info('BitcoinRiskWidget: using IDB cached risk level');
+          setRiskLevel(riskData.riskLevel);
+          logger.log('BitcoinRiskWidget: using IDB cached risk level');
         }
       } catch (e) {
         logger.error('BitcoinRiskWidget: error reading IDB risk', e);
       }
+    })();
+  }, []);
 
-      if (level !== null) {
-        setRiskLevel(level);
-        // still continue to try backend/calc for fresher
-      }
-
-      // 2. Try fresh precomputed from backend (may be price risk or other 0-1 risk)
-      try {
-        const token = await getToken();
-        if (token) {
-          const url = apiUrl('/api/risk-metrics/?ordering=-time&page_size=1');
-          const resp = await fetch(url, {
-            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-            signal: AbortSignal.timeout(8000),
-          });
-          if (resp.ok) {
-            const data = await resp.json();
-            const items = (data && data.results) || (Array.isArray(data) ? data : []);
-            if (items.length > 0) {
-              const candidate = parseFloat(items[0].value);
-              if (isFinite(candidate) && candidate >= 0 && candidate <= 1.0001) {
-                level = candidate;
-                await saveBitcoinRisk(level).catch(() => {});
-                logger.info('BitcoinRiskWidget: using fresh precomputed risk from /api/risk-metrics/');
-              }
-            }
-          }
+  // 2. Derive fresh risk from btcData (authoritative, ensures widget exactly matches the risk chart).
+  // This replaces the previous always-on effect + backend attempt (which was not a 0-1 composite and always fell back + warned).
+  const freshRisk = useMemo(() => {
+    if (!btcData || btcData.length === 0) return null;
+    try {
+      const riskDataArray = calculateRiskMetric(btcData);
+      if (riskDataArray && riskDataArray.length > 0) {
+        const calculatedRisk = riskDataArray[riskDataArray.length - 1].Risk;
+        if (isFinite(calculatedRisk)) {
+          saveBitcoinRisk(calculatedRisk).catch(() => {});
+          logger.log('BitcoinRiskWidget: calculated fresh risk from btcData (to match chart)');
+          return calculatedRisk;
         }
-      } catch (e) {
-        logger.warn('BitcoinRiskWidget: backend /api/risk-metrics/ fetch failed or no suitable 0-1 value (fallback to IDB/calc)', e && e.message ? e.message : e);
       }
+    } catch (e) {
+      logger.error('BitcoinRiskWidget: error during local calc', e);
+    }
+    return null;
+  }, [btcData]);
 
-      // 3. Always calc from current btcData if available (ensures widget matches the risk chart's latest value exactly)
-      // Do this even if we have IDB/backend, to get the current calc.
-      if (btcData && btcData.length > 0) {
-        try {
-          const riskDataArray = calculateRiskMetric(btcData);
-          if (riskDataArray && riskDataArray.length > 0) {
-            const calculatedRisk = riskDataArray[riskDataArray.length - 1].Risk;
-            if (isFinite(calculatedRisk)) {
-              await saveBitcoinRisk(calculatedRisk);
-              level = calculatedRisk;
-              logger.info('BitcoinRiskWidget: calculated fresh risk from btcData (to match chart)');
-            }
-          }
-        } catch (e) {
-          logger.error('BitcoinRiskWidget: error during local calc', e);
-        }
-      } else {
-        logger.warn('BitcoinRiskWidget: insufficient btcData for calc');
-      }
-
-      setRiskLevel(level !== null ? level : 0);
-    };
-    fetchRiskLevel();
-  }, [btcData, getToken]);
+  // Override with fresh calc as soon as btcData is available/updated (no more repeated backend calls)
+  useEffect(() => {
+    if (freshRisk !== null) {
+      setRiskLevel(freshRisk);
+    }
+  }, [freshRisk]);
 
   const displayRisk = riskLevel !== null ? Math.max(0, Math.min(100, riskLevel * 100)).toFixed(2) : 0;
   const backgroundColor = getBackgroundColor(displayRisk);
