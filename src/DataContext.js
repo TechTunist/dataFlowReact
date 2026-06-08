@@ -63,6 +63,7 @@ function getCacheConfig(cacheId) {
   if (CACHE_CONFIG[cacheId]) return CACHE_CONFIG[cacheId];
   if (cacheId && cacheId.startsWith('fredSeriesData_')) return CACHE_CONFIG['fredSeriesData_SP500'] || CACHE_CONFIG._default;
   if (cacheId && cacheId.startsWith('altcoinData_')) return { ttl: 6 * 60 * 60 * 1000, useDateCheck: true };
+  if (cacheId && cacheId.startsWith('txMvrvRatioData_')) return { ttl: 6 * 60 * 60 * 1000, useDateCheck: true };
   if (cacheId && cacheId.startsWith('fredSeriesData_')) return { ttl: 24 * 60 * 60 * 1000, useDateCheck: false };
   return CACHE_CONFIG._default;
 }
@@ -400,6 +401,9 @@ export const DataProvider = ({ children }) => {
   const [txMvrvData, setTxMvrvData] = useState([]);
   const [isTxMvrvDataFetched, setIsTxMvrvDataFetched] = useState(false);
   const [txMvrvLastUpdated, setTxMvrvLastUpdated] = useState(null);
+  const [txMvrvRatioDataBySmoothing, setTxMvrvRatioDataBySmoothing] = useState({});
+  const [isTxMvrvRatioDataFetched, setIsTxMvrvRatioDataFetched] = useState({});
+  const [txMvrvRatioLastUpdated, setTxMvrvRatioLastUpdated] = useState({});
   const [fredSeriesData, setFredSeriesData] = useState({});
   const [altcoinData, setAltcoinData] = useState({});
   const [altcoinLastUpdated, setAltcoinLastUpdated] = useState({});
@@ -1287,6 +1291,56 @@ const fetchDominanceData = useCallback(async () => {
     });
   }, [fetchTxMvrvData]);
 
+  const fetchTxMvrvRatioData = useCallback(async (smoothing = 'sma-7') => {
+    if (isTxMvrvRatioDataFetched[smoothing]) return;
+
+    setIsTxMvrvRatioDataFetched((prev) => ({ ...prev, [smoothing]: true }));
+    const success = await fetchWithCache({
+      cacheId: `txMvrvRatioData_${smoothing}`,
+      apiUrl: apiUrl(`/api/tx-mvrv-ratio/?smoothing=${smoothing}`),
+      formatData: (data) => {
+        const series = (data.series || [])
+          .map((item) => ({
+            time: item.time,
+            value: parseFloat(item.value),
+          }))
+          .filter((item) => !isNaN(item.value))
+          .sort((a, b) => new Date(a.time) - new Date(b.time));
+        return {
+          smoothing: data.smoothing,
+          horizontalThreshold: parseFloat(data.horizontal_threshold),
+          time: data.last_updated || series[series.length - 1]?.time || null,
+          series,
+        };
+      },
+      setData: (formattedData) =>
+        setTxMvrvRatioDataBySmoothing((prev) => ({ ...prev, [smoothing]: formattedData })),
+      setLastUpdated: (time) =>
+        setTxMvrvRatioLastUpdated((prev) => ({ ...prev, [smoothing]: time })),
+      setIsFetched: (fetched) =>
+        setIsTxMvrvRatioDataFetched((prev) => ({ ...prev, [smoothing]: fetched })),
+      useDateCheck: true,
+    });
+    if (!success) {
+      setIsTxMvrvRatioDataFetched((prev) => ({ ...prev, [smoothing]: false }));
+    }
+  }, [isTxMvrvRatioDataFetched]);
+
+  const refreshTxMvrvRatioData = useCallback(async (smoothing = 'sma-7') => {
+    await refreshData({
+      cacheId: `txMvrvRatioData_${smoothing}`,
+      setData: () =>
+        setTxMvrvRatioDataBySmoothing((prev) => {
+          const next = { ...prev };
+          delete next[smoothing];
+          return next;
+        }),
+      setIsFetched: () =>
+        setIsTxMvrvRatioDataFetched((prev) => ({ ...prev, [smoothing]: false })),
+      fetchFunction: () => fetchTxMvrvRatioData(smoothing),
+    });
+  }, [fetchTxMvrvRatioData]);
+
   const fetchAltcoinData = useCallback(async (coin) => {
     if (isAltcoinDataFetched[coin]) return;
 
@@ -1687,6 +1741,10 @@ const fetchDominanceData = useCallback(async () => {
       fetchTxMvrvData,
       refreshTxMvrvData,
       txMvrvLastUpdated,
+      txMvrvRatioDataBySmoothing,
+      fetchTxMvrvRatioData,
+      refreshTxMvrvRatioData,
+      txMvrvRatioLastUpdated,
       altcoinData,
       fetchAltcoinData,
       refreshAltcoinData,
@@ -1811,6 +1869,10 @@ const fetchDominanceData = useCallback(async () => {
       fetchTxMvrvData,
       refreshTxMvrvData,
       txMvrvLastUpdated,
+      txMvrvRatioDataBySmoothing,
+      fetchTxMvrvRatioData,
+      refreshTxMvrvRatioData,
+      txMvrvRatioLastUpdated,
       altcoinData,
       fetchAltcoinData,
       refreshAltcoinData,

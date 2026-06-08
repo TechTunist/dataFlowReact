@@ -30,24 +30,26 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
   const colors = tokens(theme.palette.mode);
   const isMobile = useIsMobile();
   const isNarrowScreen = useMediaQuery('(max-width:600px)');
-  const { txMvrvData: contextTxMvrvData, fetchTxMvrvData, btcData: contextBtcData, fetchBtcData, txMvrvLastUpdated } = useContext(DataContext);
+  const {
+    txMvrvData: contextTxMvrvData,
+    fetchTxMvrvData,
+    txMvrvRatioDataBySmoothing,
+    fetchTxMvrvRatioData,
+    btcData: contextBtcData,
+    fetchBtcData,
+    txMvrvLastUpdated,
+    txMvrvRatioLastUpdated,
+  } = useContext(DataContext);
 
   // Memoize raw data selection for stable references (like MVRV Z-Score hardening)
   const txMvrvData = useMemo(() => (propTxMvrvData || contextTxMvrvData) || [], [propTxMvrvData, contextTxMvrvData]);
   const btcData = useMemo(() => contextBtcData || [], [contextBtcData]);
+  const ratioPayload = useMemo(
+    () => txMvrvRatioDataBySmoothing?.[smoothingMode] || null,
+    [txMvrvRatioDataBySmoothing, smoothingMode]
+  );
 
-  // Min-max normalization (stable)
-  const normalizeData = useCallback((data, key) => {
-    const values = data.map(item => item[key]);
-    const min = Math.min(...values);
-    const max = Math.max(...values);
-    return data.map(item => ({
-      time: item.time,
-      value: (max - min) === 0 ? 0 : (item[key] - min) / (max - min),
-    }));
-  }, []);
-
-  // Calculate EMA (stable)
+  // Calculate EMA (stable) — used for tx-mvrv display mode only
   const calculateEMA = useCallback((data, period, key = 'value') => {
     const alpha = 2 / (period + 1);
     const result = [{ time: data[0].time, value: data[0][key] }];
@@ -72,55 +74,6 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
     }
     return result;
   }, []);
-
-  // Compute rolling maximum for dynamic normalization (stable)
-  const computeRollingMax = useCallback((data, windowDays = 365) => {
-    const result = [];
-    const msPerDay = 1000 * 60 * 60 * 24;
-    for (let i = 0; i < data.length; i++) {
-      const currentTime = new Date(data[i].time).getTime();
-      const windowStart = currentTime - (windowDays / 2) * msPerDay;
-      const windowEnd = currentTime + (windowDays / 2) * msPerDay;
-      const windowData = data.filter(item => {
-        const itemTime = new Date(item.time).getTime();
-        return itemTime >= windowStart && itemTime <= windowEnd;
-      });
-      const maxValue = Math.max(...windowData.map(item => item.value), 0.1);
-      result.push({ time: data[i].time, value: maxValue });
-    }
-    return result;
-  }, []);
-
-  // Compute correction factor based on rolling maximum (stable)
-  const computePeakCorrection = useCallback((data) => {
-    const rollingMax = computeRollingMax(data);
-    const globalMax = Math.max(...data.map(item => item.value), 1);
-    return data.map((item, i) => ({
-      time: item.time,
-      value: item.value * (globalMax / rollingMax[i].value),
-    }));
-  }, [computeRollingMax]);
-
-  // Calculate MVRV-to-transaction-count ratio (stable)
-  const calculateRatio = useCallback((mvrvData, txCountData, smoothing) => {
-    const normalizedMvrv = normalizeData(mvrvData, 'mvrv');
-    const normalizedTxCount = normalizeData(txCountData, 'value');
-    let ratio = normalizedMvrv.map((mvrvItem, i) => ({
-      time: mvrvItem.time,
-      value: normalizedTxCount[i].value === 0 ? 0 : (mvrvItem.value / (normalizedTxCount[i].value + 0.0001)),
-    }));
-    ratio = computePeakCorrection(ratio);
-    if (smoothing === 'ema-7') {
-      return calculateEMA(ratio, 7);
-    } else if (smoothing === 'ema-28') {
-      return calculateEMA(ratio, 28);
-    } else if (smoothing === 'sma-7') {
-      return calculateSMA(ratio, 7);
-    } else if (smoothing === 'sma-28') {
-      return calculateSMA(ratio, 28);
-    }
-    return ratio;
-  }, [normalizeData, calculateEMA, calculateSMA, computePeakCorrection]);
 
   const trends = useMemo(() => ({
     'bottom': {
@@ -192,10 +145,36 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
     });
   }, []);
 
-  // Memoize processed data to avoid recomputation
+  const buildOverboughtData = useCallback((ratioData, horizontalLineValue) => (
+    ratioData
+      .map(point => ({
+        time: point.time,
+        value: point.value > horizontalLineValue ? 1 : 0,
+      }))
+      .filter(point => point.value === 1)
+  ), []);
+
+  // Memoize processed data — ratio mode uses server-precomputed series; tx-mvrv mode stays client-side
   const processedData = useMemo(() => {
-    if (txMvrvData.length === 0 || btcData.length === 0) return null;
     const cutoffDate = new Date('2014-10-21');
+    const filteredBtcData = btcData.filter(item => new Date(item.time) >= cutoffDate);
+    if (filteredBtcData.length === 0) return null;
+
+    if (displayMode === 'ratio') {
+      if (!ratioPayload?.series?.length) return null;
+      const ratioData = ratioPayload.series;
+      const horizontalLineValue = ratioPayload.horizontalThreshold;
+      return {
+        filteredTxMvrvData: [],
+        filteredBtcData,
+        txCountData: [],
+        ratioData,
+        horizontalLineValue,
+        overboughtData: buildOverboughtData(ratioData, horizontalLineValue),
+      };
+    }
+
+    if (txMvrvData.length === 0) return null;
     const filteredTxMvrvData = txMvrvData.filter(
       item => {
         const timeValid = new Date(item.time) >= cutoffDate;
@@ -204,8 +183,8 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
         return timeValid && txValid && mvrvValid;
       }
     );
-    const filteredBtcData = btcData.filter(item => new Date(item.time) >= cutoffDate);
-    if (filteredTxMvrvData.length === 0 || filteredBtcData.length === 0) return null;
+    if (filteredTxMvrvData.length === 0) return null;
+
     let txCountData = filteredTxMvrvData.map(item => ({ time: item.time, value: item.tx_count }));
     if (smoothingMode === 'ema-7') {
       txCountData = calculateEMA(txCountData, 7);
@@ -216,32 +195,38 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
     } else if (smoothingMode === 'sma-28') {
       txCountData = calculateSMA(txCountData, 28);
     }
-    const mvrvDataForRatio = filteredTxMvrvData.map(item => ({ time: item.time, mvrv: item.mvrv }));
-    const ratioData = calculateRatio(mvrvDataForRatio, txCountData, smoothingMode);
-    const globalMaxRatio = Math.max(...ratioData.map(d => d.value));
-    const horizontalLineValue = globalMaxRatio * 0.88;
-    // Precompute overbought data only once
-    const overboughtData = ratioData
-      .map(point => ({
-        time: point.time,
-        value: point.value > horizontalLineValue ? 1 : 0,
-      }))
-      .filter(point => point.value === 1);
+
     return {
       filteredTxMvrvData,
       filteredBtcData,
       txCountData,
-      ratioData,
-      mvrvDataForRatio,
-      horizontalLineValue,
-      overboughtData,
+      ratioData: [],
+      horizontalLineValue: 0,
+      overboughtData: [],
     };
-  }, [txMvrvData, btcData, smoothingMode]);
+  }, [
+    txMvrvData,
+    btcData,
+    smoothingMode,
+    displayMode,
+    ratioPayload,
+    calculateEMA,
+    calculateSMA,
+    buildOverboughtData,
+  ]);
+
+  const lastUpdatedDate = displayMode === 'ratio'
+    ? txMvrvRatioLastUpdated?.[smoothingMode]
+    : txMvrvLastUpdated;
 
   useEffect(() => {
-    fetchTxMvrvData();
     fetchBtcData();
-  }, [fetchTxMvrvData, fetchBtcData]);
+    if (displayMode === 'ratio') {
+      fetchTxMvrvRatioData(smoothingMode);
+    } else {
+      fetchTxMvrvData();
+    }
+  }, [fetchBtcData, fetchTxMvrvData, fetchTxMvrvRatioData, displayMode, smoothingMode]);
 
   // Create chart once, add all series with initial empty data
   useEffect(() => {
@@ -856,7 +841,7 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
       </div>
       <div className='under-chart'>
         {!isDashboard && (
-          <LastUpdated customDate={txMvrvLastUpdated} />
+          <LastUpdated customDate={lastUpdatedDate} />
         )}
         {!isDashboard && <BitcoinFees />}
       </div>

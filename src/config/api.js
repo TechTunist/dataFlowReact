@@ -44,6 +44,7 @@ export const API_ENDPOINTS = {
   onchainAddressMetrics: (query = '') => apiUrl(`/api/onchain-address-metrics/${query}`),
   riskMetrics: (query = '') => apiUrl(`/api/risk-metrics/${query}`),
   txMvrv: () => apiUrl('/api/tx-mvrv/'),
+  txMvrvRatio: (smoothing = 'sma-7') => apiUrl(`/api/tx-mvrv-ratio/?smoothing=${smoothing}`),
   txMacro: () => apiUrl('/api/tx-macro/'),
   altcoinPrice: (coin) => apiUrl(`/api/${coin.toLowerCase()}/price/`),
   altcoinSeasonIndex: () => apiUrl('/api/altcoin-season-index/'),
