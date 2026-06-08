@@ -223,9 +223,14 @@ const MarketHeatIndexChart = ({ isDashboard = false }) => {
   }, [fetchBtcData, fetchMvrvData, fetchFearAndGreedData, btcData.length, mvrvData.length, fearAndGreedData.length]);
   // Calculate Market Heat Index for each day
   const marketHeatData = useMemo(() => {
-    if (!btcData.length || !mvrvData.length || !fearAndGreedData.length) return [];
-    // Align data to the earliest common date (2018-01-01 for Fear and Greed)
-    const startDate = '2018-01-01';
+    if (!btcData.length || !mvrvData.length) return [];
+    // Dynamically start from MVRV availability (~2011) so the index can use long-history indicators
+    // (MVRV, Mayer, Risk, PiCycle). F&G only contributes on days where its data exists (2018+).
+    let startDate = '2011-01-01';
+    if (mvrvData.length > 0) {
+      const sorted = [...mvrvData].sort((a, b) => a.time.localeCompare(b.time));
+      startDate = sorted[0].time;
+    }
     const alignedData = btcData.filter(item => new Date(item.time) >= new Date(startDate));
     return alignedData.map((btcItem, index) => {
       const date = btcItem.time;
@@ -265,8 +270,8 @@ const MarketHeatIndexChart = ({ isDashboard = false }) => {
         const calculatedRisk = riskDataArray[riskDataArray.length - 1].Risk;
         riskHeat = Math.min(100, calculatedRisk * 100);
       }
-      // Fear and Greed
-      const fearGreedValue = fearGreedItem ? Math.max(0, Math.min(100, fearGreedItem.value)) : 0;
+      // Fear and Greed (only use when data present for this date; otherwise exclude from average)
+      const fearGreedValue = fearGreedItem ? Math.max(0, Math.min(100, fearGreedItem.value)) : null;
       // PiCycle Heat
       let piCycleHeat = 0;
       const ratioData = calculateRatioSeries(btcData.slice(0, index + 1));
@@ -278,11 +283,22 @@ const MarketHeatIndexChart = ({ isDashboard = false }) => {
         const heatOffset = 0;
         piCycleHeat = Math.max(0, Math.min(100, (((latestRatio - minRatio) / buffer) * 100) + heatOffset));
       }
-      // Weighted Average
-      const scores = { mvrv: mvrvHeat, mayer: mayerHeat, risk: riskHeat, fearGreed: fearGreedValue, piCycle: piCycleHeat };
-      const weights = { mvrv: 0.2, mayer: 0.2, risk: 0.2, fearGreed: 0.2, piCycle: 0.2 };
-      const weightedSum = Object.keys(scores).reduce((sum, key) => sum + (scores[key] || 0) * weights[key], 0);
-      const heatValue = Math.max(0, Math.min(100, weightedSum));
+      // Weighted Average — only include F&G when data is actually available for the day
+      const scores = { mvrv: mvrvHeat, mayer: mayerHeat, risk: riskHeat, piCycle: piCycleHeat };
+      const weights = { mvrv: 0.25, mayer: 0.25, risk: 0.25, piCycle: 0.25 };
+      let weightedSum = 0;
+      let activeWeight = 0;
+      Object.keys(scores).forEach(key => {
+        if (scores[key] != null) {
+          weightedSum += scores[key] * weights[key];
+          activeWeight += weights[key];
+        }
+      });
+      if (fearGreedValue != null) {
+        weightedSum += fearGreedValue * 0.2;  // keep original F&G weight when present
+        activeWeight += 0.2;
+      }
+      const heatValue = activeWeight > 0 ? Math.max(0, Math.min(100, weightedSum / activeWeight)) : 50;
       return {
         date: date,
         index: heatValue,
@@ -497,7 +513,7 @@ const MarketHeatIndexChart = ({ isDashboard = false }) => {
             Current Index: <b>{smoothedData.length > 0 ? smoothedData[smoothedData.length - 1].index.toFixed(1) : 'N/A'}</b>
           </div>
           <p className="chart-info">
-            The Market Heat Index combines multiple indicators (MVRV, Mayer Multiple, Risk, Fear and Greed, PiCycle) to assess overall market conditions. A value closer to 100 indicates an overheated market, while a value closer to 0 indicates a cold market. Data starts from January 2018 due to availability of Fear and Greed data. Select different smoothing periods to view historical trends. Bitcoin price is shown for reference on a logarithmic scale.
+            The Market Heat Index combines multiple indicators (MVRV, Mayer Multiple, Risk, Fear and Greed, PiCycle) to assess overall market conditions. A value closer to 100 indicates an overheated market, while a value closer to 0 indicates a cold market. Core indicators extend back to ~2011 (MVRV + derived factors); Fear & Greed only contributes from 2018 onward (weights renormalized on days when it is available). Select different smoothing periods to view historical trends. Bitcoin price is shown for reference on a logarithmic scale.
           </p>
         </div>
       )}
