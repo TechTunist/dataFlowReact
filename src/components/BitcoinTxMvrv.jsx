@@ -99,6 +99,28 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, isChartPage = false, txMvrvDa
     return result;
   }, []);
 
+  const getSmoothingLabel = useCallback((mode) => {
+    const map = {
+      'ema-3': '3-day EMA',
+      'ema-7': '7-day EMA',
+      'ema-14': '14-day EMA',
+      'ema-21': '21-day EMA',
+      'ema-28': '28-day EMA',
+      'ema-42': '6-week EMA',
+      'ema-56': '8-week EMA',
+      'ema-140': '20-week EMA',
+      'sma-3': '3-day SMA',
+      'sma-7': '7-day SMA',
+      'sma-14': '14-day SMA',
+      'sma-21': '21-day SMA',
+      'sma-28': '28-day SMA',
+      'sma-42': '6-week SMA',
+      'sma-56': '8-week SMA',
+      'sma-140': '20-week SMA',
+    };
+    return map[mode] || mode;
+  }, []);
+
   const trends = useMemo(() => ({
     'bottom': {
       color: theme.palette.mode === 'dark' ? colors.greenAccent[400] : colors.greenAccent[500],
@@ -115,8 +137,8 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, isChartPage = false, txMvrvDa
   const getIndicators = useCallback((mode, smoothing) => ({
     'tx-count': {
       color: theme.palette.mode === 'dark' ? 'rgba(38, 198, 218, 1)' : 'rgba(255, 140, 0, 0.8)',
-      label: `Tx Count${smoothing === 'none' ? '' : ` (${smoothing === 'ema-7' ? '7-day EMA' : smoothing === 'ema-28' ? '28-day EMA' : smoothing === 'sma-7' ? '7-day SMA' : '28-day SMA'})`}`,
-      description: `The ${smoothing === 'none' ? 'daily' : smoothing === 'ema-7' ? '7-day EMA' : smoothing === 'ema-28' ? '28-day EMA' : smoothing === 'sma-7' ? '7-day SMA' : '28-day SMA'} of Bitcoin transaction counts, indicating network activity and usage over time.`,
+      label: `Tx Count${smoothing === 'none' ? '' : ` (${getSmoothingLabel(smoothing)})`}`,
+      description: `The ${smoothing === 'none' ? 'daily' : getSmoothingLabel(smoothing)} of Bitcoin transaction counts, indicating network activity and usage over time.`,
     },
     'mvrv': {
       color: theme.palette.mode === 'dark' ? 'rgba(255, 99, 71, 1)' : 'rgba(0, 128, 0, 1)',
@@ -125,10 +147,10 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, isChartPage = false, txMvrvDa
     },
     'ratio': {
       color: theme.palette.mode === 'dark' ? 'rgba(147, 112, 219, 1)' : 'rgba(128, 0, 128, 1)',
-      label: `MVRV/Tx Ratio${smoothing === 'none' ? '' : ` (${smoothing === 'ema-7' ? '7-day EMA' : smoothing === 'ema-28' ? '28-day EMA' : smoothing === 'sma-7' ? '7-day SMA' : '28-day SMA'})`}`,
-      description: `The ratio of normalized MVRV to normalized transaction count${smoothing === 'none' ? '' : `, smoothed with a ${smoothing === 'ema-7' || smoothing === 'ema-28' ? 'exponential' : 'simple'} moving average`}, dynamically normalized to a rolling maximum. High values may indicate overvaluation (market tops), low values may suggest undervaluation (market bottoms).`,
+      label: `MVRV/Tx Ratio${smoothing === 'none' ? '' : ` (${getSmoothingLabel(smoothing)})`}`,
+      description: `The ratio of normalized MVRV to normalized transaction count${smoothing === 'none' ? '' : `, smoothed with a ${smoothing.startsWith('ema-') ? 'exponential' : 'simple'} moving average`}, dynamically normalized to a rolling maximum. High values may indicate overvaluation (market tops), low values may suggest undervaluation (market bottoms).`,
     },
-  }), [theme.palette.mode]);
+  }), [theme.palette.mode, getSmoothingLabel]);
 
   const setInteractivity = useCallback(() => {
     setIsInteractive(prev => !prev);
@@ -324,14 +346,38 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, isChartPage = false, txMvrvDa
     if (filteredTxMvrvData.length === 0) return null;
 
     let txCountData = filteredTxMvrvData.map(item => ({ time: item.time, value: item.tx_count }));
-    if (smoothingMode === 'ema-7') {
+    if (smoothingMode === 'ema-3') {
+      txCountData = calculateEMA(txCountData, 3);
+    } else if (smoothingMode === 'ema-7') {
       txCountData = calculateEMA(txCountData, 7);
+    } else if (smoothingMode === 'ema-14') {
+      txCountData = calculateEMA(txCountData, 14);
+    } else if (smoothingMode === 'ema-21') {
+      txCountData = calculateEMA(txCountData, 21);
     } else if (smoothingMode === 'ema-28') {
       txCountData = calculateEMA(txCountData, 28);
+    } else if (smoothingMode === 'ema-42') {
+      txCountData = calculateEMA(txCountData, 42);
+    } else if (smoothingMode === 'ema-56') {
+      txCountData = calculateEMA(txCountData, 56);
+    } else if (smoothingMode === 'ema-140') {
+      txCountData = calculateEMA(txCountData, 140);
+    } else if (smoothingMode === 'sma-3') {
+      txCountData = calculateSMA(txCountData, 3);
     } else if (smoothingMode === 'sma-7') {
       txCountData = calculateSMA(txCountData, 7);
+    } else if (smoothingMode === 'sma-14') {
+      txCountData = calculateSMA(txCountData, 14);
+    } else if (smoothingMode === 'sma-21') {
+      txCountData = calculateSMA(txCountData, 21);
     } else if (smoothingMode === 'sma-28') {
       txCountData = calculateSMA(txCountData, 28);
+    } else if (smoothingMode === 'sma-42') {
+      txCountData = calculateSMA(txCountData, 42);
+    } else if (smoothingMode === 'sma-56') {
+      txCountData = calculateSMA(txCountData, 56);
+    } else if (smoothingMode === 'sma-140') {
+      txCountData = calculateSMA(txCountData, 140);
     }
 
     return {
@@ -841,10 +887,22 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, isChartPage = false, txMvrvDa
                 }}
               >
                 <MenuItem value="none">None</MenuItem>
-                <MenuItem value="ema-7">7-day EMA</MenuItem>
-                <MenuItem value="ema-28">28-day EMA</MenuItem>
+                <MenuItem value="sma-3">3-day SMA</MenuItem>
                 <MenuItem value="sma-7">7-day SMA</MenuItem>
+                <MenuItem value="sma-14">14-day SMA</MenuItem>
+                <MenuItem value="sma-21">21-day SMA</MenuItem>
                 <MenuItem value="sma-28">28-day SMA</MenuItem>
+                <MenuItem value="sma-42">6-week SMA (42-day)</MenuItem>
+                <MenuItem value="sma-56">8-week SMA (56-day)</MenuItem>
+                <MenuItem value="sma-140">20-week SMA (140-day)</MenuItem>
+                <MenuItem value="ema-3">3-day EMA</MenuItem>
+                <MenuItem value="ema-7">7-day EMA</MenuItem>
+                <MenuItem value="ema-14">14-day EMA</MenuItem>
+                <MenuItem value="ema-21">21-day EMA</MenuItem>
+                <MenuItem value="ema-28">28-day EMA</MenuItem>
+                <MenuItem value="ema-42">6-week EMA (42-day)</MenuItem>
+                <MenuItem value="ema-56">8-week EMA (56-day)</MenuItem>
+                <MenuItem value="ema-140">20-week EMA (140-day)</MenuItem>
               </Select>
             </FormControl>
             {displayMode === 'ratio' && (
@@ -1277,7 +1335,7 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, isChartPage = false, txMvrvDa
           {/* Main long-form explanation - outside the scroll (always visible) and using the centralized ChartInfo / .chart-info for bigger/prominent text vs the small activetrends metas */}
           <ChartInfo sx={{ mt: 1, color: colors.grey[300] }}>
               <br />
-              The Bitcoin Tx Count, Price & MVRV chart shows the {displayMode === 'tx-mvrv' ? `${smoothingMode === 'none' ? 'daily transaction count' : smoothingMode === 'ema-7' ? '7-day EMA' : smoothingMode === 'ema-28' ? '28-day EMA' : smoothingMode === 'sma-7' ? '7-day SMA' : '28-day SMA'} of transaction count and scaled MVRV` : `MVRV-to-transaction-count ratio${smoothingMode === 'none' ? '' : ` with ${smoothingMode === 'ema-7' || smoothingMode === 'ema-28' ? 'exponential' : 'simple'} moving average`}`} and Bitcoin price starting from October 21, 2014, illustrating network activity, price trends, and valuation. {displayMode === 'ratio' ? `The MVRV/Tx Ratio is the normalized MVRV divided by normalized transaction count, dynamically normalized to a rolling maximum and optionally smoothed with a moving average.${activeTrends.includes('bottom') ? ' The Bottom Indicator projects historical ratio lows forward.' : ''}${activeTrends.includes('threshold') ? ' The Overbought Threshold is a horizontal line near the historical max, signaling potential tops when breached.' : ''}` : 'MVRV is scaled by 100,000 to fit the linear axis.'}
+              The Bitcoin Tx Count, Price & MVRV chart shows the {displayMode === 'tx-mvrv' ? `${smoothingMode === 'none' ? 'daily transaction count' : getSmoothingLabel(smoothingMode)} of transaction count and scaled MVRV` : `MVRV-to-transaction-count ratio${smoothingMode === 'none' ? '' : ` with ${smoothingMode.startsWith('ema-') ? 'exponential' : 'simple'} moving average`}`} and Bitcoin price starting from October 21, 2014, illustrating network activity, price trends, and valuation. {displayMode === 'ratio' ? `The MVRV/Tx Ratio is the normalized MVRV divided by normalized transaction count, dynamically normalized to a rolling maximum and optionally smoothed with a moving average.${activeTrends.includes('bottom') ? ' The Bottom Indicator projects historical ratio lows forward.' : ''}${activeTrends.includes('threshold') ? ' The Overbought Threshold is a horizontal line near the historical max, signaling potential tops when breached.' : ''}` : 'MVRV is scaled by 100,000 to fit the linear axis.'}
               <br /><br />
               This chart shows the Bitcoin transaction count, Bitcoin price, MVRV ratio, or MVRV/Tx ratio, providing a snapshot of how Bitcoin’s network and value interact over time.
               The transaction count reflects activity on the Bitcoin network, and potential hype cycles that see an influx of new investors, and conversely bear markets where interest has decreased.
