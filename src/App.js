@@ -85,6 +85,7 @@ const PuellMultiple = lazy(() => import('./components/PuellMultiple'));
 const AltcoinSeasonIndexChart = lazy(() => import('./components/AltcoinSeasonIndexChart'));
 const OnChainHistoricalRisk = lazy(() => import('./components/OnChainHistoricalRisk'));
 const BitcoinTxMvrvChart = lazy(() => import('./components/BitcoinTxMvrv'));
+const DynamicDCASimulator = lazy(() => import('./components/DynamicDCASimulator'));
 const UKUnemploymentChart = lazy(() => import('./components/UKUnemployment'));
 const UKClaimantCountChart = lazy(() => import('./components/UKClaimantCount'));
 const UKEarningsChart = lazy(() => import('./components/UKEarnings'));
@@ -184,6 +185,7 @@ const appRoutes = [
   // Premium-only routes (wrapped with restrictToPaidSubscription)
   { path: "/fred/sahm-recession-indicator", component: SahmRecessionIndicator, useBasicChart: true, requirePaid: true, protected: true },
   { path: "/workbench", component: WorkbenchChart, useBasicChart: true, requirePaid: true, protected: true, basicChartProps: { seriesId: "UMCSENT", chartType: "area", valueFormatter: (v) => v.toLocaleString(), showSP500Overlay: true, explanation: "Create your own indicator by choosing your own data series' to compare." } },
+  { path: "/dynamic-dca", component: DynamicDCASimulator, useBasicChart: true, requirePaid: true, protected: true, basicChartProps: { chartMinHeight: "auto" } },
 
   // Many Fred series premium routes - defined with props for clarity
   { path: "/fred/fed-funds-rate", component: FredSeriesChart, useBasicChart: true, requirePaid: true, protected: true, basicChartProps: { seriesId: "DFF", chartType: "line", scaleMode: "linear", valueFormatter: (v) => `${v.toFixed(2)}%`, explanation: "This chart shows the daily Effective Federal Funds Rate in the United States, set by the Federal Reserve.", showSP500Overlay: true } },

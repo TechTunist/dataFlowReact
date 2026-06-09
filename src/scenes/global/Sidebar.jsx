@@ -240,6 +240,7 @@ const itemsData = [
   // === TOOLS ===
   // Category Icon: BuildIcon - Represents tools and building/analysis
   { title: "Workbench (beta)", to: "/workbench", category: "Tools", icon: <BuildIcon />, categoryIcon: <BuildIcon /> }, // BuildIcon: Workbench for building charts
+  // Dynamic DCA Simulator temporarily removed from sidebar (code kept for future)
 ];
 
   const filteredItems = useMemo(() =>

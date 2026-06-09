@@ -14,7 +14,7 @@ import { calculateRiskMetric } from '../utility/riskMetric';
 import { useChartPageFooter } from '../scenes/ChartTemplates/ChartPageFooterContext';
 import { ChartSecondaryCard } from '../scenes/ChartTemplates/ChartCardShell';
 
-const BitcoinRisk = ({ isDashboard = false, isChartPage = false, riskData: propRiskData }) => {
+const BitcoinRisk = ({ isDashboard = false, isChartPage = false, riskData: propRiskData, simulatorDcaLevels = null, hideControls = false }) => {
   const chartContainerRef = useRef();
   const chartRef = useRef(null);
   const riskSeriesRef = useRef(null);
@@ -186,6 +186,22 @@ const BitcoinRisk = ({ isDashboard = false, isChartPage = false, riskData: propR
     priceSeriesRef.current = priceSeries;
     priceSeries.setData(chartData.map(data => ({ time: data.time, value: data.value })));
 
+    // Draw custom DCA levels for the simulator (extra horizontal lines on the Risk scale)
+    // These are only for the Dynamic DCA Simulator and do not affect the main /risk page.
+    if (simulatorDcaLevels && simulatorDcaLevels.length > 0) {
+      simulatorDcaLevels.forEach((lvl, i) => {
+        const levelSeries = chart.addLineSeries({
+          color: lvl.color || (lvl.type === 'buy' ? colors.greenAccent[500] : '#f472b6'),
+          lineWidth: 1,
+          lineStyle: 2, // dashed
+          priceScaleId: 'right', // risk scale
+          lastValueVisible: false,
+          crosshairMarkerVisible: false,
+        });
+        levelSeries.setData(chartData.map(data => ({ time: data.time, value: lvl.level })));
+      });
+    }
+
     chart.applyOptions({
       handleScroll: isInteractive,
       handleScale: isInteractive,
@@ -244,7 +260,7 @@ const BitcoinRisk = ({ isDashboard = false, isChartPage = false, riskData: propR
       window.removeEventListener('resize', resizeChart);
       window.removeEventListener('resize', resetChartView);
     };
-  }, [chartData, theme.palette.mode, isDashboard]);
+  }, [chartData, theme.palette.mode, isDashboard, simulatorDcaLevels]);
 
   useEffect(() => {
     if (chartRef.current) {
