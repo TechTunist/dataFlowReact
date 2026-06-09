@@ -6,7 +6,7 @@ import { useTheme } from "@mui/material";
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
 import BitcoinFees from './BitcoinTransactionFees';
-import { Box, FormControl, InputLabel, Select, MenuItem, ToggleButton, ToggleButtonGroup, useMediaQuery, Checkbox } from '@mui/material';
+import { Box, FormControl, InputLabel, Select, MenuItem, ToggleButton, ToggleButtonGroup, useMediaQuery, Checkbox, Typography } from '@mui/material';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 
@@ -568,131 +568,169 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
     return theme.palette.mode === 'dark' ? 'rgba(255, 99, 71, 0.3)' : 'rgba(255, 140, 0, 0.3)';
   }, [theme.palette.mode]);
 
+  const calculateTooltipLeft = () => {
+    if (!tooltipData || !chartContainerRef.current) return '0px';
+    const chartWidth = chartContainerRef.current.clientWidth;
+    const tooltipWidth = isNarrowScreen ? 150 : 200;
+    const offset = 10;
+    const offsetRight = 100;
+    const cursorX = tooltipData.x;
+    if (cursorX < chartWidth / 2) {
+      return `${cursorX + offsetRight}px`;
+    }
+    return `${cursorX - offset - tooltipWidth}px`;
+  };
+
   return (
-    <div style={{ height: '100%' }}>
+    <Box sx={{
+      backgroundColor: colors.primary[400],
+      borderRadius: '12px',
+      padding: { xs: '16px', sm: '20px' },
+      height: isDashboard ? '100%' : 'auto',
+      minHeight: isDashboard ? '400px' : 'auto',
+      width: '100%',
+      maxWidth: '1400px',
+      margin: '0 auto',
+      boxSizing: 'border-box',
+      display: 'flex',
+      flexDirection: 'column',
+      position: 'relative',
+      boxShadow: `0 4px 12px ${theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.1)'}`,
+      transition: 'transform 0.2s ease-in-out',
+      '&:hover': {
+        transform: isDashboard ? 'none' : 'translateY(-4px)',
+        boxShadow: isDashboard
+          ? `0 4px 12px ${theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.1)'}`
+          : `0 6px 16px ${theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.2)'}`,
+      },
+    }}>
       {!isDashboard && (
         <Box
           sx={{
             display: 'flex',
-            flexDirection: isMobile ? 'column' : 'row',
-            justifyContent: isMobile ? 'flex-start' : 'center',
-            alignItems: isMobile ? 'stretch' : 'center',
-            marginBottom: '20px',
-            marginTop: '20px',
-            gap: isMobile ? '10px' : '20px',
-            '& > *': {
-              width: isMobile ? '100%' : 'auto',
-              maxWidth: isMobile ? 'none' : '300px',
-            },
+            flexDirection: { xs: 'column', sm: 'row' },
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '20px',
+            marginBottom: '8px',
+            marginTop: '4px',
+            width: '100%',
+            flexWrap: 'wrap',
           }}
         >
-          <ToggleButtonGroup
-            value={displayMode}
-            exclusive
-            onChange={handleDisplayModeChange}
+          <Box
             sx={{
-              backgroundColor: colors.primary[500],
-              '& .MuiToggleButton-root': {
-                color: colors.grey[100],
-                borderColor: colors.grey[300],
-                '&.Mui-selected': {
-                  backgroundColor: colors.greenAccent[500],
-                  color: colors.primary[900],
-                },
-                '&:hover': {
-                  backgroundColor: colors.greenAccent[700],
-                },
-              },
+              display: 'flex',
+              flexDirection: { xs: 'column', sm: 'row' },
+              alignItems: 'center',
+              gap: '12px',
+              flexWrap: 'wrap',
+              flex: 1,
             }}
           >
-            <ToggleButton value="tx-mvrv">Tx Count & MVRV</ToggleButton>
-            <ToggleButton value="ratio">MVRV/Tx Ratio</ToggleButton>
-          </ToggleButtonGroup>
-          <FormControl sx={{ minWidth: isMobile ? '100%' : '200px' }}>
-            <InputLabel
-              id="smoothing-mode-label"
+            <ToggleButtonGroup
+              value={displayMode}
+              exclusive
+              onChange={handleDisplayModeChange}
               sx={{
-                color: colors.grey[100],
-                '&.Mui-focused': { color: colors.greenAccent[500] },
-              }}
-            >
-              Smoothing
-            </InputLabel>
-            <Select
-              value={smoothingMode}
-              onChange={handleSmoothingModeChange}
-              labelId="smoothing-mode-label"
-              label="Smoothing"
-              sx={{
-                color: colors.grey[100],
                 backgroundColor: colors.primary[500],
-                borderRadius: "8px",
-                '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
-                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                '& .MuiSelect-select': { py: 1.5, pl: 2 },
+                '& .MuiToggleButton-root': {
+                  color: colors.grey[100],
+                  borderColor: colors.grey[300],
+                  '&.Mui-selected': {
+                    backgroundColor: colors.greenAccent[500],
+                    color: colors.primary[900],
+                  },
+                  '&:hover': {
+                    backgroundColor: colors.greenAccent[700],
+                  },
+                },
               }}
             >
-              <MenuItem value="none">None</MenuItem>
-              <MenuItem value="ema-7">7-day EMA</MenuItem>
-              <MenuItem value="ema-28">28-day EMA</MenuItem>
-              <MenuItem value="sma-7">7-day SMA</MenuItem>
-              <MenuItem value="sma-28">28-day SMA</MenuItem>
-            </Select>
-          </FormControl>
-          {displayMode === 'ratio' && (
-            <FormControl sx={{ minWidth: isMobile ? '100%' : '200px' }}>
+              <ToggleButton value="tx-mvrv">Tx Count & MVRV</ToggleButton>
+              <ToggleButton value="ratio">MVRV/Tx Ratio</ToggleButton>
+            </ToggleButtonGroup>
+            <FormControl sx={{ minWidth: '150px', width: { xs: '100%', sm: '200px' } }}>
               <InputLabel
-                id="trends-label"
-                shrink
+                id="smoothing-mode-label"
                 sx={{
                   color: colors.grey[100],
                   '&.Mui-focused': { color: colors.greenAccent[500] },
                 }}
               >
-                Trends
+                Smoothing
               </InputLabel>
               <Select
-                multiple
-                value={activeTrends}
-                onChange={handleTrendsChange}
-                labelId="trends-label"
-                label="Trends"
-                displayEmpty
-                renderValue={(selected) =>
-                  selected.length > 0
-                    ? selected.map((key) => trends[key].label).join(', ')
-                    : 'Select Trends'
-                }
+                value={smoothingMode}
+                onChange={handleSmoothingModeChange}
+                labelId="smoothing-mode-label"
+                label="Smoothing"
                 sx={{
                   color: colors.grey[100],
                   backgroundColor: colors.primary[500],
-                  borderRadius: "8px",
+                  borderRadius: '8px',
                   '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
                   '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
                   '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
                   '& .MuiSelect-select': { py: 1.5, pl: 2 },
-                  '& .MuiSelect-select:empty': { color: colors.grey[500] },
                 }}
               >
-                {Object.entries(trends).map(([key, { label }]) => (
-                  <MenuItem key={key} value={key}>
-                    <Checkbox
-                      checked={activeTrends.includes(key)}
-                      sx={{ color: colors.grey[100], '&.Mui-checked': { color: colors.greenAccent[500] } }}
-                    />
-                    <span>{label}</span>
-                  </MenuItem>
-                ))}
+                <MenuItem value="none">None</MenuItem>
+                <MenuItem value="ema-7">7-day EMA</MenuItem>
+                <MenuItem value="ema-28">28-day EMA</MenuItem>
+                <MenuItem value="sma-7">7-day SMA</MenuItem>
+                <MenuItem value="sma-28">28-day SMA</MenuItem>
               </Select>
             </FormControl>
-          )}
-        </Box>
-      )}
-      {!isDashboard && (
-        <div className='chart-top-div' style={{ display: 'flex', alignItems: 'center' }}>
-          <div style={{ flexGrow: 1 }}></div>
-          <div style={{ display: 'flex', gap: '10px' }}>
+            {displayMode === 'ratio' && (
+              <FormControl sx={{ minWidth: '150px', width: { xs: '100%', sm: '200px' } }}>
+                <InputLabel
+                  id="trends-label"
+                  shrink
+                  sx={{
+                    color: colors.grey[100],
+                    '&.Mui-focused': { color: colors.greenAccent[500] },
+                  }}
+                >
+                  Trends
+                </InputLabel>
+                <Select
+                  multiple
+                  value={activeTrends}
+                  onChange={handleTrendsChange}
+                  labelId="trends-label"
+                  label="Trends"
+                  displayEmpty
+                  renderValue={(selected) =>
+                    selected.length > 0
+                      ? selected.map((key) => trends[key].label).join(', ')
+                      : 'Select Trends'
+                  }
+                  sx={{
+                    color: colors.grey[100],
+                    backgroundColor: colors.primary[500],
+                    borderRadius: '8px',
+                    '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
+                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                    '& .MuiSelect-select': { py: 1.5, pl: 2 },
+                    '& .MuiSelect-select:empty': { color: colors.grey[500] },
+                  }}
+                >
+                  {Object.entries(trends).map(([key, { label }]) => (
+                    <MenuItem key={key} value={key}>
+                      <Checkbox
+                        checked={activeTrends.includes(key)}
+                        sx={{ color: colors.grey[100], '&.Mui-checked': { color: colors.greenAccent[500] } }}
+                      />
+                      <span>{label}</span>
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
+          </Box>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginLeft: 'auto' }}>
             <button
               onClick={setInteractivity}
               className="button-reset"
@@ -708,20 +746,30 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
               Reset Chart
             </button>
           </div>
-        </div>
+        </Box>
       )}
       <div
         className="chart-container"
         style={{
           position: 'relative',
-          height: isDashboard ? '100%' : 'calc(100% - 40px)',
+          display: 'flex',
+          flexDirection: 'column',
+          height: isDashboard ? '100%' : '620px',
+          minHeight: isDashboard ? '350px' : undefined,
+          maxHeight: isDashboard ? '750px' : '720px',
+          flexShrink: 0,
           width: '100%',
           border: '2px solid #a9a9a9',
-          zIndex: 1,
         }}
-        onDoubleClick={() => setIsInteractive(prev => !prev)}
+        onDoubleClick={() => {
+          if (!isInteractive && !isDashboard) setIsInteractive(true);
+          else setIsInteractive(false);
+        }}
       >
-        <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
+        <div
+          ref={chartContainerRef}
+          style={{ flex: '1 1 auto', minHeight: isDashboard ? '400px' : undefined, width: '100%', zIndex: 1 }}
+        />
         {!isDashboard && (
           <div
             style={{
@@ -838,100 +886,115 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
             )}
           </div>
         )}
-      </div>
-      <div className='under-chart'>
-        {!isDashboard && (
-          <LastUpdated customDate={lastUpdatedDate} />
-        )}
-        {!isDashboard && <BitcoinFees />}
-      </div>
-      {!isDashboard && (
-        <Box sx={{ margin: '10px 0', color: colors.grey[100] }}>
-          {Object.entries(indicatorsForMode).map(([key, { label, color, description }]) => (
-            (displayMode === 'tx-mvrv' ? (key === 'tx-count' || key === 'mvrv') :
-              key === 'ratio') && (
-              <p key={key} style={{ margin: '5px 0' }}>
-                <strong style={{ color }}>{label}:</strong> {description}
-              </p>
-            )
-          ))}
-          {activeTrends.map(key => (
-            <p key={key} style={{ margin: '5px 0' }}>
-              <strong style={{ color: trends[key].color }}>
-                {trends[key].label}:
-              </strong> {trends[key].description}
-            </p>
-          ))}
-          {activeTrends.includes('bottom') && (
-            <p style={{ margin: '5px 0' }}>
-              <strong style={{ color: getBottomShadedColor() }}>Bottom Shaded Areas:</strong> Lightly shaded vertical areas highlighting periods when the MVRV/Tx ratio falls below the bottom indicator trend line, indicating potential undervaluation.
-            </p>
-          )}
-          {activeTrends.includes('threshold') && (
-            <p style={{ margin: '5px 0' }}>
-              <strong style={{ color: getOverboughtShadedColor() }}>Overbought Shaded Areas:</strong> Lightly shaded vertical areas highlighting periods when the MVRV/Tx ratio exceeds the overbought threshold, indicating potential overvaluation.
-            </p>
-          )}
-        </Box>
-      )}
-      {!isDashboard && tooltipData && (
-        <div
-          className="tooltip"
-          style={{
-            position: 'fixed',
-            left: (() => {
-              const sidebarWidth = isMobile ? -80 : -320;
-              const cursorX = tooltipData.x - sidebarWidth;
-              const chartWidth = chartContainerRef.current.clientWidth - sidebarWidth;
-              const tooltipWidth = 200;
-              const offset = 10000 / (chartWidth + 300);
-              const rightPosition = cursorX + offset;
-              const leftPosition = cursorX - tooltipWidth - offset;
-              if (rightPosition + tooltipWidth <= chartWidth) return `${rightPosition}px`;
-              if (leftPosition >= 0) return `${leftPosition}px`;
-              return `${Math.max(0, Math.min(rightPosition, chartWidth - tooltipWidth))}px`;
-            })(),
-            top: `${tooltipData.y + 100}px`,
-            zIndex: 1000,
-          }}
-        >
-          <div style={{ fontSize: '15px', color: 'gray' }}>
-            BTC price: ${tooltipData.price ? (tooltipData.price / 1000).toFixed(1) + 'k' : 'N/A'}
-          </div>
-          {displayMode === 'tx-mvrv' && (
-            <>
-              <div style={{ color: indicatorsForMode['tx-count'].color }}>
-                {indicatorsForMode['tx-count'].label}: {tooltipData.txCount?.toFixed(0) ?? 'N/A'}
-              </div>
-              <div style={{ color: indicatorsForMode['mvrv'].color }}>
-                MVRV: {(tooltipData.mvrv / 100000)?.toFixed(2) ?? 'N/A'}
-              </div>
-            </>
-          )}
-          {displayMode === 'ratio' && (
-            <>
+        {!isDashboard && tooltipData && (
+          <div
+            className="tooltip"
+            style={{
+              position: 'absolute',
+              left: calculateTooltipLeft(),
+              top: `${tooltipData.y + 20}px`,
+              zIndex: 1000,
+              backgroundColor: colors.primary[900],
+              padding: isNarrowScreen ? '6px 8px' : '8px 12px',
+              borderRadius: '4px',
+              color: colors.grey[100],
+              fontSize: isNarrowScreen ? '10px' : '12px',
+              pointerEvents: 'none',
+              width: isNarrowScreen ? '150px' : '200px',
+            }}
+          >
+            <div style={{ fontSize: isNarrowScreen ? '12px' : '14px', color: colors.grey[300] }}>
+              BTC price: ${tooltipData.price ? (tooltipData.price / 1000).toFixed(1) + 'k' : 'N/A'}
+            </div>
+            {displayMode === 'tx-mvrv' && (
+              <>
+                <div style={{ color: indicatorsForMode['tx-count'].color }}>
+                  {indicatorsForMode['tx-count'].label}: {tooltipData.txCount?.toFixed(0) ?? 'N/A'}
+                </div>
+                <div style={{ color: indicatorsForMode['mvrv'].color }}>
+                  MVRV: {(tooltipData.mvrv / 100000)?.toFixed(2) ?? 'N/A'}
+                </div>
+              </>
+            )}
+            {displayMode === 'ratio' && (
               <div style={{ color: indicatorsForMode['ratio'].color }}>
                 {indicatorsForMode['ratio'].label}: {tooltipData.ratio?.toFixed(2) ?? 'N/A'}
               </div>
-            </>
-          )}
-          <div>{tooltipData.date?.toString()}</div>
-        </div>
-      )}
+            )}
+            <div>{tooltipData.date?.toString()}</div>
+          </div>
+        )}
+      </div>
+
       {!isDashboard && (
-        <p className='chart-info'>
-          The Bitcoin Tx Count, Price & MVRV chart shows the {displayMode === 'tx-mvrv' ? `${smoothingMode === 'none' ? 'daily transaction count' : smoothingMode === 'ema-7' ? '7-day EMA' : smoothingMode === 'ema-28' ? '28-day EMA' : smoothingMode === 'sma-7' ? '7-day SMA' : '28-day SMA'} of transaction count and scaled MVRV` : `MVRV-to-transaction-count ratio${smoothingMode === 'none' ? '' : ` with ${smoothingMode === 'ema-7' || smoothingMode === 'ema-28' ? 'exponential' : 'simple'} moving average`}`} and Bitcoin price starting from October 21, 2014, illustrating network activity, price trends, and valuation. {displayMode === 'ratio' ? `The MVRV/Tx Ratio is the normalized MVRV divided by normalized transaction count, dynamically normalized to a rolling maximum and optionally smoothed with a moving average.${activeTrends.includes('bottom') ? ' The Bottom Indicator projects historical ratio lows forward.' : ''}${activeTrends.includes('threshold') ? ' The Overbought Threshold is a horizontal line near the historical max, signaling potential tops when breached.' : ''}` : 'MVRV is scaled by 100,000 to fit the linear axis.'}
-          <br />
-          <br />
-          This chart shows the Bitcoin transaction count, Bitcoin price, MVRV ratio, or MVRV/Tx ratio, providing a snapshot of how Bitcoin’s network and value interact over time.
-          The transaction count reflects activity on the Bitcoin network, and potential hype cycles that see an influx of new investors, and conversely bear markets where interest has decreased.
-          The MVRV (market value to realised value) ratio shows the difference between the current market value of bitcoin and the realised value (the average value of all Bitcoin when last transacted). <br/><br/>
-          The MVRV/Tx ratio compares the MVRV to network activity. One interpretation of the spikes of this ratio is that the price has increased speculatively without corresponding network activity that would have led to a "natural" increase of value.
-          There is currently a monotonically increasing trendline under the lows in the MVRV/Tx ratio that has held for 10 years and has indicated relatively low risk entry points.
-          <br /><br /><br />
-        </p>
+        <Box sx={{
+          display: 'flex',
+          justifyContent: 'flex-start',
+          mt: 0.5,
+          mb: 1,
+          pl: 0.5,
+        }}>
+          <LastUpdated customDate={lastUpdatedDate} />
+        </Box>
       )}
-    </div>
+
+      {!isDashboard && (
+        <Box sx={{
+          mt: 1,
+          pt: 1.5,
+          borderTop: `1px solid ${colors.primary[500]}`,
+          color: colors.primary[100],
+        }}>
+          <Box sx={{
+            maxHeight: { xs: '180px', sm: '240px' },
+            overflowY: 'auto',
+            pr: 1,
+            fontSize: '0.95rem',
+            lineHeight: 1.5,
+            color: colors.grey[300],
+          }}>
+            {Object.entries(indicatorsForMode).map(([key, { label, color, description }]) => (
+              (displayMode === 'tx-mvrv' ? (key === 'tx-count' || key === 'mvrv') :
+                key === 'ratio') && (
+                <Typography key={key} component="p" sx={{ margin: '5px 0' }}>
+                  <strong style={{ color }}>{label}:</strong> {description}
+                </Typography>
+              )
+            ))}
+            {activeTrends.map(key => (
+              <Typography key={key} component="p" sx={{ margin: '5px 0' }}>
+                <strong style={{ color: trends[key].color }}>
+                  {trends[key].label}:
+                </strong> {trends[key].description}
+              </Typography>
+            ))}
+            {activeTrends.includes('bottom') && (
+              <Typography component="p" sx={{ margin: '5px 0' }}>
+                <strong style={{ color: getBottomShadedColor() }}>Bottom Shaded Areas:</strong> Lightly shaded vertical areas highlighting periods when the MVRV/Tx ratio falls below the bottom indicator trend line, indicating potential undervaluation.
+              </Typography>
+            )}
+            {activeTrends.includes('threshold') && (
+              <Typography component="p" sx={{ margin: '5px 0' }}>
+                <strong style={{ color: getOverboughtShadedColor() }}>Overbought Shaded Areas:</strong> Lightly shaded vertical areas highlighting periods when the MVRV/Tx ratio exceeds the overbought threshold, indicating potential overvaluation.
+              </Typography>
+            )}
+            <Typography component="p" className="chart-info" sx={{ mt: 1, color: colors.grey[300] }}>
+              The Bitcoin Tx Count, Price & MVRV chart shows the {displayMode === 'tx-mvrv' ? `${smoothingMode === 'none' ? 'daily transaction count' : smoothingMode === 'ema-7' ? '7-day EMA' : smoothingMode === 'ema-28' ? '28-day EMA' : smoothingMode === 'sma-7' ? '7-day SMA' : '28-day SMA'} of transaction count and scaled MVRV` : `MVRV-to-transaction-count ratio${smoothingMode === 'none' ? '' : ` with ${smoothingMode === 'ema-7' || smoothingMode === 'ema-28' ? 'exponential' : 'simple'} moving average`}`} and Bitcoin price starting from October 21, 2014, illustrating network activity, price trends, and valuation. {displayMode === 'ratio' ? `The MVRV/Tx Ratio is the normalized MVRV divided by normalized transaction count, dynamically normalized to a rolling maximum and optionally smoothed with a moving average.${activeTrends.includes('bottom') ? ' The Bottom Indicator projects historical ratio lows forward.' : ''}${activeTrends.includes('threshold') ? ' The Overbought Threshold is a horizontal line near the historical max, signaling potential tops when breached.' : ''}` : 'MVRV is scaled by 100,000 to fit the linear axis.'}
+              <br /><br />
+              This chart shows the Bitcoin transaction count, Bitcoin price, MVRV ratio, or MVRV/Tx ratio, providing a snapshot of how Bitcoin’s network and value interact over time.
+              The transaction count reflects activity on the Bitcoin network, and potential hype cycles that see an influx of new investors, and conversely bear markets where interest has decreased.
+              The MVRV (market value to realised value) ratio shows the difference between the current market value of bitcoin and the realised value (the average value of all Bitcoin when last transacted).
+              <br /><br />
+              The MVRV/Tx ratio compares the MVRV to network activity. One interpretation of the spikes of this ratio is that the price has increased speculatively without corresponding network activity that would have led to a "natural" increase of value.
+              There is currently a monotonically increasing trendline under the lows in the MVRV/Tx ratio that has held for 10 years and has indicated relatively low risk entry points.
+            </Typography>
+          </Box>
+          <Box sx={{ mt: 1.5 }}>
+            <BitcoinFees />
+          </Box>
+        </Box>
+      )}
+    </Box>
   );
 };
 
