@@ -147,7 +147,7 @@ const BitcoinMonthlyReturnsTable = ({ isDashboard = false }) => {
             alignItems: 'center',
             justifyContent: 'center',
             marginBottom: '10px',
-            marginTop: '50px',
+            marginTop: '8px',
           }}
         >
           {isLoading && <span style={{ color: colors.grey[100], marginBottom: '10px' }}>Loading...</span>}

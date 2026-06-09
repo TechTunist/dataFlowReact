@@ -4,6 +4,7 @@ import '../styling/bitcoinChart.css';
 import { tokens } from '../theme';
 import { useTheme } from '@mui/material';
 import useIsMobile from '../hooks/useIsMobile';
+import ChartTooltip from './ChartTooltip';
 
 const UKUnemployment = ({ isDashboard = false }) => {
   const chartContainerRef = useRef();
@@ -282,6 +283,19 @@ const UKUnemployment = ({ isDashboard = false }) => {
         onDoubleClick={setInteractivity}
       >
         <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
+        {!isDashboard && (
+          <ChartTooltip tooltipData={tooltipData} chartContainerRef={chartContainerRef} render={(tooltipData) => (
+<>
+<div style={{ fontSize: '13px', marginBottom: 2 }}>UK LFS Unemp Rate (16-64)</div>
+            <div style={{ fontSize: '18px', fontWeight: 600, color: '#4ade80' }}>
+              {tooltipData.unemp != null ? formatRate(tooltipData.unemp) : 'N/A'}
+            </div>
+            <div style={{ fontSize: '12px', marginTop: 4, opacity: 0.85 }}>
+              {tooltipData.date ? tooltipData.date.slice(0, 7) : 'N/A'}
+            </div>
+</>
+)} />
+        )}
       </div>
 
       {!isDashboard && (
@@ -311,36 +325,7 @@ const UKUnemployment = ({ isDashboard = false }) => {
         </div>
       )}
 
-      {!isDashboard && tooltipData && (
-        <div
-          className="tooltip"
-          style={{
-            left: (() => {
-              const sidebarWidth = isMobile ? -80 : -320;
-              const cursorX = tooltipData.x - sidebarWidth;
-              const chartWidth = chartContainerRef.current ? chartContainerRef.current.clientWidth - sidebarWidth : 800;
-              const tooltipWidth = 220;
-              const offset = 10000 / (chartWidth + 300);
-              const rightPosition = cursorX + offset;
-              const leftPosition = cursorX - tooltipWidth - offset;
-              return rightPosition + tooltipWidth <= chartWidth
-                ? `${rightPosition}px`
-                : leftPosition >= 0
-                ? `${leftPosition}px`
-                : `${Math.max(0, Math.min(rightPosition, chartWidth - tooltipWidth))}px`;
-            })(),
-            top: `${tooltipData.y + 80}px`,
-          }}
-        >
-          <div style={{ fontSize: '13px', marginBottom: 2 }}>UK LFS Unemp Rate (16-64)</div>
-          <div style={{ fontSize: '18px', fontWeight: 600, color: '#4ade80' }}>
-            {tooltipData.unemp != null ? formatRate(tooltipData.unemp) : 'N/A'}
-          </div>
-          <div style={{ fontSize: '12px', marginTop: 4, opacity: 0.85 }}>
-            {tooltipData.date ? tooltipData.date.slice(0, 7) : 'N/A'}
-          </div>
-        </div>
-      )}
+
     </div>
   );
 };

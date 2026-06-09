@@ -10,7 +10,7 @@ import { Box, FormControl, InputLabel, Select, MenuItem, ToggleButton, ToggleBut
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 
-const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData }) => {
+const BitcoinTxMvrvChart = ({ isDashboard = false, isChartPage = false, txMvrvData: propTxMvrvData }) => {
   const chartContainerRef = useRef();
   const chartRef = useRef(null);
   const txCountSeriesRef = useRef(null);
@@ -581,29 +581,30 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
     return `${cursorX - offset - tooltipWidth}px`;
   };
 
+  const wrapperSx = isDashboard
+    ? {
+        backgroundColor: colors.primary[400],
+        borderRadius: '12px',
+        padding: { xs: '16px', sm: '20px' },
+        height: '100%',
+        minHeight: '400px',
+        width: '100%',
+        maxWidth: '1400px',
+        margin: '0 auto',
+        boxSizing: 'border-box',
+        display: 'flex',
+        flexDirection: 'column',
+        position: 'relative',
+        boxShadow: `0 4px 12px ${theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.1)'}`,
+      }
+    : {
+        display: 'flex',
+        flexDirection: 'column',
+        width: '100%',
+      };
+
   return (
-    <Box sx={{
-      backgroundColor: colors.primary[400],
-      borderRadius: '12px',
-      padding: { xs: '16px', sm: '20px' },
-      height: isDashboard ? '100%' : 'auto',
-      minHeight: isDashboard ? '400px' : 'auto',
-      width: '100%',
-      maxWidth: '1400px',
-      margin: '0 auto',
-      boxSizing: 'border-box',
-      display: 'flex',
-      flexDirection: 'column',
-      position: 'relative',
-      boxShadow: `0 4px 12px ${theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.1)'}`,
-      transition: 'transform 0.2s ease-in-out',
-      '&:hover': {
-        transform: isDashboard ? 'none' : 'translateY(-4px)',
-        boxShadow: isDashboard
-          ? `0 4px 12px ${theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.1)'}`
-          : `0 6px 16px ${theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.2)'}`,
-      },
-    }}>
+    <Box sx={wrapperSx}>
       {!isDashboard && (
         <Box
           sx={{
@@ -754,9 +755,9 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, txMvrvData: propTxMvrvData })
           position: 'relative',
           display: 'flex',
           flexDirection: 'column',
-          height: isDashboard ? '100%' : '620px',
+          height: isDashboard ? '100%' : undefined,
           minHeight: isDashboard ? '350px' : undefined,
-          maxHeight: isDashboard ? '750px' : '720px',
+          maxHeight: isDashboard ? '750px' : undefined,
           flexShrink: 0,
           width: '100%',
           border: '2px solid #a9a9a9',

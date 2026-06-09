@@ -7,6 +7,7 @@ import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
 import BitcoinFees from './BitcoinTransactionFees';
 import { DataContext } from '../DataContext';
+import ChartTooltip from './ChartTooltip';
 
 const BitcoinLogRegression = ({ isDashboard = false, priceData: propPriceData }) => {
   const chartContainerRef = useRef();
@@ -390,7 +391,22 @@ const BitcoinLogRegression = ({ isDashboard = false, priceData: propPriceData })
             }
           }}
         />
-      </div>
+      
+        {!isDashboard && (
+          <ChartTooltip tooltipData={tooltipData} chartContainerRef={chartContainerRef} isNarrowScreen={isNarrowScreen} render={(tooltipData) => (
+<>
+<b>
+            {tooltipData.price && <div>Actual Price: ${tooltipData.price}</div>}
+            {tooltipData.logTop2 && <div style={{ color: 'lime' }}>Upper Band 2: ${tooltipData.logTop2}</div>}
+            {tooltipData.logTop && <div style={{ color: 'green' }}>Upper Band: ${tooltipData.logTop}</div>}
+            {tooltipData.logMid && <div style={{ color: 'violet' }}>Fair Value: ${tooltipData.logMid}</div>}
+            {tooltipData.logBase && <div style={{ color: 'red' }}>Lower Band: ${tooltipData.logBase}</div>}
+            {tooltipData.logBase2 && <div style={{ color: 'maroon' }}>Lower Band 2: ${tooltipData.logBase2}</div>}
+            {tooltipData.date && <div style={{ fontSize: '13px' }}>{tooltipData.date}</div>}
+          </b>
+</>
+)} />
+        )}</div>
 
       <div className='under-chart'>
         {!isDashboard && (
@@ -415,44 +431,7 @@ const BitcoinLogRegression = ({ isDashboard = false, priceData: propPriceData })
         )}
       </div>
 
-      {!isDashboard && tooltipData && (
-        <div
-          className="tooltip"
-          style={{
-            left: (() => {
-              const sidebarWidth = isMobile ? -80 : -300;
-              const cursorX = tooltipData.x - sidebarWidth;
-              const chartWidth = chartContainerRef.current.clientWidth - sidebarWidth;
-              const tooltipWidth = 200;
-              const K = 10000;
-              const C = 300;
-              const offset = K / (chartWidth + C);
-              const rightPosition = cursorX + offset;
-              const leftPosition = cursorX - tooltipWidth - offset;
-              if (rightPosition + tooltipWidth <= chartWidth) {
-                return `${rightPosition}px`;
-              } else if (leftPosition >= 0) {
-                return `${leftPosition}px`;
-              } else {
-                return `${Math.max(0, Math.min(rightPosition, chartWidth - tooltipWidth))}px`;
-              }
-            })(),
-            top: `${tooltipData.y + 100}px`,
-            width: isNarrowScreen ? '150px' : '200px',
-            fontSize: isNarrowScreen ? '12px' : '14px',
-          }}
-        >
-          <b>
-            {tooltipData.price && <div>Actual Price: ${tooltipData.price}</div>}
-            {tooltipData.logTop2 && <div style={{ color: 'lime' }}>Upper Band 2: ${tooltipData.logTop2}</div>}
-            {tooltipData.logTop && <div style={{ color: 'green' }}>Upper Band: ${tooltipData.logTop}</div>}
-            {tooltipData.logMid && <div style={{ color: 'violet' }}>Fair Value: ${tooltipData.logMid}</div>}
-            {tooltipData.logBase && <div style={{ color: 'red' }}>Lower Band: ${tooltipData.logBase}</div>}
-            {tooltipData.logBase2 && <div style={{ color: 'maroon' }}>Lower Band 2: ${tooltipData.logBase2}</div>}
-            {tooltipData.date && <div style={{ fontSize: '13px' }}>{tooltipData.date}</div>}
-          </b>
-        </div>
-      )}
+      
 
       {!isDashboard && (
         <p className='chart-info'>

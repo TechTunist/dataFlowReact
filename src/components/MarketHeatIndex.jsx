@@ -1,16 +1,14 @@
 import React, { useRef, useEffect, useState, useContext, useCallback, useMemo, useDeferredValue } from 'react';
 import { createChart } from 'lightweight-charts';
 import { tokens } from '../theme';
-import { useTheme, Box, FormControl, InputLabel, Select, MenuItem, useMediaQuery, Typography, IconButton, Button, Slider, Switch, FormControlLabel } from '@mui/material';
+import { useTheme, Box, FormControl, InputLabel, Select, MenuItem, useMediaQuery, Typography, Button, Slider, Switch, FormControlLabel } from '@mui/material';
 import '../styling/bitcoinChart.css';
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import logger from '../utils/logger';
-import { useFavorites } from '../contexts/FavoritesContext';
-import StarIcon from '@mui/icons-material/Star';
-import StarBorderIcon from '@mui/icons-material/StarBorder';
+
 import { useAuth, useUser } from '@clerk/clerk-react';
 import { apiUrl } from '../config/api';
 
@@ -124,7 +122,7 @@ const calculateMayerMultiple = (data) => {
 
 // ==================== MAIN COMPONENT ====================
 
-const MarketHeatIndex = ({ isDashboard = false }) => {
+const MarketHeatIndex = ({ isDashboard = false, isChartPage = false }) => {
   const chartContainerRef = useRef();
   const chartRef = useRef(null);
   const heatSeriesRef = useRef(null);
@@ -137,18 +135,6 @@ const MarketHeatIndex = ({ isDashboard = false }) => {
   const colors = tokens(theme.palette.mode);
   const isMobile = useIsMobile();
   const { btcData, mvrvData, fearAndGreedData, altcoinSeasonTimeseriesData, txMvrvRatioDataBySmoothing, fetchBtcData, fetchMvrvData, fetchFearAndGreedData, fetchAltcoinSeasonTimeseriesData, fetchTxMvrvRatioData } = useContext(DataContext);
-  const { favoriteCharts, addFavoriteChart, removeFavoriteChart } = useFavorites();
-  const chartId = "market-heat-index";
-  const isFavorite = favoriteCharts.includes(chartId);
-
-  const toggleFavorite = () => {
-    if (isFavorite) {
-      removeFavoriteChart(chartId);
-    } else {
-      addFavoriteChart(chartId);
-    }
-  };
-
   // Clerk for user-settings persistence (load/save tunable sliders)
   const { isSignedIn, getToken } = useAuth();
   const { user } = useUser();
@@ -823,48 +809,30 @@ const MarketHeatIndex = ({ isDashboard = false }) => {
     );
   }
 
-  return (
-    <Box sx={{
-      backgroundColor: colors.primary[400],
-      borderRadius: '12px',
-      padding: { xs: '16px', sm: '20px' },
-      height: isDashboard ? '100%' : 'auto', minHeight: isDashboard ? '400px' : 'auto',
-      width: '100%',
-      maxWidth: '1400px',
-      margin: '0 auto',
-      boxSizing: 'border-box',
-      display: 'flex',
-      flexDirection: 'column',
-      position: 'relative',
-      boxShadow: `0 4px 12px ${theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.1)'}`,
-      transition: 'transform 0.2s ease-in-out',
-      '&:hover': {
-        transform: 'translateY(-4px)',
-        boxShadow: `0 6px 16px ${theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.2)'}`,
-      },
-    }}>
-      {/* Favorite Star - only show when not in dashboard and Topbar is hidden */}
-      {!isDashboard && (
-        <IconButton
-          onClick={toggleFavorite}
-          sx={{
-            position: "absolute",
-            top: 12,
-            right: 12,
-            color: isFavorite ? "#FFD700" : colors.grey[300],
-            zIndex: 10,
-          }}
-          size="small"
-        >
-          {isFavorite ? <StarIcon /> : <StarBorderIcon />}
-        </IconButton>
-      )}
+  const wrapperSx = isDashboard
+    ? {
+        backgroundColor: colors.primary[400],
+        borderRadius: '12px',
+        padding: { xs: '16px', sm: '20px' },
+        height: '100%',
+        minHeight: '400px',
+        width: '100%',
+        maxWidth: '1400px',
+        margin: '0 auto',
+        boxSizing: 'border-box',
+        display: 'flex',
+        flexDirection: 'column',
+        position: 'relative',
+        boxShadow: `0 4px 12px ${theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.1)'}`,
+      }
+    : {
+        display: 'flex',
+        flexDirection: 'column',
+        width: '100%',
+      };
 
-      {!isDashboard && (
-        <Typography variant="h4" color={colors.grey[100]} gutterBottom>
-          Market Heat Index
-        </Typography>
-      )}
+  return (
+    <Box sx={wrapperSx}>
       {!isDashboard && (
         <Box
           sx={{
@@ -1069,9 +1037,9 @@ const MarketHeatIndex = ({ isDashboard = false }) => {
           position: 'relative',
           display: 'flex',
           flexDirection: 'column',
-          height: isDashboard ? '100%' : '620px',
+          height: isDashboard ? '100%' : undefined,
           minHeight: isDashboard ? '350px' : undefined,
-          maxHeight: isDashboard ? '750px' : '720px',
+          maxHeight: isDashboard ? '750px' : undefined,
           flexShrink: 0,
           width: '100%',
           border: '2px solid #a9a9a9',

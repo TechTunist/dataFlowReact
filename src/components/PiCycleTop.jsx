@@ -9,6 +9,7 @@ import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
 import { Box } from '@mui/material';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
+import ChartTooltip from './ChartTooltip';
 
 const PiCycleTopChart = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
@@ -407,6 +408,29 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
                         ))}
                     </div>
                 )}
+                {!isDashboard && (
+                    <ChartTooltip tooltipData={tooltipData} chartContainerRef={chartContainerRef} isNarrowScreen={isNarrowScreen} render={(tooltipData) => (
+<>
+<div style={{ fontSize: '15px' }}>PiCycle Top</div>
+                        {tooltipData.bitcoinValue && (
+                            <div style={{ fontSize: '20px' }}>Bitcoin Price: ${tooltipData.bitcoinValue.toFixed(2)}</div>
+                        )}
+                        {tooltipData.sma111Value && (
+                            <div style={{ color: '#66ff00' }}>111SMA: ${tooltipData.sma111Value.toFixed(2)}</div>
+                        )}
+                        {tooltipData.sma350Value && (
+                            <div style={{ color: '#fe2bc9' }}>350SMA x 2: ${tooltipData.sma350Value.toFixed(2)}</div>
+                        )}
+                        {tooltipData.ratioValue && showRatioSeries && (
+                            <div style={{ color: '#ff9900' }}>111/350x2 Ratio: {tooltipData.ratioValue.toFixed(4)}</div>
+                        )}
+                        {tooltipData.normalizedRatioValue && showNormalizedRatio && (
+                            <div style={{ color: '#00ccff' }}>Normalized Ratio: {tooltipData.normalizedRatioValue.toFixed(4)}</div>
+                        )}
+                        {tooltipData.date && <div style={{ fontSize: '13px' }}>{tooltipData.date}</div>}
+</>
+)} />
+                )}
             </div>
 
             <div className='under-chart'>
@@ -417,50 +441,6 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
                     </Box>
                 )}
             </div>
-
-            {/* Tooltip */}
-            {!isDashboard && tooltipData && (
-                <div
-                    className="tooltip"
-                    style={{
-                        position: 'fixed',
-                        left: (() => {
-                            const sidebarWidth = isMobile ? -80 : -320;
-                            const cursorX = tooltipData.x - sidebarWidth;
-                            const chartWidth = chartContainerRef.current.clientWidth - sidebarWidth;
-                            const tooltipWidth = 200;
-                            const offset = 10000 / (chartWidth + 300);
-                            const rightPosition = cursorX + offset;
-                            const leftPosition = cursorX - tooltipWidth - offset - 50;
-                            if (rightPosition + tooltipWidth <= chartWidth) return `${rightPosition}px`;
-                            else if (leftPosition >= 0) return `${leftPosition}px`;
-                            else return `${Math.max(0, Math.min(rightPosition, chartWidth - tooltipWidth))}px`;
-                        })(),
-                        top: `${tooltipData.y + 100}px`,
-                        width: isNarrowScreen ? '150px' : '200px',
-                        fontSize: isNarrowScreen ? '12px' : '14px',
-                        zIndex: 1000,
-                    }}
-                >
-                    <div style={{ fontSize: '15px' }}>PiCycle Top</div>
-                    {tooltipData.bitcoinValue && (
-                        <div style={{ fontSize: '20px' }}>Bitcoin Price: ${tooltipData.bitcoinValue.toFixed(2)}</div>
-                    )}
-                    {tooltipData.sma111Value && (
-                        <div style={{ color: '#66ff00' }}>111SMA: ${tooltipData.sma111Value.toFixed(2)}</div>
-                    )}
-                    {tooltipData.sma350Value && (
-                        <div style={{ color: '#fe2bc9' }}>350SMA x 2: ${tooltipData.sma350Value.toFixed(2)}</div>
-                    )}
-                    {tooltipData.ratioValue && showRatioSeries && (
-                        <div style={{ color: '#ff9900' }}>111/350x2 Ratio: {tooltipData.ratioValue.toFixed(4)}</div>
-                    )}
-                    {tooltipData.normalizedRatioValue && showNormalizedRatio && (
-                        <div style={{ color: '#00ccff' }}>Normalized Ratio: {tooltipData.normalizedRatioValue.toFixed(4)}</div>
-                    )}
-                    {tooltipData.date && <div style={{ fontSize: '13px' }}>{tooltipData.date}</div>}
-                </div>
-            )}
 
             {/* Indicator Descriptions */}
             {!isDashboard && (showRatioSeries || showNormalizedRatio) && (

@@ -8,6 +8,7 @@ import LastUpdated from '../hooks/LastUpdated';
 import BitcoinFees from './BitcoinTransactionFees';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
+import ChartTooltip from './ChartTooltip';
 
 // Static timeframes (hoisted for stable reference across renders)
 const TIMEFRAMES = [
@@ -253,7 +254,7 @@ const BitcoinHistoricalVolatility = ({ isDashboard = false }) => {
             justifyContent: 'center',
             gap: '20px',
             marginBottom: '10px',
-            marginTop: '50px',
+            marginTop: '8px',
           }}
         >
           <FormControl sx={{ minWidth: '150px', width: { xs: '100%', sm: '200px' } }}>
@@ -336,29 +337,18 @@ const BitcoinHistoricalVolatility = ({ isDashboard = false }) => {
             </span>
           </div>
         )}
-        {!isDashboard && tooltipData && (
-          <div
-            className="tooltip"
-            style={{
-              position: 'absolute',
-              left: calculateLeftPosition(),
-              top: `${tooltipData.y + 10}px`,
-              zIndex: 1000,
-              backgroundColor: colors.primary[900],
-              padding: '5px 10px',
-              borderRadius: '4px',
-              color: colors.grey[100],
-              fontSize: '12px',
-              pointerEvents: 'none',
-            }}
-          >
-            <div style={{ fontSize: '12px' }}>Bitcoin</div>
+        
+      
+        {!isDashboard && (
+          <ChartTooltip tooltipData={tooltipData} chartContainerRef={chartContainerRef} render={(tooltipData) => (
+<>
+<div style={{ fontSize: '12px' }}>Bitcoin</div>
             {tooltipData.price && <div style={{ fontSize: '20px' }}>${tooltipData.price.toFixed(2)}</div>}
             {tooltipData.volatility && <div style={{ color: '#ff0062', fontSize: '15px' }}>Volatility: {tooltipData.volatility.toFixed(1)}%</div>}
             {tooltipData.date && <div>{tooltipData.date}</div>}
-          </div>
-        )}
-      </div>
+</>
+)} />
+        )}</div>
       <div className="under-chart">
         {!isDashboard && <LastUpdated storageKey="btcData" />}
         {!isDashboard && <BitcoinFees />}

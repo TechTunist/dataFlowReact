@@ -293,7 +293,7 @@ const SP500ROI = ({ isDashboard = false }) => {
                             justifyContent: 'space-between',
                             gap: '20px',
                             marginBottom: '10px',
-                            marginTop: '50px',
+                            marginTop: '8px',
                         }}
                     >
                         <Box

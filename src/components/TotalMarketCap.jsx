@@ -8,6 +8,7 @@ import { DataContext } from '../DataContext';
 import BitcoinFees from './BitcoinTransactionFees';
 import LastUpdated from '../hooks/LastUpdated';
 import logger from '../utils/logger';
+import ChartTooltip from './ChartTooltip';
 
 const TotalMarketCap = ({ isDashboard = false }) => {
   const chartContainerRef = useRef();
@@ -306,6 +307,31 @@ const TotalMarketCap = ({ isDashboard = false }) => {
           style={{ height: '100%', width: '100%', zIndex: 1 }}
           onDoubleClick={setInteractivity}
         />
+        {!isDashboard && (
+          <ChartTooltip tooltipData={tooltipData} chartContainerRef={chartContainerRef} isNarrowScreen={isNarrowScreen} render={(tooltipData) => (
+<>
+<b>
+              {tooltipData.price && <div>Market Cap: ${tooltipData.price}</div>}
+              {tooltipData.logTop2 && (
+                <div style={{ color: 'lime' }}>Upper Band 2: ${tooltipData.logTop2}</div>
+              )}
+              {tooltipData.logTop && (
+                <div style={{ color: 'green' }}>Upper Band: ${tooltipData.logTop}</div>
+              )}
+              {tooltipData.fairValue && (
+                <div style={{ color: 'violet' }}>Fair Value: ${tooltipData.fairValue}</div>
+              )}
+              {tooltipData.logBase && (
+                <div style={{ color: 'red' }}>Lower Band: ${tooltipData.logBase}</div>
+              )}
+              {tooltipData.logBase2 && (
+                <div style={{ color: 'maroon' }}>Lower Band 2: ${tooltipData.logBase2}</div>
+              )}
+              {tooltipData.date && <div style={{ fontSize: '13px' }}>{tooltipData.date}</div>}
+            </b>
+</>
+)} />
+        )}
       </div>
       <div className="under-chart">
         {!isDashboard && marketCapData.length > 0 && (
@@ -328,50 +354,7 @@ const TotalMarketCap = ({ isDashboard = false }) => {
         )}
         {!isDashboard && <BitcoinFees />}
       </div>
-      {!isDashboard && tooltipData && (
-        <div
-          className="tooltip"
-          style={{
-            left: (() => {
-              const sidebarWidth = isMobile ? isNarrowScreen ? -50 : -20 : -290;
-              const cursorX = tooltipData.x - sidebarWidth;
-              const chartWidth = chartContainerRef.current.clientWidth - sidebarWidth;
-              const tooltipWidth = 200;
-              const offset = 10000 / (chartWidth + 300);
-              const rightPosition = cursorX + offset + 30;
-              const leftPosition = cursorX - tooltipWidth - offset - 20;
-              return rightPosition + tooltipWidth <= chartWidth
-                ? `${rightPosition}px`
-                : leftPosition >= 0
-                ? `${leftPosition}px`
-                : `${Math.max(0, Math.min(rightPosition, chartWidth - tooltipWidth))}px`;
-            })(),
-            top: `${tooltipData.y + 100}px`,
-            width: isNarrowScreen ? '150px' : '200px',
-            fontSize: isNarrowScreen ? '12px' : '14px',
-          }}
-        >
-          <b>
-            {tooltipData.price && <div>Market Cap: ${tooltipData.price}</div>}
-            {tooltipData.logTop2 && (
-              <div style={{ color: 'lime' }}>Upper Band 2: ${tooltipData.logTop2}</div>
-            )}
-            {tooltipData.logTop && (
-              <div style={{ color: 'green' }}>Upper Band: ${tooltipData.logTop}</div>
-            )}
-            {tooltipData.fairValue && (
-              <div style={{ color: 'violet' }}>Fair Value: ${tooltipData.fairValue}</div>
-            )}
-            {tooltipData.logBase && (
-              <div style={{ color: 'red' }}>Lower Band: ${tooltipData.logBase}</div>
-            )}
-            {tooltipData.logBase2 && (
-              <div style={{ color: 'maroon' }}>Lower Band 2: ${tooltipData.logBase2}</div>
-            )}
-            {tooltipData.date && <div style={{ fontSize: '13px' }}>{tooltipData.date}</div>}
-          </b>
-        </div>
-      )}
+
       {!isDashboard && (
         <div className="chart-info">
           The total market cap of every crypto asset combined. The regression bands have been fitted to

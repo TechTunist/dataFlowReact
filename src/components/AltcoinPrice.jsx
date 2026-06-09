@@ -8,6 +8,7 @@ import LastUpdated from '../hooks/LastUpdated';
 import { Select, MenuItem, FormControl, InputLabel, Box, Checkbox, useMediaQuery, ListSubheader } from '@mui/material';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
+import ChartTooltip from './ChartTooltip';
 import { 
   getAllMovingAverageOptions, 
   getDailyMAs, 
@@ -542,7 +543,7 @@ const AltcoinPrice = ({ isDashboard = false }) => {
             justifyContent: 'center',
             gap: '20px',
             marginBottom: '30px',
-            marginTop: '50px',
+            marginTop: '8px',
           }}
         >
           <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '200px' } }}>
@@ -965,31 +966,10 @@ const AltcoinPrice = ({ isDashboard = false }) => {
             );
           })}
         </div>
-        {!isDashboard && tooltipData && (
-          <div
-            className="tooltip"
-            style={{
-              position: 'fixed',
-              left: (() => {
-                const sidebarWidth = isMobile ? -80 : -320;
-                const cursorX = tooltipData.x - sidebarWidth;
-                const chartWidth = chartContainerRef.current.clientWidth - sidebarWidth;
-                const tooltipWidth = 200;
-                const offset = 1000 / (chartWidth + 300);
-                const rightPosition = cursorX + offset;
-                const leftPosition = cursorX - tooltipWidth - offset;
-                if (rightPosition + tooltipWidth <= chartWidth) return `${rightPosition}px`;
-                if (leftPosition >= 0) return `${leftPosition}px`;
-                return `${Math.max(0, Math.min(rightPosition, chartWidth - tooltipWidth))}px`;
-              })(),
-              top: (() => {
-                const offsetY = isNarrowScreen ? 400 : 150;
-                return `${tooltipData.y + offsetY}px`
-              })(),
-              zIndex: 1000,
-            }}
-          >
-            <div style={{ fontSize: '15px' }}>{selectedCoin}</div>
+        {!isDashboard && (
+          <ChartTooltip tooltipData={tooltipData} chartContainerRef={chartContainerRef} isNarrowScreen={isNarrowScreen} render={(tooltipData) => (
+<>
+<div style={{ fontSize: '15px' }}>{selectedCoin}</div>
             {tooltipData.price !== undefined && (
               <div style={{ fontSize: '20px' }}>
                 {denominator === 'BTC' ? '₿' : '$'}
@@ -1012,7 +992,8 @@ const AltcoinPrice = ({ isDashboard = false }) => {
               </div>
             )}
             <div>{tooltipData.date ? tooltipData.date.split('-').reverse().join('-') : ''}</div>
-          </div>
+</>
+)} />
         )}
       </div>
       {!isDashboard && (

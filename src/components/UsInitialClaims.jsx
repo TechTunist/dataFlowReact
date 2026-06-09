@@ -6,6 +6,7 @@ import { useTheme } from "@mui/material";
 import useIsMobile from '../hooks/useIsMobile';
 import { DataContext } from '../DataContext';
 import BitcoinFees from './BitcoinTransactionFees';
+import ChartTooltip from './ChartTooltip';
 
 const UsInitialClaimsChart = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
@@ -142,6 +143,15 @@ const UsInitialClaimsChart = ({ isDashboard = false }) => {
             )}
             <div className="chart-container" style={{ position: 'relative', height: isDashboard ? '100%' : 'calc(100% - 40px)', width: '100%', border: '2px solid #a9a9a9' }} onDoubleClick={setInteractivity}>
                 <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
+                {!isDashboard && (
+                    <ChartTooltip tooltipData={tooltipData} chartContainerRef={chartContainerRef} render={(tooltipData) => (
+<>
+<div style={{ fontSize: '15px' }}>Initial Claims</div>
+                        <div style={{ fontSize: '20px' }}>{tooltipData.price ? tooltipData.price.toLocaleString() : 'N/A'}</div>
+                        <div>{tooltipData.date.toString().substring(0, 4) === currentYear ? `${tooltipData.date} - latest` : tooltipData.date}</div>
+</>
+)} />
+                )}
             </div>
             <div className='under-chart'>
                 {!isDashboard && initialClaimsData.length > 0 && (
@@ -151,25 +161,6 @@ const UsInitialClaimsChart = ({ isDashboard = false }) => {
                 )}
                 {!isDashboard && <BitcoinFees />}
             </div>
-            {!isDashboard && tooltipData && (
-                <div className="tooltip" style={{
-                    left: (() => {
-                        const sidebarWidth = isMobile ? -80 : -320;
-                        const cursorX = tooltipData.x - sidebarWidth;
-                        const chartWidth = chartContainerRef.current.clientWidth - sidebarWidth;
-                        const tooltipWidth = 200;
-                        const offset = 10000 / (chartWidth + 300);
-                        const rightPosition = cursorX + offset;
-                        const leftPosition = cursorX - tooltipWidth - offset;
-                        return rightPosition + tooltipWidth <= chartWidth ? `${rightPosition}px` : (leftPosition >= 0 ? `${leftPosition}px` : `${Math.max(0, Math.min(rightPosition, chartWidth - tooltipWidth))}px`);
-                    })(),
-                    top: `${tooltipData.y + 100}px`,
-                }}>
-                    <div style={{ fontSize: '15px' }}>Initial Claims</div>
-                    <div style={{ fontSize: '20px' }}>{tooltipData.price ? tooltipData.price.toLocaleString() : 'N/A'}</div>
-                    <div>{tooltipData.date.toString().substring(0, 4) === currentYear ? `${tooltipData.date} - latest` : tooltipData.date}</div>
-                </div>
-            )}
             {!isDashboard && (
                 <p className='chart-info'>
                     This chart shows the weekly initial unemployment claims in the United States,

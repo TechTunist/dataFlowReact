@@ -16,6 +16,7 @@ import {
 import LastUpdated from '../hooks/LastUpdated';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import { getCurrentEthereumPrice } from '../utils/currentPrice';
+import ChartTooltip from './ChartTooltip';
 
 const EthereumPrice = ({ isDashboard = false }) => {
   const chartContainerRef = useRef();
@@ -474,7 +475,7 @@ const EthereumPrice = ({ isDashboard = false }) => {
             justifyContent: 'center',
             gap: '20px',
             marginBottom: '30px',
-            marginTop: '50px',
+            marginTop: '8px',
           }}
         >
           <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '300px' } }}>
@@ -817,6 +818,30 @@ const EthereumPrice = ({ isDashboard = false }) => {
             );
           })}
         </div>
+        {!isDashboard && (
+          <ChartTooltip tooltipData={tooltipData} chartContainerRef={chartContainerRef} render={(tooltipData) => (
+<>
+<div style={{ fontSize: '15px' }}>Ethereum</div>
+            {tooltipData.price && <div style={{ fontSize: '20px' }}>${tooltipData.price.toFixed(2)}</div>}
+            {activeIndicators.includes('fed-balance') && tooltipData.fedBalance && (
+              <div style={{ color: indicators['fed-balance'].color }}>
+                Fed Balance: ${tooltipData.fedBalance.toFixed(2)}T
+              </div>
+            )}
+            {activeIndicators.includes('mayer-multiple') && tooltipData.mayerMultiple && (
+              <div style={{ color: indicators['mayer-multiple'].color }}>
+                Mayer Multiple: {tooltipData.mayerMultiple.toFixed(2)}
+              </div>
+            )}
+            {activeRsiPeriod && tooltipData.rsi && (
+              <div style={{ color: 'orange' }}>
+                {rsiPeriods[activeRsiPeriod].label}: {tooltipData.rsi.toFixed(2)}
+              </div>
+            )}
+            {tooltipData.date && <div>{tooltipData.date.toString()}</div>}
+</>
+)} />
+        )}
       </div>
       {!isDashboard && (
         <div className='under-chart' style={{ padding: '10px 0' }}>
@@ -851,47 +876,7 @@ const EthereumPrice = ({ isDashboard = false }) => {
           )}
         </Box>
       )}
-      {!isDashboard && tooltipData && (
-        <div
-          className="tooltip"
-          style={{
-            left: (() => {
-              const sidebarWidth = isMobile ? -80 : -320;
-              const cursorX = tooltipData.x - sidebarWidth;
-              const chartWidth = chartContainerRef.current.clientWidth - sidebarWidth;
-              const tooltipWidth = 200;
-              const offset = 10000 / (chartWidth + 300);
 
-              const rightPosition = cursorX + offset;
-              const leftPosition = cursorX - tooltipWidth - offset;
-
-              if (rightPosition + tooltipWidth <= chartWidth) return `${rightPosition}px`;
-              if (leftPosition >= 0) return `${leftPosition}px`;
-              return `${Math.max(0, Math.min(rightPosition, chartWidth - tooltipWidth))}px`;
-            })(),
-            top: `${tooltipData.y + 100}px`,
-          }}
-        >
-          <div style={{ fontSize: '15px' }}>Ethereum</div>
-          {tooltipData.price && <div style={{ fontSize: '20px' }}>${tooltipData.price.toFixed(2)}</div>}
-          {activeIndicators.includes('fed-balance') && tooltipData.fedBalance && (
-            <div style={{ color: indicators['fed-balance'].color }}>
-              Fed Balance: ${tooltipData.fedBalance.toFixed(2)}T
-            </div>
-          )}
-          {activeIndicators.includes('mayer-multiple') && tooltipData.mayerMultiple && (
-            <div style={{ color: indicators['mayer-multiple'].color }}>
-              Mayer Multiple: {tooltipData.mayerMultiple.toFixed(2)}
-            </div>
-          )}
-          {activeRsiPeriod && tooltipData.rsi && (
-            <div style={{ color: 'orange' }}>
-              {rsiPeriods[activeRsiPeriod].label}: {tooltipData.rsi.toFixed(2)}
-            </div>
-          )}
-          {tooltipData.date && <div>{tooltipData.date.toString()}</div>}
-        </div>
-      )}
       {!isDashboard && (
         <p className='chart-info'>
           Ethereum is the second-largest cryptocurrency by market cap, launched in 2015 by Vitalik Buterin.

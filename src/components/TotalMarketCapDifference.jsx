@@ -7,6 +7,7 @@ import useIsMobile from '../hooks/useIsMobile';
 import { DataContext } from '../DataContext';
 import BitcoinFees from './BitcoinTransactionFees';
 import LastUpdated from '../hooks/LastUpdated';
+import ChartTooltip from './ChartTooltip';
 
 const MarketCapDifference = ({ isDashboard = false }) => {
   const chartContainerRef = useRef();
@@ -241,30 +242,7 @@ const MarketCapDifference = ({ isDashboard = false }) => {
         )}
         {!isDashboard && <BitcoinFees />}
       </div>
-      {!isDashboard && tooltipData && (
-        <div className="tooltip" style={{
-          left: (() => {
-            const sidebarWidth = isMobile ? -80 : -300;
-            const cursorX = tooltipData.x - sidebarWidth;
-            const chartWidth = chartContainerRef.current.clientWidth - sidebarWidth;
-            const tooltipWidth = 200;
-            const offset = 10000 / (chartWidth + 300);
-            const rightPosition = cursorX + offset + 30;
-            const leftPosition = cursorX - tooltipWidth - offset - 20;
-            return rightPosition + tooltipWidth <= chartWidth ? `${rightPosition}px` : leftPosition >= 0 ? `${leftPosition}px` : `${Math.max(0, Math.min(rightPosition, chartWidth - tooltipWidth))}px`;
-          })(),
-          top: `${tooltipData.y + 100}px`,
-          width: isNarrowScreen ? '150px' : '200px',
-          fontSize: isNarrowScreen ? '12px' : '14px',
-        }}>
-          <b>
-            {tooltipData.marketCap && <div style={{ fontSize: '15px', color: colors.primary[300] }}>Market Cap: ${tooltipData.marketCap}</div>}
-            {tooltipData.difference && <div style={{ fontSize: '15px', color: colors.blueAccent[500] }}>Percentage of Fair Value: {tooltipData.difference}</div>}
-            {tooltipData.difference && <div style={{ fontSize: '15px', color: colors.greenAccent[500] }}>Fair Value: 100%</div>}
-            {tooltipData.date && <div style={{ fontSize: '13px' }}>{tooltipData.date}</div>}
-          </b>
-        </div>
-      )}
+      
       {!isDashboard && (
         <div className="chart-info">
           The percentage of the total market cap relative to the Fair Value of all crypto assets combined.
@@ -287,7 +265,19 @@ const MarketCapDifference = ({ isDashboard = false }) => {
           <br />
         </div>
       )}
-    </div>
+    
+        {!isDashboard && (
+          <ChartTooltip tooltipData={tooltipData} chartContainerRef={chartContainerRef} isNarrowScreen={isNarrowScreen} render={(tooltipData) => (
+<>
+<b>
+            {tooltipData.marketCap && <div style={{ fontSize: '15px', color: colors.primary[300] }}>Market Cap: ${tooltipData.marketCap}</div>}
+            {tooltipData.difference && <div style={{ fontSize: '15px', color: colors.blueAccent[500] }}>Percentage of Fair Value: {tooltipData.difference}</div>}
+            {tooltipData.difference && <div style={{ fontSize: '15px', color: colors.greenAccent[500] }}>Fair Value: 100%</div>}
+            {tooltipData.date && <div style={{ fontSize: '13px' }}>{tooltipData.date}</div>}
+          </b>
+</>
+)} />
+        )}</div>
   );
 };
 

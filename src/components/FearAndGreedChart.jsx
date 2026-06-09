@@ -438,7 +438,7 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
             justifyContent: 'center',
             gap: '20px',
             marginBottom: '10px',
-            marginTop: '50px',
+            marginTop: '8px',
           }}
         >
           <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '200px' } }}>

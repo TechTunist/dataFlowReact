@@ -9,6 +9,7 @@ import LastUpdated from '../hooks/LastUpdated';
 import BitcoinFees from './BitcoinTransactionFees';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
+import ChartTooltip from './ChartTooltip';
 
 const RunningROI = ({ isDashboard = false }) => {
   const chartContainerRef = useRef(null);
@@ -355,7 +356,7 @@ const RunningROI = ({ isDashboard = false }) => {
             justifyContent: 'center',
             gap: '20px',
             marginBottom: '10px',
-            marginTop: '50px',
+            marginTop: '8px',
           }}
         >
 
@@ -501,31 +502,20 @@ const RunningROI = ({ isDashboard = false }) => {
         {!isDashboard && chartData.length > 0 && (
           <>
 
-            {tooltipData && (
-              <div
-                className="tooltip"
-                style={{
-                  position: 'absolute',
-                  left: calculateLeftPosition(),
-                  top: `${tooltipData.y + 10}px`,
-                  zIndex: 1000,
-                  backgroundColor: colors.primary[900],
-                  padding: '5px 10px',
-                  borderRadius: '4px',
-                  color: colors.grey[100],
-                  fontSize: '12px',
-                  pointerEvents: 'none',
-                }}
-              >
-                <div style={{ fontSize: '15px' }}>{altcoins.find(asset => asset.value === selectedAsset)?.label}</div>
+            
+          </>
+        )}
+      
+        {tooltipData && (
+          <ChartTooltip tooltipData={tooltipData} chartContainerRef={chartContainerRef} render={(tooltipData) => (
+<>
+<div style={{ fontSize: '15px' }}>{altcoins.find(asset => asset.value === selectedAsset)?.label}</div>
                 {tooltipData.price && <div style={{ fontSize: '20px' }}>${tooltipData.price.toFixed(2)}</div>}
                 {tooltipData.roi && <div style={{ color: '#ff0062' }}>ROI: {tooltipData.roi.toFixed(2)}x</div>}
                 {tooltipData.date && <div>{tooltipData.date ? tooltipData.date.split('-').reverse().join('-') : ''}</div>}
-              </div>
-            )}
-          </>
-        )}
-      </div>
+</>
+)} />
+        )}</div>
       <div className="under-chart">
         {!isDashboard && <LastUpdated storageKey={`${selectedAsset.toLowerCase()}Data`} />}
         {!isDashboard && selectedAsset === 'BTC' && <BitcoinFees />}

@@ -4,6 +4,10 @@ import LoadingFallback from "./components/LoadingFallback";
 import { Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { ClerkProvider, useAuth, useUser, useClerk } from "@clerk/clerk-react";
 import Topbar from "./scenes/global/Topbar";
+import { isChartPageRoute } from "./scenes/ChartTemplates/chartPageMeta";
+import MenuOutlinedIcon from "@mui/icons-material/MenuOutlined";
+import { IconButton, useTheme } from "@mui/material";
+import { tokens } from "./theme";
 import Sidebar from "./scenes/global/Sidebar";
 import BasicChart from "./scenes/ChartTemplates/BasicChart";
 import { CssBaseline, ThemeProvider } from "@mui/material";
@@ -120,7 +124,7 @@ const appRoutes = [
   // Simple protected chart routes using BasicChart
   { path: "/btc-20-ext", component: Bitcoin20WeekExtension, useBasicChart: true, protected: true },
   { path: "/bitcoin", component: BitcoinPrice, useBasicChart: true, protected: true },
-  { path: "/market-heat-index", component: MarketHeatIndex, useBasicChart: true, protected: true },
+  { path: "/market-heat-index", component: MarketHeatIndex, useBasicChart: true, protected: true, basicChartProps: { chartMinHeight: "660px" } },
   { path: "/total", component: TotalMarketCap, useBasicChart: true, protected: true },
   { path: "/total2", component: Total2Chart, useBasicChart: true, protected: true },
   { path: "/total3", component: Total3Chart, useBasicChart: true, protected: true },
@@ -130,7 +134,7 @@ const appRoutes = [
     component: TailCurvature, 
     useBasicChart: true, 
     protected: true,
-    basicChartProps: { height: "88vh" }   // taller to accommodate long explanation + give the canvas breathing room
+    basicChartProps: { chartMinHeight: "clamp(420px, 68vh, 860px)" }
   },
   { path: "/bitcoin-fees", component: BitcoinTransactionFees, useBasicChart: true, protected: true },
   { path: "/bitcoin-dominance", component: BitcoinDominance, useBasicChart: true, protected: true },
@@ -172,7 +176,7 @@ const appRoutes = [
   { path: "/uk-public-private", component: UKPublicPrivateChart, useBasicChart: true, protected: true },
   { path: "/uk-aps-workplace", component: UKAPSWorkplaceChart, useBasicChart: true, protected: true },
   { path: "/uk-esa-claimants", component: UKEsaClaimantsChart, useBasicChart: true, protected: true },
-  { path: "/tx-mvrv", component: BitcoinTxMvrvChart, useBasicChart: true, protected: true },
+  { path: "/tx-mvrv", component: BitcoinTxMvrvChart, useBasicChart: true, protected: true, basicChartProps: { chartMinHeight: "660px" } },
   { path: "/on-chain-historical-risk", component: OnChainHistoricalRisk, useBasicChart: true, protected: true },
   { path: "/altcoin-season-index", component: AltcoinSeasonIndexChart, useBasicChart: true, protected: true },
   { path: "/sp500unrate", component: SP500DivUnrateChart, useBasicChart: true, protected: true },
@@ -319,10 +323,9 @@ const AppContent = memo(() => {
   // Determine if sidebar and topbar should be rendered
   const userMenuRoutes = ["/profile", "/subscription", "/settings", "/change-password"];
   const isUserMenuPage = userMenuRoutes.includes(location.pathname);
-  const fullScreenChartRoutes = ["/market-heat-index"];
-  const isFullScreenChart = fullScreenChartRoutes.includes(location.pathname);
-  const shouldHideTopbar = isFullScreenChart;
+  const shouldHideTopbar = isChartPageRoute(location.pathname);
   const shouldRenderTopbar = !isSplashPage && !isLoginSignupPage && !isUserMenuPage && !shouldHideTopbar;
+  const navColors = tokens(memoizedTheme.palette.mode);
   // Display Stripe initialization error if present
   // In dev bypass mode we don't want Stripe failures (e.g. tracking blockers in Firefox private mode)
   // to prevent the rest of the app from working.
@@ -359,6 +362,25 @@ const AppContent = memo(() => {
                   />
                 )}
                 {isUserMenuPage && <AccountNavBar />}
+                {shouldHideTopbar && isMobile && !isSplashPage && !isLoginSignupPage && !isUserMenuPage && !isSidebar && (
+                  <IconButton
+                    onClick={() => setIsSidebar(true)}
+                    aria-label="open navigation"
+                    size="small"
+                    sx={{
+                      position: "fixed",
+                      top: 10,
+                      left: 10,
+                      zIndex: 1200,
+                      bgcolor: navColors.primary[500],
+                      color: navColors.grey[100],
+                      boxShadow: 2,
+                      "&:hover": { bgcolor: navColors.primary[600] },
+                    }}
+                  >
+                    <MenuOutlinedIcon fontSize="small" />
+                  </IconButton>
+                )}
                 <div style={{ display: "flex", flex: 1 }}>
                   {/* Render Sidebar only if signed in */}
                   {!isSplashPage && !isLoginSignupPage && !isUserMenuPage && (
@@ -378,8 +400,8 @@ const AppContent = memo(() => {
                     {/* Adjust spacing for Topbar or AccountNavBar */}
                     {shouldRenderTopbar ? (
                       <div style={{ height: isMobile ? "65px" : "85px" }} />
-                    ) : isFullScreenChart ? (
-                      <div style={{ height: "32px" }} />   
+                    ) : shouldHideTopbar ? (
+                      <div style={{ height: "16px" }} />
                     ) : null}
                     {isUserMenuPage && <div style={{ height: "65px" }} />}
                     <ErrorBoundary fallbackMessage="The main application area failed to load.">

@@ -7,6 +7,7 @@ import LastUpdated from '../hooks/LastUpdated';
 import BitcoinFees from './BitcoinTransactionFees';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
+import ChartTooltip from './ChartTooltip';
 
 const PuellMultiple = ({ isDashboard = false }) => {
   const chartContainerRef = useRef();
@@ -431,7 +432,7 @@ const PuellMultiple = ({ isDashboard = false }) => {
               justifyContent: 'center',
               gap: '20px',
               marginBottom: '30px',
-              marginTop: '50px',
+              marginTop: '8px',
             }}
           >
             <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '200px' } }}>
@@ -536,30 +537,27 @@ const PuellMultiple = ({ isDashboard = false }) => {
         }}
       >
         <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
-        {!isDashboard && tooltipData && (
-          <div
-            className="tooltip"
+        {!isDashboard && (
+          <ChartTooltip
+            tooltipData={tooltipData}
+            chartContainerRef={chartContainerRef}
             style={{
-              position: 'absolute',
-              left: calculateLeftPosition(),
-              top: `${tooltipData.y + 10}px`,
-              zIndex: 1000,
               backgroundColor: colors.primary[900],
               padding: '5px 10px',
               borderRadius: '4px',
               color: colors.primary[100],
-              fontSize: '12px',
-              pointerEvents: 'none',
             }}
-          >
-            <div style={{ fontSize: '15px' }}>Bitcoin</div>
+           render={(tooltipData) => (
+<>
+<div style={{ fontSize: '15px' }}>Bitcoin</div>
             {tooltipData.price && <div style={{ fontSize: '20px' }}>${tooltipData.price.toFixed(2)}</div>}
             {tooltipData.puell && <div style={{ color: indicators['puell-multiple'].color }}>Puell Multiple: {tooltipData.puell.toFixed(2)}</div>}
             {tooltipData.normalizedPuell && (
               <div style={{ color: indicators['normalized-puell'].color }}>Normalized Puell: {tooltipData.normalizedPuell.toFixed(2)}</div>
             )}
             {tooltipData.date && <div>{tooltipData.date}</div>}
-          </div>
+</>
+)} />
         )}
       </div>
       <div className="under-chart">

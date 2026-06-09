@@ -7,6 +7,7 @@ import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
+import ChartTooltip from './ChartTooltip';
 
 const OnChainHistoricalRisk = ({ isDashboard = false }) => {
   const chartContainerRef = useRef();
@@ -375,7 +376,7 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
             justifyContent: 'center',
             gap: '20px',
             marginBottom: '30px',
-            marginTop: '50px',
+            marginTop: '8px',
           }}
         >
           <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '200px' } }}>
@@ -487,22 +488,18 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
       >
         <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
         {tooltipData && (
-          <div
-            className="tooltip"
+          <ChartTooltip
+            tooltipData={tooltipData}
+            chartContainerRef={chartContainerRef}
             style={{
-              position: 'absolute',
-              left: calculateLeftPosition(),
-              top: `${tooltipData.y + 10}px`,
-              zIndex: 1000,
               backgroundColor: colors.primary[900],
               padding: '5px 10px',
               borderRadius: '4px',
               color: colors.primary[100],
-              fontSize: '12px',
-              pointerEvents: 'none',
             }}
-          >
-            <div style={{ fontSize: '15px' }}>Bitcoin</div>
+           render={(tooltipData) => (
+<>
+<div style={{ fontSize: '15px' }}>Bitcoin</div>
             {tooltipData.price && <div style={{ fontSize: '20px' }}>${tooltipData.price.toFixed(2)}</div>}
             {tooltipData.risk && (
               <div style={{ color: '#ff0062', fontSize: '20px' }}>
@@ -510,7 +507,8 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
               </div>
             )}
             {tooltipData.date && <div>{tooltipData.date}</div>}
-          </div>
+</>
+)} />
         )}
         {isLoading && (
           <div

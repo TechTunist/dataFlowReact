@@ -69,6 +69,8 @@ import BuildIcon from '@mui/icons-material/Build';
 import HomeWorkIcon from '@mui/icons-material/HomeWork';
 import PolicyIcon from '@mui/icons-material/Policy';
 import CallSplitIcon from '@mui/icons-material/CallSplit';
+import AppControls from "./AppControls";
+import { isChartPageRoute } from "../ChartTemplates/chartPageMeta";
 
 // import BalanceIcon from "@mui/icons-material/BalanceIconChart";
 
@@ -126,6 +128,7 @@ const Sidebar = ({ isSidebar, setIsSidebar }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const isMobile = useIsMobile();
   const [buttonOrder, setButtonOrder] = useState(["Dashboard", "Overview", "Charts"]);
+  const showSidebarControls = isChartPageRoute(location.pathname);
 
 const itemsData = [
   // === NAVIGATION ===
@@ -162,7 +165,7 @@ const itemsData = [
   // === ON-CHAIN METRICS ===
   // Category Icon: LinkIcon - Represents blockchain/on-chain data connections
   { title: "Bitcoin Address Balance", to: "/btc-add-balance", category: "On-Chain Metrics", icon: <AccountBalanceWalletIcon />, categoryIcon: <LinkIcon /> }, // AccountBalanceWalletIcon: Wallet/address balances
-  { title: "BTC MVRV to Transactions", to: "/tx-mvrv", category: "On-Chain Metrics", icon: <SwapHorizIcon />, categoryIcon: <LinkIcon /> }, // SwapHorizIcon: Transactions and value ratios
+  { title: "Tx Tension", to: "/tx-mvrv", category: "On-Chain Metrics", icon: <SwapHorizIcon />, categoryIcon: <LinkIcon /> }, // SwapHorizIcon: Transactions and value ratios
   { title: "Puell Multiple", to: "/puell-multiple", category: "On-Chain Metrics", icon: <MultipleStopIcon />, categoryIcon: <LinkIcon /> }, // MultipleStopIcon (alt: CalculateIcon): Multiples calculation
   { title: "MVRV Z-Score", to: "/btc-mvrv-z", category: "On-Chain Metrics", icon: <ScoreIcon />, categoryIcon: <LinkIcon /> }, // ScoreIcon: Z-score metric
   { title: "Bitcoin On-chain Risk", to: "/on-chain-historical-risk", category: "On-Chain Metrics", icon: <HistoryEduIcon />, categoryIcon: <LinkIcon /> }, // HistoryEduIcon: Historical on-chain data
@@ -324,13 +327,17 @@ const itemsData = [
       <Box
         className="sidebar"
         sx={{
+          "& .pro-sidebar, & .pro-sidebar-inner, & .pro-sidebar-layout, & .pro-sidebar-content": {
+            overflowX: "hidden !important",
+            maxWidth: "100%",
+          },
           "& .pro-sidebar-inner": {
             background: `${colors.primary[400]} !important`,
             borderRight: `1px solid ${colors.greenAccent[500]}`,
           },
           "& .pro-icon-wrapper": { backgroundColor: "transparent !important" },
           "& .pro-inner-item": {
-            padding: "5px 35px 5px 5px !important",
+            padding: "5px 28px 5px 5px !important",
             backgroundColor: "transparent !important",
           },
           "& .pro-inner-item:hover": { color: "#868dfb !important" },
@@ -391,14 +398,24 @@ const itemsData = [
           zIndex: 1100,
           height: "100vh",
           width: isMobile ? (isSidebar ? "270px" : "0") : "270px",
-          overflowX: isMobile && !isSidebar ? "hidden" : "auto",
+          overflowX: "hidden",
           overflowY: "auto",
           transition: "width 0.3s ease",
           visibility: isMobile && !isSidebar ? "hidden" : "visible",
         }}
       >
-        <ProSidebar>
-          <Menu iconShape="square">
+        <ProSidebar
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            height: "100vh",
+            width: "100%",
+            maxWidth: "100%",
+            overflowX: "hidden",
+            boxSizing: "border-box",
+          }}
+        >
+          <Menu iconShape="square" style={{ flex: 1, overflowY: "auto", overflowX: "hidden" }}>
             <Box display="flex" justifyContent="flex-end" alignItems="center" p={1}>
               {isMobile && (
                 <IconButton onClick={() => setIsSidebar(false)} sx={{ color: colors.grey[100] }}>
@@ -411,21 +428,24 @@ const itemsData = [
                 <img alt="main-logo" width="100px" height="100px" src={`../../assets/cryptological-original-logo.png`} />
               </Box>
               <Box display="flex" justifyContent="center" alignItems="center">
-                <img alt="main-logo" width="200px" height="50px" src={`../../assets/cryptological-title-resized.png`} />
+                <img alt="main-logo" width="196px" height="50px" src={`../../assets/cryptological-title-resized.png`} />
               </Box>
             </Box>
             {/* Carousel Button Section */}
             <Box
               sx={{
-                width: '270px', // Match sidebar width
-                height: '60px', // Fixed height for the carousel
+                width: '100%',
+                maxWidth: '100%',
+                height: '60px',
                 position: 'relative',
-                overflow: 'hidden', // Prevent buttons from spilling out
+                overflow: 'hidden',
                 display: 'flex',
                 justifyContent: 'center',
                 alignItems: 'center',
-                mx: 'auto', // Center the carousel in the sidebar
+                mx: 'auto',
                 mb: 2,
+                px: 0.5,
+                boxSizing: 'border-box',
               }}
             >
               {buttonOrder.map((title, index) => {
@@ -450,7 +470,7 @@ const itemsData = [
                 const buttonWidth = 80; // Fixed width for each button (adjust as needed)
                 const gap = 4; // Gap between buttons
                 const totalWidth = buttonWidth * 3 + gap * 2; // Total width of buttons + gaps
-                const offset = (270 - totalWidth) / 2; // Center the buttons in the 270px sidebar
+                const offset = Math.max(0, (266 - totalWidth) / 2);
                 const positionOffset = [
                   offset, // Left position
                   offset + buttonWidth + gap, // Center position
@@ -504,18 +524,34 @@ const itemsData = [
             </Box>
             {searchQuery ? filteredItems.map((item, index) => renderMenuItem(item, index)) : renderSubMenus()}
           </Menu>
-          <Box sx={{ padding: theme.spacing(2) }}>
+          {showSidebarControls && (
+            <Box
+              sx={{
+                flexShrink: 0,
+                borderTop: `3px solid ${colors.greenAccent[500]}`,
+                py: 0.75,
+                px: 0.25,
+                backgroundColor: colors.primary[400],
+                overflow: "hidden",
+                boxSizing: "border-box",
+                width: "100%",
+              }}
+            >
+              <AppControls showAbout justify="space-around" compact />
+            </Box>
+          )}
+          <Box sx={{ padding: showSidebarControls ? theme.spacing(1.5) : theme.spacing(2), flexShrink: 0 }}>
             <Box display="flex" justifyContent="center" alignItems="center">
-              <Typography variant="h5" color={colors.greenAccent[500]}>
-                Contact:
+              <Typography variant={showSidebarControls ? "body1" : "h5"} color={colors.greenAccent[500]}>
+                Contact
               </Typography>
             </Box>
-            <Box display="flex" justifyContent="center" alignItems="center" mt={2}>
-              <IconButton href="https://twitter.com/CryptoLogical__" target="_blank" sx={{ color: colors.grey[100], mr: 1 }}>
-                <XIcon />
+            <Box display="flex" justifyContent="center" alignItems="center" mt={showSidebarControls ? 1 : 2}>
+              <IconButton href="https://twitter.com/CryptoLogical__" target="_blank" sx={{ color: colors.grey[100], mr: 1 }} size="small">
+                <XIcon fontSize="small" />
               </IconButton>
-              <IconButton href="mailto:support@cryptological.app" sx={{ color: colors.grey[100] }}>
-                <EmailIcon />
+              <IconButton href="mailto:support@cryptological.app" sx={{ color: colors.grey[100] }} size="small">
+                <EmailIcon fontSize="small" />
               </IconButton>
             </Box>
           </Box>

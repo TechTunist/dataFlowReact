@@ -18,6 +18,7 @@ import {
   useMediaQuery
 } from '@mui/material';
 import { DataContext } from '../DataContext';
+import ChartTooltip from './ChartTooltip';
 
 const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominanceData }) => {
   const chartContainerRef = useRef();
@@ -400,7 +401,7 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
               justifyContent: 'center',
               gap: '20px',
               marginBottom: '30px',
-              marginTop: '50px',
+              marginTop: '8px',
             }}
           >
             <FormControlLabel
@@ -520,6 +521,24 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
         onDoubleClick={() => setInteractivity(!isInteractive)}
       >
         <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
+        {!isDashboard && (
+          <ChartTooltip tooltipData={tooltipData} chartContainerRef={chartContainerRef} isNarrowScreen={isNarrowScreen} render={(tooltipData) => (
+<>
+<div style={{ fontSize: '15px' }}>Market Dominance</div>
+            {tooltipData.btcPrice && (
+              <div style={{ fontSize: '20px', color: theme.palette.mode === 'dark' ? 'rgba(38, 198, 218, 1)' : 'rgba(76, 175, 80, 1)' }}>
+                BTC: {tooltipData.btcPrice.toFixed(2)}%
+              </div>
+            )}
+            {showEthDominance && tooltipData.ethPrice && (
+              <div style={{ fontSize: '18px', color: theme.palette.mode === 'dark' ? '#FF6B6B' : '#FF4757' }}>
+                ETH: {tooltipData.ethPrice.toFixed(2)}%
+              </div>
+            )}
+            <div>{tooltipData.date?.toString()}</div>
+</>
+)} />
+        )}
       </div>
       <div className='under-chart'>
         {!isDashboard && smoothedDominanceData.length > 0 && (
@@ -580,44 +599,7 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
           }}
         />
       )}
-      {!isDashboard && tooltipData && (
-        <div
-          className="tooltip"
-          style={{
-            position: 'fixed',
-            left: (() => {
-              const sidebarWidth = isMobile ? -80 : -380;
-              const cursorX = tooltipData.x - sidebarWidth;
-              const chartWidth = chartContainerRef.current.clientWidth - sidebarWidth;
-              const tooltipWidth = 200;
-              const offset = 1000 / (chartWidth + 300);
-              const rightPosition = cursorX + offset;
-              const leftPosition = cursorX - tooltipWidth - offset;
-              if (rightPosition + tooltipWidth <= chartWidth) return `${rightPosition}px`;
-              if (leftPosition >= 0) return `${leftPosition}px`;
-              return `${Math.max(0, Math.min(rightPosition, chartWidth - tooltipWidth))}px`;
-            })(),
-            top: (() => {
-              const offsetY = isNarrowScreen ? 300 : 150;
-              return `${tooltipData.y + offsetY}px`
-            })(),
-            zIndex: 1000,
-          }}
-        >
-          <div style={{ fontSize: '15px' }}>Market Dominance</div>
-          {tooltipData.btcPrice && (
-            <div style={{ fontSize: '20px', color: theme.palette.mode === 'dark' ? 'rgba(38, 198, 218, 1)' : 'rgba(76, 175, 80, 1)' }}>
-              BTC: {tooltipData.btcPrice.toFixed(2)}%
-            </div>
-          )}
-          {showEthDominance && tooltipData.ethPrice && (
-            <div style={{ fontSize: '18px', color: theme.palette.mode === 'dark' ? '#FF6B6B' : '#FF4757' }}>
-              ETH: {tooltipData.ethPrice.toFixed(2)}%
-            </div>
-          )}
-          <div>{tooltipData.date?.toString()}</div>
-        </div>
-      )}
+
       {!isDashboard && (
         <p className='chart-info'>
           This chart shows Bitcoin dominance, which is the percentage of the total cryptocurrency market value that Bitcoin represents. For example, if Bitcoin's market value is $500 billion and the total market value of all cryptocurrencies is $1 trillion, Bitcoin dominance is 50%. This number helps you understand Bitcoin's influence compared to other cryptocurrencies like Ethereum or smaller altcoins.

@@ -6,6 +6,7 @@ import { tokens } from '../theme';
 import { useTheme, Box, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import useIsMobile from '../hooks/useIsMobile';
 import { DataContext } from '../DataContext';
+import ChartTooltip from './ChartTooltip';
 
 const Bitcoin10YearChart = ({ indicatorId = 'btc-yield-recession', explanation, isDashboard = false }) => {
   const chartContainerRef = useRef();
@@ -414,40 +415,11 @@ const Bitcoin10YearChart = ({ indicatorId = 'btc-yield-recession', explanation, 
             <span style={{ width: '10px', height: '10px', backgroundColor: 'rgba(255, 255, 0, 0.5)', marginRight: '5px' }} />
             Halvings
           </div>
-        </div>
-        <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
-      </div>
-      <div className="under-chart">
-        {!isDashboard && indicatorData[indicatorId]?.length > 0 && (
-          <div style={{ marginTop: '10px' }}>
-            <span style={{ color: colors.greenAccent[500] }}>
-              Last Updated: {indicatorData[indicatorId][indicatorData[indicatorId].length - 1].date}
-            </span>
-          </div>
-        )}
-      </div>
-      {!isDashboard && tooltipData && (
-        <div
-          className="tooltip"
-          style={{
-            left: (() => {
-              const sidebarWidth = isMobile ? -80 : -320;
-              const cursorX = tooltipData.x - sidebarWidth;
-              const chartWidth = chartContainerRef.current.clientWidth - sidebarWidth;
-              const tooltipWidth = 200;
-              const offset = 10000 / (chartWidth + 300);
-              const rightPosition = cursorX + offset;
-              const leftPosition = cursorX - tooltipWidth - offset;
-              return rightPosition + tooltipWidth <= chartWidth
-                ? `${rightPosition}px`
-                : leftPosition >= 0
-                  ? `${leftPosition}px`
-                  : `${Math.max(0, Math.min(rightPosition, chartWidth - tooltipWidth))}px`;
-            })(),
-            top: `${tooltipData.y + 100}px`,
-          }}
-        >
-          <div style={{ fontSize: '15px' }}>BTC vs. Economic Indicators</div>
+        
+        {!isDashboard && (
+          <ChartTooltip tooltipData={tooltipData} chartContainerRef={chartContainerRef} render={(tooltipData) => (
+<>
+<div style={{ fontSize: '15px' }}>BTC vs. Economic Indicators</div>
           <div style={{ fontSize: '20px' }}>${tooltipData.btcPrice?.toFixed(2)}</div>
           {showT10Y2Y && <div>T10Y2Y: {tooltipData.t10y2y?.toFixed(2)}%</div>}
           {showFedFunds && <div>Fed Funds Rate: {tooltipData.fedFunds?.toFixed(2)}%</div>}
@@ -460,8 +432,21 @@ const Bitcoin10YearChart = ({ indicatorId = 'btc-yield-recession', explanation, 
               ? `${tooltipData.date.toString().substring(0, 4)} - latest`
               : tooltipData.date.toString().substring(0, 4)}
           </div>
-        </div>
-      )}
+</>
+)} />
+        )}</div>
+        <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
+      </div>
+      <div className="under-chart">
+        {!isDashboard && indicatorData[indicatorId]?.length > 0 && (
+          <div style={{ marginTop: '10px' }}>
+            <span style={{ color: colors.greenAccent[500] }}>
+              Last Updated: {indicatorData[indicatorId][indicatorData[indicatorId].length - 1].date}
+            </span>
+          </div>
+        )}
+      </div>
+      
       {!isDashboard && (
         <p className="chart-info">
           This chart shows Bitcoin’s price (orange line) alongside key economic indicators to help you spot trends and make trading decisions. The yield curve (red/blue line) compares long-term and short-term U.S. Treasury rates. When it turns red (negative), it often signals an upcoming economic slowdown, and Bitcoin may rise as a hedge (e.g., the 2019 inversion before the 2020 crash). The white line tracks the Federal Funds Rate, showing U.S. interest rates. Rising rates can pressure Bitcoin prices down. The green line shows M2 money supply growth. When it’s high, more money in the economy often boosts Bitcoin. <br /><br />

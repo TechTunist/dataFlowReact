@@ -744,7 +744,7 @@
 //             justifyContent: 'center',
 //             gap: '20px',
 //             marginBottom: '30px',
-//             marginTop: '50px',
+//             marginTop: '8px',
 //           }}
 //         >
 //           <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '300px' } }}>
@@ -1185,6 +1185,7 @@ import {
   calculateMovingAverage 
 } from '../utils/technicalIndicators';
 import { getCurrentBitcoinPrice } from '../utils/currentPrice';
+import ChartTooltip from './ChartTooltip';
 const BitcoinPrice = ({ isDashboard = false }) => {
   const chartContainerRef = useRef();
   const chartRef = useRef(null);
@@ -1834,7 +1835,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
             justifyContent: 'center',
             gap: '20px',
             marginBottom: '30px',
-            marginTop: '50px',
+            marginTop: '8px',
           }}
         >
           <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '300px' } }}>
@@ -2196,6 +2197,35 @@ const BitcoinPrice = ({ isDashboard = false }) => {
             );
           })}
         </div>
+        {!isDashboard && (
+          <ChartTooltip tooltipData={tooltipData} chartContainerRef={chartContainerRef} isNarrowScreen={isNarrowScreen} render={(tooltipData) => (
+<>
+<div style={{ fontSize: '15px' }}>Bitcoin</div>
+            <div style={{ fontSize: '20px' }}>${tooltipData.price?.toFixed(2)}</div>
+            {activeIndicators.includes('mvrv') && tooltipData.mvrv !== null && (
+              <div style={{ color: indicators['mvrv'].color }}>
+                MVRV Ratio: {tooltipData.mvrv.toFixed(2)}
+              </div>
+            )}
+            {activeIndicators.includes('mvrv') && tooltipData.mvrvPeakProjection !== null && (
+              <div style={{ color: 'cyan' }}>
+                MVRV Peak Projection: {tooltipData.mvrvPeakProjection.toFixed(2)}
+              </div>
+            )}
+            {activeIndicators.includes('mayer-multiple') && tooltipData.mayerMultiple !== null && (
+              <div style={{ color: indicators['mayer-multiple'].color }}>
+                Mayer Multiple: {tooltipData.mayerMultiple.toFixed(2)}
+              </div>
+            )}
+            {activeRsiPeriod && tooltipData.rsi !== null && (
+              <div style={{ color: 'green' }}>
+                {rsiPeriods[activeRsiPeriod].label}: {tooltipData.rsi.toFixed(2)}
+              </div>
+            )}
+            <div>{tooltipData.date ? tooltipData.date.split('-').reverse().join('-') : ''}</div>
+</>
+)} />
+        )}
       </div>
       {!isDashboard && (
         <div className='under-chart' style={{ padding: '10px 0' }}>
@@ -2230,55 +2260,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
           )}
         </Box>
       )}
-      {!isDashboard && tooltipData && (
-        <div
-          className="tooltip"
-          style={{
-            position: 'fixed',
-            left: (() => {
-              const sidebarWidth = isMobile ? -80 : -320;
-              const cursorX = tooltipData.x - sidebarWidth;
-              const chartWidth = chartContainerRef.current.clientWidth - sidebarWidth;
-              const tooltipWidth = 200;
-              const offset = 1000 / (chartWidth + 300);
-              const rightPosition = cursorX + offset;
-              const leftPosition = cursorX - tooltipWidth - offset;
-              if (rightPosition + tooltipWidth <= chartWidth) return `${rightPosition}px`;
-              if (leftPosition >= 0) return `${leftPosition}px`;
-              return `${Math.max(0, Math.min(rightPosition, chartWidth - tooltipWidth))}px`;
-            })(),
-            top: (() => {
-              const offsetY = isNarrowScreen ? 300 : 150;
-              return `${tooltipData.y + offsetY}px`
-            })(),
-            zIndex: 1000,
-          }}
-        >
-          <div style={{ fontSize: '15px' }}>Bitcoin</div>
-          <div style={{ fontSize: '20px' }}>${tooltipData.price?.toFixed(2)}</div>
-          {activeIndicators.includes('mvrv') && tooltipData.mvrv !== null && (
-            <div style={{ color: indicators['mvrv'].color }}>
-              MVRV Ratio: {tooltipData.mvrv.toFixed(2)}
-            </div>
-          )}
-          {activeIndicators.includes('mvrv') && tooltipData.mvrvPeakProjection !== null && (
-            <div style={{ color: 'cyan' }}>
-              MVRV Peak Projection: {tooltipData.mvrvPeakProjection.toFixed(2)}
-            </div>
-          )}
-          {activeIndicators.includes('mayer-multiple') && tooltipData.mayerMultiple !== null && (
-            <div style={{ color: indicators['mayer-multiple'].color }}>
-              Mayer Multiple: {tooltipData.mayerMultiple.toFixed(2)}
-            </div>
-          )}
-          {activeRsiPeriod && tooltipData.rsi !== null && (
-            <div style={{ color: 'green' }}>
-              {rsiPeriods[activeRsiPeriod].label}: {tooltipData.rsi.toFixed(2)}
-            </div>
-          )}
-          <div>{tooltipData.date ? tooltipData.date.split('-').reverse().join('-') : ''}</div>
-        </div>
-      )}
+
       {!isDashboard && (
         <p className='chart-info'>
           Bitcoin represents a significant advancement in digital finance. It operates on a globally distributed and permissionless ledger,

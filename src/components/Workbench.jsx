@@ -864,7 +864,7 @@ const WorkbenchChart = ({
             justifyContent: 'center',
             gap: '20px',
             marginBottom: '30px',
-            marginTop: '50px',
+            marginTop: '8px',
             width: '100%',
             mx: 'auto',
           }}

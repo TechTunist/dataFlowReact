@@ -8,6 +8,7 @@ import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import logger from '../utils/logger';
 import LastUpdated from '../hooks/LastUpdated';
+import ChartTooltip from './ChartTooltip';
 import {
   Select,
   MenuItem,
@@ -472,7 +473,7 @@ const FredSeriesChart = ({
           justifyContent: 'center',
           gap: '20px',
           marginBottom: '30px',
-          marginTop: '50px',
+          marginTop: '8px',
         }}>
           <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '300px' } }}>
             <InputLabel
@@ -683,21 +684,14 @@ const FredSeriesChart = ({
         )}
       </div>
 
-      {!isDashboard && tooltipData && (
-        <div className="tooltip" style={{
-          left: (() => {
-            const sidebarWidth = isMobile ? -70 : -100;
-            const cursorX = tooltipData.x - sidebarWidth;
-            const chartWidth = chartContainerRef.current?.clientWidth - sidebarWidth || 800;
-            const tooltipWidth = 200;
-            const offset = 1000 / (chartWidth + 100);
-            const rightPosition = cursorX + offset;
-            const leftPosition = cursorX - tooltipWidth - offset;
-            return rightPosition + tooltipWidth <= chartWidth ? `${rightPosition}px` : leftPosition >= 0 ? `${leftPosition}px` : `${Math.max(0, Math.min(rightPosition, chartWidth - tooltipWidth))}px`;
-          })(),
-          top: `${tooltipData.y + 50}px`,
-        }}>
-          <div style={{ fontSize: '15px' }}>{seriesId}</div>
+      
+
+      {!isDashboard && explanation && <p className="chart-info">{explanation}</p>}
+    
+        {!isDashboard && (
+          <ChartTooltip tooltipData={tooltipData} chartContainerRef={chartContainerRef} render={(tooltipData) => (
+<>
+<div style={{ fontSize: '15px' }}>{seriesId}</div>
           <div style={{ fontSize: '20px' }}>{tooltipData.primaryValue ? valueFormatter(tooltipData.primaryValue) : 'N/A'}</div>
           {showSP500Overlay && (
             <>
@@ -706,11 +700,9 @@ const FredSeriesChart = ({
             </>
           )}
           <div>{tooltipData.date}</div>
-        </div>
-      )}
-
-      {!isDashboard && explanation && <p className="chart-info">{explanation}</p>}
-    </div>
+</>
+)} />
+        )}</div>
   );
 };
 

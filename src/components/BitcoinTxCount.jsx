@@ -6,6 +6,7 @@ import { useTheme } from "@mui/material";
 import useIsMobile from '../hooks/useIsMobile';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
+import ChartTooltip from './ChartTooltip';
 import LastUpdated from '../hooks/LastUpdated';
 
 const BitcoinTxCountChart = ({ isDashboard = false }) => {
@@ -178,6 +179,15 @@ const BitcoinTxCountChart = ({ isDashboard = false }) => {
             )}
             <div className="chart-container" style={{ position: 'relative', height: isDashboard ? '100%' : 'calc(100% - 40px)', width: '100%', border: '2px solid #a9a9a9' }} onDoubleClick={setInteractivity}>
                 <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
+                {!isDashboard && (
+                    <ChartTooltip tooltipData={tooltipData} chartContainerRef={chartContainerRef} render={(tooltipData) => (
+<>
+<div style={{ fontSize: '15px' }}>Transaction Count</div>
+                        <div style={{ fontSize: '20px' }}>{tooltipData.value.toLocaleString()}</div>
+                        <div>{tooltipData.date.toString().substring(0, 4) === currentYear ? `${tooltipData.date.toString().substring(0, 4)} - latest` : tooltipData.date.toString().substring(0, 4)}</div>
+</>
+)} />
+                )}
             </div>
             <div className='under-chart'>
                 {!isDashboard && weeklyData.length > 0 && (
@@ -186,25 +196,6 @@ const BitcoinTxCountChart = ({ isDashboard = false }) => {
                     </div>
                 )}
             </div>
-            {!isDashboard && tooltipData && (
-                <div className="tooltip" style={{
-                    left: (() => {
-                        const sidebarWidth = isMobile ? -80 : -320;
-                        const cursorX = tooltipData.x - sidebarWidth;
-                        const chartWidth = chartContainerRef.current.clientWidth - sidebarWidth;
-                        const tooltipWidth = 200;
-                        const offset = 10000 / (chartWidth + 300);
-                        const rightPosition = cursorX + offset;
-                        const leftPosition = cursorX - tooltipWidth - offset;
-                        return rightPosition + tooltipWidth <= chartWidth ? `${rightPosition}px` : (leftPosition >= 0 ? `${leftPosition}px` : `${Math.max(0, Math.min(rightPosition, chartWidth - tooltipWidth))}px`);
-                    })(),
-                    top: `${tooltipData.y + 100}px`,
-                }}>
-                    <div style={{ fontSize: '15px' }}>Transaction Count</div>
-                    <div style={{ fontSize: '20px' }}>{tooltipData.value.toLocaleString()}</div>
-                    <div>{tooltipData.date.toString().substring(0, 4) === currentYear ? `${tooltipData.date.toString().substring(0, 4)} - latest` : tooltipData.date.toString().substring(0, 4)}</div>
-                </div>
-            )}
             {!isDashboard && (
                 <p className='chart-info'>
                     This chart shows the {useWeekly ? 'weekly' : 'daily'} transaction count on the Bitcoin blockchain,

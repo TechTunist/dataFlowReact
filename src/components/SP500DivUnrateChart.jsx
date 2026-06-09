@@ -7,6 +7,7 @@ import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
 import BitcoinFees from './BitcoinTransactionFees'; // Replace or remove if not needed
 import { DataContext } from '../DataContext';
+import ChartTooltip from './ChartTooltip';
 
 const SP500DivUnrateChart = ({ isDashboard = false }) => {
   const chartContainerRef = useRef();
@@ -236,7 +237,17 @@ const SP500DivUnrateChart = ({ isDashboard = false }) => {
             setInteractivity();
           }}
         />
-      </div>
+      
+        {!isDashboard && (
+          <ChartTooltip tooltipData={tooltipData} chartContainerRef={chartContainerRef} render={(tooltipData) => (
+<>
+<b>
+            {tooltipData.price && <div>Actual Price: {tooltipData.price}</div>}
+            {tooltipData.date && <div style={{ fontSize: '13px' }}>{tooltipData.date}</div>}
+          </b>
+</>
+)} />
+        )}</div>
 
       <div className='under-chart'>
         {!isDashboard && (
@@ -249,37 +260,7 @@ const SP500DivUnrateChart = ({ isDashboard = false }) => {
         )}
       </div>
 
-      {!isDashboard && tooltipData && (
-        <div
-          className="tooltip"
-          style={{
-            left: (() => {
-              const sidebarWidth = isMobile ? -80 : -300;
-              const cursorX = tooltipData.x - sidebarWidth;
-              const chartWidth = chartContainerRef.current.clientWidth - sidebarWidth;
-              const tooltipWidth = 200;
-              const K = 10000;
-              const C = 300;
-              const offset = K / (chartWidth + C);
-              const rightPosition = cursorX + offset;
-              const leftPosition = cursorX - tooltipWidth - offset;
-              if (rightPosition + tooltipWidth <= chartWidth) {
-                return `${rightPosition}px`;
-              } else if (leftPosition >= 0) {
-                return `${leftPosition}px`;
-              } else {
-                return `${Math.max(0, Math.min(rightPosition, chartWidth - tooltipWidth))}px`;
-              }
-            })(),
-            top: `${tooltipData.y + 100}px`,
-          }}
-        >
-          <b>
-            {tooltipData.price && <div>Actual Price: {tooltipData.price}</div>}
-            {tooltipData.date && <div style={{ fontSize: '13px' }}>{tooltipData.date}</div>}
-          </b>
-        </div>
-      )}
+      
 
       {!isDashboard && (
         <p className='chart-info'>

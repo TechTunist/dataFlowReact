@@ -7,6 +7,7 @@ import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
+import ChartTooltip from './ChartTooltip';
 
 const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
   const chartContainerRef = useRef();
@@ -323,7 +324,7 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
             justifyContent: 'center',
             gap: '20px',
             marginBottom: '10px',
-            marginTop: '50px',
+            marginTop: '8px',
           }}
         >
           <FormControl sx={{ minWidth: '150px', width: { xs: '100%', sm: '200px' } }}>
@@ -430,27 +431,21 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
             }
           }}
         />
-        {!isDashboard && tooltipData && (
-          <div
-            className="tooltip"
+        {!isDashboard && (
+          <ChartTooltip
+            tooltipData={tooltipData}
+            chartContainerRef={chartContainerRef}
+            isNarrowScreen={isNarrowScreen}
             style={{
-              position: 'absolute',
-              left: calculateLeftPosition(),
-              top: (() => {
-                const offsetY = isNarrowScreen ? 20 : 20;
-                return `${tooltipData.y + offsetY}px`;
-              })(),
-              zIndex: 1000,
               backgroundColor: colors.primary[900],
               padding: isNarrowScreen ? '6px 8px' : '8px 12px',
               borderRadius: '4px',
               color: colors.primary[100],
               fontSize: isNarrowScreen ? '10px' : '12px',
-              pointerEvents: 'none',
-              width: isNarrowScreen ? '150px' : '200px',
             }}
-          >
-            <div style={{ fontSize: isNarrowScreen ? '14px' : '16px', fontWeight: 'bold' }}>
+           render={(tooltipData) => (
+<>
+<div style={{ fontSize: isNarrowScreen ? '14px' : '16px', fontWeight: 'bold' }}>
               Altcoin Season Index
             </div>
             {tooltipData.index && (
@@ -486,7 +481,8 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
               </>
             )}
             {tooltipData.date && <div>{tooltipData.date}</div>}
-          </div>
+</>
+)} />
         )}
       </div>
       <div className="under-chart">

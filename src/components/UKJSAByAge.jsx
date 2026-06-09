@@ -4,6 +4,7 @@ import '../styling/bitcoinChart.css';
 import { tokens } from '../theme';
 import { useTheme } from '@mui/material';
 import useIsMobile from '../hooks/useIsMobile';
+import ChartTooltip from './ChartTooltip';
 
 const UKJSAByAge = ({ isDashboard = false }) => {
   const chartContainerRef = useRef();
@@ -113,6 +114,15 @@ const UKJSAByAge = ({ isDashboard = false }) => {
       )}
       <div className="chart-container" style={{ flex: '1 1 auto', minHeight: isDashboard ? '380px' : '620px', overflow: 'hidden', width: '100%', border: '2px solid #a9a9a9', position: 'relative', zIndex: 1 }} onDoubleClick={setInteractivity}>
         <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
+        {!isDashboard && (
+          <ChartTooltip tooltipData={tooltipData} chartContainerRef={chartContainerRef} render={(tooltipData) => (
+<>
+<div style={{ fontSize: '13px' }}>UK JSA ({genderLabel}, {ageLabel})</div>
+            <div style={{ fontSize: '18px', fontWeight: 600, color: '#eab308' }}>{formatVal(tooltipData.value)}</div>
+            <div style={{ fontSize: '12px', marginTop: 3, opacity: 0.85 }}>{tooltipData.date ? tooltipData.date.slice(0,7) : 'N/A'}</div>
+</>
+)} />
+        )}
       </div>
       {!isDashboard && (
         <div className="under-chart" style={{ flexShrink: 0, padding: '10px 0 20px 0', display: 'block' }}>
@@ -125,13 +135,7 @@ const UKJSAByAge = ({ isDashboard = false }) => {
           <div style={{ marginTop: '6px', fontSize: '12px', color: '#888', textAlign: 'left' }}>Source: Nomis (ONS). Consistent monthly series with proportions.</div>
         </div>
       )}
-      {!isDashboard && tooltipData && (
-        <div className="tooltip" style={{ left: '50%', top: `${tooltipData.y + 80}px`, transform: 'translateX(-50%)' }}>
-          <div style={{ fontSize: '13px' }}>UK JSA ({genderLabel}, {ageLabel})</div>
-          <div style={{ fontSize: '18px', fontWeight: 600, color: '#eab308' }}>{formatVal(tooltipData.value)}</div>
-          <div style={{ fontSize: '12px', marginTop: 3, opacity: 0.85 }}>{tooltipData.date ? tooltipData.date.slice(0,7) : 'N/A'}</div>
-        </div>
-      )}
+
     </div>
   );
 };

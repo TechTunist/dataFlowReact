@@ -294,6 +294,39 @@ input:checked + .slider:before {
     margin-bottom: 20px; /* Space below the introductory text */
 }
 
+/* Full-page chart layout: keep all chart UI inside the raised card shell */
+.chart-page-content > div {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: auto !important;
+    min-height: 0;
+}
+
+.chart-page-content .chart-container,
+.chart-page-content .market-cycles-plot {
+    position: relative !important;
+    min-height: var(--chart-area-min-height, clamp(400px, 62vh, 780px)) !important;
+    height: var(--chart-area-min-height, clamp(400px, 62vh, 780px)) !important;
+    flex-shrink: 0;
+    overflow: visible;
+}
+
+.chart-page-content .MuiTableContainer-root {
+    flex-shrink: 0;
+    min-height: clamp(400px, 50vh, 650px);
+}
+
+.chart-page-content .chart-info,
+.chart-page-content .under-chart,
+.chart-page-content .chart-top-div {
+    flex-shrink: 0;
+}
+
+.chart-page-content .chart-info {
+    color: inherit;
+}
+
 .chart-top-div {
     display: flex;
     justify-content: space-between;

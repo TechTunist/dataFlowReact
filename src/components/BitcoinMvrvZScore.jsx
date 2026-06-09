@@ -9,6 +9,7 @@ import BitcoinFees from './BitcoinTransactionFees';
 import { Box, useMediaQuery } from '@mui/material';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
+import ChartTooltip from './ChartTooltip';
 
 const BitcoinMvrvZScoreChart = ({ isDashboard = false, txMvrvData: propTxMvrvData }) => {
   const chartContainerRef = useRef();
@@ -293,7 +294,20 @@ const BitcoinMvrvZScoreChart = ({ isDashboard = false, txMvrvData: propTxMvrvDat
             ))}
           </div>
         )}
-      </div>
+      
+        {!isDashboard && (
+          <ChartTooltip tooltipData={tooltipData} chartContainerRef={chartContainerRef} isNarrowScreen={isNarrowScreen} render={(tooltipData) => (
+<>
+<div style={{ fontSize: '15px', color: 'gray' }}>
+            BTC Price: ${tooltipData.price ? (tooltipData.price / 1000).toFixed(1) + 'k' : 'N/A'}
+          </div>
+          <div style={{ color: indicators['z-score'].color }}>
+            MVRV Z-Score: {tooltipData.zScore?.toFixed(2) ?? 'N/A'}
+          </div>
+          <div>{tooltipData.date?.toString()}</div>
+</>
+)} />
+        )}</div>
       <div className='under-chart'>
         {!isDashboard && (
           <LastUpdated customDate={txMvrvLastUpdated} />
@@ -309,36 +323,7 @@ const BitcoinMvrvZScoreChart = ({ isDashboard = false, txMvrvData: propTxMvrvDat
           ))}
         </Box>
       )}
-      {!isDashboard && tooltipData && (
-        <div
-          className="tooltip"
-          style={{
-            position: 'fixed',
-            left: (() => {
-              const sidebarWidth = isMobile ? -80 : -320;
-              const cursorX = tooltipData.x - sidebarWidth;
-              const chartWidth = chartContainerRef.current.clientWidth - sidebarWidth;
-              const tooltipWidth = 200;
-              const offset = 10000 / (chartWidth + 300);
-              const rightPosition = cursorX + offset;
-              const leftPosition = cursorX - tooltipWidth - offset;
-              if (rightPosition + tooltipWidth <= chartWidth) return `${rightPosition}px`;
-              if (leftPosition >= 0) return `${leftPosition}px`;
-              return `${Math.max(0, Math.min(rightPosition, chartWidth - tooltipWidth))}px`;
-            })(),
-            top: `${tooltipData.y + 100}px`,
-            zIndex: 1000,
-          }}
-        >
-          <div style={{ fontSize: '15px', color: 'gray' }}>
-            BTC Price: ${tooltipData.price ? (tooltipData.price / 1000).toFixed(1) + 'k' : 'N/A'}
-          </div>
-          <div style={{ color: indicators['z-score'].color }}>
-            MVRV Z-Score: {tooltipData.zScore?.toFixed(2) ?? 'N/A'}
-          </div>
-          <div>{tooltipData.date?.toString()}</div>
-        </div>
-      )}
+      
       {!isDashboard && (
         <p className='chart-info'>
           The Bitcoin Price & MVRV Z-Score chart shows the Bitcoin price and MVRV Z-Score starting from April 16th, 2011, illustrating price trends and standardized valuation deviations. The MVRV Z-Score is only calculated and displayed after at least 365 data points to avoid initial instability due to small sample size.

@@ -400,7 +400,7 @@ const BitcoinAddressBalancesChart = ({ isDashboard = false }) => {
             justifyContent: 'center',
             gap: '15px',
             marginBottom: '30px',
-            marginTop: '50px',
+            marginTop: '8px',
           }}
         >
           <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '300px' } }}>

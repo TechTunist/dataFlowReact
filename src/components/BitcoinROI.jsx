@@ -314,7 +314,7 @@ const BitcoinROI = ({ isDashboard = false }) => {
             justifyContent: { xs: 'flex-start', sm: 'space-between' },
             gap: { xs: '10px', sm: '10px' },
             marginBottom: '10px',
-            marginTop: '50px',
+            marginTop: '8px',
             width: '100%',
             flexWrap: { xs: 'wrap', sm: 'nowrap' },
           }}
