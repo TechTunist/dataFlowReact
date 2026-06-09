@@ -6,6 +6,7 @@ import '../styling/bitcoinChart.css';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import LastUpdated from '../hooks/LastUpdated';
+import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
 import BitcoinFees from './BitcoinTransactionFees';
 import useIsMobile from '../hooks/useIsMobile';
 
@@ -477,19 +478,17 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
           onDoubleClick={handleDoubleClick}
         />
       </div>
-      <div className='under-chart'>
-        {!isDashboard && (
-          <div>
-            <LastUpdated storageKey="btcData" />
-          </div>
-        )}
+      <UnderChartRow>
+        {!isDashboard && <LastUpdated storageKey="btcData" />}
         {!isDashboard && <BitcoinFees />}
-      </div>
+      </UnderChartRow>
       {!isDashboard && (
         <div>
-          <div style={{ display: 'inline-block', marginTop: '10px', fontSize: '1.2rem', color: colors.primary[100] }}>
-            Latest Extension: {latestExtension}%
-          </div>
+          <UnderChartValue>
+            <span style={{ fontSize: '1.15rem', color: colors.primary[100] }}>
+              Latest Extension: <b style={{ color: colors.greenAccent[500] }}>{latestExtension}%</b>
+            </span>
+          </UnderChartValue>
           <p className='chart-info'>
             The Bitcoin 20-Week Extension chart shows the percentage difference between the current price and the 20-week moving average (MA),
             which helps to identify if we are currently in a bubble or a bear market. The chart is color-coded to indicate different ranges of extension.

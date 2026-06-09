@@ -7,6 +7,7 @@ import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
 import BitcoinFees from './BitcoinTransactionFees';
 import { Box, FormControl, InputLabel, Select, MenuItem, ToggleButton, ToggleButtonGroup, useMediaQuery, Checkbox, Typography } from '@mui/material';
+import { UnderChartRow, ChartUnderSection, UnderChartScroll, ChartInfo } from './ChartUnderSection';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 
@@ -928,32 +929,18 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, isChartPage = false, txMvrvDa
       </div>
 
       {!isDashboard && (
-        <Box sx={{
-          display: 'flex',
-          justifyContent: 'flex-start',
-          mt: 0.5,
-          mb: 1,
-          pl: 0.5,
-        }}>
+        <UnderChartRow>
           <LastUpdated customDate={lastUpdatedDate} />
-        </Box>
+          <BitcoinFees />
+        </UnderChartRow>
       )}
 
       {!isDashboard && (
-        <Box sx={{
-          mt: 1,
-          pt: 1.5,
-          borderTop: `1px solid ${colors.primary[500]}`,
-          color: colors.primary[100],
-        }}>
-          <Box sx={{
-            maxHeight: { xs: '180px', sm: '240px' },
-            overflowY: 'auto',
-            pr: 1,
-            fontSize: '0.95rem',
-            lineHeight: 1.5,
-            color: colors.grey[300],
-          }}>
+        <ChartUnderSection borderColor={colors.primary[500]} sx={{ color: colors.primary[100] }}>
+          <UnderChartScroll
+            maxHeight={{ xs: '180px', sm: '240px' }}
+            sx={{ color: colors.grey[300] }}
+          >
             {Object.entries(indicatorsForMode).map(([key, { label, color, description }]) => (
               (displayMode === 'tx-mvrv' ? (key === 'tx-count' || key === 'mvrv') :
                 key === 'ratio') && (
@@ -979,7 +966,11 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, isChartPage = false, txMvrvDa
                 <strong style={{ color: getOverboughtShadedColor() }}>Overbought Shaded Areas:</strong> Lightly shaded vertical areas highlighting periods when the MVRV/Tx ratio exceeds the overbought threshold, indicating potential overvaluation.
               </Typography>
             )}
-            <Typography component="p" className="chart-info" sx={{ mt: 1, color: colors.grey[300] }}>
+          </UnderChartScroll>
+
+          {/* Main long-form explanation - outside the scroll (always visible) and using the centralized ChartInfo / .chart-info for bigger/prominent text vs the small activetrends metas */}
+          <ChartInfo sx={{ mt: 1, color: colors.grey[300] }}>
+              <br />
               The Bitcoin Tx Count, Price & MVRV chart shows the {displayMode === 'tx-mvrv' ? `${smoothingMode === 'none' ? 'daily transaction count' : smoothingMode === 'ema-7' ? '7-day EMA' : smoothingMode === 'ema-28' ? '28-day EMA' : smoothingMode === 'sma-7' ? '7-day SMA' : '28-day SMA'} of transaction count and scaled MVRV` : `MVRV-to-transaction-count ratio${smoothingMode === 'none' ? '' : ` with ${smoothingMode === 'ema-7' || smoothingMode === 'ema-28' ? 'exponential' : 'simple'} moving average`}`} and Bitcoin price starting from October 21, 2014, illustrating network activity, price trends, and valuation. {displayMode === 'ratio' ? `The MVRV/Tx Ratio is the normalized MVRV divided by normalized transaction count, dynamically normalized to a rolling maximum and optionally smoothed with a moving average.${activeTrends.includes('bottom') ? ' The Bottom Indicator projects historical ratio lows forward.' : ''}${activeTrends.includes('threshold') ? ' The Overbought Threshold is a horizontal line near the historical max, signaling potential tops when breached.' : ''}` : 'MVRV is scaled by 100,000 to fit the linear axis.'}
               <br /><br />
               This chart shows the Bitcoin transaction count, Bitcoin price, MVRV ratio, or MVRV/Tx ratio, providing a snapshot of how Bitcoin’s network and value interact over time.
@@ -988,12 +979,8 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, isChartPage = false, txMvrvDa
               <br /><br />
               The MVRV/Tx ratio compares the MVRV to network activity. One interpretation of the spikes of this ratio is that the price has increased speculatively without corresponding network activity that would have led to a "natural" increase of value.
               There is currently a monotonically increasing trendline under the lows in the MVRV/Tx ratio that has held for 10 years and has indicated relatively low risk entry points.
-            </Typography>
-          </Box>
-          <Box sx={{ mt: 1.5 }}>
-            <BitcoinFees />
-          </Box>
-        </Box>
+          </ChartInfo>
+        </ChartUnderSection>
       )}
     </Box>
   );

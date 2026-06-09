@@ -7,6 +7,7 @@ import useIsMobile from '../hooks/useIsMobile';
 import { DataContext } from '../DataContext';
 import BitcoinFees from './BitcoinTransactionFees';
 import LastUpdated from '../hooks/LastUpdated';
+import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
 import logger from '../utils/logger';
 import ChartTooltip from './ChartTooltip';
 
@@ -333,27 +334,18 @@ const TotalMarketCap = ({ isDashboard = false }) => {
 )} />
         )}
       </div>
-      <div className="under-chart">
-        {!isDashboard && marketCapData.length > 0 && (
-          <div style={{ }}>
-            {!isDashboard && <LastUpdated customDate={marketCapLastUpdated} />}
-            {valuationDifference && (
-              <span
-                style={{
-                  paddingTop: '20px',
-                  fontSize: '1.3rem',
-                  color: valuationDifference.label === 'Overvaluation' ? '#ff0062' : colors.blueAccent[500],
-                  display: 'block',
-                  marginTop: '5px',
-                }}
-              >
-                {valuationDifference.label}: {valuationDifference.percentage} {valuationDifference.currentMarketCap}
-              </span>
-            )}
-          </div>
-        )}
+      <UnderChartRow>
+        {!isDashboard && marketCapData.length > 0 && <LastUpdated customDate={marketCapLastUpdated} />}
         {!isDashboard && <BitcoinFees />}
-      </div>
+      </UnderChartRow>
+
+      {!isDashboard && marketCapData.length > 0 && valuationDifference && (
+        <UnderChartValue>
+          <span style={{ fontSize: '1.15rem', color: colors.primary[100] }}>
+            {valuationDifference.label}: <b style={{ color: valuationDifference.label === 'Overvaluation' ? '#ff0062' : colors.greenAccent[500] }}>{valuationDifference.percentage}</b> {valuationDifference.currentMarketCap}
+          </span>
+        </UnderChartValue>
+      )}
 
       {!isDashboard && (
         <div className="chart-info">

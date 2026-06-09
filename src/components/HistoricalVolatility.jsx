@@ -5,6 +5,7 @@ import { useTheme, Box, FormControl, InputLabel, Select, MenuItem } from "@mui/m
 import '../styling/bitcoinChart.css';
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
+import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
 import BitcoinFees from './BitcoinTransactionFees';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
@@ -349,15 +350,17 @@ const BitcoinHistoricalVolatility = ({ isDashboard = false }) => {
 </>
 )} />
         )}</div>
-      <div className="under-chart">
+      <UnderChartRow>
         {!isDashboard && <LastUpdated storageKey="btcData" />}
         {!isDashboard && <BitcoinFees />}
-      </div>
+      </UnderChartRow>
       {!isDashboard && (
         <div>
-          <div style={{ display: 'inline-block', marginTop: '10px', fontSize: '1.2rem', color: colors.primary[100] }}>
-            Current {timeframe} Volatility: <b>{currentVolatility}</b>% (${currentBtcPrice.toFixed(0)}k)
-          </div>
+          <UnderChartValue>
+            <span style={{ fontSize: '1.15rem', color: colors.primary[100] }}>
+              Current {timeframe} Volatility: <b style={{ color: colors.greenAccent[500] }}>{currentVolatility}%</b> (<b style={{ color: colors.greenAccent[500] }}>${currentBtcPrice.toFixed(0)}k</b>)
+            </span>
+          </UnderChartValue>
           <p className="chart-info">
             The historical volatility is calculated as the annualized standard deviation of daily logarithmic returns over the selected timeframe, expressed as a percentage. Volatility data is only shown after the selected timeframe has passed from the start of the dataset. Select different timeframes to analyze volatility over various periods.
             The visual spikes in volatility indicate periods of significant price fluctuations, which can be useful for understanding market behavior and potential changes in price momentum after volatility peaks and changes direction.

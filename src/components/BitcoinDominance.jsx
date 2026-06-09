@@ -6,6 +6,7 @@ import { useTheme } from "@mui/material";
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
 import BitcoinFees from './BitcoinTransactionFees';
+import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
 import {
   Select,
   MenuItem,
@@ -540,51 +541,31 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
 )} />
         )}
       </div>
-      <div className='under-chart'>
-        {!isDashboard && smoothedDominanceData.length > 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <LastUpdated storageKey="dominanceData" />
-            {currentDominance && (
-              <span
-                style={{
-                  fontSize: '1.3rem',
-                  color: colors.blueAccent[500],
-                  display: 'block',
-                  marginTop: '1.1rem',
-                }}
-              >
-                Bitcoin Dominance: {currentDominance}%
-              </span>
-            )}
-            {showEthDominance && rawDominanceData.length > 0 && (
-              (() => {
-                const latestEthData = rawDominanceData
-                  .filter(item => item.eth > 0)
-                  .sort((a, b) => new Date(b.date || b.time) - new Date(a.date || a.time))[0];
-                const recentEthData = rawDominanceData
-                  .filter(item => item.eth > 0)
-                  .slice(-7)
-                  .reduce((sum, item) => sum + item.eth, 0) / 7;
-                return (
-                  <span
-                    style={{
-                      fontSize: '1.2rem',
-                      color: theme.palette.mode === 'dark' ? '#FF6B6B' : '#FF4757',
-                      display: 'block',
-                      fontWeight: 500,
-                    }}
-                  >
-                    Ethereum Dominance: {recentEthData.toFixed(2)}%
-                  </span>
-                );
-              })()
-            )}
-          </div>
-        )}
-        {!isDashboard && (
-          <BitcoinFees />
-        )}
-      </div>
+      <UnderChartRow>
+        {!isDashboard && smoothedDominanceData.length > 0 && <LastUpdated storageKey="dominanceData" />}
+        {!isDashboard && <BitcoinFees />}
+      </UnderChartRow>
+
+      {!isDashboard && smoothedDominanceData.length > 0 && currentDominance && (
+        <UnderChartValue>
+          <span style={{ fontSize: '1.15rem', color: colors.primary[100] }}>
+            Bitcoin Dominance: <b style={{ color: colors.greenAccent[500] }}>{currentDominance}%</b>
+          </span>
+          {showEthDominance && rawDominanceData.length > 0 && (
+            (() => {
+              const recentEthData = rawDominanceData
+                .filter(item => item.eth > 0)
+                .slice(-7)
+                .reduce((sum, item) => sum + item.eth, 0) / 7;
+              return (
+                <span style={{ fontSize: '1.05rem', color: colors.primary[100], marginLeft: 16 }}>
+                  Ethereum Dominance: <b style={{ color: theme.palette.mode === 'dark' ? '#FF6B6B' : '#FF4757' }}>{recentEthData.toFixed(2)}%</b>
+                </span>
+              );
+            })()
+          )}
+        </UnderChartValue>
+      )}
       {!isDashboard && (
         <div
           style={{

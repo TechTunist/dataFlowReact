@@ -5,6 +5,7 @@ import { useTheme } from "@mui/material";
 import '../styling/bitcoinChart.css';
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
+import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 
@@ -353,14 +354,16 @@ const EthereumRisk = ({ isDashboard = false, riskData: propRiskData }) => {
                     onDoubleClick={() => setInteractivity(!isInteractive && !isDashboard)}
                 />
             </div>
-            {!isDashboard && (
-                <LastUpdated storageKey="ethData" />
-            )}
+            <UnderChartRow>
+                {!isDashboard && <LastUpdated storageKey="ethData" />}
+            </UnderChartRow>
             <div>
                 {!isDashboard && (
-                    <div style={{ display: 'inline-block', marginTop: '10px', fontSize: '1.2rem' }}>
-                        Current Risk level: <b>{currentRiskLevel}</b> (${currentEthPrice.toFixed(2)})
-                    </div>
+                    <UnderChartValue>
+                      <span style={{ fontSize: '1.15rem', color: colors.primary[100] }}>
+                        Current Risk level: <b style={{ color: colors.greenAccent[500] }}>{currentRiskLevel}</b> (${currentEthPrice.toFixed(2)})
+                      </span>
+                    </UnderChartValue>
                 )}
                 <div className='simulator-container'>
                     {!isDashboard && (

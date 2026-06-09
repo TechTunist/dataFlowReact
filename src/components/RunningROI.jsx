@@ -6,6 +6,7 @@ import { useTheme, Box, FormControl, InputLabel, Select, MenuItem, Button } from
 import '../styling/bitcoinChart.css';
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
+import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
 import BitcoinFees from './BitcoinTransactionFees';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
@@ -516,15 +517,17 @@ const RunningROI = ({ isDashboard = false }) => {
 </>
 )} />
         )}</div>
-      <div className="under-chart">
+      <UnderChartRow>
         {!isDashboard && <LastUpdated storageKey={`${selectedAsset.toLowerCase()}Data`} />}
         {!isDashboard && selectedAsset === 'BTC' && <BitcoinFees />}
-      </div>
+      </UnderChartRow>
       {!isDashboard && (
         <div>
-          <div style={{ display: 'inline-block', marginTop: '10px', fontSize: '1.2rem', color: colors.primary[100] }}>
-            Current {timeframe} ROI: <b>{currentRoi}</b>x (${currentPrice.toFixed(0)}k)
-          </div>
+          <UnderChartValue>
+            <span style={{ fontSize: '1.15rem', color: colors.primary[100] }}>
+              Current {timeframe} ROI: <b style={{ color: colors.greenAccent[500] }}>{currentRoi}x</b> (<b>${currentPrice.toFixed(0)}k</b>)
+            </span>
+          </UnderChartValue>
           <p className="chart-info">
             The running ROI is calculated as the return on investment over the selected timeframe, showing the multiplicative change in {altcoins.find(asset => asset.value === selectedAsset)?.label} price from the start of the period to each day (e.g., 1x for no change, 2x for 100% increase, 0.5x for 50% decrease). ROI data is only shown after the selected timeframe has passed from the start of the dataset. Select different assets and timeframes to analyze ROI over various periods.
           </p>

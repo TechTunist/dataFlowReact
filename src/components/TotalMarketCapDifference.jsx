@@ -7,6 +7,7 @@ import useIsMobile from '../hooks/useIsMobile';
 import { DataContext } from '../DataContext';
 import BitcoinFees from './BitcoinTransactionFees';
 import LastUpdated from '../hooks/LastUpdated';
+import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
 import ChartTooltip from './ChartTooltip';
 
 const MarketCapDifference = ({ isDashboard = false }) => {
@@ -229,19 +230,18 @@ const MarketCapDifference = ({ isDashboard = false }) => {
       <div className="chart-container" style={{ position: 'relative', height: isDashboard ? '100%' : 'calc(100% - 40px)', width: '100%', border: '2px solid #a9a9a9' }}>
         <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} onDoubleClick={setInteractivityHandler} />
       </div>
-      <div className="under-chart">
-        {!isDashboard && differenceData.length > 0 && (
-          <div style={{ marginTop: '10px' }}>
-            <LastUpdated customDate={marketCapLastUpdated} />
-            {valuationDifference && (
-              <span style={{ fontSize: '1.3rem', color: valuationDifference.label === 'Overvaluation' ? '#ff0062' : colors.blueAccent[500], display: 'block', marginTop: '5px' }}>
-                {valuationDifference.label}: {valuationDifference.percentage}
-              </span>
-            )}
-          </div>
-        )}
+      <UnderChartRow>
+        {!isDashboard && differenceData.length > 0 && <LastUpdated customDate={marketCapLastUpdated} />}
         {!isDashboard && <BitcoinFees />}
-      </div>
+      </UnderChartRow>
+
+      {!isDashboard && differenceData.length > 0 && valuationDifference && (
+        <UnderChartValue>
+          <span style={{ fontSize: '1.15rem', color: colors.primary[100] }}>
+            {valuationDifference.label}: <b style={{ color: valuationDifference.label === 'Overvaluation' ? '#ff0062' : colors.greenAccent[500] }}>{valuationDifference.percentage}</b>
+          </span>
+        </UnderChartValue>
+      )}
       
       {!isDashboard && (
         <div className="chart-info">

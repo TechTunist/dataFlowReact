@@ -4,6 +4,7 @@ import { tokens } from "../theme";
 import { useTheme, Button, Box, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
 import '../styling/bitcoinChart.css';
 import LastUpdated from '../hooks/LastUpdated';
+import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
 import BitcoinFees from './BitcoinTransactionFees';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
@@ -560,15 +561,17 @@ const PuellMultiple = ({ isDashboard = false }) => {
 )} />
         )}
       </div>
-      <div className="under-chart">
+      <UnderChartRow>
         {!isDashboard && <LastUpdated customDate={lastUpdatedDate} />}
         {!isDashboard && <BitcoinFees />}
-      </div>
+      </UnderChartRow>
       {!isDashboard && (
         <div>
-          <div style={{ display: 'inline-block', marginTop: '10px', marginBottom: '10px', fontSize: '1.2rem', color: colors.primary[100] }}>
-            Current Puell Multiple: <b>{currentPuellMultiple}</b> (${currentBtcPrice.toFixed(0)}k)
-          </div>
+          <UnderChartValue>
+            <span style={{ fontSize: '1.15rem', color: colors.primary[100] }}>
+              Current Puell Multiple: <b style={{ color: colors.greenAccent[500] }}>{currentPuellMultiple}</b> ( <b>${currentBtcPrice.toFixed(0)}k</b> )
+            </span>
+          </UnderChartValue>
           {/* Show Normalized Puell description when active */}
           {showNormalizedPuell && (
             <div style={{ margin: '10px 0', color: colors.grey[100] }}>

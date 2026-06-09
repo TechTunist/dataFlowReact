@@ -7,6 +7,7 @@ import useIsMobile from '../hooks/useIsMobile';
 import { DataContext } from '../DataContext';
 import BitcoinFees from './BitcoinTransactionFees';
 import LastUpdated from '../hooks/LastUpdated';
+import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
 import ChartTooltip from './ChartTooltip';
 
 const Total3Chart = ({ isDashboard = false }) => {
@@ -338,27 +339,18 @@ const Total3Chart = ({ isDashboard = false }) => {
 )} />
         )}
       </div>
-      <div className="under-chart">
-        {!isDashboard && total3Data.length > 0 && (
-          <div style={{}}>
-            {!isDashboard && <LastUpdated customDate={total3LastUpdated} />}
-            {valuationDifference && (
-              <span
-                style={{
-                  paddingTop: '20px',
-                  fontSize: '1.3rem',
-                  color: valuationDifference.label === 'Overvaluation' ? '#ff0062' : colors.blueAccent[500],
-                  display: 'block',
-                  marginTop: '5px',
-                }}
-              >
-                {valuationDifference.label}: {valuationDifference.percentage} {valuationDifference.currentTotal3}
-              </span>
-            )}
-          </div>
-        )}
+      <UnderChartRow>
+        {!isDashboard && total3Data.length > 0 && <LastUpdated customDate={total3LastUpdated} />}
         {!isDashboard && <BitcoinFees />}
-      </div>
+      </UnderChartRow>
+
+      {!isDashboard && total3Data.length > 0 && valuationDifference && (
+        <UnderChartValue>
+          <span style={{ fontSize: '1.15rem', color: colors.primary[100] }}>
+            {valuationDifference.label}: <b style={{ color: valuationDifference.label === 'Overvaluation' ? '#ff0062' : colors.greenAccent[500] }}>{valuationDifference.percentage}</b> {valuationDifference.currentTotal3}
+          </span>
+        </UnderChartValue>
+      )}
 
       {!isDashboard && (
         <div className="chart-info">

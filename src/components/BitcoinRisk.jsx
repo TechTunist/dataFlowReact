@@ -6,6 +6,7 @@ import '../styling/bitcoinChart.css';
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
 import BitcoinFees from './BitcoinTransactionFees';
+import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import { saveBitcoinRisk } from '../utility/idbUtils';
@@ -602,20 +603,18 @@ const BitcoinRisk = ({ isDashboard = false, isChartPage = false, riskData: propR
         />
       </div>
 
-      <div className='under-chart'>
-        {!isDashboard && (
-          <LastUpdated storageKey="btcData" />
-        )}
-        {!isDashboard && (
-          <BitcoinFees />
-        )}
-      </div>
+      <UnderChartRow>
+        {!isDashboard && <LastUpdated storageKey="btcData" />}
+        {!isDashboard && <BitcoinFees />}
+      </UnderChartRow>
 
       {!isDashboard && (
         <>
-          <div style={{ display: 'inline-block', marginTop: '10px', fontSize: '1.2rem', color: colors.primary[100] }}>
-            Current Risk level: <b>{currentRiskLevel}</b> (${currentBtcPrice.toFixed(0)}k)
-          </div>
+          <UnderChartValue>
+            <span style={{ fontSize: '1.15rem', color: colors.primary[100] }}>
+              Current Risk level: <b style={{ color: colors.greenAccent[500] }}>{currentRiskLevel}</b> (${currentBtcPrice.toFixed(0)}k)
+            </span>
+          </UnderChartValue>
           <p className='chart-info'>
             The risk metric assesses Bitcoin's investment risk over time by comparing its daily prices to a 374-day moving average, incorporating a factor that accounts for sustained periods above the moving average. It calculates a normalized score between 0 and 1, where a higher score indicates higher risk, particularly after prolonged bull markets amplified by higher price levels. A lower score indicates lower risk. This method provides a view of when it might be riskier or safer to invest in Bitcoin based on historical price movements and market maturity.
           </p>

@@ -5,6 +5,7 @@ import { useTheme, Select, MenuItem, FormControl, InputLabel, Box, Typography } 
 import '../styling/bitcoinChart.css';
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
+import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import ChartTooltip from './ChartTooltip';
@@ -539,16 +540,16 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
           </Typography>
         )}
       </div>
-      {!isDashboard && (
-        <div className="under-chart">
-          <LastUpdated customDate={lastUpdatedTime} />
-        </div>
-      )}
+      <UnderChartRow>
+        {!isDashboard && <LastUpdated customDate={lastUpdatedTime} />}
+      </UnderChartRow>
       {!isDashboard && (
         <div style={{ paddingBottom: '20px' }}>
-          <div style={{ display: 'inline-block', marginTop: '10px', fontSize: '1.2rem', color: colors.primary[100] }}>
-            Current {metricLabels[selectedMetric]}: <b>{currentRiskLevel}</b> (${currentBtcPrice}k)
-          </div>
+          <UnderChartValue>
+            <span style={{ fontSize: '1.15rem', color: colors.primary[100] }}>
+              Current {metricLabels[selectedMetric]}: <b style={{ color: colors.greenAccent[500] }}>{currentRiskLevel}</b> (${currentBtcPrice}k)
+            </span>
+          </UnderChartValue>
           <p style={{ color: colors.primary[100] }}>(data typically lags by 1 day)</p>
           <p
             className="chart-info"

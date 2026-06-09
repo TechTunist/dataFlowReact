@@ -5,6 +5,7 @@ import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
+import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
 import { Select, MenuItem, FormControl, InputLabel, Box } from '@mui/material';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
@@ -357,16 +358,16 @@ const AltcoinRisk = ({ isDashboard = false }) => {
           </div>
         )}
       </div>
-      {!isDashboard && (
-        <div className="under-chart">
-          <LastUpdated storageKey={`${selectedCoin.toLowerCase()}Data`} />
-        </div>
-      )}
+      <UnderChartRow>
+        {!isDashboard && <LastUpdated storageKey={`${selectedCoin.toLowerCase()}Data`} />}
+      </UnderChartRow>
       {!isDashboard && (
         <div style={{ paddingBottom: '20px' }}>
-          <div style={{ display: 'inline-block', marginTop: '10px', fontSize: '1.2rem', color: colors.primary[100] }}>
-            Current Risk level: <b>{currentRiskLevel}</b> ({denominator === 'BTC' ? '₿' : '$'}{currentAltcoinPrice})
-          </div>
+          <UnderChartValue>
+            <span style={{ fontSize: '1.15rem', color: colors.primary[100] }}>
+              Current Risk level: <b style={{ color: colors.greenAccent[500] }}>{currentRiskLevel}</b> ({denominator === 'BTC' ? '₿' : '$'}{currentAltcoinPrice})
+            </span>
+          </UnderChartValue>
           <p className='chart-info'>
             The altcoin market is the wild-west of the crypto world. This asset class faces regulatory uncertainty, scams perpetuated by bad actors,
             extreme volatility and the tendency to lose anywhere between 70-99% of a token's value in a bear market, with no guarantee that the price will ever recover.

@@ -346,12 +346,89 @@ input:checked + .slider:before {
     gap: 10px;
 }
 
+/* =========================================================
+   Under-chart written sections (standardized)
+   - Use these classes for consistency across all chart pages.
+   - Edit here to globally adjust font sizes, spacing, line-heights
+     for last-updated rows, current-value callouts, meta lists,
+     scrollable descriptions, and the main explanatory text.
+   ========================================================= */
+
+/* Row directly under the chart canvas for Last Updated (left) and
+   compact side elements (e.g. BTC fees). Mimics space-between. */
+.under-chart-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-top: 4px;
+  margin-bottom: 8px;
+  padding-left: 4px;
+  padding-right: 4px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* The bordered container that holds values + scrollable meta + main info text.
+   Border color is driven by --under-chart-border CSS var (set from theme in component)
+   so you can tweak the var once or override per chart. */
+.under-chart-section {
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--under-chart-border, #555);
+  color: inherit;
+}
+
+/* Prominent "Current X: 42.3" style value display (mimic Market Heat Index).
+   Place this inside .under-chart-section, before the scroll area. */
+.under-chart-value {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+/* Scrollable container for small explanatory text:
+   - indicator/series legends
+   - active trends or factor descriptions
+   - short per-item explanations
+   Font size and line height are centralized here. */
+.under-chart-scroll {
+  max-height: 180px;
+  overflow-y: auto;
+  padding-right: 4px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: inherit;
+}
+
+.under-chart-scroll p {
+  margin: 4px 0;
+}
+
+/* The main long-form explanatory paragraph under charts.
+   This should be more prominent (larger) than the small meta text
+   in .under-chart-scroll or active-trend lists. */
+.chart-info {
+  font-size: 1.1rem;
+  line-height: 1.45;
+  margin-top: 12px;
+  margin-bottom: 4px;
+}
+
+/* Older alias / fallback for components still using the old class on a wrapper div.
+   Kept for backward compat; prefer .under-chart-row + .under-chart-section. */
 .under-chart {
-    display: flex;
-    justify-content: space-between;
-    width: 100%;
-    padding: '10px 0';
-    padding-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-top: 4px;
+  margin-bottom: 8px;
+  padding: 4px 4px 0;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 

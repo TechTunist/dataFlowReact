@@ -8,6 +8,7 @@ import LastUpdated from '../hooks/LastUpdated';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import logger from '../utils/logger';
+import { UnderChartRow, ChartUnderSection, UnderChartValue, UnderChartScroll } from './ChartUnderSection';
 
 import { useAuth, useUser } from '@clerk/clerk-react';
 import { apiUrl } from '../config/api';
@@ -1107,34 +1108,18 @@ const MarketHeatIndex = ({ isDashboard = false, isChartPage = false }) => {
         )}
       </div>
 
-      {/* Last Updated - directly under chart, left aligned with chart edge */}
+      {/* Last Updated row (standardized via ChartUnderSection) */}
       {!isDashboard && (
-        <Box sx={{ 
-          display: "flex", 
-          justifyContent: "flex-start", 
-          mt: 0.5, 
-          mb: 1,
-          pl: 0.5 
-        }}>
+        <UnderChartRow style={{ justifyContent: 'flex-start' }}>
           <LastUpdated storageKey="btcData" />
-        </Box>
+        </UnderChartRow>
       )}
 
-      {/* Lower content area - always inside the card */}
+      {/* Lower content area - always inside the card (standardized) */}
       {!isDashboard && (
-        <Box sx={{
-          mt: 1,
-          pt: 1.5,
-          borderTop: `1px solid ${colors.primary[500]}`,
-          color: colors.primary[100],
-        }}>
-          <div style={{ 
-            display: "flex", 
-            alignItems: "center", 
-            gap: "12px",
-            flexWrap: "wrap",
-            marginBottom: "8px"
-          }}>
+        <ChartUnderSection borderColor={colors.primary[500]} sx={{ color: colors.primary[100] }}>
+          {/* Current value callout - the reference pattern to mimic for "value under the chart" */}
+          <UnderChartValue>
             <Typography variant="h6" sx={{ color: colors.primary[100], fontSize: "1.1rem" }}>
               Current Heat Index (plotted):{' '}
               <b style={{
@@ -1150,19 +1135,15 @@ const MarketHeatIndex = ({ isDashboard = false, isChartPage = false }) => {
                 (raw range min {heatStats.min} / max {heatStats.max})
               </Typography>
             )}
-          </div>
+          </UnderChartValue>
 
-          <Box sx={{ 
-            maxHeight: { xs: "140px", sm: "180px" }, 
-            overflowY: "auto", 
-            pr: 1,
-            fontSize: "0.95rem",
-            lineHeight: 1.5,
-            color: colors.grey[300]
-          }}>
+          <UnderChartScroll
+            maxHeight={{ xs: "140px", sm: "180px" }}
+            sx={{ color: colors.grey[300] }}
+          >
             The Market Heat Index combines multiple indicators (MVRV, Mayer Multiple, Risk, Fear and Greed, PiCycle, Alt Season, MVRV/Tx Ratio) using live-adjustable weights (see panel above). MVRV/Tx ratio is included as a heat factor (higher values signal potential overvaluation). Use the weight sliders + "Stretch observed range" to explore balances that produce fuller 0-100 excursions (the natural composite often compresses e.g. ~8–81). Threshold lines are also draggable. Core indicators (MVRV + derived Mayer/Risk/PiCycle) extend back to ~2011; F&G and Alt Season contribute from 2018 onward (and TxMVRV from 2014). When an indicator lacks data for a period its weight is excluded and the remaining active weights are renormalized. Bitcoin price overlay for reference. Experiment to find the most useful signal. MVRV/Tx values are dynamically min-max normalized to 0-100 heat contribution.
-          </Box>
-        </Box>
+          </UnderChartScroll>
+        </ChartUnderSection>
       )}
     </Box>
   );

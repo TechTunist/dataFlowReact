@@ -7,6 +7,7 @@ import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
 import BitcoinFees from './BitcoinTransactionFees';
 import { Box, useMediaQuery } from '@mui/material';
+import { UnderChartRow } from './ChartUnderSection';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import ChartTooltip from './ChartTooltip';
@@ -308,12 +309,12 @@ const BitcoinMvrvZScoreChart = ({ isDashboard = false, txMvrvData: propTxMvrvDat
 </>
 )} />
         )}</div>
-      <div className='under-chart'>
+      <UnderChartRow>
         {!isDashboard && (
           <LastUpdated customDate={txMvrvLastUpdated} />
         )}
         {!isDashboard && <BitcoinFees />}
-      </div>
+      </UnderChartRow>
       {!isDashboard && (
         <Box sx={{ margin: '10px 0', color: colors.grey[100] }}>
           {Object.entries(indicators).filter(([key]) => key === 'z-score').map(([key, { label, color, description }]) => (

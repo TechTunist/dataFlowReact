@@ -82,12 +82,11 @@ const BitcoinFees = () => {
     const averageFee = (calculateFeeInUsd(fees.regular) + calculateFeeInUsd(fees.priority)) / 2;
 
     return (
-        <div>
-            {/* <p style={{ marginBottom: '0', color: colors.greenAccent[500]}}>BTC Transaction Fee provided by <a href="https://www.coingecko.com/en/api" target="_blank" rel="noopener noreferrer">CoinGecko</a>: ~${averageFee.toFixed(2)}</p> */}
-            <p style={{ marginBottom: '0', color: colors.greenAccent[500]}}>BTC Transaction Fee: ~${averageFee.toFixed(2)}</p>
-            {/* <div>(Provided by <a href="https://www.coingecko.com/en/api" target="_blank" rel="noopener noreferrer">CoinGecko)</a></div> */}
+        <div className="under-chart-fee" style={{ display: 'inline-flex', alignItems: 'center' }}>
+            <p style={{ marginBottom: 0, color: colors.greenAccent[500], fontSize: '0.95rem' }}>
+                BTC Transaction Fee: ~${averageFee.toFixed(2)}
+            </p>
         </div>
-        
     );
 };
 

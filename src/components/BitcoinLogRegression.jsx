@@ -5,6 +5,7 @@ import { tokens } from "../theme";
 import { useTheme, useMediaQuery } from "@mui/material";
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
+import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
 import BitcoinFees from './BitcoinTransactionFees';
 import { DataContext } from '../DataContext';
 import ChartTooltip from './ChartTooltip';
@@ -408,28 +409,18 @@ const BitcoinLogRegression = ({ isDashboard = false, priceData: propPriceData })
 )} />
         )}</div>
 
-      <div className='under-chart'>
-        {!isDashboard && (
-          <div style={{ marginTop: '10px' }}>
-            <LastUpdated storageKey="btcData" />
-            {valuationDifference && (
-              <span
-                style={{
-                  fontSize: '1.3rem',
-                  color: valuationDifference.label === 'Overvaluation' ? '#ff0062' : colors.blueAccent[500],
-                  display: 'block',
-                  marginTop: '5px',
-                }}
-              >
-                {valuationDifference.label}: {valuationDifference.percentage}
-              </span>
-            )}
-          </div>
-        )}
-        {!isDashboard && (
-          <BitcoinFees />
-        )}
-      </div>
+      <UnderChartRow>
+        {!isDashboard && <LastUpdated storageKey="btcData" />}
+        {!isDashboard && <BitcoinFees />}
+      </UnderChartRow>
+
+      {!isDashboard && valuationDifference && (
+        <UnderChartValue>
+          <span style={{ fontSize: '1.15rem', color: colors.primary[100] }}>
+            {valuationDifference.label}: <b style={{ color: valuationDifference.label === 'Overvaluation' ? '#ff0062' : colors.greenAccent[500] }}>{valuationDifference.percentage}</b>
+          </span>
+        </UnderChartValue>
+      )}
 
       
 

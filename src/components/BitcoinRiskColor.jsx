@@ -6,6 +6,7 @@ import { Box, FormControl, InputLabel, Select, MenuItem, useMediaQuery } from '@
 import '../styling/bitcoinChart.css';
 import LastUpdated from '../hooks/LastUpdated';
 import BitcoinFees from './BitcoinTransactionFees';
+import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import { calculateRiskMetric } from '../utility/riskMetric';
@@ -453,22 +454,24 @@ const BitcoinRiskColor = ({ isDashboard = false, riskData: propRiskData }) => {
           onDoubleClick={resetChartView}
         />
       </div>
-      <div className='under-chart'>
+      <UnderChartRow>
         {!isDashboard && <LastUpdated storageKey={`${selectedAsset.toLowerCase()}Data`} />}
         {!isDashboard && selectedAsset === 'BTC' && <BitcoinFees />}
-      </div>
+      </UnderChartRow>
       {!isDashboard && (
-        <p
-          className='current-risk'
-          style={{
-            fontSize: '1.3rem',
-            color: colors.primary[100],
-            display: 'block',
-            marginTop: '5px',
-          }}
-        >
-          Current Risk: {currentRisk !== null ? currentRisk.toFixed(2) : 'Loading...'}
-        </p>
+        <UnderChartValue>
+          <p
+            className='current-risk'
+            style={{
+              fontSize: '1.15rem',
+              color: colors.primary[100],
+              display: 'block',
+              margin: 0,
+            }}
+          >
+            Current Risk: <b style={{ color: colors.greenAccent[500] }}>{currentRisk !== null ? currentRisk.toFixed(2) : 'Loading...'}</b>
+          </p>
+        </UnderChartValue>
       )}
       {!isDashboard && (
         <div>

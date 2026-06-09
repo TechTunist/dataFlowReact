@@ -5,6 +5,7 @@ import { useTheme, useMediaQuery } from "@mui/material";
 import '../styling/bitcoinChart.css';
 import LastUpdated from '../hooks/LastUpdated';
 import BitcoinFees from './BitcoinTransactionFees';
+import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
 import useIsMobile from '../hooks/useIsMobile';
 import { DataContext } from '../DataContext';
 import { Box, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
@@ -456,14 +457,16 @@ const AssetRiskBandDuration = ({ isDashboard = false, riskData: propRiskData }) 
           onRelayout={handleRelayout}
         />
       </div>
-      <div className='under-chart'>
+      <UnderChartRow>
         {!isDashboard && <LastUpdated storageKey={`${selectedAsset.toLowerCase()}Data`} />}
         {!isDashboard && selectedAsset === 'BTC' && <BitcoinFees />}
-      </div>
+      </UnderChartRow>
       {!isDashboard && (
-        <div style={{ display: 'inline-block', marginTop: '10px', fontSize: '1.2rem', color: colors.primary[100] }}>
-          Current Risk Level: <b>{currentRiskLevel !== null ? currentRiskLevel : 'Loading...'}</b>
-        </div>
+        <UnderChartValue>
+          <span style={{ fontSize: '1.15rem', color: colors.primary[100] }}>
+            Current Risk Level: <b style={{ color: colors.greenAccent[500] }}>{currentRiskLevel !== null ? currentRiskLevel : 'Loading...'}</b>
+          </span>
+        </UnderChartValue>
       )}
       {!isDashboard && (
         <div>
