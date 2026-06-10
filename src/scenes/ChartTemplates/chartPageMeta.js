@@ -86,6 +86,7 @@ export const routeToChartId = {
   "/btc-mvrv-z": "mvrv-zscore",
   "/tail-curvature": "tail-curvature",
   "/market-heat-index": "market-heat-index",
+  "/dynamic-dca": "dynamic-dca",
 };
 
 export const isChartPageRoute = (pathname) => Boolean(routeToChartId[pathname]);
@@ -267,6 +268,8 @@ export const getTitleAndSubtitle = (pathname, isMobile = false) => {
       return { title: "Total3", subtitle: "Total Crypto Market Cap Minus BTC & ETH" };
     case "/tail-curvature":
       return { title: "Tail Curvature", subtitle: isMobile ? "Asymmetric Quantiles" : "Asymmetric Tail Curvature in Bitcoin Price Quantiles — Cowen (2026)" };
+    case "/dynamic-dca":
+      return { title: "Dynamic DCA Simulator", subtitle: isMobile ? "Risk & Tx backtesting" : "Compare dynamic DCA vs lump sum using Risk Metric or Tx Tension" };
     default:
       return { title: "CryptoLogical", subtitle: "" };
   }
