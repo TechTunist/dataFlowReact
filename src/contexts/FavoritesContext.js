@@ -1,6 +1,7 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth, useUser } from '@clerk/clerk-react';
-import { API_BASE_URL, apiUrl } from '../config/api';
+import { apiUrl } from '../config/api';
+import { getClerkToken } from '../utils/clerkAuth';
 
 export const FavoritesContext = createContext({
   favoriteCharts: [],
@@ -12,18 +13,25 @@ export const FavoritesContext = createContext({
 });
 
 export const FavoritesProvider = ({ children }) => {
-  const { isSignedIn, getToken } = useAuth();
+  const { isSignedIn, isLoaded } = useAuth();
   const { user } = useUser();
+  const userId = user?.id ?? null;
   const [favoriteCharts, setFavoriteCharts] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const hasFetchedRef = useRef(false);
 
   const fetchFavorites = useCallback(async () => {
-    if (!isSignedIn || !user) return;
-    setLoading(true);
+    if (!isSignedIn || !userId) return;
+
+    const isInitialFetch = !hasFetchedRef.current;
+    if (isInitialFetch) {
+      setLoading(true);
+    }
     setError('');
+
     try {
-      const token = await getToken();
+      const token = await getClerkToken();
       if (!token) {
         throw new Error('Failed to obtain authentication token');
       }
@@ -37,17 +45,25 @@ export const FavoritesProvider = ({ children }) => {
         throw new Error(errorData.error || 'Failed to fetch favorite charts');
       }
       const data = await response.json();
-      setFavoriteCharts(data.favoriteCharts || []);
+      const nextFavorites = data.favoriteCharts || [];
+      setFavoriteCharts((prev) => (
+        prev.length === nextFavorites.length && prev.every((id, index) => id === nextFavorites[index])
+          ? prev
+          : nextFavorites
+      ));
+      hasFetchedRef.current = true;
     } catch (err) {
       setError(`Failed to fetch favorite charts: ${err.message}`);
       console.error('Fetch favorites error:', err.message);
     } finally {
-      setLoading(false);
+      if (isInitialFetch) {
+        setLoading(false);
+      }
     }
-  }, [isSignedIn, user, getToken]);
+  }, [isSignedIn, userId]);
 
   const addFavoriteChart = useCallback(async (chartId) => {
-    if (!isSignedIn || !user) {
+    if (!isSignedIn || !userId) {
       setError('Please sign in to add favorite charts.');
       return;
     }
@@ -59,7 +75,7 @@ export const FavoritesProvider = ({ children }) => {
     setLoading(true);
     setError('');
     try {
-      const token = await getToken({ forceRefreshToken: true });
+      const token = await getClerkToken();
       if (!token) {
         throw new Error('Failed to obtain authentication token');
       }
@@ -86,10 +102,10 @@ export const FavoritesProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [isSignedIn, user, getToken]);
+  }, [isSignedIn, userId]);
 
   const removeFavoriteChart = useCallback(async (chartId) => {
-    if (!isSignedIn || !user) {
+    if (!isSignedIn || !userId) {
       setError('Please sign in to remove favorite charts.');
       return;
     }
@@ -98,7 +114,7 @@ export const FavoritesProvider = ({ children }) => {
     setLoading(true);
     setError('');
     try {
-      const token = await getToken({ forceRefreshToken: true });
+      const token = await getClerkToken();
       if (!token) {
         throw new Error('Failed to obtain authentication token');
       }
@@ -125,15 +141,24 @@ export const FavoritesProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [isSignedIn, user, getToken]);
+  }, [isSignedIn, userId]);
 
   const clearError = useCallback(() => {
     setError('');
   }, []);
 
   useEffect(() => {
+    if (!isLoaded) return;
+
+    if (!isSignedIn || !userId) {
+      hasFetchedRef.current = false;
+      setFavoriteCharts([]);
+      setLoading(false);
+      return;
+    }
+
     fetchFavorites();
-  }, [fetchFavorites]);
+  }, [isLoaded, isSignedIn, userId, fetchFavorites]);
 
   return (
     <FavoritesContext.Provider value={{ favoriteCharts, addFavoriteChart, removeFavoriteChart, error, loading, clearError }}>

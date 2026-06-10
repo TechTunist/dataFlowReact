@@ -27,7 +27,7 @@ const RestrictedComponent = memo(
         </Box>
       );
     }
-    if (loading) {
+    if (loading && !subscriptionStatus) {
       return (
         <Box sx={{ padding: '20px', textAlign: 'center' }}>
           <Typography variant="h5" sx={{ color: colors.grey[100] }}>

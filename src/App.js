@@ -2,7 +2,7 @@ import { useState, useEffect, createContext, memo, Suspense, lazy } from "react"
 import ErrorBoundary from "./components/ErrorBoundary";
 import LoadingFallback from "./components/LoadingFallback";
 import { Routes, Route, useLocation, Navigate } from "react-router-dom";
-import { ClerkProvider, useAuth, useUser, useClerk } from "@clerk/clerk-react";
+import { ClerkProvider, useAuth } from "@clerk/clerk-react";
 import Topbar from "./scenes/global/Topbar";
 import { isChartPageRoute } from "./scenes/ChartTemplates/chartPageMeta";
 import MenuOutlinedIcon from "@mui/icons-material/MenuOutlined";
@@ -269,14 +269,18 @@ const AuthWrapper = memo(() => {
   // Hooks must always be called unconditionally (top of component, same order every render)
   // to satisfy react-hooks/rules-of-hooks. We call them first, then decide what to render.
   const { isLoaded, isSignedIn } = useAuth();
-  const clerk = useClerk();
   const location = useLocation();
 
-  // Register token getter as early as possible (even before SubscriptionProvider) so that
-  // DataContext preload / first fetches can attach JWT reliably and populate IndexedDB cache.
-  if (clerk?.session) {
-    setClerkTokenGetter(() => clerk.session.getToken());
-  }
+  // Register token getter once on mount (reads live Clerk session each call).
+  useEffect(() => {
+    if (DEV_BYPASS_AUTH) return;
+    setClerkTokenGetter(async () => {
+      if (window.Clerk?.session) {
+        return window.Clerk.session.getToken();
+      }
+      return null;
+    });
+  }, []);
 
   if (DEV_BYPASS_AUTH) {
     // Dev escape hatch: run the entire app (including all protected charts)

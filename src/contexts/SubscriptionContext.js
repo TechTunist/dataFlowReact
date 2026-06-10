@@ -1,8 +1,15 @@
 // src/contexts/SubscriptionContext.js
-import React, { createContext, useState, useEffect, useCallback, useContext, useMemo } from 'react';
-import { useUser, useAuth, useClerk } from '@clerk/clerk-react';
+import React, { createContext, useState, useEffect, useCallback, useContext, useMemo, useRef } from 'react';
+import { useUser, useAuth } from '@clerk/clerk-react';
 import { apiUrl } from '../config/api';
-import { setClerkTokenGetter } from '../utils/clerkAuth';
+import { setClerkTokenGetter, getClerkToken } from '../utils/clerkAuth';
+
+const readClerkSessionToken = async () => {
+  if (window.Clerk?.session) {
+    return window.Clerk.session.getToken();
+  }
+  return null;
+};
 
 const DEV_BYPASS_AUTH = process.env.REACT_APP_DEV_BYPASS_AUTH === 'true';
 
@@ -14,52 +21,70 @@ const DEFAULT_FREE_FEATURES = {
   custom_indicators: false,
 };
 
+const normalizeSubscriptionStatus = (data) => ({
+  plan: data.plan || 'Free',
+  subscription_status: data.subscription_status || 'free',
+  current_period_end: data.current_period_end ? new Date(data.current_period_end) : null,
+  features: data.features && typeof data.features === 'object' ? data.features : DEFAULT_FREE_FEATURES,
+  access: data.access || 'Limited',
+});
+
+const subscriptionStatusesEqual = (a, b) => {
+  if (!a || !b) return a === b;
+  return (
+    a.plan === b.plan
+    && a.subscription_status === b.subscription_status
+    && a.access === b.access
+    && (a.current_period_end?.getTime() ?? null) === (b.current_period_end?.getTime() ?? null)
+    && JSON.stringify(a.features) === JSON.stringify(b.features)
+  );
+};
+
 export const SubscriptionProvider = ({ children }) => {
   const { user, isSignedIn } = useUser();
-  const { getToken } = useAuth();
-  const clerk = useClerk();
+  const { isLoaded } = useAuth();
+  const userId = user?.id ?? null;
 
   // All hooks must be called unconditionally and in the same order on every render.
   // This is required by react-hooks/rules-of-hooks.
 
-  // Register a robust token getter as soon as Clerk is available.
-  // We prefer using the Clerk instance directly for better reliability
-  // in non-component code (DataContext, etc.).
+  // Register once — always reads the live Clerk session (avoids refetch storms when
+  // Clerk "touch" updates hook object identities without changing the signed-in user).
   useEffect(() => {
-    if (DEV_BYPASS_AUTH) return; // dev bypass: do nothing
-
-    if (clerk?.session) {
-      // Register a getter that uses the Clerk instance (most reliable)
-      setClerkTokenGetter(() => clerk.session.getToken());
-    } else if (getToken) {
-      // Fallback to useAuth's getToken if Clerk instance isn't ready yet
-      setClerkTokenGetter(getToken);
-    }
-  }, [clerk, getToken]);
+    if (DEV_BYPASS_AUTH) return;
+    setClerkTokenGetter(readClerkSessionToken);
+  }, []);
 
   const [subscriptionStatus, setSubscriptionStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const hasFetchedRef = useRef(false);
 
   const fetchSubscriptionStatus = useCallback(async () => {
-    if (DEV_BYPASS_AUTH) return; // dev bypass: no-op
+    if (DEV_BYPASS_AUTH) return;
 
-    if (!isSignedIn || !user) {
+    if (!isSignedIn || !userId) {
+      hasFetchedRef.current = false;
       setError('Please sign in to view this chart.');
       setLoading(false);
       return;
     }
-    setLoading(true);
+
+    const isInitialFetch = !hasFetchedRef.current;
+    if (isInitialFetch) {
+      setLoading(true);
+    }
     setError('');
+
     try {
-      const token = await getToken();
+      const token = await getClerkToken();
       if (!token) {
         throw new Error('Failed to obtain authentication token');
       }
-      const response = await fetch(apiUrl('/api/subscription-status/'), {  // Cache-bust removed in favor of proper headers later
+      const response = await fetch(apiUrl('/api/subscription-status/'), {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       });
@@ -68,31 +93,45 @@ export const SubscriptionProvider = ({ children }) => {
         throw new Error(`HTTP error! status: ${response.status}, message: ${errorData.error || 'Unknown error'}`);
       }
       const data = await response.json();
-      setSubscriptionStatus({
-        plan: data.plan || 'Free',
-        subscription_status: data.subscription_status || 'free',
-        current_period_end: data.current_period_end ? new Date(data.current_period_end) : null,
-        features: data.features && typeof data.features === 'object' ? data.features : DEFAULT_FREE_FEATURES,
-        access: data.access || 'Limited',  // Explicitly include access
-      });
+      const nextStatus = normalizeSubscriptionStatus(data);
+      setSubscriptionStatus((prev) => (
+        subscriptionStatusesEqual(prev, nextStatus) ? prev : nextStatus
+      ));
+      hasFetchedRef.current = true;
     } catch (err) {
       setError(`Failed to fetch subscription status: ${err.message}`);
-      setSubscriptionStatus({
+      const fallbackStatus = normalizeSubscriptionStatus({
         plan: 'Free',
         subscription_status: 'free',
         current_period_end: null,
         features: DEFAULT_FREE_FEATURES,
-        access: 'Limited',  // Ensure default includes access
+        access: 'Limited',
       });
+      setSubscriptionStatus((prev) => (
+        subscriptionStatusesEqual(prev, fallbackStatus) ? prev : fallbackStatus
+      ));
+      hasFetchedRef.current = true;
     } finally {
-      setLoading(false);
+      if (isInitialFetch) {
+        setLoading(false);
+      }
     }
-  }, [isSignedIn, user, getToken, DEV_BYPASS_AUTH]);
+  }, [isSignedIn, userId]);
 
   useEffect(() => {
-    if (DEV_BYPASS_AUTH) return; // dev bypass: do nothing
+    if (DEV_BYPASS_AUTH) return;
+    if (!isLoaded) return;
+
+    if (!isSignedIn || !userId) {
+      hasFetchedRef.current = false;
+      setSubscriptionStatus(null);
+      setLoading(false);
+      setError('');
+      return;
+    }
+
     fetchSubscriptionStatus();
-  }, [fetchSubscriptionStatus]);
+  }, [isLoaded, isSignedIn, userId, fetchSubscriptionStatus]);
 
   // Memoize the context value to prevent unnecessary rerenders
   const contextValue = useMemo(

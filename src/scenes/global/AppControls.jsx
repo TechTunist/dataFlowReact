@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect } from "react";
+import React, { useContext, useState } from "react";
 import {
   Box,
   IconButton,
@@ -24,8 +24,8 @@ import StarBorderIcon from "@mui/icons-material/StarBorder";
 import StarIcon from "@mui/icons-material/Star";
 import { useClerk, useUser } from "@clerk/clerk-react";
 import { ColorModeContext, tokens } from "../../theme";
-import { apiUrl } from "../../config/api";
 import { useFavorites } from "../../contexts/FavoritesContext";
+import { useSubscription } from "../../contexts/SubscriptionContext";
 
 const AppControls = ({
   showAbout = true,
@@ -40,35 +40,12 @@ const AppControls = ({
   const colors = tokens(theme.palette.mode);
   const colorMode = useContext(ColorModeContext);
   const navigate = useNavigate();
-  const { user, isSignedIn } = useUser();
+  const { user } = useUser();
   const { signOut } = useClerk();
   const { error, clearError } = useFavorites();
+  const { subscriptionStatus } = useSubscription();
   const [anchorEl, setAnchorEl] = useState(null);
-  const [userPlan, setUserPlan] = useState("Free");
-
-  useEffect(() => {
-    if (isSignedIn && user) {
-      const fetchSubscriptionStatus = async () => {
-        try {
-          const token = await user.getToken();
-          const response = await fetch(apiUrl("/api/subscription-status/"), {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          });
-          if (!response.ok) throw new Error("Failed to fetch subscription status");
-          const data = await response.json();
-          setUserPlan(data.plan || "Free");
-        } catch (err) {
-          console.error("Error fetching subscription status:", err);
-          setUserPlan("Free");
-        }
-      };
-      fetchSubscriptionStatus();
-    }
-  }, [isSignedIn, user]);
+  const userPlan = subscriptionStatus?.plan || "Free";
 
   return (
     <>
