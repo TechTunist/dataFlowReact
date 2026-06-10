@@ -85,7 +85,11 @@ const Item = ({ title, to, icon, isNested, onClick, isProminent = false }) => {
     <MenuItem
       active={isActive}
       style={{
-        color: isProminent ? colors.greenAccent[500] : colors.grey[100],
+        color: isActive
+          ? colors.greenAccent[500]
+          : isProminent
+            ? colors.greenAccent[500]
+            : colors.grey[100],
         padding: '5px 0px 5px 0px',
       }}
       onClick={onClick}
@@ -95,23 +99,33 @@ const Item = ({ title, to, icon, isNested, onClick, isProminent = false }) => {
         <Typography
           variant={isNested ? "body1" : "h6"}
           sx={{
-            fontWeight: isProminent ? 'bold' : 'normal',
+            fontWeight: isActive || isProminent ? 'bold' : 'normal',
             position: 'relative',
             whiteSpace: 'normal',
             wordBreak: 'break-word',
             maxWidth: 'calc(100% - 40px)',
             overflow: 'hidden',
-            '&:after': isProminent
+            '&:after': isActive
               ? {
                   content: '""',
                   position: 'absolute',
-                  width: '50%',
+                  width: '100%',
                   height: '2px',
                   bottom: '-2px',
                   left: 0,
                   backgroundColor: colors.greenAccent[500],
                 }
-              : {},
+              : isProminent
+                ? {
+                    content: '""',
+                    position: 'absolute',
+                    width: '50%',
+                    height: '2px',
+                    bottom: '-2px',
+                    left: 0,
+                    backgroundColor: colors.greenAccent[500],
+                  }
+                : {},
           }}
         >
           {title}
@@ -243,6 +257,11 @@ const itemsData = [
   // Dynamic DCA Simulator temporarily removed from sidebar (code kept for future)
 ];
 
+  const activeCategory = useMemo(() => {
+    const activeItem = itemsData.find((item) => item.to === location.pathname);
+    return activeItem?.category ?? null;
+  }, [location.pathname]);
+
   const filteredItems = useMemo(() =>
     itemsData.filter(item =>
       (item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -297,6 +316,7 @@ const itemsData = [
         title={category}
         icon={items[0].categoryIcon || <BarChartOutlinedIcon />}
         style={{ color: colors.grey[100] }}
+        open={category === activeCategory ? true : undefined}
       >
         {items.map((item, index) => renderMenuItem(item, index, true))}
       </SubMenu>
@@ -341,7 +361,19 @@ const itemsData = [
             padding: "5px 28px 5px 5px !important",
             backgroundColor: "transparent !important",
           },
+          "& .pro-menu-item.active > .pro-inner-item": {
+            color: `${colors.greenAccent[500]} !important`,
+            backgroundColor: `${colors.greenAccent[700]}55 !important`,
+            borderLeft: `3px solid ${colors.greenAccent[500]}`,
+            borderRadius: "4px",
+          },
+          "& .pro-menu-item.active .pro-icon-wrapper .pro-icon": {
+            color: `${colors.greenAccent[500]} !important`,
+          },
           "& .pro-inner-item:hover": { color: "#868dfb !important" },
+          "& .pro-menu-item.active > .pro-inner-item:hover": {
+            color: `${colors.greenAccent[400]} !important`,
+          },
           "& .pro-menu > ul > .pro-sub-menu > .pro-inner-list-item": {
             backgroundColor: "transparent !important",
           },
