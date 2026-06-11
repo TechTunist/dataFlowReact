@@ -872,7 +872,8 @@ const FredSeriesChart = ({
           <div>{tooltipData.date}</div>
 </>
 )} />
-        )}</div>
+        )}
+        </div>
   );
 };
 

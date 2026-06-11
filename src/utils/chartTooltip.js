@@ -10,8 +10,8 @@ export const getTooltipPosition = ({
   y,
   chartWidth,
   tooltipWidth = 200,
-  offset = 15,
-  rightBias = 8,
+  offset = 25,
+  rightBias = 30,
 }) => {
   const safeX = Number.isFinite(x) ? x : 0;
   const safeY = Number.isFinite(y) ? y : 0;
