@@ -551,7 +551,7 @@ const SahmRecessionIndicator = ({ isDashboard = false, explanation = '' }) => {
           {[
             { id: 'SAHM', label: 'Sahm Indicator', color: colors.greenAccent[500] || '#4cceac' },
             { id: 'SP500', label: 'S&P 500', color: colors.blueAccent[500] || '#0000FF' },
-            { id: 'USRECD', label: 'Recession Periods', color: 'rgba(255, 255, 255, 0.72)' },
+            { id: 'USRECD', label: 'Recession Periods', color: 'rgba(146, 146, 146, 0.22)' },
           ].map(({ id, label, color }) => (
             <div key={id} style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>
               <span
@@ -583,7 +583,7 @@ const SahmRecessionIndicator = ({ isDashboard = false, explanation = '' }) => {
                 {[
                   { id: 'SAHM', label: 'Sahm Indicator', color: colors.greenAccent[500] || '#4cceac' },
                   { id: 'SP500', label: 'S&P 500', color: colors.blueAccent[500] || '#0000FF' },
-                  { id: 'USRECD', label: 'Recession Periods', color: 'rgba(150, 130, 130, 0.22)' },
+                  { id: 'USRECD', label: 'Recession Periods', color: 'rgba(133, 133, 133, 0.72)' },
                 ].map(({ id, label, color }) => (
                   <div key={id}>
                     <div style={{ fontSize: '15px' }}>
