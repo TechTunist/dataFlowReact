@@ -215,7 +215,7 @@ const UsInflationChart = ({ isDashboard = false }) => {
             <div className="chart-container" style={{ position: 'relative', height: isDashboard ? '100%' : 'calc(100% - 40px)', width: '100%', border: '2px solid #a9a9a9' }} onDoubleClick={setInteractivity}>
                 <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
                 {!isDashboard && (
-                    <ChartTooltip tooltipData={tooltipData} chartContainerRef={chartContainerRef} render={(tooltipData) => (
+                    <ChartTooltip tooltipData={tooltipData} xNudge={80} chartContainerRef={chartContainerRef} render={(tooltipData) => (
 <>
 <div style={{ fontSize: '15px' }}>US Inflation</div>
                         <div style={{ fontSize: '20px' }}>{tooltipData.primaryValue != null ? `${tooltipData.primaryValue.toFixed(2)}%` : 'N/A'}</div>

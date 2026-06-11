@@ -519,6 +519,7 @@ const PuellMultiple = ({ isDashboard = false }) => {
           <ChartTooltip
             tooltipData={tooltipData}
             chartContainerRef={chartContainerRef}
+            xNudge={50}
             style={{
               backgroundColor: colors.primary[900],
               padding: '5px 10px',

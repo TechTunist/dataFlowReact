@@ -1047,6 +1047,7 @@ const MarketHeatIndex = ({ isDashboard = false, isChartPage = false }) => {
             tooltipData={tooltipData}
             chartContainerRef={chartContainerRef}
             isNarrowScreen={isNarrowScreen}
+            xNudge={50}
             style={{
               backgroundColor: colors.primary[900],
               padding: isNarrowScreen ? '6px 8px' : '8px 12px',

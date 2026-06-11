@@ -857,7 +857,7 @@ const FredSeriesChart = ({
       {!isDashboard && chartExplanation && <p className="chart-info">{chartExplanation}</p>}
 
         {!isDashboard && (
-          <ChartTooltip tooltipData={tooltipData} chartContainerRef={chartContainerRef} render={(tooltipData) => (
+          <ChartTooltip tooltipData={tooltipData} chartContainerRef={chartContainerRef} xNudge={70} render={(tooltipData) => (
 <>
 <div style={{ fontSize: '15px' }}>{seriesLabel}</div>
           <div style={{ fontSize: '20px' }}>{tooltipData.primaryValue != null ? valueFormatter(tooltipData.primaryValue) : 'N/A'}</div>

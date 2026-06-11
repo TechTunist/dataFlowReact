@@ -488,7 +488,11 @@ const RunningROI = ({ isDashboard = false }) => {
         )}
       
         {tooltipData && (
-          <ChartTooltip tooltipData={tooltipData} chartContainerRef={chartContainerRef} render={(tooltipData) => (
+          <ChartTooltip
+            tooltipData={tooltipData}
+            chartContainerRef={chartContainerRef}
+            xNudge={50}
+            render={(tooltipData) => (
 <>
 <div style={{ fontSize: '15px' }}>{altcoins.find(asset => asset.value === selectedAsset)?.label}</div>
                 {tooltipData.price && <div style={{ fontSize: '20px' }}>${tooltipData.price.toFixed(2)}</div>}

@@ -320,7 +320,7 @@ const BitcoinHistoricalVolatility = ({ isDashboard = false }) => {
         
       
         {!isDashboard && (
-          <ChartTooltip tooltipData={tooltipData} chartContainerRef={chartContainerRef} render={(tooltipData) => (
+          <ChartTooltip tooltipData={tooltipData} xNudge={50} chartContainerRef={chartContainerRef} render={(tooltipData) => (
 <>
 <div style={{ fontSize: '12px' }}>Bitcoin</div>
             {tooltipData.price && <div style={{ fontSize: '20px' }}>${tooltipData.price.toFixed(2)}</div>}
