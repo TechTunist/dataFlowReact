@@ -10,6 +10,7 @@ import { Box, FormControl, InputLabel, Select, MenuItem, ToggleButton, ToggleBut
 import { UnderChartRow, ChartUnderSection, UnderChartScroll, ChartInfo } from './ChartUnderSection';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
+import ChartTooltip from './ChartTooltip';
 
 const BitcoinTxMvrvChart = ({ isDashboard = false, isChartPage = false, txMvrvData: propTxMvrvData, simulatorDcaLevels = null, hideControls = false }) => {
   const chartContainerRef = useRef();
@@ -778,19 +779,6 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, isChartPage = false, txMvrvDa
     return theme.palette.mode === 'dark' ? 'rgba(255, 99, 71, 0.3)' : 'rgba(255, 140, 0, 0.3)';
   }, [theme.palette.mode]);
 
-  const calculateTooltipLeft = () => {
-    if (!tooltipData || !chartContainerRef.current) return '0px';
-    const chartWidth = chartContainerRef.current.clientWidth;
-    const tooltipWidth = isNarrowScreen ? 150 : 200;
-    const offset = 10;
-    const offsetRight = 100;
-    const cursorX = tooltipData.x;
-    if (cursorX < chartWidth / 2) {
-      return `${cursorX + offsetRight}px`;
-    }
-    return `${cursorX - offset - tooltipWidth}px`;
-  };
-
   const wrapperSx = isDashboard
     ? {
         backgroundColor: colors.primary[400],
@@ -1110,42 +1098,41 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, isChartPage = false, txMvrvDa
           </div>
         )}
         {!isDashboard && tooltipData && (
-          <div
-            className="tooltip"
+          <ChartTooltip
+            tooltipData={tooltipData}
+            chartContainerRef={chartContainerRef}
+            isNarrowScreen={isNarrowScreen}
             style={{
-              position: 'absolute',
-              left: calculateTooltipLeft(),
-              top: `${tooltipData.y + 20}px`,
-              zIndex: 1000,
               backgroundColor: colors.primary[900],
               padding: isNarrowScreen ? '6px 8px' : '8px 12px',
               borderRadius: '4px',
               color: colors.grey[100],
               fontSize: isNarrowScreen ? '10px' : '12px',
-              pointerEvents: 'none',
-              width: isNarrowScreen ? '150px' : '200px',
             }}
-          >
-            <div style={{ fontSize: isNarrowScreen ? '12px' : '14px', color: colors.grey[300] }}>
-              BTC price: ${tooltipData.price ? (tooltipData.price / 1000).toFixed(1) + 'k' : 'N/A'}
-            </div>
-            {displayMode === 'tx-mvrv' && (
+            render={(tooltipData) => (
               <>
-                <div style={{ color: indicatorsForMode['tx-count'].color }}>
-                  {indicatorsForMode['tx-count'].label}: {tooltipData.txCount?.toFixed(0) ?? 'N/A'}
+                <div style={{ fontSize: isNarrowScreen ? '12px' : '14px', color: colors.grey[300] }}>
+                  BTC price: ${tooltipData.price ? (tooltipData.price / 1000).toFixed(1) + 'k' : 'N/A'}
                 </div>
-                <div style={{ color: indicatorsForMode['mvrv'].color }}>
-                  MVRV: {(tooltipData.mvrv / 100000)?.toFixed(2) ?? 'N/A'}
-                </div>
+                {displayMode === 'tx-mvrv' && (
+                  <>
+                    <div style={{ color: indicatorsForMode['tx-count'].color }}>
+                      {indicatorsForMode['tx-count'].label}: {tooltipData.txCount?.toFixed(0) ?? 'N/A'}
+                    </div>
+                    <div style={{ color: indicatorsForMode['mvrv'].color }}>
+                      MVRV: {(tooltipData.mvrv / 100000)?.toFixed(2) ?? 'N/A'}
+                    </div>
+                  </>
+                )}
+                {displayMode === 'ratio' && (
+                  <div style={{ color: indicatorsForMode['ratio'].color }}>
+                    {indicatorsForMode['ratio'].label}: {tooltipData.ratio?.toFixed(2) ?? 'N/A'}
+                  </div>
+                )}
+                <div>{tooltipData.date?.toString()}</div>
               </>
             )}
-            {displayMode === 'ratio' && (
-              <div style={{ color: indicatorsForMode['ratio'].color }}>
-                {indicatorsForMode['ratio'].label}: {tooltipData.ratio?.toFixed(2) ?? 'N/A'}
-              </div>
-            )}
-            <div>{tooltipData.date?.toString()}</div>
-          </div>
+          />
         )}
       </div>
 

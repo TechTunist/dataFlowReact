@@ -184,8 +184,8 @@ const AltcoinRisk = ({ isDashboard = false }) => {
         textColor: colors.primary[100],
       },
       grid: {
-        vertLines: { color: 'rgba(70, 70, 70, 0.5)' },
-        horzLines: { color: 'rgba(70, 70, 70, 0.5)' },
+        vertLines: { color: colors.greenAccent[700] },
+        horzLines: { color: colors.greenAccent[700] },
       },
       rightPriceScale: {
         scaleMargins: { top: 0.01, bottom: 0.01 },

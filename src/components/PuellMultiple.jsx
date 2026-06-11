@@ -250,8 +250,8 @@ const PuellMultiple = ({ isDashboard = false }) => {
         textColor: colors.primary[100],
       },
       grid: {
-        vertLines: { color: 'rgba(70, 70, 70, 0.5)' },
-        horzLines: { color: 'rgba(70, 70, 70, 0.5)' },
+        vertLines: { color: colors.greenAccent[700] },
+        horzLines: { color: colors.greenAccent[700] },
       },
       rightPriceScale: {
         scaleMargins: { top: 0.01, bottom: 0.01 },
@@ -397,29 +397,6 @@ const PuellMultiple = ({ isDashboard = false }) => {
     setCurrentPuellMultiple(latestPuellData && latestPuellData.value ? latestPuellData.value.toFixed(2) : null);
     setLastUpdatedDate(latestPuellData ? latestPuellData.time : null);
   }, [prepareData.priceData, puellDataAll]);
-
-  // Calculate tooltip position (stable)
-  const calculateLeftPosition = useCallback(() => {
-    if (!tooltipData) return '0px';
-    const chartWidth = chartContainerRef.current?.clientWidth || 800;
-    const tooltipWidth = 200;
-    const desiredOffset = 100;
-    const cursorX = tooltipData.x;
-    const rightPosition = cursorX + desiredOffset;
-    const leftPosition = cursorX - desiredOffset - tooltipWidth + 200;
-    if (rightPosition + tooltipWidth <= chartWidth) {
-      return `${rightPosition}px`;
-    } else if (leftPosition >= 0) {
-      return `${leftPosition}px`;
-    } else {
-      const centeredPosition = Math.max(0, Math.min(cursorX, chartWidth - tooltipWidth));
-      if (cursorX > chartWidth / 2) {
-        return `${Math.max(centeredPosition, chartWidth - tooltipWidth)}px`;
-      } else {
-        return `${centeredPosition}px`;
-      }
-    }
-  }, [tooltipData]);
 
   return (
     <div style={{ height: '100%' }}>

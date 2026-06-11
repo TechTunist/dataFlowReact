@@ -45,7 +45,8 @@ const FredSeriesChart = ({
   chartType = 'area',
   valueFormatter = value => (value != null ? value.toLocaleString() : ''),
   explanation = '',
-  scaleMode = 'linear',
+  scaleMode = 'logarithmic',
+  defaultScaleMode,
   showSP500Overlay = false,
   enableAssetOverlay,
   defaultOverlaySeriesId = 'SP500',
@@ -74,12 +75,15 @@ const FredSeriesChart = ({
     'Weekly': { days: 98, label: 'Weekly RSI (14)' },
   }), []);
 
-  const initialScaleMode = scaleMode === 'logarithmic' ? 1 : 0;
-  const [primaryScaleMode, setPrimaryScaleMode] = useState(initialScaleMode);
-  const [overlayScaleMode, setOverlayScaleMode] = useState(0);
+  const effectiveInitialScale = (scaleMode || defaultScaleMode) === 'logarithmic' ? 1 : 0;
+  const [scaleModeState, setScaleModeState] = useState(effectiveInitialScale);
+
   const [overlaySeriesId, setOverlaySeriesId] = useState(
     assetOverlayEnabled && seriesId !== defaultOverlaySeriesId ? defaultOverlaySeriesId : OVERLAY_NONE,
   );
+
+  const isRecessionPrimary = seriesId === 'USRECD';
+  const isRecessionOverlay = overlaySeriesId === 'USRECD';
   const [smoothingPeriod, setSmoothingPeriod] = useState(0);
   const [tooltipData, setTooltipData] = useState(null);
   const [isInteractive, setIsInteractive] = useState(false);
@@ -104,22 +108,24 @@ const FredSeriesChart = ({
   const primaryDataRef = useRef([]);
   const overlayDataRef = useRef([]);
 
+  const overlayCleanScale = isRecessionOverlay ? 0 : scaleModeState;
   const { cleanedOverlayData, hasOverlay, overlayMeta } = useMacroOverlaySeries({
     overlaySeriesId,
-    overlayScaleMode,
+    scaleMode: overlayCleanScale,
     setIsLoading,
     setError,
   });
 
-  const overlayColor = overlayMeta?.color
-    || (theme.palette.mode === 'dark' ? 'rgb(223, 175, 185)' : 'rgba(112, 153, 112, 0.8)');
+  const overlayColor = isRecessionOverlay
+    ? (theme.palette.mode === 'dark' ? 'rgba(120, 90, 130, 0.18)' : 'rgba(140, 100, 120, 0.15)')
+    : (overlayMeta?.color || (theme.palette.mode === 'dark' ? 'rgb(223, 175, 185)' : 'rgba(112, 153, 112, 0.8)'));
 
   // Cleaned data used for BOTH primary series plotting AND technical indicator (MA/RSI) calculations.
   // This ensures consistency (same points, same time normalization, same log-scale filtering)
   // and matches the pattern used in BitcoinPrice / AltcoinPrice / etc.
   const cleanedPrimaryData = useMemo(
-    () => cleanSeriesData(primarySeriesData, { scaleMode: primaryScaleMode }),
-    [primarySeriesData, primaryScaleMode],
+    () => cleanSeriesData(primarySeriesData, { scaleMode: isRecessionPrimary ? 0 : scaleModeState }),
+    [primarySeriesData, scaleModeState, isRecessionPrimary],
   );
 
   const plottedPrimaryData = useMemo(
@@ -357,13 +363,44 @@ const FredSeriesChart = ({
 
   useEffect(() => {
     if (!chartRef.current) return;
-    chartRef.current.priceScale('right').applyOptions({ mode: primaryScaleMode, borderVisible: false });
-    chartRef.current.priceScale('left').applyOptions({
-      visible: hasOverlay,
-      mode: overlayScaleMode,
-      borderVisible: false,
-    });
-  }, [primaryScaleMode, overlayScaleMode, hasOverlay]);
+    const mode = scaleModeState;
+
+    // Dedicated hidden linear scale for recession shading (full height, always linear, never log)
+    try {
+      chartRef.current.priceScale('recession').applyOptions({
+        mode: 0,
+        visible: false,
+        borderVisible: false,
+        scaleMargins: { top: 0, bottom: 0 },
+      });
+    } catch (e) {
+      // scale may not exist yet; will be configured when series is added
+    }
+
+    if (isRecessionPrimary) {
+      // Recession is primary: its shading uses 'recession' scale (always linear).
+      // Overlay (if any) goes on left and respects the toggle.
+      chartRef.current.priceScale('left').applyOptions({
+        visible: hasOverlay,
+        mode,
+        borderVisible: false,
+      });
+      chartRef.current.priceScale('right').applyOptions({ visible: false, borderVisible: false });
+    } else if (isRecessionOverlay && hasOverlay) {
+      // Recession as overlay: shading on 'recession' (linear, hidden).
+      // Primary data on right, controlled by toggle.
+      chartRef.current.priceScale('right').applyOptions({ mode, borderVisible: false });
+      chartRef.current.priceScale('left').applyOptions({ visible: false, borderVisible: false });
+    } else {
+      // Normal case
+      chartRef.current.priceScale('right').applyOptions({ mode, borderVisible: false });
+      chartRef.current.priceScale('left').applyOptions({
+        visible: hasOverlay,
+        mode,
+        borderVisible: false,
+      });
+    }
+  }, [scaleModeState, hasOverlay, isRecessionPrimary, isRecessionOverlay]);
 
   useEffect(() => {
     if (!chartRef.current || plottedPrimaryData.length === 0) return;
@@ -377,6 +414,48 @@ const FredSeriesChart = ({
     }
     primaryDataRef.current = plottedPrimaryData;
 
+    // Subtle recession shading color (used for area fill to create clean vertical bands)
+    const recessionColor = theme.palette.mode === 'dark'
+      ? 'rgba(186, 12, 245, 0.3)'
+      : 'rgba(172, 58, 115, 0.3)';
+
+    // Always clear previous overlay (line or recession shading) before (re)adding the current overlay.
+    // This ensures clean switches between normal overlays and recession shading.
+    if (overlaySeriesRef.current) {
+      try { chartRef.current.removeSeries(overlaySeriesRef.current); } catch (e) {}
+      overlaySeriesRef.current = null;
+    }
+
+    // If recession is the *overlay*, add its shading *first* so it renders behind the main data series.
+    if (isRecessionOverlay && plottedOverlayData.length > 0) {
+      if (overlaySeriesRef.current) {
+        try { chartRef.current.removeSeries(overlaySeriesRef.current); } catch (e) {}
+        overlaySeriesRef.current = null;
+      }
+      const recOverlaySeries = chartRef.current.addAreaSeries({
+        priceScaleId: 'recession',
+        lineVisible: false,
+        crosshairMarkerVisible: false,
+        topColor: recessionColor,
+        bottomColor: recessionColor,
+        lineColor: 'transparent',
+        baseValue: { type: 'price', price: 0 },
+        priceFormat: { type: 'custom', minMove: 1, formatter: (v) => defaultOverlayFormatter(overlaySeriesId, v) },
+      });
+      overlaySeriesRef.current = recOverlaySeries;
+      recOverlaySeries.setData(plottedOverlayData);
+      overlayDataRef.current = plottedOverlayData;
+
+      try {
+        chartRef.current.priceScale('recession').applyOptions({
+          mode: 0,
+          visible: false,
+          borderVisible: false,
+          scaleMargins: { top: 0, bottom: 0 },
+        });
+      } catch (e) {}
+    }
+
     if (primarySeriesRef.current) {
       try { chartRef.current.removeSeries(primarySeriesRef.current); } catch (e) {}
       primarySeriesRef.current = null;
@@ -387,7 +466,22 @@ const FredSeriesChart = ({
       : { topColor: 'rgba(255, 165, 0, 0.56)', bottomColor: 'rgba(255, 165, 0, 0.2)', lineColor: 'rgba(255, 140, 0, 0.8)', color: 'rgba(255, 140, 0, 0.8)' };
 
     let primarySeries;
-    if (chartType === 'area') {
+    if (isRecessionPrimary) {
+      // Use AreaSeries + dedicated hidden scale for recession shading.
+      // This produces clean, solid vertical bands for recession periods at any zoom level
+      // (no per-day thin bars turning into a solid mass when zoomed out).
+      // Always linear (the 'recession' scale is forced linear above).
+      primarySeries = chartRef.current.addAreaSeries({
+        priceScaleId: 'recession',
+        lineVisible: false,
+        crosshairMarkerVisible: false,
+        topColor: recessionColor,
+        bottomColor: recessionColor,
+        lineColor: 'transparent',
+        baseValue: { type: 'price', price: 0 },
+        priceFormat: { type: 'custom', minMove: 1, formatter: valueFormatter },
+      });
+    } else if (chartType === 'area') {
       primarySeries = chartRef.current.addAreaSeries({
         priceScaleId: 'right', lineWidth: 2, topColor, bottomColor, lineColor,
         priceFormat: { type: 'custom', minMove: 0.01, formatter: valueFormatter },
@@ -399,12 +493,25 @@ const FredSeriesChart = ({
       });
     } else {
       primarySeries = chartRef.current.addHistogramSeries({
-        priceScaleId: 'right', color,
+        priceScaleId: 'right',
+        color,
         priceFormat: { type: 'custom', minMove: 0.01, formatter: valueFormatter },
       });
     }
     primarySeriesRef.current = primarySeries;
     primarySeries.setData(plottedPrimaryData);
+
+    // Ensure recession scale is configured (hidden, linear, full height) whenever we add recession shading
+    if (isRecessionPrimary && chartRef.current) {
+      try {
+        chartRef.current.priceScale('recession').applyOptions({
+          mode: 0,
+          visible: false,
+          borderVisible: false,
+          scaleMargins: { top: 0, bottom: 0 },
+        });
+      } catch (e) {}
+    }
 
     if (overlaySeriesRef.current) {
       try { chartRef.current.removeSeries(overlaySeriesRef.current); } catch (e) {}
@@ -412,18 +519,22 @@ const FredSeriesChart = ({
     }
 
     if (hasOverlay && plottedOverlayData.length > 0) {
-      const overlaySeries = chartRef.current.addLineSeries({
-        priceScaleId: 'left',
-        lineWidth: 2,
-        color: overlayColor,
-        priceFormat: {
-          type: 'custom',
-          minMove: 0.01,
-          formatter: (v) => defaultOverlayFormatter(overlaySeriesId, v),
-        },
-      });
-      overlaySeriesRef.current = overlaySeries;
-      overlaySeries.setData(plottedOverlayData);
+      if (!isRecessionOverlay) {
+        // Normal (non-recession) overlay as line on left scale.
+        // (Recession overlay, if present, was already added earlier as background shading.)
+        const overlaySeries = chartRef.current.addLineSeries({
+          priceScaleId: 'left',
+          lineWidth: 2,
+          color: overlayColor,
+          priceFormat: {
+            type: 'custom',
+            minMove: 0.01,
+            formatter: (v) => defaultOverlayFormatter(overlaySeriesId, v),
+          },
+        });
+        overlaySeriesRef.current = overlaySeries;
+        overlaySeries.setData(plottedOverlayData);
+      }
       overlayDataRef.current = plottedOverlayData;
     } else {
       overlayDataRef.current = [];
@@ -432,7 +543,7 @@ const FredSeriesChart = ({
     if (isNewSeries || !zoomRange) {
       chartRef.current.timeScale().fitContent();
     }
-  }, [plottedPrimaryData, plottedOverlayData, chartType, valueFormatter, theme.palette.mode, seriesId, hasOverlay, overlaySeriesId, overlayColor]);
+  }, [plottedPrimaryData, plottedOverlayData, chartType, valueFormatter, theme.palette.mode, seriesId, hasOverlay, overlaySeriesId, overlayColor, isRecessionPrimary, isRecessionOverlay, zoomRange]);
 
   // Tooltip
   useEffect(() => {
@@ -483,8 +594,7 @@ const FredSeriesChart = ({
   }, [isInteractive]);
 
   const setInteractivity = useCallback(() => setIsInteractive(prev => !prev), []);
-  const togglePrimaryScaleMode = useCallback(() => setPrimaryScaleMode(prev => (prev === 1 ? 0 : 1)), []);
-  const toggleOverlayScaleMode = useCallback(() => setOverlayScaleMode(prev => (prev === 1 ? 0 : 1)), []);
+  const toggleScaleMode = useCallback(() => setScaleModeState(prev => (prev === 1 ? 0 : 1)), []);
   const resetChartView = useCallback(() => {
     if (chartRef.current) {
       chartRef.current.timeScale().fitContent();
@@ -493,7 +603,10 @@ const FredSeriesChart = ({
   }, []);
   const toggleLegend = useCallback(() => setIsLegendVisible(prev => !prev), []);
 
-  const primaryColor = theme.palette.mode === 'dark' ? 'rgba(38, 198, 218, 1)' : 'rgba(255, 140, 0, 0.8)';
+  const recessionLegendColor = theme.palette.mode === 'dark' ? 'rgba(120, 90, 130, 0.18)' : 'rgba(140, 100, 120, 0.15)';
+  const primaryColor = isRecessionPrimary
+    ? recessionLegendColor
+    : (theme.palette.mode === 'dark' ? 'rgba(38, 198, 218, 1)' : 'rgba(255, 140, 0, 0.8)');
   const excludeOverlayIds = useMemo(() => {
     const ids = [seriesId];
     if (getSeriesMeta(seriesId)) ids.push(seriesId);
@@ -672,21 +785,25 @@ const FredSeriesChart = ({
           onOverlayChange={setOverlaySeriesId}
           smoothingPeriod={smoothingPeriod}
           onSmoothingChange={setSmoothingPeriod}
-          primaryScaleMode={primaryScaleMode}
-          onPrimaryScaleChange={togglePrimaryScaleMode}
-          overlayScaleMode={overlayScaleMode}
-          onOverlayScaleChange={toggleOverlayScaleMode}
-          showOverlayScale={hasOverlay}
           enableOverlay
           excludeOverlayIds={excludeOverlayIds}
-          primaryLabel={seriesLabel}
-          overlayLabel={getOverlaySeriesLabel(overlaySeriesId)}
         />
       )}
 
       {!isDashboard && (
         <div className="chart-top-div">
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+            { (seriesId !== 'USRECD' || hasOverlay) && (
+              <>
+                <label className="switch">
+                  <input type="checkbox" checked={scaleModeState === 1} onChange={toggleScaleMode} />
+                  <span className="slider round"></span>
+                </label>
+                <span style={{ color: colors.primary[100] }}>
+                  {scaleModeState === 1 ? 'Logarithmic' : 'Linear'}
+                </span>
+              </>
+            )}
             {isLoading && <span style={{ color: colors.grey[100] }}>Loading...</span>}
             {error && <span style={{ color: colors.redAccent[500] }}>{error}</span>}
           </div>

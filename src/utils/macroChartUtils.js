@@ -6,10 +6,10 @@ import {
 
 export const SMOOTHING_OPTIONS = [
   { value: 0, label: 'None' },
-  { value: 7, label: '7-Day SMA' },
-  { value: 14, label: '14-Day SMA' },
-  { value: 28, label: '28-Day SMA' },
-  { value: 90, label: '90-Day SMA' },
+  { value: 3, label: '3-period SMA' },
+  { value: 6, label: '6-period SMA' },
+  { value: 12, label: '12-period SMA' },
+  { value: 24, label: '24-period SMA' },
 ];
 
 export const OVERLAY_NONE = 'NONE';
@@ -58,7 +58,7 @@ export function normalizeTimePoint(time) {
   return time;
 }
 
-export function cleanSeriesData(rawData, { scaleMode = 0, valueKey = 'value' } = {}) {
+export function cleanSeriesData(rawData, { scaleMode = 1, valueKey = 'value' } = {}) {
   if (!rawData || rawData.length === 0) return [];
   return rawData
     .map((item) => {

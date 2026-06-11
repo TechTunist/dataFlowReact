@@ -8,6 +8,7 @@ import useIsMobile from '../hooks/useIsMobile';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import LastUpdated from '../hooks/LastUpdated';
+import ChartTooltip from './ChartTooltip';
 
 const SahmRecessionIndicator = ({ isDashboard = false, explanation = '' }) => {
   const chartContainerRef = useRef();
@@ -550,7 +551,7 @@ const SahmRecessionIndicator = ({ isDashboard = false, explanation = '' }) => {
           {[
             { id: 'SAHM', label: 'Sahm Indicator', color: colors.greenAccent[500] || '#4cceac' },
             { id: 'SP500', label: 'S&P 500', color: colors.blueAccent[500] || '#0000FF' },
-            { id: 'USRECD', label: 'Recession Periods', color: 'rgba(218, 203, 203, 0.52)' },
+            { id: 'USRECD', label: 'Recession Periods', color: 'rgba(150, 130, 130, 0.22)' },
           ].map(({ id, label, color }) => (
             <div key={id} style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>
               <span
@@ -567,53 +568,35 @@ const SahmRecessionIndicator = ({ isDashboard = false, explanation = '' }) => {
           ))}
         </div>
         {tooltipData && Object.keys(seriesRefs.current).length > 0 && (
-          <div
-            className="tooltip"
+          <ChartTooltip
+            tooltipData={tooltipData}
+            chartContainerRef={chartContainerRef}
             style={{
-              position: 'absolute',
-              left: (() => {
-                const chartWidth = chartContainerRef.current?.clientWidth || 100;
-                const tooltipWidth = 200;
-                const offsetX = 10;
-                let left = tooltipData.x + offsetX;
-                if (left + tooltipWidth > chartWidth) {
-                  left = tooltipData.x - tooltipWidth - offsetX;
-                }
-                return `${Math.max(10, Math.min(left, chartWidth - tooltipWidth - 10))}px`;
-              })(),
-              top: (() => {
-                const chartHeight = chartContainerRef.current?.clientHeight || 100;
-                const tooltipHeight = 100;
-                const offsetY = 10;
-                let top = tooltipData.y + offsetY;
-                if (top + tooltipHeight > chartHeight) {
-                  top = tooltipData.y - tooltipHeight - offsetY;
-                }
-                return `${Math.max(10, Math.min(top, chartHeight - tooltipHeight - 10))}px`;
-              })(),
               backgroundColor: theme.palette.mode === 'dark' ? colors.primary[900] : colors.primary[200],
               color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900],
               padding: '5px',
               borderRadius: '4px',
               boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
-              zIndex: 3,
             }}
-          >
-            {[
-              { id: 'SAHM', label: 'Sahm Indicator', color: colors.greenAccent[500] || '#4cceac' },
-              { id: 'SP500', label: 'S&P 500', color: colors.blueAccent[500] || '#0000FF' },
-              { id: 'USRECD', label: 'Recession Periods', color: 'rgba(218, 203, 203, 0.52)' },
-            ].map(({ id, label, color }) => (
-              <div key={id}>
-                <div style={{ fontSize: '15px' }}>
-                  <span style={{ color }}>
-                    {label}: {tooltipData.values[id] != null ? (id === 'USRECD' ? (tooltipData.values[id] === 1 ? 'Recession' : 'No Recession') : tooltipData.values[id].toFixed(2)) : 'N/A'}
-                  </span>
-                </div>
-              </div>
-            ))}
-            <div>{tooltipData.date}</div>
-          </div>
+            render={(tooltipData) => (
+              <>
+                {[
+                  { id: 'SAHM', label: 'Sahm Indicator', color: colors.greenAccent[500] || '#4cceac' },
+                  { id: 'SP500', label: 'S&P 500', color: colors.blueAccent[500] || '#0000FF' },
+                  { id: 'USRECD', label: 'Recession Periods', color: 'rgba(150, 130, 130, 0.22)' },
+                ].map(({ id, label, color }) => (
+                  <div key={id}>
+                    <div style={{ fontSize: '15px' }}>
+                      <span style={{ color }}>
+                        {label}: {tooltipData.values[id] != null ? (id === 'USRECD' ? (tooltipData.values[id] === 1 ? 'Recession' : 'No Recession') : tooltipData.values[id].toFixed(2)) : 'N/A'}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+                <div>{tooltipData.date}</div>
+              </>
+            )}
+          />
         )}
       </div>
       <div className="under-chart">

@@ -159,7 +159,7 @@ const EthereumRisk = ({ isDashboard = false, riskData: propRiskData }) => {
       width: chartContainerRef.current.clientWidth,
       height: chartContainerRef.current.clientHeight,
       layout: { background: { type: 'solid', color: colors.primary[700] }, textColor: colors.primary[100] },
-      grid: { vertLines: { color: 'rgba(70, 70, 70, 0.5)' }, horzLines: { color: 'rgba(70, 70, 70, 0.5)' } },
+      grid: { vertLines: { color: colors.greenAccent[700] }, horzLines: { color: colors.greenAccent[700] } },
       rightPriceScale: { scaleMargins: { top: 0.01, bottom: 0.01 }, borderVisible: false },
       leftPriceScale: { visible: true, borderColor: 'rgba(197, 203, 206, 1)', scaleMargins: { top: 0.1, bottom: 0.1 } },
       timeScale: { minBarSpacing: 0.001 },

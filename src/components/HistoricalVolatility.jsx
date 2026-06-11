@@ -109,8 +109,8 @@ const BitcoinHistoricalVolatility = ({ isDashboard = false }) => {
         textColor: colors.primary[100],
       },
       grid: {
-        vertLines: { color: 'rgba(70, 70, 70, 0.5)' },
-        horzLines: { color: 'rgba(70, 70, 70, 0.5)' },
+        vertLines: { color: colors.greenAccent[700] },
+        horzLines: { color: colors.greenAccent[700] },
       },
       rightPriceScale: {
         scaleMargins: { top: 0.01, bottom: 0.01 },
@@ -222,27 +222,6 @@ const BitcoinHistoricalVolatility = ({ isDashboard = false }) => {
   }, [priceData, volatilityData]);
 
   const handleTimeframeChange = useCallback((e) => setTimeframe(e.target.value), []);
-
-  // **Calculate tooltip position** (stable callback, deps on tooltip state like examples)
-  const calculateLeftPosition = useCallback(() => {
-    if (!tooltipData || !chartContainerRef.current) return '0px';
-    const chartWidth = chartContainerRef.current.clientWidth;
-    const tooltipWidth = 200;
-    const offset = 100; // Distance when tooltip is on the right
-    const leftOffset = -80; // Distance when tooltip is on the left
-    const cursorX = tooltipData.x;
- 
-    if (cursorX + offset + tooltipWidth <= chartWidth) {
-      // Tooltip on the right of the cursor
-      return `${cursorX + offset}px`;
-    } else if (cursorX - leftOffset - tooltipWidth >= 0) {
-      // Tooltip on the left of the cursor
-      return `${cursorX - leftOffset - tooltipWidth}px`;
-    } else {
-      // Fallback: clamp to chart boundaries
-      return `${Math.max(0, Math.min(cursorX, chartWidth - tooltipWidth))}px`;
-    }
-  }, [tooltipData]);
 
   return (
     <div style={{ height: '100%' }}>

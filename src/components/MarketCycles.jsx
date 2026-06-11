@@ -9,7 +9,7 @@ import BitcoinFees from './BitcoinTransactionFees';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import LastUpdated from '../hooks/LastUpdated';
-import CycleDaysLeft from './CycleDaysLeft';
+import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
 
 const MarketCycles = ({ isDashboard = false }) => {
   const theme = useTheme();
@@ -26,9 +26,49 @@ const MarketCycles = ({ isDashboard = false }) => {
   const plotRef = useRef(null);
   const containerRef = useRef(null);
 
-  // Constants for the new cycle logic
-  const CYCLE4_END_DATE = '2025-10-06';
+  // Constants for cycle timing (used both for slicing historical cycle data in the chart
+  // and for the "current position" metrics shown under the chart).
+  const CYCLE4_END_DATE = '2025-10-06';      // 2025 bull market peak date (end of Cycle 4)
   const NEW_CYCLE_START_DATE = '2025-10-07';
+  const AVG_BEAR_FROM_PEAK = 370;           // Avg days from cycle peak (top) to next bottom (bear phase), as measured from cycle peak
+  const AVG_PEAK_TO_PEAK = 1425;            // Avg peak-to-peak days (full cycle length). Computed from Cycle 2 (1424 days) + Cycle 3 (1426 days)
+
+  // Local helper to compute days between dates (inclusive-ish, matches existing calcs)
+  const calculateDays = (start, end) => {
+    if (!start || !end) return null;
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    return Math.round((endDate - startDate) / (1000 * 60 * 60 * 24));
+  };
+
+  // Days-left stats for the under-chart section (specific to /market-cycles display).
+  // Both values are "as measured from cycle peak":
+  // - Bottom: time remaining in the expected bear phase (370 days from the 2025 peak)
+  // - Peak:  time remaining until the next cycle peak, using the 1425-day peak-to-peak average
+  //          minus days elapsed since the Cycle 4 peak (for the "from cycle peak" view of the current cycle).
+  const cycleDaysStats = useMemo(() => {
+    if (btcData.length === 0) {
+      return {
+        daysLeftBottom: { left: 0, avg: AVG_BEAR_FROM_PEAK },
+        daysLeftPeak: { left: 0, avg: AVG_PEAK_TO_PEAK },
+      };
+    }
+
+    const peakDate = CYCLE4_END_DATE;
+    const currentDateStr = btcData[btcData.length - 1].time;
+    const elapsedSincePeak = calculateDays(peakDate, currentDateStr) || 0;
+
+    // Bear phase remaining (from this cycle peak)
+    const leftToBottom = Math.max(0, AVG_BEAR_FROM_PEAK - elapsedSincePeak);
+
+    // Peak-to-peak remaining (subtract current elapsed since last peak for Cycle 4)
+    const leftToPeak = Math.max(0, AVG_PEAK_TO_PEAK - elapsedSincePeak);
+
+    return {
+      daysLeftBottom: { left: leftToBottom, avg: AVG_BEAR_FROM_PEAK },
+      daysLeftPeak: { left: leftToPeak, avg: AVG_PEAK_TO_PEAK },
+    };
+  }, [btcData]);
 
   // Define the initial layout with useMemo
   const initialLayout = useMemo(() => ({
@@ -228,17 +268,23 @@ const MarketCycles = ({ isDashboard = false }) => {
     return [...validCycles, ...(averageCycle ? [averageCycle] : [])];
   }, [btcData, startPoint, selectedCycles]);
 
-  // Update cycle datasets and series visibility
+  // Update cycle datasets and series visibility.
+  // When cycles are selected for averaging, force their visibility to false (hidden on chart by default)
+  // so the average line is the focus. Users can still click legend entries to re-enable individual cycles.
   useEffect(() => {
     setCycleDataSets(cycleDatasets);
     setSeriesVisibility((prev) => {
       const newVisibility = {};
       cycleDatasets.forEach((cycle) => {
-        newVisibility[cycle.shortName] = prev[cycle.shortName] !== undefined ? prev[cycle.shortName] : true;
+        let isVisible = prev[cycle.shortName] !== undefined ? prev[cycle.shortName] : true;
+        if (selectedCycles.includes(cycle.shortName)) {
+          isVisible = false;
+        }
+        newVisibility[cycle.shortName] = isVisible;
       });
       return newVisibility;
     });
-  }, [cycleDatasets]);
+  }, [cycleDatasets, selectedCycles]);
 
   // Function to format date as dd/mm/yyyy
   const formatDate = (dateStr) => {
@@ -490,13 +536,27 @@ const MarketCycles = ({ isDashboard = false }) => {
           onLegendClick={handleLegendClick}
         />
       </div>
-      <div className="under-chart">
+
+      <UnderChartRow>
         {!isDashboard && btcData.length > 0 && <LastUpdated storageKey="btcData" />}
         {!isDashboard && <BitcoinFees />}
-      </div>
-      <div>
-        {!isDashboard && <CycleDaysLeft onlyBottom />}
-      </div>
+      </UnderChartRow>
+
+      {!isDashboard && btcData.length > 0 && (
+        <>
+          <UnderChartValue>
+            <span style={{ fontSize: '1.15rem', color: colors.primary[100] }}>
+              Days left til Bottom: <b style={{ color: colors.greenAccent[500] }}>{cycleDaysStats.daysLeftBottom.left}</b> (avg: {cycleDaysStats.daysLeftBottom.avg} as measured from cycle peak)
+            </span>
+          </UnderChartValue>
+          <UnderChartValue>
+            <span style={{ fontSize: '1.15rem', color: colors.primary[100] }}>
+              Days left til Peak: <b style={{ color: colors.greenAccent[500] }}>{cycleDaysStats.daysLeftPeak.left}</b> (avg: {cycleDaysStats.daysLeftPeak.avg} as measured from cycle peak)
+            </span>
+          </UnderChartValue>
+        </>
+      )}
+
       {!isDashboard && (
         <p className='chart-info'>
           The return on investment between market cycles is calculated as a shifted logarithmic scale (log10(price / basePrice) + 1),

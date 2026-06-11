@@ -89,8 +89,8 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
         textColor: colors.primary[100],
       },
       grid: {
-        vertLines: { color: 'rgba(70, 70, 70, 0.1)' },
-        horzLines: { color: 'rgba(70, 70, 70, 0.1)' },
+        vertLines: { color: colors.greenAccent[700] },
+        horzLines: { color: colors.greenAccent[700] },
       },
       rightPriceScale: {
         scaleMargins: { top: 0.1, bottom: 0.1 },
@@ -203,8 +203,8 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
           textColor: colors.primary[100],
         },
         grid: {
-          vertLines: { color: 'rgba(70, 70, 70, 0.1)' },
-          horzLines: { color: 'rgba(70, 70, 70, 0.1)' },
+          vertLines: { color: colors.greenAccent[700] },
+          horzLines: { color: colors.greenAccent[700] },
         },
       });
     }
@@ -291,19 +291,6 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
       chartRef.current.timeScale().fitContent();
       setHasUserInteracted(false);
     }
-  };
-
-  const calculateLeftPosition = () => {
-    if (!tooltipData) return '0px';
-    const chartWidth = chartContainerRef.current.clientWidth;
-    const tooltipWidth = isNarrowScreen ? 150 : 200;
-    const offset = 10;
-    const offsetRight = 100;
-    const cursorX = tooltipData.x;
-    if (cursorX < chartWidth / 2) {
-      return `${cursorX + offsetRight}px`;
-    }
-    return `${cursorX - offset - tooltipWidth}px`;
   };
 
   if (error) {

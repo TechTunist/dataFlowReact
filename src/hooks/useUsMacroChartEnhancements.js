@@ -10,18 +10,17 @@ import {
 
 export function useUsMacroChartEnhancements({
   primaryData = [],
-  primaryScaleMode = 0,
+  scaleMode = 1,
   defaultOverlaySeriesId = 'SP500',
   setIsLoading,
   setError,
 }) {
   const [overlaySeriesId, setOverlaySeriesId] = useState(defaultOverlaySeriesId);
-  const [overlayScaleMode, setOverlayScaleMode] = useState(0);
   const [smoothingPeriod, setSmoothingPeriod] = useState(0);
 
   const cleanedPrimaryData = useMemo(
-    () => cleanSeriesData(primaryData, { scaleMode: primaryScaleMode }),
-    [primaryData, primaryScaleMode],
+    () => cleanSeriesData(primaryData, { scaleMode }),
+    [primaryData, scaleMode],
   );
 
   const plottedPrimaryData = useMemo(
@@ -31,7 +30,7 @@ export function useUsMacroChartEnhancements({
 
   const { cleanedOverlayData, hasOverlay, overlayMeta } = useMacroOverlaySeries({
     overlaySeriesId,
-    overlayScaleMode,
+    scaleMode,  // single scale applies to overlay too
     setIsLoading,
     setError,
   });
@@ -50,8 +49,6 @@ export function useUsMacroChartEnhancements({
   return {
     overlaySeriesId,
     setOverlaySeriesId,
-    overlayScaleMode,
-    setOverlayScaleMode,
     smoothingPeriod,
     setSmoothingPeriod,
     cleanedPrimaryData,

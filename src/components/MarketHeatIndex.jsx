@@ -9,6 +9,7 @@ import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import logger from '../utils/logger';
 import { UnderChartRow, ChartUnderSection, UnderChartValue, UnderChartScroll } from './ChartUnderSection';
+import ChartTooltip from './ChartTooltip';
 
 import { useAuth, useUser } from '@clerk/clerk-react';
 import { apiUrl } from '../config/api';
@@ -537,8 +538,8 @@ const MarketHeatIndex = ({ isDashboard = false, isChartPage = false }) => {
         textColor: colors.primary[100],
       },
       grid: {
-        vertLines: { color: 'rgba(70, 70, 70, 0.5)' },
-        horzLines: { color: 'rgba(70, 70, 70, 0.5)' },
+        vertLines: { color: colors.greenAccent[700] },
+        horzLines: { color: colors.greenAccent[700] },
       },
       rightPriceScale: {
         scaleMargins: { top: 0.1, bottom: 0.1 },
@@ -654,8 +655,8 @@ const MarketHeatIndex = ({ isDashboard = false, isChartPage = false }) => {
           textColor: colors.primary[100],
         },
         grid: {
-          vertLines: { color: 'rgba(70, 70, 70, 0.5)' },
-          horzLines: { color: 'rgba(70, 70, 70, 0.5)' },
+          vertLines: { color: colors.greenAccent[700] },
+          horzLines: { color: colors.greenAccent[700] },
         },
       });
     }
@@ -787,19 +788,6 @@ const MarketHeatIndex = ({ isDashboard = false, isChartPage = false }) => {
       norm[maxK] += (100 - newTotal);
     }
     setWeights(norm);
-  };
-
-  const calculateLeftPosition = () => {
-    if (!tooltipData) return '0px';
-    const chartWidth = chartContainerRef.current.clientWidth;
-    const tooltipWidth = isNarrowScreen ? 150 : 200;
-    const offset = 10;
-    const offsetRight = 100;
-    const cursorX = tooltipData.x;
-    if (cursorX < chartWidth / 2) {
-      return `${cursorX + offsetRight}px`;
-    }
-    return `${cursorX - offset - tooltipWidth}px`;
   };
 
   if (error) {
@@ -1055,56 +1043,52 @@ const MarketHeatIndex = ({ isDashboard = false, isChartPage = false }) => {
           }}
         />
         {!isDashboard && tooltipData && (
-          <div
-            className="tooltip"
+          <ChartTooltip
+            tooltipData={tooltipData}
+            chartContainerRef={chartContainerRef}
+            isNarrowScreen={isNarrowScreen}
             style={{
-              position: 'absolute',
-              left: calculateLeftPosition(),
-              top: (() => {
-                const offsetY = isNarrowScreen ? 20 : 20;
-                return `${tooltipData.y + offsetY}px`;
-              })(),
-              zIndex: 1000,
               backgroundColor: colors.primary[900],
               padding: isNarrowScreen ? '6px 8px' : '8px 12px',
               borderRadius: '4px',
               color: colors.grey[100],
               fontSize: isNarrowScreen ? '10px' : '12px',
-              pointerEvents: 'none',
-              width: isNarrowScreen ? '150px' : '200px',
             }}
-          >
-            <div style={{ fontSize: isNarrowScreen ? '14px' : '16px', fontWeight: 'bold' }}>
-              Market Heat Index
-            </div>
-            {tooltipData.heat != null && (
-              <div style={{ fontSize: isNarrowScreen ? '18px' : '22px', margin: '4px 0' }}>
-                {tooltipData.heat.toFixed(1)}
-              </div>
-            )}
-            {tooltipData.btcPrice != null && <div>BTC Price: ${tooltipData.btcPrice.toFixed(2)}</div>}
-            {tooltipData.date && (
+            render={(tooltipData) => (
               <>
-                <div style={{ fontSize: isNarrowScreen ? '16px' : '18px', fontWeight: 'bold', marginTop: '4px' }}>
-                  Heat:{' '}
-                  <span
-                    style={{
-                      color:
-                        tooltipData.heat >= overheatThreshold
-                          ? colors.redAccent[500]
-                          : tooltipData.heat <= coldThreshold
-                          ? colors.blueAccent[400]
-                          : colors.greenAccent[400],
-                      fontWeight: 'bold',
-                    }}
-                  >
-                    {tooltipData.heat >= overheatThreshold ? 'Overheated' : tooltipData.heat <= coldThreshold ? 'Cold' : 'Neutral'}
-                  </span>
+                <div style={{ fontSize: isNarrowScreen ? '14px' : '16px', fontWeight: 'bold' }}>
+                  Market Heat Index
                 </div>
-                <div>{tooltipData.date}</div>
+                {tooltipData.heat != null && (
+                  <div style={{ fontSize: isNarrowScreen ? '18px' : '22px', margin: '4px 0' }}>
+                    {tooltipData.heat.toFixed(1)}
+                  </div>
+                )}
+                {tooltipData.btcPrice != null && <div>BTC Price: ${tooltipData.btcPrice.toFixed(2)}</div>}
+                {tooltipData.date && (
+                  <>
+                    <div style={{ fontSize: isNarrowScreen ? '16px' : '18px', fontWeight: 'bold', marginTop: '4px' }}>
+                      Heat:{' '}
+                      <span
+                        style={{
+                          color:
+                            tooltipData.heat >= overheatThreshold
+                              ? colors.redAccent[500]
+                              : tooltipData.heat <= coldThreshold
+                              ? colors.blueAccent[400]
+                              : colors.greenAccent[400],
+                          fontWeight: 'bold',
+                        }}
+                      >
+                        {tooltipData.heat >= overheatThreshold ? 'Overheated' : tooltipData.heat <= coldThreshold ? 'Cold' : 'Neutral'}
+                      </span>
+                    </div>
+                    <div>{tooltipData.date}</div>
+                  </>
+                )}
               </>
             )}
-          </div>
+          />
         )}
       </div>
 

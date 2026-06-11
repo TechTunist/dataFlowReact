@@ -310,17 +310,25 @@ const itemsData = [
   );
 
   const renderSubMenus = () => (
-    Object.entries(itemsByCategory).map(([category, items]) => (
-      <SubMenu
-        key={category}
-        title={category}
-        icon={items[0].categoryIcon || <BarChartOutlinedIcon />}
-        style={{ color: colors.grey[100] }}
-        open={category === activeCategory ? true : undefined}
-      >
-        {items.map((item, index) => renderMenuItem(item, index, true))}
-      </SubMenu>
-    ))
+    Object.entries(itemsByCategory).map(([category, items]) => {
+      const isActiveSection = category === activeCategory;
+      return (
+        <SubMenu
+          key={category}
+          title={category}
+          icon={items[0].categoryIcon || <BarChartOutlinedIcon />}
+          style={{ color: colors.grey[100] }}
+          className={isActiveSection ? "active" : undefined}
+          // No `open` prop: the SubMenu is uncontrolled so the user can freely
+          // collapse/expand any section (including the one that contains the
+          // currently highlighted page). We still mark the header with the
+          // "active" class so it receives the same visual treatment as an
+          // active leaf MenuItem.
+        >
+          {items.map((item, index) => renderMenuItem(item, index, true))}
+        </SubMenu>
+      );
+    })
   );
 
   const buttonData = [
@@ -370,8 +378,27 @@ const itemsData = [
           "& .pro-menu-item.active .pro-icon-wrapper .pro-icon": {
             color: `${colors.greenAccent[500]} !important`,
           },
+          /* Highlight for category/section headers (SubMenu) when the current page
+             belongs to that section. This gives the same "active" treatment to the
+             section title itself, even when the section is collapsed. */
+          "& .pro-menu-item.pro-sub-menu.active > .pro-inner-item": {
+            color: `${colors.greenAccent[500]} !important`,
+            backgroundColor: `${colors.greenAccent[700]}55 !important`,
+            borderLeft: `3px solid ${colors.greenAccent[500]}`,
+            borderRadius: "4px",
+          },
+          "& .pro-menu-item.pro-sub-menu.active .pro-icon-wrapper .pro-icon": {
+            color: `${colors.greenAccent[500]} !important`,
+          },
+          /* Make the expand/collapse chevron stand out on an active section header too. */
+          "& .pro-menu-item.pro-sub-menu.active > .pro-inner-item > .pro-arrow-wrapper .pro-arrow": {
+            borderColor: `${colors.greenAccent[500]} !important`,
+          },
           "& .pro-inner-item:hover": { color: "#868dfb !important" },
           "& .pro-menu-item.active > .pro-inner-item:hover": {
+            color: `${colors.greenAccent[400]} !important`,
+          },
+          "& .pro-menu-item.pro-sub-menu.active > .pro-inner-item:hover": {
             color: `${colors.greenAccent[400]} !important`,
           },
           "& .pro-menu > ul > .pro-sub-menu > .pro-inner-list-item": {

@@ -68,7 +68,7 @@ async function fetchOverlaySeries(dataContext, seriesId) {
 
 export function useMacroOverlaySeries({
   overlaySeriesId = OVERLAY_NONE,
-  overlayScaleMode = 0,
+  scaleMode = 1,
   setIsLoading,
   setError,
 }) {
@@ -132,8 +132,8 @@ export function useMacroOverlaySeries({
   ]);
 
   const cleanedOverlayData = useMemo(
-    () => cleanSeriesData(rawOverlayData, { scaleMode: overlayScaleMode, valueKey: overlayValueKey }),
-    [rawOverlayData, overlayScaleMode, overlayValueKey],
+    () => cleanSeriesData(rawOverlayData, { scaleMode, valueKey: overlayValueKey }),
+    [rawOverlayData, scaleMode, overlayValueKey],
   );
 
   const fetchOverlay = useCallback(async () => {

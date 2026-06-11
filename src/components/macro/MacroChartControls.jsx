@@ -29,33 +29,14 @@ const labelSx = (colors) => ({
   '&.Mui-focused': { color: colors.greenAccent[500] },
 });
 
-const ScaleToggle = ({ label, checked, onChange, colors }) => (
-  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-    <label className="switch">
-      <input type="checkbox" checked={checked} onChange={onChange} />
-      <span className="slider round" />
-    </label>
-    <span style={{ color: colors.primary[100], fontSize: '0.9rem' }}>
-      {label}: {checked ? 'Log' : 'Linear'}
-    </span>
-  </div>
-);
-
 const MacroChartControls = ({
   colors,
   overlaySeriesId,
   onOverlayChange,
   smoothingPeriod,
   onSmoothingChange,
-  primaryScaleMode,
-  onPrimaryScaleChange,
-  overlayScaleMode,
-  onOverlayScaleChange,
-  showOverlayScale = false,
   enableOverlay = true,
   excludeOverlayIds = [],
-  primaryLabel = 'Primary',
-  overlayLabel = 'Overlay',
 }) => {
   const overlayGroups = getOverlaySeriesOptions(excludeOverlayIds);
 
@@ -119,23 +100,6 @@ const MacroChartControls = ({
           ))}
         </Select>
       </FormControl>
-
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        <ScaleToggle
-          label={primaryLabel}
-          checked={primaryScaleMode === 1}
-          onChange={onPrimaryScaleChange}
-          colors={colors}
-        />
-        {showOverlayScale && (
-          <ScaleToggle
-            label={overlayLabel}
-            checked={overlayScaleMode === 1}
-            onChange={onOverlayScaleChange}
-            colors={colors}
-          />
-        )}
-      </Box>
     </Box>
   );
 };

@@ -22,7 +22,7 @@ const UsInterestChart = ({ isDashboard = false }) => {
     const isMobile = useIsMobile();
     const { interestData, fetchInterestData } = useContext(DataContext);
 
-    const [primaryScaleMode, setPrimaryScaleMode] = useState(0);
+    const [scaleMode, setScaleMode] = useState(1);
     const [tooltipData, setTooltipData] = useState(null);
     const [isInteractive, setIsInteractive] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -31,8 +31,6 @@ const UsInterestChart = ({ isDashboard = false }) => {
     const {
         overlaySeriesId,
         setOverlaySeriesId,
-        overlayScaleMode,
-        setOverlayScaleMode,
         smoothingPeriod,
         setSmoothingPeriod,
         plottedPrimaryData,
@@ -42,7 +40,7 @@ const UsInterestChart = ({ isDashboard = false }) => {
         formatOverlayValue,
     } = useUsMacroChartEnhancements({
         primaryData: interestData,
-        primaryScaleMode,
+        scaleMode,
         defaultOverlaySeriesId: 'SP500',
         setIsLoading,
         setError,
@@ -69,8 +67,7 @@ const UsInterestChart = ({ isDashboard = false }) => {
     }, [fetchInterestData, interestData.length]);
 
     const setInteractivity = useCallback(() => setIsInteractive(prev => !prev), []);
-    const togglePrimaryScaleMode = useCallback(() => setPrimaryScaleMode(prev => (prev === 1 ? 0 : 1)), []);
-    const toggleOverlayScaleMode = useCallback(() => setOverlayScaleMode(prev => (prev === 1 ? 0 : 1)), []);
+    const toggleScaleMode = useCallback(() => setScaleMode(prev => (prev === 1 ? 0 : 1)), []);
     const resetChartView = useCallback(() => chartRef.current?.timeScale().fitContent(), []);
 
     const findNearestData = useCallback((data, targetTime) => {
@@ -112,8 +109,9 @@ const UsInterestChart = ({ isDashboard = false }) => {
         });
         areaSeriesRef.current = areaSeries;
 
-        chart.priceScale('right').applyOptions({ mode: primaryScaleMode, borderVisible: false });
-        chart.priceScale('left').applyOptions({ mode: overlayScaleMode, borderVisible: false, visible: hasOverlay });
+        const mode = scaleMode;
+        chart.priceScale('right').applyOptions({ mode, borderVisible: false });
+        chart.priceScale('left').applyOptions({ mode, borderVisible: false, visible: hasOverlay });
 
         chart.subscribeCrosshairMove(param => {
             if (!param.point || !param.time || param.point.x < 0 || param.point.x > chartContainerRef.current.clientWidth || param.point.y < 0 || param.point.y > chartContainerRef.current.clientHeight) {
@@ -172,7 +170,7 @@ const UsInterestChart = ({ isDashboard = false }) => {
             chart.remove();
             window.removeEventListener('resize', resizeChart);
         };
-    }, [plottedPrimaryData, plottedOverlayData, colors, primaryScaleMode, overlayScaleMode, theme.palette.mode, hasOverlay, overlayColor, formatOverlayValue, findNearestData, resetChartView]);
+    }, [plottedPrimaryData, plottedOverlayData, colors, scaleMode, theme.palette.mode, hasOverlay, overlayColor, formatOverlayValue, findNearestData, resetChartView]);
 
     useEffect(() => {
         if (chartRef.current) {
@@ -189,19 +187,19 @@ const UsInterestChart = ({ isDashboard = false }) => {
                     onOverlayChange={setOverlaySeriesId}
                     smoothingPeriod={smoothingPeriod}
                     onSmoothingChange={setSmoothingPeriod}
-                    primaryScaleMode={primaryScaleMode}
-                    onPrimaryScaleChange={togglePrimaryScaleMode}
-                    overlayScaleMode={overlayScaleMode}
-                    onOverlayScaleChange={toggleOverlayScaleMode}
-                    showOverlayScale={hasOverlay}
                     excludeOverlayIds={['INTEREST']}
-                    primaryLabel="US Interest Rate"
-                    overlayLabel={getOverlaySeriesLabel(overlaySeriesId)}
                 />
             )}
             {!isDashboard && (
                 <div className='chart-top-div'>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                        <label className="switch">
+                            <input type="checkbox" checked={scaleMode === 1} onChange={toggleScaleMode} />
+                            <span className="slider round"></span>
+                        </label>
+                        <span style={{ color: colors.primary[100] }}>
+                            {scaleMode === 1 ? 'Logarithmic' : 'Linear'}
+                        </span>
                         {isLoading && <span style={{ color: colors.grey[100] }}>Loading...</span>}
                         {error && <span style={{ color: colors.redAccent[500] }}>{error}</span>}
                     </div>
