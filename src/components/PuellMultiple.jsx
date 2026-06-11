@@ -101,8 +101,14 @@ const PuellMultiple = ({ isDashboard = false }) => {
       .filter(d => d.time) // Remove invalid time entries
       .sort((a, b) => a.time.localeCompare(b.time));
 
-    if (issuanceData.length === 0 && rawPriceData.length > 0) {
-      console.warn('IssContUSD data missing, calculating issuance using block reward');
+    const latestIssuanceDate = issuanceData.length > 0 ? issuanceData[issuanceData.length - 1].time : '';
+    const latestPriceDate = rawPriceData.length > 0 ? rawPriceData[rawPriceData.length - 1].time : '';
+
+    // If no issuance data, or the onchain issuance data is stale (doesn't cover up to the latest price date),
+    // fall back to client-side calculation using daily block reward * price. This prevents showing
+    // stale IssContUSD data (e.g. stopping in Oct 2025) while btcData is fresh.
+    if ((issuanceData.length === 0 || latestIssuanceDate < latestPriceDate) && rawPriceData.length > 0) {
+      console.warn('IssContUSD data missing or stale (latest onchain:', latestIssuanceDate, 'vs price:', latestPriceDate, '), calculating issuance using block reward');
       issuanceData = rawPriceData.map(d => ({
         time: d.time,
         value: calculateDailyIssuance(d.time) * d.value,
