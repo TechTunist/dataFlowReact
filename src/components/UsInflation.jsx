@@ -7,24 +7,51 @@ import useIsMobile from '../hooks/useIsMobile';
 import { DataContext } from '../DataContext';
 import BitcoinFees from './BitcoinTransactionFees';
 import ChartTooltip from './ChartTooltip';
+import MacroChartControls, { getOverlaySeriesLabel } from './macro/MacroChartControls';
+import useUsMacroChartEnhancements from '../hooks/useUsMacroChartEnhancements';
 
 const UsInflationChart = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
     const chartRef = useRef(null);
     const areaSeriesRef = useRef(null);
+    const overlaySeriesRef = useRef(null);
+    const primaryDataRef = useRef([]);
+    const overlayDataRef = useRef([]);
     const theme = useTheme();
     const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
     const isMobile = useIsMobile();
     const { inflationData, fetchInflationData } = useContext(DataContext);
 
-    const [scaleMode, setScaleMode] = useState(0); // 0 for linear, 1 for logarithmic
+    const [primaryScaleMode, setPrimaryScaleMode] = useState(0);
     const [tooltipData, setTooltipData] = useState(null);
     const [isInteractive, setIsInteractive] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
     const currentYear = useMemo(() => new Date().getFullYear().toString(), []);
 
-    // Fetch data only if not present in context
+    const {
+        overlaySeriesId,
+        setOverlaySeriesId,
+        overlayScaleMode,
+        setOverlayScaleMode,
+        smoothingPeriod,
+        setSmoothingPeriod,
+        plottedPrimaryData,
+        plottedOverlayData,
+        hasOverlay,
+        overlayMeta,
+        formatOverlayValue,
+    } = useUsMacroChartEnhancements({
+        primaryData: inflationData,
+        primaryScaleMode,
+        defaultOverlaySeriesId: 'SP500',
+        setIsLoading,
+        setError,
+    });
+
+    const overlayColor = overlayMeta?.color
+        || (theme.palette.mode === 'dark' ? 'rgb(223, 175, 185)' : 'rgba(112, 153, 112, 0.8)');
+
     useEffect(() => {
         const fetchData = async () => {
             if (inflationData.length > 0) return;
@@ -43,12 +70,31 @@ const UsInflationChart = ({ isDashboard = false }) => {
     }, [fetchInflationData, inflationData.length]);
 
     const setInteractivity = useCallback(() => setIsInteractive(prev => !prev), []);
-    const toggleScaleMode = useCallback(() => setScaleMode(prev => (prev === 1 ? 0 : 1)), []);
+    const togglePrimaryScaleMode = useCallback(() => setPrimaryScaleMode(prev => (prev === 1 ? 0 : 1)), []);
+    const toggleOverlayScaleMode = useCallback(() => setOverlayScaleMode(prev => (prev === 1 ? 0 : 1)), []);
     const resetChartView = useCallback(() => chartRef.current?.timeScale().fitContent(), []);
 
-    // Initialize chart
+    const findNearestData = useCallback((data, targetTime) => {
+        if (!data.length) return null;
+        const target = new Date(targetTime).getTime();
+        let left = 0;
+        let right = data.length - 1;
+        while (left <= right) {
+            const mid = Math.floor((left + right) / 2);
+            const midTime = new Date(data[mid].time).getTime();
+            if (midTime === target) return data[mid];
+            if (midTime < target) left = mid + 1;
+            else right = mid - 1;
+        }
+        const prev = right >= 0 ? data[right] : null;
+        const next = left < data.length ? data[left] : null;
+        if (!prev) return next;
+        if (!next) return prev;
+        return Math.abs(new Date(prev.time).getTime() - target) <= Math.abs(new Date(next.time).getTime() - target) ? prev : next;
+    }, []);
+
     useEffect(() => {
-        if (inflationData.length === 0) return;
+        if (!chartContainerRef.current || plottedPrimaryData.length === 0) return;
 
         const chart = createChart(chartContainerRef.current, {
             width: chartContainerRef.current.clientWidth,
@@ -56,6 +102,8 @@ const UsInflationChart = ({ isDashboard = false }) => {
             layout: { background: { type: 'solid', color: colors.primary[700] }, textColor: colors.primary[100] },
             grid: { vertLines: { color: colors.greenAccent[700] }, horzLines: { color: colors.greenAccent[700] } },
             timeScale: { minBarSpacing: 0.001 },
+            rightPriceScale: { visible: true, borderVisible: false },
+            leftPriceScale: { visible: hasOverlay, borderVisible: false },
         });
 
         const areaSeries = chart.addAreaSeries({
@@ -65,19 +113,21 @@ const UsInflationChart = ({ isDashboard = false }) => {
         });
         areaSeriesRef.current = areaSeries;
 
-        chart.priceScale('right').applyOptions({
-            mode: scaleMode,
-            borderVisible: false,
-        });
+        chart.priceScale('right').applyOptions({ mode: primaryScaleMode, borderVisible: false });
+        chart.priceScale('left').applyOptions({ mode: overlayScaleMode, borderVisible: false, visible: hasOverlay });
 
         chart.subscribeCrosshairMove(param => {
             if (!param.point || !param.time || param.point.x < 0 || param.point.x > chartContainerRef.current.clientWidth || param.point.y < 0 || param.point.y > chartContainerRef.current.clientHeight) {
                 setTooltipData(null);
             } else {
-                const data = param.seriesData.get(areaSeries);
+                const primaryNearest = param.seriesData.get(areaSeries) || findNearestData(primaryDataRef.current, param.time);
+                const overlayNearest = hasOverlay && overlaySeriesRef.current
+                    ? (param.seriesData.get(overlaySeriesRef.current) || findNearestData(overlayDataRef.current, param.time))
+                    : null;
                 setTooltipData({
                     date: param.time,
-                    price: data?.value,
+                    primaryValue: primaryNearest?.value,
+                    overlayValue: overlayNearest?.value,
                     x: param.point.x,
                     y: param.point.y,
                 });
@@ -98,7 +148,23 @@ const UsInflationChart = ({ isDashboard = false }) => {
             : { topColor: 'rgba(255, 165, 0, 0.56)', bottomColor: 'rgba(255, 165, 0, 0.2)', lineColor: 'rgba(255, 140, 0, 0.8)' };
 
         areaSeries.applyOptions({ topColor, bottomColor, lineColor });
-        areaSeries.setData(inflationData);
+        areaSeries.setData(plottedPrimaryData);
+        primaryDataRef.current = plottedPrimaryData;
+
+        if (hasOverlay && plottedOverlayData.length > 0) {
+            const overlaySeries = chart.addLineSeries({
+                priceScaleId: 'left',
+                lineWidth: 2,
+                color: overlayColor,
+                priceFormat: { type: 'custom', minMove: 0.01, formatter: formatOverlayValue },
+            });
+            overlaySeriesRef.current = overlaySeries;
+            overlaySeries.setData(plottedOverlayData);
+            overlayDataRef.current = plottedOverlayData;
+        } else {
+            overlaySeriesRef.current = null;
+            overlayDataRef.current = [];
+        }
 
         chartRef.current = chart;
         resetChartView();
@@ -107,9 +173,8 @@ const UsInflationChart = ({ isDashboard = false }) => {
             chart.remove();
             window.removeEventListener('resize', resizeChart);
         };
-    }, [inflationData, colors, scaleMode, theme.palette.mode]);
+    }, [plottedPrimaryData, plottedOverlayData, colors, primaryScaleMode, overlayScaleMode, theme.palette.mode, hasOverlay, overlayColor, formatOverlayValue, findNearestData, resetChartView]);
 
-    // Update interactivity
     useEffect(() => {
         if (chartRef.current) {
             chartRef.current.applyOptions({ handleScroll: isInteractive, handleScale: isInteractive });
@@ -119,13 +184,25 @@ const UsInflationChart = ({ isDashboard = false }) => {
     return (
         <div style={{ height: '100%' }}>
             {!isDashboard && (
+                <MacroChartControls
+                    colors={colors}
+                    overlaySeriesId={overlaySeriesId}
+                    onOverlayChange={setOverlaySeriesId}
+                    smoothingPeriod={smoothingPeriod}
+                    onSmoothingChange={setSmoothingPeriod}
+                    primaryScaleMode={primaryScaleMode}
+                    onPrimaryScaleChange={togglePrimaryScaleMode}
+                    overlayScaleMode={overlayScaleMode}
+                    onOverlayScaleChange={toggleOverlayScaleMode}
+                    showOverlayScale={hasOverlay}
+                    excludeOverlayIds={['INFLATION']}
+                    primaryLabel="US Inflation"
+                    overlayLabel={getOverlaySeriesLabel(overlaySeriesId)}
+                />
+            )}
+            {!isDashboard && (
                 <div className='chart-top-div'>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-                        <label className="switch">
-                            <input type="checkbox" checked={scaleMode === 1} onChange={toggleScaleMode} />
-                            <span className="slider round"></span>
-                        </label>
-                        <span style={{ color: colors.primary[100] }}>{scaleMode === 1 ? 'Logarithmic' : 'Linear'}</span>
                         {isLoading && <span style={{ color: colors.grey[100] }}>Loading...</span>}
                         {error && <span style={{ color: colors.redAccent[500] }}>{error}</span>}
                     </div>
@@ -142,8 +219,16 @@ const UsInflationChart = ({ isDashboard = false }) => {
                 {!isDashboard && (
                     <ChartTooltip tooltipData={tooltipData} chartContainerRef={chartContainerRef} render={(tooltipData) => (
 <>
-<div style={{ fontSize: '15px' }}>Inflation</div>
-                        <div style={{ fontSize: '20px' }}>{tooltipData.price != null ? tooltipData.price.toFixed(2) : 'N/A'}%</div>
+<div style={{ fontSize: '15px' }}>US Inflation</div>
+                        <div style={{ fontSize: '20px' }}>{tooltipData.primaryValue != null ? `${tooltipData.primaryValue.toFixed(2)}%` : 'N/A'}</div>
+                        {hasOverlay && (
+                            <>
+                                <div style={{ fontSize: '15px', color: overlayColor }}>{getOverlaySeriesLabel(overlaySeriesId)}</div>
+                                <div style={{ fontSize: '20px', color: overlayColor }}>
+                                    {tooltipData.overlayValue != null ? formatOverlayValue(tooltipData.overlayValue) : 'N/A'}
+                                </div>
+                            </>
+                        )}
                         <div>{tooltipData.date.toString().substring(0, 4) === currentYear ? `${tooltipData.date.toString().substring(0, 4)} - latest` : tooltipData.date.toString().substring(0, 4)}</div>
 </>
 )} />
@@ -159,8 +244,9 @@ const UsInflationChart = ({ isDashboard = false }) => {
             </div>
             {!isDashboard && (
                 <p className='chart-info'>
-                    This chart shows the historical annualized inflation rate of the United States,
-                    with the latest datapoint being the most recent month's inflation rate.
+                    This chart shows the historical annualized U.S. inflation rate, with the latest datapoint reflecting the most recent month.
+                    Overlay an asset such as Bitcoin or the S&amp;P 500 to compare how inflation regimes have aligned with market performance.
+                    Use smoothing to reduce monthly noise and reveal the underlying trend.
                 </p>
             )}
         </div>

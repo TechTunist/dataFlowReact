@@ -155,7 +155,8 @@ const UsCombinedMacroChart = ({ isDashboard = false }) => {
             </div>
             {!isDashboard && (
                 <p className='chart-info'>
-                    This chart shows the historical macroeconomic indicators of the United States, including inflation rate, unemployment rate, and interest rate.
+                    This combined view plots U.S. inflation, unemployment, and interest rates together so you can see how the Fed&apos;s policy stance relates to price stability and labor conditions.
+                    It is useful for spotting stagflationary setups (high inflation + rising unemployment), policy pivot points, and how macro stress has evolved relative to prior cycles.
                 </p>
             )}
         </div>

@@ -9,6 +9,18 @@ import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import logger from '../utils/logger';
 import LastUpdated from '../hooks/LastUpdated';
 import ChartTooltip from './ChartTooltip';
+import MacroChartControls, { getOverlaySeriesLabel } from './macro/MacroChartControls';
+import useMacroOverlaySeries from '../hooks/useMacroOverlaySeries';
+import { getMacroSeriesExplanation } from '../config/macroSeriesExplanations';
+import { availableMacroSeries } from './workbench/availableSeries';
+import {
+  OVERLAY_NONE,
+  applySmoothing,
+  cleanSeriesData,
+  defaultOverlayFormatter,
+  filterOverlayFromPrimary,
+  getSeriesMeta,
+} from '../utils/macroChartUtils';
 import {
   Select,
   MenuItem,
@@ -35,12 +47,16 @@ const FredSeriesChart = ({
   explanation = '',
   scaleMode = 'linear',
   showSP500Overlay = false,
+  enableAssetOverlay,
+  defaultOverlaySeriesId = 'SP500',
   enableTechnicalIndicators = false,
+  seriesLabel: seriesLabelProp,
 }) => {
+  const assetOverlayEnabled = enableAssetOverlay ?? showSP500Overlay;
   const chartContainerRef = useRef();
   const chartRef = useRef(null);
   const primarySeriesRef = useRef(null);
-  const sp500SeriesRef = useRef(null);
+  const overlaySeriesRef = useRef(null);
   const prevSeriesIdRef = useRef(null);
   const smaSeriesRefs = useRef({});
   const rsiSeriesRef = useRef(null);
@@ -59,15 +75,23 @@ const FredSeriesChart = ({
   }), []);
 
   const initialScaleMode = scaleMode === 'logarithmic' ? 1 : 0;
-  const [scaleModeState, setScaleModeState] = useState(initialScaleMode);
+  const [primaryScaleMode, setPrimaryScaleMode] = useState(initialScaleMode);
+  const [overlayScaleMode, setOverlayScaleMode] = useState(0);
+  const [overlaySeriesId, setOverlaySeriesId] = useState(
+    assetOverlayEnabled && seriesId !== defaultOverlaySeriesId ? defaultOverlaySeriesId : OVERLAY_NONE,
+  );
+  const [smoothingPeriod, setSmoothingPeriod] = useState(0);
   const [tooltipData, setTooltipData] = useState(null);
   const [isInteractive, setIsInteractive] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [zoomRange, setZoomRange] = useState(null);
   const [activeSMAs, setActiveSMAs] = useState([]);
-  const [maFilter, setMaFilter] = useState('daily'); // 'daily' | 'weekly' — defaults to daily as requested
+  const [maFilter, setMaFilter] = useState('daily');
   const [activeRsiPeriod, setActiveRsiPeriod] = useState('');
+
+  const seriesLabel = seriesLabelProp || availableMacroSeries[seriesId]?.label || seriesId;
+  const chartExplanation = explanation || getMacroSeriesExplanation(seriesId);
 
   const clearMovingAverages = useCallback(() => {
     setActiveSMAs([]);
@@ -77,29 +101,37 @@ const FredSeriesChart = ({
 
   const currentYear = useMemo(() => new Date().getFullYear().toString(), []);
   const primarySeriesData = fredSeriesData[seriesId] || [];
-  const sp500SeriesData = fredSeriesData['SP500'] || [];
   const primaryDataRef = useRef([]);
-  const sp500DataRef = useRef([]);
+  const overlayDataRef = useRef([]);
+
+  const { cleanedOverlayData, hasOverlay, overlayMeta } = useMacroOverlaySeries({
+    overlaySeriesId,
+    overlayScaleMode,
+    setIsLoading,
+    setError,
+  });
+
+  const overlayColor = overlayMeta?.color
+    || (theme.palette.mode === 'dark' ? 'rgb(223, 175, 185)' : 'rgba(112, 153, 112, 0.8)');
 
   // Cleaned data used for BOTH primary series plotting AND technical indicator (MA/RSI) calculations.
   // This ensures consistency (same points, same time normalization, same log-scale filtering)
   // and matches the pattern used in BitcoinPrice / AltcoinPrice / etc.
-  const cleanedPrimaryData = useMemo(() => {
-    if (!primarySeriesData || primarySeriesData.length === 0) return [];
-    return primarySeriesData
-      .filter(item => {
-        if (item.value == null || isNaN(item.value)) return false;
-        if (scaleModeState === 1 && item.value <= 0) return false;
-        const t = item.time;
-        if (!t || (typeof t === 'string' && t.length <= 4)) return false;
-        return true;
-      })
-      .map(item => ({
-        ...item,
-        time: item.time.includes('-') ? item.time : `${item.time}-01-01`
-      }))
-      .sort((a, b) => new Date(a.time) - new Date(b.time));
-  }, [primarySeriesData, scaleModeState]);
+  const cleanedPrimaryData = useMemo(
+    () => cleanSeriesData(primarySeriesData, { scaleMode: primaryScaleMode }),
+    [primarySeriesData, primaryScaleMode],
+  );
+
+  const plottedPrimaryData = useMemo(
+    () => applySmoothing(cleanedPrimaryData, smoothingPeriod),
+    [cleanedPrimaryData, smoothingPeriod],
+  );
+
+  const plottedOverlayData = useMemo(() => {
+    if (!hasOverlay) return [];
+    const filtered = filterOverlayFromPrimary(cleanedOverlayData, plottedPrimaryData.length ? plottedPrimaryData : cleanedPrimaryData);
+    return applySmoothing(filtered, smoothingPeriod);
+  }, [hasOverlay, cleanedOverlayData, plottedPrimaryData, cleanedPrimaryData, smoothingPeriod]);
 
   const handleSMAChange = useCallback((event) => setActiveSMAs(event.target.value), []);
   const handleRsiPeriodChange = useCallback((event) => {
@@ -155,14 +187,12 @@ const FredSeriesChart = ({
     return Math.abs(new Date(prev.time).getTime() - target) <= Math.abs(new Date(next.time).getTime() - target) ? prev : next;
   }, []);
 
-  // Fetch data
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
       setError(null);
       try {
         if (primarySeriesData.length === 0) await fetchFredSeriesData(seriesId);
-        if (showSP500Overlay && sp500SeriesData.length === 0) await fetchFredSeriesData('SP500');
       } catch (err) {
         setError(`Failed to fetch data for ${seriesId}`);
       } finally {
@@ -170,7 +200,7 @@ const FredSeriesChart = ({
       }
     };
     fetchData();
-  }, [fetchFredSeriesData, seriesId, showSP500Overlay]);
+  }, [fetchFredSeriesData, seriesId, primarySeriesData.length]);
 
   // Create chart once + resize listener
   useEffect(() => {
@@ -194,7 +224,7 @@ const FredSeriesChart = ({
         smoothScroll: true,
       },
       rightPriceScale: { visible: true, borderVisible: false },
-      leftPriceScale: { visible: showSP500Overlay, borderVisible: false },
+      leftPriceScale: { visible: hasOverlay, borderVisible: false },
     });
     chartRef.current = chart;
     smaSeriesRefs.current = {};
@@ -215,7 +245,7 @@ const FredSeriesChart = ({
       }
       window.removeEventListener('resize', resizeChart);
     };
-  }, [colors, showSP500Overlay]);
+  }, [colors, hasOverlay]);
 
   // Moving Averages effect
   useEffect(() => {
@@ -325,28 +355,27 @@ const FredSeriesChart = ({
     }
   }, [colors]);
 
-  // Update scale & overlay
   useEffect(() => {
     if (!chartRef.current) return;
-    chartRef.current.priceScale('right').applyOptions({ mode: scaleModeState, borderVisible: false });
+    chartRef.current.priceScale('right').applyOptions({ mode: primaryScaleMode, borderVisible: false });
     chartRef.current.priceScale('left').applyOptions({
-      visible: showSP500Overlay,
+      visible: hasOverlay,
+      mode: overlayScaleMode,
       borderVisible: false,
     });
-  }, [scaleModeState, showSP500Overlay]);
+  }, [primaryScaleMode, overlayScaleMode, hasOverlay]);
 
-  // Update main series data
   useEffect(() => {
-    if (!chartRef.current || cleanedPrimaryData.length === 0) return;
+    if (!chartRef.current || plottedPrimaryData.length === 0) return;
 
     const isNewSeries = seriesId !== prevSeriesIdRef.current;
     prevSeriesIdRef.current = seriesId;
 
-    if (cleanedPrimaryData.length === 0) {
+    if (plottedPrimaryData.length === 0) {
       setError(`No valid data for ${seriesId}`);
       return;
     }
-    primaryDataRef.current = cleanedPrimaryData;
+    primaryDataRef.current = plottedPrimaryData;
 
     if (primarySeriesRef.current) {
       try { chartRef.current.removeSeries(primarySeriesRef.current); } catch (e) {}
@@ -375,32 +404,35 @@ const FredSeriesChart = ({
       });
     }
     primarySeriesRef.current = primarySeries;
-    primarySeries.setData(cleanedPrimaryData);
+    primarySeries.setData(plottedPrimaryData);
 
-    if (showSP500Overlay && sp500SeriesData.length > 0) {
-      const minTime = new Date(cleanedPrimaryData[0].time).getTime();
-      const cleanedSP500 = sp500SeriesData
-        .filter(item => new Date(item.time).getTime() >= minTime && item.value > 0)
-        .sort((a, b) => new Date(a.time) - new Date(b.time));
+    if (overlaySeriesRef.current) {
+      try { chartRef.current.removeSeries(overlaySeriesRef.current); } catch (e) {}
+      overlaySeriesRef.current = null;
+    }
 
-      if (cleanedSP500.length > 0) {
-        if (sp500SeriesRef.current) {
-          try { chartRef.current.removeSeries(sp500SeriesRef.current); } catch (e) {}
-        }
-        const sp500Color = theme.palette.mode === 'dark' ? 'rgb(223, 175, 185)' : 'rgba(112, 153, 112, 0.8)';
-        const sp500Series = chartRef.current.addLineSeries({
-          priceScaleId: 'left', lineWidth: 2, color: sp500Color,
-          priceFormat: { type: 'custom', minMove: 0.01, formatter: v => v?.toLocaleString() || '' },
-        });
-        sp500SeriesRef.current = sp500Series;
-        sp500Series.setData(cleanedSP500);
-      }
+    if (hasOverlay && plottedOverlayData.length > 0) {
+      const overlaySeries = chartRef.current.addLineSeries({
+        priceScaleId: 'left',
+        lineWidth: 2,
+        color: overlayColor,
+        priceFormat: {
+          type: 'custom',
+          minMove: 0.01,
+          formatter: (v) => defaultOverlayFormatter(overlaySeriesId, v),
+        },
+      });
+      overlaySeriesRef.current = overlaySeries;
+      overlaySeries.setData(plottedOverlayData);
+      overlayDataRef.current = plottedOverlayData;
+    } else {
+      overlayDataRef.current = [];
     }
 
     if (isNewSeries || !zoomRange) {
       chartRef.current.timeScale().fitContent();
     }
-  }, [cleanedPrimaryData, sp500SeriesData, chartType, valueFormatter, theme.palette.mode, seriesId, showSP500Overlay]);
+  }, [plottedPrimaryData, plottedOverlayData, chartType, valueFormatter, theme.palette.mode, seriesId, hasOverlay, overlaySeriesId, overlayColor]);
 
   // Tooltip
   useEffect(() => {
@@ -415,9 +447,9 @@ const FredSeriesChart = ({
       let primaryNearest = param.seriesData.get(primarySeriesRef.current);
       if (!primaryNearest) primaryNearest = findNearestData(primaryDataRef.current, param.time);
 
-      let sp500Nearest = null;
-      if (showSP500Overlay && sp500SeriesRef.current) {
-        sp500Nearest = param.seriesData.get(sp500SeriesRef.current) || findNearestData(sp500DataRef.current, param.time);
+      let overlayNearest = null;
+      if (hasOverlay && overlaySeriesRef.current) {
+        overlayNearest = param.seriesData.get(overlaySeriesRef.current) || findNearestData(overlayDataRef.current, param.time);
       }
 
       clearTimeout(tooltipTimeout);
@@ -425,7 +457,7 @@ const FredSeriesChart = ({
         setTooltipData({
           date: param.time,
           primaryValue: primaryNearest?.value,
-          sp500Value: sp500Nearest?.value,
+          overlayValue: overlayNearest?.value,
           x: param.point.x,
           y: param.point.y,
         });
@@ -437,7 +469,7 @@ const FredSeriesChart = ({
       clearTimeout(tooltipTimeout);
       if (chartRef.current) chartRef.current.unsubscribeCrosshairMove(handleCrosshair);
     };
-  }, [findNearestData, showSP500Overlay]);
+  }, [findNearestData, hasOverlay]);
 
   // Interactivity
   useEffect(() => {
@@ -451,7 +483,8 @@ const FredSeriesChart = ({
   }, [isInteractive]);
 
   const setInteractivity = useCallback(() => setIsInteractive(prev => !prev), []);
-  const toggleScaleMode = useCallback(() => setScaleModeState(prev => prev === 1 ? 0 : 1), []);
+  const togglePrimaryScaleMode = useCallback(() => setPrimaryScaleMode(prev => (prev === 1 ? 0 : 1)), []);
+  const toggleOverlayScaleMode = useCallback(() => setOverlayScaleMode(prev => (prev === 1 ? 0 : 1)), []);
   const resetChartView = useCallback(() => {
     if (chartRef.current) {
       chartRef.current.timeScale().fitContent();
@@ -461,7 +494,11 @@ const FredSeriesChart = ({
   const toggleLegend = useCallback(() => setIsLegendVisible(prev => !prev), []);
 
   const primaryColor = theme.palette.mode === 'dark' ? 'rgba(38, 198, 218, 1)' : 'rgba(255, 140, 0, 0.8)';
-  const sp500Color = theme.palette.mode === 'dark' ? 'rgb(223, 175, 185)' : 'rgba(112, 153, 112, 0.8)';
+  const excludeOverlayIds = useMemo(() => {
+    const ids = [seriesId];
+    if (getSeriesMeta(seriesId)) ids.push(seriesId);
+    return ids;
+  }, [seriesId]);
 
   return (
     <div style={{ height: '100%', position: 'relative' }}>
@@ -629,13 +666,27 @@ const FredSeriesChart = ({
       )}
 
       {!isDashboard && (
+        <MacroChartControls
+          colors={colors}
+          overlaySeriesId={overlaySeriesId}
+          onOverlayChange={setOverlaySeriesId}
+          smoothingPeriod={smoothingPeriod}
+          onSmoothingChange={setSmoothingPeriod}
+          primaryScaleMode={primaryScaleMode}
+          onPrimaryScaleChange={togglePrimaryScaleMode}
+          overlayScaleMode={overlayScaleMode}
+          onOverlayScaleChange={toggleOverlayScaleMode}
+          showOverlayScale={hasOverlay}
+          enableOverlay
+          excludeOverlayIds={excludeOverlayIds}
+          primaryLabel={seriesLabel}
+          overlayLabel={getOverlaySeriesLabel(overlaySeriesId)}
+        />
+      )}
+
+      {!isDashboard && (
         <div className="chart-top-div">
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-            <label className="switch">
-              <input type="checkbox" checked={scaleModeState === 1} onChange={toggleScaleMode} />
-              <span className="slider round"></span>
-            </label>
-            <span style={{ color: colors.primary[100] }}>{scaleModeState === 1 ? 'Logarithmic' : 'Linear'}</span>
             {isLoading && <span style={{ color: colors.grey[100] }}>Loading...</span>}
             {error && <span style={{ color: colors.redAccent[500] }}>{error}</span>}
           </div>
@@ -660,12 +711,12 @@ const FredSeriesChart = ({
             <button onClick={toggleLegend} className="legend-minimize-button" style={{ position: 'absolute', top: '5px', left: '5px', background: 'transparent', border: 'none', color: colors.primary[100], fontSize: '16px', cursor: 'pointer' }}>−</button>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <div style={{ width: '12px', height: '12px', backgroundColor: primaryColor, borderRadius: '2px' }}></div>
-              <span>{seriesId}</span>
+              <span>{seriesLabel}</span>
             </div>
-            {showSP500Overlay && (
+            {hasOverlay && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '5px' }}>
-                <div style={{ width: '12px', height: '12px', backgroundColor: sp500Color, borderRadius: '2px' }}></div>
-                <span>S&P 500</span>
+                <div style={{ width: '12px', height: '12px', backgroundColor: overlayColor, borderRadius: '2px' }}></div>
+                <span>{getOverlaySeriesLabel(overlaySeriesId)}</span>
               </div>
             )}
           </div>
@@ -686,17 +737,19 @@ const FredSeriesChart = ({
 
       
 
-      {!isDashboard && explanation && <p className="chart-info">{explanation}</p>}
-    
+      {!isDashboard && chartExplanation && <p className="chart-info">{chartExplanation}</p>}
+
         {!isDashboard && (
           <ChartTooltip tooltipData={tooltipData} chartContainerRef={chartContainerRef} render={(tooltipData) => (
 <>
-<div style={{ fontSize: '15px' }}>{seriesId}</div>
-          <div style={{ fontSize: '20px' }}>{tooltipData.primaryValue ? valueFormatter(tooltipData.primaryValue) : 'N/A'}</div>
-          {showSP500Overlay && (
+<div style={{ fontSize: '15px' }}>{seriesLabel}</div>
+          <div style={{ fontSize: '20px' }}>{tooltipData.primaryValue != null ? valueFormatter(tooltipData.primaryValue) : 'N/A'}</div>
+          {hasOverlay && (
             <>
-              <div style={{ fontSize: '15px', color: sp500Color }}>S&P 500</div>
-              <div style={{ fontSize: '20px', color: sp500Color }}>{tooltipData.sp500Value ? tooltipData.sp500Value.toLocaleString() : 'N/A'}</div>
+              <div style={{ fontSize: '15px', color: overlayColor }}>{getOverlaySeriesLabel(overlaySeriesId)}</div>
+              <div style={{ fontSize: '20px', color: overlayColor }}>
+                {tooltipData.overlayValue != null ? defaultOverlayFormatter(overlaySeriesId, tooltipData.overlayValue) : 'N/A'}
+              </div>
             </>
           )}
           <div>{tooltipData.date}</div>
