@@ -6,7 +6,7 @@ import { ClerkProvider, useAuth } from "@clerk/clerk-react";
 import Topbar from "./scenes/global/Topbar";
 import { isChartPageRoute } from "./scenes/ChartTemplates/chartPageMeta";
 import MenuOutlinedIcon from "@mui/icons-material/MenuOutlined";
-import { IconButton, useTheme } from "@mui/material";
+import { IconButton } from "@mui/material";
 import { tokens } from "./theme";
 import Sidebar from "./scenes/global/Sidebar";
 import BasicChart from "./scenes/ChartTemplates/BasicChart";

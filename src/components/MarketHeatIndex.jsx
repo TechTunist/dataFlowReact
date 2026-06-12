@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState, useContext, useCallback, useMemo, useDeferredValue } from 'react';
 import { createChart } from 'lightweight-charts';
 import { tokens } from '../theme';
-import { useTheme, Box, FormControl, InputLabel, Select, MenuItem, useMediaQuery, Typography, Button, Slider, Switch, FormControlLabel } from '@mui/material';
+import { useTheme, Box, FormControl, InputLabel, Select, MenuItem, useMediaQuery, Typography, Button, Slider, Switch, FormControlLabel, CircularProgress } from '@mui/material';
 import '../styling/bitcoinChart.css';
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
@@ -170,6 +170,11 @@ const MarketHeatIndex = ({ isDashboard = false, isChartPage = false }) => {
   const [stretchToFullRange, setStretchToFullRange] = useState(false);
   const [heatSeriesReady, setHeatSeriesReady] = useState(false);
 
+  // Settings (previous state) load UX + failure handling
+  const [isLoadingSettings, setIsLoadingSettings] = useState(false);
+  const [settingsLoadFailed, setSettingsLoadFailed] = useState(false);
+  const [settingsLoadFailureCount, setSettingsLoadFailureCount] = useState(0);
+
   // Initialize latestSettingsRef with initial defaults (will be kept in sync via effect)
   if (!latestSettingsRef.current) {
     latestSettingsRef.current = {
@@ -191,6 +196,12 @@ const MarketHeatIndex = ({ isDashboard = false, isChartPage = false }) => {
   // Save debounced on any change of the tunable states; also on unmount if dirty.
   // Only for !isDashboard. Errors silent/graceful. Settings survive logout/login (server in Clerk metadata).
   // persistence added for tunable heat weights etc.
+  //
+  // UX improvements:
+  // - Show subtle "loading previous state" indicator while fetching (few seconds delay common)
+  // - On failure (after N attempts), still allow full use of component with defaults
+  // - Provide manual "Retry" so user can try restoring again
+  // - Only apply remote settings if user hasn't already started tweaking (avoids clobbering during slow load)
 
   const saveMarketHeatSettings = useCallback(async (settings) => {
     if (!settings || isDashboard) return;
@@ -218,26 +229,33 @@ const MarketHeatIndex = ({ isDashboard = false, isChartPage = false }) => {
     saveFnRef.current = saveMarketHeatSettings;
   }, [saveMarketHeatSettings]);
 
-  // Load settings on mount (once)
-  useEffect(() => {
-    const loadSettings = async () => {
-      if (hasLoadedSettings.current || isDashboard || !isSignedIn || !user) {
-        hasLoadedSettings.current = true;
-        return;
-      }
-      try {
-        const token = await getToken();
-        const response = await fetch(apiUrl('/api/user-settings/get/'), {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          if (data.marketHeatIndexSettings) {
-            const s = data.marketHeatIndexSettings;
+  // Extracted loader (callable for initial + manual retry)
+  const loadMarketHeatSettings = useCallback(async (isRetry = false) => {
+    if (!isRetry && (hasLoadedSettings.current || isDashboard || !isSignedIn || !user)) {
+      return;
+    }
+
+    setIsLoadingSettings(true);
+    setSettingsLoadFailed(false);
+
+    let success = false;
+    try {
+      const token = await getToken();
+      const response = await fetch(apiUrl('/api/user-settings/get/'), {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.marketHeatIndexSettings) {
+          const s = data.marketHeatIndexSettings;
+
+          // Only restore server state if the user hasn't already started interacting
+          // (prevents slow load from clobbering tweaks the user made while waiting)
+          if (!isDirtyRef.current) {
             if (s.weights && typeof s.weights === 'object') {
               setWeights(prev => ({ ...prev, ...s.weights }));
             }
@@ -254,27 +272,48 @@ const MarketHeatIndex = ({ isDashboard = false, isChartPage = false }) => {
               setStretchToFullRange(s.stretchToFullRange);
             }
           }
+          success = true;
+          setSettingsLoadFailureCount(0);
         }
-      } catch (err) {
-        // graceful, no UI break
-        console.warn('Could not load market heat index settings (using defaults):', err);
-      } finally {
-        hasLoadedSettings.current = true;
       }
-    };
-    loadSettings();
+    } catch (err) {
+      // graceful, no UI break - component remains fully usable with current (default) values
+      console.warn('Could not load market heat index settings (using defaults):', err);
+      setSettingsLoadFailureCount(c => c + 1);
+    } finally {
+      setIsLoadingSettings(false);
+      hasLoadedSettings.current = true;
+      if (!success) {
+        setSettingsLoadFailed(true);
+      }
+    }
   }, [isDashboard, isSignedIn, user, getToken]);
 
-  // Debounced save on state changes (800ms). Only after loaded, only !dashboard.
+  // Load settings on mount (once)
   useEffect(() => {
-    if (!hasLoadedSettings.current || isDashboard) return;
+    loadMarketHeatSettings();
+  }, [loadMarketHeatSettings]);
+
+  // Manual retry for user (after failures)
+  const handleRetryLoadSettings = useCallback(() => {
+    hasLoadedSettings.current = false;
+    setSettingsLoadFailed(false);
+    loadMarketHeatSettings(true);
+  }, [loadMarketHeatSettings]);
+
+  // Debounced save on state changes (800ms).
+  // We mark dirty on *any* user interaction (even during load), but only actually persist
+  // *after* hasLoadedSettings (so the initial load can safely apply remote prefs without being overwritten by defaults).
+  // If user tweaked before load finished, load will see isDirtyRef and skip applying remote.
+  useEffect(() => {
+    if (isDashboard) return;
     isDirtyRef.current = true;
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
     }
     const snapshot = { ...latestSettingsRef.current };
     saveTimeoutRef.current = setTimeout(() => {
-      if (saveFnRef.current) {
+      if (saveFnRef.current && hasLoadedSettings.current) {
         saveFnRef.current(snapshot);
       }
       isDirtyRef.current = false;
@@ -922,6 +961,57 @@ const MarketHeatIndex = ({ isDashboard = false, isChartPage = false }) => {
           <Typography variant="subtitle2" sx={{ color: colors.grey[100], mb: 0.5, fontSize: '0.85rem' }}>
             Weight Tuning &amp; Range (experimental — live updates the historic chart)
           </Typography>
+
+          {/* Loading previous user state (remote settings) indicator + graceful failure handling */}
+          {!isDashboard && isLoadingSettings && (
+            <Typography
+              variant="caption"
+              sx={{
+                color: colors.grey[400],
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.75,
+                mb: 0.5,
+                fontSize: '0.72rem',
+                opacity: 0.9,
+              }}
+            >
+              <CircularProgress size={13} sx={{ color: colors.grey[400] }} />
+              Restoring your saved weights, thresholds &amp; preferences...
+            </Typography>
+          )}
+
+          {!isDashboard && settingsLoadFailed && !isLoadingSettings && (
+            <Typography
+              variant="caption"
+              sx={{
+                color: colors.redAccent[400],
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+                mb: 0.5,
+                fontSize: '0.72rem',
+              }}
+            >
+              Could not restore saved settings after {settingsLoadFailureCount || 1} attempt
+              {settingsLoadFailureCount > 1 ? 's' : ''} (using defaults — component is fully usable).
+              <Button
+                size="small"
+                variant="text"
+                onClick={handleRetryLoadSettings}
+                sx={{
+                  minWidth: 0,
+                  p: '1px 4px',
+                  fontSize: '0.65rem',
+                  textTransform: 'none',
+                  color: colors.redAccent[400],
+                  '&:hover': { backgroundColor: 'rgba(255,255,255,0.08)' },
+                }}
+              >
+                Retry
+              </Button>
+            </Typography>
+          )}
           <Box sx={{
             display: 'grid',
             gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)', md: 'repeat(7, 1fr)' },

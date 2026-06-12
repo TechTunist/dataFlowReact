@@ -12,8 +12,7 @@ import {
 } from "@mui/material";
 import { Link, useNavigate } from "react-router-dom";
 import { useTheme } from "@mui/material";
-import LightModeOutlinedIcon from "@mui/icons-material/LightModeOutlined";
-import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
+import PaletteOutlinedIcon from "@mui/icons-material/PaletteOutlined";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import PersonOutlinedIcon from "@mui/icons-material/PersonOutlined";
 import PaymentOutlinedIcon from "@mui/icons-material/PaymentOutlined";
@@ -45,7 +44,9 @@ const AppControls = ({
   const { error, clearError } = useFavorites();
   const { subscriptionStatus } = useSubscription();
   const [anchorEl, setAnchorEl] = useState(null);
+  const [themeAnchorEl, setThemeAnchorEl] = useState(null);
   const userPlan = subscriptionStatus?.plan || "Free";
+  const currentThemeName = colorMode?.themeName || "night";
 
   return (
     <>
@@ -110,18 +111,64 @@ const AppControls = ({
           </IconButton>
         )}
         <IconButton
-          onClick={colorMode.toggleColorMode}
+          onClick={(e) => setThemeAnchorEl(e.currentTarget)}
           color="inherit"
           size="small"
-          aria-label="toggle theme"
+          aria-label="choose theme"
           sx={{ p: compact ? "3px" : undefined, minWidth: compact ? 32 : undefined }}
         >
-          {theme.palette.mode === "dark" ? (
-            <LightModeOutlinedIcon sx={{ fontSize: compact ? 18 : undefined }} />
-          ) : (
-            <DarkModeOutlinedIcon sx={{ fontSize: compact ? 18 : undefined }} />
-          )}
+          <PaletteOutlinedIcon sx={{ fontSize: compact ? 18 : undefined }} />
         </IconButton>
+        <Menu
+          anchorEl={themeAnchorEl}
+          open={Boolean(themeAnchorEl)}
+          onClose={() => setThemeAnchorEl(null)}
+          anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+          transformOrigin={{ vertical: "top", horizontal: "right" }}
+          PaperProps={{
+            sx: {
+              backgroundColor: colors.primary[800],
+              color: colors.grey[100],
+              minWidth: "188px",
+              py: 0.5,
+            },
+          }}
+        >
+          {[
+            { id: "night", label: "Night" },
+            { id: "black", label: "Black" },
+            { id: "darkGrey", label: "Dark Grey" },
+            { id: "day", label: "Day" },
+            { id: "dawn", label: "Dawn" },
+          ].map((t) => {
+            const isSelected = currentThemeName === t.id;
+            return (
+              <MenuItem
+                key={t.id}
+                selected={isSelected}
+                onClick={() => {
+                  colorMode?.setTheme?.(t.id);
+                  setThemeAnchorEl(null);
+                }}
+                sx={{
+                  fontSize: "13.5px",
+                  py: 0.6,
+                  px: 1.5,
+                  "&.Mui-selected": {
+                    backgroundColor: colors.primary[700],
+                    "&:hover": { backgroundColor: colors.primary[600] },
+                  },
+                  "&:hover": { backgroundColor: colors.primary[700] },
+                }}
+              >
+                {t.label}
+                {isSelected && (
+                  <Box component="span" sx={{ ml: "auto", fontSize: 11, opacity: 0.6 }}>✓</Box>
+                )}
+              </MenuItem>
+            );
+          })}
+        </Menu>
         {user && (
           <>
             <IconButton
