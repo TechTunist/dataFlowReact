@@ -14,7 +14,8 @@ import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { UnderChartRow } from './ChartUnderSection';
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  ReferenceArea, ReferenceLine
 } from 'recharts';
 import useIsMobile from '../hooks/useIsMobile';
 import { useAuth, useUser } from '@clerk/clerk-react';
@@ -96,6 +97,10 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
 
   // Persisted results per strategy so switching chips reloads the previous run's chart/portfolio curve for visual comparison
   const [resultsByStrategy, setResultsByStrategy] = useState({});
+
+  // Legend toggle state for the portfolio value chart series (invested / portfolioValue / lumpSumValue)
+  // Allows hiding the lump sum line which can dominate/skew the view depending on start date.
+  const [hiddenPortfolioSeries, setHiddenPortfolioSeries] = useState(new Set());
 
   // Attempt to load the user's currently saved Market Heat Index slider configuration (weights etc.)
   // so the DCA backtest for the heat strategy reflects the exact tunings they have in /market-heat-index.
@@ -554,6 +559,115 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
   // Those embeds have been removed per requirements; the levels array is no longer needed here
   // but the tier state (buyTiers/sellTiers) continues to drive the backtest logic.
 
+  // Toggle handler for portfolio chart legend (supports hiding lump sum to avoid skew from start-date timing)
+  const togglePortfolioSeries = useCallback((dataKey) => {
+    if (!dataKey) return;
+    setHiddenPortfolioSeries(prev => {
+      const next = new Set(prev);
+      if (next.has(dataKey)) {
+        next.delete(dataKey);
+      } else {
+        next.add(dataKey);
+      }
+      return next;
+    });
+  }, []);
+
+  // Subtle level bands + lines for the decision metric chart underneath the portfolio chart.
+  // Stronger tiers (farther extremes) get slightly higher opacity (more visible tint) but still subtle.
+  const metricChartElements = useMemo(() => {
+    const elements = [];
+    if (!fullChartData || fullChartData.length === 0) return elements;
+
+    const buysSorted = [...buyTiers].sort((a, b) => a.level - b.level);
+    const sellsSortedDesc = [...sellTiers].sort((a, b) => b.level - a.level);
+
+    const isHeat = strategy === 'heat-index';
+    const isRisk = strategy === 'risk';
+
+    // Buy zones (lower indicator = stronger buy for all three strategies)
+    let prevBuy = null;
+    buysSorted.forEach((tier, idx) => {
+      const strength = (buysSorted.length - idx) / Math.max(1, buysSorted.length); // first (lowest) = strongest
+      const alpha = 0.07 + (strength * 0.16); // subtle range ~0.07-0.23
+      const fill = isHeat
+        ? `rgba(0, 188, 212, ${alpha})`   // cyan/teal for heat
+        : `rgba(76, 175, 80, ${alpha})`;  // green for risk / tx
+      elements.push(
+        <ReferenceArea
+          key={`buy-zone-${idx}`}
+          y1={prevBuy}
+          y2={tier.level}
+          fill={fill}
+          fillOpacity={1}
+          stroke="none"
+        />
+      );
+      prevBuy = tier.level;
+    });
+
+    // Sell zones (higher = stronger sell)
+    let prevSell = null;
+    sellsSortedDesc.forEach((tier, idx) => {
+      const strength = (sellsSortedDesc.length - idx) / Math.max(1, sellsSortedDesc.length);
+      const alpha = 0.07 + (strength * 0.16);
+      const fill = `rgba(239, 83, 80, ${alpha})`; // red tones
+      elements.push(
+        <ReferenceArea
+          key={`sell-zone-${idx}`}
+          y1={tier.level}
+          y2={prevSell}
+          fill={fill}
+          fillOpacity={1}
+          stroke="none"
+        />
+      );
+      prevSell = tier.level;
+    });
+
+    // Thin dashed reference lines at exact tier levels (for precision, low visual weight)
+    buysSorted.forEach((tier, idx) => {
+      elements.push(
+        <ReferenceLine
+          key={`buy-line-${idx}`}
+          y={tier.level}
+          stroke={isHeat ? '#00bcd4' : '#4caf50'}
+          strokeDasharray="2 2"
+          strokeOpacity={0.65}
+          strokeWidth={1}
+        />
+      );
+    });
+    sellsSortedDesc.forEach((tier, idx) => {
+      elements.push(
+        <ReferenceLine
+          key={`sell-line-${idx}`}
+          y={tier.level}
+          stroke="#ef5350"
+          strokeDasharray="2 2"
+          strokeOpacity={0.65}
+          strokeWidth={1}
+        />
+      );
+    });
+
+    return elements;
+  }, [buyTiers, sellTiers, strategy, fullChartData]);
+
+  const metricLabel = strategy === 'risk'
+    ? 'Bitcoin Risk Metric (0-1)'
+    : strategy === 'tx-tension'
+      ? 'Tx Tension (MVRV/Tx Ratio)'
+      : 'Market Heat Index (0-100, using your saved config weights)';
+
+  const metricLineColor = strategy === 'risk'
+    ? colors.greenAccent[400]
+    : strategy === 'tx-tension'
+      ? colors.blueAccent[400]
+      : '#00bcd4';
+
+  const metricYDomain = strategy === 'risk' ? [0, 1.02] : strategy === 'heat-index' ? [0, 102] : ['auto', 'auto'];
+
   return (
     <Box sx={{ p: isMobile ? 1 : { xs: 1, md: 3 }, maxWidth: 1400, mx: 'auto' }}>
       {/* Strategy Selector - shell now provides the "Dynamic DCA Simulator" title from meta (no more CryptoLogical above it) */}
@@ -864,36 +978,45 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
                       contentStyle={{ backgroundColor: colors.primary[400], border: `1px solid ${colors.primary[500]}`, color: colors.grey[100] }}
                       formatter={(value) => ['$' + Math.round(value).toLocaleString()]}
                     />
-                    <Legend wrapperStyle={{ color: colors.grey[200], fontSize: 12 }} />
-                    <Line 
-                      type="step" 
-                      dataKey="invested" 
-                      name="Total Invested (DCA)" 
-                      stroke={colors.greenAccent[500]} 
-                      strokeWidth={2.5} 
-                      dot={false} 
-                      activeDot={{ r: 3, fill: colors.greenAccent[400] }}
+                    <Legend 
+                      wrapperStyle={{ color: colors.grey[200], fontSize: 12, cursor: 'pointer' }} 
+                      onClick={(e) => e && e.dataKey && togglePortfolioSeries(e.dataKey)}
                     />
-                    <Line 
-                      type="linear" 
-                      dataKey="portfolioValue" 
-                      name="Portfolio Value (incl. sells + remaining BTC)" 
-                      stroke={colors.blueAccent[400]} 
-                      strokeWidth={2.5} 
-                      dot={false} 
-                      activeDot={{ r: 3, fill: colors.blueAccent[400] }}
-                    />
-                    {/* Lump sum comparison line: same final capital all deployed at the sim's first price, held (no sells/boosts). Dashed for visual distinction. */}
-                    <Line 
-                      type="linear" 
-                      dataKey="lumpSumValue" 
-                      name="Lump Sum (final capital all-in at start, held)" 
-                      stroke={colors.grey[300]} 
-                      strokeWidth={2} 
-                      strokeDasharray="5 3"
-                      dot={false} 
-                      activeDot={{ r: 3, fill: colors.grey[300] }}
-                    />
+                    {!hiddenPortfolioSeries.has('invested') && (
+                      <Line 
+                        type="step" 
+                        dataKey="invested" 
+                        name="Total Invested (DCA)" 
+                        stroke={colors.greenAccent[500]} 
+                        strokeWidth={2.5} 
+                        dot={false} 
+                        activeDot={{ r: 3, fill: colors.greenAccent[400] }}
+                      />
+                    )}
+                    {!hiddenPortfolioSeries.has('portfolioValue') && (
+                      <Line 
+                        type="linear" 
+                        dataKey="portfolioValue" 
+                        name="Portfolio Value (incl. sells + remaining BTC)" 
+                        stroke={colors.blueAccent[400]} 
+                        strokeWidth={2.5} 
+                        dot={false} 
+                        activeDot={{ r: 3, fill: colors.blueAccent[400] }}
+                      />
+                    )}
+                    {/* Lump sum comparison line: same final capital all deployed at the sim's first price, held (no sells/boosts). Dashed for visual distinction. Click legend to toggle (useful when start date creates skew). */}
+                    {!hiddenPortfolioSeries.has('lumpSumValue') && (
+                      <Line 
+                        type="linear" 
+                        dataKey="lumpSumValue" 
+                        name="Lump Sum (final capital all-in at start, held)" 
+                        stroke={colors.grey[300]} 
+                        strokeWidth={2} 
+                        strokeDasharray="5 3"
+                        dot={false} 
+                        activeDot={{ r: 3, fill: colors.grey[300] }}
+                      />
+                    )}
                   </LineChart>
                 </ResponsiveContainer>
               ) : (
@@ -921,6 +1044,66 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
             <Typography variant="caption" sx={{ color: colors.grey[400], mt: 1, display: 'block' }}>
               Green = capital you put in over time. Blue = what your portfolio (including profits locked in via sells and the BTC you still hold) is worth at each point.
             </Typography>
+
+            {/* NEW: Decision metric visualization placed directly underneath the portfolio chart.
+                Shows the live indicator (risk / tx-tension / heat) used by the strategy + subtle colored bands for the configured buy/sell tiers.
+                Stronger tiers use slightly higher opacity tints (still kept subtle so the main line remains clearly visible).
+                Click legend items on the chart *above* to toggle the three portfolio series (hiding Lump Sum often cleans up skew from start date choice). */}
+            {chartSeriesData && chartSeriesData.length > 5 && (
+              <Box sx={{ mt: 2.5, pt: 1.5, borderTop: `1px solid ${colors.primary[500]}` }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+                  <Typography variant="subtitle2" sx={{ color: colors.grey[200] }}>{metricLabel}</Typography>
+                  <MuiTooltip title="This is the exact metric driving the dynamic buy boosts and sell reductions in the backtest. Colored bands visualize your current tier thresholds (stronger/extreme tiers use more visible but still transparent tints). Dashed lines mark the precise level values.">
+                    <InfoOutlinedIcon fontSize="small" sx={{ ml: 1, color: colors.grey[500] }} />
+                  </MuiTooltip>
+                </Box>
+                <Box sx={{ 
+                  width: '100%', 
+                  height: isMobile ? 160 : 210, 
+                  borderRadius: 1.5, 
+                  overflow: 'hidden',
+                  border: `1px solid ${colors.primary[500]}`,
+                  background: colors.primary[700],
+                  p: 0.5
+                }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={chartSeriesData}>
+                      <CartesianGrid strokeDasharray="2 2" stroke={colors.primary[500]} />
+                      <XAxis 
+                        dataKey="time" 
+                        tick={{ fill: colors.grey[400], fontSize: 9 }}
+                        tickLine={{ stroke: colors.grey[600] }}
+                        minTickGap={40}
+                      />
+                      <YAxis 
+                        domain={metricYDomain}
+                        tick={{ fill: colors.grey[400], fontSize: 9 }}
+                        tickLine={{ stroke: colors.grey[600] }}
+                        tickFormatter={(v) => strategy === 'risk' ? v.toFixed(2) : Math.round(v).toString()}
+                      />
+                      <Tooltip 
+                        contentStyle={{ backgroundColor: colors.primary[400], border: `1px solid ${colors.primary[500]}`, color: colors.grey[100], fontSize: 11 }}
+                        labelStyle={{ color: colors.grey[300] }}
+                        formatter={(value) => [strategy === 'risk' ? value.toFixed(3) : Math.round(value), 'Metric Value']}
+                      />
+                      {metricChartElements}
+                      <Line 
+                        type="linear" 
+                        dataKey="indicator" 
+                        name="Metric"
+                        stroke={metricLineColor} 
+                        strokeWidth={2} 
+                        dot={false} 
+                        activeDot={{ r: 2.5 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </Box>
+                <Typography variant="caption" sx={{ color: colors.grey[500], mt: 0.5, display: 'block', fontSize: '0.65rem' }}>
+                  Green/teal bands = buy boost zones (stronger tiers = more saturated tint). Red bands = sell / take-profit zones. Update tiers on the left and re-run to see impact on the portfolio chart above.
+                </Typography>
+              </Box>
+            )}
 
             {/* Compact results summary placed directly under the chart (per request) so the most important numbers are visible instantly without further scrolling. Granular trade log is kept lower down. */}
             {simulationResults && (
