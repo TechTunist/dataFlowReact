@@ -668,6 +668,18 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
 
   const metricYDomain = strategy === 'risk' ? [0, 1.02] : strategy === 'heat-index' ? [0, 102] : ['auto', 'auto'];
 
+  // Strategy comparison data - derived from persisted runs
+  const strategyComparisons = useMemo(() => {
+    const entries = Object.entries(resultsByStrategy || {}).map(([key, res]) => ({
+      key,
+      name: key === 'risk' ? 'Bitcoin Risk Metric' : key === 'tx-tension' ? 'Tx Tension (MVRV/Tx)' : key === 'heat-index' ? 'Market Heat Index' : key,
+      roi: res?.roi ?? 0,
+    }));
+    return entries.sort((a, b) => b.roi - a.roi);
+  }, [resultsByStrategy]);
+
+  const hasMultipleStrategiesRun = strategyComparisons.length > 1;
+
   return (
     <Box sx={{ p: isMobile ? 1 : { xs: 1, md: 3 }, maxWidth: 1400, mx: 'auto' }}>
       {/* Strategy Selector - shell now provides the "Dynamic DCA Simulator" title from meta (no more CryptoLogical above it) */}
@@ -1136,6 +1148,72 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
             )}
           </Paper>
         </Grid>
+
+        {/* Strategy Comparison - only appears after you've run 2+ different strategies.
+            Placed here above the Detailed Trade Log as requested. */}
+        {hasMultipleStrategiesRun && (
+          <Grid item xs={12}>
+            <Paper sx={{ p: isMobile ? 1.5 : 2.5, backgroundColor: colors.primary[400], border: `1px solid ${colors.primary[500]}`, mb: 2 }}>
+              <Typography variant="h6" sx={{ mb: 0.5 }}>Strategy Comparison</Typography>
+              <Typography variant="caption" sx={{ color: colors.grey[400], display: 'block', mb: 1.5 }}>
+                ROI of each dynamic strategy you've run so far (higher is better).
+              </Typography>
+
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
+                {strategyComparisons.map((entry) => {
+                  const isWinner = entry.key === strategyComparisons[0]?.key;
+                  return (
+                    <Box
+                      key={entry.key}
+                      sx={{
+                        flex: '1 1 160px',
+                        minWidth: 160,
+                        maxWidth: 240,
+                        p: 1.5,
+                        borderRadius: 1.5,
+                        backgroundColor: isWinner ? colors.greenAccent[800] : colors.primary[500],
+                        border: isWinner ? `2px solid ${colors.greenAccent[400]}` : `1px solid ${colors.primary[600]}`,
+                        position: 'relative',
+                      }}
+                    >
+                      <Typography variant="caption" sx={{ color: isWinner ? colors.greenAccent[200] : colors.grey[300], fontWeight: 500 }}>
+                        {entry.name}
+                      </Typography>
+                      <Typography variant="h5" sx={{ 
+                        color: isWinner ? colors.greenAccent[400] : colors.grey[100], 
+                        fontWeight: 700, 
+                        lineHeight: 1.1, 
+                        mt: 0.25 
+                      }}>
+                        {entry.roi.toFixed(1)}%
+                      </Typography>
+                      {isWinner && (
+                        <Chip 
+                          size="small" 
+                          label="🏆 Winner" 
+                          sx={{ 
+                            position: 'absolute', 
+                            top: 8, 
+                            right: 8, 
+                            backgroundColor: colors.greenAccent[400], 
+                            color: '#111', 
+                            fontWeight: 600,
+                            fontSize: '0.65rem',
+                            height: 20
+                          }} 
+                        />
+                      )}
+                    </Box>
+                  );
+                })}
+              </Box>
+
+              <Typography variant="caption" sx={{ mt: 1.5, display: 'block', color: colors.grey[500] }}>
+                Winner determined by highest ROI on the dynamic strategy run. Re-run any strategy to update its result here.
+              </Typography>
+            </Paper>
+          </Grid>
+        )}
 
         {/* Detailed / granular section (lower on the page, requires scroll). 
             The important summary numbers + chart are already visible higher up (under the chart in the right column). */}
