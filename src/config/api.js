@@ -47,6 +47,7 @@ export const API_ENDPOINTS = {
   txMvrvRatio: (smoothing = 'sma-7') => apiUrl(`/api/tx-mvrv-ratio/?smoothing=${smoothing}`),
   txMacro: () => apiUrl('/api/tx-macro/'),
   altcoinPrice: (coin) => apiUrl(`/api/${coin.toLowerCase()}/price/`),
+  tslaPrice: () => apiUrl('/api/tsla/price/'),
   altcoinSeasonIndex: () => apiUrl('/api/altcoin-season-index/'),
   altcoinSeasonTimeseries: () => apiUrl('/api/altcoin-season-index-timeseries/'),
   fedBalance: () => apiUrl('/api/fed-balance/'),

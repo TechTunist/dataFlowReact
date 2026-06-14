@@ -26,6 +26,8 @@ export const routeToChartId = {
   "/risk-color": "risk-color",
   "/risk-bands": "risk-bands",
   "/altcoin-price": "altcoin-price",
+  "/stocks": "stocks",
+  "/tsla": "tsla",
   "/altcoin-risk": "altcoin-risk",
   "/market-cycles": "market-cycles",
   "/fear-and-greed-chart": "fear-and-greed-chart",
@@ -124,6 +126,10 @@ export const getTitleAndSubtitle = (pathname, isMobile = false) => {
       return { title: "Time in Risk Bands", subtitle: isMobile ? "" : "See how long an asset spends in different risk bands" };
     case "/altcoin-price":
       return { title: "Altcoins", subtitle: "Altcoin Analysis" };
+    case "/tsla":
+      return { title: "Tesla (TSLA)", subtitle: isMobile ? "TSLA Stock" : "Tesla Daily Price History & Technical Analysis (MAs, RSI, etc.)" };
+    case "/stocks":
+      return { title: "Stock Selector", subtitle: isMobile ? "Stock Prices" : "Stock Price Viewer with selector (defaults to TSLA)" };
     case "/about":
       return { title: "About", subtitle: "Why did I create Cryptological?" };
     case "/login-signup":

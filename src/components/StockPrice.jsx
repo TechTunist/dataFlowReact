@@ -18,7 +18,7 @@ import {
 } from '../utils/technicalIndicators';
 import { getCurrentPrice } from '../utils/currentPrice';
 
-const AltcoinPrice = ({ isDashboard = false, defaultSelectedCoin }) => {
+const StockPrice = ({ isDashboard = false, defaultSelectedCoin }) => {
   const chartContainerRef = useRef();
   const chartRef = useRef(null);
   const priceSeriesRef = useRef(null);
@@ -33,7 +33,7 @@ const AltcoinPrice = ({ isDashboard = false, defaultSelectedCoin }) => {
   const [scaleMode, setScaleMode] = useState(0); // 0: linear, 1: logarithmic
   const [tooltipData, setTooltipData] = useState(null);
   const [isInteractive, setIsInteractive] = useState(false);
-  const [selectedCoin, setSelectedCoin] = useState(defaultSelectedCoin || 'SOL');
+  const [selectedCoin, setSelectedCoin] = useState(defaultSelectedCoin || 'TSLA');
   const [denominator, setDenominator] = useState('USD');
   const [activeIndicators, setActiveIndicators] = useState([]);
   const [activeSMAs, setActiveSMAs] = useState([]);
@@ -63,7 +63,7 @@ const AltcoinPrice = ({ isDashboard = false, defaultSelectedCoin }) => {
     'fed-balance': {
       color: 'purple',
       label: 'Fed Balance (Trillions)',
-      description: 'The Federal Reserve\'s balance sheet size in trillions of USD, reflecting monetary policy and liquidity in the economy, which may influence altcoin prices.',
+      description: 'The Federal Reserve\'s balance sheet size in trillions of USD, reflecting monetary policy and liquidity in the economy, which may influence stock prices.',
     },
     'mayer-multiple': {
       color: 'red',
@@ -82,40 +82,17 @@ const AltcoinPrice = ({ isDashboard = false, defaultSelectedCoin }) => {
     'Weekly': { days: 98, label: 'Weekly RSI' },
   }), []);
 
-  // Hardcoded list of altcoins
-  const altcoins = [
-    { label: 'Ethereum', value: 'ETH' },
-    { label: 'Solana', value: 'SOL' },
-    { label: 'Cardano', value: 'ADA' },
-    { label: 'Dogecoin', value: 'DOGE' },
-    { label: 'Chainlink', value: 'LINK' },
-    { label: 'XRP', value: 'XRP' },
-    { label: 'Avalanche', value: 'AVAX' },
-    { label: 'Toncoin', value: 'TON' },
-    { label: 'Binance-Coin', value: 'BNB' },
-    { label: 'Aave', value: 'AAVE' },
-    { label: 'Cronos', value: 'CRO' },
-    { label: 'Sui', value: 'SUI' },
-    { label: 'Hedera', value: 'HBAR' },
-    { label: 'Stellar', value: 'XLM' },
-    { label: 'Aptos', value: 'APT' },
-    { label: 'Polkadot', value: 'DOT' },
-    { label: 'VeChain', value: 'VET' },
-    { label: 'Uniswap', value: 'UNI' },
-    { label: 'Litecoin', value: 'LTC' },
-    { label: 'Leo Utility Token', value: 'LEO' },
-    { label: 'Hyperliquid', value: 'HYPE' },
-    { label: 'Near Protocol', value: 'NEAR' },
-    { label: 'Fetch.ai', value: 'FET' },
-    { label: 'Ondo Finance', value: 'ONDO' },
-    { label: 'Internet Computer', value: 'ICP' },
-    { label: 'Monero', value: 'XMR' },
-    { label: 'Polygon', value: 'POL' },
-    { label: 'Algorand', value: 'ALGO' },
-    { label: 'Render', value: 'RENDER' },
-    { label: 'Arbitrum', value: 'ARB' },
-    { label: 'Raydium', value: 'RAY' },
-    { label: 'Move', value: 'MOVE' },
+  // Hardcoded list of stocks (dedicated StockPrice component with its own selector, separate from altcoins)
+  const stocks = [
+    { label: 'Tesla (TSLA)', value: 'TSLA' },
+    { label: 'NVIDIA (NVDA)', value: 'NVDA' },
+    { label: 'Apple (AAPL)', value: 'AAPL' },
+    { label: 'Amazon (AMZN)', value: 'AMZN' },
+    { label: 'Microsoft (MSFT)', value: 'MSFT' },
+    { label: 'MicroStrategy (MSTR)', value: 'MSTR' },
+    { label: 'GameStop (GME)', value: 'GME' },
+    { label: 'Alphabet (GOOG)', value: 'GOOG' },
+    // Add more as backend daily updates (update_*.py) and data are enabled via update_all batches.
   ];
 
   // Utility functions
@@ -548,20 +525,20 @@ const AltcoinPrice = ({ isDashboard = false, defaultSelectedCoin }) => {
         >
           <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '200px' } }}>
             <InputLabel
-              id="altcoin-label"
+              id="stock-label"
               shrink
               sx={{
                 color: colors.grey[100],
                 '&.Mui-focused': { color: colors.greenAccent[500] },
               }}
             >
-              Altcoin
+              Stock
             </InputLabel>
             <Select
               value={selectedCoin}
               onChange={(e) => setSelectedCoin(e.target.value)}
-              label="Altcoin"
-              labelId="altcoin-label"
+              label="Stock"
+              labelId="stock-label"
               sx={{
                 color: colors.grey[100],
                 backgroundColor: colors.primary[500],
@@ -572,7 +549,7 @@ const AltcoinPrice = ({ isDashboard = false, defaultSelectedCoin }) => {
                 '& .MuiSelect-select': { py: 1.5, pl: 2 },
               }}
             >
-              {altcoins.map((coin) => (
+              {stocks.map((coin) => (
                 <MenuItem key={coin.value} value={coin.value}>
                   {coin.label}
                 </MenuItem>
@@ -1036,21 +1013,14 @@ const AltcoinPrice = ({ isDashboard = false, defaultSelectedCoin }) => {
       )}
       {!isDashboard && (
         <p className="chart-info">
-          The altcoin market is the wild-west of the crypto world. This asset class faces regulatory uncertainty, scams perpetuated by bad actors,
-          extreme volatility and the tendency to lose anywhere between 70-99% of a token's value in a bear market, with no guarantee that the price will ever recover.
-          There is however a core of projects that are being driven by some talented and respected developers and technologists that are implementing
-          smart-contract functionality (permissionless and immutable executable code that is deployed on the blockchain) and are genuinely attempting
-          to build the next generation of the internet through distributed ledger blockchain technology. These crypto assets are used to drive the
-          functionality and security of their respective blockchain.
-          These projects are far riskier, but during certain phases of the business cycle (severe drops in bitcoin dominance paired with looser monetary policy)
-          they have historically offered far greater returns than that of traditional markets and the 2 crypto blue-chips; Bitcoin & Ethereum.
-          Since Bitcoin is the lowest risk crypto asset, it makes sense to value these altcoins against not only their USD pair, but also their BTC pair.
-          If the altcoin is underperforming against BTC, it makes no sense to hold the far riskier asset.
-          This chart allows you to compare the performance of various altcoins against Bitcoin.
+          Stocks like TSLA provide exposure to individual companies with real-world fundamentals, earnings, and sector dynamics (EV, tech, AI, etc.).
+          They tend to be less volatile than altcoins but can still experience significant drawdowns. This viewer lets you analyze price action with moving averages,
+          RSI, and other technical indicators, and optionally compare against BTC (as a "risk-on" macro proxy) or USD.
+          Use the dropdown to switch between major stocks that have daily historical data in the platform.
         </p>
       )}
     </div>
   );
 };
 
-export default restrictToPaidSubscription(AltcoinPrice);
+export default restrictToPaidSubscription(StockPrice);

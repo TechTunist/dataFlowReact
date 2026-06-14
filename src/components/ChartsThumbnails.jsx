@@ -64,6 +64,14 @@ const Charts = () => {
         image: '../../assets/initialClaims.png',
       },
     ],
+    "Stocks": [
+      {
+        path: "/stocks",
+        title: "Stock Selector",
+        description: "Dedicated stock price viewer (Stock Selector component) with dropdown for TSLA, NVDA, AAPL, AMZN, MSFT, MSTR, GME, GOOG etc. Same technical indicators (MAs, RSI, etc.) as the altcoin viewer but completely separate. Defaults to TSLA. Data updated daily via backend.",
+        image: '../../assets/tsla.png', // placeholder
+      },
+    ],
     Price: [
       {
         path: "/bitcoin",

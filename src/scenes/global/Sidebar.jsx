@@ -255,6 +255,8 @@ const itemsData = [
   // Category Icon: BuildIcon - Represents tools and building/analysis
   { title: "Workbench (beta)", to: "/workbench", category: "Tools", icon: <BuildIcon />, categoryIcon: <BuildIcon /> }, // BuildIcon: Workbench for building charts
   { title: "Dynamic DCA Simulator", to: "/dynamic-dca", category: "Tools", icon: <CalculateIcon />, categoryIcon: <BuildIcon /> },
+  // === STOCKS (dedicated section + component "Stock Selector", separate from altcoins) ===
+  { title: "Stock Selector", to: "/stocks", category: "Stocks", icon: <ShowChartIcon />, categoryIcon: <AssessmentIcon /> },
 ];
 
   const activeCategory = useMemo(() => {
