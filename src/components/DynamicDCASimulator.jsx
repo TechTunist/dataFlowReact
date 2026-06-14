@@ -680,11 +680,117 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
 
   const hasMultipleStrategiesRun = strategyComparisons.length > 1;
 
+  // Clear only the saved simulation results (keeps user's tuned tiers, weights, and parameters)
+  const clearSimulations = useCallback(() => {
+    setResultsByStrategy({});
+    setSimulationResults(null);
+    setShowTrades(false);
+    setHiddenPortfolioSeries(new Set());
+  }, []);
+
+  // ============================================
+  // Persistence: localStorage for simulations + config between sessions and component mounts
+  // ============================================
+
+  // Load persisted state once on mount (after initial defaults)
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('cryptological:dcaSimulatorState');
+      if (!raw) return;
+      const saved = JSON.parse(raw);
+
+      if (saved.strategy) setStrategy(saved.strategy);
+      if (typeof saved.txSmoothing === 'string') setTxSmoothing(saved.txSmoothing);
+      if (typeof saved.dcaAmount === 'number') setDcaAmount(saved.dcaAmount);
+      if (typeof saved.frequency === 'number') setFrequency(saved.frequency);
+      if (typeof saved.startDate === 'string') setStartDate(saved.startDate);
+      if (typeof saved.buyStrategy === 'string') setBuyStrategy(saved.buyStrategy);
+
+      if (Array.isArray(saved.riskBuyTiers)) setRiskBuyTiers(saved.riskBuyTiers);
+      if (Array.isArray(saved.riskSellTiers)) setRiskSellTiers(saved.riskSellTiers);
+      if (Array.isArray(saved.txBuyTiers)) setTxBuyTiers(saved.txBuyTiers);
+      if (Array.isArray(saved.txSellTiers)) setTxSellTiers(saved.txSellTiers);
+      if (Array.isArray(saved.heatBuyTiers)) setHeatBuyTiers(saved.heatBuyTiers);
+      if (Array.isArray(saved.heatSellTiers)) setHeatSellTiers(saved.heatSellTiers);
+
+      if (saved.heatWeights && typeof saved.heatWeights === 'object') {
+        setHeatWeights(prev => ({ ...prev, ...saved.heatWeights }));
+      }
+
+      if (saved.resultsByStrategy && typeof saved.resultsByStrategy === 'object') {
+        setResultsByStrategy(saved.resultsByStrategy);
+      }
+
+      // Note: simulationResults is restored via the existing resultsByStrategy + strategy effect
+      // hiddenPortfolioSeries is intentionally not restored (UI preference)
+    } catch (e) {
+      // Corrupt storage or quota — ignore
+      console.warn('Failed to load persisted DCA simulator state', e);
+    }
+  }, []); // run once
+
+  // Save key state whenever it changes (debounce not strictly needed; localStorage is fast)
+  useEffect(() => {
+    const stateToPersist = {
+      strategy,
+      txSmoothing,
+      dcaAmount,
+      frequency,
+      startDate,
+      buyStrategy,
+      riskBuyTiers,
+      riskSellTiers,
+      txBuyTiers,
+      txSellTiers,
+      heatWeights,
+      heatBuyTiers,
+      heatSellTiers,
+      resultsByStrategy,
+    };
+    try {
+      localStorage.setItem('cryptological:dcaSimulatorState', JSON.stringify(stateToPersist));
+    } catch (e) {
+      console.warn('Failed to persist DCA simulator state (storage full?)', e);
+    }
+  }, [
+    strategy,
+    txSmoothing,
+    dcaAmount,
+    frequency,
+    startDate,
+    buyStrategy,
+    riskBuyTiers,
+    riskSellTiers,
+    txBuyTiers,
+    txSellTiers,
+    heatWeights,
+    heatBuyTiers,
+    heatSellTiers,
+    resultsByStrategy,
+  ]);
+
   return (
     <Box sx={{ p: isMobile ? 1 : { xs: 1, md: 3 }, maxWidth: 1400, mx: 'auto' }}>
       {/* Strategy Selector - shell now provides the "Dynamic DCA Simulator" title from meta (no more CryptoLogical above it) */}
       <Paper sx={{ p: isMobile ? 1.5 : 2, mb: 3, backgroundColor: colors.primary[400], border: `1px solid ${colors.primary[500]}` }}>
-        <Typography variant="subtitle2" sx={{ mb: 1, color: colors.grey[200] }}>Strategy / Indicator</Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+          <Typography variant="subtitle2" sx={{ color: colors.grey[200] }}>Strategy / Indicator</Typography>
+          <Button
+            size="small"
+            variant="outlined"
+            color="error"
+            onClick={clearSimulations}
+            sx={{ 
+              fontSize: '0.7rem', 
+              py: 0.25, 
+              px: 1,
+              minWidth: 'auto',
+              borderColor: colors.redAccent ? colors.redAccent[400] : undefined 
+            }}
+          >
+            Clear Simulations
+          </Button>
+        </Box>
         <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
           <Chip
             label="Bitcoin Risk Metric (0-1)"
