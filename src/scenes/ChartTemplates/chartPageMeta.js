@@ -28,6 +28,7 @@ export const routeToChartId = {
   "/altcoin-price": "altcoin-price",
   "/stocks": "stocks",
   "/tsla": "tsla",
+  "/stock-risk": "stock-risk",
   "/altcoin-risk": "altcoin-risk",
   "/market-cycles": "market-cycles",
   "/fear-and-greed-chart": "fear-and-greed-chart",
@@ -130,6 +131,8 @@ export const getTitleAndSubtitle = (pathname, isMobile = false) => {
       return { title: "Tesla (TSLA)", subtitle: isMobile ? "TSLA Stock" : "Tesla Daily Price History & Technical Analysis (MAs, RSI, etc.)" };
     case "/stocks":
       return { title: "Stock Selector", subtitle: isMobile ? "Stock Prices" : "Stock Price Viewer with selector (defaults to TSLA)" };
+    case "/stock-risk":
+      return { title: "Stock Risk", subtitle: isMobile ? "Stock Risk" : "Stock Risk Metric (price-history based, like Altcoin Risk)" };
     case "/about":
       return { title: "About", subtitle: "Why did I create Cryptological?" };
     case "/login-signup":

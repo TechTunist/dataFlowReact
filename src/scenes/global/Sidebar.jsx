@@ -257,6 +257,7 @@ const itemsData = [
   { title: "Dynamic DCA Simulator", to: "/dynamic-dca", category: "Tools", icon: <CalculateIcon />, categoryIcon: <BuildIcon /> },
   // === STOCKS (dedicated section + component "Stock Selector", separate from altcoins) ===
   { title: "Stock Selector", to: "/stocks", category: "Stocks", icon: <ShowChartIcon />, categoryIcon: <AssessmentIcon /> },
+  { title: "Stock Risk", to: "/stock-risk", category: "Stocks", icon: <ShowChartIcon />, categoryIcon: <AssessmentIcon /> },
 ];
 
   const activeCategory = useMemo(() => {

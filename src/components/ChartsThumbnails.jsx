@@ -71,6 +71,11 @@ const Charts = () => {
         description: "Dedicated stock price viewer (Stock Selector component) with dropdown for TSLA, NVDA, AAPL, AMZN, MSFT, MSTR, GME, GOOG etc. Same technical indicators (MAs, RSI, etc.) as the altcoin viewer but completely separate. Defaults to TSLA. Data updated daily via backend.",
         image: '../../assets/tsla.png', // placeholder
       },
+      {
+        path: "/stock-risk",
+        title: "Stock Risk",
+        description: "Stock risk metric viewer with selector (identical price-history risk calc to Altcoin Risk, using stock data). Defaults to TSLA.",
+      },
     ],
     Price: [
       {

@@ -40,6 +40,7 @@ import BitcoinRiskColor from "./components/BitcoinRiskColor";
 import AssetRiskBandDuration from "./components/RiskTimeInBands";
 import AltcoinPrice from "./components/AltcoinPrice";
 import StockPrice from "./components/StockPrice";
+import StockRisk from "./components/StockRisk";
 import AltcoinRisk from "./components/AltcoinRisk";
 import MarketCycles from "./components/MarketCycles";
 import FearAndGreedChart from "./components/FearAndGreedChart";
@@ -160,6 +161,7 @@ const appRoutes = [
   { path: "/altcoin-price", component: AltcoinPrice, useBasicChart: true, protected: true },
   { path: "/stocks", component: StockPrice, useBasicChart: true, protected: true, props: { defaultSelectedCoin: 'TSLA' } },
   { path: "/tsla", component: StockPrice, useBasicChart: true, protected: true, props: { defaultSelectedCoin: 'TSLA' } },
+  { path: "/stock-risk", component: StockRisk, useBasicChart: true, protected: true },
   { path: "/altcoin-risk", component: AltcoinRisk, useBasicChart: true, protected: true },
   { path: "/market-cycles", component: MarketCycles, useBasicChart: true, protected: true },
   { path: "/fear-and-greed-chart", component: FearAndGreedChart, useBasicChart: true, protected: true },
