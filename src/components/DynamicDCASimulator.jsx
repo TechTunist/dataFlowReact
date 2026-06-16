@@ -95,6 +95,17 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
   // 'trigger-only' = only buy when a buy tier is hit (freq then acts as cooldown since last buy). No automatic "normal" buys.
   const [buyStrategy, setBuyStrategy] = useState('periodic-boost');
 
+  // Dynamic label for the DCA button based on selected frequency
+  const frequencyLabel = useMemo(() => {
+    switch (frequency) {
+      case 1: return 'Daily';
+      case 7: return 'Weekly';
+      case 14: return 'Bi-weekly';
+      case 28: return 'Monthly';
+      default: return `${frequency}-day`;
+    }
+  }, [frequency]);
+
   // Persisted results per strategy so switching chips reloads the previous run's chart/portfolio curve for visual comparison
   const [resultsByStrategy, setResultsByStrategy] = useState({});
 
@@ -865,15 +876,15 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
             />
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
-            <Typography variant="caption" sx={{ color: colors.grey[200] }}>Buy mode</Typography>
+            <Typography variant="caption" sx={{ color: colors.grey[200] }}>{`Buy Mode: ${frequencyLabel}`}</Typography>
             <Box sx={{ display: 'flex', gap: 0.5, mt: 0.5, flexWrap: 'wrap' }}>
               <Button size="small" variant={buyStrategy === 'periodic-boost' ? 'contained' : 'outlined'} onClick={() => setBuyStrategy('periodic-boost')}
                 sx={{ color: buyStrategy === 'periodic-boost' ? '#111' : colors.greenAccent[500], borderColor: colors.greenAccent[500], backgroundColor: buyStrategy === 'periodic-boost' ? colors.greenAccent[500] : 'transparent', fontSize: '0.7rem', px: 1, py: 0.25 }}>
-                Periodic+boost
+                Constant
               </Button>
               <Button size="small" variant={buyStrategy === 'trigger-only' ? 'contained' : 'outlined'} onClick={() => setBuyStrategy('trigger-only')}
                 sx={{ color: buyStrategy === 'trigger-only' ? '#111' : colors.blueAccent[400], borderColor: colors.blueAccent[400], backgroundColor: buyStrategy === 'trigger-only' ? colors.blueAccent[400] : 'transparent', fontSize: '0.7rem', px: 1, py: 0.25 }}>
-                Trigger only
+                On Trigger Levels
               </Button>
             </Box>
           </Grid>
@@ -887,7 +898,7 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
                 color: '#111', 
                 fontWeight: 600,
                 '&:hover': {
-                  backgroundColor: colors.blueAccent[500],
+                  backgroundColor: '#da07ff',
                   color: '#fff'
                 }
               }}
