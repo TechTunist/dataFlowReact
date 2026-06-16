@@ -6,13 +6,13 @@ import { useTheme } from "@mui/material";
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
 import BitcoinFees from './BitcoinTransactionFees';
-import { Box, FormControl, InputLabel, Select, MenuItem, ToggleButton, ToggleButtonGroup, useMediaQuery, Checkbox, Typography, Button, Grid, TextField } from '@mui/material';
+import { Box, FormControl, InputLabel, Select, MenuItem, ToggleButton, ToggleButtonGroup, useMediaQuery, Checkbox, Typography } from '@mui/material';
 import { UnderChartRow, ChartUnderSection, UnderChartScroll, ChartInfo } from './ChartUnderSection';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import ChartTooltip from './ChartTooltip';
 
-const BitcoinTxMvrvChart = ({ isDashboard = false, isChartPage = false, txMvrvData: propTxMvrvData, simulatorDcaLevels = null, hideControls = false }) => {
+const BitcoinTxMvrvChart = ({ isDashboard = false, isChartPage = false, txMvrvData: propTxMvrvData, hideControls = false }) => {
   const chartContainerRef = useRef();
   const chartRef = useRef(null);
   const txCountSeriesRef = useRef(null);
@@ -23,33 +23,11 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, isChartPage = false, txMvrvDa
   const horizontalLineSeriesRef = useRef(null);
   const overboughtSeriesRef = useRef(null);
   const bottomShadedSeriesRef = useRef(null);
-  const dcaLevelSeriesRefs = useRef([]);
   const [tooltipData, setTooltipData] = useState(null);
   const [isInteractive, setIsInteractive] = useState(false);
   const [displayMode, setDisplayMode] = useState('ratio');
   const [smoothingMode, setSmoothingMode] = useState('sma-7');
   const [activeTrends, setActiveTrends] = useState([]);
-
-  // === DCA Simulation using MVRV/Tx Ratio (copied and adapted from BitcoinRisk.jsx) ===
-  // Do not change the /risk component. This is a copy for tx-mvrv.
-  const [dcaAmount, setDcaAmount] = useState(100);
-  const [dcaFrequency, setDcaFrequency] = useState(7);
-  const [dcaStartDate, setDcaStartDate] = useState('2021-01-01');
-  const [dcaRatioThreshold, setDcaRatioThreshold] = useState(10); // adjustable, default in low range 5-16
-  const [sellThresholds, setSellThresholds] = useState([
-    { ratioLevel: 20, percentage: 10 },
-    { ratioLevel: 30, percentage: 25 },
-    { ratioLevel: 40, percentage: 50 },
-  ]);
-  const [totalUsdInvested, setTotalUsdInvested] = useState(0);
-  const [totalUsdRealized, setTotalUsdRealized] = useState(0);
-  const [btcHeld, setBtcHeld] = useState(0);
-  const [transactionHistory, setTransactionHistory] = useState([]);
-  const [simulationRun, setSimulationRun] = useState(false);
-  const [percentageGains, setPercentageGains] = useState(0);
-  const [unrealizedGains, setUnrealizedGains] = useState(0);
-  const [totalPortfolioValue, setTotalPortfolioValue] = useState(0);
-  const [showTransactions, setShowTransactions] = useState(false);
 
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
@@ -179,120 +157,6 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, isChartPage = false, txMvrvDa
   const handleTrendsChange = useCallback((event) => {
     setActiveTrends(event.target.value);
   }, []);
-
-  // Adapted from BitcoinRisk - DCA simulation for ratio values
-  // high ratio = overbought (sell), low ratio = oversold (buy more)
-  const handleThresholdChange = (index, newPercentage) => {
-    const updatedThresholds = sellThresholds.map((threshold, idx) => {
-      if (idx === index) {
-        return { ...threshold, percentage: newPercentage };
-      }
-      return threshold;
-    });
-    setSellThresholds(updatedThresholds);
-  };
-
-  const handleDcaSimulation = () => {
-    // Use ratio data if in ratio mode, else fallback
-    let simData = [];
-    if (displayMode === 'ratio' && processedData && processedData.ratioData && processedData.ratioData.length > 0) {
-      const { ratioData, filteredBtcData } = processedData;
-      simData = ratioData.map((r, i) => {
-        const b = filteredBtcData[i] || { value: 0, time: r.time };
-        return {
-          time: r.time,
-          value: b.value,
-          ratio: r.value,
-        };
-      });
-    } else if (txMvrvData.length > 0) {
-      // fallback: if txMvrvData has mvrv, but for ratio we prefer the precomputed
-      // for now use empty or simple
-      simData = [];
-    }
-    if (simData.length === 0) {
-      alert('Switch to MVRV/Tx Ratio mode or ensure data is loaded for simulation.');
-      return;
-    }
-
-    let localBtcHeld = 0;
-    let localTotalUsdRealized = 0;
-    let localTotalUsdInvested = 0;
-    let localTransactionHistory = [];
-    let nextPurchaseDate = new Date(dcaStartDate);
-    let lastSellDate = new Date(dcaStartDate);
-    lastSellDate.setDate(lastSellDate.getDate() - dcaFrequency);
-
-    let currentBtcPrice = 0;
-    let currentRatio = 0;
-
-    simData.forEach(day => {
-      const dayDate = new Date(day.time);
-      currentBtcPrice = day.value;
-      currentRatio = day.ratio;
-
-      if (dayDate >= nextPurchaseDate && currentRatio <= dcaRatioThreshold) {
-        const btcPurchased = dcaAmount / day.value;
-        localBtcHeld += btcPurchased;
-        localTotalUsdInvested += dcaAmount;
-        localTransactionHistory.push({
-          type: 'buy',
-          date: day.time,
-          amount: btcPurchased,
-          price: day.value,
-          ratio: currentRatio,
-        });
-        nextPurchaseDate = new Date(dayDate);
-        nextPurchaseDate.setDate(dayDate.getDate() + dcaFrequency);
-      }
-
-      const daysSinceLastSale = (dayDate - lastSellDate) / (1000 * 60 * 60 * 24);
-
-      if (localBtcHeld > 0 && daysSinceLastSale >= dcaFrequency) {
-        let maxApplicableThreshold = null;
-
-        sellThresholds.forEach(threshold => {
-          if (currentRatio >= threshold.ratioLevel && threshold.percentage > 0) {
-            if (!maxApplicableThreshold || threshold.ratioLevel > maxApplicableThreshold.ratioLevel) {
-              maxApplicableThreshold = threshold;
-            }
-          }
-        });
-
-        if (maxApplicableThreshold && maxApplicableThreshold.percentage > 0) {
-          const btcSold = localBtcHeld * (maxApplicableThreshold.percentage / 100);
-          localBtcHeld -= btcSold;
-          const usdRealized = btcSold * day.value;
-          localTotalUsdRealized += usdRealized;
-          localTransactionHistory.push({
-            type: 'sell',
-            date: day.time,
-            amount: btcSold,
-            price: day.value,
-            ratio: currentRatio,
-            sellPercent: maxApplicableThreshold.percentage,
-          });
-          lastSellDate = new Date(dayDate);
-        }
-      }
-    });
-
-    const calculatePercentageGains = localTotalUsdInvested > 0
-      ? ((localTotalUsdRealized - localTotalUsdInvested) / localTotalUsdInvested) * 100
-      : 0;
-
-    const unrealizedGains = localBtcHeld * currentBtcPrice;
-
-    setBtcHeld(localBtcHeld);
-    setTotalUsdRealized(localTotalUsdRealized);
-    setTotalUsdInvested(localTotalUsdInvested);
-    setPercentageGains(calculatePercentageGains);
-    setTransactionHistory(localTransactionHistory);
-    setUnrealizedGains(unrealizedGains);
-    setTotalPortfolioValue(localTotalUsdRealized + unrealizedGains);
-
-    setSimulationRun(true);
-  };
 
   const getBearMarketBottoms = useCallback((ratioData, bottomDates) => {
     return bottomDates.map(date => {
@@ -449,36 +313,36 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, isChartPage = false, txMvrvDa
     // Add overbought series first to create the scale
     const overboughtSeries = chart.addHistogramSeries({
       priceScaleId: 'overbought-scale',
-      color: theme.palette.mode === 'dark' ? 'rgba(255, 99, 71, 0.3)' : 'rgba(255, 140, 0, 0.3)', // Muted red/orange with higher opacity for visibility
+      color: theme.palette.mode === 'dark' ? 'rgba(255, 99, 71, 0.3)' : 'rgba(255, 140, 0, 0.3)',
       priceFormat: {
         type: 'custom',
         minMove: 0.01,
-        formatter: (value) => (value === 1 ? '' : ''), // Hide labels
+        formatter: (value) => (value === 1 ? '' : ''),
       },
-      visible: false, // Initially hidden
+      visible: false,
     });
     overboughtSeriesRef.current = overboughtSeries;
-    overboughtSeries.setData([]); // Initial empty data
+    overboughtSeries.setData([]);
 
     // Add bottom shaded series
     const bottomShadedSeries = chart.addHistogramSeries({
       priceScaleId: 'overbought-scale',
-      color: theme.palette.mode === 'dark' ? 'rgba(38, 198, 218, 0.3)' : 'rgba(0, 128, 0, 0.3)', // Muted cyan/green with higher opacity for visibility
+      color: theme.palette.mode === 'dark' ? 'rgba(38, 198, 218, 0.3)' : 'rgba(0, 128, 0, 0.3)',
       priceFormat: {
         type: 'custom',
         minMove: 0.01,
-        formatter: (value) => (value === 1 ? '' : ''), // Hide labels
+        formatter: (value) => (value === 1 ? '' : ''),
       },
-      visible: false, // Initially hidden
+      visible: false,
     });
     bottomShadedSeriesRef.current = bottomShadedSeries;
-    bottomShadedSeries.setData([]); // Initial empty data
+    bottomShadedSeries.setData([]);
 
     // Now configure the overbought scale
     chart.priceScale('overbought-scale').applyOptions({
       borderVisible: false,
       scaleMargins: { top: 0.05, bottom: 0.05 },
-      visible: false, // Invisible scale for overlay
+      visible: false,
     });
 
     // Configure other scales
@@ -592,8 +456,6 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, isChartPage = false, txMvrvDa
     });
     ratioSeriesRef.current = ratioSeries;
     ratioSeries.setData([]);
-    // prepare for custom dca levels
-    dcaLevelSeriesRefs.current = [];
 
     chartRef.current = chart;
     return () => {
@@ -621,32 +483,9 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, isChartPage = false, txMvrvDa
     mvrvSeriesRef.current?.applyOptions({ visible: displayMode === 'tx-mvrv' });
     ratioSeriesRef.current?.applyOptions({ visible: displayMode === 'ratio' });
 
-    // Draw simulator custom DCA levels (extra horizontals on ratio scale)
-    // Only active when simulatorDcaLevels prop is passed (used exclusively by the Dynamic DCA Simulator)
-    if (simulatorDcaLevels && simulatorDcaLevels.length > 0 && displayMode === 'ratio' && chartRef.current) {
-      dcaLevelSeriesRefs.current.forEach(s => {
-        try { chartRef.current.removeSeries(s); } catch (e) {}
-      });
-      dcaLevelSeriesRefs.current = [];
-
-      const times = ratioData.map(d => d.time);
-      simulatorDcaLevels.forEach((lvl) => {
-        const lvlSeries = chartRef.current.addLineSeries({
-          color: lvl.color || (lvl.type === 'buy' ? colors.greenAccent[500] : '#f472b6'),
-          lineWidth: 1.2,
-          lineStyle: 2,
-          priceScaleId: 'left',
-          lastValueVisible: false,
-          crosshairMarkerVisible: false,
-        });
-        const lineData = times.map(t => ({ time: t, value: lvl.level }));
-        lvlSeries.setData(lineData);
-        dcaLevelSeriesRefs.current.push(lvlSeries);
-      });
-    }
     // Always fit content to ensure full view of data
     chartRef.current.timeScale().fitContent();
-  }, [processedData, displayMode, activeTrends, simulatorDcaLevels]);
+  }, [processedData, displayMode, activeTrends]);
 
   // Update trends lines when activeTrends or processedData changes
   useEffect(() => {
@@ -712,7 +551,7 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, isChartPage = false, txMvrvDa
           const daysSinceStart = (pointTimestamp - baseDate) / msPerDay;
           let trendVal;
           if (daysSinceStart < 0) {
-            trendVal = c; // Use start value for points before base date to match original behavior
+            trendVal = c;
           } else {
             trendVal = m * daysSinceStart + c;
           }
@@ -1135,149 +974,6 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, isChartPage = false, txMvrvDa
           />
         )}
       </div>
-
-      {/* DCA Simulation Tool copied/adapted from /risk for Tx Tension (MVRV/Tx Ratio) */}
-      {/* Uses the ratio values (high=overbought/sell, low=oversold/buy more). Thresholds adjustable in the raw ratio scale (e.g. ~5-43 range). */}
-      {!isDashboard && (
-        <Box sx={{
-          mt: 2,
-          p: 2,
-          backgroundColor: colors.primary[400],
-          borderRadius: '8px',
-          border: `1px solid ${colors.primary[500]}`,
-        }}>
-          <Typography variant="h6" sx={{ mb: 1, color: colors.primary[100] }}>
-            DCA Simulation using MVRV/Tx Ratio
-          </Typography>
-          <Typography variant="body2" sx={{ mb: 2, color: colors.grey[300] }}>
-            Backtest dynamic DCA: buy more when ratio is low (oversold), sell portions when ratio is high (overbought). 
-            Adjust thresholds below (typical raw ratio range ~5-16 low, up to ~43 high). Simulation uses current display mode data if ratio.
-          </Typography>
-
-          <Grid container spacing={2} sx={{ mb: 2 }}>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Start Date"
-                type="date"
-                value={dcaStartDate}
-                onChange={e => setDcaStartDate(e.target.value)}
-                fullWidth
-                size="small"
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="USD per DCA Period"
-                type="number"
-                value={dcaAmount}
-                onChange={e => setDcaAmount(parseFloat(e.target.value) || 100)}
-                fullWidth
-                size="small"
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <Typography variant="caption" sx={{ color: colors.grey[200] }}>DCA Frequency (days):</Typography>
-              <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
-                {[7,14,28].map(f => (
-                  <Button
-                    key={f}
-                    variant={dcaFrequency === f ? "contained" : "outlined"}
-                    size="small"
-                    onClick={() => setDcaFrequency(f)}
-                    sx={{ 
-                      color: dcaFrequency === f ? '#111' : colors.greenAccent[500],
-                      borderColor: colors.greenAccent[500],
-                      backgroundColor: dcaFrequency === f ? colors.greenAccent[500] : 'transparent'
-                    }}
-                  >
-                    {f}
-                  </Button>
-                ))}
-              </Box>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Buy Threshold (ratio <= this to buy)"
-                type="number"
-                value={dcaRatioThreshold}
-                onChange={e => setDcaRatioThreshold(parseFloat(e.target.value) || 10)}
-                fullWidth
-                size="small"
-                helperText="Low ratio = oversold, buy (e.g. 5-16)"
-              />
-            </Grid>
-          </Grid>
-
-          {/* Sell thresholds - adjustable like risk levels */}
-          <Typography variant="subtitle2" sx={{ mt: 1, mb: 1, color: colors.primary[100] }}>Sell Thresholds (high ratio = sell % of holdings)</Typography>
-          {sellThresholds.map((t, idx) => (
-            <Box key={idx} sx={{ display: 'flex', gap: 2, mb: 1, alignItems: 'center' }}>
-              <TextField
-                label="Ratio Level"
-                type="number"
-                value={t.ratioLevel}
-                onChange={e => {
-                  const val = parseFloat(e.target.value) || 20;
-                  const updated = [...sellThresholds];
-                  updated[idx] = { ...updated[idx], ratioLevel: val };
-                  setSellThresholds(updated);
-                }}
-                size="small"
-                sx={{ width: 120 }}
-              />
-              <TextField
-                label="% to Sell"
-                type="number"
-                value={t.percentage}
-                onChange={e => {
-                  const val = parseFloat(e.target.value) || 10;
-                  const updated = [...sellThresholds];
-                  updated[idx] = { ...updated[idx], percentage: val };
-                  setSellThresholds(updated);
-                }}
-                size="small"
-                sx={{ width: 100 }}
-              />
-            </Box>
-          ))}
-
-          <Button
-            onClick={handleDcaSimulation}
-            variant="contained"
-            sx={{ mt: 2, backgroundColor: colors.greenAccent[500], color: '#111' }}
-          >
-            Run DCA Simulation
-          </Button>
-
-          {simulationRun && (
-            <Box sx={{ mt: 2, p: 1.5, backgroundColor: colors.primary[500], borderRadius: 1 }}>
-              <Typography variant="subtitle2" sx={{ color: colors.greenAccent[400] }}>Results</Typography>
-              <Typography variant="body2">Total Invested: ${totalUsdInvested.toFixed(0)}</Typography>
-              <Typography variant="body2">Total Realized from Sales: ${totalUsdRealized.toFixed(0)}</Typography>
-              <Typography variant="body2">BTC Held: {btcHeld.toFixed(4)}</Typography>
-              <Typography variant="body2">Unrealized Gains: ${unrealizedGains.toFixed(0)}</Typography>
-              <Typography variant="body2">Total Portfolio Value: ${totalPortfolioValue.toFixed(0)}</Typography>
-              <Typography variant="body2" sx={{ color: percentageGains >= 0 ? colors.greenAccent[400] : '#f472b6' }}>
-                Realized Gains: {percentageGains.toFixed(1)}%
-              </Typography>
-              {transactionHistory.length > 0 && (
-                <Button size="small" onClick={() => setShowTransactions(!showTransactions)} sx={{ mt: 1 }}>
-                  {showTransactions ? 'Hide' : 'Show'} Transactions ({transactionHistory.length})
-                </Button>
-              )}
-              {showTransactions && transactionHistory.length > 0 && (
-                <Box sx={{ maxHeight: 200, overflow: 'auto', mt: 1, fontSize: '0.8rem', color: colors.grey[300] }}>
-                  {transactionHistory.slice(0, 20).map((t, i) => (
-                    <div key={i}>{t.date} - {t.type} {t.amount.toFixed(4)} BTC @ ${t.price.toFixed(0)} (ratio: {t.ratio?.toFixed(2)}){t.sellPercent ? ` - ${t.sellPercent}%` : ''}</div>
-                  ))}
-                  {transactionHistory.length > 20 && <div>... and more</div>}
-                </Box>
-              )}
-            </Box>
-          )}
-        </Box>
-      )}
 
       {!isDashboard && (
         <UnderChartRow>
