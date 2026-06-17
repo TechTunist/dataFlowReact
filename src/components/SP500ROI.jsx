@@ -40,7 +40,7 @@ const SP500ROI = ({ isDashboard = false }) => {
 
     const [layout, setLayout] = useState({
         title: isDashboard ? '' : 'Annual S&P 500 ROI',
-        margin: { l: 50, r: 50, b: 30, t: 50, pad: 4 },
+        margin: { l: 50, r: 50, b: 80, t: 50, pad: 4 },
         plot_bgcolor: colors?.primary?.[700] || '#1F2A44',
         paper_bgcolor: colors?.primary?.[700] || '#1F2A44',
         font: { color: colors?.primary?.[100] || '#FFFFFF' },
@@ -53,13 +53,13 @@ const SP500ROI = ({ isDashboard = false }) => {
           type: 'log',
           autorange: true,
         },
-        showlegend: false,
+        showlegend: true,
         hovermode: 'x unified',
         legend: {
           orientation: 'h',
           x: 0.5,
           xanchor: 'center',
-          y: -0.1,
+          y: -0.15,
           yanchor: 'top',
         },
     });
@@ -233,7 +233,7 @@ const SP500ROI = ({ isDashboard = false }) => {
             ...prev,
             xaxis: { ...prev.xaxis, autorange: true },
             yaxis: { ...prev.yaxis, autorange: true },
-            showlegend: false
+            showlegend: true
         }));
         setVisibilityMap(prev => {
             const newMap = { ...prev };
@@ -425,6 +425,7 @@ const SP500ROI = ({ isDashboard = false }) => {
                         hoverinfo: item.shortName === 'Select/Deselect All' ? 'none' : 'text',
                         hovertemplate: item.shortName === 'Select/Deselect All' ? undefined : `%{text}<extra></extra>`,
                         visible: visibilityMap[item.name] !== undefined ? visibilityMap[item.name] : true,
+                        showlegend: item.shortName !== 'Select/Deselect All',
                         hoverlabel: {
                             bgcolor: colors.primary[900],
                             font: { color: colors.primary[100], size: isMobile ? 12 : 14 },

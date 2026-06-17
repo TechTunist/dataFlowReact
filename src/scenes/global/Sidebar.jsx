@@ -72,6 +72,21 @@ import CallSplitIcon from '@mui/icons-material/CallSplit';
 import AppControls from "./AppControls";
 import { isChartPageRoute } from "../ChartTemplates/chartPageMeta";
 
+const SIDEBAR_CATEGORY_ORDER = [
+  "Bitcoin",
+  "Altcoins",
+  "Market Capitalisation",
+  "Risk Analysis",
+  "On-Chain Metrics",
+  "Stocks",
+  "ROI",
+  "Sentiment",
+  "Advanced Models",
+  "Tools",
+  "Macro Charts",
+  "UK Macro",
+];
+
 // import BalanceIcon from "@mui/icons-material/BalanceIconChart";
 
 
@@ -154,12 +169,12 @@ const itemsData = [
   // Category Icon: CurrencyBitcoinIcon - Directly represents Bitcoin as the primary cryptocurrency
   { title: "Bitcoin Chart", to: "/bitcoin", category: "Bitcoin", icon: <CandlestickChartIcon />, categoryIcon: <CurrencyBitcoinIcon /> }, // CandlestickChartIcon: Represents price charts and trading data
   { title: "Market cycles", to: "/market-cycles", category: "Bitcoin", icon: <RepeatIcon />, categoryIcon: <CurrencyBitcoinIcon /> }, // RepeatIcon: Symbolizes cycles and repetition in market patterns
-  { title: "Bitcoin ROI", to: "/bitcoin-roi", category: "Bitcoin", icon: <TrendingUpIcon />, categoryIcon: <CurrencyBitcoinIcon /> }, // TrendingUpIcon: Indicates return on investment growth
   { title: "Bitcoin Monthly Returns", to: "/monthly-returns", category: "Bitcoin", icon: <CalendarMonthIcon />, categoryIcon: <CurrencyBitcoinIcon /> }, // CalendarMonthIcon: Focuses on monthly time-based returns
   { title: "Bitcoin Dominance", to: "/bitcoin-dominance", category: "Bitcoin", icon: <PieChartIcon />, categoryIcon: <CurrencyBitcoinIcon /> }, // PieChartIcon: Represents market share/dominance as portions of a whole
   { title: "Historical BTC Volatility", to: "/historical-volatility", category: "Bitcoin", icon: <TimelineIcon />, categoryIcon: <CurrencyBitcoinIcon /> }, // TimelineIcon: Shows historical trends over time
   { title: "Bitcoin Logarithmic Regression", to: "/logarithmic-regression", category: "Bitcoin", icon: <FunctionsIcon />, categoryIcon: <CurrencyBitcoinIcon /> }, // FunctionsIcon: Mathematical regression models
   { title: "Bitcoin Bubble Indicator", to: "/btc-20-ext", category: "Bitcoin", icon: <WarningAmberIcon />, categoryIcon: <CurrencyBitcoinIcon /> }, // WarningAmberIcon: Alerts to potential bubbles/risks
+  { title: "PiCycleTop Indicator", to: "/pi-cycle", category: "Bitcoin", icon: <CurrencyExchangeIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
   
   // === ALTCOINS ===
   // Category Icon: MonetizationOnIcon - Represents alternative coins/money beyond Bitcoin
@@ -167,29 +182,11 @@ const itemsData = [
   { title: "Altcoin Season Index", to: "/altcoin-season-index", category: "Altcoins", icon: <CallSplitIcon />, categoryIcon: <MonetizationOnIcon /> }, // IndexIcon (assuming import from @mui/icons-material/Index or similar; if not, use EqualizerIcon): Represents indexing/seasons
   { title: "Altcoin Risk Metric", to: "/altcoin-risk", category: "Altcoins", icon: <WarningIcon />, categoryIcon: <MonetizationOnIcon /> }, // WarningIcon: Risk assessment
   
-  // === MARKET METRICS ===
-  // Category Icon: AnalyticsIcon - Core market analysis and metrics
-  { title: "Total Market Cap", to: "/total", category: "Market Metrics", icon: <AttachMoneyIcon />, categoryIcon: <AnalyticsIcon /> }, // AttachMoneyIcon: Total capitalization in dollars
-  { title: "Total 2 Market Cap", to: "/total2", category: "Market Metrics", icon: <AttachMoneyIcon />, categoryIcon: <AnalyticsIcon /> }, // AttachMoneyIcon: Variant of market cap
-  { title: "Total 3 Market Cap", to: "/total3", category: "Market Metrics", icon: <AttachMoneyIcon />, categoryIcon: <AnalyticsIcon /> }, // AttachMoneyIcon: Variant of market cap
-  { title: "Total Cap to Fair Value", to: "/total-difference", category: "Market Metrics", icon: <BalanceIcon />, categoryIcon: <AnalyticsIcon /> }, // BalanceIcon: Fair value comparison
-  { title: "PiCycleTop Indicator", to: "/pi-cycle", category: "Market Metrics", icon: <CurrencyExchangeIcon />, categoryIcon: <AnalyticsIcon /> }, // CycleIcon (assuming import; alt: AutorenewIcon): Cycle-based indicator
-  { title: "Market Heat Index", to: "/market-heat-index", category: "Market Metrics", icon: <AnalyticsIcon />, categoryIcon: <AnalyticsIcon /> }, // Added for market heat index feature
-  
-  // === ON-CHAIN METRICS ===
-  // Category Icon: LinkIcon - Represents blockchain/on-chain data connections
-  { title: "Bitcoin Address Balance", to: "/btc-add-balance", category: "On-Chain Metrics", icon: <AccountBalanceWalletIcon />, categoryIcon: <LinkIcon /> }, // AccountBalanceWalletIcon: Wallet/address balances
-  { title: "Tx Tension", to: "/tx-mvrv", category: "On-Chain Metrics", icon: <SwapHorizIcon />, categoryIcon: <LinkIcon /> }, // SwapHorizIcon: Transactions and value ratios
-  { title: "Puell Multiple", to: "/puell-multiple", category: "On-Chain Metrics", icon: <MultipleStopIcon />, categoryIcon: <LinkIcon /> }, // MultipleStopIcon (alt: CalculateIcon): Multiples calculation
-  { title: "MVRV Z-Score", to: "/btc-mvrv-z", category: "On-Chain Metrics", icon: <ScoreIcon />, categoryIcon: <LinkIcon /> }, // ScoreIcon: Z-score metric
-  { title: "Bitcoin On-chain Risk", to: "/on-chain-historical-risk", category: "On-Chain Metrics", icon: <HistoryEduIcon />, categoryIcon: <LinkIcon /> }, // HistoryEduIcon: Historical on-chain data
-  
-  // === SENTIMENT & BEHAVIOR ===
-  // Category Icon: SentimentSatisfiedIcon - Represents market sentiment/emotions
-  { title: "Fear And Greed Indicator", to: "/fear-and-greed", category: "Sentiment", icon: <MoodBadIcon />, categoryIcon: <SentimentSatisfiedIcon /> }, // MoodBadIcon: Fear/greed emotions
-  { title: "Fear and Greed Chart", to: "/fear-and-greed-chart", category: "Sentiment", icon: <MoodIcon />, categoryIcon: <SentimentSatisfiedIcon /> }, // MoodIcon: Sentiment visualization
-  { title: "Running ROI", to: "/running-roi", category: "Sentiment", icon: <CalculateIcon />, categoryIcon: <SentimentSatisfiedIcon /> }, // CalculateIcon: Ongoing ROI calculations
-  { title: "Monthly Average ROI", to: "/monthly-average-roi", category: "Sentiment", icon: <BarChartIcon />, categoryIcon: <SentimentSatisfiedIcon /> }, // AverageIcon (alt: FunctionsIcon): Averages over time
+  // === MARKET CAPITALISATION ===
+  { title: "Total Market Cap", to: "/total", category: "Market Capitalisation", icon: <AttachMoneyIcon />, categoryIcon: <AnalyticsIcon /> },
+  { title: "Total 2 Market Cap", to: "/total2", category: "Market Capitalisation", icon: <AttachMoneyIcon />, categoryIcon: <AnalyticsIcon /> },
+  { title: "Total 3 Market Cap", to: "/total3", category: "Market Capitalisation", icon: <AttachMoneyIcon />, categoryIcon: <AnalyticsIcon /> },
+  { title: "Total Cap to Fair Value", to: "/total-difference", category: "Market Capitalisation", icon: <BalanceIcon />, categoryIcon: <AnalyticsIcon /> },
   
   // === RISK ANALYSIS ===
   // Category Icon: WarningIcon - Core risk alerting
@@ -197,11 +194,37 @@ const itemsData = [
   { title: "Ethereum Risk Metric", to: "/risk-eth", category: "Risk Analysis", icon: <WarningAmberIcon />, categoryIcon: <WarningIcon /> }, // WarningAmberIcon: Risk warning
   { title: "Risk Colour Chart", to: "/risk-color", category: "Risk Analysis", icon: <PaletteIcon />, categoryIcon: <WarningIcon /> }, // PaletteIcon: Color-based visualization
   { title: "Time in Risk Bands", to: "/risk-bands", category: "Risk Analysis", icon: <TimelineIcon />, categoryIcon: <WarningIcon /> }, // TimelineIcon: Time-based bands
-  
-  // === MACRO INDICATORS ===
-  // Category Icon: AssessmentIcon - Analytical assessment of macro data
-  { title: "S&P 500 Return On Investment", to: "/sp500-roi", category: "Macro Indicators", icon: <TrendingUpIcon />, categoryIcon: <AssessmentIcon /> }, // TrendingUpIcon: ROI growth
-  { title: "Sahm Recession Indicator", to: "/fred/sahm-recession-indicator", category: "Macro Indicators", icon: <WarningIcon />, categoryIcon: <AssessmentIcon /> }, // WarningIcon: Recession alert
+
+  // === ON-CHAIN METRICS ===
+  { title: "Bitcoin Address Balance", to: "/btc-add-balance", category: "On-Chain Metrics", icon: <AccountBalanceWalletIcon />, categoryIcon: <LinkIcon /> },
+  { title: "Tx Tension", to: "/tx-mvrv", category: "On-Chain Metrics", icon: <SwapHorizIcon />, categoryIcon: <LinkIcon /> },
+  { title: "Puell Multiple", to: "/puell-multiple", category: "On-Chain Metrics", icon: <MultipleStopIcon />, categoryIcon: <LinkIcon /> },
+  { title: "MVRV Z-Score", to: "/btc-mvrv-z", category: "On-Chain Metrics", icon: <ScoreIcon />, categoryIcon: <LinkIcon /> },
+  { title: "Bitcoin On-chain Risk", to: "/on-chain-historical-risk", category: "On-Chain Metrics", icon: <HistoryEduIcon />, categoryIcon: <LinkIcon /> },
+
+  // === STOCKS ===
+  { title: "Stock Selector", to: "/stocks", category: "Stocks", icon: <ShowChartIcon />, categoryIcon: <AssessmentIcon /> },
+  { title: "Stock Risk", to: "/stock-risk", category: "Stocks", icon: <ShowChartIcon />, categoryIcon: <AssessmentIcon /> },
+  { title: "Stock Risk Colour", to: "/stock-risk-color", category: "Stocks", icon: <ShowChartIcon />, categoryIcon: <AssessmentIcon /> },
+
+  // === ROI ===
+  { title: "Bitcoin ROI", to: "/bitcoin-roi", category: "ROI", icon: <TrendingUpIcon />, categoryIcon: <TrendingUpIcon /> },
+  { title: "Running ROI", to: "/running-roi", category: "ROI", icon: <CalculateIcon />, categoryIcon: <TrendingUpIcon /> },
+  { title: "Monthly Average ROI", to: "/monthly-average-roi", category: "ROI", icon: <BarChartIcon />, categoryIcon: <TrendingUpIcon /> },
+  { title: "S&P 500 Return On Investment", to: "/sp500-roi", category: "ROI", icon: <TrendingUpIcon />, categoryIcon: <TrendingUpIcon /> },
+
+  // === SENTIMENT ===
+  { title: "Fear And Greed Indicator", to: "/fear-and-greed", category: "Sentiment", icon: <MoodBadIcon />, categoryIcon: <SentimentSatisfiedIcon /> },
+  { title: "Fear and Greed Chart", to: "/fear-and-greed-chart", category: "Sentiment", icon: <MoodIcon />, categoryIcon: <SentimentSatisfiedIcon /> },
+
+  // === ADVANCED MODELS ===
+  { title: "Tail Curvature (Asymmetric Quantiles)", to: "/tail-curvature", category: "Advanced Models", icon: <ShowChartIcon />, categoryIcon: <AssessmentIcon /> },
+  { title: "Sahm Recession Indicator", to: "/fred/sahm-recession-indicator", category: "Advanced Models", icon: <WarningIcon />, categoryIcon: <AssessmentIcon /> },
+  { title: "Market Heat Index", to: "/market-heat-index", category: "Advanced Models", icon: <AnalyticsIcon />, categoryIcon: <AssessmentIcon /> },
+
+  // === TOOLS ===
+  { title: "Workbench (beta)", to: "/workbench", category: "Tools", icon: <BuildIcon />, categoryIcon: <BuildIcon /> },
+  { title: "Dynamic DCA Simulator", to: "/dynamic-dca", category: "Tools", icon: <CalculateIcon />, categoryIcon: <BuildIcon /> },
   
   // === MACRO CHARTS ===
   // Category Icon: AssessmentIcon - Same as above for consistency in macro
@@ -249,16 +272,6 @@ const itemsData = [
   { title: "UK Public/Private Employment", to: "/uk-public-private", category: "UK Macro", icon: <ApartmentIcon />, categoryIcon: <AssessmentIcon /> },
   { title: "UK APS Workplace", to: "/uk-aps-workplace", category: "UK Macro", icon: <BarChartIcon />, categoryIcon: <AssessmentIcon /> },
   { title: "UK ESA Claimants", to: "/uk-esa-claimants", category: "UK Macro", icon: <WarningIcon />, categoryIcon: <AssessmentIcon /> },
-  // New research visualization from Cowen (2026) paper + golden pocket dislocation levels
-  { title: "Tail Curvature (Asymmetric Quantiles)", to: "/tail-curvature", category: "Advanced Models", icon: <ShowChartIcon />, categoryIcon: <AssessmentIcon /> },
-  // === TOOLS ===
-  // Category Icon: BuildIcon - Represents tools and building/analysis
-  { title: "Workbench (beta)", to: "/workbench", category: "Tools", icon: <BuildIcon />, categoryIcon: <BuildIcon /> }, // BuildIcon: Workbench for building charts
-  { title: "Dynamic DCA Simulator", to: "/dynamic-dca", category: "Tools", icon: <CalculateIcon />, categoryIcon: <BuildIcon /> },
-  // === STOCKS (dedicated section + component "Stock Selector", separate from altcoins) ===
-  { title: "Stock Selector", to: "/stocks", category: "Stocks", icon: <ShowChartIcon />, categoryIcon: <AssessmentIcon /> },
-  { title: "Stock Risk", to: "/stock-risk", category: "Stocks", icon: <ShowChartIcon />, categoryIcon: <AssessmentIcon /> },
-  { title: "Stock Risk Colour", to: "/stock-risk-color", category: "Stocks", icon: <ShowChartIcon />, categoryIcon: <AssessmentIcon /> },
 ];
 
   const activeCategory = useMemo(() => {
@@ -313,8 +326,14 @@ const itemsData = [
     />
   );
 
-  const renderSubMenus = () => (
-    Object.entries(itemsByCategory).map(([category, items]) => {
+  const renderSubMenus = () => {
+    const orderedCategories = [
+      ...SIDEBAR_CATEGORY_ORDER.filter((category) => itemsByCategory[category]),
+      ...Object.keys(itemsByCategory).filter((category) => !SIDEBAR_CATEGORY_ORDER.includes(category)),
+    ];
+
+    return orderedCategories.map((category) => {
+      const items = itemsByCategory[category];
       const isActiveSection = category === activeCategory;
       return (
         <SubMenu
@@ -332,8 +351,8 @@ const itemsData = [
           {items.map((item, index) => renderMenuItem(item, index, true))}
         </SubMenu>
       );
-    })
-  );
+    });
+  };
 
   const buttonData = [
     { title: "Dashboard", to: "/dashboard" },
