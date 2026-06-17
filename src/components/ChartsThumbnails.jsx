@@ -68,7 +68,7 @@ const Charts = () => {
       {
         path: "/stocks",
         title: "Stock Selector",
-        description: "Dedicated stock price viewer (Stock Selector component) with dropdown for TSLA, NVDA, AAPL, AMZN, MSFT, MSTR, GME, GOOG etc. Same technical indicators (MAs, RSI, etc.) as the altcoin viewer but completely separate. Defaults to TSLA. Data updated daily via backend.",
+        description: "Dedicated stock price viewer with Nasdaq top holdings (NVDA, GOOGL, GOOG, AAPL, MSFT, AMZN, AVGO, META, TSLA, BRK.B, SPCX) plus MSTR and GME. Same technical indicators as the altcoin viewer. Data updated daily via Twelve Data backend.",
         image: '../../assets/tsla.png', // placeholder
       },
       {

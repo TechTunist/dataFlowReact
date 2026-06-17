@@ -17,6 +17,7 @@ import {
   calculateMovingAverage 
 } from '../utils/technicalIndicators';
 import { getCurrentPrice } from '../utils/currentPrice';
+import { NASDAQ_TOP_STOCKS, OTHER_STOCKS } from '../config/stocksConfig';
 
 const StockPrice = ({ isDashboard = false, defaultSelectedCoin }) => {
   const chartContainerRef = useRef();
@@ -82,18 +83,7 @@ const StockPrice = ({ isDashboard = false, defaultSelectedCoin }) => {
     'Weekly': { days: 98, label: 'Weekly RSI' },
   }), []);
 
-  // Hardcoded list of stocks (dedicated StockPrice component with its own selector, separate from altcoins)
-  const stocks = [
-    { label: 'Tesla (TSLA)', value: 'TSLA' },
-    { label: 'NVIDIA (NVDA)', value: 'NVDA' },
-    { label: 'Apple (AAPL)', value: 'AAPL' },
-    { label: 'Amazon (AMZN)', value: 'AMZN' },
-    { label: 'Microsoft (MSFT)', value: 'MSFT' },
-    { label: 'MicroStrategy (MSTR)', value: 'MSTR' },
-    { label: 'GameStop (GME)', value: 'GME' },
-    { label: 'Alphabet (GOOG)', value: 'GOOG' },
-    // Add more as backend daily updates (update_*.py) and data are enabled via update_all batches.
-  ];
+  const stocks = [...NASDAQ_TOP_STOCKS, ...OTHER_STOCKS];
 
   // Utility functions
   const setInteractivity = useCallback(() => setIsInteractive(prev => !prev), []);
@@ -549,7 +539,14 @@ const StockPrice = ({ isDashboard = false, defaultSelectedCoin }) => {
                 '& .MuiSelect-select': { py: 1.5, pl: 2 },
               }}
             >
-              {stocks.map((coin) => (
+              <ListSubheader sx={{ color: colors.grey[400], lineHeight: '28px' }}>Nasdaq Top Holdings</ListSubheader>
+              {NASDAQ_TOP_STOCKS.map((coin) => (
+                <MenuItem key={coin.value} value={coin.value}>
+                  {coin.label}
+                </MenuItem>
+              ))}
+              <ListSubheader sx={{ color: colors.grey[400], lineHeight: '28px' }}>Other</ListSubheader>
+              {OTHER_STOCKS.map((coin) => (
                 <MenuItem key={coin.value} value={coin.value}>
                   {coin.label}
                 </MenuItem>

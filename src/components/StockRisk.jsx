@@ -9,6 +9,7 @@ import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
 import { Select, MenuItem, FormControl, InputLabel, Box } from '@mui/material';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
+import { STOCKS } from '../config/stocksConfig';
 
 const StockRisk = ({ isDashboard = false }) => {
   const chartContainerRef = useRef();
@@ -26,16 +27,7 @@ const StockRisk = ({ isDashboard = false }) => {
   const [currentRiskLevel, setCurrentRiskLevel] = useState(null);
   const { altcoinData, fetchAltcoinData, btcData, fetchBtcData } = useContext(DataContext);
 
-  const stocks = [
-    { label: 'Tesla (TSLA)', value: 'TSLA' },
-    { label: 'NVIDIA (NVDA)', value: 'NVDA' },
-    { label: 'Apple (AAPL)', value: 'AAPL' },
-    { label: 'Amazon (AMZN)', value: 'AMZN' },
-    { label: 'Microsoft (MSFT)', value: 'MSFT' },
-    { label: 'MicroStrategy (MSTR)', value: 'MSTR' },
-    { label: 'GameStop (GME)', value: 'GME' },
-    { label: 'Alphabet (GOOG)', value: 'GOOG' },
-  ];
+  const stocks = STOCKS;
 
   const handleSelectChange = (event) => {
     setSelectedCoin(event.target.value);
@@ -335,7 +327,7 @@ const StockRisk = ({ isDashboard = false }) => {
         )}
       </div>
       <UnderChartRow>
-        {!isDashboard && <LastUpdated storageKey={`stock-${selectedCoin.toLowerCase()}Data`} />}
+        {!isDashboard && <LastUpdated storageKey={`${selectedCoin.toLowerCase()}Data`} />}
       </UnderChartRow>
       {!isDashboard && (
         <div style={{ paddingBottom: '20px' }}>

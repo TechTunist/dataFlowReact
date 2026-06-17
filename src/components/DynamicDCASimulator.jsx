@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useContext, useMemo, useCallback, useRef } from 'react';
 import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
 import { DataContext } from '../DataContext';
@@ -20,6 +20,47 @@ import {
 import useIsMobile from '../hooks/useIsMobile';
 import { useAuth, useUser } from '@clerk/clerk-react';
 import { apiUrl } from '../config/api';
+
+// Tx Tension ratio scale varies widely by smoothing (e.g. ~74 on 7-day SMA vs ~850 on 3-day SMA).
+// Tier defaults are expressed as fractions of the series max so they stay meaningful across smoothings.
+const TX_TIER_DEFAULT_FRACTIONS = {
+  buyStrong: 0.12,
+  buyMedium: 0.20,
+  sellMedium: 0.30,
+  sellStrong: 0.43,
+};
+
+const TX_LEGACY_REFERENCE_MAX = 74;
+
+const computeTxIndicatorRange = (values) => {
+  const finite = values.filter((v) => Number.isFinite(v));
+  if (finite.length === 0) {
+    return { min: 0, max: 40, step: 0.5, dataMin: 0, dataMax: 40 };
+  }
+  const dataMin = Math.min(...finite);
+  const dataMax = Math.max(...finite);
+  let paddedMax = Math.ceil(dataMax * 1.08);
+  if (paddedMax <= 0) paddedMax = 40;
+  const step = paddedMax > 300 ? 10 : paddedMax > 150 ? 5 : paddedMax > 75 ? 2 : paddedMax > 30 ? 1 : 0.5;
+  return { min: 0, max: paddedMax, step, dataMin, dataMax };
+};
+
+const buildTxTierDefaults = (rangeMax, step = 0.5) => {
+  const snap = (fraction) => {
+    const raw = rangeMax * fraction;
+    return Math.max(0, Math.min(rangeMax, Math.round(raw / step) * step));
+  };
+  return {
+    buy: [
+      { level: snap(TX_TIER_DEFAULT_FRACTIONS.buyStrong), multiplier: 2.5, label: 'Strong Oversold' },
+      { level: snap(TX_TIER_DEFAULT_FRACTIONS.buyMedium), multiplier: 1.6, label: 'Medium Oversold' },
+    ],
+    sell: [
+      { level: snap(TX_TIER_DEFAULT_FRACTIONS.sellMedium), sellPercent: 12, label: 'Medium Overbought' },
+      { level: snap(TX_TIER_DEFAULT_FRACTIONS.sellStrong), sellPercent: 28, label: 'Strong Overbought' },
+    ],
+  };
+};
 
 const DynamicDCASimulator = ({ isDashboard = false }) => {
   const theme = useTheme();
@@ -94,6 +135,9 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
   // Buy strategy: 'periodic-boost' = buy every freq days (boost amount if tier hit), 
   // 'trigger-only' = only buy when a buy tier is hit (freq then acts as cooldown since last buy). No automatic "normal" buys.
   const [buyStrategy, setBuyStrategy] = useState('periodic-boost');
+
+  // When false, sell tiers are ignored — portfolio stays 100% in BTC (no exit/de-risk strategy).
+  const [enableDynamicSelling, setEnableDynamicSelling] = useState(true);
 
   // Dynamic label for the DCA button based on selected frequency
   const frequencyLabel = useMemo(() => {
@@ -245,6 +289,62 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
     }
   }, [contextBtcData, txMvrvRatioDataBySmoothing, strategy, txSmoothing, heatWeights, mvrvData, fearAndGreedData, altcoinSeasonTimeseriesData]);
 
+  // Tx Tension ratio range for the active smoothing — drives slider bounds and metric chart Y-axis
+  const txIndicatorRange = useMemo(() => {
+    if (!isTx || fullChartData.length === 0) {
+      return computeTxIndicatorRange([]);
+    }
+    return computeTxIndicatorRange(fullChartData.map((d) => d.indicator));
+  }, [isTx, fullChartData]);
+
+  const txBuyTiersRef = useRef(txBuyTiers);
+  const txSellTiersRef = useRef(txSellTiers);
+  const prevTxScaleRef = useRef({ smoothing: txSmoothing, max: null });
+
+  useEffect(() => {
+    txBuyTiersRef.current = txBuyTiers;
+  }, [txBuyTiers]);
+
+  useEffect(() => {
+    txSellTiersRef.current = txSellTiers;
+  }, [txSellTiers]);
+
+  // Rescale tier levels when smoothing changes so relative trigger positions stay on-chart
+  useEffect(() => {
+    if (!isTx || txIndicatorRange.dataMax == null) return;
+
+    const newMax = txIndicatorRange.max;
+    const step = txIndicatorRange.step;
+    const prev = prevTxScaleRef.current;
+
+    const roundLevel = (value) => Math.max(0, Math.min(newMax, Math.round(value / step) * step));
+
+    const scaleTiers = (oldMax) => {
+      if (!oldMax || oldMax <= 0 || newMax <= 0) return;
+      const scale = newMax / oldMax;
+      setTxBuyTiers((tiers) => tiers.map((t) => ({ ...t, level: roundLevel(t.level * scale) })));
+      setTxSellTiers((tiers) => tiers.map((t) => ({ ...t, level: roundLevel(t.level * scale) })));
+    };
+
+    if (prev.smoothing !== txSmoothing) {
+      if (prev.max != null) {
+        scaleTiers(prev.max);
+      } else {
+        const maxTier = Math.max(
+          0,
+          ...txBuyTiersRef.current.map((t) => t.level),
+          ...txSellTiersRef.current.map((t) => t.level),
+        );
+        if (maxTier > 0 && maxTier < newMax * 0.12) {
+          scaleTiers(TX_LEGACY_REFERENCE_MAX);
+        }
+      }
+      prev.smoothing = txSmoothing;
+    }
+
+    prev.max = newMax;
+  }, [isTx, txSmoothing, txIndicatorRange.max, txIndicatorRange.step, txIndicatorRange.dataMax]);
+
   // Filtered data for simulation backtest (respects startDate)
   const simSeriesData = useMemo(() => {
     return fullChartData.filter(d => d.time >= startDate);
@@ -261,74 +361,88 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
   const sortedBuyTiers = useMemo(() => [...buyTiers].sort((a, b) => a.level - b.level), [buyTiers]);
   const sortedSellTiers = useMemo(() => [...sellTiers].sort((a, b) => b.level - a.level), [sellTiers]);
 
-  // Load previously computed results (incl. chart series with lump sum) when switching strategy chips
+  const buyModeLabel = useMemo(
+    () => (buyStrategy === 'periodic-boost' ? 'Constant DCA' : 'Trigger-Level DCA'),
+    [buyStrategy]
+  );
+
+  const sellModeLabel = useMemo(
+    () => (enableDynamicSelling ? 'Selling On' : 'Hold BTC Only'),
+    [enableDynamicSelling]
+  );
+
+  const getSellModeKey = useCallback((sellingEnabled) => (
+    sellingEnabled ? 'selling-on' : 'hold-btc-only'
+  ), []);
+
+  // Resolve cached result for strategy + buy mode + exit strategy (supports legacy formats)
+  const getCachedResult = useCallback((strategyKey, buyMode, sellingEnabled) => {
+    const saved = resultsByStrategy[strategyKey];
+    if (!saved) return null;
+    const sellKey = sellingEnabled ? 'selling-on' : 'hold-btc-only';
+
+    const buyBucket = saved[buyMode];
+    if (buyBucket?.[sellKey]) return buyBucket[sellKey];
+    if (buyBucket?.buyStrategyUsed && buyBucket.sellStrategyEnabled === sellingEnabled) return buyBucket;
+
+    if (saved.buyStrategyUsed === buyMode && saved.sellStrategyEnabled === sellingEnabled) return saved;
+
+    return null;
+  }, [resultsByStrategy]);
+
+  // Load previously computed results when switching strategy, buy mode, or exit strategy
   useEffect(() => {
-    const saved = resultsByStrategy[strategy];
-    if (saved) {
-      setSimulationResults(saved);
-    } else {
-      // No previous run for this strategy yet -> clear chart so user sees placeholder until they run for it
-      setSimulationResults(null);
-    }
-  }, [strategy, resultsByStrategy]);
+    const modeResult = getCachedResult(strategy, buyStrategy, enableDynamicSelling);
+    setSimulationResults(modeResult);
+  }, [strategy, buyStrategy, enableDynamicSelling, getCachedResult]);
 
   // Helper to get applicable action for a given indicator value (used only for backtest logic)
-  const getActionForIndicator = useCallback((indicator) => {
-    // Check sells first (overbought)
-    for (const tier of sortedSellTiers) {
-      if (isTx) {
-        if (indicator >= tier.level) {
-          return { type: 'sell', percent: tier.sellPercent || 0, tier };
-        }
-      } else {
+  const getActionForIndicator = useCallback((indicator, sellingEnabled = true) => {
+    if (sellingEnabled) {
+      for (const tier of sortedSellTiers) {
         if (indicator >= tier.level) {
           return { type: 'sell', percent: tier.sellPercent || 0, tier };
         }
       }
     }
-    // Then buys (oversold) - strongest (lowest for tx/risk) first because sorted
     for (const tier of sortedBuyTiers) {
-      if (isTx) {
-        if (indicator <= tier.level) {
-          return { type: 'buy', multiplier: tier.multiplier || 1, tier };
-        }
-      } else {
-        if (indicator <= tier.level) {
-          return { type: 'buy', multiplier: tier.multiplier || 1, tier };
-        }
+      if (indicator <= tier.level) {
+        return { type: 'buy', multiplier: tier.multiplier || 1, tier };
       }
     }
     return { type: 'normal', multiplier: 1 };
-  }, [sortedBuyTiers, sortedSellTiers, isTx]);
+  }, [sortedBuyTiers, sortedSellTiers]);
 
-  // The core backtesting engine (all frontend)
-  const runBacktest = useCallback(() => {
+  const strategyDisplayName = useMemo(() => {
+    if (isTx) return 'Tx Tension (MVRV/Tx)';
+    if (isHeat) return 'Market Heat Index';
+    return 'Bitcoin Risk Metric';
+  }, [isTx, isHeat]);
+
+  // Core backtesting engine — pure computation for a single buy mode + selling setting
+  const computeBacktestResult = useCallback((buyMode, sellingEnabled) => {
     if (simSeriesData.length === 0) return null;
-
-    setIsRunning(true);
 
     let btcHeld = 0;
     let totalUsdInvested = 0;
     let totalUsdRealized = 0;
     const transactions = [];
     const portfolioSeries = [];
-
-    const data = simSeriesData; // filtered for backtest start
-
+    const data = simSeriesData;
     let currentPrice = 0;
 
-    // Separate cooldowns so frequency applies per action type, and supports "only buy on trigger"
     let lastBuyDate = new Date(startDate);
     lastBuyDate.setDate(lastBuyDate.getDate() - frequency);
     let lastSellDate = new Date(startDate);
     lastSellDate.setDate(lastSellDate.getDate() - frequency);
 
-    // Initial point (start of sim period)
     if (data.length > 0) {
       portfolioSeries.push({
         time: data[0].time,
         invested: 0,
         portfolioValue: 0,
+        btcValue: 0,
+        cashValue: 0,
         price: data[0].price || 0,
       });
     }
@@ -337,25 +451,19 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
       const dayDate = new Date(day.time);
       currentPrice = day.price;
       const ind = day.indicator;
-
-      const action = getActionForIndicator(ind);
+      const action = getActionForIndicator(ind, sellingEnabled);
 
       const daysSinceBuy = (dayDate - lastBuyDate) / (1000 * 60 * 60 * 24);
       const daysSinceSell = (dayDate - lastSellDate) / (1000 * 60 * 60 * 24);
-
       const buyIntervalOk = daysSinceBuy >= frequency;
       const sellIntervalOk = daysSinceSell >= frequency;
 
-      let boughtThisStep = false;
-
       if (action.type === 'buy' && buyIntervalOk) {
-        // In trigger-only: we only buy here (when tier hit). In periodic-boost we also allow the else below for normal.
         const usdToSpend = dcaAmount * (action.multiplier || 1);
         if (usdToSpend > 0 && currentPrice > 0) {
           const btcBought = usdToSpend / currentPrice;
           btcHeld += btcBought;
           totalUsdInvested += usdToSpend;
-
           transactions.push({
             date: day.time,
             type: 'BUY',
@@ -366,16 +474,14 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
             note: action.tier ? `${action.tier.label || 'Boost'} (x${action.multiplier})` : 'Normal',
           });
           lastBuyDate = dayDate;
-          boughtThisStep = true;
         }
-      } else if (action.type === 'sell' && sellIntervalOk && btcHeld > 0) {
+      } else if (sellingEnabled && action.type === 'sell' && sellIntervalOk && btcHeld > 0) {
         const sellPct = action.percent || 0;
         if (sellPct > 0) {
           const btcSold = btcHeld * (sellPct / 100);
           const usdReceived = btcSold * currentPrice;
           btcHeld -= btcSold;
           totalUsdRealized += usdReceived;
-
           transactions.push({
             date: day.time,
             type: 'SELL',
@@ -387,13 +493,11 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
           });
           lastSellDate = dayDate;
         }
-      } else if (buyStrategy === 'periodic-boost' && buyIntervalOk) {
-        // Normal scheduled DCA buy (only in periodic-boost mode; suppressed in trigger-only)
+      } else if (buyMode === 'periodic-boost' && buyIntervalOk) {
         if (dcaAmount > 0 && currentPrice > 0) {
           const btcBought = dcaAmount / currentPrice;
           btcHeld += btcBought;
           totalUsdInvested += dcaAmount;
-
           transactions.push({
             date: day.time,
             type: 'BUY',
@@ -404,16 +508,16 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
             note: 'Normal DCA',
           });
           lastBuyDate = dayDate;
-          boughtThisStep = true;
         }
       }
 
-      // Always record portfolio state for the chart at decision points (and final will be ensured)
-      // This keeps the series reasonably dense without one point per calendar day.
+      const btcValue = btcHeld * currentPrice;
       portfolioSeries.push({
         time: day.time,
         invested: totalUsdInvested,
-        portfolioValue: totalUsdRealized + (btcHeld * currentPrice),
+        portfolioValue: totalUsdRealized + btcValue,
+        btcValue,
+        cashValue: totalUsdRealized,
         price: currentPrice,
       });
     });
@@ -423,18 +527,22 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
     const netGain = totalPortfolio - totalUsdInvested;
     const roi = totalUsdInvested > 0 ? (netGain / totalUsdInvested) * 100 : 0;
 
-    // Ensure a final point at the very end of the data window (even if no action on last day)
     if (data.length > 0) {
       const lastTime = data[data.length - 1].time;
       const lastInvested = totalUsdInvested;
       const lastPortfolio = totalUsdRealized + (btcHeld * currentPrice);
       if (portfolioSeries.length === 0 || portfolioSeries[portfolioSeries.length - 1].time !== lastTime) {
-        portfolioSeries.push({ time: lastTime, invested: lastInvested, portfolioValue: lastPortfolio, price: currentPrice });
+        portfolioSeries.push({
+          time: lastTime,
+          invested: lastInvested,
+          portfolioValue: lastPortfolio,
+          btcValue: finalBtcValue,
+          cashValue: totalUsdRealized,
+          price: currentPrice,
+        });
       }
     }
 
-    // Augment every point with lumpSumValue for the chart (uses the *final* total capital the strategy deployed,
-    // bought once at the very first price of the sim window, then valued at the price of each point in the series).
     if (data.length > 0 && totalUsdInvested > 0 && data[0].price > 0) {
       const lumpBtc = totalUsdInvested / data[0].price;
       portfolioSeries.forEach((pt) => {
@@ -443,7 +551,6 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
       });
     }
 
-    // Simple Static DCA benchmark (same schedule, fixed amount, no sells/boosts)
     let staticBtc = 0;
     let staticInvested = 0;
     let staticLastDate = new Date(startDate);
@@ -451,7 +558,7 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
 
     data.forEach(day => {
       const d = new Date(day.time);
-      const delta = (d - staticLastDate) / (1000*60*60*24);
+      const delta = (d - staticLastDate) / (1000 * 60 * 60 * 24);
       if (delta >= frequency && day.price > 0) {
         staticBtc += dcaAmount / day.price;
         staticInvested += dcaAmount;
@@ -461,7 +568,6 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
     const staticFinalValue = staticBtc * currentPrice;
     const staticRoi = staticInvested > 0 ? ((staticFinalValue - staticInvested) / staticInvested) * 100 : 0;
 
-    // Lump Sum benchmark: same *total capital actually deployed*, invested all at once on the first day of the sim window, held to the end (no sells)
     let lumpSumFinal = 0;
     let lumpSumRoi = 0;
     if (data.length > 0 && totalUsdInvested > 0 && data[0].price > 0) {
@@ -471,14 +577,16 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
       lumpSumRoi = ((lumpSumFinal - totalUsdInvested) / totalUsdInvested) * 100;
     }
 
-    const result = {
-      strategy: isTx ? 'Tx Tension (MVRV/Tx)' : 'Bitcoin Risk',
-      totalUsdInvested: totalUsdInvested,
-      totalUsdRealized: totalUsdRealized,
-      btcHeld: btcHeld,
-      finalBtcValue: finalBtcValue,
-      totalPortfolio: totalPortfolio,
-      roi: roi,
+    const buyModeLabelUsed = buyMode === 'periodic-boost' ? 'Constant DCA' : 'Trigger-Level DCA';
+
+    return {
+      strategy: strategyDisplayName,
+      totalUsdInvested,
+      totalUsdRealized,
+      btcHeld,
+      finalBtcValue,
+      totalPortfolio,
+      roi,
       transactionCount: transactions.length,
       transactions,
       staticDca: {
@@ -493,17 +601,57 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
         roi: lumpSumRoi,
       },
       portfolioSeries,
-      buyStrategyUsed: buyStrategy,
+      buyStrategyUsed: buyMode,
+      buyModeLabel: buyModeLabelUsed,
+      sellStrategyEnabled: sellingEnabled,
       lastPrice: currentPrice,
       dataPoints: data.length,
     };
+  }, [simSeriesData, dcaAmount, frequency, startDate, getActionForIndicator, strategyDisplayName]);
 
-    setSimulationResults(result);
-    // Save for this strategy so switching between Risk <-> Tx Tension restores the exact previous chart + lump sum curve
-    setResultsByStrategy(prev => ({ ...prev, [strategy]: result }));
+  const hasResultsForCurrentStrategy = useMemo(
+    () => Boolean(
+      getCachedResult(strategy, 'periodic-boost', true)
+      || getCachedResult(strategy, 'periodic-boost', false)
+      || getCachedResult(strategy, 'trigger-only', true)
+      || getCachedResult(strategy, 'trigger-only', false)
+    ),
+    [strategy, getCachedResult]
+  );
+
+  const alternateBuyModeResult = useMemo(
+    () => getCachedResult(strategy, buyStrategy === 'periodic-boost' ? 'trigger-only' : 'periodic-boost', enableDynamicSelling),
+    [strategy, buyStrategy, enableDynamicSelling, getCachedResult]
+  );
+
+  const alternateSellModeResult = useMemo(
+    () => getCachedResult(strategy, buyStrategy, !enableDynamicSelling),
+    [strategy, buyStrategy, enableDynamicSelling, getCachedResult]
+  );
+
+  // Run all buy mode + exit strategy combinations so toggles switch instantly without re-running
+  const runBacktest = useCallback(() => {
+    if (simSeriesData.length === 0) return null;
+
+    setIsRunning(true);
+
+    const strategyResults = {
+      'periodic-boost': {
+        'selling-on': computeBacktestResult('periodic-boost', true),
+        'hold-btc-only': computeBacktestResult('periodic-boost', false),
+      },
+      'trigger-only': {
+        'selling-on': computeBacktestResult('trigger-only', true),
+        'hold-btc-only': computeBacktestResult('trigger-only', false),
+      },
+    };
+
+    const sellKey = getSellModeKey(enableDynamicSelling);
+    setResultsByStrategy(prev => ({ ...prev, [strategy]: strategyResults }));
+    setSimulationResults(strategyResults[buyStrategy][sellKey]);
     setIsRunning(false);
     setShowTrades(true);
-  }, [simSeriesData, dcaAmount, frequency, startDate, getActionForIndicator, isTx, buyStrategy, strategy]);
+  }, [simSeriesData, computeBacktestResult, strategy, buyStrategy, enableDynamicSelling, getSellModeKey]);
 
   // Tier editor helpers
   const updateTier = (listSetter, index, key, value) => {
@@ -516,9 +664,10 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
 
   const addTier = (listSetter, isBuy) => {
     listSetter(prev => {
-      const def = isBuy 
-        ? { level: isHeat ? 30 : isTx ? 12 : 0.30, multiplier: 1.5, label: 'New Tier' }
-        : { level: isHeat ? 75 : isTx ? 28 : 0.70, sellPercent: 20, label: 'New Tier' };
+      const txDefaults = buildTxTierDefaults(txIndicatorRange.max, txIndicatorRange.step);
+      const def = isBuy
+        ? { level: isHeat ? 30 : isTx ? txDefaults.buy[0].level : 0.30, multiplier: 1.5, label: 'New Tier' }
+        : { level: isHeat ? 75 : isTx ? txDefaults.sell[0].level : 0.70, sellPercent: 20, label: 'New Tier' };
       return [...prev, def];
     });
   };
@@ -530,15 +679,9 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
   // Reset to sensible defaults per strategy
   const resetDefaults = () => {
     if (isTx) {
-      // Raw ratio scale for Tx Tension (lower number = stronger buy signal)
-      setTxBuyTiers([
-        { level: 9, multiplier: 2.5, label: 'Strong Oversold' },
-        { level: 15, multiplier: 1.6, label: 'Medium Oversold' },
-      ]);
-      setTxSellTiers([
-        { level: 22, sellPercent: 12, label: 'Medium Overbought' },
-        { level: 32, sellPercent: 28, label: 'Strong Overbought' },
-      ]);
+      const txDefaults = buildTxTierDefaults(txIndicatorRange.max, txIndicatorRange.step);
+      setTxBuyTiers(txDefaults.buy);
+      setTxSellTiers(txDefaults.sell);
     } else if (isHeat) {
       setHeatBuyTiers([
         { level: 25, multiplier: 2.0, label: 'Cold / Strong Oversold' },
@@ -560,8 +703,10 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
     }
   };
 
-  const currentTiersDisplay = isTx 
-    ? 'MVRV/Tx Ratio (raw values from API: lower ratio ≈ stronger oversold / buy signal; higher ≈ overbought / sell signal). Tiers below use this scale.'
+  const txLevelDecimals = txIndicatorRange.max > 100 ? 0 : 1;
+
+  const currentTiersDisplay = isTx
+    ? `MVRV/Tx Ratio (${txSmoothing}) — observed range ~${txIndicatorRange.dataMin.toFixed(txLevelDecimals)}–${txIndicatorRange.dataMax.toFixed(txLevelDecimals)}; tier sliders span 0–${txIndicatorRange.max}. Lower = oversold/buy; higher = overbought/sell.`
     : isHeat
       ? 'Market Heat Index (0-100). Low values = cold/oversold (good for buy boosts). High = hot/overbought (good for sells). Uses your saved weights from /market-heat-index if you have tuned them.'
       : 'Risk (0 = low risk / good entry, 1 = high risk)';
@@ -583,6 +728,55 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
       return next;
     });
   }, []);
+
+  const portfolioSeriesLegend = useMemo(() => ([
+    { dataKey: 'invested', label: 'Total Invested (DCA)', color: colors.greenAccent[500], dashed: false },
+    { dataKey: 'portfolioValue', label: 'Portfolio Value (incl. sells + remaining BTC)', color: colors.blueAccent[400], dashed: false },
+    { dataKey: 'lumpSumValue', label: 'Lump Sum (final capital all-in at start, held)', color: colors.grey[300], dashed: true },
+  ]), [colors]);
+
+  const renderPortfolioLegend = useCallback(() => (
+    <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, flexWrap: 'wrap', pt: 1, pb: 0.5 }}>
+      {portfolioSeriesLegend.map((item) => {
+        const isHidden = hiddenPortfolioSeries.has(item.dataKey);
+        return (
+          <Box
+            key={item.dataKey}
+            onClick={() => togglePortfolioSeries(item.dataKey)}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.75,
+              cursor: 'pointer',
+              userSelect: 'none',
+              opacity: isHidden ? 0.4 : 1,
+              transition: 'opacity 0.15s ease',
+              '&:hover': { opacity: isHidden ? 0.6 : 0.85 },
+            }}
+          >
+            <Box
+              sx={{
+                width: 16,
+                height: 0,
+                borderTop: `3px ${item.dashed ? 'dashed' : 'solid'} ${item.color}`,
+                opacity: isHidden ? 0.35 : 1,
+              }}
+            />
+            <Typography
+              variant="caption"
+              sx={{
+                color: isHidden ? colors.grey[500] : colors.grey[200],
+                fontSize: '0.75rem',
+                lineHeight: 1.2,
+              }}
+            >
+              {item.label}
+            </Typography>
+          </Box>
+        );
+      })}
+    </Box>
+  ), [portfolioSeriesLegend, hiddenPortfolioSeries, togglePortfolioSeries, colors]);
 
   // Subtle level bands + lines for the decision metric chart underneath the portfolio chart.
   // Stronger tiers (farther extremes) get slightly higher opacity (more visible tint) but still subtle.
@@ -617,19 +811,22 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
       prevBuy = tier.level;
     });
 
-    // Sell zones (higher = stronger sell)
+    // Sell zones (higher = stronger sell) — greyed when exit strategy is Hold BTC Only
+    const sellActive = enableDynamicSelling;
     let prevSell = null;
     sellsSortedDesc.forEach((tier, idx) => {
       const strength = (sellsSortedDesc.length - idx) / Math.max(1, sellsSortedDesc.length);
       const alpha = 0.07 + (strength * 0.16);
-      const fill = `rgba(239, 83, 80, ${alpha})`; // red tones
+      const fill = sellActive
+        ? `rgba(239, 83, 80, ${alpha})`
+        : `rgba(158, 158, 158, ${alpha * 0.55})`;
       elements.push(
         <ReferenceArea
           key={`sell-zone-${idx}`}
           y1={tier.level}
           y2={prevSell}
           fill={fill}
-          fillOpacity={1}
+          fillOpacity={sellActive ? 1 : 0.7}
           stroke="none"
         />
       );
@@ -654,21 +851,21 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
         <ReferenceLine
           key={`sell-line-${idx}`}
           y={tier.level}
-          stroke="#ef5350"
+          stroke={sellActive ? '#ef5350' : colors.grey[500]}
           strokeDasharray="2 2"
-          strokeOpacity={0.65}
+          strokeOpacity={sellActive ? 0.65 : 0.35}
           strokeWidth={1}
         />
       );
     });
 
     return elements;
-  }, [buyTiers, sellTiers, strategy, fullChartData]);
+  }, [buyTiers, sellTiers, strategy, fullChartData, enableDynamicSelling, colors]);
 
   const metricLabel = strategy === 'risk'
     ? 'Bitcoin Risk Metric (0-1)'
     : strategy === 'tx-tension'
-      ? 'Tx Tension (MVRV/Tx Ratio)'
+      ? `Tx Tension (MVRV/Tx Ratio, ${txSmoothing}, 0–${txIndicatorRange.max})`
       : 'Market Heat Index (0-100, using your saved config weights)';
 
   const metricLineColor = strategy === 'risk'
@@ -677,17 +874,26 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
       ? colors.blueAccent[400]
       : '#00bcd4';
 
-  const metricYDomain = strategy === 'risk' ? [0, 1.02] : strategy === 'heat-index' ? [0, 102] : ['auto', 'auto'];
+  const metricYDomain = strategy === 'risk'
+    ? [0, 1.02]
+    : strategy === 'heat-index'
+      ? [0, 102]
+      : isTx
+        ? [0, txIndicatorRange.max]
+        : ['auto', 'auto'];
 
-  // Strategy comparison data - derived from persisted runs
+  // Strategy comparison data - uses the currently selected buy mode for fair side-by-side ROI
   const strategyComparisons = useMemo(() => {
-    const entries = Object.entries(resultsByStrategy || {}).map(([key, res]) => ({
-      key,
-      name: key === 'risk' ? 'Bitcoin Risk Metric' : key === 'tx-tension' ? 'Tx Tension (MVRV/Tx)' : key === 'heat-index' ? 'Market Heat Index' : key,
-      roi: res?.roi ?? 0,
-    }));
+    const entries = Object.entries(resultsByStrategy || {}).map(([key]) => {
+      const modeResult = getCachedResult(key, buyStrategy, enableDynamicSelling);
+      return {
+        key,
+        name: key === 'risk' ? 'Bitcoin Risk Metric' : key === 'tx-tension' ? 'Tx Tension (MVRV/Tx)' : key === 'heat-index' ? 'Market Heat Index' : key,
+        roi: modeResult?.roi ?? 0,
+      };
+    }).filter(e => getCachedResult(e.key, buyStrategy, enableDynamicSelling));
     return entries.sort((a, b) => b.roi - a.roi);
-  }, [resultsByStrategy]);
+  }, [resultsByStrategy, buyStrategy, enableDynamicSelling, getCachedResult]);
 
   const hasMultipleStrategiesRun = strategyComparisons.length > 1;
 
@@ -716,6 +922,7 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
       if (typeof saved.frequency === 'number') setFrequency(saved.frequency);
       if (typeof saved.startDate === 'string') setStartDate(saved.startDate);
       if (typeof saved.buyStrategy === 'string') setBuyStrategy(saved.buyStrategy);
+      if (typeof saved.enableDynamicSelling === 'boolean') setEnableDynamicSelling(saved.enableDynamicSelling);
 
       if (Array.isArray(saved.riskBuyTiers)) setRiskBuyTiers(saved.riskBuyTiers);
       if (Array.isArray(saved.riskSellTiers)) setRiskSellTiers(saved.riskSellTiers);
@@ -729,7 +936,33 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
       }
 
       if (saved.resultsByStrategy && typeof saved.resultsByStrategy === 'object') {
-        setResultsByStrategy(saved.resultsByStrategy);
+        const migrated = {};
+        const wrapBuyResult = (buyResult) => {
+          if (!buyResult) return null;
+          if (buyResult['selling-on'] || buyResult['hold-btc-only']) return buyResult;
+          if (buyResult.buyStrategyUsed) {
+            const sellKey = buyResult.sellStrategyEnabled !== false ? 'selling-on' : 'hold-btc-only';
+            return { [sellKey]: buyResult };
+          }
+          return buyResult;
+        };
+        Object.entries(saved.resultsByStrategy).forEach(([key, val]) => {
+          if (!val) return;
+          if (val.buyStrategyUsed) {
+            const sellKey = val.sellStrategyEnabled !== false ? 'selling-on' : 'hold-btc-only';
+            migrated[key] = { [val.buyStrategyUsed]: { [sellKey]: val } };
+            return;
+          }
+          if (val['periodic-boost'] || val['trigger-only']) {
+            migrated[key] = {
+              ...(val['periodic-boost'] ? { 'periodic-boost': wrapBuyResult(val['periodic-boost']) } : {}),
+              ...(val['trigger-only'] ? { 'trigger-only': wrapBuyResult(val['trigger-only']) } : {}),
+            };
+            return;
+          }
+          migrated[key] = val;
+        });
+        setResultsByStrategy(migrated);
       }
 
       // Note: simulationResults is restored via the existing resultsByStrategy + strategy effect
@@ -749,6 +982,7 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
       frequency,
       startDate,
       buyStrategy,
+      enableDynamicSelling,
       riskBuyTiers,
       riskSellTiers,
       txBuyTiers,
@@ -770,6 +1004,7 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
     frequency,
     startDate,
     buyStrategy,
+    enableDynamicSelling,
     riskBuyTiers,
     riskSellTiers,
     txBuyTiers,
@@ -829,10 +1064,22 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
               <InputLabel>Smoothing</InputLabel>
               <Select value={txSmoothing} label="Smoothing" onChange={e => setTxSmoothing(e.target.value)}>
                 <MenuItem value="none">None</MenuItem>
+                <MenuItem value="sma-3">3-day SMA</MenuItem>
                 <MenuItem value="sma-7">7-day SMA</MenuItem>
+                <MenuItem value="sma-14">14-day SMA</MenuItem>
+                <MenuItem value="sma-21">21-day SMA</MenuItem>
                 <MenuItem value="sma-28">28-day SMA</MenuItem>
+                <MenuItem value="sma-42">6-week SMA</MenuItem>
+                <MenuItem value="sma-56">8-week SMA</MenuItem>
+                <MenuItem value="sma-140">20-week SMA</MenuItem>
+                <MenuItem value="ema-3">3-day EMA</MenuItem>
                 <MenuItem value="ema-7">7-day EMA</MenuItem>
+                <MenuItem value="ema-14">14-day EMA</MenuItem>
+                <MenuItem value="ema-21">21-day EMA</MenuItem>
                 <MenuItem value="ema-28">28-day EMA</MenuItem>
+                <MenuItem value="ema-42">6-week EMA</MenuItem>
+                <MenuItem value="ema-56">8-week EMA</MenuItem>
+                <MenuItem value="ema-140">20-week EMA</MenuItem>
               </Select>
             </FormControl>
           )}
@@ -887,6 +1134,29 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
                 On Trigger Levels
               </Button>
             </Box>
+            {hasResultsForCurrentStrategy && (
+              <Typography variant="caption" sx={{ color: colors.blueAccent[300], display: 'block', mt: 0.5, fontSize: '0.65rem' }}>
+                Switch buy modes to compare Constant vs Trigger-Level results instantly.
+              </Typography>
+            )}
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Typography variant="caption" sx={{ color: colors.grey[200] }}>Exit Strategy (Dynamic Selling)</Typography>
+            <Box sx={{ display: 'flex', gap: 0.5, mt: 0.5, flexWrap: 'wrap' }}>
+              <Button size="small" variant={enableDynamicSelling ? 'contained' : 'outlined'} onClick={() => setEnableDynamicSelling(true)}
+                sx={{ color: enableDynamicSelling ? '#111' : colors.blueAccent[400], borderColor: colors.blueAccent[400], backgroundColor: enableDynamicSelling ? colors.blueAccent[400] : 'transparent', fontSize: '0.7rem', px: 1, py: 0.25 }}>
+                Selling On
+              </Button>
+              <Button size="small" variant={!enableDynamicSelling ? 'contained' : 'outlined'} onClick={() => setEnableDynamicSelling(false)}
+                sx={{ color: !enableDynamicSelling ? '#111' : colors.grey[400], borderColor: colors.grey[500], backgroundColor: !enableDynamicSelling ? colors.grey[400] : 'transparent', fontSize: '0.7rem', px: 1, py: 0.25 }}>
+                Hold BTC Only
+              </Button>
+            </Box>
+            {hasResultsForCurrentStrategy && (
+              <Typography variant="caption" sx={{ color: colors.blueAccent[300], display: 'block', mt: 0.5, fontSize: '0.65rem' }}>
+                Switch exit strategy to compare selling vs holding — cash from sells stays flat while BTC value moves with price.
+              </Typography>
+            )}
           </Grid>
           <Grid item xs={12}>
             <Button
@@ -911,7 +1181,10 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
           </Grid>
         </Grid>
         <Typography variant="caption" sx={{ mt: 1, display: 'block', color: colors.grey[500] }}>
-          {buyStrategy === 'trigger-only' ? 'In trigger-only mode the frequency is used as cooldown after a level is hit (no normal periodic buys).' : 'In periodic mode you buy every interval (boosted when a tier matches).'}
+          Run backtest computes all four combinations (Constant / Trigger-Level × Selling On / Hold BTC Only) for instant comparison.
+          {enableDynamicSelling
+            ? ' Selling On: portfolio = cash from sells (price-stable) + remaining BTC (moves with price).'
+            : ' Hold BTC Only: portfolio = 100% BTC holdings — entire value moves with Bitcoin price.'}
         </Typography>
       </Paper>
 
@@ -950,15 +1223,15 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
               <AccordionDetails>
                 {buyTiers.map((tier, idx) => (
                   <Box key={idx} sx={{ mb: 2, p: 1.5, background: colors.primary[500], borderLeft: `4px solid ${colors.greenAccent[500]}`, borderRadius: 1 }}>
-                    <Typography variant="caption" sx={{ color: colors.greenAccent[200] }}>{tier.label || `Tier ${idx + 1}`} — {Number(tier.level).toFixed(isTx ? 1 : 2)}</Typography>
+                    <Typography variant="caption" sx={{ color: colors.greenAccent[200] }}>{tier.label || `Tier ${idx + 1}`} — {Number(tier.level).toFixed(isTx ? txLevelDecimals : 2)}</Typography>
                     <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mt: 0.5 }}>
                       <Box sx={{ flex: 1 }}>
                         <Typography variant="caption" sx={{ color: colors.grey[200] }}>Trigger Level</Typography>
                         <Slider
-                          value={tier.level}
-                          min={isHeat ? 0 : isTx ? 0 : 0}
-                          max={isHeat ? 100 : isTx ? 40 : 1}
-                          step={isHeat ? 1 : isTx ? 0.5 : 0.01}
+                          value={Math.min(tier.level, isTx ? txIndicatorRange.max : isHeat ? 100 : 1)}
+                          min={isHeat ? 0 : isTx ? txIndicatorRange.min : 0}
+                          max={isHeat ? 100 : isTx ? txIndicatorRange.max : 1}
+                          step={isHeat ? 1 : isTx ? txIndicatorRange.step : 0.01}
                           onChange={(_, v) => {
                             const setter = isHeat ? setHeatBuyTiers : isTx ? setTxBuyTiers : setRiskBuyTiers;
                             updateTier(setter, idx, 'level', v);
@@ -1008,15 +1281,15 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
               <AccordionDetails>
                 {sellTiers.map((tier, idx) => (
                   <Box key={idx} sx={{ mb: 2, p: 1.5, background: colors.primary[500], borderLeft: `4px solid ${colors.blueAccent[400]}`, borderRadius: 1 }}>
-                    <Typography variant="caption" sx={{ color: colors.blueAccent[200] }}>{tier.label || `Tier ${idx + 1}`} — {Number(tier.level).toFixed(isTx ? 1 : 2)}</Typography>
+                    <Typography variant="caption" sx={{ color: colors.blueAccent[200] }}>{tier.label || `Tier ${idx + 1}`} — {Number(tier.level).toFixed(isTx ? txLevelDecimals : 2)}</Typography>
                     <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mt: 0.5 }}>
                       <Box sx={{ flex: 1 }}>
                         <Typography variant="caption" sx={{ color: colors.grey[200] }}>Trigger Level</Typography>
                         <Slider
-                          value={tier.level}
-                          min={isHeat ? 0 : isTx ? 5 : 0}
-                          max={isHeat ? 100 : isTx ? 60 : 1}
-                          step={isHeat ? 1 : isTx ? 0.5 : 0.01}
+                          value={Math.min(tier.level, isTx ? txIndicatorRange.max : isHeat ? 100 : 1)}
+                          min={isHeat ? 0 : isTx ? txIndicatorRange.min : 0}
+                          max={isHeat ? 100 : isTx ? txIndicatorRange.max : 1}
+                          step={isHeat ? 1 : isTx ? txIndicatorRange.step : 0.01}
                           onChange={(_, v) => {
                             const setter = isHeat ? setHeatSellTiers : isTx ? setTxSellTiers : setRiskSellTiers;
                             updateTier(setter, idx, 'level', v);
@@ -1057,6 +1330,8 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
                 </Button>
                 <Typography variant="caption" sx={{ display: 'block', mt: 1, color: colors.grey[400] }}>
                   Higher tiers take precedence when multiple levels are triggered.
+                  {!enableDynamicSelling && hasResultsForCurrentStrategy && ' (Viewing Hold BTC Only results — toggle Selling On above to compare exit strategy benefit.)'}
+                  {!enableDynamicSelling && !hasResultsForCurrentStrategy && ' (Hold BTC Only selected — run backtest to compare against Selling On.)'}
                 </Typography>
               </AccordionDetails>
             </Accordion>
@@ -1070,9 +1345,25 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
         {/* Portfolio Value Chart (replaces the embedded risk/tx indicator chart) */}
         <Grid item xs={12} md={7}>
           <Paper sx={{ p: isMobile ? 1.5 : 2, backgroundColor: colors.primary[400], border: `1px solid ${colors.primary[500]}`, height: '100%' }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-              <Typography variant="h6">Portfolio Value vs Total Invested</Typography>
-              <MuiTooltip title="Shows cumulative capital deployed via DCA over time, and the current total portfolio value (realized profits from sells + value of BTC still held).">
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1, flexWrap: 'wrap', gap: 1 }}>
+              <Box>
+                <Typography variant="h6">Portfolio Value vs Total Invested</Typography>
+                {simulationResults && (
+                  <Box sx={{ display: 'flex', gap: 0.5, mt: 0.5, flexWrap: 'wrap' }}>
+                    <Chip
+                      size="small"
+                      label={simulationResults.buyModeLabel || buyModeLabel}
+                      sx={{ backgroundColor: buyStrategy === 'periodic-boost' ? colors.greenAccent[700] : colors.blueAccent[700], color: colors.grey[100], fontSize: '0.7rem', height: 22 }}
+                    />
+                    <Chip
+                      size="small"
+                      label={simulationResults.sellStrategyEnabled ? 'Exit: Selling On' : 'Exit: Hold BTC Only'}
+                      sx={{ backgroundColor: simulationResults.sellStrategyEnabled ? colors.blueAccent[800] : colors.primary[600], color: colors.grey[200], fontSize: '0.7rem', height: 22 }}
+                    />
+                  </Box>
+                )}
+              </Box>
+              <MuiTooltip title="Shows cumulative capital deployed via DCA over time, and the current total portfolio value (cash from sells + value of BTC still held when exit strategy is on; 100% BTC when off).">
                 <InfoOutlinedIcon fontSize="small" sx={{ color: colors.grey[400] }} />
               </MuiTooltip>
             </Box>
@@ -1105,47 +1396,42 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
                     />
                     <Tooltip 
                       contentStyle={{ backgroundColor: colors.primary[400], border: `1px solid ${colors.primary[500]}`, color: colors.grey[100] }}
-                      formatter={(value) => ['$' + Math.round(value).toLocaleString()]}
+                      formatter={(value, name) => ['$' + Math.round(value).toLocaleString(), name]}
+                      labelFormatter={(label) => `${label} • ${simulationResults?.buyModeLabel || buyModeLabel} • ${simulationResults?.sellStrategyEnabled ? 'Selling On' : 'Hold BTC Only'}`}
                     />
-                    <Legend 
-                      wrapperStyle={{ color: colors.grey[200], fontSize: 12, cursor: 'pointer' }} 
-                      onClick={(e) => e && e.dataKey && togglePortfolioSeries(e.dataKey)}
+                    <Legend content={renderPortfolioLegend} />
+                    <Line 
+                      hide={hiddenPortfolioSeries.has('invested')}
+                      type="step" 
+                      dataKey="invested" 
+                      name="Total Invested (DCA)" 
+                      stroke={colors.greenAccent[500]} 
+                      strokeWidth={2.5} 
+                      dot={false} 
+                      activeDot={{ r: 3, fill: colors.greenAccent[400] }}
                     />
-                    {!hiddenPortfolioSeries.has('invested') && (
-                      <Line 
-                        type="step" 
-                        dataKey="invested" 
-                        name="Total Invested (DCA)" 
-                        stroke={colors.greenAccent[500]} 
-                        strokeWidth={2.5} 
-                        dot={false} 
-                        activeDot={{ r: 3, fill: colors.greenAccent[400] }}
-                      />
-                    )}
-                    {!hiddenPortfolioSeries.has('portfolioValue') && (
-                      <Line 
-                        type="linear" 
-                        dataKey="portfolioValue" 
-                        name="Portfolio Value (incl. sells + remaining BTC)" 
-                        stroke={colors.blueAccent[400]} 
-                        strokeWidth={2.5} 
-                        dot={false} 
-                        activeDot={{ r: 3, fill: colors.blueAccent[400] }}
-                      />
-                    )}
+                    <Line 
+                      hide={hiddenPortfolioSeries.has('portfolioValue')}
+                      type="linear" 
+                      dataKey="portfolioValue" 
+                      name="Portfolio Value (incl. sells + remaining BTC)" 
+                      stroke={colors.blueAccent[400]} 
+                      strokeWidth={2.5} 
+                      dot={false} 
+                      activeDot={{ r: 3, fill: colors.blueAccent[400] }}
+                    />
                     {/* Lump sum comparison line: same final capital all deployed at the sim's first price, held (no sells/boosts). Dashed for visual distinction. Click legend to toggle (useful when start date creates skew). */}
-                    {!hiddenPortfolioSeries.has('lumpSumValue') && (
-                      <Line 
-                        type="linear" 
-                        dataKey="lumpSumValue" 
-                        name="Lump Sum (final capital all-in at start, held)" 
-                        stroke={colors.grey[300]} 
-                        strokeWidth={2} 
-                        strokeDasharray="5 3"
-                        dot={false} 
-                        activeDot={{ r: 3, fill: colors.grey[300] }}
-                      />
-                    )}
+                    <Line 
+                      hide={hiddenPortfolioSeries.has('lumpSumValue')}
+                      type="linear" 
+                      dataKey="lumpSumValue" 
+                      name="Lump Sum (final capital all-in at start, held)" 
+                      stroke={colors.grey[300]} 
+                      strokeWidth={2} 
+                      strokeDasharray="5 3"
+                      dot={false} 
+                      activeDot={{ r: 3, fill: colors.grey[300] }}
+                    />
                   </LineChart>
                 </ResponsiveContainer>
               ) : (
@@ -1171,7 +1457,11 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
             </Box>
 
             <Typography variant="caption" sx={{ color: colors.grey[400], mt: 1, display: 'block' }}>
-              Green = capital you put in over time. Blue = what your portfolio (including profits locked in via sells and the BTC you still hold) is worth at each point.
+              Green = capital you put in over time. Blue = total portfolio value at each point
+              {simulationResults?.sellStrategyEnabled
+                ? ' (cash from sells stays flat in USD + remaining BTC moves with price).'
+                : ' (100% BTC — entire portfolio moves with Bitcoin price).'}
+              {' '}Toggle buy mode and exit strategy above to compare all cached results instantly.
             </Typography>
 
             {/* NEW: Decision metric visualization placed directly underneath the portfolio chart.
@@ -1229,7 +1519,9 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
                   </ResponsiveContainer>
                 </Box>
                 <Typography variant="caption" sx={{ color: colors.grey[500], mt: 0.5, display: 'block', fontSize: '0.65rem' }}>
-                  Green/teal bands = buy boost zones (stronger tiers = more saturated tint). Red bands = sell / take-profit zones. Update tiers on the left and re-run to see impact on the portfolio chart above.
+                  Green/teal bands = buy boost zones. Red bands = active sell / take-profit zones.
+                  {!enableDynamicSelling && ' Grey bands = sell tiers (inactive while Hold BTC Only is selected — still editable via sliders, turn red when Selling On).'}
+                  {' '}Update tiers on the left and re-run to see impact on the portfolio chart above.
                 </Typography>
               </Box>
             )}
@@ -1237,7 +1529,11 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
             {/* Compact results summary placed directly under the chart (per request) so the most important numbers are visible instantly without further scrolling. Granular trade log is kept lower down. */}
             {simulationResults && (
               <Box sx={{ mt: 2, pt: 1.5, borderTop: `1px solid ${colors.primary[500]}` }}>
-                <Typography variant="subtitle2" sx={{ mb: 1, color: colors.grey[200] }}>Results Summary</Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, flexWrap: 'wrap' }}>
+                  <Typography variant="subtitle2" sx={{ color: colors.grey[200] }}>Results Summary</Typography>
+                  <Chip size="small" label={simulationResults.buyModeLabel || buyModeLabel} sx={{ fontSize: '0.65rem', height: 20, backgroundColor: buyStrategy === 'periodic-boost' ? colors.greenAccent[800] : colors.blueAccent[800], color: colors.grey[100] }} />
+                  <Chip size="small" label={simulationResults.sellStrategyEnabled ? 'Selling On' : 'Hold BTC Only'} sx={{ fontSize: '0.65rem', height: 20 }} variant="outlined" />
+                </Box>
                 <Grid container spacing={isMobile ? 0.75 : 1}>
                   {[
                     { label: 'Invested', value: `$${simulationResults.totalUsdInvested.toFixed(0)}` },
@@ -1253,14 +1549,78 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
                     </Grid>
                   ))}
                 </Grid>
+                <Grid container spacing={isMobile ? 0.75 : 1} sx={{ mt: 0.75 }}>
+                  <Grid item xs={6} sm={simulationResults.sellStrategyEnabled ? 4 : 6}>
+                    <Box sx={{ p: 0.75, background: colors.primary[500], borderRadius: 1, textAlign: 'center', borderLeft: `3px solid ${colors.greenAccent[500]}` }}>
+                      <Typography variant="caption" sx={{ color: colors.grey[400], fontSize: '0.65rem' }}>BTC Holdings</Typography>
+                      <Typography variant="body2" sx={{ color: colors.greenAccent[300], fontWeight: 600, lineHeight: 1.1, fontSize: '0.85rem' }}>
+                        {simulationResults.btcHeld.toFixed(4)} BTC
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: colors.grey[500], fontSize: '0.6rem' }}>
+                        ${simulationResults.finalBtcValue.toFixed(0)} value
+                      </Typography>
+                    </Box>
+                  </Grid>
+                  {simulationResults.sellStrategyEnabled && (
+                    <Grid item xs={6} sm={4}>
+                      <Box sx={{ p: 0.75, background: colors.primary[500], borderRadius: 1, textAlign: 'center', borderLeft: `3px solid ${colors.blueAccent[400]}` }}>
+                        <Typography variant="caption" sx={{ color: colors.grey[400], fontSize: '0.65rem' }}>Cash from Sells</Typography>
+                        <Typography variant="body2" sx={{ color: colors.blueAccent[300], fontWeight: 600, lineHeight: 1.1, fontSize: '0.85rem' }}>
+                          ${simulationResults.totalUsdRealized.toFixed(0)}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: colors.grey[500], fontSize: '0.6rem' }}>
+                          realized exit proceeds
+                        </Typography>
+                      </Box>
+                    </Grid>
+                  )}
+                  <Grid item xs={12} sm={simulationResults.sellStrategyEnabled ? 4 : 6}>
+                    <Box sx={{ p: 0.75, background: colors.primary[500], borderRadius: 1, textAlign: 'center' }}>
+                      <Typography variant="caption" sx={{ color: colors.grey[400], fontSize: '0.65rem' }}>Trades</Typography>
+                      <Typography variant="body2" sx={{ color: colors.grey[200], fontWeight: 600, lineHeight: 1.1, fontSize: '0.85rem' }}>
+                        {simulationResults.transactionCount}
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: colors.grey[500], fontSize: '0.6rem' }}>
+                        {simulationResults.sellStrategyEnabled ? 'buys + sells' : 'buys only'}
+                      </Typography>
+                    </Box>
+                  </Grid>
+                </Grid>
                 <Box sx={{ mt: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                  <Chip size="small" label={`Static DCA: ${simulationResults.staticDca.roi.toFixed(1)}%`} />
+                  <Chip size="small" label={`Static DCA (${simulationResults.buyModeLabel || buyModeLabel}): ${simulationResults.staticDca.roi.toFixed(1)}%`} />
                   <Chip size="small" label={`Lump Sum: ${simulationResults.lumpSum?.roi?.toFixed(1) ?? 0}%`} />
                   <Chip size="small" color="success" label={`Beat static: ${(simulationResults.roi - simulationResults.staticDca.roi).toFixed(1)}pp`} />
+                  {alternateBuyModeResult && (
+                    <Chip
+                      size="small"
+                      variant="outlined"
+                      label={`${buyStrategy === 'periodic-boost' ? 'Trigger-Level' : 'Constant'} ROI: ${alternateBuyModeResult.roi.toFixed(1)}%`}
+                      sx={{ borderColor: colors.blueAccent[400], color: colors.blueAccent[300] }}
+                    />
+                  )}
+                  {alternateSellModeResult && (
+                    <Chip
+                      size="small"
+                      variant="outlined"
+                      label={`${enableDynamicSelling ? 'Hold BTC Only' : 'Selling On'} ROI: ${alternateSellModeResult.roi.toFixed(1)}%`}
+                      sx={{ borderColor: colors.grey[400], color: colors.grey[300] }}
+                    />
+                  )}
+                  {alternateSellModeResult && simulationResults.sellStrategyEnabled && (
+                    <Chip
+                      size="small"
+                      color={simulationResults.roi >= alternateSellModeResult.roi ? 'success' : 'default'}
+                      label={`Selling vs Hold: ${(simulationResults.roi - alternateSellModeResult.roi).toFixed(1)}pp`}
+                    />
+                  )}
+                  {alternateSellModeResult && !simulationResults.sellStrategyEnabled && (
+                    <Chip
+                      size="small"
+                      color={alternateSellModeResult.roi >= simulationResults.roi ? 'success' : 'default'}
+                      label={`Selling vs Hold: ${(alternateSellModeResult.roi - simulationResults.roi).toFixed(1)}pp`}
+                    />
+                  )}
                 </Box>
-                <Typography variant="caption" sx={{ mt: 0.5, display: 'block', color: colors.grey[500] }}>
-                  BTC held: {simulationResults.btcHeld.toFixed(4)} • Trades: {simulationResults.transactionCount} • Mode: {simulationResults.buyStrategyUsed || 'periodic-boost'}
-                </Typography>
               </Box>
             )}
           </Paper>
@@ -1273,7 +1633,7 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
             <Paper sx={{ p: isMobile ? 1.5 : 2.5, backgroundColor: colors.primary[400], border: `1px solid ${colors.primary[500]}`, mb: 2 }}>
               <Typography variant="h6" sx={{ mb: 0.5 }}>Strategy Comparison</Typography>
               <Typography variant="caption" sx={{ color: colors.grey[400], display: 'block', mb: 1.5 }}>
-                ROI of each dynamic strategy you've run so far (higher is better).
+                {`ROI of each dynamic strategy for ${buyModeLabel} + ${sellModeLabel} (higher is better). Switch buy mode or exit strategy above to compare.`}
               </Typography>
 
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
@@ -1345,15 +1705,24 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
               {/* Highlighted current dynamic DCA strategy results for completeness in the detailed section */}
               {simulationResults && (
                 <Box sx={{ mb: 2, p: 1.5, backgroundColor: colors.primary[500], border: `1px solid ${colors.greenAccent[500]}`, borderRadius: 1 }}>
-                  <Typography variant="caption" sx={{ color: colors.greenAccent[300], fontWeight: 500 }}>Current Run — {simulationResults.strategy}</Typography>
+                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <Typography variant="caption" sx={{ color: colors.greenAccent[300], fontWeight: 500 }}>
+                      {simulationResults.buyModeLabel || buyModeLabel} — {simulationResults.strategy}
+                    </Typography>
+                    <Chip size="small" label={simulationResults.sellStrategyEnabled ? 'Exit: Selling On' : 'Exit: Hold BTC Only'} sx={{ fontSize: '0.65rem', height: 20 }} />
+                  </Box>
                   <Grid container spacing={isMobile ? 0.75 : 1} sx={{ mt: 0.5 }}>
                     {[
                       { label: 'Invested', value: `$${simulationResults.totalUsdInvested.toFixed(0)}` },
                       { label: 'Portfolio', value: `$${simulationResults.totalPortfolio.toFixed(0)}` },
                       { label: 'Net P/L', value: `$${(simulationResults.totalPortfolio - simulationResults.totalUsdInvested).toFixed(0)}` },
                       { label: 'ROI', value: `${simulationResults.roi.toFixed(1)}%` },
+                      { label: 'BTC Holdings', value: `${simulationResults.btcHeld.toFixed(4)} BTC ($${simulationResults.finalBtcValue.toFixed(0)})` },
+                      ...(simulationResults.sellStrategyEnabled
+                        ? [{ label: 'Cash from Sells', value: `$${simulationResults.totalUsdRealized.toFixed(0)}` }]
+                        : []),
                     ].map((s, i) => (
-                      <Grid item xs={6} sm={3} key={i}>
+                      <Grid item xs={6} sm={4} md={simulationResults.sellStrategyEnabled ? 2 : 3} key={i}>
                         <Box sx={{ p: 0.5, background: colors.primary[400], borderRadius: 1, textAlign: 'center' }}>
                           <Typography variant="caption" sx={{ color: colors.grey[400], fontSize: '0.65rem' }}>{s.label}</Typography>
                           <Typography variant="body2" sx={{ color: colors.greenAccent[400], fontWeight: 600, lineHeight: 1.1, fontSize: '0.85rem' }}>{s.value}</Typography>
@@ -1380,7 +1749,7 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
               </Box>
 
               <Button onClick={() => setShowTrades(!showTrades)} sx={{ mb: 2 }}>
-                {showTrades ? 'Hide' : 'Show'} Trade Log ({simulationResults.transactions.length} trades)
+                {showTrades ? 'Hide' : 'Show'} Trade Log — {simulationResults.buyModeLabel || buyModeLabel} ({simulationResults.transactions.length} trades)
               </Button>
 
               {showTrades && simulationResults.transactions.length > 0 && (
@@ -1429,7 +1798,7 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
 
       <UnderChartRow>
         <Typography variant="caption" sx={{ color: colors.grey[400] }}>
-          Data is loaded client-side. Configure buy/sell tiers on the left, set your DCA amount + frequency + start date, then run the backtest. The portfolio chart and results update with your dynamic strategy vs static DCA and lump-sum equivalents.
+          Data is loaded client-side. Configure buy/sell tiers, set parameters, then run the backtest. All four combinations are computed — toggle buy mode and exit strategy anytime to compare. Hold BTC Only: portfolio tracks Bitcoin price entirely. Selling On: cash from sells is price-stable; only remaining BTC moves with price — showing the benefit of taking profits at overbought levels.
         </Typography>
       </UnderChartRow>
     </Box>
