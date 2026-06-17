@@ -1354,7 +1354,12 @@ const fetchDominanceData = useCallback(async () => {
       apiUrl: apiUrl(`/api/${coin.toLowerCase()}/price/`),
       formatData: (data) =>
         data
-          .filter((item) => item.close != null && !isNaN(parseFloat(item.close)))
+          .filter(
+            (item) =>
+              item.close != null &&
+              !isNaN(parseFloat(item.close)) &&
+              parseFloat(item.close) > 0
+          )
           .map((item) => ({
             time: item.date,
             value: parseFloat(item.close),

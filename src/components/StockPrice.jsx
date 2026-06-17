@@ -5,7 +5,7 @@ import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
-import { Select, MenuItem, FormControl, InputLabel, Box, Checkbox, useMediaQuery, ListSubheader } from '@mui/material';
+import { Select, MenuItem, FormControl, InputLabel, Box, Checkbox, useMediaQuery } from '@mui/material';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import ChartTooltip from './ChartTooltip';
@@ -17,7 +17,7 @@ import {
   calculateMovingAverage 
 } from '../utils/technicalIndicators';
 import { getCurrentPrice } from '../utils/currentPrice';
-import { NASDAQ_TOP_STOCKS, OTHER_STOCKS } from '../config/stocksConfig';
+import StockGroupSelect from './StockGroupSelect';
 
 const StockPrice = ({ isDashboard = false, defaultSelectedCoin }) => {
   const chartContainerRef = useRef();
@@ -52,6 +52,7 @@ const StockPrice = ({ isDashboard = false, defaultSelectedCoin }) => {
     altcoinData,
     fetchAltcoinData,
     altcoinLastUpdated,
+    isAltcoinDataFetched,
     btcData,
     fetchBtcData,
     fedBalanceData,
@@ -83,7 +84,7 @@ const StockPrice = ({ isDashboard = false, defaultSelectedCoin }) => {
     'Weekly': { days: 98, label: 'Weekly RSI' },
   }), []);
 
-  const stocks = [...NASDAQ_TOP_STOCKS, ...OTHER_STOCKS];
+
 
   // Utility functions
   const setInteractivity = useCallback(() => setIsInteractive(prev => !prev), []);
@@ -136,7 +137,7 @@ const StockPrice = ({ isDashboard = false, defaultSelectedCoin }) => {
   useEffect(() => {
     const fetchData = async () => {
       const promises = [];
-      if (!altcoinData[selectedCoin]) {
+      if (!altcoinData[selectedCoin]?.length) {
         promises.push(fetchAltcoinData(selectedCoin));
       }
       if (denominator === 'BTC' && btcData.length === 0) {
@@ -156,10 +157,10 @@ const StockPrice = ({ isDashboard = false, defaultSelectedCoin }) => {
   // Compute chart data and manage loading state
   useEffect(() => {
     const altData = altcoinData[selectedCoin] || [];
-    const isAltcoinDataLoaded = altData.length > 0;
+    const stockFetchDone = Boolean(isAltcoinDataFetched[selectedCoin]);
     const isBtcDataLoaded = denominator === 'BTC' ? btcData.length > 0 : true;
     const isFedBalanceDataLoaded = activeIndicators.includes('fed-balance') ? fedBalanceData.length > 0 : true;
-    if (isAltcoinDataLoaded && isBtcDataLoaded && isFedBalanceDataLoaded) {
+    if (stockFetchDone && isBtcDataLoaded && isFedBalanceDataLoaded) {
       let newChartData = [];
       if (denominator === 'USD') {
         newChartData = altData;
@@ -174,7 +175,7 @@ const StockPrice = ({ isDashboard = false, defaultSelectedCoin }) => {
       setChartData(newChartData);
       setIsLoading(false);
     }
-  }, [denominator, altcoinData, selectedCoin, btcData, activeIndicators, fedBalanceData]);
+  }, [denominator, altcoinData, selectedCoin, btcData, activeIndicators, fedBalanceData, isAltcoinDataFetched]);
 
   // Fetch current price for the selected altcoin from CoinGecko ONCE after its data is loaded.
   // Only once per coin load to avoid interference with chart zoom.
@@ -524,34 +525,13 @@ const StockPrice = ({ isDashboard = false, defaultSelectedCoin }) => {
             >
               Stock
             </InputLabel>
-            <Select
+            <StockGroupSelect
               value={selectedCoin}
               onChange={(e) => setSelectedCoin(e.target.value)}
               label="Stock"
               labelId="stock-label"
-              sx={{
-                color: colors.grey[100],
-                backgroundColor: colors.primary[500],
-                borderRadius: "8px",
-                '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
-                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                '& .MuiSelect-select': { py: 1.5, pl: 2 },
-              }}
-            >
-              <ListSubheader sx={{ color: colors.grey[400], lineHeight: '28px' }}>Nasdaq Top Holdings</ListSubheader>
-              {NASDAQ_TOP_STOCKS.map((coin) => (
-                <MenuItem key={coin.value} value={coin.value}>
-                  {coin.label}
-                </MenuItem>
-              ))}
-              <ListSubheader sx={{ color: colors.grey[400], lineHeight: '28px' }}>Other</ListSubheader>
-              {OTHER_STOCKS.map((coin) => (
-                <MenuItem key={coin.value} value={coin.value}>
-                  {coin.label}
-                </MenuItem>
-              ))}
-            </Select>
+              colors={colors}
+            />
           </FormControl>
           <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '150px' } }}>
             <InputLabel
@@ -833,6 +813,22 @@ const StockPrice = ({ isDashboard = false, defaultSelectedCoin }) => {
             Loading...
           </div>
         )}
+        {!isLoading && chartData.length === 0 && isAltcoinDataFetched[selectedCoin] && (
+          <div
+            style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              color: colors.grey[100],
+              zIndex: 2,
+              textAlign: 'center',
+              padding: '1rem',
+            }}
+          >
+            No price data for {selectedCoin} yet. Please check back later or select a different stock.
+          </div>
+        )}
         <div
           style={{
             position: 'absolute',
@@ -1013,7 +1009,7 @@ const StockPrice = ({ isDashboard = false, defaultSelectedCoin }) => {
           Stocks like TSLA provide exposure to individual companies with real-world fundamentals, earnings, and sector dynamics (EV, tech, AI, etc.).
           They tend to be less volatile than altcoins but can still experience significant drawdowns. This viewer lets you analyze price action with moving averages,
           RSI, and other technical indicators, and optionally compare against BTC (as a "risk-on" macro proxy) or USD.
-          Use the dropdown to switch between major stocks that have daily historical data in the platform.
+          Stocks are grouped by Mega Cap Tech, Crypto-Adjacent, Market Benchmarks, and Retail Sentiment — pick any symbol with daily historical data in the platform.
         </p>
       )}
     </div>

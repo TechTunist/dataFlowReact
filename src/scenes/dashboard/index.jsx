@@ -13,6 +13,9 @@ import BitcoinDominance from "../../components/BitcoinDominance";
 import TotalMarketCap from "../../components/TotalMarketCap";
 import AltcoinPrice from "../../components/AltcoinPrice";
 import AltcoinRisk from "../../components/AltcoinRisk";
+import StockPrice from "../../components/StockPrice";
+import StockRisk from "../../components/StockRisk";
+import StockRiskColor from "../../components/StockRiskColor";
 import EthereumRisk from "../../components/EthereumRisk";
 import EthereumPrice from "../../components/EthereumPrice";
 import MarketCycles from "../../components/MarketCycles";
@@ -91,6 +94,9 @@ const chartConfig = [
   { id: "risk-bands", title: "Time Spent in Risk Bands", linkTo: "/risk-bands", component: (props) => <AssetRiskTimeInBands isDashboard={true} {...props} />, description: "Time spent in each defined Bitcoin risk band." },
   { id: "altcoin-price", title: "Altcoin Charts", linkTo: "/altcoin-price", component: (props) => <AltcoinPrice isDashboard={true} {...props} />, description: "Simple price chart for a selection of altcoins." },
   { id: "altcoin-risk", title: "Altcoin Risk", linkTo: "/altcoin-risk", component: (props) => <AltcoinRisk isDashboard={true} {...props} />, description: "Risk metrics for altcoins." },
+  { id: "stocks", title: "Stock Selector", linkTo: "/stocks", component: (props) => <StockPrice isDashboard={true} defaultSelectedCoin="TSLA" {...props} />, description: "Daily stock prices with technical indicators — mega-cap, crypto-adjacent, benchmarks, and retail sentiment groups." },
+  { id: "stock-risk", title: "Stock Risk", linkTo: "/stock-risk", component: (props) => <StockRisk isDashboard={true} {...props} />, description: "Equity risk metric (200-day MA + rolling 5-year percentile) with USD or BTC denomination." },
+  { id: "stock-risk-color", title: "Stock Risk Colour", linkTo: "/stock-risk-color", component: (props) => <StockRiskColor isDashboard={true} {...props} />, description: "Colorized stock price by risk band — compare crypto-adjacent names vs benchmarks." },
   { id: "market-cycles", title: "Bitcoin Market Cycles", linkTo: "/market-cycles", component: (props) => <MarketCycles isDashboard={true} {...props} />, description: "Compare previous crypto market cycles." },
   { id: "fear-and-greed-chart", title: "Fear and Greed Chart", linkTo: "/fear-and-greed-chart", component: (props) => <FearAndGreedChart isDashboard={true} {...props} />, description: "Chart of Fear and Greed index over time." },
   { id: "fear-and-greed-3d", title: "Fear and Greed 3D", linkTo: "/fear-and-greed-3d", component: (props) => <FearAndGreed3D isDashboard={true} {...props} />, description: "3D visualization of Fear and Greed." },

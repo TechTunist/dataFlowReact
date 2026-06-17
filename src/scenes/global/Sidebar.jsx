@@ -258,6 +258,7 @@ const itemsData = [
   // === STOCKS (dedicated section + component "Stock Selector", separate from altcoins) ===
   { title: "Stock Selector", to: "/stocks", category: "Stocks", icon: <ShowChartIcon />, categoryIcon: <AssessmentIcon /> },
   { title: "Stock Risk", to: "/stock-risk", category: "Stocks", icon: <ShowChartIcon />, categoryIcon: <AssessmentIcon /> },
+  { title: "Stock Risk Colour", to: "/stock-risk-color", category: "Stocks", icon: <ShowChartIcon />, categoryIcon: <AssessmentIcon /> },
 ];
 
   const activeCategory = useMemo(() => {

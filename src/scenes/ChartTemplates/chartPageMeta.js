@@ -29,6 +29,7 @@ export const routeToChartId = {
   "/stocks": "stocks",
   "/tsla": "tsla",
   "/stock-risk": "stock-risk",
+  "/stock-risk-color": "stock-risk-color",
   "/altcoin-risk": "altcoin-risk",
   "/market-cycles": "market-cycles",
   "/fear-and-greed-chart": "fear-and-greed-chart",
@@ -132,7 +133,9 @@ export const getTitleAndSubtitle = (pathname, isMobile = false) => {
     case "/stocks":
       return { title: "Stock Selector", subtitle: isMobile ? "Stock Prices" : "Stock Price Viewer with selector (defaults to TSLA)" };
     case "/stock-risk":
-      return { title: "Stock Risk", subtitle: isMobile ? "Stock Risk" : "Stock Risk Metric (price-history based, like Altcoin Risk)" };
+      return { title: "Stock Risk", subtitle: isMobile ? "Stock Risk" : "Stock Risk Metric (200-day MA + rolling percentile, tuned for equities)" };
+    case "/stock-risk-color":
+      return { title: "Stock Risk Colour", subtitle: isMobile ? "Stock Risk Bands" : "Colorized stock price by equity risk level (0–1 bands)" };
     case "/about":
       return { title: "About", subtitle: "Why did I create Cryptological?" };
     case "/login-signup":

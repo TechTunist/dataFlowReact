@@ -9,7 +9,8 @@ import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
 import { Select, MenuItem, FormControl, InputLabel, Box } from '@mui/material';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
-import { STOCKS } from '../config/stocksConfig';
+import { calculateStockRiskMetric } from '../utility/stockRiskMetric';
+import StockGroupSelect from './StockGroupSelect';
 
 const StockRisk = ({ isDashboard = false }) => {
   const chartContainerRef = useRef();
@@ -26,8 +27,6 @@ const StockRisk = ({ isDashboard = false }) => {
   const [currentStockPrice, setCurrentStockPrice] = useState(0);
   const [currentRiskLevel, setCurrentRiskLevel] = useState(null);
   const { altcoinData, fetchAltcoinData, btcData, fetchBtcData } = useContext(DataContext);
-
-  const stocks = STOCKS;
 
   const handleSelectChange = (event) => {
     setSelectedCoin(event.target.value);
@@ -57,51 +56,11 @@ const StockRisk = ({ isDashboard = false }) => {
     }
   };
 
-  const calculateRiskMetric = (data) => {
-    const maWindow = Math.min(373, Math.floor(data.length / 2));
-    const movingAverage = data.map((item, index) => {
-      const start = Math.max(index - maWindow, 0);
-      const subset = data.slice(start, index + 1);
-      const avg = subset.reduce((sum, curr) => sum + curr.value, 0) / subset.length;
-      return { ...item, MA: avg };
-    });
-    let consecutiveDeclineDays = 0;
-    movingAverage.forEach((item, index) => {
-      const changeFactor = index ** 0.395;
-      let preavg = (Math.log(item.value) - Math.log(item.MA)) * changeFactor;
-      if (index > 0) {
-        const previousItem = movingAverage[index - 1];
-        const priceChange = item.value / previousItem.value;
-        if (priceChange > 1.5) {
-          const dampingFactor = 1 / priceChange;
-          preavg *= dampingFactor;
-          consecutiveDeclineDays = 0;
-        }
-        if (priceChange < 1) {
-          consecutiveDeclineDays++;
-          const declineFactor = Math.min(consecutiveDeclineDays / 30, 1);
-          preavg *= (1 + declineFactor);
-        } else {
-          consecutiveDeclineDays = 0;
-        }
-      }
-      item.Preavg = preavg;
-    });
-    const preavgValues = movingAverage.map(item => item.Preavg);
-    const preavgMin = Math.min(...preavgValues);
-    const preavgMax = Math.max(...preavgValues);
-    const normalizedRisk = movingAverage.map(item => ({
-      ...item,
-      Risk: (item.Preavg - preavgMin) / (preavgMax - preavgMin)
-    }));
-    return normalizedRisk;
-  };
-
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        if (!altcoinData[selectedCoin]) {
+        if (!altcoinData[selectedCoin]?.length) {
           await fetchAltcoinData(selectedCoin);
         }
         if (denominator === 'BTC' && btcData.length === 0) {
@@ -132,7 +91,7 @@ const StockRisk = ({ isDashboard = false }) => {
           .filter(Boolean);
       }
       if (baseData.length > 0) {
-        const withRiskMetric = calculateRiskMetric(baseData);
+        const withRiskMetric = calculateStockRiskMetric(baseData);
         setChartData(withRiskMetric);
       } else {
         setChartData([]);
@@ -239,25 +198,13 @@ const StockRisk = ({ isDashboard = false }) => {
         <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: 'center', justifyContent: 'center', gap: '20px', marginBottom: '30px', marginTop: '30px' }}>
           <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '200px' } }}>
             <InputLabel id="stock-label" shrink sx={{ color: colors.grey[100], '&.Mui-focused': { color: colors.greenAccent[500] }, top: 0, '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' } }}>Stock</InputLabel>
-            <Select
+            <StockGroupSelect
               value={selectedCoin}
               onChange={handleSelectChange}
               label="Stock"
-              labelId='stock-label'
-              sx={{
-                color: colors.grey[100],
-                backgroundColor: colors.primary[500],
-                borderRadius: "8px",
-                '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
-                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                '& .MuiSelect-select': { py: 1.5, pl: 2 }
-              }}
-            >
-              {stocks.map((coin) => (
-                <MenuItem key={coin.value} value={coin.value}>{coin.label}</MenuItem>
-              ))}
-            </Select>
+              labelId="stock-label"
+              colors={colors}
+            />
           </FormControl>
           <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '200px' } }}>
             <InputLabel id="denominator-label" shrink sx={{ color: colors.grey[100], '&.Mui-focused': { color: colors.greenAccent[500] }, top: 0, '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' } }}>Denominator</InputLabel>
@@ -339,7 +286,7 @@ const StockRisk = ({ isDashboard = false }) => {
           <p className='chart-info'>
             Stocks carry company-specific and sector risks (earnings misses, competition, regulation, macro cycles) on top of market beta.
             Unlike altcoins, established stocks have real cash flows and balance sheets, but can still experience sharp drawdowns during bear markets or company-specific events.
-            The risk metric here is a price-history based technical measure (similar to the altcoin version): deviation from a long moving average, adjusted for momentum and decline streaks, normalized to 0-1.
+            The risk metric compares price to its 200-day average, maps that into a 0–1 band from 3-year history, smooths over 21 days, then applies log-odds tail compression so readings only reach the outer extremes when price is genuinely stretched beyond its normal range. Mid-range scores (0.35–0.65) are typical; 0.8+ or 0.2− require strong extension.
             Since Bitcoin often acts as a high-beta "risk-on" asset, comparing stock performance vs BTC can highlight relative strength or weakness.
             This chart lets you analyze individual stocks' risk profile alongside price action (in USD or BTC terms).
           </p>

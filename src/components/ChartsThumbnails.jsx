@@ -68,13 +68,18 @@ const Charts = () => {
       {
         path: "/stocks",
         title: "Stock Selector",
-        description: "Dedicated stock price viewer with Nasdaq top holdings (NVDA, GOOGL, GOOG, AAPL, MSFT, AMZN, AVGO, META, TSLA, BRK.B, SPCX) plus MSTR and GME. Same technical indicators as the altcoin viewer. Data updated daily via Twelve Data backend.",
-        image: '../../assets/tsla.png', // placeholder
+        description: "Stock price viewer grouped by Mega Cap Tech, Crypto-Adjacent (MSTR, COIN, MARA, RIOT, CLSK, IBIT, HOOD, BLOCK), Market Benchmarks (SPY, QQQ, GLD, IWM), and Retail Sentiment (GME, RUM, AMC, SOFI, PLTR). Same technical indicators as altcoins. Daily Twelve Data.",
+        image: '../../assets/tsla.png',
       },
       {
         path: "/stock-risk",
         title: "Stock Risk",
-        description: "Stock risk metric viewer with selector (identical price-history risk calc to Altcoin Risk, using stock data). Defaults to TSLA.",
+        description: "Equity risk metric using 200-day MA and rolling 5-year percentile rank (tuned for stocks, not the Bitcoin cycle model). USD or BTC denomination.",
+      },
+      {
+        path: "/stock-risk-color",
+        title: "Stock Risk Colour",
+        description: "Colorized stock price by risk band (0–1), like the Bitcoin Risk Colour chart but with the equity-specific risk algorithm.",
       },
     ],
     Price: [
