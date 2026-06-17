@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useContext, useMemo, useCallback, useRef } from 'react';
 import Plot from 'react-plotly.js';
 import { tokens } from "../theme";
 import { useTheme, Box, FormControl, InputLabel, Select, MenuItem, Checkbox, Button } from "@mui/material";
@@ -8,6 +8,40 @@ import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import LastUpdated from '../hooks/LastUpdated';
 import { useFavorites } from '../contexts/FavoritesContext';
+
+const RECESSION_CRISIS_LABELS = {
+    2000: 'Dot-com peak',
+    2001: 'Dot-com bust',
+    2002: 'Post-bubble bear',
+    2008: 'Financial crisis',
+    2009: 'GFC aftermath',
+    2020: 'COVID crash',
+    2022: 'Inflation bear market',
+};
+
+const getSp500YearTags = (year) => {
+    const y = Number(year);
+    const tags = [];
+    if (RECESSION_CRISIS_LABELS[y]) tags.push(RECESSION_CRISIS_LABELS[y]);
+    if (y % 4 === 0) tags.push('Presidential election');
+    else if (y % 4 === 2) tags.push('Midterm election');
+    return tags;
+};
+
+const formatSp500YearLabel = (year) => {
+    const tags = getSp500YearTags(year);
+    const base = `Year ${year}`;
+    return tags.length > 0 ? `${base} (${tags.join(', ')})` : base;
+};
+
+const getDefaultVisibleYear = (yearlyDatasets, currentYear) => {
+    const yearNames = yearlyDatasets.map((dataset) => dataset.name);
+    if (yearNames.includes(currentYear)) return currentYear;
+    return yearNames[yearNames.length - 1] ?? currentYear;
+};
+
+const getDefaultYearVisibility = (yearName, visibleYear) =>
+    yearName === visibleYear ? true : 'legendonly';
 
 const SP500ROI = ({ isDashboard = false }) => {
     const theme = useTheme();
@@ -20,8 +54,11 @@ const SP500ROI = ({ isDashboard = false }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
     const [selectedYears, setSelectedYears] = useState([]);
+    const [isSelectAll, setIsSelectAll] = useState(false);
+    const visibilityInitializedRef = useRef(false);
     const chartId = "sp500-roi";
     const isFavorite = favoriteCharts.includes(chartId);
+    const currentYear = useMemo(() => `${new Date().getFullYear()}`, []);
 
     const toggleFavorite = () => {
         if (isFavorite) {
@@ -99,7 +136,6 @@ const SP500ROI = ({ isDashboard = false }) => {
     const { yearlyDatasets, availableYears } = useMemo(() => {
         const sp500Data = fredSeriesData['SP500'] || [];
         if (sp500Data.length === 0) return { yearlyDatasets: [], availableYears: [] };
-        const significantYears = ['2008', '2020'];
         const years = [...new Set(sp500Data.map(d => new Date(d.time).getFullYear()))]
             .sort((a, b) => a - b);
         const processYearlyData = (year) => {
@@ -126,10 +162,15 @@ const SP500ROI = ({ isDashboard = false }) => {
         const yearlyData = years.map(year => processYearlyData(year)).filter(year => year !== null);
         const yearsAvailable = years.map(year => ({
             value: `${year}`,
-            label: `Year ${year}${significantYears.includes(`${year}`) ? ' (Significant)' : ''}`
+            label: formatSp500YearLabel(year),
         }));
         return { yearlyDatasets: yearlyData, availableYears: yearsAvailable };
     }, [fredSeriesData]);
+
+    const defaultVisibleYear = useMemo(
+        () => getDefaultVisibleYear(yearlyDatasets, currentYear),
+        [yearlyDatasets, currentYear]
+    );
 
     // Compute average dataset
     const averageDataset = useMemo(() => {
@@ -158,29 +199,31 @@ const SP500ROI = ({ isDashboard = false }) => {
         };
     }, [selectedYears, yearlyDatasets]);
 
-    // Toggle select/deselect all years for legend
-    const toggleAllLegend = useCallback(() => {
+    // Toggle deselect/select all for legend
+    const toggleSelectAllLegend = useCallback(() => {
         setVisibilityMap(prev => {
             const newMap = { ...prev };
-            const hasHidden = Object.values(newMap).some(visible => visible === 'legendonly');
+            const newVisibility = isSelectAll ? true : 'legendonly';
             yearDataSets.forEach(dataset => {
-                if (dataset.shortName !== 'Average' && dataset.shortName !== 'Select/Deselect All') {
-                    newMap[dataset.name] = hasHidden ? true : 'legendonly';
+                if (dataset.shortName !== 'Average' && dataset.shortName !== 'Deselect / Select All') {
+                    newMap[dataset.name] = newVisibility;
                 }
             });
             return newMap;
         });
-    }, [yearDataSets]);
+        setIsSelectAll(prev => !prev);
+    }, [yearDataSets, isSelectAll]);
 
-    // Legend datasets with select/deselect all option
+    // Legend datasets with deselect/select all option
     const legendDataSets = useMemo(() => {
         const datasets = [...yearDataSets];
         if (datasets.length > 0) {
             datasets.push({
-                name: 'Select/Deselect All',
-                shortName: 'Select/Deselect All',
+                name: 'Deselect / Select All',
+                shortName: 'Deselect / Select All',
                 data: [{ day: 0, roi: 0 }],
                 visible: true,
+                showlegend: true,
                 type: 'scatter',
                 mode: 'none'
             });
@@ -199,20 +242,32 @@ const SP500ROI = ({ isDashboard = false }) => {
     }, []);
 
     useEffect(() => {
+        if (yearlyDatasets.length === 0) return;
+
         setVisibilityMap(prev => {
             const newMap = { ...prev };
             const datasets = [...yearlyDatasets];
             if (averageDataset) {
                 datasets.push(averageDataset);
             }
+
             datasets.forEach(dataset => {
-                if (newMap[dataset.name] === undefined) {
-                    newMap[dataset.name] = true;
+                if (dataset.shortName === 'Average') {
+                    if (newMap[dataset.name] === undefined) {
+                        newMap[dataset.name] = true;
+                    }
+                    return;
+                }
+
+                if (!visibilityInitializedRef.current || newMap[dataset.name] === undefined) {
+                    newMap[dataset.name] = getDefaultYearVisibility(dataset.name, defaultVisibleYear);
                 }
             });
+
+            visibilityInitializedRef.current = true;
             return newMap;
         });
-    }, [yearlyDatasets, averageDataset]);
+    }, [yearlyDatasets, averageDataset, defaultVisibleYear]);
    
     useEffect(() => {
         const datasets = [...yearlyDatasets];
@@ -235,14 +290,19 @@ const SP500ROI = ({ isDashboard = false }) => {
             yaxis: { ...prev.yaxis, autorange: true },
             showlegend: true
         }));
+        setIsSelectAll(false);
         setVisibilityMap(prev => {
             const newMap = { ...prev };
             yearDataSets.forEach(dataset => {
-                newMap[dataset.name] = true;
+                if (dataset.shortName === 'Average') {
+                    newMap[dataset.name] = true;
+                } else if (dataset.shortName !== 'Deselect / Select All') {
+                    newMap[dataset.name] = getDefaultYearVisibility(dataset.name, defaultVisibleYear);
+                }
             });
             return newMap;
         });
-    }, [yearDataSets]);
+    }, [yearDataSets, defaultVisibleYear]);
 
     const handleRelayout = useCallback((event) => {
         if (event['xaxis.range[0]'] || event['yaxis.range[0]']) {
@@ -264,8 +324,8 @@ const SP500ROI = ({ isDashboard = false }) => {
 
     const handleLegendClick = useCallback((event) => {
         const name = event.data[event.curveNumber].name;
-        if (name === 'Select/Deselect All') {
-            toggleAllLegend();
+        if (name === 'Deselect / Select All') {
+            toggleSelectAllLegend();
             return false;
         }
         setVisibilityMap(prev => {
@@ -274,7 +334,7 @@ const SP500ROI = ({ isDashboard = false }) => {
             return newMap;
         });
         return false;
-    }, [toggleAllLegend]);
+    }, [toggleSelectAllLegend]);
 
     // Get the latest timestamp from fredSeriesData['SP500'] for LastUpdated
     const latestTimestamp = fredSeriesData['SP500']?.length > 0
@@ -412,20 +472,20 @@ const SP500ROI = ({ isDashboard = false }) => {
                         x: item.data.map(d => d.day),
                         y: item.data.map(d => d.roi),
                         type: 'scatter',
-                        mode: item.shortName === 'Select/Deselect All' ? 'none' : 'lines',
-                        name: isMobile ? item.shortName : item.name,
+                        mode: item.shortName === 'Deselect / Select All' ? 'none' : 'lines',
+                        name: item.name,
                         line: {
                             color: item.shortName === 'Average' ? colors.greenAccent[500] : undefined,
                             width: item.shortName === 'Average' ? 3 : 2,
                             dash: item.shortName === 'Average' ? 'dash' : 'solid'
                         },
-                        text: item.shortName !== 'Select/Deselect All'
+                        text: item.shortName !== 'Deselect / Select All'
                             ? item.data.map(d => `<b>${item.shortName} ROI: ${d.roi.toFixed(2)}</b> (${new Date(d.date).toLocaleDateString()})`)
-                            : ['Select/Deselect All Years'],
-                        hoverinfo: item.shortName === 'Select/Deselect All' ? 'none' : 'text',
-                        hovertemplate: item.shortName === 'Select/Deselect All' ? undefined : `%{text}<extra></extra>`,
-                        visible: visibilityMap[item.name] !== undefined ? visibilityMap[item.name] : true,
-                        showlegend: item.shortName !== 'Select/Deselect All',
+                            : ['Toggle All Series Visibility'],
+                        hoverinfo: item.shortName === 'Deselect / Select All' ? 'none' : 'text',
+                        hovertemplate: item.shortName === 'Deselect / Select All' ? undefined : `%{text}<extra></extra>`,
+                        visible: visibilityMap[item.name] !== undefined ? visibilityMap[item.name] : getDefaultYearVisibility(item.name, defaultVisibleYear),
+                        showlegend: true,
                         hoverlabel: {
                             bgcolor: colors.primary[900],
                             font: { color: colors.primary[100], size: isMobile ? 12 : 14 },
@@ -456,8 +516,9 @@ const SP500ROI = ({ isDashboard = false }) => {
                 <p className='chart-info' style={{ color: colors.primary[100] }}>
                     The return on investment for each year is calculated as a shifted logarithmic scale (log10(price / basePrice) + 1),
                     where ROI = 1 indicates no change, above 1 indicates positive returns, and below 1 indicates negative returns.
-                    Select years to average, use 'Select/Deselect All' in the legend to toggle all years,
-                    or click legend items to toggle visibility.
+                    Select years to average, use 'Deselect / Select All' in the legend to toggle all years,
+                    or click legend items to toggle visibility. Significant years in the dropdown include recession/crisis
+                    years, presidential election years, and midterm election years.
                 </p>
             )}
         </div>
