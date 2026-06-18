@@ -148,6 +148,19 @@ const SplashPage = () => {
           >
             No card details required • Instant access • Cancel anytime
           </Typography>
+          <Button
+            component={Link}
+            to="/bitcoin-whitepaper"
+            sx={{
+              mt: 3,
+              color: colors.greenAccent[400],
+              fontSize: '1rem',
+              textTransform: 'none',
+              '&:hover': { color: colors.greenAccent[300], backgroundColor: 'transparent' },
+            }}
+          >
+            New to Bitcoin? Read the whitepaper explained →
+          </Button>
         </Container>
       </Box>
 

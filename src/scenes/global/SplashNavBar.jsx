@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AppBar, Toolbar, Container, Button } from "@mui/material";
+import { AppBar, Toolbar, Container, Button, Box } from "@mui/material";
 import { Link } from "react-router-dom";
 
 const Navbar = ({ colors }) => {
@@ -48,25 +48,52 @@ const Navbar = ({ colors }) => {
             alignItems: 'center', // Ensure content is centered vertically
           }}
         >
-          <img
-            src="/assets/cryptological-original-logo.png"
-            alt="Cryptological Logo"
-            style={{ height: '60px' }}
-          />
-          <Button
-            component={Link}
-            to="/login-signup?mode=signin"
-            sx={{
-              color: colors.grey[100], // White text
-              fontWeight: 'bold',
-              fontSize: '1.2rem',
-              '&:hover': {
-                color: colors.greenAccent[500], // Green text on hover
-              },
-            }}
-          >
-            Login
-          </Button>
+          <Link to="/splash" style={{ display: "flex", alignItems: "center" }}>
+            <img
+              src="/assets/cryptological-original-logo.png"
+              alt="Cryptological Logo"
+              style={{ height: '60px' }}
+            />
+          </Link>
+          <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1, sm: 2 } }}>
+            <Button
+              component={Link}
+              to="/bitcoin-whitepaper"
+              sx={{
+                color: colors.grey[100],
+                fontWeight: 'bold',
+                fontSize: { xs: '0.95rem', sm: '1.05rem' },
+                '&:hover': { color: colors.greenAccent[500] },
+              }}
+            >
+              Why Bitcoin
+            </Button>
+            <Button
+              component={Link}
+              to="/charts"
+              sx={{
+                color: colors.grey[100],
+                fontWeight: 'bold',
+                fontSize: { xs: '0.95rem', sm: '1.05rem' },
+                display: { xs: 'none', sm: 'inline-flex' },
+                '&:hover': { color: colors.greenAccent[500] },
+              }}
+            >
+              Charts
+            </Button>
+            <Button
+              component={Link}
+              to="/login-signup?mode=signin"
+              sx={{
+                color: colors.grey[100],
+                fontWeight: 'bold',
+                fontSize: { xs: '0.95rem', sm: '1.2rem' },
+                '&:hover': { color: colors.greenAccent[500] },
+              }}
+            >
+              Login
+            </Button>
+          </Box>
         </Toolbar>
       </Container>
     </AppBar>

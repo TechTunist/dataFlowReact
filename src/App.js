@@ -13,6 +13,7 @@ import BasicChart from "./scenes/ChartTemplates/BasicChart";
 import { CssBaseline, ThemeProvider } from "@mui/material";
 import { ColorModeContext, useMode } from "./theme";
 import SplashPage from "./scenes/splash";
+import BitcoinWhitepaper from "./scenes/BitcoinWhitepaper";
 import LoginSignup from "./scenes/LoginSignup";
 import useIsMobile from "./hooks/useIsMobile";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -107,11 +108,19 @@ const UKEsaClaimantsChart = lazy(() => import('./components/UKEsaClaimants'));
  * This replaces the previous 800+ lines of repetitive <Route> JSX.
  * Much easier to maintain, review, and extend.
  */
+export const PUBLIC_ROUTE_PATHS = [
+  "/splash",
+  "/login-signup",
+  "/charts",
+  "/bitcoin-whitepaper",
+];
+
 const appRoutes = [
   // Public routes (no auth required)
   { path: "/splash", element: <SplashPage />, public: true },
   { path: "/login-signup", element: <LoginSignup />, public: true },
   { path: "/charts", element: <Charts />, public: true },
+  { path: "/bitcoin-whitepaper", element: <BitcoinWhitepaper />, public: true },
 
   // Core protected scenes (not using BasicChart wrapper)
   { path: "/dashboard", component: Dashboard, protected: true, props: (ctx) => ({ isMobile: ctx.isMobile, isSidebar: ctx.isSidebar }) },
@@ -299,7 +308,7 @@ const AuthWrapper = memo(() => {
     return <div>Loading...</div>;
   }
   // Redirect to splash if not signed in and trying to access a protected route
-  if (!isSignedIn && location.pathname !== "/splash" && location.pathname !== "/login-signup") {
+  if (!isSignedIn && !PUBLIC_ROUTE_PATHS.includes(location.pathname)) {
     return <Navigate to="/splash" replace state={{ from: location }} />;
   }
   return <AppContent />;
@@ -313,6 +322,8 @@ const AppContent = memo(() => {
   const isDashboardTopbar = location.pathname === "/dashboard";
   const isSplashPage = location.pathname === "/splash";
   const isLoginSignupPage = location.pathname === "/login-signup";
+  const isStandalonePublicPage =
+    isSplashPage || isLoginSignupPage || location.pathname === "/bitcoin-whitepaper";
   // Memoize theme and colorMode to prevent unnecessary updates
   const memoizedTheme = useMemo(() => theme, [theme]);
   const memoizedColorMode = useMemo(() => colorMode, [colorMode]);
@@ -337,7 +348,7 @@ const AppContent = memo(() => {
   const userMenuRoutes = ["/profile", "/subscription", "/settings", "/change-password"];
   const isUserMenuPage = userMenuRoutes.includes(location.pathname);
   const shouldHideTopbar = isChartPageRoute(location.pathname);
-  const shouldRenderTopbar = !isSplashPage && !isLoginSignupPage && !isUserMenuPage && !shouldHideTopbar;
+  const shouldRenderTopbar = !isStandalonePublicPage && !isUserMenuPage && !shouldHideTopbar;
   const navColors = tokens(memoizedTheme.palette.mode);
   // Display Stripe initialization error if present
   // In dev bypass mode we don't want Stripe failures (e.g. tracking blockers in Firefox private mode)
@@ -375,7 +386,7 @@ const AppContent = memo(() => {
                   />
                 )}
                 {isUserMenuPage && <AccountNavBar />}
-                {shouldHideTopbar && isMobile && !isSplashPage && !isLoginSignupPage && !isUserMenuPage && !isSidebar && (
+                {shouldHideTopbar && isMobile && !isStandalonePublicPage && !isUserMenuPage && !isSidebar && (
                   <IconButton
                     onClick={() => setIsSidebar(true)}
                     aria-label="open navigation"
@@ -396,7 +407,7 @@ const AppContent = memo(() => {
                 )}
                 <div style={{ display: "flex", flex: 1 }}>
                   {/* Render Sidebar only if signed in */}
-                  {!isSplashPage && !isLoginSignupPage && !isUserMenuPage && (
+                  {!isStandalonePublicPage && !isUserMenuPage && (
                     <div
                       className="sidebar"
                       style={{
