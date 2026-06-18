@@ -41,7 +41,7 @@ export const API_ENDPOINTS = {
   totalDifference: () => apiUrl('/api/total/difference/'),
   combinedMacro: () => apiUrl('/api/combined-macro-data/'),
   onchainMetrics: (query = '') => apiUrl(`/api/onchain-metrics/${query}`),
-  onchainAddressMetrics: (query = '') => apiUrl(`/api/onchain-address-metrics/${query}`),
+
   riskMetrics: (query = '') => apiUrl(`/api/risk-metrics/${query}`),
   txMvrv: () => apiUrl('/api/tx-mvrv/'),
   txMvrvRatio: (smoothing = 'sma-7') => apiUrl(`/api/tx-mvrv-ratio/?smoothing=${smoothing}`),

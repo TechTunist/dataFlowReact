@@ -70,7 +70,7 @@ const Navbar = ({ colors }) => {
             </Button>
             <Button
               component={Link}
-              to="/charts"
+              to="/chart-gallery"
               sx={{
                 color: colors.grey[100],
                 fontWeight: 'bold',

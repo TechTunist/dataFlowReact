@@ -13,7 +13,7 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import { useTheme } from "@mui/material";
 import PaletteOutlinedIcon from "@mui/icons-material/PaletteOutlined";
-import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import InfoMenuButton from "./InfoMenuButton";
 import PersonOutlinedIcon from "@mui/icons-material/PersonOutlined";
 import PaymentOutlinedIcon from "@mui/icons-material/PaymentOutlined";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
@@ -83,17 +83,7 @@ const AppControls = ({
           px: compact ? 0.25 : 0,
         }}
       >
-        {showAbout && (
-          <Link to="/about">
-            <IconButton
-              aria-label="about"
-              size="small"
-              sx={{ color: colors.primary[100], p: compact ? "3px" : undefined, minWidth: compact ? 32 : undefined }}
-            >
-              <InfoOutlinedIcon sx={{ fontSize: compact ? 18 : undefined }} />
-            </IconButton>
-          </Link>
-        )}
+        {showAbout && <InfoMenuButton compact />}
         {showFavorite && onToggleFavorite && (
           <IconButton
             onClick={onToggleFavorite}

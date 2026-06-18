@@ -59,7 +59,7 @@ import MultilineChartIcon from "@mui/icons-material/MultilineChart";
 import CandlestickChartIcon from '@mui/icons-material/CandlestickChart';
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import BalanceIcon from '@mui/icons-material/Balance';
-import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
+
 import MultipleStopIcon from '@mui/icons-material/MultipleStop';
 import ScoreIcon from '@mui/icons-material/Score';
 import HistoryEduIcon from '@mui/icons-material/HistoryEdu';
@@ -196,7 +196,7 @@ const itemsData = [
   { title: "Time in Risk Bands", to: "/risk-bands", category: "Risk Analysis", icon: <TimelineIcon />, categoryIcon: <WarningIcon /> }, // TimelineIcon: Time-based bands
 
   // === ON-CHAIN METRICS ===
-  { title: "Bitcoin Address Balance", to: "/btc-add-balance", category: "On-Chain Metrics", icon: <AccountBalanceWalletIcon />, categoryIcon: <LinkIcon /> },
+
   { title: "Tx Tension", to: "/tx-mvrv", category: "On-Chain Metrics", icon: <SwapHorizIcon />, categoryIcon: <LinkIcon /> },
   { title: "Puell Multiple", to: "/puell-multiple", category: "On-Chain Metrics", icon: <MultipleStopIcon />, categoryIcon: <LinkIcon /> },
   { title: "MVRV Z-Score", to: "/btc-mvrv-z", category: "On-Chain Metrics", icon: <ScoreIcon />, categoryIcon: <LinkIcon /> },

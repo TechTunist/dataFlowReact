@@ -14,6 +14,7 @@ import { CssBaseline, ThemeProvider } from "@mui/material";
 import { ColorModeContext, useMode } from "./theme";
 import SplashPage from "./scenes/splash";
 import BitcoinWhitepaper from "./scenes/BitcoinWhitepaper";
+import PublicChartGallery from "./scenes/PublicChartGallery";
 import LoginSignup from "./scenes/LoginSignup";
 import useIsMobile from "./hooks/useIsMobile";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -71,7 +72,7 @@ const ChangePassword = lazy(() => import('./scenes/ChangePassword'));
 const About = lazy(() => import('./scenes/About'));
 const Charts = lazy(() => import('./components/ChartsThumbnails'));
 
-const BitcoinAddressBalancesChart = lazy(() => import('./components/BitcoinAddressBalance'));
+
 const BitcoinROI = lazy(() => import('./components/BitcoinROI'));
 const RunningROI = lazy(() => import('./components/RunningROI'));
 const MonthlyAverageROI = lazy(() => import('./components/MonthlyAverageROI'));
@@ -111,7 +112,7 @@ const UKEsaClaimantsChart = lazy(() => import('./components/UKEsaClaimants'));
 export const PUBLIC_ROUTE_PATHS = [
   "/splash",
   "/login-signup",
-  "/charts",
+  "/chart-gallery",
   "/bitcoin-whitepaper",
 ];
 
@@ -119,7 +120,7 @@ const appRoutes = [
   // Public routes (no auth required)
   { path: "/splash", element: <SplashPage />, public: true },
   { path: "/login-signup", element: <LoginSignup />, public: true },
-  { path: "/charts", element: <Charts />, public: true },
+  { path: "/chart-gallery", element: <PublicChartGallery />, public: true },
   { path: "/bitcoin-whitepaper", element: <BitcoinWhitepaper />, public: true },
 
   // Core protected scenes (not using BasicChart wrapper)
@@ -128,6 +129,7 @@ const appRoutes = [
   // is applied at route level (consistent with workbench + premium FRED routes). The individual
   // data fetches it triggers (mvrv, altcoin-season-index, sp500-div-unrate) are also premium-only.
   { path: "/market-overview", component: MarketOverview, protected: true, requirePaid: true },
+  { path: "/charts", component: Charts, protected: true },
   { path: "/about", component: About, protected: true },
   { path: "/profile", component: Profile, protected: true },
   { path: "/subscription", component: Subscription, protected: true },
@@ -158,7 +160,7 @@ const appRoutes = [
   { path: "/monthly-returns", component: BitcoinMonthlyReturnsTable, useBasicChart: true, protected: true },
   { path: "/monthly-average-roi", component: MonthlyAverageROI, useBasicChart: true, protected: true },
   { path: "/btc-mvrv-z", component: BitcoinMvrvZScore, useBasicChart: true, protected: true },
-  { path: "/btc-add-balance", component: BitcoinAddressBalancesChart, useBasicChart: true, protected: true },
+
   { path: "/puell-multiple", component: PuellMultiple, useBasicChart: true, protected: true },
   { path: "/risk", component: Risk, useBasicChart: true, protected: true },
   { path: "/risk-eth", component: EthereumRisk, useBasicChart: true, protected: true },
@@ -323,7 +325,10 @@ const AppContent = memo(() => {
   const isSplashPage = location.pathname === "/splash";
   const isLoginSignupPage = location.pathname === "/login-signup";
   const isStandalonePublicPage =
-    isSplashPage || isLoginSignupPage || location.pathname === "/bitcoin-whitepaper";
+    isSplashPage ||
+    isLoginSignupPage ||
+    location.pathname === "/bitcoin-whitepaper" ||
+    location.pathname === "/chart-gallery";
   // Memoize theme and colorMode to prevent unnecessary updates
   const memoizedTheme = useMemo(() => theme, [theme]);
   const memoizedColorMode = useMemo(() => colorMode, [colorMode]);
@@ -429,7 +434,7 @@ const AppContent = memo(() => {
                     ) : null}
                     {isUserMenuPage && <div style={{ height: "65px" }} />}
                     <ErrorBoundary fallbackMessage="The main application area failed to load.">
-                      <Suspense fallback={<LoadingFallback message="Loading chart..." />}>
+                      <Suspense fallback={<LoadingFallback message="Loading..." />}>
                       <FearAndGreedBinaryProvider>
                       <Routes>
                       {/* All routes are now driven by the appRoutes config + createRouteElement helper above.

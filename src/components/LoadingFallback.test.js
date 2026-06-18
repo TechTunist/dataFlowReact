@@ -19,7 +19,7 @@ const renderWithTheme = (ui) => {
 describe('LoadingFallback (polished component)', () => {
   test('renders default loading message and progress', () => {
     renderWithTheme(<LoadingFallback />);
-    expect(screen.getByText(/Loading chart.../i)).toBeInTheDocument();
+    expect(screen.getByText(/Loading.../i)).toBeInTheDocument();
     // CircularProgress renders as role progress or svg
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
   });

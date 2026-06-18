@@ -31,7 +31,7 @@ import RunningROI from "../../components/RunningROI";
 import HistoricalVolatility from "../../components/HistoricalVolatility";
 import BitcoinMonthlyReturnsTable from "../../components/MonthlyReturnsTable";
 import MonthlyAverageROI from "../../components/MonthlyAverageROI";
-import BitcoinAddressBalancesChart from "../../components/BitcoinAddressBalance";
+
 import PuellMultiple from "../../components/PuellMultiple";
 import BitcoinRisk from "../../components/BitcoinRisk";
 import FearAndGreedChart from "../../components/FearAndGreedChart";
@@ -81,7 +81,7 @@ const chartConfig = [
   { id: "historical-volatility", title: "Historical Volatility", linkTo: "/historical-volatility", component: (props) => <HistoricalVolatility isDashboard={true} {...props} />, description: "Historical volatility of Bitcoin." },
   { id: "monthly-returns", title: "Bitcoin Monthly Returns", linkTo: "/monthly-returns", component: (props) => <BitcoinMonthlyReturnsTable isDashboard={true} {...props} />, description: "Monthly returns for Bitcoin." },
   { id: "monthly-average-roi", title: "Monthly Average ROI", linkTo: "/monthly-average-roi", component: (props) => <MonthlyAverageROI isDashboard={true} {...props} />, description: "Average monthly ROI for Bitcoin." },
-  { id: "bitcoin-address-balances", title: "Bitcoin Address Balances", linkTo: "/btc-add-balance", component: (props) => <BitcoinAddressBalancesChart isDashboard={true} {...props} />, description: "Bitcoin address balances over time." },
+
   { id: "ethereum-price", title: "Ethereum Price", linkTo: "/ethereum", component: (props) => <EthereumPrice isDashboard={true} {...props} />, description: "A simple chart of the entire Ethereum daily close price history." },
   { id: "puell-multiple", title: "Puell Multiple", linkTo: "/puell-multiple", component: (props) => <PuellMultiple isDashboard={true} {...props} />, description: "Puell Multiple indicator for Bitcoin mining." },
   { id: "mvrv-zscore", title: "Bitcoin Mvrv Z-Score", linkTo: "/btc-mvrv-z", component: (props) => <BitcoinMvrvZScoreChart isDashboard={true} {...props} />, description: "Pick out extremes between the market value and realised value of Bitcoin." },

@@ -46,7 +46,7 @@ const CACHE_CONFIG = {
   feeRiskData: { ttl: 24 * 60 * 60 * 1000, useDateCheck: false },
   soplRiskData: { ttl: 24 * 60 * 60 * 1000, useDateCheck: false },
   onchainMetricsData: { ttl: 12 * 60 * 60 * 1000, useDateCheck: false },
-  addressMetricsData: { ttl: 12 * 60 * 60 * 1000, useDateCheck: false },
+
   // Others
   altcoinSeasonData: { ttl: 6 * 60 * 60 * 1000, useDateCheck: true },
   altcoinSeasonTimeseriesData: { ttl: 6 * 60 * 60 * 1000, useDateCheck: true },
@@ -292,15 +292,6 @@ const fetchWithCache = async ({
     inflightFetches.delete(cacheId);
   }
 };
-
-const ADDRESS_METRICS = [
-  'AdrBal1in100KCnt', 'AdrBal1in10KCnt', 'AdrBal1in1KCnt',
-  'AdrBalNtv0.001Cnt', 'AdrBalNtv0.01Cnt', 'AdrBalNtv0.1Cnt',
-  'AdrBalNtv1Cnt', 'AdrBalNtv10Cnt', 'AdrBalNtv100Cnt',
-  'AdrBalUSD1Cnt', 'AdrBalUSD10Cnt', 'AdrBalUSD100Cnt',
-  'AdrBalUSD1KCnt', 'AdrBalUSD10KCnt', 'AdrBalUSD100KCnt',
-  'AdrBalUSD1MCnt',
-];
 
 const refreshData = async ({
   cacheId,
@@ -843,52 +834,6 @@ export const DataProvider = ({ children }) => {
       setOnchainFetchError(error.message);
     }
   }, [fetchOnchainMetricsData]);
-
-  const fetchAddressMetricsData = useCallback(async () => {
-    const cacheId = 'addressMetricsData';
-    const currentDate = new Date().toISOString().split('T')[0];
-    const currentTimestamp = Date.now();
-
-    try {
-      setIsOnchainMetricsDataFetched(true);
-      setOnchainFetchError(null);
-
-      const cached = await getCachedData(cacheId);
-      if (cached && cached.data.length > 0) {
-        const sortedCachedData = [...cached.data].sort((a, b) => new Date(a.time) - new Date(b.time));
-        const latestCachedDate = sortedCachedData[sortedCachedData.length - 1].time;
-        if (latestCachedDate >= currentDate) {
-          setOnchainMetricsData(sortedCachedData);
-          setOnchainMetricsLastUpdated(latestCachedDate);
-          return;
-        }
-      }
-
-      const addressUrl = apiUrl(`/api/onchain-address-metrics/?start_time=2010-01-01`);
-      const allData = await fetchAllPages(addressUrl);
-
-      if (!allData || allData.length === 0) {
-        throw new Error('No address metrics data returned');
-      }
-
-      const formattedData = allData.map((item) => ({
-        time: item.time,
-        ...Object.fromEntries(
-          Object.entries(item)
-            .filter(([key]) => ADDRESS_METRICS.includes(key))
-            .map(([key, value]) => [key, value !== null ? parseFloat(value) : null])
-        ),
-      }));
-
-      setOnchainMetricsData(formattedData);
-      setOnchainMetricsLastUpdated(formattedData[formattedData.length - 1].time);
-      await cacheData(cacheId, formattedData, currentTimestamp);
-    } catch (error) {
-      // console.error('Error fetching address metrics:', error);
-      setIsOnchainMetricsDataFetched(false);
-      setOnchainFetchError(error.message);
-    }
-  }, []);
 
   const fetchFedBalanceData = useCallback(async () => {
     if (isFedBalanceDataFetched) return;
@@ -1770,7 +1715,6 @@ const fetchDominanceData = useCallback(async () => {
       onchainMetricsLastUpdated,
       onchainFetchError,
       isAltcoinDataFetched,
-      fetchAddressMetricsData,
       capRealData,
       revAllTimeData,
       mvrvRiskData,
@@ -1898,7 +1842,6 @@ const fetchDominanceData = useCallback(async () => {
       onchainMetricsLastUpdated,
       onchainFetchError,
       isAltcoinDataFetched,
-      fetchAddressMetricsData,
       capRealData,
       revAllTimeData,
       mvrvRiskData,

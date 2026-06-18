@@ -14,7 +14,7 @@ export const routeToChartId = {
   "/historical-volatility": "historical-volatility",
   "/monthly-returns": "monthly-returns",
   "/monthly-average-roi": "monthly-average-roi",
-  "/btc-add-balance": "bitcoin-address-balances",
+
   "/ethereum": "ethereum-price",
   "/puell-multiple": "puell-multiple",
   "/risk": "bitcoin-risk",
@@ -256,8 +256,7 @@ export const getTitleAndSubtitle = (pathname, isMobile = false) => {
       return { title: "OnChain Risk", subtitle: isMobile ? "Historical Risk" : "Historical Risk Levels of OnChain Indicators" };
     case "/market-overview":
       return { title: "General Market Conditions", subtitle: isMobile ? "Overview" : "Select features of the current market conditions" };
-    case "/btc-add-balance":
-      return { title: "BTC Account Balance", subtitle: isMobile ? "Discrete BTC Balances" : "Balances of Bitcoin in individual or grouped addresses" };
+
     case "/total-difference":
       return { title: "Total Cap to Fair Value", subtitle: isMobile ? "Total Cap to Fair Value" : "Total Market Cap to Fair Value Difference" };
     case "/historical-volatility":

@@ -219,7 +219,7 @@ const BitcoinWhitepaper = () => {
             </Button>
             <Button
               component={Link}
-              to="/charts"
+              to="/chart-gallery"
               variant="contained"
               sx={{
                 backgroundColor: colors.greenAccent[500],

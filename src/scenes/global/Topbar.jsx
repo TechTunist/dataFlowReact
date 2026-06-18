@@ -2,13 +2,13 @@ import React from "react";
 import { Box, IconButton, useTheme } from "@mui/material";
 import { tokens } from "../../theme";
 import MenuOutlinedIcon from "@mui/icons-material/MenuOutlined";
-import { Link, useLocation } from "react-router-dom";
-import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import { useLocation } from "react-router-dom";
 import useIsMobile from "../../hooks/useIsMobile";
 import "../../styling/bitcoinChart.css";
 import Header from "../../components/Header";
 import { useFavorites } from "../../contexts/FavoritesContext";
 import AppControls from "./AppControls";
+import InfoMenuButton from "./InfoMenuButton";
 import { getTitleAndSubtitle, routeToChartId } from "../ChartTemplates/chartPageMeta";
 
 const Topbar = ({ setIsSidebar, isSidebar }) => {
@@ -58,11 +58,7 @@ const Topbar = ({ setIsSidebar, isSidebar }) => {
             <MenuOutlinedIcon style={{ color: colors.primary[100] }} />
           </IconButton>
         )}
-        <Link to="/about">
-          <IconButton aria-label="about" className="about-button">
-            <InfoOutlinedIcon style={{ color: colors.primary[100] }} />
-          </IconButton>
-        </Link>
+        <InfoMenuButton className="about-button" />
       </Box>
       <div style={{ flexGrow: 1, textAlign: "center" }}>
         <Header title={title} subtitle={subtitle} />
