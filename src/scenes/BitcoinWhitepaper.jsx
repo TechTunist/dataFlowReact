@@ -24,7 +24,12 @@ import { Link } from "react-router-dom";
 import { useTheme } from "@mui/material";
 import { tokens } from "../theme";
 import Navbar from "./global/SplashNavBar.jsx";
+import SeoHead from "../components/SeoHead";
+import SeoPublicFooter from "./seo/SeoPublicFooter";
+import { SEO_PAGES } from "../seo/staticPageContent";
 import "../styling/splashPage.css";
+
+const whitepaperSeo = SEO_PAGES["bitcoin-whitepaper"];
 
 const WHITEPAPER_SECTIONS = [
   {
@@ -154,6 +159,12 @@ const BitcoinWhitepaper = () => {
         boxSizing: "border-box",
       }}
     >
+      <SeoHead
+        title={whitepaperSeo.title}
+        description={whitepaperSeo.description}
+        path="/bitcoin-whitepaper"
+        keywords={whitepaperSeo.keywords}
+      />
       <Navbar colors={colors} />
 
       {/* Hero */}
@@ -177,6 +188,7 @@ const BitcoinWhitepaper = () => {
             }}
           />
           <Typography
+            component="h1"
             variant="h1"
             sx={{
               color: colors.grey[100],
@@ -186,7 +198,7 @@ const BitcoinWhitepaper = () => {
               mb: 2,
             }}
           >
-            Why Bitcoin exists — the whitepaper in plain English
+            {whitepaperSeo.h1}
           </Typography>
           <Typography
             variant="h6"
@@ -579,19 +591,7 @@ const BitcoinWhitepaper = () => {
         </Container>
       </Box>
 
-      <Box
-        sx={{
-          width: "100%",
-          py: 4,
-          textAlign: "center",
-          backgroundColor: colors.primary[800],
-          color: colors.grey[500],
-        }}
-      >
-        <Typography variant="body2">
-          © {new Date().getFullYear()} Cryptological. Educational content — not financial advice.
-        </Typography>
-      </Box>
+      <SeoPublicFooter />
     </Box>
   );
 };

@@ -15,6 +15,7 @@ import { ColorModeContext, useMode } from "./theme";
 import SplashPage from "./scenes/splash";
 import BitcoinWhitepaper from "./scenes/BitcoinWhitepaper";
 import PublicChartGallery from "./scenes/PublicChartGallery";
+import SeoLandingPage from "./scenes/seo/SeoLandingPage";
 import LoginSignup from "./scenes/LoginSignup";
 import useIsMobile from "./hooks/useIsMobile";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -110,18 +111,26 @@ const UKEsaClaimantsChart = lazy(() => import('./components/UKEsaClaimants'));
  * Much easier to maintain, review, and extend.
  */
 export const PUBLIC_ROUTE_PATHS = [
+  "/",
   "/splash",
   "/login-signup",
   "/chart-gallery",
   "/bitcoin-whitepaper",
+  "/bitcoin-analytics",
+  "/on-chain-metrics",
+  "/crypto-charts-tools",
 ];
 
 const appRoutes = [
   // Public routes (no auth required)
+  { path: "/", element: <Navigate to="/splash" replace />, public: true },
   { path: "/splash", element: <SplashPage />, public: true },
   { path: "/login-signup", element: <LoginSignup />, public: true },
   { path: "/chart-gallery", element: <PublicChartGallery />, public: true },
   { path: "/bitcoin-whitepaper", element: <BitcoinWhitepaper />, public: true },
+  { path: "/bitcoin-analytics", element: <SeoLandingPage />, public: true },
+  { path: "/on-chain-metrics", element: <SeoLandingPage />, public: true },
+  { path: "/crypto-charts-tools", element: <SeoLandingPage />, public: true },
 
   // Core protected scenes (not using BasicChart wrapper)
   { path: "/dashboard", component: Dashboard, protected: true, props: (ctx) => ({ isMobile: ctx.isMobile, isSidebar: ctx.isSidebar }) },
@@ -324,11 +333,13 @@ const AppContent = memo(() => {
   const isDashboardTopbar = location.pathname === "/dashboard";
   const isSplashPage = location.pathname === "/splash";
   const isLoginSignupPage = location.pathname === "/login-signup";
+  const seoLandingPaths = ["/bitcoin-analytics", "/on-chain-metrics", "/crypto-charts-tools"];
   const isStandalonePublicPage =
     isSplashPage ||
     isLoginSignupPage ||
     location.pathname === "/bitcoin-whitepaper" ||
-    location.pathname === "/chart-gallery";
+    location.pathname === "/chart-gallery" ||
+    seoLandingPaths.includes(location.pathname);
   // Memoize theme and colorMode to prevent unnecessary updates
   const memoizedTheme = useMemo(() => theme, [theme]);
   const memoizedColorMode = useMemo(() => colorMode, [colorMode]);

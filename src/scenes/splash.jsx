@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, AppBar, Toolbar, Typography, Button, useTheme, Grid, Container, Card, CardContent, Divider, Accordion, AccordionSummary, AccordionDetails, List, ListItem, ListItemIcon, ListItemText } from "@mui/material";
+import { Box, Typography, Button, useTheme, Grid, Container, Card, CardContent, Divider, Accordion, AccordionSummary, AccordionDetails } from "@mui/material";
 import { tokens } from "../theme";
 import { Link } from "react-router-dom";
 import CheckIcon from '@mui/icons-material/Check';
@@ -7,6 +7,11 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import StarIcon from '@mui/icons-material/Star';
 import '../styling/splashPage.css';
 import Navbar from "./global/SplashNavBar.jsx";
+import SeoHead, { organizationJsonLd, webSiteJsonLd, softwareApplicationJsonLd } from '../components/SeoHead';
+import SeoPublicFooter from './seo/SeoPublicFooter';
+import { SEO_PAGES } from '../seo/staticPageContent';
+
+const splashSeo = SEO_PAGES.splash;
 
 const SplashPage = () => {
   const theme = useTheme();
@@ -24,6 +29,13 @@ const SplashPage = () => {
         boxSizing: 'border-box',
       }}
     >
+      <SeoHead
+        title={splashSeo.title}
+        description={splashSeo.description}
+        path="/splash"
+        keywords={splashSeo.keywords}
+        jsonLd={[organizationJsonLd, webSiteJsonLd, softwareApplicationJsonLd]}
+      />
     <Navbar colors={colors} />
       
       {/* Hero Section with Video Background */}
@@ -70,33 +82,37 @@ const SplashPage = () => {
         />
         <Container maxWidth="md" sx={{ position: 'relative', zIndex: 2, textAlign: 'center' }}>
           <Typography
-            component="span"
-            variant="h1"
+            component="h1"
             sx={{
-            color: colors.grey[100],
-            fontWeight: 'bold',
-            fontSize: { xs: '3rem', sm: '4rem', md: '5rem' },
-            mb: 2,
+              color: colors.grey[100],
+              fontWeight: 'bold',
+              fontSize: { xs: '3rem', sm: '4rem', md: '5rem' },
+              mb: 2,
+              lineHeight: 1.1,
             }}
+          >
+            <Box
+              component="span"
+              sx={{
+                position: 'absolute',
+                width: 1,
+                height: 1,
+                p: 0,
+                m: -1,
+                overflow: 'hidden',
+                clip: 'rect(0,0,0,0)',
+                whiteSpace: 'nowrap',
+                border: 0,
+              }}
             >
-
-            Crypto
-          </Typography>
-          <Typography
-            component="span"
-            variant="h1"
-            sx={{
-            color: colors.greenAccent[500],
-            fontWeight: 'bold',
-            fontSize: { xs: '3rem', sm: '4rem', md: '5rem' },
-            mb: 2,
-            }}
-            >
-
-            Logical
+              Cryptological
+            </Box>
+            <Box component="span" sx={{ color: colors.grey[100] }}>Crypto</Box>
+            <Box component="span" sx={{ color: colors.greenAccent[500] }}>logical</Box>
           </Typography>
 
           <Typography
+            component="p"
             variant="h3"
             sx={{
               color: colors.grey[100],
@@ -618,21 +634,7 @@ const SplashPage = () => {
         </Container>
       </Box>
 
-      {/* Footer */}
-      <Box
-        sx={{
-          width: '100%',
-          py: 4,
-          textAlign: 'center',
-          backgroundColor: colors.primary[800],
-          color: colors.grey[400],
-        }}
-      >
-        <Typography>
-          © {new Date().getFullYear()} Cryptological. All rights reserved.
-          {/* © {new Date().getFullYear()} Cryptological. All rights reserved. | <Link to="/privacy" style={{ color: colors.grey[300] }}>Privacy Policy</Link> | <Link to="/terms" style={{ color: colors.grey[300] }}>Terms of Service</Link> */}
-        </Typography>
-      </Box>
+      <SeoPublicFooter />
     </Box>
   );
 };

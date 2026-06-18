@@ -5,7 +5,12 @@ import { useTheme } from "@mui/material";
 import { tokens } from "../theme";
 import Navbar from "./global/SplashNavBar.jsx";
 import ChartGalleryContent from "../components/ChartGalleryContent";
+import SeoHead from "../components/SeoHead";
+import SeoPublicFooter from "./seo/SeoPublicFooter";
+import { SEO_PAGES } from "../seo/staticPageContent";
 import "../styling/splashPage.css";
+
+const gallerySeo = SEO_PAGES["chart-gallery"];
 
 const PublicChartGallery = () => {
   const theme = useTheme();
@@ -24,6 +29,12 @@ const PublicChartGallery = () => {
         boxSizing: "border-box",
       }}
     >
+      <SeoHead
+        title={gallerySeo.title}
+        description={gallerySeo.description}
+        path="/chart-gallery"
+        keywords={gallerySeo.keywords}
+      />
       <Navbar colors={colors} />
 
       <Box
@@ -46,6 +57,7 @@ const PublicChartGallery = () => {
             }}
           />
           <Typography
+            component="h1"
             variant="h1"
             sx={{
               color: colors.grey[100],
@@ -55,7 +67,7 @@ const PublicChartGallery = () => {
               mb: 2,
             }}
           >
-            Explore the charts
+            {gallerySeo.h1}
           </Typography>
           <Typography
             variant="h6"
@@ -89,6 +101,7 @@ const PublicChartGallery = () => {
       <Box sx={{ width: "100%", pb: 8 }}>
         <ChartGalleryContent linkable={false} />
       </Box>
+      <SeoPublicFooter />
     </Box>
   );
 };

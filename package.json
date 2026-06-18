@@ -8,7 +8,9 @@
   "modernization": {
     "status": "Vite/TS/tests foundation kickoff",
     "defaultBuilder": "CRA (react-scripts)",
-    "parallel": ["vite"]
+    "parallel": [
+      "vite"
+    ]
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.30.4",
@@ -29,6 +31,7 @@
     "react-dom": "^18.2.0",
     "react-gauge-chart": "^0.5.1",
     "react-grid-layout": "^1.5.1",
+    "react-helmet-async": "^3.0.0",
     "react-icons": "^5.5.0",
     "react-lazyload": "^3.2.1",
     "react-plotly.js": "^2.6.0",
@@ -50,7 +53,7 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "preinstall": "npx npm-force-resolutions",
-    "build": "GENERATE_SOURCEMAP=false CI=false react-scripts build",
+    "build": "GENERATE_SOURCEMAP=false CI=false react-scripts build && node scripts/generate-seo-html.mjs",
     "dev:vite": "vite",
     "build:vite": "vite build",
     "preview:vite": "vite preview"
@@ -74,12 +77,12 @@
     ]
   },
   "devDependencies": {
-    "npm-force-resolutions": "^0.0.10",
     "@types/node": "^20.12.0",
     "@types/react": "^18.2.79",
     "@types/react-dom": "^18.2.25",
     "@vitejs/plugin-react": "^4.3.1",
     "jsdom": "^24.0.0",
+    "npm-force-resolutions": "^0.0.10",
     "typescript": "^5.4.5",
     "vite": "^5.4.8",
     "vitest": "^1.6.0"
