@@ -125,16 +125,17 @@ const SplashPage = () => {
             Decrypt The Confusing
           </Typography>
           <Typography
-            variant="h4"
+            component="p"
             sx={{
-              color: colors.grey[100],
-              fontSize: { xs: '1.5rem', sm: '1.8rem', md: '2rem' },
+              color: colors.grey[300],
+              fontWeight: 400,
+              fontSize: { xs: '1.1rem', sm: '1.25rem', md: '1.5rem' },
               mb: 4,
-              maxWidth: '800px',
+              maxWidth: '600px',
               mx: 'auto',
             }}
           >
-            Unlock powerful analytics, risk metrics, and market insights, whether you're a beginner or experienced investor. 
+            Turning complex data into simple decisions
           </Typography>
           <Button
             component={Link}
