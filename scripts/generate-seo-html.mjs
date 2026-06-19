@@ -1,6 +1,6 @@
 /**
  * Post-build: inject crawlable static HTML into index.html for each public SEO route.
- * Non-JS crawlers (and fast indexing) see real text; React replaces #root when JS loads.
+ * Crawlers read hidden prerender copy in #root; users see only the boot loader until React mounts.
  */
 import { readFileSync, writeFileSync, mkdirSync } from 'fs';
 import { dirname, join } from 'path';
@@ -13,6 +13,48 @@ const buildDir = join(__dirname, '..', 'build');
 const { SEO_PAGES, PRERENDER_PATHS } = await import('../src/seo/staticPageContent.js');
 
 const SITE_URL = 'https://www.cryptological.app';
+
+// Inlined so the boot screen is styled before the JS/CSS bundles load.
+const CRITICAL_BOOT_CSS = `<style>
+      html, body { margin: 0; background-color: #040509; }
+      .app-boot-placeholder {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        color: #a3a3a3;
+        font-family: "Source Sans Pro", sans-serif;
+        gap: 1.25rem;
+      }
+      .app-boot-spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid rgba(76, 206, 172, 0.2);
+        border-top-color: #4cceac;
+        border-radius: 50%;
+        animation: app-boot-spin 0.9s linear infinite;
+      }
+      @keyframes app-boot-spin { to { transform: rotate(360deg); } }
+      #seo-static-content {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+    </style>`;
+
+// Visible to users before React hydrates; replaced when the app mounts.
+const BOOT_PLACEHOLDER = `
+    <div id="app-boot-placeholder" class="app-boot-placeholder" aria-live="polite">
+      <div class="app-boot-spinner" role="progressbar" aria-label="Loading"></div>
+      <p>Loading...</p>
+    </div>`;
 
 function escapeHtml(str) {
   return str
@@ -37,16 +79,21 @@ function buildStaticBody(page) {
     .map((l) => `<a href="${escapeHtml(l.href)}">${escapeHtml(l.label)}</a>`)
     .join(' · ');
 
+  // Visually hidden for users (CSS in index.html) but present in HTML source for crawlers.
   return `
-  <main id="seo-static-content" style="font-family: 'Source Sans Pro', sans-serif; background:#0a1929; color:#e0e0e0; padding:2rem; max-width:800px; margin:0 auto;">
-    <header>
-      <p><strong>Cryptological</strong> — Bitcoin &amp; crypto analytics</p>
-      <h1>${escapeHtml(page.h1)}</h1>
-    </header>
-    ${sections}
-    <nav aria-label="Related pages"><p>${nav}</p></nav>
-    <p><a href="/login-signup?mode=signup">Sign up free</a> · <a href="/chart-gallery">Chart gallery</a></p>
-  </main>`;
+    <main id="seo-static-content" aria-hidden="true">
+      <header>
+        <p><strong>Cryptological</strong> — Bitcoin &amp; crypto analytics</p>
+        <h1>${escapeHtml(page.h1)}</h1>
+      </header>
+      ${sections}
+      <nav aria-label="Related pages"><p>${nav}</p></nav>
+      <p><a href="/login-signup?mode=signup">Sign up free</a> · <a href="/chart-gallery">Chart gallery</a></p>
+    </main>`;
+}
+
+function buildRootContent(page) {
+  return `${BOOT_PLACEHOLDER}${buildStaticBody(page)}`;
 }
 
 function applyMeta(template, page, path) {
@@ -110,9 +157,13 @@ function applyMeta(template, page, path) {
     }
   }
 
+  if (!html.includes('app-boot-critical-css')) {
+    html = html.replace('</head>', `${CRITICAL_BOOT_CSS}\n</head>`);
+  }
+
   html = html.replace(
-    /<div id="root"><\/div>/,
-    `<div id="root">${buildStaticBody(page)}</div>`
+    /<div id="root">[\s\S]*<\/div>(?=\s*<\/body>)/,
+    `<div id="root">${buildRootContent(page)}</div>`
   );
 
   return html;

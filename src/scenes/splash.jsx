@@ -113,13 +113,13 @@ const SplashPage = () => {
 
           <Typography
             component="p"
-            variant="h3"
             sx={{
               color: colors.grey[100],
-              fontWeight: 'bold',
-              fontSize: { xs: '1.5rem', sm: '2.5rem', md: '3.5rem' },
+              fontWeight: 600,
+              fontSize: { xs: '1.25rem', sm: '1.6rem', md: '2rem' },
               marginBottom: '0.5rem',
-              marginTop: '0.5rem'
+              marginTop: '0.25rem',
+              lineHeight: 1.3,
             }}
           >
             Decrypt The Confusing
