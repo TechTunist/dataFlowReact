@@ -1,6 +1,7 @@
 import { useState, useEffect, createContext, memo, Suspense, lazy } from "react";
 import ErrorBoundary from "./components/ErrorBoundary";
 import LoadingFallback from "./components/LoadingFallback";
+import AppBootScreen from "./components/AppBootScreen";
 import { Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { ClerkProvider, useAuth } from "@clerk/clerk-react";
 import Topbar from "./scenes/global/Topbar";
@@ -316,7 +317,7 @@ const AuthWrapper = memo(() => {
   }
 
   if (!isLoaded) {
-    return <div>Loading...</div>;
+    return <AppBootScreen message="Loading..." />;
   }
   // Redirect to splash if not signed in and trying to access a protected route
   if (!isSignedIn && !PUBLIC_ROUTE_PATHS.includes(location.pathname)) {
@@ -445,7 +446,7 @@ const AppContent = memo(() => {
                     ) : null}
                     {isUserMenuPage && <div style={{ height: "65px" }} />}
                     <ErrorBoundary fallbackMessage="The main application area failed to load.">
-                      <Suspense fallback={<LoadingFallback message="Loading..." />}>
+                      <Suspense fallback={<LoadingFallback message="Loading..." fullScreen />}>
                       <FearAndGreedBinaryProvider>
                       <Routes>
                       {/* All routes are now driven by the appRoutes config + createRouteElement helper above.

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { useSignUp, useSignIn } from "@clerk/clerk-react";
+import { useSignUp, useSignIn, useAuth } from "@clerk/clerk-react";
 import { useNavigate, useLocation } from "react-router-dom";
+import AppBootScreen from "../../components/AppBootScreen";
 import { Box, Typography, TextField, Button, useTheme, IconButton, InputAdornment } from "@mui/material";
 import { tokens } from "../../theme";
 import Visibility from "@mui/icons-material/Visibility";
@@ -25,7 +26,17 @@ export default function LoginSignup() {
   const [passwordError, setPasswordError] = useState(''); // inline instead of alert for double-pw confirm (bulletproof UX)
   const { signUp, setActive } = useSignUp();
   const { signIn } = useSignIn();
+  const { isLoaded, isSignedIn } = useAuth();
   const navigate = useNavigate();
+
+  // Already signed in — send them to the app instead of showing a dead-end form.
+  useEffect(() => {
+    if (isLoaded && isSignedIn) {
+      const query = new URLSearchParams(location.search);
+      const plan = query.get('plan');
+      navigate(plan === 'premium' ? '/subscription' : '/dashboard', { replace: true });
+    }
+  }, [isLoaded, isSignedIn, location.search, navigate]);
 
   // Google auth handler
   const handleGoogle = async () => {
@@ -213,6 +224,10 @@ export default function LoginSignup() {
       onVerifyPress();
     }
   };
+
+  if (isLoaded && isSignedIn) {
+    return <AppBootScreen message="Taking you to the app..." />;
+  }
 
   return (
     <Box

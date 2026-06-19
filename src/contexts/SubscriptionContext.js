@@ -63,9 +63,12 @@ export const SubscriptionProvider = ({ children }) => {
   const fetchSubscriptionStatus = useCallback(async () => {
     if (DEV_BYPASS_AUTH) return;
 
+    if (!isLoaded) return;
+
     if (!isSignedIn || !userId) {
       hasFetchedRef.current = false;
-      setError('Please sign in to view this chart.');
+      setSubscriptionStatus(null);
+      setError('');
       setLoading(false);
       return;
     }
@@ -77,7 +80,7 @@ export const SubscriptionProvider = ({ children }) => {
     setError('');
 
     try {
-      const token = await getClerkToken();
+      const token = await getClerkToken({ maxRetries: 8, delayMs: 400 });
       if (!token) {
         throw new Error('Failed to obtain authentication token');
       }
@@ -99,28 +102,23 @@ export const SubscriptionProvider = ({ children }) => {
       ));
       hasFetchedRef.current = true;
     } catch (err) {
-      setError(`Failed to fetch subscription status: ${err.message}`);
-      const fallbackStatus = normalizeSubscriptionStatus({
-        plan: 'Free',
-        subscription_status: 'free',
-        current_period_end: null,
-        features: DEFAULT_FREE_FEATURES,
-        access: 'Limited',
-      });
-      setSubscriptionStatus((prev) => (
-        subscriptionStatusesEqual(prev, fallbackStatus) ? prev : fallbackStatus
-      ));
+      // Do not assume Free on transient auth/network failures — that flashes a false upgrade prompt.
+      setError(`Failed to verify subscription: ${err.message}`);
       hasFetchedRef.current = true;
     } finally {
       if (isInitialFetch) {
         setLoading(false);
       }
     }
-  }, [isSignedIn, userId]);
+  }, [isLoaded, isSignedIn, userId]);
 
   useEffect(() => {
     if (DEV_BYPASS_AUTH) return;
-    if (!isLoaded) return;
+
+    if (!isLoaded) {
+      setLoading(true);
+      return;
+    }
 
     if (!isSignedIn || !userId) {
       hasFetchedRef.current = false;

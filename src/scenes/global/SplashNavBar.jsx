@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { AppBar, Toolbar, Container, Button, Box } from "@mui/material";
 import { Link } from "react-router-dom";
+import { useAuth } from "@clerk/clerk-react";
 
 const Navbar = ({ colors }) => {
+  const { isLoaded, isSignedIn } = useAuth();
   const [visible, setVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
 
@@ -22,6 +24,15 @@ const Navbar = ({ colors }) => {
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, [lastScrollY]);
+
+  const navButtonSx = {
+    color: colors.grey[100],
+    fontWeight: 'bold',
+    fontSize: { xs: '0.95rem', sm: '1.05rem' },
+    '&:hover': { color: colors.greenAccent[500] },
+  };
+
+  const showSignedInNav = isLoaded && isSignedIn;
 
   return (
     <AppBar
@@ -59,40 +70,57 @@ const Navbar = ({ colors }) => {
             <Button
               component={Link}
               to="/bitcoin-whitepaper"
-              sx={{
-                color: colors.grey[100],
-                fontWeight: 'bold',
-                fontSize: { xs: '0.95rem', sm: '1.05rem' },
-                '&:hover': { color: colors.greenAccent[500] },
-              }}
+              sx={navButtonSx}
             >
               Why Bitcoin
             </Button>
-            <Button
-              component={Link}
-              to="/chart-gallery"
-              sx={{
-                color: colors.grey[100],
-                fontWeight: 'bold',
-                fontSize: { xs: '0.95rem', sm: '1.05rem' },
-                display: { xs: 'none', sm: 'inline-flex' },
-                '&:hover': { color: colors.greenAccent[500] },
-              }}
-            >
-              Charts
-            </Button>
-            <Button
-              component={Link}
-              to="/login-signup?mode=signin"
-              sx={{
-                color: colors.grey[100],
-                fontWeight: 'bold',
-                fontSize: { xs: '0.95rem', sm: '1.2rem' },
-                '&:hover': { color: colors.greenAccent[500] },
-              }}
-            >
-              Login
-            </Button>
+            {showSignedInNav ? (
+              <>
+                <Button
+                  component={Link}
+                  to="/dashboard"
+                  sx={{
+                    ...navButtonSx,
+                    fontSize: { xs: '0.95rem', sm: '1.2rem' },
+                  }}
+                >
+                  Dashboard
+                </Button>
+                <Button
+                  component={Link}
+                  to="/charts"
+                  sx={{
+                    ...navButtonSx,
+                    display: { xs: 'none', sm: 'inline-flex' },
+                  }}
+                >
+                  Charts
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  component={Link}
+                  to="/chart-gallery"
+                  sx={{
+                    ...navButtonSx,
+                    display: { xs: 'none', sm: 'inline-flex' },
+                  }}
+                >
+                  Charts
+                </Button>
+                <Button
+                  component={Link}
+                  to="/login-signup?mode=signin"
+                  sx={{
+                    ...navButtonSx,
+                    fontSize: { xs: '0.95rem', sm: '1.2rem' },
+                  }}
+                >
+                  Login
+                </Button>
+              </>
+            )}
           </Box>
         </Toolbar>
       </Container>

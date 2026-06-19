@@ -2,6 +2,7 @@
 import { memo } from "react";
 import { useAuth } from "@clerk/clerk-react";
 import { Navigate, useLocation } from "react-router-dom";
+import AppBootScreen from "./AppBootScreen";
 
 const DEV_BYPASS_AUTH = process.env.REACT_APP_DEV_BYPASS_AUTH === 'true';
 
@@ -26,7 +27,7 @@ const ProtectedRoute = memo(({ children }) => {
   }
 
   if (!isLoaded) {
-    return <div style={{ padding: 40, textAlign: "center" }}>Loading authentication...</div>;
+    return <AppBootScreen message="Verifying session..." />;
   }
 
   if (!isSignedIn) {
