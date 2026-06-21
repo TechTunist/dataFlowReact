@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import { HelmetProvider } from "react-helmet-async";
 import "./styling/index.css";
 import App from "./App";
+import PlausiblePageview from "./components/PlausiblePageview";
 import { BrowserRouter } from "react-router-dom";
 import { DataProvider } from "./DataContext";
 
@@ -13,6 +14,7 @@ root.render(
     <HelmetProvider>
       <React.StrictMode>
         <BrowserRouter>
+          <PlausiblePageview />
           <App />
         </BrowserRouter>
       </React.StrictMode>
