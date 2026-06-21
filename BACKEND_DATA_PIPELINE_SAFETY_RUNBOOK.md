@@ -80,4 +80,51 @@ Any proposal that touches the data pipeline must include:
 
 ---
 
+## Manual ops: altcoin date gaps (bottom 16 coins)
+
+**When to use:** Charts for MOVE, RAY, RENDER, ARB, ALGO, MATIC/POL, XMR, ICP, ONDO, FET, NEAR, HYPE, LEO, LTC, UNI, or VET show a **flat gap** then a sudden jump to today.
+
+**Root cause (Jun 2026):** CryptoCompare (`min-api.cryptocompare.com`) now returns **401 without an API key**. The nightly cron failed silently for these coins until fallback logic was added.
+
+### Recovery command (safe — additive inserts only)
+
+Run **locally** against production Neon (`DATABASE_URL` in `SaaS/.env`):
+
+```bash
+cd SaaS/src
+../venv/bin/python manage.py fill_recent_gaps --days=30 --pause=15
+```
+
+| Flag | Meaning |
+|------|---------|
+| `--days=30` | Fetch window (increase if gap > 30 days) |
+| `--pause=15` | Seconds between CoinGecko requests (avoid 429 on free tier) |
+| `--symbol=MOVE` | Optional: one coin only |
+
+### After backfill
+
+1. Hard-refresh the app and spot-check one altcoin chart.
+2. Add `CRYPTOCOMPARE_API_KEY` to Vercel backend env so cron uses the primary source (see below).
+3. Do **not** delete rows manually — re-run `fill_recent_gaps`; it skips existing dates.
+
+### CryptoCompare key vs CoinGecko fallback
+
+| | Manual `fill_recent_gaps` | Nightly cron (16 coins) |
+|--|---------------------------|-------------------------|
+| **CoinGecko fallback** | Works with `--pause=15` (~4 min once) | Often **429 rate-limited** if all coins run quickly |
+| **CryptoCompare + key** | One request per coin, fast | Reliable unattended daily updates |
+| **Data quality** | CoinGecko: hourly-derived OHLC, volume=0 on fallback | CryptoCompare: native daily OHLCV |
+
+CoinGecko is **insurance for manual recovery**. CryptoCompare key is **insurance for automation**.
+
+### Stocks (different issue)
+
+Stock scripts use Twelve Data. Last bar = **last US trading day**, not calendar today (weekends/holidays). Thursday before Juneteenth weekend is correct.
+
+**Full checklist:** `SaaS/HANDOFF.md` → section **Manual ops toolkit — data pipeline**.
+
+---
+
 **This document should be updated whenever we learn something new about safe ways to evolve the system.**
+
+Last updated: **2026-06-21** (altcoin gap recovery + `fill_recent_gaps`).
