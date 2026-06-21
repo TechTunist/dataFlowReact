@@ -107,15 +107,16 @@ cd SaaS/src
 2. Add `CRYPTOCOMPARE_API_KEY` to Vercel backend env so cron uses the primary source (see below).
 3. Do **not** delete rows manually — re-run `fill_recent_gaps`; it skips existing dates.
 
-### CryptoCompare key vs CoinGecko fallback
+### Data sources (Jun 2026)
 
-| | Manual `fill_recent_gaps` | Nightly cron (16 coins) |
-|--|---------------------------|-------------------------|
-| **CoinGecko fallback** | Works with `--pause=15` (~4 min once) | Often **429 rate-limited** if all coins run quickly |
-| **CryptoCompare + key** | One request per coin, fast | Reliable unattended daily updates |
-| **Data quality** | CoinGecko: hourly-derived OHLC, volume=0 on fallback | CryptoCompare: native daily OHLCV |
+| Source | Viable for daily cron? | Notes |
+|--------|------------------------|-------|
+| **CoinGecko free** | Yes, with 15s spacing (batches 26–41 in `update.yml`) | Primary source when no paid API keys |
+| **CoinGecko demo key** | Yes, better limits | Optional `COINGECKO_API_KEY` in Vercel env |
+| **CoinDesk/CryptoCompare free** | **No** | 100 calls/month; need ~480/month for 16 daily coins |
+| **CoinDesk paid** | Yes | Only if you want native OHLCV + volume; not required |
 
-CoinGecko is **insurance for manual recovery**. CryptoCompare key is **insurance for automation**.
+Manual `fill_recent_gaps --pause=15` remains the recovery tool if cron misses days.
 
 ### Stocks (different issue)
 
