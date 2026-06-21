@@ -7,11 +7,11 @@
       "destination": "https://vercel-dataflow.vercel.app/api/$1"
     },
     {
-      "source": "/stats/js/script.js",
+      "source": "/p/js/script.js",
       "destination": "https://plausible.io/js/pa-J-f6cbp2d2srW3LByBaYl.js"
     },
     {
-      "source": "/stats/api/event",
+      "source": "/p/api/event",
       "destination": "https://plausible.io/api/event"
     },
     {
