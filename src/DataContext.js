@@ -29,6 +29,7 @@ const CACHE_CONFIG = {
   txCountData: { ttl: 6 * 60 * 60 * 1000, useDateCheck: true },
   txCountCombinedData: { ttl: 6 * 60 * 60 * 1000, useDateCheck: true },
   txMvrvData: { ttl: 6 * 60 * 60 * 1000, useDateCheck: true },
+  txMvrvData_v2: { ttl: 6 * 60 * 60 * 1000, useDateCheck: true },
   altcoinData_SOL: { ttl: 6 * 60 * 60 * 1000, useDateCheck: true }, // example; dynamic ones use default
   // Macro / slower: longer
   macroData: { ttl: 12 * 60 * 60 * 1000, useDateCheck: false },
@@ -1229,41 +1230,62 @@ const fetchDominanceData = useCallback(async () => {
     });
   }, [fetchTxCountCombinedData]);
 
+  const enrichTxMvrvDataset = useCallback((data) => {
+    if (!Array.isArray(data)) return data;
+    return data.map((item) => {
+      const mvrv = item.mvrv;
+      const marketCap = item.market_cap;
+      let realizedCap = item.realized_cap;
+      if (
+        (realizedCap === null || realizedCap === undefined || Number.isNaN(realizedCap)) &&
+        marketCap !== null &&
+        marketCap !== undefined &&
+        !Number.isNaN(marketCap) &&
+        mvrv !== null &&
+        mvrv !== undefined &&
+        !Number.isNaN(mvrv) &&
+        mvrv !== 0
+      ) {
+        realizedCap = marketCap / mvrv;
+      }
+      return realizedCap !== item.realized_cap ? { ...item, realized_cap: realizedCap } : item;
+    });
+  }, []);
+
+  const setEnrichedTxMvrvData = useCallback((data) => {
+    setTxMvrvData(enrichTxMvrvDataset(data));
+  }, [enrichTxMvrvDataset]);
+
   const fetchTxMvrvData = useCallback(async () => {
     if (isTxMvrvDataFetched) return;
     // preloadComplete guard removed — this dataset is now demand-loaded only
     await fetchWithCache({
-      cacheId: 'txMvrvData',
+      // v2: cache bust after realized_cap derivation fix (CapRealUSD no longer updated in DB)
+      cacheId: 'txMvrvData_v2',
       apiUrl: apiUrl('/api/tx-mvrv/'),
       formatData: (data) =>
-        data
-          .filter(item => item.date && item.mvrv !== null && !isNaN(parseFloat(item.mvrv)))
-          .map((item) => {
-            const mvrv = parseFloat(item.mvrv);
-            const marketCap = item.market_cap !== null ? parseFloat(item.market_cap) : null;
-            let realizedCap = item.realized_cap !== null ? parseFloat(item.realized_cap) : null;
-            if (realizedCap === null && marketCap !== null && !isNaN(mvrv) && mvrv !== 0) {
-              realizedCap = marketCap / mvrv;
-            }
-            return {
+        enrichTxMvrvDataset(
+          data
+            .filter(item => item.date && item.mvrv !== null && !isNaN(parseFloat(item.mvrv)))
+            .map((item) => ({
               time: item.date,
               tx_count: parseFloat(item.tx_count),
-              mvrv,
-              market_cap: marketCap,
-              realized_cap: realizedCap,
-            };
-          })
-          .sort((a, b) => new Date(a.time) - new Date(b.time)),
-      setData: setTxMvrvData,
+              mvrv: parseFloat(item.mvrv),
+              market_cap: item.market_cap !== null ? parseFloat(item.market_cap) : null,
+              realized_cap: item.realized_cap !== null ? parseFloat(item.realized_cap) : null,
+            }))
+            .sort((a, b) => new Date(a.time) - new Date(b.time))
+        ),
+      setData: setEnrichedTxMvrvData,
       setLastUpdated: setTxMvrvLastUpdated,
       setIsFetched: setIsTxMvrvDataFetched,
       useDateCheck: true,
     });
-  }, [isTxMvrvDataFetched]);
+  }, [isTxMvrvDataFetched, enrichTxMvrvDataset, setEnrichedTxMvrvData]);
 
   const refreshTxMvrvData = useCallback(async () => {
     await refreshData({
-      cacheId: 'txMvrvData',
+      cacheId: 'txMvrvData_v2',
       setData: setTxMvrvData,
       setIsFetched: setIsTxMvrvDataFetched,
       fetchFunction: fetchTxMvrvData,

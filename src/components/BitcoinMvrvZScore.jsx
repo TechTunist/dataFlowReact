@@ -43,7 +43,14 @@ const BitcoinMvrvZScoreChart = ({ isDashboard = false, txMvrvData: propTxMvrvDat
     const pastMarkets = [];
     for (const item of sorted) {
       const mc = item.market_cap;
-      const rc = item.realized_cap;
+      let rc = item.realized_cap;
+      if (
+        (rc === null || isNaN(rc)) &&
+        mc !== null && !isNaN(mc) &&
+        item.mvrv !== null && !isNaN(item.mvrv) && item.mvrv !== 0
+      ) {
+        rc = mc / item.mvrv;
+      }
       if (mc === null || isNaN(mc) || rc === null || isNaN(rc)) continue;
       pastMarkets.push(mc);
       if (pastMarkets.length < 2) continue;
