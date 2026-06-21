@@ -25,6 +25,7 @@ const MarketCycles = ({ isDashboard = false }) => {
   const isNarrowScreen = useMediaQuery('(max-width:600px)');
   const plotRef = useRef(null);
   const containerRef = useRef(null);
+  const prevSelectedCyclesRef = useRef([]);
 
   // Constants for cycle timing (used both for slicing historical cycle data in the chart
   // and for the "current position" metrics shown under the chart).
@@ -271,19 +272,24 @@ const MarketCycles = ({ isDashboard = false }) => {
   // Update cycle datasets and series visibility.
   // When cycles are selected for averaging, force their visibility to false (hidden on chart by default)
   // so the average line is the focus. Users can still click legend entries to re-enable individual cycles.
+  // When cycles are deselected from the averages dropdown, restore their visibility on the chart.
   useEffect(() => {
     setCycleDataSets(cycleDatasets);
+    const prevSelected = prevSelectedCyclesRef.current;
     setSeriesVisibility((prev) => {
       const newVisibility = {};
       cycleDatasets.forEach((cycle) => {
-        let isVisible = prev[cycle.shortName] !== undefined ? prev[cycle.shortName] : true;
         if (selectedCycles.includes(cycle.shortName)) {
-          isVisible = false;
+          newVisibility[cycle.shortName] = false;
+        } else if (prevSelected.includes(cycle.shortName)) {
+          newVisibility[cycle.shortName] = true;
+        } else {
+          newVisibility[cycle.shortName] = prev[cycle.shortName] !== undefined ? prev[cycle.shortName] : true;
         }
-        newVisibility[cycle.shortName] = isVisible;
       });
       return newVisibility;
     });
+    prevSelectedCyclesRef.current = selectedCycles;
   }, [cycleDatasets, selectedCycles]);
 
   // Function to format date as dd/mm/yyyy

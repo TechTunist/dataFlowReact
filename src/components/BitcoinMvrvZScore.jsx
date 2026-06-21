@@ -11,12 +11,16 @@ import { UnderChartRow } from './ChartUnderSection';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import ChartTooltip from './ChartTooltip';
+import { calculateSMA } from '../utils/technicalIndicators';
+
+const REALIZED_PRICE_SMA_PERIOD = 28;
 
 const BitcoinMvrvZScoreChart = ({ isDashboard = false, txMvrvData: propTxMvrvData }) => {
   const chartContainerRef = useRef();
   const chartRef = useRef(null);
   const zScoreSeriesRef = useRef(null);
   const priceSeriesRef = useRef(null);
+  const realizedPriceSeriesRef = useRef(null);
   const [tooltipData, setTooltipData] = useState(null);
   const [isInteractive, setIsInteractive] = useState(false);
   const theme = useTheme();
@@ -57,7 +61,7 @@ const BitcoinMvrvZScoreChart = ({ isDashboard = false, txMvrvData: propTxMvrvDat
   }, []);
 
   // Memoize filtered data + z-score derivation so downstream effects only re-run on actual content change
-  const { filteredTxMvrvData, filteredBtcData, zScoreData } = useMemo(() => {
+  const { filteredTxMvrvData, filteredBtcData, zScoreData, realizedPriceData } = useMemo(() => {
     const cutoffDate = new Date('2011-04-16');
     const fTx = txMvrvData.filter(item => {
       const timeValid = new Date(item.time) >= cutoffDate;
@@ -67,7 +71,22 @@ const BitcoinMvrvZScoreChart = ({ isDashboard = false, txMvrvData: propTxMvrvDat
     const fBtc = btcDataForChart.filter(item => new Date(item.time) >= cutoffDate);
 
     const zScores = (fTx.length > 0) ? calculateMvrvZScore(fTx) : [];
-    return { filteredTxMvrvData: fTx, filteredBtcData: fBtc, zScoreData: zScores };
+    const mvrvByTime = new Map(fTx.map((item) => [item.time, item.mvrv]));
+    const realizedPricesRaw = fBtc
+      .map((item) => {
+        const mvrv = mvrvByTime.get(item.time);
+        if (!mvrv || mvrv === 0) return null;
+        return { time: item.time, value: item.value / mvrv };
+      })
+      .filter(Boolean);
+    const realizedPrices = calculateSMA(realizedPricesRaw, REALIZED_PRICE_SMA_PERIOD);
+
+    return {
+      filteredTxMvrvData: fTx,
+      filteredBtcData: fBtc,
+      zScoreData: zScores,
+      realizedPriceData: realizedPrices,
+    };
   }, [txMvrvData, btcDataForChart, calculateMvrvZScore]);
 
   const getIndicators = useMemo(() => ({
@@ -80,6 +99,11 @@ const BitcoinMvrvZScoreChart = ({ isDashboard = false, txMvrvData: propTxMvrvDat
       color: 'gray',
       label: 'Bitcoin Price',
       description: 'The price of Bitcoin over time.',
+    },
+    'realized-price': {
+      color: theme.palette.mode === 'dark' ? 'rgba(100, 149, 237, 1)' : 'rgba(30, 144, 255, 1)',
+      label: 'Realized Price',
+      description: `28-day SMA of average on-chain cost basis per BTC (price ÷ MVRV), plotted on the same scale as spot price.`,
     },
   }), [theme.palette.mode]);
 
@@ -146,10 +170,12 @@ const BitcoinMvrvZScoreChart = ({ isDashboard = false, txMvrvData: propTxMvrvDat
         const dateStr = param.time;
         const zScoreData = param.seriesData.get(zScoreSeriesRef.current);
         const priceData = param.seriesData.get(priceSeriesRef.current);
+        const realizedPriceDataPoint = param.seriesData.get(realizedPriceSeriesRef.current);
         setTooltipData({
           date: dateStr,
           zScore: zScoreData?.value,
           price: priceData?.value,
+          realizedPrice: realizedPriceDataPoint?.value,
           x: param.point.x,
           y: param.point.y,
         });
@@ -167,12 +193,14 @@ const BitcoinMvrvZScoreChart = ({ isDashboard = false, txMvrvData: propTxMvrvDat
     const lightThemeColors = {
       zScore: { lineColor: 'rgba(0, 128, 0, 1)' },
       price: { lineColor: 'gray' },
+      realizedPrice: { lineColor: 'rgba(30, 144, 255, 1)' },
     };
     const darkThemeColors = {
       zScore: { lineColor: 'rgba(255, 99, 71, 1)' },
       price: { lineColor: 'gray' },
+      realizedPrice: { lineColor: 'rgba(100, 149, 237, 1)' },
     };
-    const { zScore: zScoreColors, price: priceColors } =
+    const { zScore: zScoreColors, price: priceColors, realizedPrice: realizedPriceColors } =
       theme.palette.mode === 'dark' ? darkThemeColors : lightThemeColors;
     // Bitcoin Price Series
     const priceSeries = chart.addLineSeries({
@@ -187,6 +215,22 @@ const BitcoinMvrvZScoreChart = ({ isDashboard = false, txMvrvData: propTxMvrvDat
     });
     priceSeriesRef.current = priceSeries;
     priceSeries.setData(filteredBtcData.map(data => ({ time: data.time, value: data.value })));
+    const realizedPriceSeries = chart.addLineSeries({
+      priceScaleId: 'left',
+      color: realizedPriceColors.lineColor,
+      lineWidth: 1.2,
+      lineStyle: 2,
+      priceLineVisible: false,
+      lastValueVisible: false,
+      crosshairMarkerVisible: false,
+      priceFormat: {
+        type: 'custom',
+        formatter: value => (value >= 1000 ? (value / 1000).toFixed(1) + 'k' : value.toFixed(0)),
+      },
+      visible: true,
+    });
+    realizedPriceSeriesRef.current = realizedPriceSeries;
+    realizedPriceSeries.setData(realizedPriceData);
     // MVRV Z-Score Series — use pre-computed memoized zScoreData
     const zScoreSeries = chart.addLineSeries({
       priceScaleId: 'right',
@@ -214,7 +258,7 @@ const BitcoinMvrvZScoreChart = ({ isDashboard = false, txMvrvData: propTxMvrvDat
         window.removeEventListener('resize', resizeChart);
       };
     }
-  }, [filteredTxMvrvData, filteredBtcData, zScoreData, isDashboard, theme.palette.mode]);
+  }, [filteredTxMvrvData, filteredBtcData, zScoreData, realizedPriceData, isDashboard, theme.palette.mode]);
 
   useEffect(() => {
     if (chartRef.current) {
@@ -302,6 +346,9 @@ const BitcoinMvrvZScoreChart = ({ isDashboard = false, txMvrvData: propTxMvrvDat
 <div style={{ fontSize: '15px', color: 'gray' }}>
             BTC Price: ${tooltipData.price ? (tooltipData.price / 1000).toFixed(1) + 'k' : 'N/A'}
           </div>
+          <div style={{ color: indicators['realized-price'].color }}>
+            Realized Price: ${tooltipData.realizedPrice ? (tooltipData.realizedPrice / 1000).toFixed(1) + 'k' : 'N/A'}
+          </div>
           <div style={{ color: indicators['z-score'].color }}>
             MVRV Z-Score: {tooltipData.zScore?.toFixed(2) ?? 'N/A'}
           </div>
@@ -317,7 +364,7 @@ const BitcoinMvrvZScoreChart = ({ isDashboard = false, txMvrvData: propTxMvrvDat
       </UnderChartRow>
       {!isDashboard && (
         <Box sx={{ margin: '10px 0', color: colors.grey[100] }}>
-          {Object.entries(indicators).filter(([key]) => key === 'z-score').map(([key, { label, color, description }]) => (
+          {Object.entries(indicators).filter(([key]) => key === 'z-score' || key === 'realized-price').map(([key, { label, color, description }]) => (
             <p key={key} style={{ margin: '5px 0' }}>
               <strong style={{ color: color }}>{label}:</strong> {description}
             </p>
@@ -327,7 +374,7 @@ const BitcoinMvrvZScoreChart = ({ isDashboard = false, txMvrvData: propTxMvrvDat
       
       {!isDashboard && (
         <p className='chart-info'>
-          The Bitcoin Price & MVRV Z-Score chart shows the Bitcoin price and MVRV Z-Score starting from April 16th, 2011, illustrating price trends and standardized valuation deviations. The MVRV Z-Score is only calculated and displayed after at least 365 data points to avoid initial instability due to small sample size.
+          The Bitcoin Price & MVRV Z-Score chart shows the Bitcoin price, smoothed realized price (28-day SMA of spot price ÷ MVRV), and MVRV Z-Score starting from April 16th, 2011, illustrating price trends and standardized valuation deviations. Realized price shares the left-hand price scale with spot price. The MVRV Z-Score is only calculated and displayed after at least 365 data points to avoid initial instability due to small sample size.
           <br />
           <br />
           This chart shows the Bitcoin price and MVRV Z-Score, providing a snapshot of how Bitcoin’s value and standardized metrics interact over time.

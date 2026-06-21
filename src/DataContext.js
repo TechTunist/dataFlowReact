@@ -1238,13 +1238,21 @@ const fetchDominanceData = useCallback(async () => {
       formatData: (data) =>
         data
           .filter(item => item.date && item.mvrv !== null && !isNaN(parseFloat(item.mvrv)))
-          .map((item) => ({
-            time: item.date,
-            tx_count: parseFloat(item.tx_count),
-            mvrv: parseFloat(item.mvrv),
-            market_cap: item.market_cap !== null ? parseFloat(item.market_cap) : null,
-            realized_cap: item.realized_cap !== null ? parseFloat(item.realized_cap) : null,
-          }))
+          .map((item) => {
+            const mvrv = parseFloat(item.mvrv);
+            const marketCap = item.market_cap !== null ? parseFloat(item.market_cap) : null;
+            let realizedCap = item.realized_cap !== null ? parseFloat(item.realized_cap) : null;
+            if (realizedCap === null && marketCap !== null && !isNaN(mvrv) && mvrv !== 0) {
+              realizedCap = marketCap / mvrv;
+            }
+            return {
+              time: item.date,
+              tx_count: parseFloat(item.tx_count),
+              mvrv,
+              market_cap: marketCap,
+              realized_cap: realizedCap,
+            };
+          })
           .sort((a, b) => new Date(a.time) - new Date(b.time)),
       setData: setTxMvrvData,
       setLastUpdated: setTxMvrvLastUpdated,
