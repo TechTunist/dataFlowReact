@@ -86,7 +86,16 @@ Any proposal that touches the data pipeline must include:
 
 **Root cause (Jun 2026):** CryptoCompare (`min-api.cryptocompare.com`) now returns **401 without an API key**. The nightly cron failed silently for these coins until fallback logic was added.
 
-### Recovery command (safe — additive inserts only)
+### Flat corrupt section (same price for weeks/months)
+
+Example: Polygon flat at 0.1995 from Oct 2025–Jun 2026.
+
+```bash
+cd SaaS/src
+../venv/bin/python manage.py repair_flat_altcoin --symbol=MATIC
+```
+
+### Recovery command — missing dates (safe — additive inserts only)
 
 Run **locally** against production Neon (`DATABASE_URL` in `SaaS/.env`):
 

@@ -1,6 +1,7 @@
 // src/DataContext.js
 import React, { createContext, useState, useCallback, useContext, useEffect, useMemo, useRef } from 'react';
 import { initDB, cacheData, getCachedData, clearCache, isCacheFresh, getFreshCachedData, DEFAULT_CACHE_TTL, pruneOldCache } from './utility/idbUtils';
+import { detectTimeSeriesIntegrityIssues, shouldInvalidateDailyCache } from './utility/cacheIntegrity';
 import { apiUrl } from './config/api';
 import logger from './utils/logger';
 import { initializeDataService, getBtcPriceSeries, getEthPriceSeries, getMvrvSeries, getMarketCapSeries, getDominanceSeries } from './data'; // New data layer (Phase 1)
@@ -189,6 +190,14 @@ const fetchWithCache = async ({
           shouldReuseCache = false;
         }
 
+        // Gaps or long flat runs in the middle of the series (e.g. Polygon Oct–Jun corruption).
+        // Latest date alone is not enough — invalidate and refetch without clearing IDB manually.
+        if (shouldReuseCache && shouldInvalidateDailyCache(cachedData, effectiveUseDateCheck)) {
+          const integrity = detectTimeSeriesIntegrityIssues(cachedData, { daily: true });
+          logger.log(`[Cache] INTEGRITY miss for ${cacheId}: ${integrity.reasons.join(', ')}`);
+          shouldReuseCache = false;
+        }
+
         if (shouldReuseCache) {
           logger.log(`[Cache] HIT (fresh) for ${cacheId}`);
           setData(Array.isArray(cached.data) ? cachedData : cached.data);
@@ -200,7 +209,12 @@ const fetchWithCache = async ({
 
         // Stale-while-revalidate: serve instantly, but only bg-revalidate if the *entry* is older than half TTL
         // (reduces pointless re-fetches compared to always-reval on any !date-hit).
-        if (staleWhileRevalidate && cached && cached.data) {
+        // Skip serving corrupt/incomplete series — force a blocking refetch instead.
+        const cacheIntegrityBad = shouldInvalidateDailyCache(
+          Array.isArray(cached.data) ? cachedData : cached.data,
+          effectiveUseDateCheck
+        );
+        if (staleWhileRevalidate && cached && cached.data && !cacheIntegrityBad) {
           const shouldRevalidate = !isCacheFresh(cached, Math.floor(effectiveTTL / 2));
           logger.log(`[Cache] HIT (stale, revalidating in background) for ${cacheId}`);
           setData(Array.isArray(cached.data) ? cachedData : cached.data);
@@ -264,11 +278,19 @@ const fetchWithCache = async ({
       : formattedData.time || null;
 
     if (latestFetchedDate && cached && cached.data) {
-      const cachedData = Array.isArray(cached.data) ? cached.data : [cached.data];
-      const sortedCachedData = [...cachedData].sort((a, b) => new Date(a.time) - new Date(b.time));
+      const cachedArr = Array.isArray(cached.data) ? cached.data : [cached.data];
+      const sortedCachedData = [...cachedArr].sort((a, b) => new Date(a.time) - new Date(b.time));
       const latestCachedDate = sortedCachedData[sortedCachedData.length - 1]?.time;
-      if (latestCachedDate && latestFetchedDate <= latestCachedDate) {
-        setData(Array.isArray(cached.data) ? cachedData : cached.data);
+      const cachedIntegrityBad = shouldInvalidateDailyCache(sortedCachedData, effectiveUseDateCheck);
+      const freshIsShorter = isArray && formattedData.length < sortedCachedData.length;
+      // Do not keep IDB copy when API has newer/better series (fixes gap repair without manual cache clear).
+      if (
+        !cachedIntegrityBad &&
+        !freshIsShorter &&
+        latestCachedDate &&
+        latestFetchedDate <= latestCachedDate
+      ) {
+        setData(Array.isArray(cached.data) ? cachedArr : cached.data);
         if (setLastUpdated) {
           setLastUpdated(latestCachedDate);
         }
@@ -516,6 +538,10 @@ export const DataProvider = ({ children }) => {
 
             // Address data freshness on sprint: for useDateCheck series, if cached latest < today, force fetch.
             if (effectiveUseDateCheck && latestCachedDate && latestCachedDate < currentDate) {
+              shouldReuseCache = false;
+            }
+
+            if (shouldReuseCache && shouldInvalidateDailyCache(sortedCachedData, effectiveUseDateCheck)) {
               shouldReuseCache = false;
             }
 
