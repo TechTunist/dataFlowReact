@@ -13,6 +13,10 @@ const buildDir = join(__dirname, '..', 'build');
 const { SEO_PAGES, PRERENDER_PATHS } = await import('../src/seo/staticPageContent.js');
 
 const SITE_URL = 'https://www.cryptological.app';
+const BUILD_ID =
+  process.env.VERCEL_GIT_COMMIT_SHA ||
+  process.env.REACT_APP_BUILD_ID ||
+  `local-${Date.now()}`;
 
 // Inlined so the boot screen is styled before the JS/CSS bundles load.
 const CRITICAL_BOOT_CSS = `<style>
@@ -159,6 +163,18 @@ function applyMeta(template, page, path) {
 
   if (!html.includes('app-boot-critical-css')) {
     html = html.replace('</head>', `${CRITICAL_BOOT_CSS}\n</head>`);
+  }
+
+  if (!html.includes('name="app-build-id"')) {
+    html = html.replace(
+      '</head>',
+      `  <meta name="app-build-id" content="${escapeHtml(BUILD_ID)}"/>\n</head>`
+    );
+  } else {
+    html = html.replace(
+      /<meta\s+name="app-build-id"\s+content="[^"]*"\s*\/?>/i,
+      `<meta name="app-build-id" content="${escapeHtml(BUILD_ID)}"/>`
+    );
   }
 
   html = html.replace(

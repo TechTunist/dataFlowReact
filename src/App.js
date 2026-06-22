@@ -1,4 +1,6 @@
-import { useState, useEffect, createContext, memo, Suspense, lazy } from "react";
+import { useState, useEffect, createContext, memo, Suspense } from "react";
+import { lazyWithRetry } from "./utils/lazyWithRetry";
+import { markAppMounted } from "./utils/registerAppRecovery";
 import ErrorBoundary from "./components/ErrorBoundary";
 import LoadingFallback from "./components/LoadingFallback";
 import AppBootScreen from "./components/AppBootScreen";
@@ -65,47 +67,47 @@ import Total3Chart from "./components/Total3Marketcap";
 const DEV_BYPASS_AUTH = process.env.REACT_APP_DEV_BYPASS_AUTH === 'true';
 
 // Lazy load heavy charting components + scenes (code splitting for performance)
-const Dashboard = lazy(() => import('./scenes/dashboard'));
-const MarketOverview = lazy(() => import('./scenes/MarketOverview'));
-const Subscription = lazy(() => import('./scenes/Subscription'));
-const Profile = lazy(() => import('./scenes/Profile'));
-const Settings = lazy(() => import('./scenes/Settings'));
-const ChangePassword = lazy(() => import('./scenes/ChangePassword'));
-const About = lazy(() => import('./scenes/About'));
-const Charts = lazy(() => import('./components/ChartsThumbnails'));
+const Dashboard = lazyWithRetry(() => import('./scenes/dashboard'));
+const MarketOverview = lazyWithRetry(() => import('./scenes/MarketOverview'));
+const Subscription = lazyWithRetry(() => import('./scenes/Subscription'));
+const Profile = lazyWithRetry(() => import('./scenes/Profile'));
+const Settings = lazyWithRetry(() => import('./scenes/Settings'));
+const ChangePassword = lazyWithRetry(() => import('./scenes/ChangePassword'));
+const About = lazyWithRetry(() => import('./scenes/About'));
+const Charts = lazyWithRetry(() => import('./components/ChartsThumbnails'));
 
 
-const BitcoinROI = lazy(() => import('./components/BitcoinROI'));
-const RunningROI = lazy(() => import('./components/RunningROI'));
-const RunningROIRisk = lazy(() => import('./components/RunningROIRisk'));
-const MonthlyAverageROI = lazy(() => import('./components/MonthlyAverageROI'));
-const BitcoinMonthlyReturnsTable = lazy(() => import('./components/MonthlyReturnsTable'));
-const Bitcoin20WeekExtension = lazy(() => import('./components/Bitcoin20WeekExtension'));
-const SahmRecessionIndicator = lazy(() => import('./components/SahmRecessionIndicator'));
-const MarketHeatIndex = lazy(() => import('./components/MarketHeatIndex'));
+const BitcoinROI = lazyWithRetry(() => import('./components/BitcoinROI'));
+const RunningROI = lazyWithRetry(() => import('./components/RunningROI'));
+const RunningROIRisk = lazyWithRetry(() => import('./components/RunningROIRisk'));
+const MonthlyAverageROI = lazyWithRetry(() => import('./components/MonthlyAverageROI'));
+const BitcoinMonthlyReturnsTable = lazyWithRetry(() => import('./components/MonthlyReturnsTable'));
+const Bitcoin20WeekExtension = lazyWithRetry(() => import('./components/Bitcoin20WeekExtension'));
+const SahmRecessionIndicator = lazyWithRetry(() => import('./components/SahmRecessionIndicator'));
+const MarketHeatIndex = lazyWithRetry(() => import('./components/MarketHeatIndex'));
 
-const FearAndGreed3D = lazy(() => import('./components/FearAndGreed3D'));
-const WorkbenchChart = lazy(() => import('./components/Workbench'));
-const BitcoinMvrvZScore = lazy(() => import('./components/BitcoinMvrvZScore'));
-const SP500DivUnrateChart = lazy(() => import('./components/SP500DivUnrateChart'));
-const HistoricalVolatility = lazy(() => import('./components/HistoricalVolatility'));
-const PuellMultiple = lazy(() => import('./components/PuellMultiple'));
-const AltcoinSeasonIndexChart = lazy(() => import('./components/AltcoinSeasonIndexChart'));
-const OnChainHistoricalRisk = lazy(() => import('./components/OnChainHistoricalRisk'));
-const BitcoinTxMvrvChart = lazy(() => import('./components/BitcoinTxMvrv'));
-const DynamicDCASimulator = lazy(() => import('./components/DynamicDCASimulator'));
-const UKUnemploymentChart = lazy(() => import('./components/UKUnemployment'));
-const UKClaimantCountChart = lazy(() => import('./components/UKClaimantCount'));
-const UKEarningsChart = lazy(() => import('./components/UKEarnings'));
-const UKPopulationChart = lazy(() => import('./components/UKPopulation'));
-const UKWorkforceJobsChart = lazy(() => import('./components/UKWorkforceJobs'));
-const UKBusinessCountsChart = lazy(() => import('./components/UKBusinessCounts'));
-const UKJSAByAgeChart = lazy(() => import('./components/UKJSAByAge'));
-const UKJSAByEthnicityChart = lazy(() => import('./components/UKJSAByEthnicity'));
-const UKLabourByAgeChart = lazy(() => import('./components/UKLabourByAge'));
-const UKPublicPrivateChart = lazy(() => import('./components/UKPublicPrivateEmployment'));
-const UKAPSWorkplaceChart = lazy(() => import('./components/UKApsWorkplace'));
-const UKEsaClaimantsChart = lazy(() => import('./components/UKEsaClaimants'));
+const FearAndGreed3D = lazyWithRetry(() => import('./components/FearAndGreed3D'));
+const WorkbenchChart = lazyWithRetry(() => import('./components/Workbench'));
+const BitcoinMvrvZScore = lazyWithRetry(() => import('./components/BitcoinMvrvZScore'));
+const SP500DivUnrateChart = lazyWithRetry(() => import('./components/SP500DivUnrateChart'));
+const HistoricalVolatility = lazyWithRetry(() => import('./components/HistoricalVolatility'));
+const PuellMultiple = lazyWithRetry(() => import('./components/PuellMultiple'));
+const AltcoinSeasonIndexChart = lazyWithRetry(() => import('./components/AltcoinSeasonIndexChart'));
+const OnChainHistoricalRisk = lazyWithRetry(() => import('./components/OnChainHistoricalRisk'));
+const BitcoinTxMvrvChart = lazyWithRetry(() => import('./components/BitcoinTxMvrv'));
+const DynamicDCASimulator = lazyWithRetry(() => import('./components/DynamicDCASimulator'));
+const UKUnemploymentChart = lazyWithRetry(() => import('./components/UKUnemployment'));
+const UKClaimantCountChart = lazyWithRetry(() => import('./components/UKClaimantCount'));
+const UKEarningsChart = lazyWithRetry(() => import('./components/UKEarnings'));
+const UKPopulationChart = lazyWithRetry(() => import('./components/UKPopulation'));
+const UKWorkforceJobsChart = lazyWithRetry(() => import('./components/UKWorkforceJobs'));
+const UKBusinessCountsChart = lazyWithRetry(() => import('./components/UKBusinessCounts'));
+const UKJSAByAgeChart = lazyWithRetry(() => import('./components/UKJSAByAge'));
+const UKJSAByEthnicityChart = lazyWithRetry(() => import('./components/UKJSAByEthnicity'));
+const UKLabourByAgeChart = lazyWithRetry(() => import('./components/UKLabourByAge'));
+const UKPublicPrivateChart = lazyWithRetry(() => import('./components/UKPublicPrivateEmployment'));
+const UKAPSWorkplaceChart = lazyWithRetry(() => import('./components/UKApsWorkplace'));
+const UKEsaClaimantsChart = lazyWithRetry(() => import('./components/UKEsaClaimants'));
 
 /**
  * Route Configuration for the entire app.
@@ -476,6 +478,10 @@ const AppContent = memo(() => {
 });
 
 const App = memo(() => {
+  useEffect(() => {
+    markAppMounted();
+  }, []);
+
   // Only pass the custom domain prop when using a production/live Clerk key.
   // Dev/test keys (pk_test_*) work better without it (or with their accounts.dev domain).
   const isProdKey = PUBLISHABLE_KEY && PUBLISHABLE_KEY.startsWith('pk_live_');
