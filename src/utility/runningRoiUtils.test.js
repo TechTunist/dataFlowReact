@@ -1,5 +1,6 @@
 import {
   calculateRunningROI,
+  calculateRunningRoiRiskSeries,
   filterPriceDataFromStart,
   RUNNING_ROI_RISK_DATA_START,
   normalizeRunningRoiLinear,
@@ -254,5 +255,23 @@ describe('runningRoiUtils', () => {
   test('easeInOutSmoothstep returns 0 and 1 at endpoints', () => {
     expect(easeInOutSmoothstep(0)).toBe(0);
     expect(easeInOutSmoothstep(1)).toBe(1);
+  });
+
+  test('calculateRunningRoiRiskSeries returns 0-1 risk scores from price data', () => {
+    const prices = [];
+    for (let i = 0; i < 400; i++) {
+      const date = new Date('2011-11-01');
+      date.setDate(date.getDate() + i);
+      prices.push({
+        time: date.toISOString().split('T')[0],
+        value: 100 + i * 2,
+      });
+    }
+    const series = calculateRunningRoiRiskSeries(prices);
+    expect(series.length).toBeGreaterThan(0);
+    series.forEach((point) => {
+      expect(point.riskScore).toBeGreaterThanOrEqual(0);
+      expect(point.riskScore).toBeLessThanOrEqual(1);
+    });
   });
 });

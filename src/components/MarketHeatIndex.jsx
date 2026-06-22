@@ -13,6 +13,7 @@ import ChartTooltip from './ChartTooltip';
 
 import { useAuth, useUser } from '@clerk/clerk-react';
 import { apiUrl } from '../config/api';
+import { calculateRunningRoiRiskSeries } from '../utility/runningRoiUtils';
 
 const TX_MVRV_SMOOTHING = 'sma-7';
 
@@ -161,6 +162,7 @@ const MarketHeatIndex = ({ isDashboard = false, isChartPage = false }) => {
     mvrv: 25,
     mayer: 20,
     risk: 20,
+    roirisk: 10,
     pi: 10,
     alt: 10,
     txmvrv: 10,
@@ -175,7 +177,7 @@ const MarketHeatIndex = ({ isDashboard = false, isChartPage = false }) => {
   // Initialize latestSettingsRef with initial defaults (will be kept in sync via effect)
   if (!latestSettingsRef.current) {
     latestSettingsRef.current = {
-      weights: { fg: 15, mvrv: 25, mayer: 20, risk: 20, pi: 10, alt: 10, txmvrv: 10 },
+      weights: { fg: 15, mvrv: 25, mayer: 20, risk: 20, roirisk: 10, pi: 10, alt: 10, txmvrv: 10 },
       smaPeriod: '28d',
       overheatThreshold: 85,
       coldThreshold: 30,
@@ -303,7 +305,7 @@ const MarketHeatIndex = ({ isDashboard = false, isChartPage = false }) => {
     { value: '90d', label: '90 Days', days: 90 },
   ];
 
-  const WEIGHT_KEYS = useMemo(() => ['fg', 'mvrv', 'mayer', 'risk', 'pi', 'alt', 'txmvrv'], []);
+  const WEIGHT_KEYS = useMemo(() => ['fg', 'mvrv', 'mayer', 'risk', 'roirisk', 'pi', 'alt', 'txmvrv'], []);
 
   // MVRV/Tx ratio series — normalized dates so lookups align with btc/mvrv time keys.
   // Kept as its own memo so factorScoresBase reliably recomputes when this async dataset arrives.
@@ -343,6 +345,7 @@ const MarketHeatIndex = ({ isDashboard = false, isChartPage = false }) => {
     const mayerSeries = calculateMayerMultiple(alignedBtc);
     const riskSeries = calculateRiskMetric(alignedBtc);
     const piRatioSeries = calculateRatioSeries(alignedBtc);
+    const runningRoiRiskSeries = calculateRunningRoiRiskSeries(alignedBtc);
 
     const mayerMap = {};
     mayerSeries.forEach(item => { mayerMap[item.time] = item.value; });
@@ -350,6 +353,8 @@ const MarketHeatIndex = ({ isDashboard = false, isChartPage = false }) => {
     riskSeries.forEach(item => { riskMap[item.time] = item.Risk; });
     const piMap = {};
     piRatioSeries.forEach(item => { piMap[item.time] = item.value; });
+    const roiriskMap = {};
+    runningRoiRiskSeries.forEach(item => { roiriskMap[item.time] = item.riskScore; });
 
     const altSeasonMap = {};
     if (altcoinSeasonTimeseriesData && altcoinSeasonTimeseriesData.length) {
@@ -392,6 +397,11 @@ const MarketHeatIndex = ({ isDashboard = false, isChartPage = false }) => {
       const riskVal = riskMap[time] ?? 0.5;
       scores.risk = btcData.length > 0 ? riskVal * 100 : 50;
       available.risk = true;
+
+      if (roiriskMap[time] != null) {
+        scores.roirisk = Math.max(0, Math.min(100, roiriskMap[time] * 100));
+        available.roirisk = true;
+      }
 
       const piVal = piMap[time] ?? 0;
       scores.pi = btcData.length > 0 ? Math.max(0, Math.min(100, piVal * 50)) : 50;
@@ -771,7 +781,7 @@ const MarketHeatIndex = ({ isDashboard = false, isChartPage = false }) => {
 
   // Weight / threshold tuning handlers (for the experimental panel)
   const handleResetWeights = () => {
-    setWeights({ fg: 15, mvrv: 25, mayer: 20, risk: 20, pi: 10, alt: 10, txmvrv: 10 });
+    setWeights({ fg: 15, mvrv: 25, mayer: 20, risk: 20, roirisk: 10, pi: 10, alt: 10, txmvrv: 10 });
   };
   const handleNormalizeWeights = () => {
     const total = Object.values(weights).reduce((a, b) => a + b, 0) || 1;
@@ -925,7 +935,7 @@ const MarketHeatIndex = ({ isDashboard = false, isChartPage = false }) => {
 
           <Box sx={{
             display: 'grid',
-            gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)', md: 'repeat(7, 1fr)' },
+            gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, 1fr)', md: 'repeat(4, 1fr)' },
             gap: 1.5,
             mb: 1,
           }}>
@@ -935,6 +945,7 @@ const MarketHeatIndex = ({ isDashboard = false, isChartPage = false }) => {
                 mvrv: 'MVRV',
                 mayer: 'Mayer',
                 risk: 'Risk',
+                roirisk: 'ROI Risk',
                 pi: 'PiCycle',
                 alt: 'Alt Season',
                 txmvrv: 'MVRV/Tx',

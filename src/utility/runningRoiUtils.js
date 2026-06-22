@@ -680,7 +680,28 @@ export function easeInOutSmoothstep(t) {
 }
 
 /**
- * Snapshot for future Market Heat / Risk consumers.
+ * Daily running ROI risk scores (0–1) for composite indicators such as Market Heat Index.
+ * Derived client-side from cached BTC price — same inputs as the /running-roi-risk chart.
+ *
+ * @param {Array<{ time: string, value: number }>} priceData
+ * @param {{ peaks?: Array, lookbackDays?: number }} [options]
+ * @returns {{ time: string, riskScore: number }[]}
+ */
+export function calculateRunningRoiRiskSeries(
+  priceData,
+  { peaks = BITCOIN_1Y_ROI_CYCLE_PEAKS, lookbackDays = 365 } = {}
+) {
+  const filtered = filterPriceDataFromStart(priceData);
+  const roiData = calculateRunningROI(filtered, lookbackDays);
+  const riskSeries = mapRunningRoiToRiskSeries(roiData, { peaks });
+  return riskSeries.map((point) => ({
+    time: point.time,
+    riskScore: point.riskScore ?? point.roi ?? 0,
+  }));
+}
+
+/**
+ * Snapshot for Market Heat / signal consumers.
  */
 export function getRunningRoiSignalSnapshot(roiData, riskMetricData, buyThreshold, sellThreshold) {
   const latest = roiData[roiData.length - 1];
