@@ -147,6 +147,12 @@ export const chartSections = {
         image: '/assets/bandsRisk.png',
       },
       {
+        path: "/running-roi-risk",
+        title: "Running ROI Risk",
+        description: "1-year running ROI for Bitcoin with raw and normalized buy/sell signal zones. Running ROI is the multiplicative return from the start of the lookback window to each day; this chart uses it for risk-style accumulation and distribution testing.",
+        image: '/assets/runningRoi.png',
+      },
+      {
         path: "/altcoin-risk",
         title: "Altcoin Risk",
         description: "Risk metric for a selection of altcoins. Values closer to 0 indicates low risk, values closer to 1 indicates high risk.",

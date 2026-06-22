@@ -77,6 +77,7 @@ const Charts = lazy(() => import('./components/ChartsThumbnails'));
 
 const BitcoinROI = lazy(() => import('./components/BitcoinROI'));
 const RunningROI = lazy(() => import('./components/RunningROI'));
+const RunningROIRisk = lazy(() => import('./components/RunningROIRisk'));
 const MonthlyAverageROI = lazy(() => import('./components/MonthlyAverageROI'));
 const BitcoinMonthlyReturnsTable = lazy(() => import('./components/MonthlyReturnsTable'));
 const Bitcoin20WeekExtension = lazy(() => import('./components/Bitcoin20WeekExtension'));
@@ -166,6 +167,7 @@ const appRoutes = [
   { path: "/bitcoin-roi", component: BitcoinROI, useBasicChart: true, protected: true },
   { path: "/sp500-roi", component: SP500ROI, useBasicChart: true, protected: true },
   { path: "/running-roi", component: RunningROI, useBasicChart: true, protected: true },
+  { path: "/running-roi-risk", component: RunningROIRisk, useBasicChart: true, protected: true },
   { path: "/historical-volatility", component: HistoricalVolatility, useBasicChart: true, protected: true },
   { path: "/monthly-returns", component: BitcoinMonthlyReturnsTable, useBasicChart: true, protected: true },
   { path: "/monthly-average-roi", component: MonthlyAverageROI, useBasicChart: true, protected: true },

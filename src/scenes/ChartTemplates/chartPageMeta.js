@@ -11,6 +11,7 @@ export const routeToChartId = {
   "/bitcoin-dominance": "bitcoin-dominance",
   "/bitcoin-roi": "bitcoin-roi",
   "/running-roi": "running-roi",
+  "/running-roi-risk": "running-roi-risk",
   "/historical-volatility": "historical-volatility",
   "/monthly-returns": "monthly-returns",
   "/monthly-average-roi": "monthly-average-roi",
@@ -152,6 +153,13 @@ export const getTitleAndSubtitle = (pathname, isMobile = false) => {
       return { title: "Bitcoin Monthly Returns", subtitle: isMobile ? "Monthly Returns" : "The Monthly Returns for Bitcoin" };
     case "/running-roi":
       return { title: "Running ROI", subtitle: isMobile ? "Running ROI v Price" : "The Running ROI plotted Against Price" };
+    case "/running-roi-risk":
+      return {
+        title: "Running ROI Risk",
+        subtitle: isMobile
+          ? "1Y ROI Risk (0–1)"
+          : "1-year running ROI linearly scaled to 0–1 with buy/sell zones",
+      };
     case "/fear-and-greed-chart":
       return { title: "Bitcoin Fear and Greed", subtitle: "Fear and Greed plotted over the Bitcoin Price" };
     case "/altcoin-risk":

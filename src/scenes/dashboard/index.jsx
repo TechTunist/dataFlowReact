@@ -28,6 +28,7 @@ import BitcoinROI from "../../components/BitcoinROI";
 import Bitcoin20WeekExtension from "../../components/Bitcoin20WeekExtension";
 import MarketCapDifference from "../../components/TotalMarketCapDifference";
 import RunningROI from "../../components/RunningROI";
+import RunningROIRisk from "../../components/RunningROIRisk";
 import HistoricalVolatility from "../../components/HistoricalVolatility";
 import BitcoinMonthlyReturnsTable from "../../components/MonthlyReturnsTable";
 import MonthlyAverageROI from "../../components/MonthlyAverageROI";
@@ -92,6 +93,7 @@ const chartConfig = [
   { id: "logarithmic-regression", title: "Bitcoin Logarithmic Regression", linkTo: "/logarithmic-regression", component: (props) => <BitcoinLogRegression isDashboard={true} {...props} />, description: "Logarithmic Regression trend lines for Bitcoin." },
   { id: "risk-color", title: "Risk Colour Chart", linkTo: "/risk-color", component: (props) => <BitcoinRiskColor isDashboard={true} {...props} />, description: "Colour coded bitcoin risk levels." },
   { id: "risk-bands", title: "Time Spent in Risk Bands", linkTo: "/risk-bands", component: (props) => <AssetRiskTimeInBands isDashboard={true} {...props} />, description: "Time spent in each defined Bitcoin risk band." },
+  { id: "running-roi-risk", title: "Running ROI Risk", linkTo: "/running-roi-risk", component: (props) => <RunningROIRisk isDashboard={true} {...props} />, description: "1-year running ROI with raw and linearly scaled 0–1 buy/sell signal zones." },
   { id: "altcoin-price", title: "Altcoin Charts", linkTo: "/altcoin-price", component: (props) => <AltcoinPrice isDashboard={true} {...props} />, description: "Simple price chart for a selection of altcoins." },
   { id: "altcoin-risk", title: "Altcoin Risk", linkTo: "/altcoin-risk", component: (props) => <AltcoinRisk isDashboard={true} {...props} />, description: "Risk metrics for altcoins." },
   { id: "stocks", title: "Stock Selector", linkTo: "/stocks", component: (props) => <StockPrice isDashboard={true} defaultSelectedCoin="TSLA" {...props} />, description: "Daily stock prices with technical indicators — mega-cap, crypto-adjacent, benchmarks, and retail sentiment groups." },

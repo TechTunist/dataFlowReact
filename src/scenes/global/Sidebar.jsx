@@ -194,6 +194,7 @@ const itemsData = [
   { title: "Ethereum Risk Metric", to: "/risk-eth", category: "Risk Analysis", icon: <WarningAmberIcon />, categoryIcon: <WarningIcon /> }, // WarningAmberIcon: Risk warning
   { title: "Risk Colour Chart", to: "/risk-color", category: "Risk Analysis", icon: <PaletteIcon />, categoryIcon: <WarningIcon /> }, // PaletteIcon: Color-based visualization
   { title: "Time in Risk Bands", to: "/risk-bands", category: "Risk Analysis", icon: <TimelineIcon />, categoryIcon: <WarningIcon /> }, // TimelineIcon: Time-based bands
+  { title: "Running ROI Risk", to: "/running-roi-risk", category: "Risk Analysis", icon: <CalculateIcon />, categoryIcon: <WarningIcon /> },
 
   // === ON-CHAIN METRICS ===
 
