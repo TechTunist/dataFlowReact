@@ -669,13 +669,30 @@ const RunningROIRisk = ({ isDashboard = false }) => {
                 checked={showRiskMetric}
                 onChange={(e) => setShowRiskMetric(e.target.checked)}
                 size="small"
+                sx={{
+                  '& .MuiSwitch-switchBase': {
+                    color: colors.grey[400],
+                  },
+                  '& .MuiSwitch-track': {
+                    backgroundColor: colors.grey[600],
+                    opacity: 1,
+                  },
+                  '& .MuiSwitch-switchBase.Mui-checked': {
+                    color: colors.greenAccent[500],
+                  },
+                  '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                    backgroundColor: colors.greenAccent[500],
+                    opacity: 0.65,
+                  },
+                }}
               />
             }
             label={
-              <Typography variant="caption" sx={{ color: colors.grey[200] }}>
+              <Typography variant="caption" sx={{ color: colors.greenAccent[500] }}>
                 ROI Risk (0–1)
               </Typography>
             }
+            sx={{ color: colors.greenAccent[500] }}
           />
         </Box>
       )}
@@ -832,7 +849,7 @@ const RunningROIRisk = ({ isDashboard = false }) => {
           <p className="chart-info">
             Running ROI is the multiplicative return over a fixed 1-year lookback (1x = flat, 2x = doubled). Data before 1 November 2011 is omitted so early price history does not skew the scale. <b>ROI Risk</b> (0–1) corrects diminishing returns on both tops and bottoms: cycle peaks (2013: 91.51x, 2017: 24.04x, 2021: 11.85x, 2024: 3.35x) are lifted toward 1, while later cycle drawdowns — expected to be less violent — are mapped to progressively lower risk targets so modest pullbacks can still dip meaningfully.
             {isSignalsEnabled && (
-              <> Toggle ROI Risk to morph between raw ROI and the 0–1 metric (~450ms). Buy on raw ROI (0.1x–1.0x) or low risk (0–0.5, default 0.2); sell signals in risk view only (default 0.75).</>
+              <> Toggle ROI Risk to morph between raw ROI and the 0–1 metric (~450ms). Buy on raw ROI (0.1x–1.0x, default 0.3x) or low risk (0–0.5, default 0.07); sell signals in risk view only (default 0.9).</>
             )}
           </p>
         </div>

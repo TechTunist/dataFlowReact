@@ -16,7 +16,7 @@ export const RISK_METRIC_TARGET_PEAK = 1;
 export const BUY_SIGNAL_MIN = 0.1;
 export const BUY_SIGNAL_MAX = 1.0;
 
-export const DEFAULT_BUY_SIGNAL_THRESHOLD = 0.5;
+export const DEFAULT_BUY_SIGNAL_THRESHOLD = 0.3;
 export const DEFAULT_SELL_SIGNAL_THRESHOLD = 60;
 
 /** Buy/sell sliders in ROI Risk view (0–1 scale). */
@@ -24,8 +24,8 @@ export const RISK_METRIC_BUY_MIN = 0;
 export const RISK_METRIC_BUY_MAX = 0.5;
 export const RISK_METRIC_SELL_MIN = 0.5;
 export const RISK_METRIC_SELL_MAX = 1;
-export const DEFAULT_RISK_METRIC_BUY_THRESHOLD = 0.2;
-export const DEFAULT_RISK_METRIC_SELL_THRESHOLD = 0.75;
+export const DEFAULT_RISK_METRIC_BUY_THRESHOLD = 0.07;
+export const DEFAULT_RISK_METRIC_SELL_THRESHOLD = 0.9;
 
 /**
  * Minimum risk score at the deepest adjusted-ROI lows (prevents long flatlines at 0).
