@@ -986,7 +986,23 @@ const MarketHeatIndex = ({ isDashboard = false, isChartPage = false }) => {
                   checked={stretchToFullRange}
                   onChange={(e) => setStretchToFullRange(e.target.checked)}
                   size="small"
-                  sx={{ ml: 0.5 }}
+                  sx={{
+                    ml: 0.5,
+                    '& .MuiSwitch-switchBase': {
+                      color: colors.grey[400],
+                    },
+                    '& .MuiSwitch-track': {
+                      backgroundColor: colors.grey[600],
+                      opacity: 1,
+                    },
+                    '& .MuiSwitch-switchBase.Mui-checked': {
+                      color: colors.greenAccent[500],
+                    },
+                    '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                      backgroundColor: colors.greenAccent[500],
+                      opacity: 0.65,
+                    },
+                  }}
                 />
               }
               label={<Typography variant="caption" sx={{ color: colors.grey[200] }}>Stretch observed range to 0-100</Typography>}

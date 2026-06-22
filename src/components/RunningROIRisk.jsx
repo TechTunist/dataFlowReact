@@ -1,5 +1,5 @@
 // src/components/RunningROIRisk.jsx
-import React, { useRef, useEffect, useState, useContext, useMemo } from 'react';
+import React, { useRef, useEffect, useState, useContext, useMemo, useCallback } from 'react';
 import { createChart } from 'lightweight-charts';
 import { tokens } from "../theme";
 import {
@@ -10,9 +10,10 @@ import {
   Select,
   MenuItem,
   Slider,
-  Switch,
-  FormControlLabel,
   Typography,
+  ToggleButton,
+  ToggleButtonGroup,
+  Checkbox,
 } from "@mui/material";
 import '../styling/bitcoinChart.css';
 import useIsMobile from '../hooks/useIsMobile';
@@ -29,7 +30,6 @@ import {
   BITCOIN_1Y_ROI_CYCLE_PEAKS,
   buildBelowThresholdZones,
   buildAboveThresholdZones,
-  summarizeContiguousZones,
   blendRoiSeries,
   easeInOutSmoothstep,
   DEFAULT_BUY_SIGNAL_THRESHOLD,
@@ -41,12 +41,20 @@ import {
   RISK_METRIC_BUY_MAX,
   RISK_METRIC_SELL_MIN,
   RISK_METRIC_SELL_MAX,
+  smoothRunningRoiSeries,
+  parseRoiSmoothingPeriod,
+  getRoiSmoothingLabel,
 } from '../utility/runningRoiUtils';
 
 const LOOKBACK_DAYS = 365;
 const ROI_TRANSITION_MS = 450;
-const RAW_ROI_COLOR = '#ff0062';
-const RISK_METRIC_COLOR = '#00ccff';
+const ROI_SERIES_COLOR = '#ff0062';
+const ROI_LINE_WIDTH = 1.5;
+
+const SIGNAL_ZONES = {
+  buy: { label: 'Buy zone' },
+  sell: { label: 'Sell zone' },
+};
 
 const RunningROIRisk = ({ isDashboard = false }) => {
   const chartContainerRef = useRef(null);
@@ -59,12 +67,28 @@ const RunningROIRisk = ({ isDashboard = false }) => {
   const sellSignalPriceLineRef = useRef(null);
   const buySignalThresholdRef = useRef(DEFAULT_BUY_SIGNAL_THRESHOLD);
   const sellSignalThresholdRef = useRef(DEFAULT_RISK_METRIC_SELL_THRESHOLD);
-  const showRiskMetricRef = useRef(false);
+  const showRiskMetricRef = useRef(true);
   const displayedRoiRef = useRef([]);
-  const prevShowRiskMetricRef = useRef(false);
+  const prevShowRiskMetricRef = useRef(true);
   const transitionRafRef = useRef(null);
   const theme = useTheme();
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
+  const buyZoneColor = useMemo(
+    () => (theme.palette.mode === 'dark' ? 'rgba(38, 198, 218, 0.3)' : 'rgba(0, 128, 0, 0.3)'),
+    [theme.palette.mode]
+  );
+  const sellZoneColor = useMemo(
+    () => (theme.palette.mode === 'dark' ? 'rgba(255, 99, 71, 0.3)' : 'rgba(255, 140, 0, 0.3)'),
+    [theme.palette.mode]
+  );
+  const buyZoneAccent = useMemo(
+    () => (theme.palette.mode === 'dark' ? '#26c6da' : '#2e7d32'),
+    [theme.palette.mode]
+  );
+  const sellZoneAccent = useMemo(
+    () => (theme.palette.mode === 'dark' ? '#ff6347' : '#ff8c00'),
+    [theme.palette.mode]
+  );
   const isMobile = useIsMobile();
   const { btcData, fetchBtcData, ethData, fetchEthData, altcoinData, fetchAltcoinData } = useContext(DataContext);
   const [isInteractive, setIsInteractive] = useState(false);
@@ -79,7 +103,9 @@ const RunningROIRisk = ({ isDashboard = false }) => {
   const [rawBuySignalThreshold, setRawBuySignalThreshold] = useState(DEFAULT_BUY_SIGNAL_THRESHOLD);
   const [riskBuySignalThreshold, setRiskBuySignalThreshold] = useState(DEFAULT_RISK_METRIC_BUY_THRESHOLD);
   const [riskSellSignalThreshold, setRiskSellSignalThreshold] = useState(DEFAULT_RISK_METRIC_SELL_THRESHOLD);
-  const [showRiskMetric, setShowRiskMetric] = useState(false);
+  const [showRiskMetric, setShowRiskMetric] = useState(true);
+  const [activeSignalZones, setActiveSignalZones] = useState([]);
+  const [smoothingMode, setSmoothingMode] = useState('none');
 
   const isSignalsEnabled = !isDashboard;
   const isRiskMetricView = showRiskMetric;
@@ -173,11 +199,12 @@ const RunningROIRisk = ({ isDashboard = false }) => {
     maxActiveRoi,
     buyZoneData,
     sellZoneData,
-    buyZoneRanges,
     inBuyZone,
     inSellZone,
   } = useMemo(() => {
-    const filteredData = calculateRunningROI(chartData, LOOKBACK_DAYS);
+    const rawRoiData = calculateRunningROI(chartData, LOOKBACK_DAYS);
+    const smoothingPeriod = parseRoiSmoothingPeriod(smoothingMode);
+    const filteredData = smoothRunningRoiSeries(rawRoiData, smoothingPeriod);
     const cyclePeaks = selectedAsset === 'BTC' ? BITCOIN_1Y_ROI_CYCLE_PEAKS : null;
     const riskSeries = mapRunningRoiToRiskSeries(filteredData, { peaks: cyclePeaks });
 
@@ -204,7 +231,6 @@ const RunningROIRisk = ({ isDashboard = false }) => {
       maxActiveRoi: activeMax,
       buyZoneData: buyZones,
       sellZoneData: sellZones,
-      buyZoneRanges: summarizeContiguousZones(buyZones),
       inBuyZone: latest != null && latest.roi < buySignalThreshold,
       inSellZone: usingRiskMetric && latest != null && latest.roi > sellSignalThreshold,
     };
@@ -214,6 +240,7 @@ const RunningROIRisk = ({ isDashboard = false }) => {
     showRiskMetric,
     buySignalThreshold,
     sellSignalThreshold,
+    smoothingMode,
   ]);
 
   const setInteractivity = () => setIsInteractive(!isInteractive);
@@ -259,32 +286,34 @@ const RunningROIRisk = ({ isDashboard = false }) => {
     });
 
     const buyZoneShadedSeries = chart.addHistogramSeries({
-      priceScaleId: 'signal-scale',
-      color: theme.palette.mode === 'dark' ? 'rgba(76, 175, 80, 0.28)' : 'rgba(0, 128, 0, 0.22)',
+      priceScaleId: '',
+      base: 0,
+      color: buyZoneColor,
       priceFormat: { type: 'custom', minMove: 0.01, formatter: () => '' },
       visible: false,
     });
     buyZoneShadedSeriesRef.current = buyZoneShadedSeries;
 
     const sellZoneShadedSeries = chart.addHistogramSeries({
-      priceScaleId: 'signal-scale',
-      color: theme.palette.mode === 'dark' ? 'rgba(255, 99, 71, 0.28)' : 'rgba(220, 38, 38, 0.22)',
+      priceScaleId: '',
+      base: 0,
+      color: sellZoneColor,
       priceFormat: { type: 'custom', minMove: 0.01, formatter: () => '' },
       visible: false,
     });
     sellZoneShadedSeriesRef.current = sellZoneShadedSeries;
 
-    chart.priceScale('signal-scale').applyOptions({
+    chart.priceScale('').applyOptions({
       borderVisible: false,
-      scaleMargins: { top: 0.05, bottom: 0.05 },
+      scaleMargins: { top: 0, bottom: 0 },
       visible: false,
     });
 
     const roiSeries = chart.addLineSeries({
-      color: RAW_ROI_COLOR,
+      color: ROI_SERIES_COLOR,
       lastValueVisible: true,
       priceScaleId: 'right',
-      lineWidth: 2,
+      lineWidth: ROI_LINE_WIDTH,
     });
     roiSeriesRef.current = roiSeries;
 
@@ -386,7 +415,7 @@ const RunningROIRisk = ({ isDashboard = false }) => {
       ? riskMetricData
       : roiData;
     const targetSeries = targetRoiData.map((d) => ({ time: d.time, value: d.roi }));
-    const targetColor = showRiskMetric ? RISK_METRIC_COLOR : RAW_ROI_COLOR;
+    const targetColor = ROI_SERIES_COLOR;
     const viewModeChanged = prevShowRiskMetricRef.current !== showRiskMetric;
     prevShowRiskMetricRef.current = showRiskMetric;
 
@@ -404,7 +433,7 @@ const RunningROIRisk = ({ isDashboard = false }) => {
     const applyTarget = () => {
       series.setData(targetSeries);
       displayedRoiRef.current = targetSeries;
-      series.applyOptions({ color: targetColor });
+      series.applyOptions({ color: targetColor, lineWidth: ROI_LINE_WIDTH });
       chartRef.current?.priceScale('right').applyOptions({
         mode: showRiskMetric ? 0 : 1,
         minimum: showRiskMetric ? 0 : 0.1,
@@ -458,16 +487,21 @@ const RunningROIRisk = ({ isDashboard = false }) => {
 
   useEffect(() => {
     if (buyZoneShadedSeriesRef.current) {
-      const active = isSignalsEnabled && buyZoneData.length > 0;
+      const active = isSignalsEnabled && activeSignalZones.includes('buy') && buyZoneData.length > 0;
       buyZoneShadedSeriesRef.current.setData(active ? buyZoneData : []);
       buyZoneShadedSeriesRef.current.applyOptions({ visible: active });
     }
     if (sellZoneShadedSeriesRef.current) {
-      const active = isSignalsEnabled && isRiskMetricView && sellZoneData.length > 0;
+      const active = isSignalsEnabled && activeSignalZones.includes('sell') && isRiskMetricView && sellZoneData.length > 0;
       sellZoneShadedSeriesRef.current.setData(active ? sellZoneData : []);
       sellZoneShadedSeriesRef.current.applyOptions({ visible: active });
     }
-  }, [buyZoneData, sellZoneData, isSignalsEnabled, isRiskMetricView]);
+  }, [buyZoneData, sellZoneData, isSignalsEnabled, isRiskMetricView, activeSignalZones]);
+
+  useEffect(() => {
+    buyZoneShadedSeriesRef.current?.applyOptions({ color: buyZoneColor });
+    sellZoneShadedSeriesRef.current?.applyOptions({ color: sellZoneColor });
+  }, [buyZoneColor, sellZoneColor]);
 
   useEffect(() => {
     const series = roiSeriesRef.current;
@@ -487,11 +521,11 @@ const RunningROIRisk = ({ isDashboard = false }) => {
     try {
       buySignalPriceLineRef.current = series.createPriceLine({
         price: buySignalThreshold,
-        color: colors.greenAccent[500],
+        color: buyZoneAccent,
         lineWidth: 2,
         lineStyle: 2,
         title: 'Buy Signal',
-        axisLabelColor: colors.greenAccent[500],
+        axisLabelColor: buyZoneAccent,
       });
     } catch (e) { /* noop */ }
 
@@ -499,11 +533,11 @@ const RunningROIRisk = ({ isDashboard = false }) => {
       try {
         sellSignalPriceLineRef.current = series.createPriceLine({
           price: sellSignalThreshold,
-          color: colors.redAccent[500],
+          color: sellZoneAccent,
           lineWidth: 2,
           lineStyle: 2,
           title: 'Sell Signal',
-          axisLabelColor: colors.redAccent[500],
+          axisLabelColor: sellZoneAccent,
         });
       } catch (e) { /* noop */ }
     }
@@ -513,7 +547,8 @@ const RunningROIRisk = ({ isDashboard = false }) => {
     isRiskMetricView,
     buySignalThreshold,
     sellSignalThreshold,
-    colors,
+    buyZoneAccent,
+    sellZoneAccent,
   ]);
 
   useEffect(() => {
@@ -545,8 +580,22 @@ const RunningROIRisk = ({ isDashboard = false }) => {
 
   const handleAssetChange = (e) => setSelectedAsset(e.target.value);
 
-  const roiLegendLabel = isRiskMetricView ? (isMobile ? 'Risk' : 'ROI Risk') : (isMobile ? 'ROI' : 'Running ROI');
-  const roiLegendColor = isRiskMetricView ? RISK_METRIC_COLOR : RAW_ROI_COLOR;
+  const handleRoiViewChange = useCallback((event, newView) => {
+    if (newView !== null) {
+      setShowRiskMetric(newView === 'risk');
+    }
+  }, []);
+
+  const handleSmoothingModeChange = (e) => setSmoothingMode(e.target.value);
+
+  const handleSignalZonesChange = useCallback((event) => {
+    setActiveSignalZones(event.target.value);
+  }, []);
+
+  const smoothingSuffix = smoothingMode !== 'none' ? ` (${getRoiSmoothingLabel(smoothingMode)})` : '';
+  const roiLegendLabel = isRiskMetricView
+    ? (isMobile ? 'Risk' : `ROI Risk${smoothingSuffix}`)
+    : (isMobile ? 'ROI' : `Running ROI${smoothingSuffix}`);
   const valueSuffix = isRiskMetricView ? '' : 'x';
 
   return (
@@ -558,12 +607,13 @@ const RunningROIRisk = ({ isDashboard = false }) => {
             flexDirection: { xs: 'column', sm: 'row' },
             alignItems: 'center',
             justifyContent: 'center',
-            gap: '20px',
+            gap: { xs: 1.5, sm: 2 },
             marginBottom: '10px',
             marginTop: '8px',
+            flexWrap: 'wrap',
           }}
         >
-          <FormControl sx={{ minWidth: '150px', width: { xs: '100%', sm: '200px' } }}>
+          <FormControl sx={{ minWidth: '150px', width: '200px' }}>
             <InputLabel
               id="asset-label"
               shrink
@@ -598,6 +648,116 @@ const RunningROIRisk = ({ isDashboard = false }) => {
               ))}
             </Select>
           </FormControl>
+          <ToggleButtonGroup
+            value={showRiskMetric ? 'risk' : 'roi'}
+            exclusive
+            onChange={handleRoiViewChange}
+            size="small"
+            sx={{
+              backgroundColor: colors.primary[500],
+              '& .MuiToggleButton-root': {
+                color: colors.grey[100],
+                borderColor: colors.grey[300],
+                px: { xs: 1.5, sm: 2 },
+                py: 0.75,
+                fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                whiteSpace: 'nowrap',
+                '&.Mui-selected': {
+                  backgroundColor: colors.greenAccent[500],
+                  color: colors.primary[900],
+                },
+                '&:hover': {
+                  backgroundColor: colors.greenAccent[700],
+                },
+              },
+            }}
+          >
+            <ToggleButton value="roi">ROI</ToggleButton>
+            <ToggleButton value="risk">ROI Risk</ToggleButton>
+          </ToggleButtonGroup>
+          <FormControl sx={{ minWidth: '150px', width: '200px' }}>
+            <InputLabel
+              id="roi-smoothing-label"
+              shrink
+              sx={{
+                color: colors.grey[100],
+                '&.Mui-focused': { color: colors.greenAccent[500] },
+                top: 0,
+                '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' },
+              }}
+            >
+              Smoothing
+            </InputLabel>
+            <Select
+              value={smoothingMode}
+              onChange={handleSmoothingModeChange}
+              label="Smoothing"
+              labelId="roi-smoothing-label"
+              sx={{
+                color: colors.grey[100],
+                backgroundColor: colors.primary[500],
+                borderRadius: '8px',
+                '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
+                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                '& .MuiSelect-select': { py: 1.5, pl: 2 },
+              }}
+            >
+              <MenuItem value="none">None</MenuItem>
+              <MenuItem value="sma-3">3-day SMA</MenuItem>
+              <MenuItem value="sma-7">7-day SMA</MenuItem>
+              <MenuItem value="sma-28">28-day SMA</MenuItem>
+            </Select>
+          </FormControl>
+          {isSignalsEnabled && (
+            <FormControl sx={{ minWidth: '150px', width: '200px' }}>
+              <InputLabel
+                id="signal-zones-label"
+                shrink
+                sx={{
+                  color: colors.grey[100],
+                  '&.Mui-focused': { color: colors.greenAccent[500] },
+                  top: 0,
+                  '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' },
+                }}
+              >
+                Zones
+              </InputLabel>
+              <Select
+                multiple
+                value={activeSignalZones}
+                onChange={handleSignalZonesChange}
+                labelId="signal-zones-label"
+                label="Zones"
+                displayEmpty
+                renderValue={(selected) =>
+                  selected.length > 0
+                    ? selected.map((key) => SIGNAL_ZONES[key].label).join(', ')
+                    : 'Select zones'
+                }
+                sx={{
+                  color: colors.grey[100],
+                  backgroundColor: colors.primary[500],
+                  borderRadius: '8px',
+                  '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
+                  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                  '& .MuiSelect-select': { py: 1.5, pl: 2 },
+                  '& .MuiSelect-select:empty': { color: colors.grey[500] },
+                }}
+              >
+                {Object.entries(SIGNAL_ZONES).map(([key, { label }]) => (
+                  <MenuItem key={key} value={key}>
+                    <Checkbox
+                      checked={activeSignalZones.includes(key)}
+                      sx={{ color: colors.grey[100], '&.Mui-checked': { color: colors.greenAccent[500] } }}
+                    />
+                    <span>{label}</span>
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
         </Box>
       )}
 
@@ -611,16 +771,12 @@ const RunningROIRisk = ({ isDashboard = false }) => {
             border: `1px solid ${colors.grey[700]}`,
           }}
         >
-          <Typography variant="caption" sx={{ color: colors.grey[300], display: 'block', mb: 1 }}>
-            Fixed 1-year running ROI from 1 Nov 2011 onward. Raw view is unmodified (log scale). ROI Risk (0–1) aligns cycle peaks and drawdowns via diminishing-returns scaling — later, shallower bottoms can reach lower risk more easily.
-          </Typography>
-
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.5, mb: 1 }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.5 }}>
             <Box>
-              <Typography variant="caption" sx={{ color: colors.greenAccent[500], display: 'block', mb: 0.25 }}>
+              <Typography variant="caption" sx={{ color: buyZoneAccent, display: 'block', mb: 0.25 }}>
                 Buy signal{isRiskMetricView ? ' (risk)' : ' (raw)'}: <b>{buySignalThreshold.toFixed(isRiskMetricView ? 2 : 2)}{isRiskMetricView ? '' : 'x'}</b>
                 {' — '}
-                <b style={{ color: inBuyZone ? colors.greenAccent[400] : colors.grey[400] }}>
+                <b style={{ color: inBuyZone ? buyZoneAccent : colors.grey[400] }}>
                   {inBuyZone ? 'BUY' : 'NO BUY'}
                 </b>
               </Typography>
@@ -635,16 +791,16 @@ const RunningROIRisk = ({ isDashboard = false }) => {
                   if (isRiskMetricView) setRiskBuySignalThreshold(next);
                   else setRawBuySignalThreshold(next);
                 }}
-                sx={{ color: colors.greenAccent[500] }}
+                sx={{ color: buyZoneAccent }}
               />
             </Box>
             <Box sx={{ opacity: isRiskMetricView ? 1 : 0.45 }}>
-              <Typography variant="caption" sx={{ color: colors.redAccent[500], display: 'block', mb: 0.25 }}>
+              <Typography variant="caption" sx={{ color: sellZoneAccent, display: 'block', mb: 0.25 }}>
                 Sell signal (ROI Risk): <b>{sellSignalThreshold.toFixed(2)}</b>
                 {isRiskMetricView && (
                   <>
                     {' — '}
-                    <b style={{ color: inSellZone ? colors.redAccent[400] : colors.grey[400] }}>
+                    <b style={{ color: inSellZone ? sellZoneAccent : colors.grey[400] }}>
                       {inSellZone ? 'SELL' : 'NO SELL'}
                     </b>
                   </>
@@ -658,42 +814,10 @@ const RunningROIRisk = ({ isDashboard = false }) => {
                 size="small"
                 disabled={!isRiskMetricView}
                 onChange={(_, v) => setRiskSellSignalThreshold(Number(v))}
-                sx={{ color: colors.redAccent[500] }}
+                sx={{ color: sellZoneAccent }}
               />
             </Box>
           </Box>
-
-          <FormControlLabel
-            control={
-              <Switch
-                checked={showRiskMetric}
-                onChange={(e) => setShowRiskMetric(e.target.checked)}
-                size="small"
-                sx={{
-                  '& .MuiSwitch-switchBase': {
-                    color: colors.grey[400],
-                  },
-                  '& .MuiSwitch-track': {
-                    backgroundColor: colors.grey[600],
-                    opacity: 1,
-                  },
-                  '& .MuiSwitch-switchBase.Mui-checked': {
-                    color: colors.greenAccent[500],
-                  },
-                  '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                    backgroundColor: colors.greenAccent[500],
-                    opacity: 0.65,
-                  },
-                }}
-              />
-            }
-            label={
-              <Typography variant="caption" sx={{ color: colors.greenAccent[500] }}>
-                ROI Risk (0–1)
-              </Typography>
-            }
-            sx={{ color: colors.greenAccent[500] }}
-          />
         </Box>
       )}
 
@@ -705,25 +829,23 @@ const RunningROIRisk = ({ isDashboard = false }) => {
               {altcoins.find(asset => asset.value === selectedAsset)?.label} {isMobile ? '' : 'Price'}
             </span>
             <span style={{ marginRight: '20px', display: 'inline-block' }}>
-              <span style={{ backgroundColor: roiLegendColor, height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
+              <span style={{ backgroundColor: ROI_SERIES_COLOR, height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
               {roiLegendLabel}
             </span>
-            {isSignalsEnabled && (
-              <>
-                <span style={{ marginRight: '12px', display: 'inline-block' }}>
-                  <span style={{ backgroundColor: colors.greenAccent[500], height: '10px', width: '10px', display: 'inline-block', marginRight: '5px', opacity: 0.5 }} />
-                  Buy zone
-                </span>
-                {isRiskMetricView && (
-                  <span style={{ display: 'inline-block' }}>
-                    <span style={{ backgroundColor: colors.redAccent[500], height: '10px', width: '10px', display: 'inline-block', marginRight: '5px', opacity: 0.5 }} />
-                    Sell zone
-                  </span>
-                )}
-              </>
+            {isSignalsEnabled && activeSignalZones.includes('buy') && (
+              <span style={{ marginRight: '12px', display: 'inline-block' }}>
+                <span style={{ backgroundColor: buyZoneAccent, height: '10px', width: '10px', display: 'inline-block', marginRight: '5px', opacity: 0.85 }} />
+                Buy zone
+              </span>
+            )}
+            {isSignalsEnabled && activeSignalZones.includes('sell') && isRiskMetricView && (
+              <span style={{ display: 'inline-block' }}>
+                <span style={{ backgroundColor: sellZoneAccent, height: '10px', width: '10px', display: 'inline-block', marginRight: '5px', opacity: 0.85 }} />
+                Sell zone
+              </span>
             )}
           </div>
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', flexWrap: 'wrap', gap: '6px' }}>
             <button onClick={setInteractivity} className="button-reset" style={{ backgroundColor: isInteractive ? '#4cceac' : 'transparent', color: isInteractive ? 'black' : '#31d6aa', borderColor: isInteractive ? 'violet' : '#70d8bd' }}>
               {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
             </button>
@@ -788,17 +910,17 @@ const RunningROIRisk = ({ isDashboard = false }) => {
                 <div style={{ fontSize: '15px' }}>{altcoins.find(asset => asset.value === selectedAsset)?.label}</div>
                 {tip.price && <div style={{ fontSize: '20px' }}>${tip.price.toFixed(2)}</div>}
                 {tip.roi != null && (
-                  <div style={{ color: tip.isRiskMetricView ? RISK_METRIC_COLOR : RAW_ROI_COLOR }}>
+                  <div style={{ color: ROI_SERIES_COLOR }}>
                     {tip.isRiskMetricView ? 'ROI Risk' : 'ROI'}: {tip.roi.toFixed(tip.isRiskMetricView ? 3 : 2)}{tip.isRiskMetricView ? '' : 'x'}
                   </div>
                 )}
                 {isSignalsEnabled && tip.inBuyZone != null && (
-                  <div style={{ color: tip.inBuyZone ? colors.greenAccent[400] : colors.grey[400] }}>
+                  <div style={{ color: tip.inBuyZone ? buyZoneAccent : colors.grey[400] }}>
                     Buy zone: {tip.inBuyZone ? 'YES' : 'NO'}
                   </div>
                 )}
                 {isSignalsEnabled && tip.isRiskMetricView && tip.inSellZone != null && (
-                  <div style={{ color: tip.inSellZone ? colors.redAccent[400] : colors.grey[400] }}>
+                  <div style={{ color: tip.inSellZone ? sellZoneAccent : colors.grey[400] }}>
                     Sell zone: {tip.inSellZone ? 'YES' : 'NO'}
                   </div>
                 )}
@@ -819,38 +941,20 @@ const RunningROIRisk = ({ isDashboard = false }) => {
           <UnderChartValue>
             <span style={{ fontSize: '1.15rem', color: colors.primary[100] }}>
               Current {isRiskMetricView ? 'ROI risk' : '1Y ROI'}:{' '}
-              <b style={{ color: roiLegendColor }}>{currentRoi}{valueSuffix}</b> (<b>${currentPrice.toFixed(0)}k</b>)
+              <b style={{ color: ROI_SERIES_COLOR }}>{currentRoi}{valueSuffix}</b> (<b>${currentPrice.toFixed(0)}k</b>)
               {isSignalsEnabled && (
                 <>
-                  {' '}| Buy: <b style={{ color: inBuyZone ? colors.greenAccent[400] : colors.grey[400] }}>{inBuyZone ? 'YES' : 'NO'}</b>
+                  {' '}| Buy: <b style={{ color: inBuyZone ? buyZoneAccent : colors.grey[400] }}>{inBuyZone ? 'YES' : 'NO'}</b>
                   {isRiskMetricView && (
-                    <> | Sell: <b style={{ color: inSellZone ? colors.redAccent[400] : colors.grey[400] }}>{inSellZone ? 'YES' : 'NO'}</b></>
+                    <> | Sell: <b style={{ color: inSellZone ? sellZoneAccent : colors.grey[400] }}>{inSellZone ? 'YES' : 'NO'}</b></>
                   )}
                 </>
               )}
             </span>
           </UnderChartValue>
 
-          {isSignalsEnabled && buyZoneRanges.length > 0 && (
-            <Box sx={{ mt: 1, mb: 1, px: 1 }}>
-              <Typography variant="caption" sx={{ color: colors.grey[300], display: 'block', mb: 0.5 }}>
-                Recent buy zones ({buyZoneRanges.length} period{buyZoneRanges.length !== 1 ? 's' : ''}):
-              </Typography>
-              <Typography variant="caption" component="div" sx={{ color: colors.grey[400], fontSize: '0.75rem' }}>
-                {buyZoneRanges.slice(-5).map((range) => (
-                  <div key={`${range.start}-${range.end}`}>
-                    {formatDate(range.start)} → {formatDate(range.end)} ({range.days}d, low {range.minRoi.toFixed(isRiskMetricView ? 3 : 2)}{isRiskMetricView ? ' risk' : 'x'} @ ${range.minPrice.toFixed(0)})
-                  </div>
-                ))}
-              </Typography>
-            </Box>
-          )}
-
           <p className="chart-info">
-            Running ROI is the multiplicative return over a fixed 1-year lookback (1x = flat, 2x = doubled). Data before 1 November 2011 is omitted so early price history does not skew the scale. <b>ROI Risk</b> (0–1) corrects diminishing returns on both tops and bottoms: cycle peaks (2013: 91.51x, 2017: 24.04x, 2021: 11.85x, 2024: 3.35x) are lifted toward 1, while later cycle drawdowns — expected to be less violent — are mapped to progressively lower risk targets so modest pullbacks can still dip meaningfully.
-            {isSignalsEnabled && (
-              <> Toggle ROI Risk to morph between raw ROI and the 0–1 metric (~450ms). Buy on raw ROI (0.1x–1.0x, default 0.3x) or low risk (0–0.5, default 0.07); sell signals in risk view only (default 0.9).</>
-            )}
+            Running ROI is the multiplicative return over a fixed 1-year lookback (1× = flat, 2× = doubled). Data before 1 November 2011 is omitted. Optional 3-, 7-, or 28-day simple moving averages smooth the ROI line; <b>ROI Risk</b> (0–1) is derived from the same smoothed ROI and normalises for diminishing returns across cycles so peaks and drawdowns stay comparable over time.
           </p>
         </div>
       )}

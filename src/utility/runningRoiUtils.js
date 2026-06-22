@@ -24,7 +24,7 @@ export const RISK_METRIC_BUY_MIN = 0;
 export const RISK_METRIC_BUY_MAX = 0.5;
 export const RISK_METRIC_SELL_MIN = 0.5;
 export const RISK_METRIC_SELL_MAX = 1;
-export const DEFAULT_RISK_METRIC_BUY_THRESHOLD = 0.07;
+export const DEFAULT_RISK_METRIC_BUY_THRESHOLD = 0.085;
 export const DEFAULT_RISK_METRIC_SELL_THRESHOLD = 0.9;
 
 /**
@@ -580,6 +580,49 @@ export function calculateRunningROI(data, days) {
   }
 
   return result;
+}
+
+/** Supported SMA windows for Running ROI / ROI Risk chart smoothing. */
+export const ROI_SMOOTHING_MODES = ['none', 'sma-3', 'sma-7', 'sma-28'];
+
+/**
+ * Parse an ROI smoothing mode string to a day count (null = no smoothing).
+ */
+export function parseRoiSmoothingPeriod(mode) {
+  if (!mode || mode === 'none') return null;
+  const match = /^sma-(\d+)$/.exec(mode);
+  return match ? Number(match[1]) : null;
+}
+
+/**
+ * Human-readable label for ROI smoothing modes.
+ */
+export function getRoiSmoothingLabel(mode) {
+  const labels = {
+    none: 'Daily',
+    'sma-3': '3-day SMA',
+    'sma-7': '7-day SMA',
+    'sma-28': '28-day SMA',
+  };
+  return labels[mode] || mode;
+}
+
+/**
+ * Simple moving average on the ROI multiplier; preserves other point fields.
+ * Early points before the window is full keep their raw ROI (tx-mvrv pattern).
+ */
+export function smoothRunningRoiSeries(roiData, period) {
+  if (!roiData || roiData.length === 0) return [];
+  if (!period || period <= 1) return roiData.map((point) => ({ ...point }));
+
+  return roiData.map((point, index) => {
+    if (index < period - 1) {
+      return { ...point };
+    }
+    const window = roiData.slice(index - period + 1, index + 1);
+    const avg = window.reduce((sum, item) => sum + item.roi, 0) / period;
+    return { ...point, roi: avg };
+  });
 }
 
 /**

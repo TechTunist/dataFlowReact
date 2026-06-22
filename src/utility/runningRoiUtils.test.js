@@ -25,6 +25,9 @@ import {
   summarizeContiguousZones,
   blendRoiSeries,
   easeInOutSmoothstep,
+  smoothRunningRoiSeries,
+  parseRoiSmoothingPeriod,
+  getRoiSmoothingLabel,
 } from './runningRoiUtils';
 
 describe('runningRoiUtils', () => {
@@ -255,6 +258,26 @@ describe('runningRoiUtils', () => {
   test('easeInOutSmoothstep returns 0 and 1 at endpoints', () => {
     expect(easeInOutSmoothstep(0)).toBe(0);
     expect(easeInOutSmoothstep(1)).toBe(1);
+  });
+
+  test('smoothRunningRoiSeries applies SMA while preserving early raw values', () => {
+    const roiData = [
+      { time: '2020-01-01', value: 100, roi: 1 },
+      { time: '2020-01-02', value: 110, roi: 2 },
+      { time: '2020-01-03', value: 120, roi: 3 },
+      { time: '2020-01-04', value: 130, roi: 4 },
+    ];
+    const smoothed = smoothRunningRoiSeries(roiData, 3);
+    expect(smoothed[0].roi).toBe(1);
+    expect(smoothed[1].roi).toBe(2);
+    expect(smoothed[2].roi).toBeCloseTo(2, 5);
+    expect(smoothed[3].roi).toBeCloseTo(3, 5);
+  });
+
+  test('parseRoiSmoothingPeriod and getRoiSmoothingLabel', () => {
+    expect(parseRoiSmoothingPeriod('none')).toBeNull();
+    expect(parseRoiSmoothingPeriod('sma-7')).toBe(7);
+    expect(getRoiSmoothingLabel('sma-28')).toBe('28-day SMA');
   });
 
   test('calculateRunningRoiRiskSeries returns 0-1 risk scores from price data', () => {
