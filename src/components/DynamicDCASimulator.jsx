@@ -20,6 +20,13 @@ import {
 import useIsMobile from '../hooks/useIsMobile';
 import { useAuth, useUser } from '@clerk/clerk-react';
 import { apiUrl } from '../config/api';
+import {
+  TX_MVRV_SMOOTHING,
+  DEFAULT_MARKET_HEAT_WEIGHTS,
+  DEFAULT_MARKET_HEAT_SETTINGS,
+  computeMarketHeatPipeline,
+  getMarketHeatSmaLabel,
+} from '../utility/marketHeatUtils';
 
 // Tx Tension ratio scale varies widely by smoothing (e.g. ~74 on 7-day SMA vs ~850 on 3-day SMA).
 // Tier defaults are expressed as fractions of the series max so they stay meaningful across smoothings.
@@ -115,9 +122,9 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
 
   // Heat Index (Market Heat Index) specific tiers + weights.
   // Weights default to the standard ones from /market-heat-index; we attempt to load the user's saved configuration below.
-  const [heatWeights, setHeatWeights] = useState({
-    fg: 15, mvrv: 25, mayer: 20, risk: 20, pi: 10, alt: 10, txmvrv: 10,
-  });
+  const [heatWeights, setHeatWeights] = useState({ ...DEFAULT_MARKET_HEAT_WEIGHTS });
+  const [heatSmaPeriod, setHeatSmaPeriod] = useState(DEFAULT_MARKET_HEAT_SETTINGS.smaPeriod);
+  const [heatStretchToFullRange, setHeatStretchToFullRange] = useState(DEFAULT_MARKET_HEAT_SETTINGS.stretchToFullRange);
   const [heatBuyTiers, setHeatBuyTiers] = useState([
     { level: 25, multiplier: 2.0, label: 'Cold / Strong Oversold' },
     { level: 40, multiplier: 1.5, label: 'Cool / Medium Oversold' },
@@ -157,31 +164,47 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
   // Allows hiding the lump sum line which can dominate/skew the view depending on start date.
   const [hiddenPortfolioSeries, setHiddenPortfolioSeries] = useState(new Set());
 
-  // Attempt to load the user's currently saved Market Heat Index slider configuration (weights etc.)
-  // so the DCA backtest for the heat strategy reflects the exact tunings they have in /market-heat-index.
-  useEffect(() => {
-    const loadSavedHeatWeights = async () => {
-      if (!isSignedIn || !getToken) return;
-      try {
-        const token = await getToken();
-        const resp = await fetch(apiUrl('/api/user-settings/get/'), {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-        if (resp.ok) {
-          const data = await resp.json();
-          if (data.marketHeatIndexSettings?.weights && typeof data.marketHeatIndexSettings.weights === 'object') {
-            setHeatWeights(prev => ({ ...prev, ...data.marketHeatIndexSettings.weights }));
-          }
+  const applySavedHeatSettings = useCallback(async () => {
+    if (!isSignedIn || !getToken) return;
+    try {
+      const token = await getToken();
+      const resp = await fetch(apiUrl('/api/user-settings/get/'), {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      if (resp.ok) {
+        const data = await resp.json();
+        const s = data.marketHeatIndexSettings;
+        if (!s) return;
+        if (s.weights && typeof s.weights === 'object') {
+          setHeatWeights((prev) => ({ ...prev, ...s.weights }));
         }
-      } catch (e) {
-        // non-fatal; just use the defaults
+        if (s.smaPeriod) {
+          setHeatSmaPeriod(s.smaPeriod);
+        }
+        if (typeof s.stretchToFullRange === 'boolean') {
+          setHeatStretchToFullRange(s.stretchToFullRange);
+        }
       }
-    };
-    loadSavedHeatWeights();
+    } catch (e) {
+      // non-fatal; just use the defaults
+    }
   }, [isSignedIn, getToken]);
+
+  // Load saved Market Heat Index settings from /market-heat-index so the DCA chart/backtest
+  // uses the exact same weights, smoothing, and stretch configuration as the component page.
+  useEffect(() => {
+    applySavedHeatSettings();
+  }, [applySavedHeatSettings]);
+
+  // Re-sync when user switches to the heat strategy (picks up latest MHI tunings without full reload).
+  useEffect(() => {
+    if (strategy === 'heat-index') {
+      applySavedHeatSettings();
+    }
+  }, [strategy, applySavedHeatSettings]);
 
   const isTx = strategy === 'tx-tension';
   const isHeat = strategy === 'heat-index';
@@ -189,10 +212,11 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
   // Ensure data
   useEffect(() => {
     fetchBtcData();
-    if (isTx || isHeat) {
+    if (isTx) {
       fetchTxMvrvRatioData(txSmoothing);
     }
     if (isHeat) {
+      fetchTxMvrvRatioData(TX_MVRV_SMOOTHING);
       fetchMvrvData();
       fetchFearAndGreedData();
       fetchAltcoinSeasonTimeseriesData();
@@ -230,64 +254,39 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
         })
         .filter(d => d.price > 0);
     } else if (strategy === 'heat-index') {
-      // Market Heat Index as third indicator (0-100 scale).
-      // Uses the user's currently saved weights from /market-heat-index (loaded above) when available.
-      // High heat = overheated (favor sells), low heat = cold (favor buy boosts).
-      const w = heatWeights;
-      const totalW = (w.fg + w.mvrv + w.mayer + w.risk + w.pi + w.alt + w.txmvrv) || 100;
-
-      const riskData = calculateRiskMetric(contextBtcData || []);
-      const riskMap = {};
-      riskData.forEach(d => { riskMap[d.time] = d.Risk * 100; });
-
-      const mvrvMap = {};
-      (mvrvData || []).forEach(d => { mvrvMap[d.time] = Number(d.value); });
-
-      const fgMap = {};
-      (fearAndGreedData || []).forEach(item => {
-        if (item && item.timestamp != null) {
-          const d = new Date(item.timestamp * 1000).toISOString().split('T')[0];
-          fgMap[d] = Number(item.value);
-        }
+      const { plottedData } = computeMarketHeatPipeline({
+        btcData: contextBtcData || [],
+        mvrvData: mvrvData || [],
+        fearAndGreedData: fearAndGreedData || [],
+        altcoinSeasonTimeseriesData: altcoinSeasonTimeseriesData || [],
+        txMvrvRatioDataBySmoothing: txMvrvRatioDataBySmoothing || {},
+        weights: heatWeights,
+        smaPeriod: heatSmaPeriod,
+        stretchToFullRange: heatStretchToFullRange,
+        txMvrvSmoothing: TX_MVRV_SMOOTHING,
       });
 
-      const txPayload = txMvrvRatioDataBySmoothing?.[txSmoothing] || {};
-      const txmvrvMap = {};
-      (txPayload.series || []).forEach(d => { txmvrvMap[d.time] = Number(d.value); });
-
-      return (contextBtcData || []).map(d => {
-        const t = d.time;
-        let heat = 50;
-        // risk (0-100)
-        const r = riskMap[t];
-        if (r != null) heat += (r - 50) * (w.risk / totalW);
-        // mvrv normalized roughly to 0-100 contribution
-        const m = mvrvMap[t];
-        if (m != null) {
-          const mScore = Math.max(0, Math.min(100, ((m - 1) / 3) * 100));
-          heat += (mScore - 50) * (w.mvrv / totalW);
-        }
-        // fear & greed (high greed = hot)
-        const f = fgMap[t];
-        if (f != null) heat += (f - 50) * (w.fg / totalW);
-        // tx mvrv ratio (high = hot) - rough scale
-        const tx = txmvrvMap[t];
-        if (tx != null) {
-          const txScore = Math.max(0, Math.min(100, ((tx - 8) / 25) * 100));
-          heat += (txScore - 50) * (w.txmvrv / totalW);
-        }
-        heat = Math.max(0, Math.min(100, heat));
-        return {
-          time: t,
-          price: d.value,
-          indicator: heat,
-          raw: d,
-        };
-      });
+      return plottedData.map((d) => ({
+        time: d.time,
+        price: d.btcPrice,
+        indicator: d.value,
+        raw: d,
+      }));
     } else {
       return [];
     }
-  }, [contextBtcData, txMvrvRatioDataBySmoothing, strategy, txSmoothing, heatWeights, mvrvData, fearAndGreedData, altcoinSeasonTimeseriesData]);
+  }, [
+    contextBtcData,
+    txMvrvRatioDataBySmoothing,
+    strategy,
+    txSmoothing,
+    heatWeights,
+    heatSmaPeriod,
+    heatStretchToFullRange,
+    mvrvData,
+    fearAndGreedData,
+    altcoinSeasonTimeseriesData,
+  ]);
 
   // Tx Tension ratio range for the active smoothing — drives slider bounds and metric chart Y-axis
   const txIndicatorRange = useMemo(() => {
@@ -708,7 +707,7 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
   const currentTiersDisplay = isTx
     ? `MVRV/Tx Ratio (${txSmoothing}) — observed range ~${txIndicatorRange.dataMin.toFixed(txLevelDecimals)}–${txIndicatorRange.dataMax.toFixed(txLevelDecimals)}; tier sliders span 0–${txIndicatorRange.max}. Lower = oversold/buy; higher = overbought/sell.`
     : isHeat
-      ? 'Market Heat Index (0-100). Low values = cold/oversold (good for buy boosts). High = hot/overbought (good for sells). Uses your saved weights from /market-heat-index if you have tuned them.'
+      ? `Market Heat Index (0-100) — synced with /market-heat-index (${getMarketHeatSmaLabel(heatSmaPeriod)} smoothing${heatStretchToFullRange ? ', stretched to 0–100' : ''}). Low = cold/oversold; high = hot/overbought.`
       : 'Risk (0 = low risk / good entry, 1 = high risk)';
 
   // Note: getSimulatorLevels was previously used to overlay tiers on the embedded risk/tx charts.
@@ -866,7 +865,7 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
     ? 'Bitcoin Risk Metric (0-1)'
     : strategy === 'tx-tension'
       ? `Tx Tension (MVRV/Tx Ratio, ${txSmoothing}, 0–${txIndicatorRange.max})`
-      : 'Market Heat Index (0-100, using your saved config weights)';
+      : `Market Heat Index (0-100, ${getMarketHeatSmaLabel(heatSmaPeriod)}${heatStretchToFullRange ? ', stretched' : ''})`;
 
   const metricLineColor = strategy === 'risk'
     ? colors.greenAccent[400]
@@ -934,6 +933,8 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
       if (saved.heatWeights && typeof saved.heatWeights === 'object') {
         setHeatWeights(prev => ({ ...prev, ...saved.heatWeights }));
       }
+      if (typeof saved.heatSmaPeriod === 'string') setHeatSmaPeriod(saved.heatSmaPeriod);
+      if (typeof saved.heatStretchToFullRange === 'boolean') setHeatStretchToFullRange(saved.heatStretchToFullRange);
 
       if (saved.resultsByStrategy && typeof saved.resultsByStrategy === 'object') {
         const migrated = {};
@@ -988,6 +989,8 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
       txBuyTiers,
       txSellTiers,
       heatWeights,
+      heatSmaPeriod,
+      heatStretchToFullRange,
       heatBuyTiers,
       heatSellTiers,
       resultsByStrategy,
@@ -1010,6 +1013,8 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
     txBuyTiers,
     txSellTiers,
     heatWeights,
+    heatSmaPeriod,
+    heatStretchToFullRange,
     heatBuyTiers,
     heatSellTiers,
     resultsByStrategy,

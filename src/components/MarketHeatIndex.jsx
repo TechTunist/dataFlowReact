@@ -13,115 +13,14 @@ import ChartTooltip from './ChartTooltip';
 
 import { useAuth, useUser } from '@clerk/clerk-react';
 import { apiUrl } from '../config/api';
-import { calculateRunningRoiRiskSeries } from '../utility/runningRoiUtils';
-
-const TX_MVRV_SMOOTHING = 'sma-7';
-
-const normalizeDateKey = (time) => {
-  if (!time) return null;
-  if (typeof time === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(time)) return time;
-  const parsed = new Date(time);
-  if (!isNaN(parsed.getTime())) return parsed.toISOString().split('T')[0];
-  return String(time).split('T')[0];
-};
-
-// ==================== HEAVY HELPER FUNCTIONS (kept for later use) ====================
-// These are left intact. The slowdown was caused by calling them thousands of times inside useMemo.
-
-const calculateRiskMetric = (data) => {
-  const movingAverage = data.map((item, index) => {
-    const start = Math.max(index - 373, 0);
-    const subset = data.slice(start, index + 1);
-    const avg = subset.reduce((sum, curr) => sum + parseFloat(curr.value), 0) / subset.length;
-    return { ...item, MA: avg };
-  });
-  const movingAverageWithPreavg = movingAverage.map((item, index) => {
-    const preavg = index > 0 ? (Math.log(item.value) - Math.log(item.MA)) * Math.pow(index, 0.395) : 0;
-    return { ...item, Preavg: preavg };
-  });
-  const preavgValues = movingAverageWithPreavg.map(item => item.Preavg);
-  const preavgMin = Math.min(...preavgValues);
-  const preavgMax = Math.max(...preavgValues);
-  const normalizedRisk = movingAverageWithPreavg.map(item => ({
-    ...item,
-    Risk: preavgMax === preavgMin ? 0 : (item.Preavg - preavgMin) / (preavgMax - preavgMin),
-  }));
-  return normalizedRisk;
-};
-
-const calculateSMA = (data, windowSize) => {
-  if (!data || data.length < windowSize) return [];
-  let sma = [];
-  for (let i = windowSize - 1; i < data.length; i++) {
-    let sum = 0;
-    for (let j = 0; j < windowSize; j++) {
-      sum += parseFloat(data[i - j].value) || 0;
-    }
-    sma.push({ time: data[i].time, value: sum / windowSize });
-  }
-  return sma;
-};
-
-const calculateRatioSeries = (data) => {
-  if (!data || data.length < 350) return [];
-  const sma111 = calculateSMA(data, 111);
-  const sma350 = calculateSMA(data, 350);
-  let ratioData = [];
-  for (let i = 349; i < data.length; i++) {
-    if (i - 110 >= 0 && sma111[i - 110] && sma350[i - 349]) {
-      const sma350Value = sma350[i - 349].value;
-      const ratio = sma350Value > 0.001 ? sma111[i - 110].value / (sma350Value * 2) : 0;
-      ratioData.push({ time: data[i].time, value: ratio });
-    }
-  }
-  return ratioData;
-};
-
-const calculateMvrvPeakProjection = (mvrvData) => {
-  if (!mvrvData || mvrvData.length < 181) return { projectedPeak: null };
-  const sortedMvrvData = [...mvrvData].sort((a, b) => new Date(a.time) - new Date(b.time));
-  const peaks = [];
-  const window = 90;
-  for (let i = window; i < sortedMvrvData.length - window; i++) {
-    const isPeak = sortedMvrvData.slice(i - window, i + window + 1).every(
-      (item, idx) => item.value <= sortedMvrvData[i].value || idx === window
-    );
-    if (isPeak && sortedMvrvData[i].value > 2) {
-      peaks.push(sortedMvrvData[i]);
-    }
-  }
-  const decreases = [];
-  for (let i = 1; i < peaks.length; i++) {
-    const decrease = (peaks[i - 1].value - peaks[i].value) / peaks[i - 1].value;
-    decreases.push(decrease);
-  }
-  const avgDecrease = decreases.length > 0
-    ? decreases.reduce((sum, val) => sum + val, 0) / decreases.length
-    : 0;
-  const latestPeak = peaks.length > 0 ? peaks[peaks.length - 1] : null;
-  const projectedPeak = latestPeak
-    ? latestPeak.value * (1 - avgDecrease)
-    : null;
-  return { projectedPeak };
-};
-
-const calculateMayerMultiple = (data) => {
-  if (!data || data.length < 200) return [];
-  const period = 200;
-  let mayerMultiples = [];
-  for (let i = period - 1; i < data.length; i++) {
-    let sum = 0;
-    for (let j = 0; j < period; j++) {
-      sum += parseFloat(data[i - j].value) || 0;
-    }
-    const ma200 = sum / period;
-    mayerMultiples.push({
-      time: data[i].time,
-      value: data[i].value / ma200,
-    });
-  }
-  return mayerMultiples;
-};
+import {
+  TX_MVRV_SMOOTHING,
+  MARKET_HEAT_WEIGHT_KEYS,
+  MARKET_HEAT_SMA_PERIODS,
+  DEFAULT_MARKET_HEAT_WEIGHTS,
+  DEFAULT_MARKET_HEAT_SETTINGS,
+  computeMarketHeatPipeline,
+} from '../utility/marketHeatUtils';
 
 // ==================== MAIN COMPONENT ====================
 
@@ -157,32 +56,17 @@ const MarketHeatIndex = ({ isDashboard = false, isChartPage = false }) => {
   const isNarrowScreen = useMediaQuery('(max-width:600px)');
 
   // Experimental weight tuning + range controls (for balancing the heat equation)
-  const [weights, setWeights] = useState({
-    fg: 15,
-    mvrv: 25,
-    mayer: 20,
-    risk: 20,
-    roirisk: 10,
-    pi: 10,
-    alt: 10,
-    txmvrv: 10,
-  });
-  const [overheatThreshold, setOverheatThreshold] = useState(85);
-  const [coldThreshold, setColdThreshold] = useState(30);
-  const [stretchToFullRange, setStretchToFullRange] = useState(false);
+  const [weights, setWeights] = useState({ ...DEFAULT_MARKET_HEAT_WEIGHTS });
+  const [overheatThreshold, setOverheatThreshold] = useState(DEFAULT_MARKET_HEAT_SETTINGS.overheatThreshold);
+  const [coldThreshold, setColdThreshold] = useState(DEFAULT_MARKET_HEAT_SETTINGS.coldThreshold);
+  const [stretchToFullRange, setStretchToFullRange] = useState(DEFAULT_MARKET_HEAT_SETTINGS.stretchToFullRange);
   const [heatSeriesReady, setHeatSeriesReady] = useState(false);
 
 
 
   // Initialize latestSettingsRef with initial defaults (will be kept in sync via effect)
   if (!latestSettingsRef.current) {
-    latestSettingsRef.current = {
-      weights: { fg: 15, mvrv: 25, mayer: 20, risk: 20, roirisk: 10, pi: 10, alt: 10, txmvrv: 10 },
-      smaPeriod: '28d',
-      overheatThreshold: 85,
-      coldThreshold: 30,
-      stretchToFullRange: false,
-    };
+    latestSettingsRef.current = { ...DEFAULT_MARKET_HEAT_SETTINGS };
   }
 
   // Keep latestSettingsRef in sync on every change (for debounced save + unmount save)
@@ -298,212 +182,39 @@ const MarketHeatIndex = ({ isDashboard = false, isChartPage = false }) => {
     };
   }, []); // run cleanup on unmount only
 
-  const smaPeriods = [
-    { value: 'none', label: 'None' },
-    { value: '7d', label: '7 Days', days: 7 },
-    { value: '28d', label: '28 Days', days: 28 },
-    { value: '90d', label: '90 Days', days: 90 },
-  ];
+  const smaPeriods = MARKET_HEAT_SMA_PERIODS;
+  const WEIGHT_KEYS = MARKET_HEAT_WEIGHT_KEYS;
 
-  const WEIGHT_KEYS = useMemo(() => ['fg', 'mvrv', 'mayer', 'risk', 'roirisk', 'pi', 'alt', 'txmvrv'], []);
+  const {
+    factorScoresBase,
+    smoothedData,
+    plottedData,
+  } = useMemo(() => computeMarketHeatPipeline({
+    btcData,
+    mvrvData,
+    fearAndGreedData,
+    altcoinSeasonTimeseriesData,
+    txMvrvRatioDataBySmoothing,
+    weights,
+    smaPeriod,
+    stretchToFullRange,
+    txMvrvSmoothing: TX_MVRV_SMOOTHING,
+  }), [
+    btcData,
+    mvrvData,
+    fearAndGreedData,
+    altcoinSeasonTimeseriesData,
+    txMvrvRatioDataBySmoothing,
+    weights,
+    smaPeriod,
+    stretchToFullRange,
+  ]);
 
-  // MVRV/Tx ratio series — normalized dates so lookups align with btc/mvrv time keys.
-  // Kept as its own memo so factorScoresBase reliably recomputes when this async dataset arrives.
-  const txMvrvRatioSeries = useMemo(() => {
-    const payload = txMvrvRatioDataBySmoothing[TX_MVRV_SMOOTHING] || {};
-    return (payload.series || [])
-      .map(item => ({
-        time: normalizeDateKey(item.time),
-        value: Number(item.value),
-      }))
-      .filter(item => item.time && !isNaN(item.value) && isFinite(item.value));
-  }, [txMvrvRatioDataBySmoothing]);
-
-  // ==================== PERFORMANT REAL HEAT INDEX ====================
-  // Phase 1: pre-compute per-factor 0-100 scores (heavy; only when source data changes).
-  // Phase 2: blend scores with weights (light O(n); runs immediately on slider changes).
-  const factorScoresBase = useMemo(() => {
-    if (!btcData.length) return [];
-
-    let startDate = '2011-01-01';
-    if (mvrvData.length > 0) {
-      const sortedMvrv = [...mvrvData].sort((a, b) => a.time.localeCompare(b.time));
-      startDate = sortedMvrv[0].time;
-    }
-    const alignedBtc = btcData.filter(item => new Date(item.time) >= new Date(startDate));
-    if (alignedBtc.length < 10) return [];
-
-    const fgMap = {};
-    fearAndGreedData.forEach(item => {
-      const d = new Date(item.timestamp * 1000).toISOString().split('T')[0];
-      fgMap[d] = Number(item.value);
-    });
-
-    const mvrvMap = {};
-    mvrvData.forEach(item => { mvrvMap[item.time] = Number(item.value); });
-
-    const mayerSeries = calculateMayerMultiple(alignedBtc);
-    const riskSeries = calculateRiskMetric(alignedBtc);
-    const piRatioSeries = calculateRatioSeries(alignedBtc);
-    const runningRoiRiskSeries = calculateRunningRoiRiskSeries(alignedBtc);
-
-    const mayerMap = {};
-    mayerSeries.forEach(item => { mayerMap[item.time] = item.value; });
-    const riskMap = {};
-    riskSeries.forEach(item => { riskMap[item.time] = item.Risk; });
-    const piMap = {};
-    piRatioSeries.forEach(item => { piMap[item.time] = item.value; });
-    const roiriskMap = {};
-    runningRoiRiskSeries.forEach(item => { roiriskMap[item.time] = item.riskScore; });
-
-    const altSeasonMap = {};
-    if (altcoinSeasonTimeseriesData && altcoinSeasonTimeseriesData.length) {
-      altcoinSeasonTimeseriesData.forEach(item => {
-        if (item.time) altSeasonMap[item.time] = Number(item.index) || 0;
-      });
-    }
-
-    const txmvrvMap = {};
-    txMvrvRatioSeries.forEach(item => {
-      txmvrvMap[item.time] = item.value;
-    });
-
-    let txmvrvMin = 0.2;
-    let txmvrvMax = 1.0;
-    if (txMvrvRatioSeries.length > 0) {
-      const vals = txMvrvRatioSeries.map(d => d.value);
-      txmvrvMin = Math.min(...vals);
-      txmvrvMax = Math.max(...vals);
-    }
-
-    return alignedBtc.map(item => {
-      const time = item.time;
-      const scores = {};
-      const available = {};
-
-      if (fgMap[time] != null) {
-        scores.fg = fgMap[time];
-        available.fg = true;
-      }
-
-      const mvrvVal = mvrvMap[time] || 1.5;
-      scores.mvrv = mvrvData.length > 0 ? Math.max(0, Math.min(100, ((mvrvVal - 1) / 3) * 100)) : 50;
-      available.mvrv = true;
-
-      const mayerVal = mayerMap[time] ?? 1.0;
-      scores.mayer = mvrvData.length > 0 ? Math.max(0, Math.min(100, ((mayerVal - 0.6) / 1.8) * 100)) : 50;
-      available.mayer = true;
-
-      const riskVal = riskMap[time] ?? 0.5;
-      scores.risk = btcData.length > 0 ? riskVal * 100 : 50;
-      available.risk = true;
-
-      if (roiriskMap[time] != null) {
-        scores.roirisk = Math.max(0, Math.min(100, roiriskMap[time] * 100));
-        available.roirisk = true;
-      }
-
-      const piVal = piMap[time] ?? 0;
-      scores.pi = btcData.length > 0 ? Math.max(0, Math.min(100, piVal * 50)) : 50;
-      available.pi = true;
-
-      if (altSeasonMap[time] != null) {
-        scores.alt = altSeasonMap[time] || 50;
-        available.alt = true;
-      }
-
-      if (txmvrvMap[time] != null) {
-        const txmvrvVal = txmvrvMap[time];
-        scores.txmvrv = (txmvrvMax > txmvrvMin)
-          ? Math.max(0, Math.min(100, ((txmvrvVal - txmvrvMin) / (txmvrvMax - txmvrvMin)) * 100))
-          : 50;
-        available.txmvrv = true;
-      }
-
-      return { time, btcPrice: item.value, scores, available };
-    });
-  }, [btcData, mvrvData, fearAndGreedData, altcoinSeasonTimeseriesData, txMvrvRatioSeries]);
-
-  const marketHeatData = useMemo(() => {
-    if (!factorScoresBase.length) return [];
-    const w = weights;
-
-    return factorScoresBase.map(({ time, btcPrice, scores, available }) => {
-      let totalWeighted = 0;
-      let totalWeight = 0;
-
-      for (const key of WEIGHT_KEYS) {
-        if (available[key]) {
-          const weight = Number(w[key]) || 0;
-          totalWeighted += scores[key] * weight;
-          totalWeight += weight;
-        }
-      }
-
-      const heat = totalWeight > 0 ? totalWeighted / totalWeight : 50;
-      return {
-        time,
-        value: Math.max(0, Math.min(100, heat)),
-        btcPrice,
-      };
-    });
-  }, [factorScoresBase, weights, WEIGHT_KEYS]);
-
-  /* 
-  // ==================== ORIGINAL HEAVY CODE (commented out for now because it stops the component loading) ====================
-  const marketHeatData = useMemo(() => {
-    if (!btcData.length || !mvrvData.length || !fearAndGreedData.length) return [];
-
-    const startDate = '2018-01-01';
-    const endDate = btcData[btcData.length - 1]?.time || new Date().toISOString().split('T')[0];
-    const alignedData = btcData.filter(item => new Date(item.time) >= new Date(startDate));
-
-    return alignedData.map((btcItem, index) => {
-      // ... (all the heavy MVRV, Mayer, Risk, PiCycle calculations were here)
-      // This was causing the component to freeze for many seconds.
-    });
-  }, [btcData, mvrvData, fearAndGreedData]);
-  */
-
-  // Apply smoothing (unchanged)
-  const smoothedData = useMemo(() => {
-    const selectedSma = smaPeriods.find(sp => sp.value === smaPeriod);
-    const days = selectedSma.days || 0;
-    if (smaPeriod === 'none' || days === 0) return marketHeatData;
-    const result = [];
-    for (let i = 0; i < marketHeatData.length; i++) {
-      if (i < days - 1) {
-        result.push({ ...marketHeatData[i], value: marketHeatData[i].value });
-        continue;
-      }
-      const window = marketHeatData.slice(i - days + 1, i + 1);
-      const sum = window.reduce((acc, item) => acc + item.value, 0);
-      const sma = sum / days;
-      result.push({ ...marketHeatData[i], value: sma });
-    }
-    return result;
-  }, [marketHeatData, smaPeriod]);
-
-  // Filter Bitcoin data to match heat index range (independent of weight changes)
   const filteredBtcData = useMemo(() => {
     if (!factorScoresBase.length) return [];
     const startDate = factorScoresBase[0].time;
     return btcData.filter(item => new Date(item.time) >= new Date(startDate));
   }, [btcData, factorScoresBase]);
-
-  // Post-process for display: optional stretch of observed raw range to full 0-100 so extremes are visible
-  // (helps when natural composite min/max is compressed e.g. 8-81)
-  const plottedData = useMemo(() => {
-    if (!stretchToFullRange || !smoothedData.length) return smoothedData;
-    const vals = smoothedData.map(d => d.value);
-    const minV = Math.min(...vals);
-    const maxV = Math.max(...vals);
-    if (maxV <= minV) return smoothedData;
-    return smoothedData.map(d => ({
-      ...d,
-      value: Math.max(0, Math.min(100, ((d.value - minV) / (maxV - minV)) * 100))
-    }));
-  }, [smoothedData, stretchToFullRange]);
 
   // Defer only the chart redraw — stats/slider labels stay immediate while weight blending is cheap
   const deferredPlottedData = useDeferredValue(plottedData);
