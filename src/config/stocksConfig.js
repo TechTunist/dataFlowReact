@@ -57,3 +57,14 @@ export const STOCK_GROUPS = [
 export const STOCKS = STOCK_GROUPS.flatMap((g) => g.stocks);
 
 export const STOCK_VALUES = STOCKS.map((s) => s.value);
+
+export const getStockLabel = (symbol) => {
+  const match = STOCKS.find((s) => s.value === symbol);
+  return match ? match.label : symbol;
+};
+
+export const stockLoadingMessage = (symbol) =>
+  `Loading ${getStockLabel(symbol)} data if available…`;
+
+export const stockRiskInsufficientHistoryMessage = (daysLoaded) =>
+  `Need at least ~340 trading days of history to compute risk bands (${daysLoaded} days loaded). Try a stock with a longer history, e.g. MSTR or SPY.`;

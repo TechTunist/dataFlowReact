@@ -18,6 +18,7 @@ import {
 } from '../utils/technicalIndicators';
 import { getCurrentPrice } from '../utils/currentPrice';
 import StockGroupSelect from './StockGroupSelect';
+import { stockLoadingMessage } from '../config/stocksConfig';
 
 const StockPrice = ({ isDashboard = false, defaultSelectedCoin }) => {
   const chartContainerRef = useRef();
@@ -154,18 +155,23 @@ const StockPrice = ({ isDashboard = false, defaultSelectedCoin }) => {
     fetchData();
   }, [selectedCoin, altcoinData, btcData, denominator, activeIndicators, fedBalanceData, fetchAltcoinData, fetchBtcData, fetchFedBalanceData]);
 
+  // Clear stale chart data immediately when switching stocks
+  useEffect(() => {
+    setChartData([]);
+  }, [selectedCoin]);
+
   // Compute chart data and manage loading state
   useEffect(() => {
-    const altData = altcoinData[selectedCoin] || [];
-    const stockFetchDone = Boolean(isAltcoinDataFetched[selectedCoin]);
+    const altData = altcoinData[selectedCoin];
+    const stockDataReady = Boolean(isAltcoinDataFetched[selectedCoin] && altData !== undefined);
     const isBtcDataLoaded = denominator === 'BTC' ? btcData.length > 0 : true;
     const isFedBalanceDataLoaded = activeIndicators.includes('fed-balance') ? fedBalanceData.length > 0 : true;
-    if (stockFetchDone && isBtcDataLoaded && isFedBalanceDataLoaded) {
+    if (stockDataReady && isBtcDataLoaded && isFedBalanceDataLoaded) {
       let newChartData = [];
       if (denominator === 'USD') {
-        newChartData = altData;
+        newChartData = altData ?? [];
       } else if (denominator === 'BTC' && btcData.length > 0) {
-        newChartData = altData
+        newChartData = (altData ?? [])
           .map(altEntry => {
             const btcEntry = btcData.find(btc => btc.time === altEntry.time);
             return btcEntry ? { ...altEntry, value: altEntry.value / btcEntry.value } : null;
@@ -799,34 +805,21 @@ const StockPrice = ({ isDashboard = false, defaultSelectedCoin }) => {
         }}
       >
         <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
-        {isLoading && (
+        {chartData.length === 0 && (
           <div
             style={{
               position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              color: colors.primary[100],
-              zIndex: 2,
-            }}
-          >
-            Loading...
-          </div>
-        )}
-        {!isLoading && chartData.length === 0 && isAltcoinDataFetched[selectedCoin] && (
-          <div
-            style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
+              inset: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
               color: colors.grey[100],
               zIndex: 2,
               textAlign: 'center',
               padding: '1rem',
             }}
           >
-            No price data for {selectedCoin} yet. Please check back later or select a different stock.
+            {stockLoadingMessage(selectedCoin)}
           </div>
         )}
         <div

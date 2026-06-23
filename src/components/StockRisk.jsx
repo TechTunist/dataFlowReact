@@ -10,6 +10,7 @@ import { Select, MenuItem, FormControl, InputLabel, Box } from '@mui/material';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import { calculateStockRiskMetric } from '../utility/stockRiskMetric';
+import { stockLoadingMessage, stockRiskInsufficientHistoryMessage } from '../config/stocksConfig';
 import StockGroupSelect from './StockGroupSelect';
 
 const StockRisk = ({ isDashboard = false }) => {
@@ -26,7 +27,7 @@ const StockRisk = ({ isDashboard = false }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [currentStockPrice, setCurrentStockPrice] = useState(0);
   const [currentRiskLevel, setCurrentRiskLevel] = useState(null);
-  const { altcoinData, fetchAltcoinData, btcData, fetchBtcData } = useContext(DataContext);
+  const { altcoinData, fetchAltcoinData, btcData, fetchBtcData, isAltcoinDataFetched } = useContext(DataContext);
 
   const handleSelectChange = (event) => {
     setSelectedCoin(event.target.value);
@@ -74,6 +75,11 @@ const StockRisk = ({ isDashboard = false }) => {
     };
     fetchData();
   }, [selectedCoin, denominator, altcoinData, btcData, fetchAltcoinData, fetchBtcData]);
+
+  const chartSourceData = altcoinData[selectedCoin] ?? [];
+  const isSourceDataReady = Boolean(
+    isAltcoinDataFetched[selectedCoin] && altcoinData[selectedCoin] !== undefined
+  );
 
   useEffect(() => {
     if (altcoinData[selectedCoin] && altcoinData[selectedCoin].length > 0) {
@@ -258,18 +264,23 @@ const StockRisk = ({ isDashboard = false }) => {
         onDoubleClick={() => { if (!isInteractive && !isDashboard) setInteractivity(); else setInteractivity(); }}
       >
         <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
-        {isLoading && (
+        {chartData.length === 0 && (
           <div
             style={{
               position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
+              inset: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
               color: colors.grey[100],
               zIndex: 2,
+              padding: '1rem',
+              textAlign: 'center',
             }}
           >
-            Loading...
+            {!isSourceDataReady || isLoading || chartSourceData.length === 0
+              ? stockLoadingMessage(selectedCoin)
+              : stockRiskInsufficientHistoryMessage(chartSourceData.length)}
           </div>
         )}
       </div>

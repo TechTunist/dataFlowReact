@@ -9,14 +9,14 @@ import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import { calculateStockRiskMetric } from '../utility/stockRiskMetric';
-import { STOCKS } from '../config/stocksConfig';
+import { STOCKS, stockLoadingMessage, stockRiskInsufficientHistoryMessage } from '../config/stocksConfig';
 import StockGroupSelect from './StockGroupSelect';
 
 const StockRiskColor = ({ isDashboard = false }) => {
   const theme = useTheme();
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
   const isNarrowScreen = useMediaQuery('(max-width:600px)');
-  const { altcoinData, fetchAltcoinData } = useContext(DataContext);
+  const { altcoinData, fetchAltcoinData, isAltcoinDataFetched } = useContext(DataContext);
   const plotRef = useRef(null);
   const containerRef = useRef(null);
   const [selectedStock, setSelectedStock] = useState('MSTR');
@@ -27,8 +27,12 @@ const StockRiskColor = ({ isDashboard = false }) => {
   }, [selectedStock]);
 
   const chartSourceData = useMemo(
-    () => altcoinData[selectedStock] || [],
+    () => altcoinData[selectedStock] ?? [],
     [altcoinData, selectedStock]
+  );
+
+  const isSourceDataReady = Boolean(
+    isAltcoinDataFetched[selectedStock] && altcoinData[selectedStock] !== undefined
   );
 
   const chartData = useMemo(
@@ -294,9 +298,9 @@ const StockRiskColor = ({ isDashboard = false }) => {
               textAlign: 'center',
             }}
           >
-            {chartSourceData.length === 0
-              ? 'Loading stock data…'
-              : `Need at least ~340 trading days of history to compute risk bands (${chartSourceData.length} days loaded). Try a stock with a longer history, e.g. MSTR or SPY.`}
+            {!isSourceDataReady || chartSourceData.length === 0
+              ? stockLoadingMessage(selectedStock)
+              : stockRiskInsufficientHistoryMessage(chartSourceData.length)}
           </div>
         )}
         <Plot
