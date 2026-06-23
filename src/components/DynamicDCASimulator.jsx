@@ -52,6 +52,130 @@ const computeTxIndicatorRange = (values) => {
   return { min: 0, max: paddedMax, step, dataMin, dataMax };
 };
 
+const DCA_STATE_KEY = 'cryptological:dcaSimulatorState';
+const DCA_RESULTS_KEY_PREFIX = 'cryptological:dcaSimulatorResults:';
+const DCA_RESULTS_INDEX_KEY = `${DCA_RESULTS_KEY_PREFIX}_keys`;
+const DCA_PERSISTENCE_MAX_SERIES_POINTS = 500;
+
+const wrapBuyResult = (buyResult) => {
+  if (!buyResult) return null;
+  if (buyResult['selling-on'] || buyResult['hold-btc-only']) return buyResult;
+  if (buyResult.buyStrategyUsed) {
+    const sellKey = buyResult.sellStrategyEnabled !== false ? 'selling-on' : 'hold-btc-only';
+    return { [sellKey]: buyResult };
+  }
+  return buyResult;
+};
+
+const migrateStrategyResults = (val) => {
+  if (!val) return null;
+  if (val.buyStrategyUsed) {
+    const sellKey = val.sellStrategyEnabled !== false ? 'selling-on' : 'hold-btc-only';
+    return { [val.buyStrategyUsed]: { [sellKey]: val } };
+  }
+  if (val['periodic-boost'] || val['trigger-only']) {
+    return {
+      ...(val['periodic-boost'] ? { 'periodic-boost': wrapBuyResult(val['periodic-boost']) } : {}),
+      ...(val['trigger-only'] ? { 'trigger-only': wrapBuyResult(val['trigger-only']) } : {}),
+    };
+  }
+  return val;
+};
+
+const downsampleSeries = (series, maxPoints = DCA_PERSISTENCE_MAX_SERIES_POINTS) => {
+  if (!Array.isArray(series) || series.length <= maxPoints) return series;
+  const step = Math.ceil(series.length / maxPoints);
+  const sampled = series.filter((_, index) => index % step === 0 || index === series.length - 1);
+  if (sampled[sampled.length - 1] !== series[series.length - 1]) {
+    sampled.push(series[series.length - 1]);
+  }
+  return sampled;
+};
+
+const slimBacktestResult = (result) => {
+  if (!result) return null;
+  return {
+    ...result,
+    portfolioSeries: downsampleSeries(result.portfolioSeries),
+    transactions: Array.isArray(result.transactions) ? result.transactions.slice(0, 120) : [],
+  };
+};
+
+const slimStrategyResults = (strategyResults) => {
+  if (!strategyResults) return null;
+  const slimmed = {};
+  ['periodic-boost', 'trigger-only'].forEach((buyMode) => {
+    const buyBucket = strategyResults[buyMode];
+    if (!buyBucket) return;
+    slimmed[buyMode] = {
+      ...(buyBucket['selling-on'] ? { 'selling-on': slimBacktestResult(buyBucket['selling-on']) } : {}),
+      ...(buyBucket['hold-btc-only'] ? { 'hold-btc-only': slimBacktestResult(buyBucket['hold-btc-only']) } : {}),
+    };
+  });
+  return slimmed;
+};
+
+const loadPersistedResultsByStrategy = () => {
+  const migrated = {};
+  try {
+    const keysRaw = localStorage.getItem(DCA_RESULTS_INDEX_KEY);
+    const keys = keysRaw ? JSON.parse(keysRaw) : [];
+    keys.forEach((key) => {
+      const raw = localStorage.getItem(`${DCA_RESULTS_KEY_PREFIX}${key}`);
+      if (!raw) return;
+      migrated[key] = migrateStrategyResults(JSON.parse(raw));
+    });
+
+    if (Object.keys(migrated).length > 0) return migrated;
+
+    const legacyRaw = localStorage.getItem(DCA_STATE_KEY);
+    if (!legacyRaw) return migrated;
+    const legacy = JSON.parse(legacyRaw);
+    if (!legacy.resultsByStrategy || typeof legacy.resultsByStrategy !== 'object') return migrated;
+    Object.entries(legacy.resultsByStrategy).forEach(([key, val]) => {
+      if (val) migrated[key] = migrateStrategyResults(val);
+    });
+  } catch (e) {
+    console.warn('Failed to load persisted DCA simulation results', e);
+  }
+  return migrated;
+};
+
+const savePersistedResultsByStrategy = (resultsByStrategy) => {
+  const keys = Object.keys(resultsByStrategy || {}).filter((key) => resultsByStrategy[key]);
+  try {
+    localStorage.setItem(DCA_RESULTS_INDEX_KEY, JSON.stringify(keys));
+    keys.forEach((key) => {
+      const slimmed = slimStrategyResults(resultsByStrategy[key]);
+      localStorage.setItem(`${DCA_RESULTS_KEY_PREFIX}${key}`, JSON.stringify(slimmed));
+    });
+    Array.from({ length: localStorage.length }, (_, i) => localStorage.key(i))
+      .filter((key) => key?.startsWith(DCA_RESULTS_KEY_PREFIX) && key !== DCA_RESULTS_INDEX_KEY)
+      .forEach((storageKey) => {
+        const strategyKey = storageKey.slice(DCA_RESULTS_KEY_PREFIX.length);
+        if (!keys.includes(strategyKey)) {
+          localStorage.removeItem(storageKey);
+        }
+      });
+  } catch (e) {
+    console.warn('Failed to persist DCA simulation results (storage full?)', e);
+  }
+};
+
+const clearPersistedResultsByStrategy = () => {
+  try {
+    const keysRaw = localStorage.getItem(DCA_RESULTS_INDEX_KEY);
+    const keys = keysRaw ? JSON.parse(keysRaw) : [];
+    keys.forEach((key) => localStorage.removeItem(`${DCA_RESULTS_KEY_PREFIX}${key}`));
+    localStorage.removeItem(DCA_RESULTS_INDEX_KEY);
+    Array.from({ length: localStorage.length }, (_, i) => localStorage.key(i))
+      .filter((key) => key?.startsWith(DCA_RESULTS_KEY_PREFIX))
+      .forEach((key) => localStorage.removeItem(key));
+  } catch (e) {
+    console.warn('Failed to clear persisted DCA simulation results', e);
+  }
+};
+
 const buildTxTierDefaults = (rangeMax, step = 0.5) => {
   const snap = (fraction) => {
     const raw = rangeMax * fraction;
@@ -159,6 +283,7 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
 
   // Persisted results per strategy so switching chips reloads the previous run's chart/portfolio curve for visual comparison
   const [resultsByStrategy, setResultsByStrategy] = useState({});
+  const [persistenceReady, setPersistenceReady] = useState(false);
 
   // Legend toggle state for the portfolio value chart series (invested / portfolioValue / lumpSumValue)
   // Allows hiding the lump sum line which can dominate/skew the view depending on start date.
@@ -902,6 +1027,7 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
     setSimulationResults(null);
     setShowTrades(false);
     setHiddenPortfolioSeries(new Set());
+    clearPersistedResultsByStrategy();
   }, []);
 
   // ============================================
@@ -911,71 +1037,50 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
   // Load persisted state once on mount (after initial defaults)
   useEffect(() => {
     try {
-      const raw = localStorage.getItem('cryptological:dcaSimulatorState');
-      if (!raw) return;
-      const saved = JSON.parse(raw);
+      const raw = localStorage.getItem(DCA_STATE_KEY);
+      if (raw) {
+        const saved = JSON.parse(raw);
 
-      if (saved.strategy) setStrategy(saved.strategy);
-      if (typeof saved.txSmoothing === 'string') setTxSmoothing(saved.txSmoothing);
-      if (typeof saved.dcaAmount === 'number') setDcaAmount(saved.dcaAmount);
-      if (typeof saved.frequency === 'number') setFrequency(saved.frequency);
-      if (typeof saved.startDate === 'string') setStartDate(saved.startDate);
-      if (typeof saved.buyStrategy === 'string') setBuyStrategy(saved.buyStrategy);
-      if (typeof saved.enableDynamicSelling === 'boolean') setEnableDynamicSelling(saved.enableDynamicSelling);
+        if (saved.strategy) setStrategy(saved.strategy);
+        if (typeof saved.txSmoothing === 'string') setTxSmoothing(saved.txSmoothing);
+        if (typeof saved.dcaAmount === 'number') setDcaAmount(saved.dcaAmount);
+        if (typeof saved.frequency === 'number') setFrequency(saved.frequency);
+        if (typeof saved.startDate === 'string') setStartDate(saved.startDate);
+        if (typeof saved.buyStrategy === 'string') setBuyStrategy(saved.buyStrategy);
+        if (typeof saved.enableDynamicSelling === 'boolean') setEnableDynamicSelling(saved.enableDynamicSelling);
 
-      if (Array.isArray(saved.riskBuyTiers)) setRiskBuyTiers(saved.riskBuyTiers);
-      if (Array.isArray(saved.riskSellTiers)) setRiskSellTiers(saved.riskSellTiers);
-      if (Array.isArray(saved.txBuyTiers)) setTxBuyTiers(saved.txBuyTiers);
-      if (Array.isArray(saved.txSellTiers)) setTxSellTiers(saved.txSellTiers);
-      if (Array.isArray(saved.heatBuyTiers)) setHeatBuyTiers(saved.heatBuyTiers);
-      if (Array.isArray(saved.heatSellTiers)) setHeatSellTiers(saved.heatSellTiers);
+        if (Array.isArray(saved.riskBuyTiers)) setRiskBuyTiers(saved.riskBuyTiers);
+        if (Array.isArray(saved.riskSellTiers)) setRiskSellTiers(saved.riskSellTiers);
+        if (Array.isArray(saved.txBuyTiers)) setTxBuyTiers(saved.txBuyTiers);
+        if (Array.isArray(saved.txSellTiers)) setTxSellTiers(saved.txSellTiers);
+        if (Array.isArray(saved.heatBuyTiers)) setHeatBuyTiers(saved.heatBuyTiers);
+        if (Array.isArray(saved.heatSellTiers)) setHeatSellTiers(saved.heatSellTiers);
 
-      if (saved.heatWeights && typeof saved.heatWeights === 'object') {
-        setHeatWeights(prev => ({ ...prev, ...saved.heatWeights }));
+        if (saved.heatWeights && typeof saved.heatWeights === 'object') {
+          setHeatWeights((prev) => ({ ...prev, ...saved.heatWeights }));
+        }
+        if (typeof saved.heatSmaPeriod === 'string') setHeatSmaPeriod(saved.heatSmaPeriod);
+        if (typeof saved.heatStretchToFullRange === 'boolean') setHeatStretchToFullRange(saved.heatStretchToFullRange);
       }
-      if (typeof saved.heatSmaPeriod === 'string') setHeatSmaPeriod(saved.heatSmaPeriod);
-      if (typeof saved.heatStretchToFullRange === 'boolean') setHeatStretchToFullRange(saved.heatStretchToFullRange);
 
-      if (saved.resultsByStrategy && typeof saved.resultsByStrategy === 'object') {
-        const migrated = {};
-        const wrapBuyResult = (buyResult) => {
-          if (!buyResult) return null;
-          if (buyResult['selling-on'] || buyResult['hold-btc-only']) return buyResult;
-          if (buyResult.buyStrategyUsed) {
-            const sellKey = buyResult.sellStrategyEnabled !== false ? 'selling-on' : 'hold-btc-only';
-            return { [sellKey]: buyResult };
-          }
-          return buyResult;
-        };
-        Object.entries(saved.resultsByStrategy).forEach(([key, val]) => {
-          if (!val) return;
-          if (val.buyStrategyUsed) {
-            const sellKey = val.sellStrategyEnabled !== false ? 'selling-on' : 'hold-btc-only';
-            migrated[key] = { [val.buyStrategyUsed]: { [sellKey]: val } };
-            return;
-          }
-          if (val['periodic-boost'] || val['trigger-only']) {
-            migrated[key] = {
-              ...(val['periodic-boost'] ? { 'periodic-boost': wrapBuyResult(val['periodic-boost']) } : {}),
-              ...(val['trigger-only'] ? { 'trigger-only': wrapBuyResult(val['trigger-only']) } : {}),
-            };
-            return;
-          }
-          migrated[key] = val;
-        });
-        setResultsByStrategy(migrated);
+      const migratedResults = loadPersistedResultsByStrategy();
+      if (Object.keys(migratedResults).length > 0) {
+        setResultsByStrategy(migratedResults);
       }
 
       // Note: simulationResults is restored via the existing resultsByStrategy + strategy effect
       // hiddenPortfolioSeries is intentionally not restored (UI preference)
     } catch (e) {
-      // Corrupt storage or quota — ignore
       console.warn('Failed to load persisted DCA simulator state', e);
+    } finally {
+      setPersistenceReady(true);
     }
   }, []); // run once
 
-  // Save key state whenever it changes (debounce not strictly needed; localStorage is fast)
+  // Save config + per-strategy results only after hydration (avoids mount race wiping saved runs)
   useEffect(() => {
+    if (!persistenceReady) return;
+
     const stateToPersist = {
       strategy,
       txSmoothing,
@@ -993,14 +1098,15 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
       heatStretchToFullRange,
       heatBuyTiers,
       heatSellTiers,
-      resultsByStrategy,
     };
     try {
-      localStorage.setItem('cryptological:dcaSimulatorState', JSON.stringify(stateToPersist));
+      localStorage.setItem(DCA_STATE_KEY, JSON.stringify(stateToPersist));
+      savePersistedResultsByStrategy(resultsByStrategy);
     } catch (e) {
       console.warn('Failed to persist DCA simulator state (storage full?)', e);
     }
   }, [
+    persistenceReady,
     strategy,
     txSmoothing,
     dcaAmount,
