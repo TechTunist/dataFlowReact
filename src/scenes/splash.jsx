@@ -272,20 +272,6 @@ const SplashPage = () => {
       {/* Interactive premium draw — real frozen BTC risk data */}
       <SplashRiskColorPreview />
 
-      {/* Asset coverage */}
-      <Box sx={{ width: '100%', py: 4, backgroundColor: colors.primary[800], textAlign: 'center' }}>
-        <Container maxWidth="lg">
-          <Typography variant="body1" sx={{ color: colors.grey[300], mb: 2 }}>
-            Bitcoin, top altcoins, and fiat macro — 80+ chart templates updated daily.
-          </Typography>
-          <Grid container spacing={4} justifyContent="center">
-            <Grid item><img src="/assets/bitcoin.jpg" alt="Bitcoin" height="40" /></Grid>
-            <Grid item><img src="/assets/ethereum.jpg" alt="Ethereum" height="40" /></Grid>
-            <Grid item><img src="/assets/dollar.jpg" alt="US Dollar macro" height="40" /></Grid>
-          </Grid>
-        </Container>
-      </Box>
-
       {/* Features */}
       <Box sx={{ width: '100%', py: 10, backgroundColor: colors.primary[800] }}>
         <Container maxWidth="lg" sx={{ textAlign: 'center' }}>
