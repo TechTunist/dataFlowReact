@@ -27,7 +27,11 @@ import Navbar from "./global/SplashNavBar.jsx";
 import SeoHead from "../components/SeoHead";
 import SeoPublicFooter from "./seo/SeoPublicFooter";
 import { SEO_PAGES } from "../seo/staticPageContent";
+import TrackedSignupLink from "../components/marketing/TrackedSignupLink";
+import StickySignupCta from "../components/marketing/StickySignupCta";
 import "../styling/splashPage.css";
+
+const FREE_SIGNUP = "/login-signup?mode=signup";
 
 const whitepaperSeo = SEO_PAGES["bitcoin-whitepaper"];
 
@@ -166,6 +170,11 @@ const BitcoinWhitepaper = () => {
         keywords={whitepaperSeo.keywords}
       />
       <Navbar colors={colors} />
+      <StickySignupCta
+        colors={colors}
+        signupPath={FREE_SIGNUP}
+        label="Get cycle charts free"
+      />
 
       {/* Hero */}
       <Box
@@ -214,35 +223,53 @@ const BitcoinWhitepaper = () => {
             electronic cash that does not require trusting a financial institution. This page explains that vision for
             anyone curious about money, power, and why cryptographic networks matter — no jargon required to start.
           </Typography>
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems="center">
+            <Button
+              component={TrackedSignupLink}
+              to={FREE_SIGNUP}
+              location="whitepaper-hero"
+              variant="contained"
+              size="large"
+              sx={{
+                backgroundColor: colors.greenAccent[500],
+                color: colors.grey[900],
+                fontWeight: "bold",
+                px: 4,
+                "&:hover": { backgroundColor: colors.greenAccent[400] },
+              }}
+            >
+              Create free account
+            </Button>
+            <Button
+              component={Link}
+              to="/chart-gallery"
+              variant="outlined"
+              sx={{
+                color: colors.greenAccent[400],
+                borderColor: colors.greenAccent[500],
+                fontWeight: "bold",
+                "&:hover": { borderColor: colors.greenAccent[300], backgroundColor: `${colors.greenAccent[900]}44` },
+              }}
+            >
+              Explore free charts
+            </Button>
             <Button
               component="a"
               href="https://bitcoin.org/bitcoin.pdf"
               target="_blank"
               rel="noopener noreferrer"
-              variant="outlined"
               sx={{
-                color: colors.greenAccent[400],
-                borderColor: colors.greenAccent[500],
-                "&:hover": { borderColor: colors.greenAccent[300], backgroundColor: `${colors.greenAccent[900]}44` },
+                color: colors.grey[400],
+                textTransform: "none",
+                "&:hover": { color: colors.grey[200], backgroundColor: "transparent" },
               }}
             >
-              Read the original PDF
-            </Button>
-            <Button
-              component={Link}
-              to="/chart-gallery"
-              variant="contained"
-              sx={{
-                backgroundColor: colors.greenAccent[500],
-                color: colors.grey[900],
-                fontWeight: "bold",
-                "&:hover": { backgroundColor: colors.greenAccent[400] },
-              }}
-            >
-              Explore free charts
+              Read original PDF →
             </Button>
           </Stack>
+          <Typography sx={{ color: colors.grey[500], mt: 2, fontSize: "0.95rem" }}>
+            Free signup · No card required · See on-chain data behind the philosophy
+          </Typography>
         </Container>
       </Box>
 
@@ -306,6 +333,55 @@ const BitcoinWhitepaper = () => {
             </Grid>
           ))}
         </Grid>
+
+        {/* Mid-page email capture CTA */}
+        <Box
+          sx={{
+            mt: 6,
+            p: { xs: 3, md: 4 },
+            textAlign: "center",
+            borderRadius: 2,
+            background: `linear-gradient(135deg, ${colors.greenAccent[900]}55 0%, ${colors.primary[800]} 100%)`,
+            border: `1px solid ${colors.greenAccent[800]}`,
+          }}
+        >
+          <Typography variant="h5" sx={{ color: colors.grey[100], fontWeight: "bold", mb: 1.5 }}>
+            You understand why Bitcoin. Now see where the market is.
+          </Typography>
+          <Typography sx={{ color: colors.grey[300], mb: 3, lineHeight: 1.7, maxWidth: 560, mx: "auto" }}>
+            Cryptological turns abstract ideas into observable history — risk cycles, on-chain behaviour, and market
+            structure. Start with free charts; no payment details needed.
+          </Typography>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2} justifyContent="center">
+            <Button
+              component={TrackedSignupLink}
+              to={FREE_SIGNUP}
+              location="whitepaper-mid"
+              variant="contained"
+              sx={{
+                backgroundColor: colors.greenAccent[500],
+                color: colors.grey[900],
+                fontWeight: "bold",
+                px: 4,
+                "&:hover": { backgroundColor: colors.greenAccent[400] },
+              }}
+            >
+              Create free account
+            </Button>
+            <Button
+              component={Link}
+              to="/chart-gallery"
+              variant="outlined"
+              sx={{
+                color: colors.grey[100],
+                borderColor: colors.grey[500],
+                "&:hover": { borderColor: colors.grey[300] },
+              }}
+            >
+              Browse chart gallery
+            </Button>
+          </Stack>
+        </Box>
       </Container>
 
       <Divider sx={{ width: "80%", borderColor: colors.primary[600] }} />
@@ -555,13 +631,14 @@ const BitcoinWhitepaper = () => {
             See the data behind the story
           </Typography>
           <Typography sx={{ color: colors.grey[300], mb: 4, lineHeight: 1.7 }}>
-            Cryptological charts turn abstract ideas into observable history — risk cycles, on-chain behaviour, market
-            structure, and more. Start with free charts, or create an account when you are ready to go deeper.
+            You understand the philosophy. See the on-chain data that reflects it — risk bands, cycle positioning,
+            and market heat. Free account, no card required.
           </Typography>
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2} justifyContent="center">
             <Button
-              component={Link}
-              to="/login-signup?mode=signup&plan=premium"
+              component={TrackedSignupLink}
+              to={FREE_SIGNUP}
+              location="whitepaper-bottom"
               variant="contained"
               size="large"
               sx={{

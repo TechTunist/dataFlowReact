@@ -270,17 +270,6 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
   // When false, sell tiers are ignored — portfolio stays 100% in BTC (no exit/de-risk strategy).
   const [enableDynamicSelling, setEnableDynamicSelling] = useState(true);
 
-  // Dynamic label for the DCA button based on selected frequency
-  const frequencyLabel = useMemo(() => {
-    switch (frequency) {
-      case 1: return 'Daily';
-      case 7: return 'Weekly';
-      case 14: return 'Bi-weekly';
-      case 28: return 'Monthly';
-      default: return `${frequency}-day`;
-    }
-  }, [frequency]);
-
   // Persisted results per strategy so switching chips reloads the previous run's chart/portfolio curve for visual comparison
   const [resultsByStrategy, setResultsByStrategy] = useState({});
   const [persistenceReady, setPersistenceReady] = useState(false);
@@ -1204,7 +1193,7 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
       <Paper sx={{ p: isMobile ? 1.5 : 2, mb: 2, backgroundColor: colors.primary[400], border: `1px solid ${colors.primary[500]}` }}>
         <Typography variant="subtitle2" sx={{ mb: 1, color: colors.grey[200] }}>Backtest Parameters (set these first)</Typography>
         <Grid container spacing={isMobile ? 1.5 : 2} alignItems="flex-end">
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={12} sm={6} md={2}>
             <TextField
               label="DCA Amount (USD)"
               type="number"
@@ -1213,7 +1202,7 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
               fullWidth size="small"
             />
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={12} sm={6} md={2}>
             <FormControl fullWidth size="small">
               <InputLabel>Frequency (days)</InputLabel>
               <Select value={frequency} label="Frequency (days)" onChange={e => setFrequency(parseInt(e.target.value))}>
@@ -1224,7 +1213,7 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
               </Select>
             </FormControl>
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={12} sm={6} md={2}>
             <TextField
               label="Start Date"
               type="date"
@@ -1234,7 +1223,7 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
             />
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
-            <Typography variant="caption" sx={{ color: colors.grey[200] }}>{`Buy Mode: ${frequencyLabel}`}</Typography>
+            <Typography variant="caption" sx={{ color: colors.grey[200], display: 'block' }}>Buy Mode</Typography>
             <Box sx={{ display: 'flex', gap: 0.5, mt: 0.5, flexWrap: 'wrap' }}>
               <Button size="small" variant={buyStrategy === 'periodic-boost' ? 'contained' : 'outlined'} onClick={() => setBuyStrategy('periodic-boost')}
                 sx={{ color: buyStrategy === 'periodic-boost' ? '#111' : colors.greenAccent[500], borderColor: colors.greenAccent[500], backgroundColor: buyStrategy === 'periodic-boost' ? colors.greenAccent[500] : 'transparent', fontSize: '0.7rem', px: 1, py: 0.25 }}>
@@ -1242,17 +1231,12 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
               </Button>
               <Button size="small" variant={buyStrategy === 'trigger-only' ? 'contained' : 'outlined'} onClick={() => setBuyStrategy('trigger-only')}
                 sx={{ color: buyStrategy === 'trigger-only' ? '#111' : colors.blueAccent[400], borderColor: colors.blueAccent[400], backgroundColor: buyStrategy === 'trigger-only' ? colors.blueAccent[400] : 'transparent', fontSize: '0.7rem', px: 1, py: 0.25 }}>
-                On Trigger Levels
+                On Trigger
               </Button>
             </Box>
-            {hasResultsForCurrentStrategy && (
-              <Typography variant="caption" sx={{ color: colors.blueAccent[300], display: 'block', mt: 0.5, fontSize: '0.65rem' }}>
-                Switch buy modes to compare Constant vs Trigger-Level results instantly.
-              </Typography>
-            )}
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
-            <Typography variant="caption" sx={{ color: colors.grey[200] }}>Exit Strategy (Dynamic Selling)</Typography>
+            <Typography variant="caption" sx={{ color: colors.grey[200], display: 'block' }}>Exit Strategy</Typography>
             <Box sx={{ display: 'flex', gap: 0.5, mt: 0.5, flexWrap: 'wrap' }}>
               <Button size="small" variant={enableDynamicSelling ? 'contained' : 'outlined'} onClick={() => setEnableDynamicSelling(true)}
                 sx={{ color: enableDynamicSelling ? '#111' : colors.blueAccent[400], borderColor: colors.blueAccent[400], backgroundColor: enableDynamicSelling ? colors.blueAccent[400] : 'transparent', fontSize: '0.7rem', px: 1, py: 0.25 }}>
@@ -1260,14 +1244,9 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
               </Button>
               <Button size="small" variant={!enableDynamicSelling ? 'contained' : 'outlined'} onClick={() => setEnableDynamicSelling(false)}
                 sx={{ color: !enableDynamicSelling ? '#111' : colors.grey[400], borderColor: colors.grey[500], backgroundColor: !enableDynamicSelling ? colors.grey[400] : 'transparent', fontSize: '0.7rem', px: 1, py: 0.25 }}>
-                Hold BTC Only
+                Hodl BTC
               </Button>
             </Box>
-            {hasResultsForCurrentStrategy && (
-              <Typography variant="caption" sx={{ color: colors.blueAccent[300], display: 'block', mt: 0.5, fontSize: '0.65rem' }}>
-                Switch exit strategy to compare selling vs holding — cash from sells stays flat while BTC value moves with price.
-              </Typography>
-            )}
           </Grid>
           <Grid item xs={12}>
             <Button

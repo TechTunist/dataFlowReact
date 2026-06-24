@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, memo } from 'react';
+import React, { useState, useEffect, useContext, memo, useRef } from 'react';
 import { useUser, useAuth } from '@clerk/clerk-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
@@ -18,6 +18,7 @@ import Header from '../components/Header';
 import { StripeContext } from '../App';
 import { apiUrl } from '../config/api';
 import { useSubscription } from '../contexts/SubscriptionContext';
+import { trackCheckoutStarted } from '../utils/plausibleEvents';
 
 const Subscription = memo(() => {
   const theme = useTheme();
@@ -42,8 +43,9 @@ const Subscription = memo(() => {
   const [openCancelDialog, setOpenCancelDialog] = useState(false);
   const [selectedCurrency, setSelectedCurrency] = useState('USD');
   const plans = [
-    { id: 11, name: 'Full Access (Beta)', billing_interval: 'MONTHLY', price_gbp: 10.00, price_usd: 13.45 },
+    { id: 11, name: 'Full Access', billing_interval: 'MONTHLY', price_gbp: 10.00, price_usd: 13.45 },
   ];
+  const autoCheckoutAttempted = useRef(false);
 
   // Prefer context values; fall back to sensible defaults if not yet loaded
   const subscriptionStatus = ctxSubscriptionStatus || {
@@ -91,6 +93,7 @@ const Subscription = memo(() => {
     setLoading(true);
     setError('');
     setSuccess('');
+    trackCheckoutStarted('subscription-page');
     try {
       const token = await getToken();
       if (!token) {
@@ -230,6 +233,31 @@ const Subscription = memo(() => {
       fetchSubscriptionStatus();
     }
   }, [user, isSignedIn]);
+
+  // Premium signup intent: auto-redirect to Stripe after account creation.
+  useEffect(() => {
+    const query = new URLSearchParams(location.search);
+    if (!query.get('checkout')) return;
+    if (!isSignedIn || !user || !stripe || loading || ctxLoading) return;
+    if (autoCheckoutAttempted.current) return;
+    if (subscriptionStatus.access === 'Full') return;
+
+    autoCheckoutAttempted.current = true;
+    const defaultPlan = plans[0];
+    handleCheckout(defaultPlan.id, selectedCurrency);
+    navigate('/subscription', { replace: true });
+  }, [
+    location.search,
+    isSignedIn,
+    user,
+    stripe,
+    loading,
+    ctxLoading,
+    subscriptionStatus.plan,
+    subscriptionStatus.access,
+    selectedCurrency,
+    navigate,
+  ]);
 
   if (!isSignedIn || !user) {
     return (

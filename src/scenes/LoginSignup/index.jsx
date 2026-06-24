@@ -1,11 +1,25 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSignUp, useSignIn, useAuth } from "@clerk/clerk-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import AppBootScreen from "../../components/AppBootScreen";
-import { Box, Typography, TextField, Button, useTheme, IconButton, InputAdornment } from "@mui/material";
+import {
+  Box,
+  Typography,
+  TextField,
+  Button,
+  useTheme,
+  IconButton,
+  InputAdornment,
+  Chip,
+  Divider,
+} from "@mui/material";
 import { tokens } from "../../theme";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
+import { trackSignupCompleted, trackSignupStarted } from "../../utils/plausibleEvents";
+
+const PREMIUM_DEST = "/subscription?checkout=1";
+const FREE_DEST = "/dashboard";
 
 export default function LoginSignup() {
   const theme = useTheme();
@@ -23,39 +37,55 @@ export default function LoginSignup() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
-  const [passwordError, setPasswordError] = useState(''); // inline instead of alert for double-pw confirm (bulletproof UX)
+  const [passwordError, setPasswordError] = useState("");
   const { signUp, setActive } = useSignUp();
   const { signIn } = useSignIn();
   const { isLoaded, isSignedIn } = useAuth();
   const navigate = useNavigate();
 
-  // Already signed in — send them to the app instead of showing a dead-end form.
+  const plan = useMemo(() => new URLSearchParams(location.search).get("plan"), [location.search]);
+  const isPremiumIntent = plan === "premium";
+
+  const postSignupDestination = isPremiumIntent ? PREMIUM_DEST : FREE_DEST;
+
+  const planChipLabel = isSignUp
+    ? isPremiumIntent
+      ? "Premium — payment after signup"
+      : "Free account"
+    : null;
+
+  const planHelperText = isSignUp
+    ? isPremiumIntent
+      ? "After verifying your email you'll go straight to secure Stripe checkout."
+      : "Access 15+ free charts instantly — no card required."
+    : null;
+
   useEffect(() => {
     if (isLoaded && isSignedIn) {
-      const query = new URLSearchParams(location.search);
-      const plan = query.get('plan');
-      navigate(plan === 'premium' ? '/subscription' : '/dashboard', { replace: true });
+      navigate(postSignupDestination, { replace: true });
     }
-  }, [isLoaded, isSignedIn, location.search, navigate]);
+  }, [isLoaded, isSignedIn, postSignupDestination, navigate]);
 
-  // Google auth handler
   const handleGoogle = async () => {
     setIsLoading(true);
+    trackSignupStarted("google", isPremiumIntent ? "premium" : "free");
     try {
-      const query = new URLSearchParams(location.search);
-      const plan = query.get('plan');
-      const redirectUrlComplete = plan === 'premium' ? '/subscription' : '/dashboard';
+      const redirectUrlComplete = isSignUp
+        ? isPremiumIntent
+          ? PREMIUM_DEST
+          : FREE_DEST
+        : FREE_DEST;
       if (isSignUp) {
         await signUp.authenticateWithRedirect({
-          strategy: 'oauth_google',
-          redirectUrl: '/sso-callback',
+          strategy: "oauth_google",
+          redirectUrl: "/sso-callback",
           redirectUrlComplete,
         });
       } else {
         await signIn.authenticateWithRedirect({
-          strategy: 'oauth_google',
-          redirectUrl: '/sso-callback',
-          redirectUrlComplete: '/dashboard',
+          strategy: "oauth_google",
+          redirectUrl: "/sso-callback",
+          redirectUrlComplete: FREE_DEST,
         });
       }
     } catch (err) {
@@ -66,14 +96,12 @@ export default function LoginSignup() {
     }
   };
 
-  // Read query parameters
   useEffect(() => {
     const query = new URLSearchParams(location.search);
-    const mode = query.get('mode');
-    setIsSignUp(mode !== 'signin');
+    const mode = query.get("mode");
+    setIsSignUp(mode !== "signin");
   }, [location.search]);
 
-  // Handle Sign-Up
   const onSignUpPress = async () => {
     if (!signUp) return;
     const trimmedEmail = emailAddress.trim();
@@ -83,8 +111,9 @@ export default function LoginSignup() {
       setPasswordError("Passwords do not match");
       return;
     }
-    setPasswordError('');
+    setPasswordError("");
     setIsLoading(true);
+    trackSignupStarted("email", isPremiumIntent ? "premium" : "free");
     try {
       await signUp.create({
         emailAddress: trimmedEmail,
@@ -100,7 +129,6 @@ export default function LoginSignup() {
     }
   };
 
-  // Handle Email Verification
   const onVerifyPress = async () => {
     if (!signUp) return;
     setIsLoading(true);
@@ -108,13 +136,8 @@ export default function LoginSignup() {
       const result = await signUp.attemptEmailAddressVerification({ code });
       if (result.status === "complete") {
         await setActive({ session: result.createdSessionId });
-        const query = new URLSearchParams(location.search);
-        const plan = query.get('plan');
-        if (plan === 'premium') {
-          navigate("/subscription");
-        } else {
-          navigate("/dashboard");
-        }
+        trackSignupCompleted(isPremiumIntent ? "premium" : "free");
+        navigate(postSignupDestination);
       } else {
         alert("Verification incomplete. Please try again.");
       }
@@ -126,7 +149,6 @@ export default function LoginSignup() {
     }
   };
 
-  // Handle Sign-In
   const onSignInPress = async () => {
     if (!signIn) return;
     const trimmedEmail = emailAddress.trim();
@@ -139,7 +161,7 @@ export default function LoginSignup() {
       });
       if (result.status === "complete") {
         await setActive({ session: result.createdSessionId });
-        navigate("/dashboard");
+        navigate(FREE_DEST);
       } else if (result.status === "needs_first_factor") {
         await signIn.prepareFirstFactor({
           strategy: "email_code",
@@ -157,7 +179,6 @@ export default function LoginSignup() {
     }
   };
 
-  // Handle Forgot Password
   const onForgotPasswordPress = async () => {
     if (!signIn) return;
     const trimmedEmail = emailAddress.trim();
@@ -182,7 +203,6 @@ export default function LoginSignup() {
     }
   };
 
-  // Handle Password Reset Verification
   const onResetPasswordPress = async () => {
     if (!signIn) return;
     const trimmedNewPassword = newPassword.trim();
@@ -195,7 +215,7 @@ export default function LoginSignup() {
       });
       if (result.status === "complete") {
         await setActive({ session: result.createdSessionId });
-        navigate("/dashboard");
+        navigate(FREE_DEST);
       } else {
         alert("Password reset incomplete. Please try again.");
       }
@@ -225,8 +245,37 @@ export default function LoginSignup() {
     }
   };
 
+  const toggleAuthMode = () => {
+    const query = new URLSearchParams(location.search);
+    const nextMode = isSignUp ? "signin" : "signup";
+    query.set("mode", nextMode);
+    navigate(`/login-signup?${query.toString()}`, { replace: true });
+  };
+
+  const fieldSx = {
+    marginBottom: "20px",
+    width: "100%",
+    "& .MuiInputBase-input": { color: colors.grey[100] },
+    "& .MuiOutlinedInput-root": {
+      "& fieldset": { borderColor: colors.grey[500] },
+      "&:hover fieldset": { borderColor: colors.grey[300] },
+    },
+  };
+
+  const primaryButtonSx = {
+    backgroundColor: colors.greenAccent[500],
+    color: colors.grey[900],
+    padding: "10px 20px",
+    fontWeight: "bold",
+    "&:hover": { backgroundColor: colors.greenAccent[400] },
+  };
+
   if (isLoaded && isSignedIn) {
-    return <AppBootScreen message="Taking you to the app..." />;
+    return (
+      <AppBootScreen
+        message={isPremiumIntent ? "Taking you to checkout..." : "You're in — loading your dashboard..."}
+      />
+    );
   }
 
   return (
@@ -243,12 +292,13 @@ export default function LoginSignup() {
     >
       <Box
         sx={{
-          maxWidth: "800px",
+          maxWidth: "480px",
+          width: "100%",
           textAlign: "center",
-          padding: "40px",
+          padding: { xs: "28px", md: "40px" },
           backgroundColor: colors.primary[800],
           borderRadius: "8px",
-          boxShadow: "0 4px 6px rgba(141, 53, 53, 0.1)",
+          boxShadow: "0 4px 6px rgba(0, 0, 0, 0.15)",
         }}
       >
         {pendingVerification ? (
@@ -257,226 +307,187 @@ export default function LoginSignup() {
               variant="h2"
               sx={{
                 color: colors.grey[100],
-                marginBottom: "30px",
-                fontSize: { xs: "2rem", md: "3rem" },
+                marginBottom: "16px",
+                fontSize: { xs: "1.75rem", md: "2.25rem" },
               }}
             >
               {isPasswordReset ? "Reset Your Password" : "Verify Your Email"}
             </Typography>
-            <Typography
-              variant="body1"
-              sx={{ color: colors.grey[300], marginBottom: "20px" }}
-            >
+            <Typography variant="body1" sx={{ color: colors.grey[300], marginBottom: "20px" }}>
               {isPasswordReset
                 ? "Enter the verification code sent to your email and your new password."
-                : "Please enter the verification code sent to your email."}
+                : "Enter the code we sent to your email to finish creating your account."}
             </Typography>
             <TextField
               type="text"
               value={code}
-              placeholder="Enter your verification code"
+              placeholder="Verification code"
               onChange={(e) => setCode(e.target.value)}
               variant="outlined"
-              sx={{
-                marginBottom: "20px",
-                width: "100%",
-                "& .MuiInputBase-input": { color: colors.grey[100] },
-                "& .MuiOutlinedInput-root": {
-                  "& fieldset": { borderColor: colors.grey[500] },
-                  "&:hover fieldset": { borderColor: colors.grey[300] },
-                },
-              }}
+              sx={fieldSx}
             />
             {isPasswordReset && (
               <TextField
                 type={showNewPassword ? "text" : "password"}
                 value={newPassword}
-                placeholder="Enter new password"
+                placeholder="New password"
                 onChange={(e) => setNewPassword(e.target.value)}
                 variant="outlined"
                 InputProps={{
                   endAdornment: (
                     <InputAdornment position="end">
-                      <IconButton
-                        onClick={() => setShowNewPassword(!showNewPassword)}
-                        edge="end"
-                      >
+                      <IconButton onClick={() => setShowNewPassword(!showNewPassword)} edge="end">
                         {showNewPassword ? <VisibilityOff /> : <Visibility />}
                       </IconButton>
                     </InputAdornment>
                   ),
                 }}
-                sx={{
-                  marginBottom: "20px",
-                  width: "100%",
-                  "& .MuiInputBase-input": { color: colors.grey[100] },
-                  "& .MuiOutlinedInput-root": {
-                    "& fieldset": { borderColor: colors.grey[500] },
-                    "&:hover fieldset": { borderColor: colors.grey[300] },
-                  },
-                }}
+                sx={fieldSx}
               />
             )}
-            <Button
-              type="submit"
-              disabled={isLoading}
-              sx={{
-                backgroundColor: colors.greenAccent[500],
-                color: colors.grey[900],
-                padding: "10px 20px",
-                fontWeight: "bold",
-                "&:hover": {
-                  backgroundColor: colors.greenAccent[600],
-                },
-              }}
-            >
-              {isLoading ? "Processing..." : (isPasswordReset ? "Reset Password" : "Verify")}
+            <Button type="submit" disabled={isLoading} sx={primaryButtonSx}>
+              {isLoading ? "Processing..." : isPasswordReset ? "Reset Password" : "Verify & continue"}
             </Button>
           </form>
         ) : (
-          <form onSubmit={handleLoginSubmit}>
+          <>
+            {planChipLabel && (
+              <Chip
+                label={planChipLabel}
+                sx={{
+                  mb: 2,
+                  backgroundColor: isPremiumIntent ? colors.blueAccent[800] : colors.greenAccent[800],
+                  color: isPremiumIntent ? colors.blueAccent[300] : colors.greenAccent[300],
+                  fontWeight: 600,
+                }}
+              />
+            )}
             <Typography
               variant="h2"
               sx={{
                 color: colors.grey[100],
-                marginBottom: "30px",
-                fontSize: { xs: "2rem", md: "3rem" },
+                marginBottom: "12px",
+                fontSize: { xs: "1.75rem", md: "2.25rem" },
               }}
             >
-              {isSignUp ? "Create an Account" : "Sign In"}
+              {isSignUp ? "Create your account" : "Welcome back"}
             </Typography>
-            <TextField
-              type="email"
-              value={emailAddress}
-              placeholder="Enter email"
-              onChange={(e) => setEmailAddress(e.target.value)}
-              variant="outlined"
-              sx={{
-                marginBottom: "20px",
-                width: "100%",
-                "& .MuiInputBase-input": { color: colors.grey[100] },
-                "& .MuiOutlinedInput-root": {
-                  "& fieldset": { borderColor: colors.grey[500] },
-                  "&:hover fieldset": { borderColor: colors.grey[300] },
-                },
-              }}
-            />
-            <TextField
-              type={showPassword ? "text" : "password"}
-              value={password}
-              placeholder="Enter password"
-              onChange={(e) => setPassword(e.target.value)}
-              variant="outlined"
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      onClick={() => setShowPassword(!showPassword)}
-                      edge="end"
-                    >
-                      {showPassword ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-              sx={{
-                marginBottom: "20px",
-                width: "100%",
-                "& .MuiInputBase-input": { color: colors.grey[100] },
-                "& .MuiOutlinedInput-root": {
-                  "& fieldset": { borderColor: colors.grey[500] },
-                  "&:hover fieldset": { borderColor: colors.grey[300] },
-                },
-              }}
-            />
+            {planHelperText && (
+              <Typography variant="body1" sx={{ color: colors.grey[300], marginBottom: "24px", lineHeight: 1.6 }}>
+                {planHelperText}
+              </Typography>
+            )}
+
             {isSignUp && (
+              <>
+                <Button
+                  onClick={handleGoogle}
+                  disabled={isLoading}
+                  fullWidth
+                  sx={{
+                    ...primaryButtonSx,
+                    marginBottom: "16px",
+                    textTransform: "none",
+                    fontSize: "1rem",
+                  }}
+                >
+                  Continue with Google
+                </Button>
+                <Divider sx={{ color: colors.grey[500], marginBottom: "20px" }}>or use email</Divider>
+              </>
+            )}
+
+            <form onSubmit={handleLoginSubmit}>
               <TextField
-                type={showConfirmPassword ? "text" : "password"}
-                value={confirmPassword}
-                placeholder="Confirm password"
-                onChange={(e) => {
-                  setConfirmPassword(e.target.value);
-                  if (passwordError) setPasswordError(''); // clear inline mismatch on edit
-                }}
-                error={!!passwordError}
-                helperText={passwordError}
+                type="email"
+                value={emailAddress}
+                placeholder="Email address"
+                onChange={(e) => setEmailAddress(e.target.value)}
+                variant="outlined"
+                sx={fieldSx}
+              />
+              <TextField
+                type={showPassword ? "text" : "password"}
+                value={password}
+                placeholder="Password"
+                onChange={(e) => setPassword(e.target.value)}
                 variant="outlined"
                 InputProps={{
                   endAdornment: (
                     <InputAdornment position="end">
-                      <IconButton
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        edge="end"
-                      >
-                        {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                      <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
                       </IconButton>
                     </InputAdornment>
                   ),
                 }}
-                sx={{
-                  marginBottom: "20px",
-                  width: "100%",
-                  "& .MuiInputBase-input": { color: colors.grey[100] },
-                  "& .MuiOutlinedInput-root": {
-                    "& fieldset": { borderColor: colors.grey[500] },
-                    "&:hover fieldset": { borderColor: colors.grey[300] },
-                  },
-                }}
+                sx={fieldSx}
               />
-            )}
-            <Button
-              type="submit"
-              disabled={isLoading}
-              sx={{
-                backgroundColor: colors.greenAccent[500],
-                color: colors.grey[900],
-                padding: "10px 20px",
-                fontWeight: "bold",
-                marginBottom: "20px",
-                "&:hover": {
-                  backgroundColor: colors.greenAccent[600],
-                },
-              }}
-            >
-              {isLoading ? "Processing..." : (isSignUp ? "Continue" : "Sign In")}
-            </Button>
-            <Typography
-              variant="h3"
-              sx={{ color: colors.grey[300], marginTop: "10px" }}
-            >
-              {isSignUp ? "Have an account?" : "Don't have an account?"}{" "}
+              {isSignUp && (
+                <TextField
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={confirmPassword}
+                  placeholder="Confirm password"
+                  onChange={(e) => {
+                    setConfirmPassword(e.target.value);
+                    if (passwordError) setPasswordError("");
+                  }}
+                  error={!!passwordError}
+                  helperText={passwordError}
+                  variant="outlined"
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          edge="end"
+                        >
+                          {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
+                  sx={fieldSx}
+                />
+              )}
+              <Button type="submit" disabled={isLoading} fullWidth sx={{ ...primaryButtonSx, marginBottom: "16px" }}>
+                {isLoading ? "Processing..." : isSignUp ? "Create account" : "Sign in"}
+              </Button>
+            </form>
+
+            <Typography sx={{ color: colors.grey[300], fontSize: "0.95rem" }}>
+              {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
               <Button
-                onClick={() => setIsSignUp(!isSignUp)}
-                sx={{ color: colors.greenAccent[500], textTransform: "none", fontSize: "1.2rem" }}
+                onClick={toggleAuthMode}
+                sx={{ color: colors.greenAccent[500], textTransform: "none", fontSize: "0.95rem", p: 0, minWidth: 0 }}
               >
-                {isSignUp ? "Sign in" : "Sign up"}
+                {isSignUp ? "Sign in" : "Sign up free"}
               </Button>
               {!isSignUp && (
                 <>
-                  {" | "}
+                  {" · "}
                   <Button
                     onClick={onForgotPasswordPress}
-                    sx={{ color: colors.greenAccent[500], textTransform: "none", fontSize: "1.2rem" }}
+                    sx={{ color: colors.greenAccent[500], textTransform: "none", fontSize: "0.95rem", p: 0, minWidth: 0 }}
                   >
-                    Forgot Password?
+                    Forgot password?
                   </Button>
                 </>
               )}
             </Typography>
-            <Typography
-              variant="h3"
-              sx={{ color: colors.grey[300], marginTop: "10px" }}
-            >
-              Or{" "}
-              <Button
-                onClick={handleGoogle}
-                disabled={isLoading}
-                sx={{ color: colors.greenAccent[500], textTransform: "none", fontSize: "1.2rem" }}
-              >
-                {isSignUp ? "Sign Up with Google" : "Sign In with Google"}
-              </Button>
-            </Typography>
-          </form>
+
+            {!isSignUp && (
+              <Typography sx={{ color: colors.grey[300], marginTop: "16px", fontSize: "0.95rem" }}>
+                <Button
+                  onClick={handleGoogle}
+                  disabled={isLoading}
+                  sx={{ color: colors.greenAccent[500], textTransform: "none", fontSize: "0.95rem" }}
+                >
+                  Sign in with Google
+                </Button>
+              </Typography>
+            )}
+          </>
         )}
       </Box>
     </Box>

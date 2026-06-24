@@ -2,6 +2,7 @@ import { Box, Typography, Grid, Card, CardContent, CardMedia, useTheme, Chip } f
 import { Link } from "react-router-dom";
 import { tokens } from "../theme";
 import { chartSections } from "../config/chartGalleryData";
+import { gallerySectionId } from "../config/gallerySectionUtils";
 
 const ChartCard = ({ chart, colors, linkable, showFreeBadge }) => {
   const { path, title, description, image } = chart;
@@ -97,7 +98,7 @@ const ChartGalleryContent = ({ linkable = true }) => {
       {Object.entries(chartSections)
         .filter(([section]) => section === "Free Charts")
         .map(([section, charts]) => (
-          <Box key={section} mb={6}>
+          <Box key={section} id={gallerySectionId(section)} mb={6} sx={{ scrollMarginTop: '96px' }}>
             <Typography variant="h3" color={colors.grey[100]} mb={1} mt={10} textAlign="left" ml="45%">
               {section}{" "}
               <Typography component="span" variant="body2" sx={{ color: colors.greenAccent[500], ml: 1 }}>
@@ -113,14 +114,14 @@ const ChartGalleryContent = ({ linkable = true }) => {
             </Grid>
           </Box>
         ))}
-      <Box mb={6}>
+      <Box id={gallerySectionId('Premium Charts')} mb={6} sx={{ scrollMarginTop: '96px' }}>
         <Typography variant="h3" color={colors.grey[100]} mb={3} mt={12} textAlign="left" ml="43%">
           Premium Charts
         </Typography>
         {Object.entries(chartSections)
           .filter(([section]) => section !== "Free Charts")
           .map(([subSection, charts]) => (
-            <Box key={subSection} mb={4}>
+            <Box key={subSection} id={gallerySectionId(subSection)} mb={4} sx={{ scrollMarginTop: '96px' }}>
               <Typography variant="h4" color={colors.grey[100]} mb={1} textAlign="left" ml={3.5}>
                 {subSection}
               </Typography>

@@ -1,4 +1,5 @@
 import React from "react";
+import { useGalleryHashScroll } from "../hooks/useGalleryHashScroll";
 import { Box, Button, Container, Typography, Chip } from "@mui/material";
 import { Link } from "react-router-dom";
 import { useTheme } from "@mui/material";
@@ -15,6 +16,7 @@ const gallerySeo = SEO_PAGES["chart-gallery"];
 const PublicChartGallery = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
+  useGalleryHashScroll();
 
   return (
     <Box
