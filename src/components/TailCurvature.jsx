@@ -57,6 +57,16 @@ function computeProjectedPrice(dateStr, param) {
   return Math.pow(10, log10P);
 }
 
+function formatCompactLogAxisPrice(price) {
+  if (!Number.isFinite(price)) return '';
+  const abs = Math.abs(price);
+  if (abs >= 1e6) return `${(price / 1e6).toFixed(abs >= 1e7 ? 0 : 1)}M`;
+  if (abs >= 1e3) return `${(price / 1e3).toFixed(abs >= 1e4 ? 0 : 1)}K`;
+  if (abs >= 100) return price.toFixed(0);
+  if (abs >= 10) return price.toFixed(1);
+  return price.toFixed(2);
+}
+
 const TailCurvature = ({ isDashboard = false }) => {
   const chartContainerRef = useRef();
   const chartRef = useRef(null);
@@ -217,7 +227,7 @@ const TailCurvature = ({ isDashboard = false }) => {
           priceFormat: {
             type: 'custom',
             minMove: 0.01,
-            formatter: compactLogAxisFormatter,
+            formatter: formatCompactLogAxisPrice,
           },
         } : {}),
       },
@@ -239,7 +249,7 @@ const TailCurvature = ({ isDashboard = false }) => {
         priceFormat: {
           type: 'custom',
           minMove: 0.01,
-          formatter: compactLogAxisFormatter,
+          formatter: formatCompactLogAxisPrice,
         },
       } : {}),
     });
@@ -292,7 +302,7 @@ const TailCurvature = ({ isDashboard = false }) => {
       }
       quantileSeriesRefs.current = {};
     };
-  }, [btcData, colors, isDashboard, compactLogAxisFormatter]);
+  }, [btcData, colors, isDashboard]);
 
   // Dynamically manage quantile series (historical only - no forward projections on chart)
   useEffect(() => {
@@ -332,16 +342,6 @@ const TailCurvature = ({ isDashboard = false }) => {
     if (value >= 1e6) return (value / 1e6).toFixed(1) + 'M';
     if (value >= 1e3) return (value / 1e3).toFixed(0) + 'K';
     return value.toFixed(0);
-  }, []);
-
-  const compactLogAxisFormatter = useCallback((price) => {
-    if (!Number.isFinite(price)) return '';
-    const abs = Math.abs(price);
-    if (abs >= 1e6) return `${(price / 1e6).toFixed(abs >= 1e7 ? 0 : 1)}M`;
-    if (abs >= 1e3) return `${(price / 1e3).toFixed(abs >= 1e4 ? 0 : 1)}K`;
-    if (abs >= 100) return price.toFixed(0);
-    if (abs >= 10) return price.toFixed(1);
-    return price.toFixed(2);
   }, []);
 
   // Generate projection table data (yearly into the 2050s)
@@ -429,8 +429,7 @@ const TailCurvature = ({ isDashboard = false }) => {
           className="chart-container"
           style={{
             flex: '1 1 auto',           // better flex behavior
-            minHeight: isDashboard ? 0 : '660px',
-            height: isDashboard ? '100%' : undefined,
+            minHeight: isDashboard ? '400px' : '660px',
             overflow: 'hidden',
             width: '100%',
             border: '2px solid #a9a9a9',

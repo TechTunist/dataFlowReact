@@ -163,38 +163,44 @@ const DashboardCard = memo(({ title, component, description, linkTo, chartId, is
 
   const dashboardStyles = {
     card: {
-      minHeight: isMobile ? (wideMobile ? "340px" : "300px") : "380px",
+      ...(isMobile ? {} : { aspectRatio: "4 / 3" }),
+      minHeight: isMobile ? (wideMobile ? "340px" : "300px") : "400px",
+      maxHeight: isMobile ? undefined : "650px",
       display: "flex",
       flexDirection: "column",
       transition: "box-shadow 0.3s ease",
       width: "100%",
-      maxWidth: "100%",
+      ...(isMobile ? { maxWidth: "100%", overflow: "hidden" } : {}),
       position: "relative",
-      overflow: "hidden",
     },
     cardContent: {
       flexGrow: 1,
       display: "flex",
       flexDirection: "column",
       height: "100%",
-      minHeight: 0,
+      ...(isMobile ? { minHeight: 0 } : {}),
     },
-    chartContainer: {
-      flex: "0 1 auto",
-      height: isMobile ? (wideMobile ? "220px" : "190px") : "240px",
-      minHeight: isMobile ? (wideMobile ? "190px" : "170px") : "200px",
-      maxHeight: isMobile ? (wideMobile ? "220px" : "190px") : "240px",
-      marginTop: "10px",
-      marginBottom: "10px",
-      overflow: "hidden",
-      width: "100%",
-    },
+    chartContainer: isMobile
+      ? {
+          flex: "0 1 auto",
+          height: wideMobile ? "220px" : "190px",
+          minHeight: wideMobile ? "190px" : "170px",
+          maxHeight: wideMobile ? "220px" : "190px",
+          marginTop: "10px",
+          marginBottom: "10px",
+          overflow: "hidden",
+          width: "100%",
+        }
+      : {
+          flex: 1,
+          minHeight: "310px",
+          marginTop: "10px",
+          marginBottom: "10px",
+        },
     infoText: {
       marginTop: "auto",
-      flexShrink: 0,
-      paddingTop: "8px",
       fontSize: "0.875rem",
-      lineHeight: 1.45,
+      ...(isMobile ? { flexShrink: 0, paddingTop: "8px", lineHeight: 1.45 } : {}),
     },
   };
 
@@ -213,8 +219,8 @@ const DashboardCard = memo(({ title, component, description, linkTo, chartId, is
   );
 
   return (
-    <Grid item xs={12} lg={6} sx={{ minWidth: 0, maxWidth: "100%" }}>
-      <LazyLoad height={isMobile ? 300 : 380} offset={isMobile ? 200 : 100}>
+    <Grid item xs={12} lg={6} sx={isMobile ? { minWidth: 0, maxWidth: "100%" } : undefined}>
+      <LazyLoad height={isMobile ? 300 : 550} offset={isMobile ? 200 : 100}>
         <Box sx={{ position: "relative" }}> {/* Wrapper for card and button */}
           <Link to={linkTo} style={{ textDecoration: "none" }}>
             <Card
@@ -318,7 +324,10 @@ const Dashboard = memo(({ isMobile, isSidebar }) => {
   };
 
   return (
-    <Box sx={{ m: { xs: "12px", md: "20px" }, maxWidth: "100%", overflow: "hidden", boxSizing: "border-box" }}>
+    <Box sx={{
+      m: { xs: "12px", md: "20px" },
+      ...(isMobile ? { maxWidth: "100%", overflow: "hidden", boxSizing: "border-box" } : {}),
+    }}>
       <Snackbar
         open={!!error}
         autoHideDuration={4000}
@@ -391,7 +400,7 @@ const Dashboard = memo(({ isMobile, isSidebar }) => {
           </Box>
         </Box>
       ) : (
-        <Grid container spacing={4} sx={{ width: "100%", maxWidth: "100%", boxSizing: "border-box" }}>
+        <Grid container spacing={4} sx={isMobile ? { width: "100%", maxWidth: "100%", boxSizing: "border-box" } : undefined}>
           {favoriteCharts
             .map((chartId) => chartConfig.find((chart) => chart.id === chartId))
             .filter((chart) => chart)
