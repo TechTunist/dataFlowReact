@@ -1,5 +1,7 @@
 const RELOAD_GUARD_KEY = 'cryptological:auto-reload-at';
-const RELOAD_COOLDOWN_MS = 15_000;
+const RELOAD_COUNT_KEY = 'cryptological:auto-reload-count';
+const RELOAD_COOLDOWN_MS = 60_000;
+const MAX_RELOADS_PER_SESSION = 2;
 
 /**
  * Reload at most once per cooldown window to avoid infinite reload loops.
@@ -8,12 +10,21 @@ const RELOAD_COOLDOWN_MS = 15_000;
  */
 export function reloadOnce(reason) {
   try {
+    const reloadCount = Number.parseInt(sessionStorage.getItem(RELOAD_COUNT_KEY) || '0', 10);
+    if (reloadCount >= MAX_RELOADS_PER_SESSION) {
+      if (typeof console !== 'undefined') {
+        console.warn(`[app-recovery] Skipping reload (${reason}) — session limit reached`);
+      }
+      return false;
+    }
+
     const last = sessionStorage.getItem(RELOAD_GUARD_KEY);
     const now = Date.now();
     if (last && now - Number.parseInt(last, 10) < RELOAD_COOLDOWN_MS) {
       return false;
     }
     sessionStorage.setItem(RELOAD_GUARD_KEY, String(now));
+    sessionStorage.setItem(RELOAD_COUNT_KEY, String(reloadCount + 1));
   } catch {
     // sessionStorage may be unavailable (private mode quirks) — still attempt one reload
   }

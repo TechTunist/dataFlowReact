@@ -2,7 +2,7 @@ import { isChunkLoadError } from './isChunkLoadError';
 import { fetchLatestBuildId, getCurrentBuildId, reloadOnce } from './reloadOnce';
 
 const BOOT_WATCHDOG_MS = 20_000;
-const DEPLOY_CHECK_MIN_HIDDEN_MS = 30_000;
+const DEPLOY_CHECK_MIN_HIDDEN_MS = 120_000;
 
 let bootWatchdogId = null;
 let hiddenSince = null;
@@ -73,7 +73,7 @@ export function registerAppRecovery() {
       const target = event.target;
       if (target && (target.tagName === 'SCRIPT' || target.tagName === 'LINK')) {
         const src = target.src || target.href || '';
-        if (src.includes('/static/')) {
+        if (src.includes('/static/') && !window.__CRYPTOLOGICAL_APP_MOUNTED__) {
           reloadOnce('asset-load-error');
         }
         return;

@@ -212,6 +212,14 @@ const TailCurvature = ({ isDashboard = false }) => {
       rightPriceScale: {
         mode: 1, // Logarithmic
         borderVisible: false,
+        ...(isDashboard ? {
+          minimumWidth: 42,
+          priceFormat: {
+            type: 'custom',
+            minMove: 0.01,
+            formatter: compactLogAxisFormatter,
+          },
+        } : {}),
       },
       crosshair: {
         mode: 1,
@@ -227,6 +235,13 @@ const TailCurvature = ({ isDashboard = false }) => {
       title: 'BTC Price',
       lastValueVisible: false,
       priceLineVisible: false,
+      ...(isDashboard ? {
+        priceFormat: {
+          type: 'custom',
+          minMove: 0.01,
+          formatter: compactLogAxisFormatter,
+        },
+      } : {}),
     });
     priceSeriesRef.current = priceSeries;
 
@@ -277,7 +292,7 @@ const TailCurvature = ({ isDashboard = false }) => {
       }
       quantileSeriesRefs.current = {};
     };
-  }, [btcData, colors]);
+  }, [btcData, colors, isDashboard, compactLogAxisFormatter]);
 
   // Dynamically manage quantile series (historical only - no forward projections on chart)
   useEffect(() => {
@@ -317,6 +332,16 @@ const TailCurvature = ({ isDashboard = false }) => {
     if (value >= 1e6) return (value / 1e6).toFixed(1) + 'M';
     if (value >= 1e3) return (value / 1e3).toFixed(0) + 'K';
     return value.toFixed(0);
+  }, []);
+
+  const compactLogAxisFormatter = useCallback((price) => {
+    if (!Number.isFinite(price)) return '';
+    const abs = Math.abs(price);
+    if (abs >= 1e6) return `${(price / 1e6).toFixed(abs >= 1e7 ? 0 : 1)}M`;
+    if (abs >= 1e3) return `${(price / 1e3).toFixed(abs >= 1e4 ? 0 : 1)}K`;
+    if (abs >= 100) return price.toFixed(0);
+    if (abs >= 10) return price.toFixed(1);
+    return price.toFixed(2);
   }, []);
 
   // Generate projection table data (yearly into the 2050s)
@@ -404,7 +429,8 @@ const TailCurvature = ({ isDashboard = false }) => {
           className="chart-container"
           style={{
             flex: '1 1 auto',           // better flex behavior
-            minHeight: isDashboard ? '400px' : '660px',         // ← this is now the only minHeight (adjust to taste)
+            minHeight: isDashboard ? 0 : '660px',
+            height: isDashboard ? '100%' : undefined,
             overflow: 'hidden',
             width: '100%',
             border: '2px solid #a9a9a9',

@@ -163,30 +163,38 @@ const DashboardCard = memo(({ title, component, description, linkTo, chartId, is
 
   const dashboardStyles = {
     card: {
-      aspectRatio: "4 / 3",
-      minHeight: isMobile ? (wideMobile ? "400px" : "350px") : "400px",
-      maxHeight: isMobile ? "550px" : "650px",
+      minHeight: isMobile ? (wideMobile ? "340px" : "300px") : "380px",
       display: "flex",
       flexDirection: "column",
       transition: "box-shadow 0.3s ease",
       width: "100%",
-      position: "relative", // Added to support absolute positioning of IconButton
+      maxWidth: "100%",
+      position: "relative",
+      overflow: "hidden",
     },
     cardContent: {
       flexGrow: 1,
       display: "flex",
       flexDirection: "column",
       height: "100%",
+      minHeight: 0,
     },
     chartContainer: {
-      flex: 1,
-      minHeight: isMobile ? (wideMobile ? "310px" : "260px") : "310px",
+      flex: "0 1 auto",
+      height: isMobile ? (wideMobile ? "220px" : "190px") : "240px",
+      minHeight: isMobile ? (wideMobile ? "190px" : "170px") : "200px",
+      maxHeight: isMobile ? (wideMobile ? "220px" : "190px") : "240px",
       marginTop: "10px",
       marginBottom: "10px",
+      overflow: "hidden",
+      width: "100%",
     },
     infoText: {
       marginTop: "auto",
+      flexShrink: 0,
+      paddingTop: "8px",
       fontSize: "0.875rem",
+      lineHeight: 1.45,
     },
   };
 
@@ -205,8 +213,8 @@ const DashboardCard = memo(({ title, component, description, linkTo, chartId, is
   );
 
   return (
-    <Grid item xs={12} lg={6}>
-      <LazyLoad height={isMobile ? 380 : 550} offset={isMobile ? 250 : 100}>
+    <Grid item xs={12} lg={6} sx={{ minWidth: 0, maxWidth: "100%" }}>
+      <LazyLoad height={isMobile ? 300 : 380} offset={isMobile ? 200 : 100}>
         <Box sx={{ position: "relative" }}> {/* Wrapper for card and button */}
           <Link to={linkTo} style={{ textDecoration: "none" }}>
             <Card
@@ -310,7 +318,7 @@ const Dashboard = memo(({ isMobile, isSidebar }) => {
   };
 
   return (
-    <Box sx={{ m: { xs: "12px", md: "20px" } }}>
+    <Box sx={{ m: { xs: "12px", md: "20px" }, maxWidth: "100%", overflow: "hidden", boxSizing: "border-box" }}>
       <Snackbar
         open={!!error}
         autoHideDuration={4000}
@@ -383,7 +391,7 @@ const Dashboard = memo(({ isMobile, isSidebar }) => {
           </Box>
         </Box>
       ) : (
-        <Grid container spacing={4}>
+        <Grid container spacing={4} sx={{ width: "100%", maxWidth: "100%", boxSizing: "border-box" }}>
           {favoriteCharts
             .map((chartId) => chartConfig.find((chart) => chart.id === chartId))
             .filter((chart) => chart)

@@ -146,3 +146,17 @@
     padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)) !important;
   }
 }
+
+/* Dashboard: prevent horizontal page scroll from wide chart canvases */
+@media (max-width: 1024px) {
+  .content {
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .content .chart-container {
+    max-width: 100%;
+    overflow: hidden;
+  }
+}

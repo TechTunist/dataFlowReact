@@ -422,7 +422,7 @@ const AppContent = memo(() => {
                       <Sidebar isSidebar={isSidebar} setIsSidebar={setIsSidebar} />
                     </div>
                   )}
-                  <main className="content" style={{ flex: 1 }}>
+                  <main className="content" style={{ flex: 1, minWidth: 0, maxWidth: '100%', overflowX: 'hidden' }}>
                     {/* Adjust spacing for Topbar or AccountNavBar */}
                     {shouldRenderTopbar ? (
                       <div style={{ height: isMobile ? "65px" : "85px" }} />

@@ -622,16 +622,17 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, isChartPage = false, txMvrvDa
     ? {
         backgroundColor: colors.primary[400],
         borderRadius: '12px',
-        padding: { xs: '16px', sm: '20px' },
+        padding: { xs: '8px', sm: '12px' },
         height: '100%',
-        minHeight: '400px',
+        minHeight: 0,
         width: '100%',
-        maxWidth: '1400px',
-        margin: '0 auto',
+        maxWidth: '100%',
+        margin: 0,
         boxSizing: 'border-box',
         display: 'flex',
         flexDirection: 'column',
         position: 'relative',
+        overflow: 'hidden',
         boxShadow: `0 4px 12px ${theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.1)'}`,
       }
     : {
@@ -805,10 +806,12 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, isChartPage = false, txMvrvDa
           display: 'flex',
           flexDirection: 'column',
           height: isDashboard ? '100%' : undefined,
-          minHeight: isDashboard ? '350px' : undefined,
-          maxHeight: isDashboard ? '750px' : undefined,
-          flexShrink: 0,
+          minHeight: isDashboard ? 0 : undefined,
+          maxHeight: isDashboard ? '100%' : undefined,
+          flex: isDashboard ? '1 1 auto' : undefined,
+          flexShrink: isDashboard ? 1 : 0,
           width: '100%',
+          overflow: isDashboard ? 'hidden' : undefined,
           border: '2px solid #a9a9a9',
         }}
         onDoubleClick={() => {
@@ -818,7 +821,7 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, isChartPage = false, txMvrvDa
       >
         <div
           ref={chartContainerRef}
-          style={{ flex: '1 1 auto', minHeight: isDashboard ? '400px' : undefined, width: '100%', zIndex: 1 }}
+          style={{ flex: '1 1 auto', minHeight: isDashboard ? 0 : undefined, height: isDashboard ? '100%' : undefined, width: '100%', zIndex: 1 }}
         />
         {!isDashboard && (
           <div

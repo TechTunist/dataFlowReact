@@ -50,6 +50,9 @@ body,
 
 .content {
   flex: 1; /* This will make content to fill the space without overflowing */
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
   overflow-y: auto; /* Adds scroll inside content if it's too large */
   font-family: "Source Sans Pro", sans-serif;
 

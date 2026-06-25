@@ -1717,7 +1717,9 @@ const DaysLeftWidget = memo(({ type }) => {
         aria-label="View chart"
       />
       <Typography variant="h4" color={textColor} gutterBottom sx={{ fontWeight: 'bold' }}>
-        Days Since {titleMap[type] || titleMap[mappedType]}
+        {mappedType === 'top'
+          ? 'Avg. Days to Cycle Bottom'
+          : `Days Since ${titleMap[type] || titleMap[mappedType]}`}
       </Typography>
       <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
         <Typography variant="h3" color={textColor} sx={{ fontWeight: 'bold' }}>
@@ -1730,8 +1732,9 @@ const DaysLeftWidget = memo(({ type }) => {
           Elapsed: {daysLeftData[mappedType]?.elapsed >= 0 ? daysLeftData[mappedType].elapsed : 'N/A'} days
         </Typography>
         {projectedBottomDate && (
-          <Typography variant="body1" color={textColor} sx={{ mt: 1, fontWeight: 500 }}>
-            Projected Bottom: ~{formatDate(projectedBottomDate)}
+          <Typography variant="body1" color={textColor} sx={{ mt: 1 }}>
+            <Box component="span" sx={{ fontWeight: 'bold' }}>Projected Bottom:</Box>{' '}
+            <Box component="span" sx={{ fontWeight: 'bold' }}>~{formatDate(projectedBottomDate)}</Box>
           </Typography>
         )}
         <Typography variant="body1" color={textColor}>
