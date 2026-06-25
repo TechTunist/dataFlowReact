@@ -206,7 +206,7 @@ const DashboardCard = memo(({ title, component, description, linkTo, chartId, is
 
   return (
     <Grid item xs={12} lg={6}>
-      <LazyLoad height={550} offset={100}>
+      <LazyLoad height={isMobile ? 380 : 550} offset={isMobile ? 250 : 100}>
         <Box sx={{ position: "relative" }}> {/* Wrapper for card and button */}
           <Link to={linkTo} style={{ textDecoration: "none" }}>
             <Card
@@ -310,7 +310,7 @@ const Dashboard = memo(({ isMobile, isSidebar }) => {
   };
 
   return (
-    <Box m="20px">
+    <Box sx={{ m: { xs: "12px", md: "20px" } }}>
       <Snackbar
         open={!!error}
         autoHideDuration={4000}

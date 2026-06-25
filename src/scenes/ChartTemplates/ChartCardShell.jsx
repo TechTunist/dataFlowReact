@@ -1,4 +1,4 @@
-import { Box, IconButton, Typography, useTheme } from "@mui/material";
+import { Box, IconButton, Typography, useTheme, useMediaQuery } from "@mui/material";
 import StarIcon from "@mui/icons-material/Star";
 import StarBorderIcon from "@mui/icons-material/StarBorder";
 import { tokens } from "../../theme";
@@ -7,6 +7,7 @@ import { useFavorites } from "../../contexts/FavoritesContext";
 const ChartCardShell = ({ title, subtitle, chartId, children }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
+  const isNarrow = useMediaQuery(theme.breakpoints.down("sm"));
   const { favoriteCharts, addFavoriteChart, removeFavoriteChart } = useFavorites();
   const isFavorite = chartId && favoriteCharts.includes(chartId);
 
@@ -52,8 +53,13 @@ const ChartCardShell = ({ title, subtitle, chartId, children }) => {
         </IconButton>
       )}
 
-      <Box sx={{ mb: 1, pr: 5 }}>
-        <Typography variant="h4" color={colors.grey[100]} gutterBottom>
+      <Box sx={{ mb: 1, pr: { xs: 4, sm: 5 } }}>
+        <Typography
+          variant={isNarrow ? "h5" : "h4"}
+          color={colors.grey[100]}
+          gutterBottom
+          sx={{ lineHeight: 1.25, wordBreak: "break-word" }}
+        >
           {title}
         </Typography>
         {subtitle && (

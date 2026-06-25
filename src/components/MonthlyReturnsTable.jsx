@@ -157,6 +157,7 @@ const BitcoinMonthlyReturnsTable = ({ isDashboard = false }) => {
       <TableContainer
         component={Paper}
         ref={tableRef}
+        className={isMobile ? 'mobile-scroll-table' : undefined}
         sx={{
           maxHeight: isMobile ? 400 : 'none',
           overflow: 'auto',
@@ -169,6 +170,14 @@ const BitcoinMonthlyReturnsTable = ({ isDashboard = false }) => {
             textAlign: 'center',
             whiteSpace: 'nowrap',
           },
+          '& .MuiTableCell-root:first-of-type': isMobile
+            ? {
+                position: 'sticky',
+                left: 0,
+                zIndex: 2,
+                backgroundColor: colors.primary[700],
+              }
+            : undefined,
         }}
       >
         <Table stickyHeader>
@@ -206,7 +215,8 @@ const BitcoinMonthlyReturnsTable = ({ isDashboard = false }) => {
                     <Tooltip
                       key={mIdx}
                       title={tooltipTitle}
-                      enterDelay={300}
+                      enterDelay={isMobile ? 0 : 300}
+                      enterTouchDelay={0}
                       PopperProps={{
                         sx: {
                           '& .MuiTooltip-tooltip': {
@@ -242,7 +252,8 @@ const BitcoinMonthlyReturnsTable = ({ isDashboard = false }) => {
                   <Tooltip
                     key={idx}
                     title={tooltipTitle}
-                    enterDelay={300}
+                    enterDelay={isMobile ? 0 : 300}
+                    enterTouchDelay={0}
                     PopperProps={{
                       sx: {
                         '& .MuiTooltip-tooltip': {

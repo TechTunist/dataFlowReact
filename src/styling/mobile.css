@@ -1,0 +1,148 @@
+/**
+ * Mobile-only layout overrides. All rules are inside max-width media queries
+ * so desktop ( >1024px ) and large tablets in landscape stay unchanged.
+ */
+
+/* Chart pages: space for fixed MobileChartChrome */
+@media (max-width: 1024px) {
+  .mobile-chart-chrome-spacer {
+    height: calc(48px + env(safe-area-inset-top, 0px));
+    flex-shrink: 0;
+  }
+}
+
+/* Chart control rows — wrap and stack on narrow viewports */
+@media (max-width: 1024px) {
+  .chart-top-div {
+    flex-wrap: wrap;
+    height: auto;
+    min-height: 30px;
+    gap: 8px;
+    align-items: flex-start;
+  }
+
+  .chart-top-div > div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+}
+
+@media (max-width: 600px) {
+  .chart-top-div {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .chart-top-div > div:last-child {
+    justify-content: flex-start;
+  }
+
+  .chart-bottom-div {
+    flex-wrap: wrap;
+    height: auto;
+    min-height: 30px;
+    gap: 8px;
+  }
+
+  .button-reset,
+  .button-risk,
+  .simulate-button,
+  .simulate-button-dca {
+    min-height: 44px;
+    padding: 8px 12px;
+    font-size: 0.85rem;
+  }
+
+  .select-reset {
+    min-height: 44px;
+    font-size: 0.9rem;
+  }
+
+  .switch {
+    width: 48px;
+    height: 28px;
+  }
+
+  .switch .slider:before {
+    height: 24px;
+    width: 24px;
+  }
+
+  input:checked + .slider:before {
+    transform: translateX(22px);
+  }
+
+  .scale-mode-label {
+    line-height: 44px;
+  }
+
+  .sma-toggles {
+    gap: 8px 12px;
+  }
+
+  /* Shorter chart canvas on phones — desktop uses clamp(400px, 62vh, 780px) */
+  .chart-page-content .chart-container,
+  .chart-page-content .market-cycles-plot {
+    min-height: clamp(280px, 50vh, 520px) !important;
+    height: clamp(280px, 50vh, 520px) !important;
+  }
+
+  .chart-page-content .MuiTableContainer-root {
+    min-height: clamp(280px, 45vh, 480px);
+  }
+
+  .chart-info {
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+
+  .under-chart-scroll {
+    max-height: 140px;
+  }
+
+  /* Workbench active-series panel: less chart occlusion */
+  .workbench-active-series-panel {
+    max-width: calc(100% - 16px);
+    max-height: 96px;
+    overflow-y: auto;
+    font-size: 11px;
+  }
+
+  /* Wide tables: horizontal scroll + sticky year column */
+  .mobile-scroll-table {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .mobile-scroll-table .MuiTableCell-root:first-of-type {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+  }
+
+  /* Plotly legend density */
+  .chart-container .js-plotly-plot .legend text {
+    font-size: 10px !important;
+  }
+
+  .about-page {
+    padding: 16px !important;
+    line-height: 1.55;
+  }
+
+  .about-page p,
+  .about-page h1,
+  .about-page h2,
+  .about-page h3 {
+    text-align: left;
+    text-indent: 0;
+  }
+}
+
+/* Sticky signup bar — respect home indicator on notched phones */
+@media (max-width: 600px) {
+  .splash-sticky-cta {
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}

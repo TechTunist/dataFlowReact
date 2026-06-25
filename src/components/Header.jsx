@@ -4,22 +4,37 @@ import { tokens } from "../theme";
 const Header = ({ title, subtitle }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm')); // This checks if the current viewport is small.
+  const isNarrow = useMediaQuery(theme.breakpoints.down("sm"));
 
   return (
-    <Box mb="17px" >
+    <Box sx={{ mb: isNarrow ? "4px" : "17px", px: isNarrow ? 0.5 : 0, minWidth: 0 }}>
       <Typography
-        variant={isMobile ? 'h4' : 'h3'} // Smaller size for mobile
+        variant={isNarrow ? "h5" : "h3"}
         color={colors.grey[100]}
-        sx={{ m: "15px 0 5px 0" }}
+        sx={{
+          m: isNarrow ? "4px 0 2px 0" : "15px 0 5px 0",
+          lineHeight: 1.2,
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+        }}
+        noWrap={isNarrow}
       >
         {title}
       </Typography>
-      <Typography
-        variant={isMobile ? 'h7' : 'h6'} // Smaller size for mobile
-        color={colors.greenAccent[500]}>
-        {subtitle}
-      </Typography>
+      {subtitle && (
+        <Typography
+          variant="body2"
+          color={colors.greenAccent[500]}
+          sx={{
+            lineHeight: 1.2,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}
+          noWrap={isNarrow}
+        >
+          {subtitle}
+        </Typography>
+      )}
     </Box>
   );
 };

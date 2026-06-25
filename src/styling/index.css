@@ -108,15 +108,11 @@ body,
 
 
 
-@media (max-width: 768px) {
-  /* .sidebar {
-    width: 0;
-    overflow: hidden;
-  } */
-
+@media (max-width: 1024px) {
   .content {
     flex-grow: 1;
     width: 100%;
+    -webkit-overflow-scrolling: touch;
   }
 }
 

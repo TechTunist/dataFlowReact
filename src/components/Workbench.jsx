@@ -1564,6 +1564,7 @@ const WorkbenchChart = ({
           </div>
         )}
         <div
+          className="workbench-active-series-panel"
           style={{
             position: 'absolute',
             top: '10px',

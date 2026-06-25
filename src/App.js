@@ -7,10 +7,8 @@ import AppBootScreen from "./components/AppBootScreen";
 import { Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { ClerkProvider, useAuth } from "@clerk/clerk-react";
 import Topbar from "./scenes/global/Topbar";
+import MobileChartChrome from "./scenes/global/MobileChartChrome";
 import { isChartPageRoute } from "./scenes/ChartTemplates/chartPageMeta";
-import MenuOutlinedIcon from "@mui/icons-material/MenuOutlined";
-import { IconButton } from "@mui/material";
-import { tokens } from "./theme";
 import Sidebar from "./scenes/global/Sidebar";
 import BasicChart from "./scenes/ChartTemplates/BasicChart";
 import { CssBaseline, ThemeProvider } from "@mui/material";
@@ -370,7 +368,8 @@ const AppContent = memo(() => {
   const isUserMenuPage = userMenuRoutes.includes(location.pathname);
   const shouldHideTopbar = isChartPageRoute(location.pathname);
   const shouldRenderTopbar = !isStandalonePublicPage && !isUserMenuPage && !shouldHideTopbar;
-  const navColors = tokens(memoizedTheme.palette.mode);
+  const showMobileChartChrome =
+    isMobile && shouldHideTopbar && !isStandalonePublicPage && !isUserMenuPage;
   // Display Stripe initialization error if present
   // In dev bypass mode we don't want Stripe failures (e.g. tracking blockers in Firefox private mode)
   // to prevent the rest of the app from working.
@@ -407,25 +406,7 @@ const AppContent = memo(() => {
                   />
                 )}
                 {isUserMenuPage && <AccountNavBar />}
-                {shouldHideTopbar && isMobile && !isStandalonePublicPage && !isUserMenuPage && !isSidebar && (
-                  <IconButton
-                    onClick={() => setIsSidebar(true)}
-                    aria-label="open navigation"
-                    size="small"
-                    sx={{
-                      position: "fixed",
-                      top: 10,
-                      left: 10,
-                      zIndex: 1200,
-                      bgcolor: navColors.primary[500],
-                      color: navColors.grey[100],
-                      boxShadow: 2,
-                      "&:hover": { bgcolor: navColors.primary[600] },
-                    }}
-                  >
-                    <MenuOutlinedIcon fontSize="small" />
-                  </IconButton>
-                )}
+                {showMobileChartChrome && <MobileChartChrome setIsSidebar={setIsSidebar} />}
                 <div style={{ display: "flex", flex: 1 }}>
                   {/* Render Sidebar only if signed in */}
                   {!isStandalonePublicPage && !isUserMenuPage && (
@@ -446,7 +427,11 @@ const AppContent = memo(() => {
                     {shouldRenderTopbar ? (
                       <div style={{ height: isMobile ? "65px" : "85px" }} />
                     ) : shouldHideTopbar ? (
-                      <div style={{ height: "16px" }} />
+                      isMobile ? (
+                        <div className="mobile-chart-chrome-spacer" />
+                      ) : (
+                        <div style={{ height: "16px" }} />
+                      )
                     ) : null}
                     {isUserMenuPage && <div style={{ height: "65px" }} />}
                     <ErrorBoundary fallbackMessage="The main application area failed to load.">

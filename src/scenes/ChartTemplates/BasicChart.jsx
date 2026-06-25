@@ -19,10 +19,14 @@ const BasicChart = ({
   const { title, subtitle } = getTitleAndSubtitle(location.pathname, isMobile);
   const chartId = routeToChartId[location.pathname];
 
-  const chartAreaMinHeight = chartMinHeight || "clamp(400px, 62vh, 780px)";
+  const chartAreaMinHeight =
+    chartMinHeight ||
+    (isMobile
+      ? "clamp(280px, 50vh, 520px)"
+      : "clamp(400px, 62vh, 780px)");
 
   return (
-    <Box m="20px" mt="10px">
+    <Box sx={{ m: { xs: "8px", md: "20px" }, mt: { xs: "6px", md: "10px" } }}>
       <ChartPageFooterProvider>
         <ChartCardShell title={title} subtitle={subtitle} chartId={chartId}>
           <Box
