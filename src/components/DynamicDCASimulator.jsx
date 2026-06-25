@@ -27,6 +27,11 @@ import {
   computeMarketHeatPipeline,
   getMarketHeatSmaLabel,
 } from '../utility/marketHeatUtils';
+import { calculateRunningRoiRiskSeries } from '../utility/runningRoiUtils';
+
+const ROI_RISK_DEFAULT_BUY_STRONG = 0.09;
+const ROI_RISK_DEFAULT_SELL_STRONG = 0.95;
+const ROI_RISK_METRIC_LINE_COLOR = '#ff0062';
 
 // Tx Tension ratio scale varies widely by smoothing (e.g. ~74 on 7-day SMA vs ~850 on 3-day SMA).
 // Tier defaults are expressed as fractions of the series max so they stay meaningful across smoothings.
@@ -214,7 +219,7 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
   } = useContext(DataContext);
 
   // Strategy selection
-  const [strategy, setStrategy] = useState('risk'); // 'risk' | 'tx-tension' | 'heat-index'
+  const [strategy, setStrategy] = useState('risk'); // 'risk' | 'tx-tension' | 'heat-index' | 'running-roi-risk'
   const [txSmoothing, setTxSmoothing] = useState('sma-7');
 
   // Common simulation params
@@ -256,6 +261,16 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
   const [heatSellTiers, setHeatSellTiers] = useState([
     { level: 70, sellPercent: 15, label: 'Warm / Medium Overbought' },
     { level: 85, sellPercent: 35, label: 'Hot / Strong Overbought' },
+  ]);
+
+  // Running ROI Risk tiers (0–1 scale, same signal as /running-roi-risk)
+  const [roiRiskBuyTiers, setRoiRiskBuyTiers] = useState([
+    { level: ROI_RISK_DEFAULT_BUY_STRONG, multiplier: 2.0, label: 'Strong Oversold' },
+    { level: 0.18, multiplier: 1.5, label: 'Medium Oversold' },
+  ]);
+  const [roiRiskSellTiers, setRoiRiskSellTiers] = useState([
+    { level: 0.80, sellPercent: 15, label: 'Medium Overbought' },
+    { level: ROI_RISK_DEFAULT_SELL_STRONG, sellPercent: 35, label: 'Strong Overbought' },
   ]);
 
   // Simulation results
@@ -322,6 +337,11 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
 
   const isTx = strategy === 'tx-tension';
   const isHeat = strategy === 'heat-index';
+  const isRoiRisk = strategy === 'running-roi-risk';
+  const isNormalized01 = strategy === 'risk' || isRoiRisk;
+
+  const setBuyTiersForStrategy = isHeat ? setHeatBuyTiers : isTx ? setTxBuyTiers : isRoiRisk ? setRoiRiskBuyTiers : setRiskBuyTiers;
+  const setSellTiersForStrategy = isHeat ? setHeatSellTiers : isTx ? setTxSellTiers : isRoiRisk ? setRoiRiskSellTiers : setRiskSellTiers;
 
   // Ensure data
   useEffect(() => {
@@ -386,6 +406,19 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
         indicator: d.value,
         raw: d,
       }));
+    } else if (strategy === 'running-roi-risk') {
+      const riskSeries = calculateRunningRoiRiskSeries(contextBtcData);
+      return riskSeries
+        .map((d) => {
+          const price = priceMap.get(d.time);
+          return {
+            time: d.time,
+            price: price || 0,
+            indicator: Math.max(0, Math.min(1, d.riskScore)),
+            raw: d,
+          };
+        })
+        .filter((d) => d.price > 0);
     } else {
       return [];
     }
@@ -467,8 +500,19 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
   const chartSeriesData = fullChartData;
 
   // Current tiers based on strategy (for chart + sim)
-  const buyTiers = useMemo(() => (isTx ? txBuyTiers : isHeat ? heatBuyTiers : riskBuyTiers), [isTx, isHeat, txBuyTiers, heatBuyTiers, riskBuyTiers]);
-  const sellTiers = useMemo(() => (isTx ? txSellTiers : isHeat ? heatSellTiers : riskSellTiers), [isTx, isHeat, txSellTiers, heatSellTiers, riskSellTiers]);
+  const buyTiers = useMemo(() => {
+    if (isTx) return txBuyTiers;
+    if (isHeat) return heatBuyTiers;
+    if (isRoiRisk) return roiRiskBuyTiers;
+    return riskBuyTiers;
+  }, [isTx, isHeat, isRoiRisk, txBuyTiers, heatBuyTiers, roiRiskBuyTiers, riskBuyTiers]);
+
+  const sellTiers = useMemo(() => {
+    if (isTx) return txSellTiers;
+    if (isHeat) return heatSellTiers;
+    if (isRoiRisk) return roiRiskSellTiers;
+    return riskSellTiers;
+  }, [isTx, isHeat, isRoiRisk, txSellTiers, heatSellTiers, roiRiskSellTiers, riskSellTiers]);
 
   // Sorted for logic (lowest buy level first for strongest oversold, highest sell for strongest)
   const sortedBuyTiers = useMemo(() => [...buyTiers].sort((a, b) => a.level - b.level), [buyTiers]);
@@ -529,8 +573,9 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
   const strategyDisplayName = useMemo(() => {
     if (isTx) return 'Tx Tension (MVRV/Tx)';
     if (isHeat) return 'Market Heat Index';
+    if (isRoiRisk) return 'Running ROI Risk (1Y ROI)';
     return 'Bitcoin Risk Metric';
-  }, [isTx, isHeat]);
+  }, [isTx, isHeat, isRoiRisk]);
 
   // Core backtesting engine — pure computation for a single buy mode + selling setting
   const computeBacktestResult = useCallback((buyMode, sellingEnabled) => {
@@ -804,6 +849,15 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
         { level: 70, sellPercent: 15, label: 'Warm / Medium Overbought' },
         { level: 85, sellPercent: 35, label: 'Hot / Strong Overbought' },
       ]);
+    } else if (isRoiRisk) {
+      setRoiRiskBuyTiers([
+        { level: ROI_RISK_DEFAULT_BUY_STRONG, multiplier: 2.0, label: 'Strong Oversold' },
+        { level: 0.18, multiplier: 1.5, label: 'Medium Oversold' },
+      ]);
+      setRoiRiskSellTiers([
+        { level: 0.80, sellPercent: 15, label: 'Medium Overbought' },
+        { level: ROI_RISK_DEFAULT_SELL_STRONG, sellPercent: 35, label: 'Strong Overbought' },
+      ]);
     } else {
       setRiskBuyTiers([
         { level: 0.25, multiplier: 2.0, label: 'Strong Oversold' },
@@ -822,7 +876,9 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
     ? `MVRV/Tx Ratio (${txSmoothing}) — observed range ~${txIndicatorRange.dataMin.toFixed(txLevelDecimals)}–${txIndicatorRange.dataMax.toFixed(txLevelDecimals)}; tier sliders span 0–${txIndicatorRange.max}. Lower = oversold/buy; higher = overbought/sell.`
     : isHeat
       ? `Market Heat Index (0-100) — synced with /market-heat-index (${getMarketHeatSmaLabel(heatSmaPeriod)} smoothing${heatStretchToFullRange ? ', stretched to 0–100' : ''}). Low = cold/oversold; high = hot/overbought.`
-      : 'Risk (0 = low risk / good entry, 1 = high risk)';
+      : isRoiRisk
+        ? 'Running ROI Risk (0–1) — same normalized 1Y ROI signal as /running-roi-risk. Low = oversold/buy; high = overbought/sell.'
+        : 'Risk (0 = low risk / good entry, 1 = high risk)';
 
   // Note: getSimulatorLevels was previously used to overlay tiers on the embedded risk/tx charts.
   // Those embeds have been removed per requirements; the levels array is no longer needed here
@@ -977,17 +1033,21 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
 
   const metricLabel = strategy === 'risk'
     ? 'Bitcoin Risk Metric (0-1)'
-    : strategy === 'tx-tension'
-      ? `Tx Tension (MVRV/Tx Ratio, ${txSmoothing}, 0–${txIndicatorRange.max})`
-      : `Market Heat Index (0-100, ${getMarketHeatSmaLabel(heatSmaPeriod)}${heatStretchToFullRange ? ', stretched' : ''})`;
+    : strategy === 'running-roi-risk'
+      ? 'Running ROI Risk (0-1)'
+      : strategy === 'tx-tension'
+        ? `Tx Tension (MVRV/Tx Ratio, ${txSmoothing}, 0–${txIndicatorRange.max})`
+        : `Market Heat Index (0-100, ${getMarketHeatSmaLabel(heatSmaPeriod)}${heatStretchToFullRange ? ', stretched' : ''})`;
 
   const metricLineColor = strategy === 'risk'
     ? colors.greenAccent[400]
-    : strategy === 'tx-tension'
-      ? colors.blueAccent[400]
-      : '#00bcd4';
+    : strategy === 'running-roi-risk'
+      ? ROI_RISK_METRIC_LINE_COLOR
+      : strategy === 'tx-tension'
+        ? colors.blueAccent[400]
+        : '#00bcd4';
 
-  const metricYDomain = strategy === 'risk'
+  const metricYDomain = isNormalized01
     ? [0, 1.02]
     : strategy === 'heat-index'
       ? [0, 102]
@@ -1001,7 +1061,15 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
       const modeResult = getCachedResult(key, buyStrategy, enableDynamicSelling);
       return {
         key,
-        name: key === 'risk' ? 'Bitcoin Risk Metric' : key === 'tx-tension' ? 'Tx Tension (MVRV/Tx)' : key === 'heat-index' ? 'Market Heat Index' : key,
+        name: key === 'risk'
+          ? 'Bitcoin Risk Metric'
+          : key === 'tx-tension'
+            ? 'Tx Tension (MVRV/Tx)'
+            : key === 'heat-index'
+              ? 'Market Heat Index'
+              : key === 'running-roi-risk'
+                ? 'Running ROI Risk'
+                : key,
         roi: modeResult?.roi ?? 0,
       };
     }).filter(e => getCachedResult(e.key, buyStrategy, enableDynamicSelling));
@@ -1044,6 +1112,8 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
         if (Array.isArray(saved.txSellTiers)) setTxSellTiers(saved.txSellTiers);
         if (Array.isArray(saved.heatBuyTiers)) setHeatBuyTiers(saved.heatBuyTiers);
         if (Array.isArray(saved.heatSellTiers)) setHeatSellTiers(saved.heatSellTiers);
+        if (Array.isArray(saved.roiRiskBuyTiers)) setRoiRiskBuyTiers(saved.roiRiskBuyTiers);
+        if (Array.isArray(saved.roiRiskSellTiers)) setRoiRiskSellTiers(saved.roiRiskSellTiers);
 
         if (saved.heatWeights && typeof saved.heatWeights === 'object') {
           setHeatWeights((prev) => ({ ...prev, ...saved.heatWeights }));
@@ -1087,6 +1157,8 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
       heatStretchToFullRange,
       heatBuyTiers,
       heatSellTiers,
+      roiRiskBuyTiers,
+      roiRiskSellTiers,
     };
     try {
       localStorage.setItem(DCA_STATE_KEY, JSON.stringify(stateToPersist));
@@ -1112,6 +1184,8 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
     heatStretchToFullRange,
     heatBuyTiers,
     heatSellTiers,
+    roiRiskBuyTiers,
+    roiRiskSellTiers,
     resultsByStrategy,
   ]);
 
@@ -1157,6 +1231,13 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
             onClick={() => setStrategy('heat-index')}
             color={strategy === 'heat-index' ? 'success' : 'default'}
             variant={strategy === 'heat-index' ? 'filled' : 'outlined'}
+            sx={{ fontSize: isMobile ? '0.8rem' : '0.95rem', py: isMobile ? 1 : 2 }}
+          />
+          <Chip
+            label="Running ROI Risk (0–1)"
+            onClick={() => setStrategy('running-roi-risk')}
+            color={strategy === 'running-roi-risk' ? 'success' : 'default'}
+            variant={strategy === 'running-roi-risk' ? 'filled' : 'outlined'}
             sx={{ fontSize: isMobile ? '0.8rem' : '0.95rem', py: isMobile ? 1 : 2 }}
           />
           {isTx && (
@@ -1322,10 +1403,7 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
                           min={isHeat ? 0 : isTx ? txIndicatorRange.min : 0}
                           max={isHeat ? 100 : isTx ? txIndicatorRange.max : 1}
                           step={isHeat ? 1 : isTx ? txIndicatorRange.step : 0.01}
-                          onChange={(_, v) => {
-                            const setter = isHeat ? setHeatBuyTiers : isTx ? setTxBuyTiers : setRiskBuyTiers;
-                            updateTier(setter, idx, 'level', v);
-                          }}
+                          onChange={(_, v) => updateTier(setBuyTiersForStrategy, idx, 'level', v)}
                           valueLabelDisplay="auto"
                           sx={{ 
                             color: colors.greenAccent[500],
@@ -1340,22 +1418,16 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
                         label="Multiplier"
                         type="number" size="small" sx={{ width: 90, '& .MuiInputBase-input': { color: colors.grey[100] } }}
                         value={tier.multiplier}
-                        onChange={e => {
-                          const setter = isTx ? setTxBuyTiers : setRiskBuyTiers;
-                          updateTier(setter, idx, 'multiplier', e.target.value);
-                        }}
+                        onChange={e => updateTier(setBuyTiersForStrategy, idx, 'multiplier', e.target.value)}
                       />
-                      <Button size="small" color="error" onClick={() => {
-                        const setter = isHeat ? setHeatBuyTiers : isTx ? setTxBuyTiers : setRiskBuyTiers;
-                        removeTier(setter, idx);
-                      }}>×</Button>
+                      <Button size="small" color="error" onClick={() => removeTier(setBuyTiersForStrategy, idx)}>×</Button>
                     </Box>
                   </Box>
                 ))}
                 <Button 
                   size="small" 
                   variant="contained" 
-                  onClick={() => addTier(isHeat ? setHeatBuyTiers : isTx ? setTxBuyTiers : setRiskBuyTiers, true)}
+                  onClick={() => addTier(setBuyTiersForStrategy, true)}
                   sx={{ backgroundColor: colors.greenAccent[500], color: '#111', '&:hover': { backgroundColor: colors.greenAccent[400] }, fontSize: '0.75rem' }}
                 >
                   + Add Buy Boost Tier
@@ -1380,10 +1452,7 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
                           min={isHeat ? 0 : isTx ? txIndicatorRange.min : 0}
                           max={isHeat ? 100 : isTx ? txIndicatorRange.max : 1}
                           step={isHeat ? 1 : isTx ? txIndicatorRange.step : 0.01}
-                          onChange={(_, v) => {
-                            const setter = isHeat ? setHeatSellTiers : isTx ? setTxSellTiers : setRiskSellTiers;
-                            updateTier(setter, idx, 'level', v);
-                          }}
+                          onChange={(_, v) => updateTier(setSellTiersForStrategy, idx, 'level', v)}
                           valueLabelDisplay="auto"
                           sx={{ 
                             color: colors.blueAccent[400],
@@ -1398,22 +1467,16 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
                         label="% to Sell"
                         type="number" size="small" sx={{ width: 90, '& .MuiInputBase-input': { color: colors.grey[100] } }}
                         value={tier.sellPercent}
-                        onChange={e => {
-                          const setter = isTx ? setTxSellTiers : setRiskSellTiers;
-                          updateTier(setter, idx, 'sellPercent', e.target.value);
-                        }}
+                        onChange={e => updateTier(setSellTiersForStrategy, idx, 'sellPercent', e.target.value)}
                       />
-                      <Button size="small" color="error" onClick={() => {
-                        const setter = isHeat ? setHeatSellTiers : isTx ? setTxSellTiers : setRiskSellTiers;
-                        removeTier(setter, idx);
-                      }}>×</Button>
+                      <Button size="small" color="error" onClick={() => removeTier(setSellTiersForStrategy, idx)}>×</Button>
                     </Box>
                   </Box>
                 ))}
                 <Button 
                   size="small" 
                   variant="contained" 
-                  onClick={() => addTier(isHeat ? setHeatSellTiers : isTx ? setTxSellTiers : setRiskSellTiers, false)}
+                  onClick={() => addTier(setSellTiersForStrategy, false)}
                   sx={{ backgroundColor: colors.blueAccent[400], color: '#111', '&:hover': { backgroundColor: colors.blueAccent[300] }, fontSize: '0.75rem' }}
                 >
                   + Add Sell Tier
@@ -1588,12 +1651,12 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
                         domain={metricYDomain}
                         tick={{ fill: colors.grey[400], fontSize: 9 }}
                         tickLine={{ stroke: colors.grey[600] }}
-                        tickFormatter={(v) => strategy === 'risk' ? v.toFixed(2) : Math.round(v).toString()}
+                        tickFormatter={(v) => isNormalized01 ? v.toFixed(2) : Math.round(v).toString()}
                       />
                       <Tooltip 
                         contentStyle={{ backgroundColor: colors.primary[400], border: `1px solid ${colors.primary[500]}`, color: colors.grey[100], fontSize: 11 }}
                         labelStyle={{ color: colors.grey[300] }}
-                        formatter={(value) => [strategy === 'risk' ? value.toFixed(3) : Math.round(value), 'Metric Value']}
+                        formatter={(value) => [isNormalized01 ? value.toFixed(3) : Math.round(value), 'Metric Value']}
                       />
                       {metricChartElements}
                       <Line 
