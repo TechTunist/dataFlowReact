@@ -131,6 +131,9 @@ export function defaultOverlayFormatter(seriesId, value) {
     if (seriesId === 'VIXCLS') {
       return value.toFixed(2);
     }
+    if (seriesId === 'FED_BALANCE') {
+      return `$${value.toFixed(2)}T`;
+    }
   }
   return value.toLocaleString();
 }

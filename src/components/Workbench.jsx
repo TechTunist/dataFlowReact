@@ -40,6 +40,47 @@ import useWorkbenchTooltip from '../hooks/useWorkbenchTooltip';
 // Note: hexToRgb and colorMap are re-exported from the config module for the chart series creation effect (area fills etc).
 // All available* now single source of truth in workbench/availableSeries.js
 
+const renderWorkbenchCompactTags = (tagValue) => (
+  <Box sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0, flex: 1 }}>
+    {tagValue.length === 0
+      ? ''
+      : tagValue.length === 1
+        ? tagValue[0].label
+        : `${tagValue.length} selected`}
+  </Box>
+);
+
+const workbenchSelectorAutocompleteSx = (breakpointForRow) => ({
+  minWidth: '250px',
+  width: { xs: '100%', [breakpointForRow]: '250px' },
+  maxWidth: { xs: '100%', [breakpointForRow]: '250px' },
+  '& .MuiAutocomplete-inputRoot': {
+    flexWrap: 'nowrap',
+    overflow: 'hidden',
+    alignItems: 'center',
+  },
+});
+
+const workbenchSelectorFieldSx = (breakpointForRow, colors, theme) => ({
+  minWidth: '250px',
+  width: { xs: '100%', [breakpointForRow]: '250px' },
+  maxWidth: { xs: '100%', [breakpointForRow]: '250px' },
+  '& .MuiInputLabel-root': { color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900] },
+  '& .MuiInputLabel-root.Mui-focused': { color: colors.greenAccent[500] },
+  '& .MuiOutlinedInput-root': {
+    color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900],
+    backgroundColor: theme.palette.mode === 'dark' ? colors.primary[500] : colors.primary[200],
+    flexWrap: 'nowrap',
+    overflow: 'hidden',
+    '& fieldset': { borderColor: theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[700] },
+    '&:hover fieldset': { borderColor: colors.greenAccent[500] },
+    '&.Mui-focused fieldset': { borderColor: colors.greenAccent[500] },
+  },
+  '& .MuiAutocomplete-input': {
+    minWidth: '0 !important',
+  },
+});
+
 const WorkbenchChart = ({
   seriesId,
   isDashboard = false,
@@ -873,16 +914,13 @@ const WorkbenchChart = ({
             multiple
             disableCloseOnSelect={true}
             id="macro-series"
+            sx={workbenchSelectorAutocompleteSx(breakpointForRow)}
             options={Object.entries(availableMacroSeries).map(([id, { label }]) => ({ id, label }))}
             getOptionLabel={(option) => option.label}
             value={(mgmt.activeMacroSeries || []).map(id => ({ id, label: availableMacroSeries[id].label }))}
             onChange={(event, newValue) => mgmt.handleMacroSeriesChange({ target: { value: newValue.map(v => v.id) } }, availableMacroSeries)}
             isOptionEqualToValue={(option, value) => option.id === value.id}
-            renderTags={(tagValue) => (
-              <Box sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {tagValue.map((option) => option.label).join(', ')}
-              </Box>
-            )}
+            renderTags={renderWorkbenchCompactTags}
             renderOption={(props, option, { selected }) => (
               <li {...props} key={option.id}>
                 <Checkbox
@@ -924,19 +962,7 @@ const WorkbenchChart = ({
               <TextField
                 {...params}
                 label="Macro Data"
-                sx={{
-                  minWidth: '250px',
-                  width: { xs: '100%', [breakpointForRow]: '250px' },
-                  '& .MuiInputLabel-root': { color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900] },
-                  '& .MuiInputLabel-root.Mui-focused': { color: colors.greenAccent[500] },
-                  '& .MuiOutlinedInput-root': {
-                    color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900],
-                    backgroundColor: theme.palette.mode === 'dark' ? colors.primary[500] : colors.primary[200],
-                    '& fieldset': { borderColor: theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[700] },
-                    '&:hover fieldset': { borderColor: colors.greenAccent[500] },
-                    '&.Mui-focused fieldset': { borderColor: colors.greenAccent[500] },
-                  },
-                }}
+                sx={workbenchSelectorFieldSx(breakpointForRow, colors, theme)}
               />
             )}
           />

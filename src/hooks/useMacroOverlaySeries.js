@@ -129,6 +129,7 @@ export function useMacroOverlaySeries({
     dataContext?.minerCapThermoCapRiskData,
     dataContext?.feeRiskData,
     dataContext?.soplRiskData,
+    dataContext?.fedBalanceData,
   ]);
 
   const cleanedOverlayData = useMemo(
