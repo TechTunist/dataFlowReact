@@ -39,20 +39,20 @@ const BitcoinROI = ({ isDashboard = false }) => {
       autorange: true,
       fixedrange: true
     },
-    showlegend: true,
+    showlegend: !isDashboard,
     hovermode: 'x unified',
     hoverlabel: {
       font: {
         size: isNarrowScreen ? 8 : 12,
       },
     },
-    legend: {
+    legend: !isDashboard ? {
       orientation: 'h',
       x: 0.5,
       xanchor: 'center',
       y: -0.1,
       yanchor: 'top'
-    }
+    } : {},
   });
 
   // Update chart background, font color, and tooltip size when theme or screen size changes
@@ -178,13 +178,13 @@ const BitcoinROI = ({ isDashboard = false }) => {
         shortName: 'Deselect / Select All',
         data: [{ day: 0, roi: 0 }],
         visible: true,
-        showlegend: true,
+        showlegend: !isDashboard,
         type: 'scatter',
         mode: 'none'
       });
     }
     return datasets;
-  }, [yearDataSets]);
+  }, [yearDataSets, isDashboard]);
 
   // Handle year selection
   const handleYearSelection = useCallback(e => {
@@ -495,7 +495,7 @@ const BitcoinROI = ({ isDashboard = false }) => {
             hoverinfo: item.shortName === 'Deselect / Select All' ? 'none' : 'text',
             hovertemplate: item.shortName === 'Deselect / Select All' ? undefined : `%{text}<extra></extra>`,
             visible: visibilityMap[item.name] !== undefined ? visibilityMap[item.name] : true,
-            showlegend: true
+            showlegend: !isDashboard
           }))}
           layout={layout}
           config={{

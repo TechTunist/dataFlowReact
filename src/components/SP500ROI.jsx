@@ -90,15 +90,15 @@ const SP500ROI = ({ isDashboard = false }) => {
           type: 'log',
           autorange: true,
         },
-        showlegend: true,
+        showlegend: !isDashboard,
         hovermode: 'x unified',
-        legend: {
+        legend: !isDashboard ? {
           orientation: 'h',
           x: 0.5,
           xanchor: 'center',
           y: -0.15,
           yanchor: 'top',
-        },
+        } : {},
     });
 
     // Update chart colors on theme change
@@ -223,13 +223,13 @@ const SP500ROI = ({ isDashboard = false }) => {
                 shortName: 'Deselect / Select All',
                 data: [{ day: 0, roi: 0 }],
                 visible: true,
-                showlegend: true,
+                showlegend: !isDashboard,
                 type: 'scatter',
                 mode: 'none'
             });
         }
         return datasets;
-    }, [yearDataSets]);
+    }, [yearDataSets, isDashboard]);
 
     // Handle year selection
     const handleYearSelection = useCallback(e => {
@@ -288,7 +288,7 @@ const SP500ROI = ({ isDashboard = false }) => {
             ...prev,
             xaxis: { ...prev.xaxis, autorange: true },
             yaxis: { ...prev.yaxis, autorange: true },
-            showlegend: true
+            showlegend: !isDashboard
         }));
         setIsSelectAll(false);
         setVisibilityMap(prev => {
@@ -485,7 +485,7 @@ const SP500ROI = ({ isDashboard = false }) => {
                         hoverinfo: item.shortName === 'Deselect / Select All' ? 'none' : 'text',
                         hovertemplate: item.shortName === 'Deselect / Select All' ? undefined : `%{text}<extra></extra>`,
                         visible: visibilityMap[item.name] !== undefined ? visibilityMap[item.name] : getDefaultYearVisibility(item.name, defaultVisibleYear),
-                        showlegend: true,
+                        showlegend: !isDashboard,
                         hoverlabel: {
                             bgcolor: colors.primary[900],
                             font: { color: colors.primary[100], size: isMobile ? 12 : 14 },

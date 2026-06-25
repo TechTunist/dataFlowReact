@@ -114,14 +114,14 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
       zerolinewidth: 1,
       fixedrange: true,
     },
-    legend: {
+    legend: !isDashboard ? {
       orientation: 'h',
       x: 0.5,
       xanchor: 'center',
       y: -0.2,
       yanchor: 'top',
-    },
-    showlegend: isMobile ? false : true,
+    } : {},
+    showlegend: !isDashboard,
     hovermode: 'closest',
     hoverdistance: 10,
   });
@@ -316,7 +316,7 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
         zerolinewidth: showExtensionArea ? 1 : undefined, // Only set width when visible
         fixedrange: true,
       },
-      legend: {
+      legend: !isDashboard ? {
         orientation: 'h',
         x: 0.5,
         xanchor: 'center',
@@ -326,8 +326,8 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
         itemwidth: isNarrowScreen ? 70 : undefined,
         tracegroupgap: isNarrowScreen ? 2 : 10,
         itemsizing: 'constant',
-      },
-      showlegend: true,
+      } : {},
+      showlegend: !isDashboard,
       hovermode: 'closest',
       hoverdistance: 10,
     });
