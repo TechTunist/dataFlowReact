@@ -4,7 +4,7 @@ import { initDB, cacheData, getCachedData, clearCache, isCacheFresh, getFreshCac
 import { detectTimeSeriesIntegrityIssues, shouldInvalidateDailyCache } from './utility/cacheIntegrity';
 import { apiUrl } from './config/api';
 import logger from './utils/logger';
-import { initializeDataService, getBtcPriceSeries, getEthPriceSeries, getMvrvSeries, getMarketCapSeries, getDominanceSeries } from './data'; // New data layer (Phase 1)
+import { initializeDataService, getBtcPriceSeries, getEthPriceSeries, getMvrvSeries, getMarketCapSeries, getDominanceSeries, formatRiskSeries } from './data'; // New data layer (Phase 1)
 import { waitForPreloadIfNeeded } from './utils/waitForPreloadIfNeeded'; // Phase 1: extracted preload guard helper
 import { getAuthHeaders } from './utils/clerkAuth';
 
@@ -47,6 +47,7 @@ const CACHE_CONFIG = {
   minerCapThermoCapRiskData: { ttl: 24 * 60 * 60 * 1000, useDateCheck: false },
   feeRiskData: { ttl: 24 * 60 * 60 * 1000, useDateCheck: false },
   soplRiskData: { ttl: 24 * 60 * 60 * 1000, useDateCheck: false },
+  floorEchoData: { ttl: 6 * 60 * 60 * 1000, useDateCheck: true },
   onchainMetricsData: { ttl: 12 * 60 * 60 * 1000, useDateCheck: false },
 
   // Others
@@ -418,6 +419,9 @@ export const DataProvider = ({ children }) => {
   const [txMvrvRatioDataBySmoothing, setTxMvrvRatioDataBySmoothing] = useState({});
   const [isTxMvrvRatioDataFetched, setIsTxMvrvRatioDataFetched] = useState({});
   const [txMvrvRatioLastUpdated, setTxMvrvRatioLastUpdated] = useState({});
+  const [floorEchoData, setFloorEchoData] = useState(null);
+  const [isFloorEchoDataFetched, setIsFloorEchoDataFetched] = useState(false);
+  const [floorEchoLastUpdated, setFloorEchoLastUpdated] = useState(null);
   const [fredSeriesData, setFredSeriesData] = useState({});
   const [altcoinData, setAltcoinData] = useState({});
   const [altcoinLastUpdated, setAltcoinLastUpdated] = useState({});
@@ -1342,6 +1346,54 @@ const fetchDominanceData = useCallback(async () => {
     });
   }, [fetchTxMvrvRatioData]);
 
+  const fetchFloorEchoData = useCallback(async () => {
+    if (isFloorEchoDataFetched) return;
+
+    const success = await fetchWithCache({
+      cacheId: 'floorEchoData',
+      apiUrl: apiUrl('/api/floor-echo/'),
+      formatData: (data) => {
+        const series = (data.series || [])
+          .map((item) => ({
+            time: item.time,
+            fei: parseFloat(item.fei),
+            btcPrice: item.btc_price != null ? parseFloat(item.btc_price) : null,
+            capitulation: item.capitulation != null ? parseFloat(item.capitulation) : null,
+            drawdown: item.drawdown != null ? parseFloat(item.drawdown) : null,
+            dampening: item.dampening != null ? parseFloat(item.dampening) : null,
+            inFloorZone: Boolean(item.in_floor_zone),
+            nearHistoricFloor: Boolean(item.near_historic_floor),
+          }))
+          .filter((item) => !Number.isNaN(item.fei))
+          .sort((a, b) => new Date(a.time) - new Date(b.time));
+
+        return {
+          formulaVersion: data.formula_version,
+          floorBand: data.floor_band != null ? parseFloat(data.floor_band) : null,
+          echoBand: data.echo_band != null ? parseFloat(data.echo_band) : null,
+          time: data.last_updated || series[series.length - 1]?.time || null,
+          series,
+        };
+      },
+      setData: setFloorEchoData,
+      setLastUpdated: setFloorEchoLastUpdated,
+      setIsFetched: setIsFloorEchoDataFetched,
+      useDateCheck: true,
+    });
+    if (!success) {
+      setIsFloorEchoDataFetched(false);
+    }
+  }, [isFloorEchoDataFetched]);
+
+  const refreshFloorEchoData = useCallback(async () => {
+    await refreshData({
+      cacheId: 'floorEchoData',
+      setData: () => setFloorEchoData(null),
+      setIsFetched: setIsFloorEchoDataFetched,
+      fetchFunction: fetchFloorEchoData,
+    });
+  }, [fetchFloorEchoData]);
+
   const fetchAltcoinData = useCallback(async (coin) => {
     if (isAltcoinDataFetched[coin]) return;
 
@@ -1587,67 +1639,26 @@ const fetchDominanceData = useCallback(async () => {
   const fetchRiskMetricsData = useCallback(async () => {
     if (isMvrvRiskDataFetched && isPuellRiskDataFetched && isMinerCapThermoCapRiskDataFetched && isFeeRiskDataFetched && isSoplRiskDataFetched) return;
 
-    const currentDate = new Date().toISOString().split('T')[0];
-    const currentTimestamp = Date.now();
+    const riskMetricDefs = [
+      { metric: 'mvrv_zscore', cacheId: 'mvrvRiskData', setData: setMvrvRiskData, setIsFetched: setIsMvrvRiskDataFetched, setLastUpdated: setMvrvRiskLastUpdated },
+      { metric: 'puell_multiple', cacheId: 'puellRiskData', setData: setPuellRiskData, setIsFetched: setIsPuellRiskDataFetched, setLastUpdated: setPuellRiskLastUpdated },
+      { metric: 'miner_cap_thermo', cacheId: 'minerCapThermoCapRiskData', setData: setMinerCapThermoCapRiskData, setIsFetched: setIsMinerCapThermoCapRiskDataFetched, setLastUpdated: setMinerCapThermoCapRiskLastUpdated },
+      { metric: 'fee_risk', cacheId: 'feeRiskData', setData: setFeeRiskData, setIsFetched: setIsFeeRiskDataFetched, setLastUpdated: setFeeRiskLastUpdated },
+      { metric: 'sopl_risk', cacheId: 'soplRiskData', setData: setSoplRiskData, setIsFetched: setIsSoplRiskDataFetched, setLastUpdated: setSoplRiskLastUpdated },
+    ];
 
-    const processRiskMetric = async (metric, cacheId, setData, setIsFetched, setLastUpdated) => {
-      try {
-        const cached = await getCachedData(cacheId);
-        if (cached && cached.data.length > 0) {
-          const sortedCachedData = [...cached.data].sort((a, b) => new Date(a.time) - new Date(b.time));
-          const latestCachedDate = sortedCachedData[sortedCachedData.length - 1].time;
-          if (latestCachedDate >= currentDate) {
-            setData(sortedCachedData);
-            setLastUpdated(latestCachedDate);
-            setIsFetched(true);
-            return true;
-          }
-        }
-
-        const riskUrl = apiUrl(`/api/risk-metrics/?metric=${metric}&time__gte=2010-09-05`);
-        const allData = await fetchAllPages(riskUrl);
-
-        if (!allData || allData.length === 0) {
-          throw new Error(`No data returned for ${metric}`);
-        }
-
-        const formattedData = allData
-          .map((item) => {
-            if (!item || !item.time || item.value == null) {
-              logger.warn(`Invalid item in ${metric} data:`, item);
-              return null;
-            }
-            return {
-              time: item.time,
-              Risk: parseFloat(item.value),
-            };
-          })
-          .filter((item) => item !== null)
-          .sort((a, b) => new Date(a.time) - new Date(b.time));
-
-        if (formattedData.length === 0) {
-          throw new Error(`No valid formatted data for ${metric} after processing`);
-        }
-
-        setData(formattedData);
-        setLastUpdated(formattedData[formattedData.length - 1].time);
-        await cacheData(cacheId, formattedData, currentTimestamp);
-        setIsFetched(true);
-        return true;
-      } catch (error) {
-        console.error(`Error fetching ${metric} risk metric:`, error);
-        setIsFetched(false);
-        return false;
-      }
-    };
-
-    await Promise.all([
-      processRiskMetric('mvrv_zscore', 'mvrvRiskData', setMvrvRiskData, setIsMvrvRiskDataFetched, setMvrvRiskLastUpdated),
-      processRiskMetric('puell_multiple', 'puellRiskData', setPuellRiskData, setIsPuellRiskDataFetched, setPuellRiskLastUpdated),
-      processRiskMetric('miner_cap_thermo', 'minerCapThermoCapRiskData', setMinerCapThermoCapRiskData, setIsMinerCapThermoCapRiskDataFetched, setMinerCapThermoCapRiskLastUpdated),
-      processRiskMetric('fee_risk', 'feeRiskData', setFeeRiskData, setIsFeeRiskDataFetched, setFeeRiskLastUpdated), // New
-      processRiskMetric('sopl_risk', 'soplRiskData', setSoplRiskData, setIsSoplRiskDataFetched, setSoplRiskLastUpdated), // New
-    ]);
+    await Promise.all(
+      riskMetricDefs.map(({ metric, cacheId, setData, setIsFetched, setLastUpdated }) =>
+        fetchWithCache({
+          cacheId,
+          apiUrl: apiUrl(`/api/risk-metrics/?metric=${metric}&time__gte=2010-09-05`),
+          formatData: formatRiskSeries,
+          setData,
+          setLastUpdated,
+          setIsFetched,
+        })
+      )
+    );
   }, [
     isMvrvRiskDataFetched,
     isPuellRiskDataFetched,
@@ -1751,6 +1762,11 @@ const fetchDominanceData = useCallback(async () => {
       fetchTxMvrvRatioData,
       refreshTxMvrvRatioData,
       txMvrvRatioLastUpdated,
+      floorEchoData,
+      fetchFloorEchoData,
+      refreshFloorEchoData,
+      floorEchoLastUpdated,
+      isFloorEchoDataFetched,
       altcoinData,
       fetchAltcoinData,
       refreshAltcoinData,
@@ -1878,6 +1894,11 @@ const fetchDominanceData = useCallback(async () => {
       fetchTxMvrvRatioData,
       refreshTxMvrvRatioData,
       txMvrvRatioLastUpdated,
+      floorEchoData,
+      fetchFloorEchoData,
+      refreshFloorEchoData,
+      floorEchoLastUpdated,
+      isFloorEchoDataFetched,
       altcoinData,
       fetchAltcoinData,
       refreshAltcoinData,

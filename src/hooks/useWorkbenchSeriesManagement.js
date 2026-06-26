@@ -30,6 +30,7 @@ export function useWorkbenchSeriesManagement({ dataContext, setIsLoading, setErr
   const [activeMacroSeries, setActiveMacroSeries] = useState([]);
   const [activeCryptoSeries, setActiveCryptoSeries] = useState([]);
   const [activeIndicatorSeries, setActiveIndicatorSeries] = useState([]);
+  const [activeStockSeries, setActiveStockSeries] = useState([]);
   const [activeDerivedSeries, setActiveDerivedSeries] = useState([]);
 
   // NOTE: The real handler impls are below. We import the config in the caller and pass the maps
@@ -126,6 +127,26 @@ export function useWorkbenchSeriesManagement({ dataContext, setIsLoading, setErr
     });
   }, [dataContext, setIsLoading, setError]);
 
+  const handleStockSeriesChangeImpl = useCallback((event, availableStock) => {
+    const selected = event.target.value;
+    setActiveStockSeries(selected);
+    selected.forEach(id => {
+      const seriesInfo = availableStock[id];
+      if (!seriesInfo) return;
+      const symbol = seriesInfo.symbol;
+      if (!dataContext?.altcoinData?.[symbol] || dataContext.altcoinData[symbol].length === 0) {
+        setIsLoading?.(true);
+        setError?.(null);
+        dataContext.fetchAltcoinData(symbol)
+          .catch(err => {
+            setError?.(`Failed to fetch ${seriesInfo.label}. Please try again later.`);
+            logger.error(`Error fetching stock ${symbol}:`, err);
+          })
+          .finally(() => setIsLoading?.(false));
+      }
+    });
+  }, [dataContext, setIsLoading, setError]);
+
   const handleDerivedSeriesChange = useCallback((event) => {
     const selected = event.target.value;
     setActiveDerivedSeries(selected);
@@ -135,6 +156,7 @@ export function useWorkbenchSeriesManagement({ dataContext, setIsLoading, setErr
     setActiveMacroSeries([]);
     setActiveCryptoSeries([]);
     setActiveIndicatorSeries([]);
+    setActiveStockSeries([]);
     setActiveDerivedSeries([]);
     // Note: caller should also reset derived defs/data via its derived hook
   }, []);
@@ -155,6 +177,8 @@ export function useWorkbenchSeriesManagement({ dataContext, setIsLoading, setErr
     setActiveCryptoSeries,
     activeIndicatorSeries,
     setActiveIndicatorSeries,
+    activeStockSeries,
+    setActiveStockSeries,
     activeDerivedSeries,
     setActiveDerivedSeries,
 
@@ -162,6 +186,7 @@ export function useWorkbenchSeriesManagement({ dataContext, setIsLoading, setErr
     handleMacroSeriesChange: (e, availMacro) => handleMacroSeriesChangeImpl(e, availMacro),
     handleCryptoSeriesChange: (e, availCrypto) => handleCryptoSeriesChangeImpl(e, availCrypto),
     handleIndicatorSeriesChange: (e, availIndicator) => handleIndicatorSeriesChangeImpl(e, availIndicator),
+    handleStockSeriesChange: (e, availStock) => handleStockSeriesChangeImpl(e, availStock),
     handleDerivedSeriesChange,
 
     // Bulk

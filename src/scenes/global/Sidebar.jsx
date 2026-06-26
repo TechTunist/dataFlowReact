@@ -48,6 +48,7 @@ import LayersIcon from "@mui/icons-material/Layers";
 import HistoryIcon from "@mui/icons-material/History";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
+import TrendingDownIcon from "@mui/icons-material/TrendingDown";
 import PeopleIcon from "@mui/icons-material/People";
 import TableChartIcon from "@mui/icons-material/TableChart";
 import CalculateIcon from "@mui/icons-material/Calculate";
@@ -222,6 +223,7 @@ const itemsData = [
   { title: "Tail Curvature (Asymmetric Quantiles)", to: "/tail-curvature", category: "Advanced Models", icon: <ShowChartIcon />, categoryIcon: <AssessmentIcon /> },
   { title: "Sahm Recession Indicator", to: "/fred/sahm-recession-indicator", category: "Advanced Models", icon: <WarningIcon />, categoryIcon: <AssessmentIcon /> },
   { title: "Market Heat Index", to: "/market-heat-index", category: "Advanced Models", icon: <AnalyticsIcon />, categoryIcon: <AssessmentIcon /> },
+  { title: "Bitcoin Floor Echo", to: "/bitcoin-floor-echo", category: "Advanced Models", icon: <TrendingDownIcon />, categoryIcon: <AssessmentIcon /> },
 
   // === TOOLS ===
   { title: "Workbench (beta)", to: "/workbench", category: "Tools", icon: <BuildIcon />, categoryIcon: <BuildIcon /> },

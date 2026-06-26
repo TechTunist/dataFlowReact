@@ -91,6 +91,7 @@ export const routeToChartId = {
   "/btc-mvrv-z": "mvrv-zscore",
   "/tail-curvature": "tail-curvature",
   "/market-heat-index": "market-heat-index",
+  "/bitcoin-floor-echo": "bitcoin-floor-echo",
   "/dynamic-dca": "dynamic-dca",
 };
 
@@ -119,6 +120,8 @@ export const getTitleAndSubtitle = (pathname, isMobile = false) => {
       return { title: "PiCycle Top", subtitle: "Top Calling Indicator" };
     case "/market-heat-index":
       return { title: "Market Heat Index", subtitle: isMobile ? "Tunable multi-factor market heat" : "Live tunable composite of MVRV, Mayer, Risk, F&G, PiCycle, Alt Season" };
+    case "/bitcoin-floor-echo":
+      return { title: "Bitcoin Floor Echo", subtitle: isMobile ? "Cross-dataset bottom confluence" : "Capitulation confluence index — lows echo prior cycle bottoms" };
     case "/fear-and-greed":
       return { title: "Fear & Greed", subtitle: "Market Sentiment" };
     case "/logarithmic-regression":

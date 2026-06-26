@@ -57,6 +57,7 @@ import UKPublicPrivateChart from "../../components/UKPublicPrivateEmployment";
 import UKAPSWorkplaceChart from "../../components/UKApsWorkplace";
 import UKEsaClaimantsChart from "../../components/UKEsaClaimants";
 import MarketHeatIndex from "../../components/MarketHeatIndex";
+import BitcoinFloorEcho from "../../components/BitcoinFloorEcho";
 import OnChainHistoricalRisk from "../../components/OnChainHistoricalRisk";
 import AltcoinSeasonIndexChart from "../../components/AltcoinSeasonIndexChart";
 import FredSeriesChart from "../../components/FredSeriesChart";
@@ -123,6 +124,7 @@ const chartConfig = [
   { id: "on-chain-historical-risk", title: "On-Chain Historical Risk", linkTo: "/on-chain-historical-risk", component: (props) => <OnChainHistoricalRisk isDashboard={true} {...props} />, description: "Historical risk based on on-chain data." },
   { id: "altcoin-season-index", title: "Altcoin Season Index", linkTo: "/altcoin-season-index", component: (props) => <AltcoinSeasonIndexChart isDashboard={true} {...props} />, description: "Index indicating altcoin season trends." },
   { id: "market-heat-index", title: "Market Heat Index", linkTo: "/market-heat-index", component: (props) => <MarketHeatIndex isDashboard={true} {...props} />, description: "Interactive Market Heat Index with tunable weights for MVRV, Mayer, Risk, F&G, PiCycle, AltSeason factors." },
+  { id: "bitcoin-floor-echo", title: "Bitcoin Floor Echo", linkTo: "/bitcoin-floor-echo", component: (props) => <BitcoinFloorEcho isDashboard={true} {...props} />, description: "Cross-workbench capitulation confluence — FEI lows echo prior Bitcoin cycle bottoms." },
   { id: "fred-fed-funds-rate", title: "Federal Funds Rate", linkTo: "/fred/fed-funds-rate", component: (props) => <FredSeriesChart isDashboard={true} seriesId="DFF" chartType="line" scaleMode="logarithmic" valueFormatter={(value) => `${value.toFixed(2)}%`} {...props} />, description: "Daily Effective Federal Funds Rate in the US." },
   { id: "fred-sp500", title: "S&P 500 Index", linkTo: "/fred/sp500", component: (props) => <FredSeriesChart isDashboard={true} seriesId="SP500" chartType="area" scaleMode="logarithmic" valueFormatter={(value) => value.toLocaleString()} enableTechnicalIndicators={true} {...props} />, description: "Daily closing values of the S&P 500 Index." },
   { id: "fred-recession-indicator", title: "US Recession Indicator", linkTo: "/fred/recession-indicator", component: (props) => <FredSeriesChart isDashboard={true} seriesId="USRECD" chartType="histogram" valueFormatter={(value) => (value === 1 ? "Recession" : "No Recession")} defaultScaleMode={0} {...props} />, description: "Periods of recession in the US." },

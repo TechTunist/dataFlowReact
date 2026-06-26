@@ -39,6 +39,7 @@ import {
   availableMacroSeries,
   availableCryptoSeries,
   availableIndicatorSeries,
+  availableStockSeries,
 } from '../components/workbench/availableSeries';
 
 export function useWorkbenchSeriesData({ dataContext, derivedData = {}, derivedSeriesDefs = [] }) {
@@ -46,6 +47,7 @@ export function useWorkbenchSeriesData({ dataContext, derivedData = {}, derivedS
     if (availableMacroSeries[id]) return 'macro';
     if (availableCryptoSeries[id]) return 'crypto';
     if (availableIndicatorSeries[id]) return 'indicator';
+    if (availableStockSeries[id]) return 'stock';
     return null;
   }, []);
 
@@ -57,13 +59,14 @@ export function useWorkbenchSeriesData({ dataContext, derivedData = {}, derivedS
   }, [getType, derivedSeriesDefs]);
 
   const getValueKey = useCallback((id) => {
-    return (availableMacroSeries[id] || availableCryptoSeries[id] || availableIndicatorSeries[id])?.valueKey || 'value';
+    return (availableMacroSeries[id] || availableCryptoSeries[id] || availableIndicatorSeries[id] || availableStockSeries[id])?.valueKey || 'value';
   }, []);
 
   const getSeriesInfo = useCallback((id, type) => {
     if (type === 'macro') return availableMacroSeries[id];
     if (type === 'crypto') return availableCryptoSeries[id];
     if (type === 'indicator') return availableIndicatorSeries[id];
+    if (type === 'stock') return availableStockSeries[id];
     if (type === 'derived') return derivedSeriesDefs.find(d => d.id === id);
     return null;
   }, [derivedSeriesDefs]);
@@ -74,6 +77,7 @@ export function useWorkbenchSeriesData({ dataContext, derivedData = {}, derivedS
     if (type === 'macro') return availableMacroSeries[id]?.color || '#00FFFF';
     if (type === 'crypto') return availableCryptoSeries[id]?.color || '#00FFFF';
     if (type === 'indicator') return availableIndicatorSeries[id]?.color || '#00FFFF';
+    if (type === 'stock') return availableStockSeries[id]?.color || '#00FFFF';
     if (type === 'derived') return derivedSeriesDefs.find(d => d.id === id)?.color || '#00FFFF';
     return '#00FFFF';
   }, [derivedSeriesDefs]);
@@ -112,6 +116,11 @@ export function useWorkbenchSeriesData({ dataContext, derivedData = {}, derivedS
       // Some indicators (risks etc) may be precomputed in context; dominance/marketCap now also delegated in DS.
       return dataContext?.[info.dataKey] || [];
     }
+    if (type === 'stock') {
+      const info = availableStockSeries[id];
+      if (!info) return [];
+      return dataContext?.altcoinData?.[info.symbol] || [];
+    }
     return [];
   }, [dataContext, derivedData]);
 
@@ -136,6 +145,7 @@ export function useWorkbenchSeriesData({ dataContext, derivedData = {}, derivedS
     macro: availableMacroSeries,
     crypto: availableCryptoSeries,
     indicator: availableIndicatorSeries,
+    stock: availableStockSeries,
   }), []);
 
   return {

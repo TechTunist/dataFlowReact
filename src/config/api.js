@@ -45,6 +45,7 @@ export const API_ENDPOINTS = {
   riskMetrics: (query = '') => apiUrl(`/api/risk-metrics/${query}`),
   txMvrv: () => apiUrl('/api/tx-mvrv/'),
   txMvrvRatio: (smoothing = 'sma-7') => apiUrl(`/api/tx-mvrv-ratio/?smoothing=${smoothing}`),
+  floorEcho: () => apiUrl('/api/floor-echo/'),
   txMacro: () => apiUrl('/api/tx-macro/'),
   altcoinPrice: (coin) => apiUrl(`/api/${coin.toLowerCase()}/price/`),
   tslaPrice: () => apiUrl('/api/tsla/price/'),

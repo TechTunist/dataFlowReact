@@ -26,9 +26,11 @@ import {
   availableMacroSeries,
   availableCryptoSeries,
   availableIndicatorSeries,
+  availableStockSeries,
   colorMap,
   hexToRgb,
 } from './workbench/availableSeries';
+import { STOCK_GROUPS } from '../config/stocksConfig';
 
 // Custom hooks extracted (useWorkbench* in hooks/ per plan). These shrink the 1600-line monolith.
 import useWorkbenchSeriesData from '../hooks/useWorkbenchSeriesData';
@@ -36,6 +38,7 @@ import useWorkbenchMovingAverages from '../hooks/useWorkbenchMovingAverages';
 import useWorkbenchDerivedSeries from '../hooks/useWorkbenchDerivedSeries';
 import useWorkbenchSeriesManagement from '../hooks/useWorkbenchSeriesManagement';
 import useWorkbenchTooltip from '../hooks/useWorkbenchTooltip';
+import { resolveRatioChartPoints, ratioAllowsLogScale } from '../utils/derivedRatioUtils';
 
 // Note: hexToRgb and colorMap are re-exported from the config module for the chart series creation effect (area fills etc).
 // All available* now single source of truth in workbench/availableSeries.js
@@ -99,7 +102,7 @@ const WorkbenchChart = ({
   const seriesDataMapsRef = useRef({});
   // Original cleaned sparse points per series (for robust "last known value" / LOCF lookups on mixed-frequency data)
   const seriesPointsRef = useRef({});
-  const prevSeriesRef = useRef({ macro: [], crypto: [], indicator: [], derived: [] });
+  const prevSeriesRef = useRef({ macro: [], crypto: [], indicator: [], stock: [], derived: [] });
 
   // Ref to break composition cycle between useWorkbenchSeriesData (needs live derivedData) and
   // useWorkbenchDerivedSeries (needs the getter methods for handleCreate). Updated at end of render.
@@ -177,6 +180,7 @@ const WorkbenchChart = ({
     activeMacroSeries: mgmt.activeMacroSeries,
     activeCryptoSeries: mgmt.activeCryptoSeries,
     activeIndicatorSeries: mgmt.activeIndicatorSeries,
+    activeStockSeries: mgmt.activeStockSeries,
     activeDerivedSeries: mgmt.activeDerivedSeries,
   });
 
@@ -205,13 +209,14 @@ const WorkbenchChart = ({
     activeMacroSeries: mgmt.activeMacroSeries || [],
     activeCryptoSeries: mgmt.activeCryptoSeries || [],
     activeIndicatorSeries: mgmt.activeIndicatorSeries || [],
+    activeStockSeries: mgmt.activeStockSeries || [],
     activeDerivedSeries: mgmt.activeDerivedSeries || [],
     derivedSeriesDefs: derivedHook.derivedSeriesDefs || [],
     seriesMovingAverages: movingAverages.seriesMovingAverages || {},
     seriesColors: movingAverages.seriesColors || {},
     scaleMode: scaleModeState,
   }), [
-    mgmt.activeMacroSeries, mgmt.activeCryptoSeries, mgmt.activeIndicatorSeries, mgmt.activeDerivedSeries,
+    mgmt.activeMacroSeries, mgmt.activeCryptoSeries, mgmt.activeIndicatorSeries, mgmt.activeStockSeries, mgmt.activeDerivedSeries,
     derivedHook.derivedSeriesDefs,
     movingAverages.seriesMovingAverages, movingAverages.seriesColors,
     scaleModeState,
@@ -289,6 +294,13 @@ const WorkbenchChart = ({
                 mgmt.setActiveIndicatorSeries([]);
               }
             }
+            if (Array.isArray(ws.activeStockSeries)) {
+              if (ws.activeStockSeries.length > 0) {
+                mgmt.handleStockSeriesChange({ target: { value: ws.activeStockSeries } }, availableStockSeries);
+              } else {
+                mgmt.setActiveStockSeries([]);
+              }
+            }
             if (Array.isArray(ws.activeDerivedSeries)) {
               mgmt.setActiveDerivedSeries(ws.activeDerivedSeries);
             }
@@ -338,6 +350,7 @@ const WorkbenchChart = ({
     (dataContext?.fearAndGreedData || []).length,
     (dataContext?.dominanceData || []).length,
     (dataContext?.marketCapData || []).length,
+    Object.keys(dataContext?.altcoinData || {}).length,
   ]);
 
   // Debounced auto-save on any relevant state change (after initial load). 800ms.
@@ -351,7 +364,7 @@ const WorkbenchChart = ({
     }, 800);
   }, [
     isDashboard,
-    mgmt.activeMacroSeries, mgmt.activeCryptoSeries, mgmt.activeIndicatorSeries, mgmt.activeDerivedSeries,
+    mgmt.activeMacroSeries, mgmt.activeCryptoSeries, mgmt.activeIndicatorSeries, mgmt.activeStockSeries, mgmt.activeDerivedSeries,
     derivedHook.derivedSeriesDefs,
     movingAverages.seriesMovingAverages, movingAverages.seriesColors,
     scaleModeState,
@@ -462,13 +475,15 @@ const WorkbenchChart = ({
     const mActMacro = mgmt.activeMacroSeries || [];
     const mActCrypto = mgmt.activeCryptoSeries || [];
     const mActInd = mgmt.activeIndicatorSeries || [];
+    const mActStock = mgmt.activeStockSeries || [];
     const mActDer = mgmt.activeDerivedSeries || [];
     const isNewSeries =
       JSON.stringify([...mActMacro].sort()) !== JSON.stringify([...prevSeriesRef.current.macro].sort()) ||
       JSON.stringify([...mActCrypto].sort()) !== JSON.stringify([...prevSeriesRef.current.crypto].sort()) ||
       JSON.stringify([...mActInd].sort()) !== JSON.stringify([...prevSeriesRef.current.indicator].sort()) ||
+      JSON.stringify([...mActStock].sort()) !== JSON.stringify([...prevSeriesRef.current.stock].sort()) ||
       JSON.stringify([...mActDer].sort()) !== JSON.stringify([...prevSeriesRef.current.derived].sort());
-    prevSeriesRef.current = { macro: mActMacro, crypto: mActCrypto, indicator: mActInd, derived: mActDer };
+    prevSeriesRef.current = { macro: mActMacro, crypto: mActCrypto, indicator: mActInd, stock: mActStock, derived: mActDer };
     Object.keys(seriesRefs.current).forEach(id => {
       if (chartRef.current && seriesRefs.current[id]) {
         try {
@@ -486,6 +501,7 @@ const WorkbenchChart = ({
       ...mActMacro.map(id => ({ id, type: 'macro' })),
       ...mActCrypto.map(id => ({ id, type: 'crypto' })),
       ...mActInd.map(id => ({ id, type: 'indicator' })),
+      ...mActStock.map(id => ({ id, type: 'stock' })),
       ...mActDer.map(id => ({ id, type: 'derived' })),
     ];
     const sortedSeries = allSeries.sort((a, b) => {
@@ -537,6 +553,9 @@ const WorkbenchChart = ({
       seriesRefs.current[id] = series;
       usedPriceScales.add(seriesInfo.scaleId);
       let rawData = seriesData.getRawData(id, type);
+      if (type === 'derived' && seriesInfo?.ratioOutput) {
+        rawData = resolveRatioChartPoints(seriesInfo, rawData, scaleModeState);
+      }
       let valueKey = seriesData.getValueKey(id);
       const timeKey = (type === 'indicator' && seriesInfo.dataKey === 'txMvrvData') ? 'date' : 'time';
       rawData = rawData
@@ -558,10 +577,13 @@ const WorkbenchChart = ({
       });
       if (rawData.length > 0) {
         try {
-          const validData = scaleModeState === 1 && seriesInfo.allowLogScale
+          const seriesAllowsLog = type === 'derived' && seriesInfo?.ratioOutput
+            ? ratioAllowsLogScale(seriesInfo, scaleModeState)
+            : seriesInfo.allowLogScale;
+          const validData = scaleModeState === 1 && seriesAllowsLog
             ? rawData.filter(item => item.value > 0)
             : rawData;
-          if (validData.length === 0 && scaleModeState === 1 && seriesInfo.allowLogScale) {
+          if (validData.length === 0 && scaleModeState === 1 && seriesAllowsLog) {
             logger.warn(`No valid data for series ${id} in logarithmic scale`);
             setError(`Cannot display ${seriesInfo.label} in logarithmic scale due to non-positive values.`);
           } else {
@@ -588,8 +610,8 @@ const WorkbenchChart = ({
       }
     });
     const priceScales = {};
-    [...Object.keys(availableMacroSeries), ...Object.keys(availableCryptoSeries), ...Object.keys(availableIndicatorSeries), 'derived-scale'].forEach(key => {
-      const seriesInfo = availableMacroSeries[key] || availableCryptoSeries[key] || availableIndicatorSeries[key] || { allowLogScale: true };
+    [...Object.keys(availableMacroSeries), ...Object.keys(availableCryptoSeries), ...Object.keys(availableIndicatorSeries), ...Object.keys(availableStockSeries), 'derived-scale'].forEach(key => {
+      const seriesInfo = availableMacroSeries[key] || availableCryptoSeries[key] || availableIndicatorSeries[key] || availableStockSeries[key] || { allowLogScale: true };
       priceScales[key === 'derived-scale' ? 'derived-scale' : seriesInfo.scaleId] = {
         mode: key === 'USRECD' ? 0 : (seriesInfo.allowLogScale ? scaleModeState : 0),
         borderVisible: false,
@@ -609,8 +631,12 @@ const WorkbenchChart = ({
     }
     usedPriceScales.forEach(scaleId => {
       try {
-        const seriesInfo = [...Object.values(availableMacroSeries), ...Object.values(availableCryptoSeries), ...Object.values(availableIndicatorSeries), ...(derivedHook.derivedSeriesDefs || [])].find(s => s.scaleId === scaleId);
-        const mode = scaleId === 'usrecd-scale' ? 0 : (seriesInfo?.allowLogScale ? scaleModeState : 0);
+        const seriesInfo = [...Object.values(availableMacroSeries), ...Object.values(availableCryptoSeries), ...Object.values(availableIndicatorSeries), ...Object.values(availableStockSeries), ...(derivedHook.derivedSeriesDefs || [])].find(s => s.scaleId === scaleId);
+        const mode = scaleId === 'usrecd-scale' ? 0 : (
+          seriesInfo?.ratioOutput
+            ? (ratioAllowsLogScale(seriesInfo, scaleModeState) ? scaleModeState : 0)
+            : (seriesInfo?.allowLogScale ? scaleModeState : 0)
+        );
         chartRef.current.priceScale(scaleId).applyOptions({ mode });
       } catch (err) {
         logger.error(`Failed to apply scale mode for ${scaleId}:`, err);
@@ -724,13 +750,15 @@ const WorkbenchChart = ({
       const tActMacro = mgmt.activeMacroSeries || [];
       const tActCrypto = mgmt.activeCryptoSeries || [];
       const tActInd = mgmt.activeIndicatorSeries || [];
+      const tActStock = mgmt.activeStockSeries || [];
       const tActDer = mgmt.activeDerivedSeries || [];
-      const allActive = [...tActMacro, ...tActCrypto, ...tActInd, ...tActDer];
+      const allActive = [...tActMacro, ...tActCrypto, ...tActInd, ...tActStock, ...tActDer];
       allActive.forEach(id => {
         const isM = tActMacro.includes(id);
         const isC = tActCrypto.includes(id);
         const isI = tActInd.includes(id);
-        const t = isM ? 'macro' : isC ? 'crypto' : isI ? 'indicator' : 'derived';
+        const isS = tActStock.includes(id);
+        const t = isM ? 'macro' : isC ? 'crypto' : isI ? 'indicator' : isS ? 'stock' : 'derived';
         const info = seriesData.getSeriesInfo(id, t);
         const color = movingAverages.getSeriesColor(id, t, seriesData.getSeriesColorBase);
         const ma = movingAverages.seriesMovingAverages[id] && movingAverages.seriesMovingAverages[id] !== 'None' ? ` (${movingAverages.seriesMovingAverages[id]} MA)` : '';
@@ -827,7 +855,7 @@ const WorkbenchChart = ({
   }, [
     dataContext,
     // Now from hooks (stable where possible via their internal useMemo/useCallback)
-    mgmt.activeMacroSeries, mgmt.activeCryptoSeries, mgmt.activeIndicatorSeries, mgmt.activeDerivedSeries,
+    mgmt.activeMacroSeries, mgmt.activeCryptoSeries, mgmt.activeIndicatorSeries, mgmt.activeStockSeries, mgmt.activeDerivedSeries,
     derivedHook.derivedSeriesDefs, derivedHook.derivedData,
     movingAverages.seriesMovingAverages, movingAverages.seriesColors,
     chartType, valueFormatter, scaleModeState, isMobile, theme.palette.mode, colors,
@@ -871,13 +899,20 @@ const WorkbenchChart = ({
   const rActMacro = mgmt.activeMacroSeries || [];
   const rActCrypto = mgmt.activeCryptoSeries || [];
   const rActInd = mgmt.activeIndicatorSeries || [];
+  const rActStock = mgmt.activeStockSeries || [];
   const rActDer = mgmt.activeDerivedSeries || [];
-  const allActiveForCalc = [...rActMacro, ...rActCrypto, ...rActInd];
+  const allActiveForCalc = [...rActMacro, ...rActCrypto, ...rActInd, ...rActStock];
   // allActive now includes created derived so Create Derived dialog can use prior derived as base (for trends or even arith)
-  const allActive = [...rActMacro, ...rActCrypto, ...rActInd, ...rActDer];
+  const allActive = [...rActMacro, ...rActCrypto, ...rActInd, ...rActStock, ...rActDer];
   const createDialogSeriesIds = Array.from(new Set(allActive)); // deduped for selects
   const hasDerived = (derivedHook.derivedSeriesDefs || []).length > 0;
-  const numSelectors = hasDerived ? 4 : 3;
+  const numSelectors = hasDerived ? 5 : 4;
+  const stockSelectorOptions = useMemo(
+    () => STOCK_GROUPS.flatMap((group) =>
+      group.stocks.map((stock) => ({ id: stock.value, label: stock.label, group: group.label }))
+    ),
+    []
+  );
   const minWidthNeeded = numSelectors * 250 + (numSelectors - 1) * 20;
   let breakpointForRow;
   if (minWidthNeeded <= 600) breakpointForRow = 'sm';
@@ -890,7 +925,7 @@ const WorkbenchChart = ({
     if (!id) return id;
     const d = (derivedHook.derivedSeriesDefs || []).find(dd => dd.id === id);
     if (d) return d.label;
-    return (availableMacroSeries[id] || availableCryptoSeries[id] || availableIndicatorSeries[id])?.label || id;
+    return (availableMacroSeries[id] || availableCryptoSeries[id] || availableIndicatorSeries[id] || availableStockSeries[id])?.label || id;
   };
 
   return (
@@ -910,62 +945,6 @@ const WorkbenchChart = ({
             mx: 'auto',
           }}
         >
-          <Autocomplete
-            multiple
-            disableCloseOnSelect={true}
-            id="macro-series"
-            sx={workbenchSelectorAutocompleteSx(breakpointForRow)}
-            options={Object.entries(availableMacroSeries).map(([id, { label }]) => ({ id, label }))}
-            getOptionLabel={(option) => option.label}
-            value={(mgmt.activeMacroSeries || []).map(id => ({ id, label: availableMacroSeries[id].label }))}
-            onChange={(event, newValue) => mgmt.handleMacroSeriesChange({ target: { value: newValue.map(v => v.id) } }, availableMacroSeries)}
-            isOptionEqualToValue={(option, value) => option.id === value.id}
-            renderTags={renderWorkbenchCompactTags}
-            renderOption={(props, option, { selected }) => (
-              <li {...props} key={option.id}>
-                <Checkbox
-                  style={{ marginRight: 8 }}
-                  checked={selected}
-                  sx={{ color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900], '&.Mui-checked': { color: colors.greenAccent[500] } }}
-                />
-                {option.label}
-                <Box sx={{ ml: 'auto' }}>
-                  <Button
-                    onClick={(e) => handleEditClick(e, option.id, 'macro')}
-                    disabled={!(mgmt.activeMacroSeries || []).includes(option.id)}
-                    sx={{
-                      textTransform: 'none',
-                      fontSize: '12px',
-                      color: (mgmt.activeMacroSeries || []).includes(option.id) ? (theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900]) : (theme.palette.mode === 'dark' ? colors.grey[500] : colors.grey[600]),
-                      border: `1px solid ${(mgmt.activeMacroSeries || []).includes(option.id) ? (theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[700]) : (theme.palette.mode === 'dark' ? colors.grey[500] : colors.grey[600])}`,
-                      borderRadius: '4px',
-                      padding: '2px 8px',
-                      minWidth: '50px',
-                      backgroundColor: editClicked[option.id] ? '#4cceac' : 'transparent',
-                      ...(editClicked[option.id] && { color: 'black', borderColor: 'violet' }),
-                      '&:hover': {
-                        borderColor: (mgmt.activeMacroSeries || []).includes(option.id) ? colors.greenAccent[500] : (theme.palette.mode === 'dark' ? colors.grey[500] : colors.grey[600]),
-                        backgroundColor: (mgmt.activeMacroSeries || []).includes(option.id) && !editClicked[option.id] ? (theme.palette.mode === 'dark' ? colors.primary[600] : colors.primary[300]) : 'transparent',
-                      },
-                      '&.Mui-disabled': {
-                        pointerEvents: 'none',
-                        opacity: 0.6,
-                      },
-                    }}
-                  >
-                    Edit
-                  </Button>
-                </Box>
-              </li>
-            )}
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                label="Macro Data"
-                sx={workbenchSelectorFieldSx(breakpointForRow, colors, theme)}
-              />
-            )}
-          />
           <Autocomplete
             multiple
             disableCloseOnSelect={true}
@@ -1108,21 +1087,131 @@ const WorkbenchChart = ({
               />
             )}
           />
+          <Autocomplete
+            multiple
+            disableCloseOnSelect={true}
+            id="stock-series"
+            sx={workbenchSelectorAutocompleteSx(breakpointForRow)}
+            options={stockSelectorOptions}
+            groupBy={(option) => option.group}
+            getOptionLabel={(option) => option.label}
+            value={(mgmt.activeStockSeries || []).map(id => ({ id, label: availableStockSeries[id]?.label, group: STOCK_GROUPS.find(g => g.stocks.some(s => s.value === id))?.label }))}
+            onChange={(event, newValue) => mgmt.handleStockSeriesChange({ target: { value: newValue.map(v => v.id) } }, availableStockSeries)}
+            isOptionEqualToValue={(option, value) => option.id === value.id}
+            renderTags={renderWorkbenchCompactTags}
+            renderOption={(props, option, { selected }) => (
+              <li {...props} key={option.id}>
+                <Checkbox
+                  style={{ marginRight: 8 }}
+                  checked={selected}
+                  sx={{ color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900], '&.Mui-checked': { color: colors.greenAccent[500] } }}
+                />
+                {option.label}
+                <Box sx={{ ml: 'auto' }}>
+                  <Button
+                    onClick={(e) => handleEditClick(e, option.id, 'stock')}
+                    disabled={!(mgmt.activeStockSeries || []).includes(option.id)}
+                    sx={{
+                      textTransform: 'none',
+                      fontSize: '12px',
+                      color: (mgmt.activeStockSeries || []).includes(option.id) ? (theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900]) : (theme.palette.mode === 'dark' ? colors.grey[500] : colors.grey[600]),
+                      border: `1px solid ${(mgmt.activeStockSeries || []).includes(option.id) ? (theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[700]) : (theme.palette.mode === 'dark' ? colors.grey[500] : colors.grey[600])}`,
+                      borderRadius: '4px',
+                      padding: '2px 8px',
+                      minWidth: '50px',
+                      backgroundColor: editClicked[option.id] ? '#4cceac' : 'transparent',
+                      ...(editClicked[option.id] && { color: 'black', borderColor: 'violet' }),
+                      '&:hover': {
+                        borderColor: (mgmt.activeStockSeries || []).includes(option.id) ? colors.greenAccent[500] : (theme.palette.mode === 'dark' ? colors.grey[500] : colors.grey[600]),
+                        backgroundColor: (mgmt.activeStockSeries || []).includes(option.id) && !editClicked[option.id] ? (theme.palette.mode === 'dark' ? colors.primary[600] : colors.primary[300]) : 'transparent',
+                      },
+                      '&.Mui-disabled': {
+                        pointerEvents: 'none',
+                        opacity: 0.6,
+                      },
+                    }}
+                  >
+                    Edit
+                  </Button>
+                </Box>
+              </li>
+            )}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Stocks"
+                sx={workbenchSelectorFieldSx(breakpointForRow, colors, theme)}
+              />
+            )}
+          />
+          <Autocomplete
+            multiple
+            disableCloseOnSelect={true}
+            id="macro-series"
+            sx={workbenchSelectorAutocompleteSx(breakpointForRow)}
+            options={Object.entries(availableMacroSeries).map(([id, { label }]) => ({ id, label }))}
+            getOptionLabel={(option) => option.label}
+            value={(mgmt.activeMacroSeries || []).map(id => ({ id, label: availableMacroSeries[id].label }))}
+            onChange={(event, newValue) => mgmt.handleMacroSeriesChange({ target: { value: newValue.map(v => v.id) } }, availableMacroSeries)}
+            isOptionEqualToValue={(option, value) => option.id === value.id}
+            renderTags={renderWorkbenchCompactTags}
+            renderOption={(props, option, { selected }) => (
+              <li {...props} key={option.id}>
+                <Checkbox
+                  style={{ marginRight: 8 }}
+                  checked={selected}
+                  sx={{ color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900], '&.Mui-checked': { color: colors.greenAccent[500] } }}
+                />
+                {option.label}
+                <Box sx={{ ml: 'auto' }}>
+                  <Button
+                    onClick={(e) => handleEditClick(e, option.id, 'macro')}
+                    disabled={!(mgmt.activeMacroSeries || []).includes(option.id)}
+                    sx={{
+                      textTransform: 'none',
+                      fontSize: '12px',
+                      color: (mgmt.activeMacroSeries || []).includes(option.id) ? (theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900]) : (theme.palette.mode === 'dark' ? colors.grey[500] : colors.grey[600]),
+                      border: `1px solid ${(mgmt.activeMacroSeries || []).includes(option.id) ? (theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[700]) : (theme.palette.mode === 'dark' ? colors.grey[500] : colors.grey[600])}`,
+                      borderRadius: '4px',
+                      padding: '2px 8px',
+                      minWidth: '50px',
+                      backgroundColor: editClicked[option.id] ? '#4cceac' : 'transparent',
+                      ...(editClicked[option.id] && { color: 'black', borderColor: 'violet' }),
+                      '&:hover': {
+                        borderColor: (mgmt.activeMacroSeries || []).includes(option.id) ? colors.greenAccent[500] : (theme.palette.mode === 'dark' ? colors.grey[500] : colors.grey[600]),
+                        backgroundColor: (mgmt.activeMacroSeries || []).includes(option.id) && !editClicked[option.id] ? (theme.palette.mode === 'dark' ? colors.primary[600] : colors.primary[300]) : 'transparent',
+                      },
+                      '&.Mui-disabled': {
+                        pointerEvents: 'none',
+                        opacity: 0.6,
+                      },
+                    }}
+                  >
+                    Edit
+                  </Button>
+                </Box>
+              </li>
+            )}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Macro Data"
+                sx={workbenchSelectorFieldSx(breakpointForRow, colors, theme)}
+              />
+            )}
+          />
           {hasDerived && (
             <Autocomplete
               multiple
               disableCloseOnSelect={true}
               id="derived-series"
+              sx={workbenchSelectorAutocompleteSx(breakpointForRow)}
               options={(derivedHook.derivedSeriesDefs || []).map(d => ({ id: d.id, label: d.label }))}
               getOptionLabel={(option) => option.label}
               value={(mgmt.activeDerivedSeries || []).map(id => ({ id, label: (derivedHook.derivedSeriesDefs || []).find(d => d.id === id)?.label }))}
               onChange={(event, newValue) => mgmt.handleDerivedSeriesChange({ target: { value: newValue.map(v => v.id) } })}
               isOptionEqualToValue={(option, value) => option.id === value.id}
-              renderTags={(tagValue) => (
-                <Box sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {tagValue.map((option) => option.label).join(', ')}
-                </Box>
-              )}
+              renderTags={renderWorkbenchCompactTags}
               renderOption={(props, option, { selected }) => (
                 <li {...props} key={option.id}>
                   <Checkbox
@@ -1169,19 +1258,7 @@ const WorkbenchChart = ({
                 <TextField
                   {...params}
                   label="Derived Series"
-                  sx={{
-                    minWidth: '250px',
-                    width: { xs: '100%', [breakpointForRow]: '250px' },
-                    '& .MuiInputLabel-root': { color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900] },
-                    '& .MuiInputLabel-root.Mui-focused': { color: colors.greenAccent[500] },
-                    '& .MuiOutlinedInput-root': {
-                      color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900],
-                      backgroundColor: theme.palette.mode === 'dark' ? colors.primary[500] : colors.primary[200],
-                      '& fieldset': { borderColor: theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[700] },
-                      '&:hover fieldset': { borderColor: colors.greenAccent[500] },
-                      '&.Mui-focused fieldset': { borderColor: colors.greenAccent[500] },
-                    },
-                  }}
+                  sx={workbenchSelectorFieldSx(breakpointForRow, colors, theme)}
                 />
               )}
             />
@@ -1223,11 +1300,116 @@ const WorkbenchChart = ({
               }}
             >
               <MenuItem value="arithmetic">Arithmetic Operation (combine two series)</MenuItem>
+              <MenuItem value="ratio">Ratio Comparison (rebased relationship)</MenuItem>
               <MenuItem value="trendline">Trendline Fit (plot line on one series)</MenuItem>
             </Select>
           </FormControl>
 
-          {(derivedHook.newDerivedMode || 'arithmetic') === 'arithmetic' ? (
+          {(derivedHook.newDerivedMode || 'arithmetic') === 'ratio' ? (
+            <>
+              <FormControl fullWidth sx={{ mt: 2 }}>
+                <InputLabel id="derived-ratio-output-label">Output Type</InputLabel>
+                <Select
+                  labelId="derived-ratio-output-label"
+                  label="Output Type"
+                  value={derivedHook.newDerivedRatioOutput || 'relative_performance'}
+                  onChange={(e) => derivedHook.setNewDerivedRatioOutput(e.target.value)}
+                  sx={{
+                    color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900],
+                    backgroundColor: theme.palette.mode === 'dark' ? colors.primary[600] : colors.primary[300],
+                    borderRadius: '4px',
+                    '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[700] },
+                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                  }}
+                >
+                  <MenuItem value="relative_performance">Relative Performance (100 = equal growth)</MenuItem>
+                  <MenuItem value="spread">Spread / Difference (indexed % gap)</MenuItem>
+                  <MenuItem value="rolling_zscore">Rolling Z-Score (of raw price ratio)</MenuItem>
+                </Select>
+              </FormControl>
+              <FormControl fullWidth sx={{ mt: 2 }}>
+                <InputLabel id="derived-ratio-num-label">Numerator</InputLabel>
+                <Select
+                  labelId="derived-ratio-num-label"
+                  label="Numerator"
+                  value={derivedHook.newDerivedSeries1}
+                  onChange={(e) => derivedHook.setNewDerivedSeries1(e.target.value)}
+                  sx={{
+                    color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900],
+                    backgroundColor: theme.palette.mode === 'dark' ? colors.primary[600] : colors.primary[300],
+                    borderRadius: '4px',
+                    '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[700] },
+                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                  }}
+                >
+                  {createDialogSeriesIds.map(id => (
+                    <MenuItem key={id} value={id}>
+                      {getSeriesLabel(id)}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <FormControl fullWidth sx={{ mt: 2 }}>
+                <InputLabel id="derived-ratio-den-label">Denominator</InputLabel>
+                <Select
+                  labelId="derived-ratio-den-label"
+                  label="Denominator"
+                  value={derivedHook.newDerivedSeries2}
+                  onChange={(e) => derivedHook.setNewDerivedSeries2(e.target.value)}
+                  sx={{
+                    color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900],
+                    backgroundColor: theme.palette.mode === 'dark' ? colors.primary[600] : colors.primary[300],
+                    borderRadius: '4px',
+                    '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[700] },
+                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                  }}
+                >
+                  {createDialogSeriesIds.map(id => (
+                    <MenuItem key={id} value={id}>
+                      {getSeriesLabel(id)}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              {(derivedHook.newDerivedRatioOutput || 'relative_performance') === 'rolling_zscore' && (
+                <FormControl fullWidth sx={{ mt: 2 }}>
+                  <InputLabel id="derived-zscore-window-label">Z-Score Window</InputLabel>
+                  <Select
+                    labelId="derived-zscore-window-label"
+                    label="Z-Score Window"
+                    value={derivedHook.newDerivedZscoreWindow || 252}
+                    onChange={(e) => derivedHook.setNewDerivedZscoreWindow(parseInt(e.target.value, 10))}
+                    sx={{
+                      color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900],
+                      backgroundColor: theme.palette.mode === 'dark' ? colors.primary[600] : colors.primary[300],
+                      borderRadius: '4px',
+                      '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[700] },
+                      '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                    }}
+                  >
+                    <MenuItem value={30}>30 days</MenuItem>
+                    <MenuItem value={90}>90 days</MenuItem>
+                    <MenuItem value={252}>252 days (~1 trading year)</MenuItem>
+                  </Select>
+                </FormControl>
+              )}
+              <Box sx={{ mt: 1.5, fontSize: '12px', opacity: 0.85, color: theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[700] }}>
+                {(derivedHook.newDerivedRatioOutput || 'relative_performance') === 'relative_performance' && (
+                  <>Anchored at the first date both series exist (start of the shorter history). Linear scale: 100 = equal growth. Log scale: shows log-relative performance (0 = equal).</>
+                )}
+                {(derivedHook.newDerivedRatioOutput || 'relative_performance') === 'spread' && (
+                  <>Anchored at first overlap. Linear scale: indexed % point gap (0 = equal). Log scale: log-relative difference.</>
+                )}
+                {(derivedHook.newDerivedRatioOutput || 'relative_performance') === 'rolling_zscore' && (
+                  <>Z-score of the raw price ratio (numerator ÷ denominator). Positive = ratio unusually high vs recent history; negative = unusually low.</>
+                )}
+              </Box>
+            </>
+          ) : (derivedHook.newDerivedMode || 'arithmetic') === 'arithmetic' ? (
             <>
               <FormControl fullWidth sx={{ mt: 2 }}>
                 <InputLabel id="derived-series1-label">Series 1</InputLabel>
@@ -1574,7 +1756,7 @@ const WorkbenchChart = ({
       )}
       <div className="chart-container" style={{ position: 'relative', height: isDashboard ? '100%' : 'calc(100% - 40px)', width: '100%', border: `2px solid ${theme.palette.mode === 'dark' ? '#a9a9a9' : colors.grey[700]}` }} onDoubleClick={setInteractivity}>
         <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
-        {((mgmt.activeMacroSeries || []).length === 0 && (mgmt.activeCryptoSeries || []).length === 0 && (mgmt.activeIndicatorSeries || []).length === 0 && (mgmt.activeDerivedSeries || []).length === 0) && !isDashboard && (
+        {((mgmt.activeMacroSeries || []).length === 0 && (mgmt.activeCryptoSeries || []).length === 0 && (mgmt.activeIndicatorSeries || []).length === 0 && (mgmt.activeStockSeries || []).length === 0 && (mgmt.activeDerivedSeries || []).length === 0) && !isDashboard && (
           <div
             style={{
               position: 'absolute',
@@ -1604,10 +1786,10 @@ const WorkbenchChart = ({
           }}
         >
           {!isDashboard && <div>Active Series</div>}
-          {[...(mgmt.activeMacroSeries || []), ...(mgmt.activeCryptoSeries || []), ...(mgmt.activeIndicatorSeries || []), ...(mgmt.activeDerivedSeries || [])].map(id => {
+          {[...(mgmt.activeMacroSeries || []), ...(mgmt.activeCryptoSeries || []), ...(mgmt.activeIndicatorSeries || []), ...(mgmt.activeStockSeries || []), ...(mgmt.activeDerivedSeries || [])].map(id => {
             const isDer = (mgmt.activeDerivedSeries || []).includes(id);
             const def = isDer ? (derivedHook.derivedSeriesDefs || []).find(d => d.id === id) : null;
-            const label = (availableMacroSeries[id] || availableCryptoSeries[id] || availableIndicatorSeries[id] || def)?.label || id;
+            const label = (availableMacroSeries[id] || availableCryptoSeries[id] || availableIndicatorSeries[id] || availableStockSeries[id] || def)?.label || id;
             const desc = isDer && derivedHook.getDerivedDescription ? derivedHook.getDerivedDescription(id) : '';
             return (
               <div key={id} style={{ display: 'flex', alignItems: 'flex-start', marginTop: '5px' }}>
@@ -1616,7 +1798,7 @@ const WorkbenchChart = ({
                     display: 'inline-block',
                     width: '10px',
                     height: '10px',
-                    backgroundColor: movingAverages.getSeriesColor(id, (mgmt.activeMacroSeries || []).includes(id) ? 'macro' : (mgmt.activeCryptoSeries || []).includes(id) ? 'crypto' : (mgmt.activeIndicatorSeries || []).includes(id) ? 'indicator' : 'derived', seriesData.getSeriesColorBase),
+                    backgroundColor: movingAverages.getSeriesColor(id, (mgmt.activeMacroSeries || []).includes(id) ? 'macro' : (mgmt.activeCryptoSeries || []).includes(id) ? 'crypto' : (mgmt.activeIndicatorSeries || []).includes(id) ? 'indicator' : (mgmt.activeStockSeries || []).includes(id) ? 'stock' : 'derived', seriesData.getSeriesColorBase),
                     marginRight: '5px',
                     marginTop: '3px',
                     flexShrink: 0,
@@ -1634,12 +1816,15 @@ const WorkbenchChart = ({
         </div>
       </div>
       <div className='under-chart'>
-        {!isDashboard && [...(mgmt.activeMacroSeries || []), ...(mgmt.activeCryptoSeries || []), ...(mgmt.activeIndicatorSeries || []), ...(mgmt.activeDerivedSeries || [])].some(id => {
+        {!isDashboard && [...(mgmt.activeMacroSeries || []), ...(mgmt.activeCryptoSeries || []), ...(mgmt.activeIndicatorSeries || []), ...(mgmt.activeStockSeries || []), ...(mgmt.activeDerivedSeries || [])].some(id => {
           let data = [];
           const type = seriesData.getSeriesType ? seriesData.getSeriesType(id, mgmt.activeDerivedSeries) : (seriesData.getType(id) || ((mgmt.activeDerivedSeries || []).includes(id) ? 'derived' : null));
-          const raw = seriesData.getRawData(id, type);
-          const valueKey = seriesData.getValueKey(id);
           const infoForTimeKey = seriesData.getSeriesInfo(id, type);
+          let raw = seriesData.getRawData(id, type);
+          if (type === 'derived' && infoForTimeKey?.ratioOutput) {
+            raw = resolveRatioChartPoints(infoForTimeKey, raw, scaleModeState);
+          }
+          const valueKey = seriesData.getValueKey(id);
           const timeKey = (type === 'indicator' && infoForTimeKey?.dataKey === 'txMvrvData') ? 'date' : 'time';
           const norm = raw
             .filter(item => item[valueKey] != null && !isNaN(parseFloat(item[valueKey])))
@@ -1657,7 +1842,7 @@ const WorkbenchChart = ({
               Last Updated:{' '}
               {new Date(
                 Math.max(
-                  ...[...(mgmt.activeMacroSeries || []), ...(mgmt.activeCryptoSeries || []), ...(mgmt.activeIndicatorSeries || []), ...(mgmt.activeDerivedSeries || [])].map(id => {
+                  ...[...(mgmt.activeMacroSeries || []), ...(mgmt.activeCryptoSeries || []), ...(mgmt.activeIndicatorSeries || []), ...(mgmt.activeStockSeries || []), ...(mgmt.activeDerivedSeries || [])].map(id => {
                     const type = seriesData.getSeriesType ? seriesData.getSeriesType(id, mgmt.activeDerivedSeries) : (seriesData.getType(id) || ((mgmt.activeDerivedSeries || []).includes(id) ? 'derived' : null));
                     if (type === 'derived') {
                       const inputIds = derivedHook.getDerivedInputIds ? derivedHook.getDerivedInputIds(id) : [];

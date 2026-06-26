@@ -2,11 +2,13 @@
  * Workbench series configuration.
  *
  * Extracted from Workbench.jsx as part of professionalization decomposition.
- * Central place for available macro/crypto/indicator series metadata.
+ * Central place for available macro/crypto/indicator/stock series metadata.
  * Used by useWorkbenchSeriesData, useWorkbenchSeriesManagement, and the chart component.
  *
- * This makes adding new series (e.g. more FRED or altcoins) a single-file change.
+ * This makes adding new series (e.g. more FRED, altcoins, or stocks) a single-file change.
  */
+
+import { STOCKS } from '../../config/stocksConfig';
 
 export const colorMap = {
   orange: '255, 165, 0',
@@ -130,10 +132,38 @@ export const availableIndicatorSeries = {
   SOPL_RISK: { label: 'SOPL Risk', color: '#B22222', chartType: 'line', scaleId: 'indicator-shared-scale', dataKey: 'soplRiskData', fetchFunction: 'fetchRiskMetricsData', valueKey: 'Risk', allowLogScale: false },
 };
 
+// Distinct palette for equities (cycles if more stocks are added to stocksConfig)
+const STOCK_COLOR_PALETTE = [
+  '#2E86AB', '#A23B72', '#F18F01', '#C73E1D', '#3B1F2B',
+  '#95C623', '#5C4D7D', '#E8871E', '#1B998B', '#FF6B6B',
+  '#4ECDC4', '#FFE66D', '#6A4C93', '#1982C4', '#8AC926',
+  '#FF595E', '#FFCA3A', '#6A0572', '#AB83A1', '#F72585',
+  '#7209B7', '#3A0CA3', '#4361EE', '#4CC9F0', '#06D6A0',
+  '#FFD166', '#EF476F', '#118AB2', '#073B4C', '#9B5DE5',
+  '#00BBF9', '#00F5D4', '#FEE440', '#F15BB5',
+];
+
+// Available Stock series — daily OHLCV via fetchAltcoinData (same cache layer as altcoins)
+export const availableStockSeries = STOCKS.reduce((acc, stock, index) => {
+  acc[stock.value] = {
+    label: stock.label,
+    color: STOCK_COLOR_PALETTE[index % STOCK_COLOR_PALETTE.length],
+    chartType: 'line',
+    scaleId: 'stock-shared-scale',
+    dataKey: 'altcoinData',
+    fetchFunction: 'fetchAltcoinData',
+    symbol: stock.value,
+    allowLogScale: true,
+    valueKey: 'value',
+  };
+  return acc;
+}, {});
+
 export default {
   availableMacroSeries,
   availableCryptoSeries,
   availableIndicatorSeries,
+  availableStockSeries,
   colorMap,
   hexToRgb,
 };

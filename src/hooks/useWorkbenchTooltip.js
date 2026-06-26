@@ -38,6 +38,7 @@ export function useWorkbenchTooltip({
   activeMacroSeries = [],
   activeCryptoSeries = [],
   activeIndicatorSeries = [],
+  activeStockSeries = [],
   activeDerivedSeries = [],
 } = {}) {
   const tooltipElRef = useRef(null);
@@ -107,14 +108,16 @@ export function useWorkbenchTooltip({
 
     // Build content (exact same as original direct-DOM version)
     let html = '';
-    const allActive = [...activeMacroSeries, ...activeCryptoSeries, ...activeIndicatorSeries, ...activeDerivedSeries];
+    const allActive = [...activeMacroSeries, ...activeCryptoSeries, ...activeIndicatorSeries, ...activeStockSeries, ...activeDerivedSeries];
     allActive.forEach(id => {
       const isMacro = activeMacroSeries.includes(id);
       const isCrypto = activeCryptoSeries.includes(id);
       const isIndicator = activeIndicatorSeries.includes(id);
+      const isStock = activeStockSeries.includes(id);
       const isDerived = activeDerivedSeries.includes(id);
-      const info = getSeriesInfo ? getSeriesInfo(id, isMacro ? 'macro' : isCrypto ? 'crypto' : isIndicator ? 'indicator' : 'derived') : null;
-      const color = getSeriesColor ? getSeriesColor(id, isMacro ? 'macro' : isCrypto ? 'crypto' : isIndicator ? 'indicator' : 'derived') : '#00FFFF';
+      const seriesType = isMacro ? 'macro' : isCrypto ? 'crypto' : isIndicator ? 'indicator' : isStock ? 'stock' : 'derived';
+      const info = getSeriesInfo ? getSeriesInfo(id, seriesType) : null;
+      const color = getSeriesColor ? getSeriesColor(id, seriesType) : '#00FFFF';
       const ma = seriesMovingAverages?.[id] && seriesMovingAverages[id] !== 'None' ? ` (${seriesMovingAverages[id]} MA)` : '';
       const val = tooltipInfo.values?.[id] != null ? valueFormatter(tooltipInfo.values[id]) : 'N/A';
       html += `<div style="margin: 1px 0;"><span style="color:${color};">${info?.label || id}${ma}: ${val}</span></div>`;
@@ -136,6 +139,7 @@ export function useWorkbenchTooltip({
     activeMacroSeries,
     activeCryptoSeries,
     activeIndicatorSeries,
+    activeStockSeries,
     activeDerivedSeries,
   ]);
 

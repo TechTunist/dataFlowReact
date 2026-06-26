@@ -83,6 +83,7 @@ const BitcoinMonthlyReturnsTable = lazyWithRetry(() => import('./components/Mont
 const Bitcoin20WeekExtension = lazyWithRetry(() => import('./components/Bitcoin20WeekExtension'));
 const SahmRecessionIndicator = lazyWithRetry(() => import('./components/SahmRecessionIndicator'));
 const MarketHeatIndex = lazyWithRetry(() => import('./components/MarketHeatIndex'));
+const BitcoinFloorEcho = lazyWithRetry(() => import('./components/BitcoinFloorEcho'));
 
 const FearAndGreed3D = lazyWithRetry(() => import('./components/FearAndGreed3D'));
 const WorkbenchChart = lazyWithRetry(() => import('./components/Workbench'));
@@ -151,6 +152,7 @@ const appRoutes = [
   { path: "/btc-20-ext", component: Bitcoin20WeekExtension, useBasicChart: true, protected: true },
   { path: "/bitcoin", component: BitcoinPrice, useBasicChart: true, protected: true },
   { path: "/market-heat-index", component: MarketHeatIndex, useBasicChart: true, protected: true, basicChartProps: { chartMinHeight: "660px" } },
+  { path: "/bitcoin-floor-echo", component: BitcoinFloorEcho, useBasicChart: true, requirePaid: true, protected: true, basicChartProps: { chartMinHeight: "660px" } },
   { path: "/total", component: TotalMarketCap, useBasicChart: true, protected: true },
   { path: "/total2", component: Total2Chart, useBasicChart: true, protected: true },
   { path: "/total3", component: Total3Chart, useBasicChart: true, protected: true },

@@ -29,6 +29,10 @@
 
 import { useState, useCallback } from 'react';
 import { computeTrendData } from '../utils/trendRegression';
+import {
+  computeRatioComparison,
+  describeRatioDerived,
+} from '../utils/derivedRatioUtils';
 
 export function useWorkbenchDerivedSeries({
   seriesData, // { getRawData, getNormalizedData, getType, getValueKey }
@@ -46,10 +50,14 @@ export function useWorkbenchDerivedSeries({
   const [newDerivedColor, setNewDerivedColor] = useState('#00FFFF');
 
   // Trendline / mode support (arithmetic keeps prior behavior; trendline fits regression to single base series)
-  const [newDerivedMode, setNewDerivedMode] = useState('arithmetic'); // 'arithmetic' | 'trendline'
+  const [newDerivedMode, setNewDerivedMode] = useState('arithmetic'); // 'arithmetic' | 'trendline' | 'ratio'
   const [newDerivedBaseSeries, setNewDerivedBaseSeries] = useState('');
   const [newDerivedTrendType, setNewDerivedTrendType] = useState('linear');
   const [newDerivedPolyDegree, setNewDerivedPolyDegree] = useState(2);
+
+  // Ratio comparison mode
+  const [newDerivedRatioOutput, setNewDerivedRatioOutput] = useState('relative_performance');
+  const [newDerivedZscoreWindow, setNewDerivedZscoreWindow] = useState(252);
 
   const computeDerivedData = useCallback((d1, d2, op) => {
     // Map-based last-value carry (LOCF) for non-aligned times (critical for mixed freq e.g. SP500 daily + monthly macro)
@@ -94,12 +102,16 @@ export function useWorkbenchDerivedSeries({
     const def = derivedSeriesDefs.find(d => d.id === id);
     if (!def) return [];
     if (def.trendType) return def.baseSeries ? [def.baseSeries] : [];
+    if (def.ratioOutput) return [def.series1, def.series2].filter(Boolean);
     return [def.series1, def.series2].filter(Boolean);
   }, [derivedSeriesDefs]);
 
   const getDerivedDescription = useCallback((idOrDef) => {
     const def = typeof idOrDef === 'string' ? derivedSeriesDefs.find(d => d.id === idOrDef) : idOrDef;
     if (!def) return '';
+    if (def.ratioOutput) {
+      return describeRatioDerived(def, getSeriesLabel);
+    }
     if (def.trendType) {
       const baseL = getSeriesLabel(def.baseSeries);
       const typeLabels = {
@@ -121,6 +133,7 @@ export function useWorkbenchDerivedSeries({
 
   const handleCreateDerived = useCallback(() => {
     const isArith = newDerivedMode === 'arithmetic';
+    const isRatio = newDerivedMode === 'ratio';
 
     if (!seriesData || !seriesData.getRawData || !seriesData.getNormalizedData) {
       onSnackbar({ open: true, message: 'Derived series data helpers not available.' });
@@ -129,20 +142,28 @@ export function useWorkbenchDerivedSeries({
 
     let finalLabel = (newDerivedLabel || '').trim();
 
-    if (isArith) {
+    if (isArith || isRatio) {
       if (!newDerivedSeries1 || !newDerivedSeries2) {
-        onSnackbar({ open: true, message: 'Please select Series 1 and Series 2.' });
+        onSnackbar({ open: true, message: isRatio ? 'Please select a numerator and denominator.' : 'Please select Series 1 and Series 2.' });
         return;
       }
       if (newDerivedSeries1 === newDerivedSeries2) {
-        onSnackbar({ open: true, message: 'Series 1 and Series 2 must be different.' });
+        onSnackbar({ open: true, message: 'Numerator and denominator must be different.' });
         return;
       }
-      if (!finalLabel) {
+      if (isArith && !finalLabel) {
         const l1 = getSeriesLabel(newDerivedSeries1);
         const l2 = getSeriesLabel(newDerivedSeries2);
         const opSym = { '+': '+', '-': '−', '*': '×', '/': '÷' }[newDerivedOperation] || newDerivedOperation;
         finalLabel = `${l1} ${opSym} ${l2}`;
+      }
+      if (isRatio && !finalLabel) {
+        finalLabel = describeRatioDerived({
+          series1: newDerivedSeries1,
+          series2: newDerivedSeries2,
+          ratioOutput: newDerivedRatioOutput,
+          zscoreWindow: newDerivedZscoreWindow,
+        }, getSeriesLabel);
       }
     } else {
       if (!newDerivedBaseSeries) {
@@ -170,7 +191,34 @@ export function useWorkbenchDerivedSeries({
     let computed = [];
     let defExtra = {};
 
-    if (isArith) {
+    if (isRatio) {
+      const type1 = seriesData.getSeriesType ? seriesData.getSeriesType(newDerivedSeries1, []) : seriesData.getType(newDerivedSeries1);
+      const type2 = seriesData.getSeriesType ? seriesData.getSeriesType(newDerivedSeries2, []) : seriesData.getType(newDerivedSeries2);
+      const raw1 = seriesData.getRawData(newDerivedSeries1, type1);
+      const raw2 = seriesData.getRawData(newDerivedSeries2, type2);
+      const valueKey1 = seriesData.getValueKey(newDerivedSeries1);
+      const valueKey2 = seriesData.getValueKey(newDerivedSeries2);
+      const norm1 = seriesData.getNormalizedData(raw1, valueKey1);
+      const norm2 = seriesData.getNormalizedData(raw2, valueKey2);
+
+      const ratioResult = computeRatioComparison(norm1, norm2, {
+        ratioOutput: newDerivedRatioOutput,
+        zscoreWindow: newDerivedZscoreWindow,
+      });
+      if (!ratioResult) {
+        onSnackbar({ open: true, message: 'No overlapping data for ratio comparison. Ensure both series have positive values from the anchor date.' });
+        return;
+      }
+      computed = ratioResult.points;
+      defExtra = {
+        series1: newDerivedSeries1,
+        series2: newDerivedSeries2,
+        ratioOutput: newDerivedRatioOutput,
+        zscoreWindow: newDerivedZscoreWindow,
+        anchorTime: ratioResult.anchorTime,
+        allowLogScale: newDerivedRatioOutput === 'relative_performance',
+      };
+    } else if (isArith) {
       const type1 = seriesData.getSeriesType ? seriesData.getSeriesType(newDerivedSeries1, []) : seriesData.getType(newDerivedSeries1);
       const type2 = seriesData.getSeriesType ? seriesData.getSeriesType(newDerivedSeries2, []) : seriesData.getType(newDerivedSeries2);
       const raw1 = seriesData.getRawData(newDerivedSeries1, type1);
@@ -202,7 +250,14 @@ export function useWorkbenchDerivedSeries({
     }
 
     if (computed.length === 0) {
-      onSnackbar({ open: true, message: isArith ? 'No overlapping data for the selected series.' : 'No data available to fit trendline.' });
+      onSnackbar({
+        open: true,
+        message: isRatio
+          ? 'No ratio data could be computed for the selected series.'
+          : isArith
+            ? 'No overlapping data for the selected series.'
+            : 'No data available to fit trendline.',
+      });
       return;
     }
 
@@ -236,9 +291,12 @@ export function useWorkbenchDerivedSeries({
     setNewDerivedBaseSeries('');
     setNewDerivedTrendType('linear');
     setNewDerivedPolyDegree(2);
+    setNewDerivedRatioOutput('relative_performance');
+    setNewDerivedZscoreWindow(252);
   }, [
     newDerivedMode,
     newDerivedSeries1, newDerivedSeries2, newDerivedOperation,
+    newDerivedRatioOutput, newDerivedZscoreWindow,
     newDerivedBaseSeries, newDerivedTrendType, newDerivedPolyDegree,
     newDerivedLabel, newDerivedColor,
     derivedSeriesDefs.length,
@@ -265,6 +323,8 @@ export function useWorkbenchDerivedSeries({
     setNewDerivedBaseSeries('');
     setNewDerivedTrendType('linear');
     setNewDerivedPolyDegree(2);
+    setNewDerivedRatioOutput('relative_performance');
+    setNewDerivedZscoreWindow(252);
   }, []);
 
   const resetDerived = useCallback(() => {
@@ -280,6 +340,8 @@ export function useWorkbenchDerivedSeries({
     setNewDerivedBaseSeries('');
     setNewDerivedTrendType('linear');
     setNewDerivedPolyDegree(2);
+    setNewDerivedRatioOutput('relative_performance');
+    setNewDerivedZscoreWindow(252);
   }, []);
 
   // Recompute derived data from current defs (using latest getters from seriesData).
@@ -296,6 +358,20 @@ export function useWorkbenchDerivedSeries({
           const norm = seriesData.getNormalizedData(raw, vk);
           const comp = computeTrendData(norm, def.trendType, def.polyDegree || 2);
           if (comp && comp.length > 0) newData[def.id] = comp;
+        } else if (def.ratioOutput && def.series1 && def.series2) {
+          const t1 = seriesData.getSeriesType ? seriesData.getSeriesType(def.series1, []) : seriesData.getType(def.series1);
+          const t2 = seriesData.getSeriesType ? seriesData.getSeriesType(def.series2, []) : seriesData.getType(def.series2);
+          const r1 = seriesData.getRawData(def.series1, t1);
+          const r2 = seriesData.getRawData(def.series2, t2);
+          const vk1 = seriesData.getValueKey(def.series1);
+          const vk2 = seriesData.getValueKey(def.series2);
+          const n1 = seriesData.getNormalizedData(r1, vk1);
+          const n2 = seriesData.getNormalizedData(r2, vk2);
+          const ratioResult = computeRatioComparison(n1, n2, {
+            ratioOutput: def.ratioOutput,
+            zscoreWindow: def.zscoreWindow || 252,
+          });
+          if (ratioResult?.points?.length > 0) newData[def.id] = ratioResult.points;
         } else if (def.series1 && def.series2) {
           const t1 = seriesData.getSeriesType ? seriesData.getSeriesType(def.series1, []) : seriesData.getType(def.series1);
           const t2 = seriesData.getSeriesType ? seriesData.getSeriesType(def.series2, []) : seriesData.getType(def.series2);
@@ -346,6 +422,11 @@ export function useWorkbenchDerivedSeries({
     setNewDerivedTrendType,
     newDerivedPolyDegree,
     setNewDerivedPolyDegree,
+
+    newDerivedRatioOutput,
+    setNewDerivedRatioOutput,
+    newDerivedZscoreWindow,
+    setNewDerivedZscoreWindow,
 
     // Logic
     computeDerivedData,

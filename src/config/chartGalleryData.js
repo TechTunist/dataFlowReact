@@ -449,6 +449,12 @@ export const chartSections = {
         image: '/assets/market-heat-index.png',
       },
       {
+        path: "/bitcoin-floor-echo",
+        title: "Bitcoin Floor Echo Index",
+        description: "Cross-workbench capitulation confluence — FEI bottoms tend to echo prior Bitcoin cycle lows",
+        image: '/assets/workbench.png',
+      },
+      {
         path: "/tail-curvature",
         title: "Tail Curvature",
         description: "Benjamin Cowen’s 2026 model of Bitcoin price quantiles",
