@@ -8,6 +8,7 @@ import LastUpdated from '../hooks/LastUpdated';
 import BitcoinFees from './BitcoinTransactionFees'; // Replace or remove if not needed
 import { DataContext } from '../DataContext';
 import ChartTooltip from './ChartTooltip';
+import ChartInfoSections from './ChartInfoSections';
 
 const SP500DivUnrateChart = ({ isDashboard = false }) => {
   const chartContainerRef = useRef();
@@ -263,15 +264,25 @@ const SP500DivUnrateChart = ({ isDashboard = false }) => {
       
 
       {!isDashboard && (
-        <p className='chart-info'>
-          The S&P 500 Dividend Yield divided by Unemployment Rate Squared chart visualizes the relationship between
-          dividend yields and labor market conditions over time. This metric provides insight into economic cycles,
-          where higher values may indicate undervaluation of equities relative to unemployment trends, and lower
-          values may suggest overvaluation or strong economic conditions. The chart tracks historical data to highlight
-          long-term trends and potential investment signals based on this unique economic indicator.
-          <br />
-          <br />
-        </p>
+        <ChartInfoSections
+          sections={[
+            {
+              title: 'What it is',
+              content:
+                'S&P 500 Dividend Yield divided by Unemployment Rate Squared, a ratio linking equity income yields to labor market conditions.',
+            },
+            {
+              title: 'What this chart shows',
+              content:
+                'Historical readings of this ratio to highlight long-term trends across economic cycles.',
+            },
+            {
+              title: 'How to interpret',
+              content:
+                'Higher values may indicate undervaluation of equities relative to unemployment trends. Lower values may suggest overvaluation or strong economic conditions.',
+            },
+          ]}
+        />
       )}
     </div>
   );

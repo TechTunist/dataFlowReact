@@ -9,6 +9,7 @@ import BitcoinFees from './BitcoinTransactionFees';
 import ChartTooltip from './ChartTooltip';
 import MacroChartControls, { getOverlaySeriesLabel } from './macro/MacroChartControls';
 import useUsMacroChartEnhancements from '../hooks/useUsMacroChartEnhancements';
+import ChartInfoSections from './ChartInfoSections';
 
 const UsInterestChart = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
@@ -240,10 +241,25 @@ const UsInterestChart = ({ isDashboard = false }) => {
                 {!isDashboard && <BitcoinFees />}
             </div>
             {!isDashboard && (
-                <p className='chart-info'>
-                    This chart tracks the effective U.S. interest rate set by monetary policy. Rates influence borrowing costs, discount rates for assets, and risk appetite.
-                    Overlay crypto or equity data to see how markets have responded across tightening and easing cycles. Smoothing helps clarify the policy trend through volatile periods.
-                </p>
+                <ChartInfoSections
+                    sections={[
+                        {
+                            title: 'What it is',
+                            content:
+                                'Tracks the effective U.S. interest rate set by monetary policy.',
+                        },
+                        {
+                            title: 'What this chart shows',
+                            content:
+                                'Historical interest rate levels with optional crypto or equity overlays across tightening and easing cycles.',
+                        },
+                        {
+                            title: 'How to interpret',
+                            content:
+                                'Rates influence borrowing costs, discount rates for assets, and risk appetite. Smoothing helps clarify the policy trend through volatile periods.',
+                        },
+                    ]}
+                />
             )}
         </div>
     );

@@ -10,6 +10,7 @@ import LastUpdated from '../hooks/LastUpdated';
 import { Box } from '@mui/material';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import ChartTooltip from './ChartTooltip';
+import ChartInfoSections from './ChartInfoSections';
 
 const PiCycleTopChart = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
@@ -462,13 +463,22 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
 
             {/* PiCycle Top General Description */}
             {!isDashboard && (
-                <p className='chart-info'>
-                    The PiCycle Top indicator was created by Phillip Swift in 2019, with the intention of calling the top of the Bitcoin bull market within 3 days.
-                    The indicator is calculated by dividing the 111-day moving average of the Bitcoin price by the 350-day moving average of the Bitcoin price.
-                    When the 111 day SMA crosses above the 350 day SMA, it is considered a bearish signal, and has historically been able to predict the
-                    2 market peaks in 2013, the bull market peak in 2017 and the first market peak in 2021.
-                    <br /><br /><br />
-                </p>
+                <ChartInfoSections
+                    sections={[
+                        {
+                            title: 'What it is',
+                            content: 'The PiCycle Top indicator was created by Phillip Swift in 2019, with the intention of calling the top of the Bitcoin bull market within 3 days.',
+                        },
+                        {
+                            title: 'How it is built',
+                            content: 'The indicator is calculated by dividing the 111-day moving average of the Bitcoin price by the 350-day moving average of the Bitcoin price.',
+                        },
+                        {
+                            title: 'How to interpret',
+                            content: 'When the 111 day SMA crosses above the 350 day SMA, it is considered a bearish signal, and has historically been able to predict the 2 market peaks in 2013, the bull market peak in 2017 and the first market peak in 2021.',
+                        },
+                    ]}
+                />
             )}
         </div>
     );

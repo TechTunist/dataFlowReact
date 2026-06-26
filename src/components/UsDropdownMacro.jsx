@@ -6,6 +6,7 @@ import '../styling/bitcoinChart.css';
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
 import { DataContext } from '../DataContext';
+import ChartInfoSections from './ChartInfoSections';
 
 const UsCombinedMacroChart = ({ isDashboard = false }) => {
     const theme = useTheme();
@@ -117,9 +118,20 @@ const UsCombinedMacroChart = ({ isDashboard = false }) => {
             <div>
                 {
                     !isDashboard && (
-                        <p className='chart-info'>
-                            This chart shows the historical macroeconomic indicators of the United States, including inflation rate, unemployment rate, and interest rate.    
-                        </p>
+                        <ChartInfoSections
+                            sections={[
+                                {
+                                    title: 'What it is',
+                                    content:
+                                        'Historical U.S. macroeconomic indicators in one selectable view.',
+                                },
+                                {
+                                    title: 'What this chart shows',
+                                    content:
+                                        'Inflation rate, unemployment rate, and interest rate over time.',
+                                },
+                            ]}
+                        />
                     )
                 }
             </div>

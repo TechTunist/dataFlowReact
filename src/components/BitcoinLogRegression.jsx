@@ -6,6 +6,7 @@ import { useTheme, useMediaQuery } from "@mui/material";
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
 import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
+import ChartInfoSections from './ChartInfoSections';
 import BitcoinFees from './BitcoinTransactionFees';
 import { DataContext } from '../DataContext';
 import ChartTooltip from './ChartTooltip';
@@ -425,17 +426,22 @@ const BitcoinLogRegression = ({ isDashboard = false, priceData: propPriceData })
       
 
       {!isDashboard && (
-        <p className='chart-info'>
-          The logarithmic regression of Bitcoin's price history captures the essence of its volatile yet upward-trending journey through upper,
-          mid, and lower range trendlines. These trendlines illustrate the expansive growth potential, the average trajectory,
-          and the foundational support levels of Bitcoin's price action over time.
-          The upper range highlights periods of exuberant market optimism and speculative peaks, while the lower range marks significant buying
-          opportunities during market corrections. The mid-range trendline serves as a more stable reference point, indicating the long-term growth
-          path of Bitcoin amidst its cyclical price movements. Together, these logarithmic regression lines offer a comprehensive view of Bitcoin's
-          historical and potential future price behavior, emphasizing its resilience and the increasing adoption curve.
-          <br />
-          <br />
-        </p>
+        <ChartInfoSections
+          sections={[
+            {
+              title: 'What it is',
+              content: 'The logarithmic regression of Bitcoin\'s price history captures the essence of its volatile yet upward-trending journey through upper, mid, and lower range trendlines. These trendlines illustrate the expansive growth potential, the average trajectory, and the foundational support levels of Bitcoin\'s price action over time.',
+            },
+            {
+              title: 'What this chart shows',
+              content: 'The upper range highlights periods of exuberant market optimism and speculative peaks, while the lower range marks significant buying opportunities during market corrections. The mid-range trendline serves as a more stable reference point, indicating the long-term growth path of Bitcoin amidst its cyclical price movements.',
+            },
+            {
+              title: 'How to interpret',
+              content: 'Together, these logarithmic regression lines offer a comprehensive view of Bitcoin\'s historical and potential future price behavior, emphasizing its resilience and the increasing adoption curve.',
+            },
+          ]}
+        />
       )}
     </div>
   );

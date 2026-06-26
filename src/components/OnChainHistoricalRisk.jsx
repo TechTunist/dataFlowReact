@@ -9,6 +9,7 @@ import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import ChartTooltip from './ChartTooltip';
+import ChartInfoSections from './ChartInfoSections';
 
 const OnChainHistoricalRisk = ({ isDashboard = false }) => {
   const chartContainerRef = useRef();
@@ -57,12 +58,82 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
   };
 
   const metricDescriptions = {
-    mvrv: 'The MVRV Z-Score Risk measures the market value to realized value ratio in standard deviations, indicating overvaluation (high Z-Score) or undervaluation (low Z-Score) of Bitcoin. A value above 7 suggests a market top, while below -1 indicates a potential bottom.',
-    puell: 'The Puell Multiple compares daily issuance value to a 365-day moving average, reflecting miner profitability. High values (>3) suggest a market top, while low values (<0.5) may indicate a bottom.',
-    minerCapThermoCap: 'The Miner Cap to Thermo Cap ratio assesses miner revenue relative to market cap. High ratios signal miner selling pressure, while low ratios suggest accumulation.',
-    fee: 'Fee Risk tracks transaction fee levels relative to Bitcoin price, indicating network congestion or speculative activity. High values suggest increased risk, while low values indicate reduced demand.',
-    sopl: 'The SOPL (Spent Output Profit/Loss) Risk measures the profit or loss of spent outputs. High positive values indicate profit-taking (high risk), while negative values suggest capitulation (low risk).',
-    average: 'The Average Risk metric combines MVRV, Puell, Miner Cap to Thermo Cap, Fee, and SOPL risk metrics by averaging their values, providing a composite view of market risk.',
+    mvrv: [
+      {
+        title: 'What it is',
+        content:
+          'MVRV Z-Score Risk measures the market value to realized value ratio in standard deviations.',
+      },
+      {
+        title: 'How to interpret',
+        content:
+          'High Z-Score indicates overvaluation; low Z-Score indicates undervaluation. A value above 7 suggests a market top, while below -1 indicates a potential bottom.',
+      },
+    ],
+    puell: [
+      {
+        title: 'What it is',
+        content:
+          'The Puell Multiple compares daily issuance value to a 365-day moving average, reflecting miner profitability.',
+      },
+      {
+        title: 'How to interpret',
+        content:
+          'High values (>3) suggest a market top. Low values (<0.5) may indicate a bottom.',
+      },
+    ],
+    minerCapThermoCap: [
+      {
+        title: 'What it is',
+        content:
+          'The Miner Cap to Thermo Cap ratio assesses miner revenue relative to market cap.',
+      },
+      {
+        title: 'How to interpret',
+        content:
+          'High ratios signal miner selling pressure. Low ratios suggest accumulation.',
+      },
+    ],
+    fee: [
+      {
+        title: 'What it is',
+        content:
+          'Fee Risk tracks transaction fee levels relative to Bitcoin price.',
+      },
+      {
+        title: 'How to interpret',
+        content:
+          'High values suggest network congestion or speculative activity (increased risk). Low values indicate reduced demand.',
+      },
+    ],
+    sopl: [
+      {
+        title: 'What it is',
+        content:
+          'SOPL (Spent Output Profit/Loss) Risk measures the profit or loss of spent outputs.',
+      },
+      {
+        title: 'How to interpret',
+        content:
+          'High positive values indicate profit-taking (high risk). Negative values suggest capitulation (low risk).',
+      },
+    ],
+    average: [
+      {
+        title: 'What it is',
+        content:
+          'The Average Risk metric combines MVRV, Puell, Miner Cap to Thermo Cap, Fee, and SOPL risk metrics.',
+      },
+      {
+        title: 'How it is built',
+        content: 'Each component risk score is averaged to produce a composite market risk reading.',
+      },
+      {
+        title: 'How to interpret',
+        content:
+          'Use as a single summary view of on-chain risk rather than relying on any one individual metric.',
+      },
+    ],
   };
 
   const lastUpdatedMap = {
@@ -535,18 +606,16 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
             </span>
           </UnderChartValue>
           <p style={{ color: colors.primary[100] }}>(data typically lags by 1 day)</p>
-          <p
-            className="chart-info"
-            style={{
+          <ChartInfoSections
+            sx={{
               marginTop: '20px',
               paddingBottom: '20px',
               fontSize: '1.2rem',
               color: colors.primary[100],
               maxWidth: '800px',
             }}
-          >
-            {metricDescriptions[selectedMetric]}
-          </p>
+            sections={metricDescriptions[selectedMetric]}
+          />
         </div>
       )}
     </div>

@@ -12,6 +12,7 @@ import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import { calculateStockRiskMetric } from '../utility/stockRiskMetric';
 import { stockLoadingMessage, stockRiskInsufficientHistoryMessage } from '../config/stocksConfig';
 import StockGroupSelect from './StockGroupSelect';
+import ChartInfoSections from './ChartInfoSections';
 
 const StockRisk = ({ isDashboard = false }) => {
   const chartContainerRef = useRef();
@@ -294,13 +295,25 @@ const StockRisk = ({ isDashboard = false }) => {
               Current Risk level: <b style={{ color: colors.greenAccent[500] }}>{currentRiskLevel}</b> ({denominator === 'BTC' ? '₿' : '$'}{currentStockPrice})
             </span>
           </UnderChartValue>
-          <p className='chart-info'>
-            Stocks carry company-specific and sector risks (earnings misses, competition, regulation, macro cycles) on top of market beta.
-            Unlike altcoins, established stocks have real cash flows and balance sheets, but can still experience sharp drawdowns during bear markets or company-specific events.
-            The risk metric compares price to its 200-day average, maps that into a 0–1 band from 3-year history, smooths over 21 days, then applies log-odds tail compression so readings only reach the outer extremes when price is genuinely stretched beyond its normal range. Mid-range scores (0.35–0.65) are typical; 0.8+ or 0.2− require strong extension.
-            Since Bitcoin often acts as a high-beta "risk-on" asset, comparing stock performance vs BTC can highlight relative strength or weakness.
-            This chart lets you analyze individual stocks' risk profile alongside price action (in USD or BTC terms).
-          </p>
+          <ChartInfoSections
+            sections={[
+              {
+                title: 'What it is',
+                content:
+                  'A dual-axis view of stock price (grey, left) and a 0-1 risk metric (pink, right) for the selected stock in USD or BTC terms. Stocks carry company-specific and sector risks (earnings misses, competition, regulation, macro cycles) on top of market beta. Unlike altcoins, established stocks have real cash flows and balance sheets, but can still experience sharp drawdowns.',
+              },
+              {
+                title: 'How it is built',
+                content:
+                  'Risk compares price to its 200-day average, maps that ratio into a 0-1 band from 3-year history, smooths over 21 days, then applies log-odds tail compression so readings only reach the outer extremes when price is genuinely stretched beyond its normal range.',
+              },
+              {
+                title: 'How to interpret',
+                content:
+                  'Mid-range scores (0.35-0.65) are typical. Readings near 0.8+ or below 0.2 require strong extension. Since Bitcoin often acts as a high-beta risk-on asset, comparing stock performance vs BTC can highlight relative strength or weakness. The current risk readout above summarizes the latest score alongside price.',
+              },
+            ]}
+          />
         </div>
       )}
     </div>

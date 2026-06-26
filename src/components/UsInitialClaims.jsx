@@ -9,6 +9,7 @@ import BitcoinFees from './BitcoinTransactionFees';
 import ChartTooltip from './ChartTooltip';
 import MacroChartControls, { getOverlaySeriesLabel } from './macro/MacroChartControls';
 import useUsMacroChartEnhancements from '../hooks/useUsMacroChartEnhancements';
+import ChartInfoSections from './ChartInfoSections';
 
 const UsInitialClaimsChart = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
@@ -241,10 +242,25 @@ const UsInitialClaimsChart = ({ isDashboard = false }) => {
                 {!isDashboard && <BitcoinFees />}
             </div>
             {!isDashboard && (
-                <p className='chart-info'>
-                    Weekly initial unemployment claims are a timely leading indicator of labor market stress. Spikes often precede broader economic slowdowns and risk-off moves in markets.
-                    Compare claims against Bitcoin, equities, or other assets to study how markets react to rising layoffs. Smoothing is especially useful here because weekly data can be noisy.
-                </p>
+                <ChartInfoSections
+                    sections={[
+                        {
+                            title: 'What it is',
+                            content:
+                                'Weekly initial unemployment claims are a timely leading indicator of labor market stress.',
+                        },
+                        {
+                            title: 'What this chart shows',
+                            content:
+                                'Claims over time with optional overlays such as Bitcoin or equities.',
+                        },
+                        {
+                            title: 'How to interpret',
+                            content:
+                                'Spikes often precede broader economic slowdowns and risk-off market moves. Smoothing is especially useful because weekly data can be noisy.',
+                        },
+                    ]}
+                />
             )}
         </div>
     );

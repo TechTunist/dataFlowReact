@@ -142,7 +142,9 @@ const SplashPage = () => {
               lineHeight: 1.5,
             }}
           >
-            Glassnode-depth metrics without Glassnode prices. See where the market is in the cycle — free to start.
+            Glassnode-depth metrics without Glassnode prices.
+            <br />
+            See where the market is in the cycle — free to start.
           </Typography>
           <Button
             component={TrackedSignupLink}
@@ -276,7 +278,7 @@ const SplashPage = () => {
       <Box sx={{ width: '100%', py: 10, backgroundColor: colors.primary[800] }}>
         <Container maxWidth="lg" sx={{ textAlign: 'center' }}>
           <Typography variant="h2" sx={{ color: colors.grey[100], fontWeight: 'bold', mb: 6, fontSize: { xs: '2.5rem', md: '3rem' } }}>
-            Powerful features to supercharge your understanding
+            Turning Complex Data Into Simple Decisions
           </Typography>
           <Grid container spacing={4} justifyContent="center">
             {[
@@ -298,7 +300,7 @@ const SplashPage = () => {
       {/* Chart previews */}
       <Container maxWidth="lg" sx={{ py: 10, textAlign: 'center' }}>
         <Typography variant="h2" sx={{ color: colors.grey[100], fontWeight: 'bold', mb: 2, fontSize: { xs: '2.5rem', md: '3rem' } }}>
-          See the power in action
+          Examples from the app
         </Typography>
         <Typography sx={{ color: colors.grey[400], mb: 6 }}>
           Click any chart to browse the full gallery

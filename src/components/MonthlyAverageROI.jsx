@@ -8,6 +8,7 @@ import LastUpdated from '../hooks/LastUpdated';
 import BitcoinFees from './BitcoinTransactionFees';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
+import ChartInfoSections from './ChartInfoSections';
 
 const MonthlyAverageROI = ({ isDashboard = false }) => {
   const theme = useTheme();
@@ -449,9 +450,22 @@ const MonthlyAverageROI = ({ isDashboard = false }) => {
         {!isDashboard && selectedAsset === 'BTC' && <BitcoinFees />}
       </div>
       {!isDashboard && (
-        <p className="chart-info">
-          This chart displays the average {selectedAsset} Return on Investment (ROI) for each month over the selected timeframe, averaged {startYear === 'All' ? 'across all available years' : `from ${startYear} onward`}. For each month, the ROI is calculated as the ratio of the average price {timeframes.find(tf => tf.value === timeframe)?.label} ahead to the average price of the current month. An ROI of 1 means no change, above 1 indicates growth (e.g., 2 means the price doubled), and below 1 indicates a decline (e.g., 0.5 means the price halved). Positive ROIs are shown in green, negative in red.
-        </p>
+        <ChartInfoSections
+          sections={[
+            {
+              title: 'What this chart shows',
+              content: <>Average {selectedAsset} Return on Investment (ROI) for each month over the selected timeframe, averaged {startYear === 'All' ? 'across all available years' : `from ${startYear} onward`}.</>,
+            },
+            {
+              title: 'How it is built',
+              content: <>For each month, the ROI is calculated as the ratio of the average price {timeframes.find(tf => tf.value === timeframe)?.label} ahead to the average price of the current month.</>,
+            },
+            {
+              title: 'How to interpret',
+              content: 'An ROI of 1 means no change, above 1 indicates growth (e.g., 2 means the price doubled), and below 1 indicates a decline (e.g., 0.5 means the price halved). Positive ROIs are shown in green, negative in red.',
+            },
+          ]}
+        />
       )}
     </div>
   );

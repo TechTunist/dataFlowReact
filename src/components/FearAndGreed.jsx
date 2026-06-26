@@ -6,6 +6,7 @@ import useIsMobile from '../hooks/useIsMobile';
 import { DataContext } from '../DataContext';
 import LastUpdated from '../hooks/LastUpdated';
 import BitcoinFees from './BitcoinTransactionFees';
+import ChartInfoSections from './ChartInfoSections';
 
 function CryptoFearAndGreedIndex({ isDashboard }) {
     const theme = useTheme();
@@ -144,14 +145,27 @@ function CryptoFearAndGreedIndex({ isDashboard }) {
       </div>
 
             {!isDashboard && (
-                <p className="chart-info" style={{ marginTop: '20px', textAlign: 'left', width: '100%' }}>
-                    The Fear and Greed index is a metric that measures the sentiment of the market by analyzing various sources of data, including surveys, social media, volatility, market momentum, and volume among others.
-                    <br />
-                    The information has been provided here:{' '}
-                    <a href="https://alternative.me/crypto/fear-and-greed-index/">
-                        https://alternative.me/crypto/fear-and-greed-index/
-                    </a>
-                </p>
+                <ChartInfoSections
+                    sx={{ marginTop: '20px', textAlign: 'left', width: '100%' }}
+                    sections={[
+                        {
+                            title: 'What it is',
+                            content:
+                                'The Fear and Greed index measures crypto market sentiment by analyzing surveys, social media, volatility, market momentum, volume, and other data sources.',
+                        },
+                        {
+                            title: 'How to interpret',
+                            content: (
+                                <>
+                                    Source:{' '}
+                                    <a href="https://alternative.me/crypto/fear-and-greed-index/">
+                                        https://alternative.me/crypto/fear-and-greed-index/
+                                    </a>
+                                </>
+                            ),
+                        },
+                    ]}
+                />
             )}
         </div>
     );

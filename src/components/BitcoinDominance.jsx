@@ -7,6 +7,7 @@ import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
 import BitcoinFees from './BitcoinTransactionFees';
 import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
+import ChartInfoSections from './ChartInfoSections';
 import {
   Select,
   MenuItem,
@@ -582,12 +583,22 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
       )}
 
       {!isDashboard && (
-        <p className='chart-info'>
-          This chart shows Bitcoin dominance, which is the percentage of the total cryptocurrency market value that Bitcoin represents. For example, if Bitcoin's market value is $500 billion and the total market value of all cryptocurrencies is $1 trillion, Bitcoin dominance is 50%. This number helps you understand Bitcoin's influence compared to other cryptocurrencies like Ethereum or smaller altcoins.
-          <br/><br/>The main plot shows a 7-day smoothed Bitcoin dominance line for better trend visibility (right scale - green border). Toggle "Show ETH Dominance" to compare Ethereum's market share on the left scale (red border). The weekly moving averages provide long-term trend analysis.
-          <br/><br/>A rising dominance means Bitcoin is growing stronger relative to others, often during market downturns when investors prefer Bitcoin's stability. A falling dominance suggests other cryptocurrencies are gaining ground, which can happen during market booms when altcoins attract more interest.
-          The chart uses historical data to show how Bitcoin dominance has changed over time. You can hover over the chart to see the dominance percentage for specific dates.
-        </p>
+        <ChartInfoSections
+          sections={[
+            {
+              title: 'What it is',
+              content: 'Bitcoin dominance is the percentage of the total cryptocurrency market value that Bitcoin represents. For example, if Bitcoin\'s market value is $500 billion and the total market value of all cryptocurrencies is $1 trillion, Bitcoin dominance is 50%. This number helps you understand Bitcoin\'s influence compared to other cryptocurrencies like Ethereum or smaller altcoins.',
+            },
+            {
+              title: 'What this chart shows',
+              content: 'The main plot shows a 7-day smoothed Bitcoin dominance line for better trend visibility (right scale, green border). Toggle "Show ETH Dominance" to compare Ethereum\'s market share on the left scale (red border). The weekly moving averages provide long-term trend analysis. Hover over the chart to see the dominance percentage for specific dates.',
+            },
+            {
+              title: 'How to interpret',
+              content: 'A rising dominance means Bitcoin is growing stronger relative to others, often during market downturns when investors prefer Bitcoin\'s stability. A falling dominance suggests other cryptocurrencies are gaining ground, which can happen during market booms when altcoins attract more interest.',
+            },
+          ]}
+        />
       )}
     </div>
   );

@@ -19,6 +19,7 @@ import { Box, FormControl, InputLabel, Select, MenuItem, Checkbox, Button, Dialo
 import { useAuth, useUser } from '@clerk/clerk-react';
 import { apiUrl } from '../config/api';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
+import ChartInfoSections from './ChartInfoSections';
 
 // === Extracted for decomposition (professionalization) ===
 // Series metadata moved to small extracted piece (allowed location).
@@ -1869,9 +1870,10 @@ const WorkbenchChart = ({
           This enables smooth, constant (per-frame) updates even with heavy long-series data like SP500 + many macros. */}
       {/* {!isDashboard && tooltipData && ... (old React tooltip removed for perf) } */}
       {!isDashboard && explanation && (
-        <p className='chart-info' style={{ color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900] }}>
-          {explanation}
-        </p>
+        <ChartInfoSections
+          sx={{ color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900] }}
+          sections={[{ title: 'What it is', content: explanation }]}
+        />
       )}
       </div>
     </ErrorBoundary>

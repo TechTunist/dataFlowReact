@@ -7,6 +7,7 @@ import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import LastUpdated from '../hooks/LastUpdated';
 import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
+import ChartInfoSections from './ChartInfoSections';
 import BitcoinFees from './BitcoinTransactionFees';
 import useIsMobile from '../hooks/useIsMobile';
 
@@ -489,13 +490,18 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
               Latest Extension: <b style={{ color: colors.greenAccent[500] }}>{latestExtension}%</b>
             </span>
           </UnderChartValue>
-          <p className='chart-info'>
-            The Bitcoin 20-Week Extension chart shows the percentage difference between the current price and the 20-week moving average (MA),
-            which helps to identify if we are currently in a bubble or a bear market. The chart is color-coded to indicate different ranges of extension.
-            Toggle 'Extension Area' to show or hide the extension percentage visualization, 'Extension Points' to show or hide colored points on the price line,
-            or 'Deselect / Select All' to toggle all ranges. Individual ranges can be toggled to show or hide their corresponding points and tooltips,
-            with deselected ranges appearing greyed out in the legend.
-          </p>
+          <ChartInfoSections
+            sections={[
+              {
+                title: 'What it is',
+                content: 'The Bitcoin 20-Week Extension measures the percentage difference between the current price and the 20-week moving average (MA), which helps to identify if we are currently in a bubble or a bear market.',
+              },
+              {
+                title: 'What this chart shows',
+                content: 'The chart is color-coded to indicate different ranges of extension. Toggle \'Extension Area\' to show or hide the extension percentage visualization, \'Extension Points\' to show or hide colored points on the price line, or \'Deselect / Select All\' to toggle all ranges. Individual ranges can be toggled to show or hide their corresponding points and tooltips, with deselected ranges appearing greyed out in the legend.',
+              },
+            ]}
+          />
         </div>
       )}
     </div>

@@ -8,8 +8,8 @@ import {
   UnderChartRow,
   UnderChartValue,
   ChartUnderSection,
-  ChartInfo,
 } from './ChartUnderSection';
+import ChartInfoSections from './ChartInfoSections';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import ChartTooltip from './ChartTooltip';
@@ -21,7 +21,6 @@ import {
   FLOOR_ECHO_FIXED_FLOOR_BAND,
   FLOOR_ECHO_FIXED_ECHO_BAND,
   FLOOR_ECHO_SMOOTHING_OPTIONS,
-  FLOOR_ECHO_DESCRIPTION,
 } from '../utility/floorEchoIndex';
 
 const BitcoinFloorEcho = ({ isDashboard = false, isChartPage = false }) => {
@@ -69,11 +68,11 @@ const BitcoinFloorEcho = ({ isDashboard = false, isChartPage = false }) => {
       inFloorZone,
       nearHistoricFloor,
       signal: nearHistoricFloor
-        ? 'Floor Echo — approaching prior bottom cluster'
+        ? 'Floor Echo: approaching prior bottom cluster'
         : inFloorZone
-          ? 'Capitulation zone — watch for local minimum'
+          ? 'Capitulation zone: watch for local minimum'
           : last.fei < (levels.median ?? 50)
-            ? 'Below median — cooling'
+            ? 'Below median: cooling'
             : 'Neutral / recovery',
     };
   }, [feiSeries]);
@@ -120,8 +119,11 @@ const BitcoinFloorEcho = ({ isDashboard = false, isChartPage = false }) => {
   }, [fetchFloorEchoData]);
 
   useEffect(() => {
-    if (isFloorEchoDataFetched && rawSeries.length === 0 && !isLoading) {
+    if (!isFloorEchoDataFetched || isLoading) return;
+    if (rawSeries.length === 0) {
       setDataError('Floor Echo data is not available yet. Run the backend precompute job.');
+    } else {
+      setDataError(null);
     }
   }, [rawSeries.length, isLoading, isFloorEchoDataFetched]);
 
@@ -245,25 +247,31 @@ const BitcoinFloorEcho = ({ isDashboard = false, isChartPage = false }) => {
     chartRef.current?.timeScale().fitContent();
   }, [feiChartData, priceData, refLevels]);
 
+  const setInteractivity = useCallback(() => {
+    setIsInteractive((prev) => !prev);
+  }, []);
+
   const resetChartView = () => chartRef.current?.timeScale().fitContent();
 
   const chartHeight = isDashboard
     ? '100%'
     : isChartPage
       ? 'var(--chart-area-min-height, clamp(400px, 62vh, 780px))'
-      : 'calc(100% - 40px)';
+      : 'calc(100% - 100px)';
 
   return (
     <div style={{ height: '100%' }}>
       {!isDashboard && (
-        <div className="chart-top-div">
+        <>
           <Box
             sx={{
               display: 'flex',
               flexDirection: { xs: 'column', sm: 'row' },
               alignItems: 'center',
-              gap: '12px',
-              flex: 1,
+              justifyContent: 'center',
+              gap: '20px',
+              marginBottom: '30px',
+              marginTop: '8px',
             }}
           >
             <FormControl sx={{ minWidth: '140px', width: { xs: '100%', sm: '200px' } }}>
@@ -288,6 +296,7 @@ const BitcoinFloorEcho = ({ isDashboard = false, isChartPage = false }) => {
                   '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
                   '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
                   '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                  '& .MuiSelect-select': { py: 1.5, pl: 2 },
                 }}
               >
                 {FLOOR_ECHO_SMOOTHING_OPTIONS.map((option) => (
@@ -299,32 +308,49 @@ const BitcoinFloorEcho = ({ isDashboard = false, isChartPage = false }) => {
             </FormControl>
             {isLoading && <span style={{ color: colors.grey[100] }}>Loading…</span>}
             {dataError && <span style={{ color: colors.redAccent[500] }}>{dataError}</span>}
+            <Box sx={{ display: 'flex', gap: '10px', marginLeft: { sm: 'auto' } }}>
+              <button
+                type="button"
+                onClick={setInteractivity}
+                className="button-reset"
+                style={{
+                  backgroundColor: isInteractive ? '#4cceac' : 'transparent',
+                  color: isInteractive ? 'black' : '#31d6aa',
+                  borderColor: isInteractive ? 'violet' : '#70d8bd',
+                }}
+              >
+                {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
+              </button>
+              <button
+                type="button"
+                onClick={resetChartView}
+                className="button-reset extra-margin"
+              >
+                Reset Chart
+              </button>
+            </Box>
           </Box>
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button
-              type="button"
-              onClick={() => setIsInteractive((v) => !v)}
-              className="button-reset"
-              style={{
-                color: theme.palette.mode === 'dark' ? '#31d6aa' : colors.grey[900],
-                borderColor: theme.palette.mode === 'dark' ? '#70d8bd' : colors.grey[700],
-              }}
-            >
-              {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
-            </button>
-            <button
-              type="button"
-              onClick={resetChartView}
-              className="button-reset"
-              style={{
-                color: theme.palette.mode === 'dark' ? '#31d6aa' : colors.grey[900],
-                borderColor: theme.palette.mode === 'dark' ? '#70d8bd' : colors.grey[700],
-              }}
-            >
-              Reset Chart
-            </button>
+          <div className="chart-top-div">
+            <div className="span-container">
+              <span style={{ marginRight: '20px', display: 'inline-block', color: colors.primary[100] }}>
+                <span style={{ backgroundColor: 'gray', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }} />
+                Bitcoin Price
+              </span>
+              <span style={{ marginRight: '20px', display: 'inline-block', color: colors.primary[100] }}>
+                <span style={{ backgroundColor: '#00e5c0', height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }} />
+                Floor Echo Index
+              </span>
+              <span style={{ marginRight: '20px', display: 'inline-block', color: colors.primary[100] }}>
+                <span style={{ borderBottom: '2px dashed rgba(255, 80, 120, 0.7)', width: '16px', display: 'inline-block', marginRight: '5px', verticalAlign: 'middle' }} />
+                Historic floor band
+              </span>
+              <span style={{ display: 'inline-block', color: colors.primary[100] }}>
+                <span style={{ borderBottom: '2px dashed rgba(255, 200, 80, 0.6)', width: '16px', display: 'inline-block', marginRight: '5px', verticalAlign: 'middle' }} />
+                Echo zone
+              </span>
+            </div>
           </div>
-        </div>
+        </>
       )}
       <div
         className="chart-container"
@@ -333,6 +359,9 @@ const BitcoinFloorEcho = ({ isDashboard = false, isChartPage = false }) => {
           height: chartHeight,
           width: '100%',
           border: isDashboard ? undefined : `2px solid ${theme.palette.mode === 'dark' ? '#a9a9a9' : colors.grey[700]}`,
+        }}
+        onDoubleClick={() => {
+          if (!isDashboard) setInteractivity();
         }}
       >
         <div ref={chartContainerRef} style={{ height: '100%', width: '100%' }} />
@@ -366,25 +395,43 @@ const BitcoinFloorEcho = ({ isDashboard = false, isChartPage = false }) => {
           <UnderChartRow style={{ justifyContent: 'flex-start' }}>
             <LastUpdated customDate={floorEchoLastUpdated} />
           </UnderChartRow>
-          {feiState && (
-            <ChartUnderSection borderColor={colors.primary[500]} sx={{ color: colors.primary[100] }}>
+          <ChartUnderSection borderColor={colors.primary[500]} sx={{ color: colors.primary[100] }}>
+            {feiState && (
               <UnderChartValue>
                 <span style={{ fontSize: isMobile ? '1rem' : '1.1rem', color: colors.primary[100] }}>
                   Floor Echo:{' '}
                   <b style={{ color: feiState.nearHistoricFloor ? colors.redAccent[400] : colors.greenAccent[500] }}>
                     {feiState.fei.toFixed(1)}
                   </b>
-                  {' — '}
+                  {' · '}
                   <span style={{ color: feiState.inFloorZone ? colors.redAccent[400] : colors.grey[300] }}>
                     {feiState.signal}
                   </span>
                 </span>
               </UnderChartValue>
-              <ChartInfo sx={{ maxWidth: '900px' }}>
-                {FLOOR_ECHO_DESCRIPTION}
-              </ChartInfo>
-            </ChartUnderSection>
-          )}
+            )}
+            <ChartInfoSections
+              sx={{ maxWidth: '900px' }}
+              sections={[
+                {
+                  title: 'What it is',
+                  content: 'The Floor Echo Index (FEI) measures how many independent crypto datasets are capitulating together. Prior Bitcoin cycle lows formed when sentiment, on-chain valuation, network activity, market structure, and miner stress all broke down at once: a "floor echo" of earlier bottoms, not a single panic spike.',
+                },
+                {
+                  title: 'What this chart shows',
+                  content: 'Grey line (left axis): BTC price (log scale). Teal line (right axis): FEI from 0–100. Red dashed line: historic floor band (~8th percentile of FEI history). Yellow dashed line: echo zone (~15th percentile). Use the smoothing selector to reduce day-to-day noise (7 days to 12 months).',
+                },
+                {
+                  title: 'How it is built',
+                  content: 'Daily inputs aligned to BTC: Fear & Greed; on-chain risk (MVRV, Puell, SOPL); transaction count; BTC dominance and altcoin-season index; miner thermo-cap stress. Macro and equity ratios are excluded because they often stress early in bears before price reaches the true floor. Each input becomes a 0–1 stress score, weighted (on-chain 30%, F&G 18%, alt regime 18%, tx 16%, miners 18%), then dampened by BTC drawdown from the rolling ~2-year peak so shallow pullbacks cannot print a full capitulation reading. The result is ranked against full history so cycle extremes land in a similar low band.',
+                },
+                {
+                  title: 'How to interpret',
+                  content: 'Low FEI (teal line dropping toward the red/yellow bands) deep into a bear market suggests broad capitulation. Watch for a local price minimum forming. FEI revisiting the floor band near prior cycle lows is the main signal; mid-bear bounces can still show elevated stress without implying the cycle low is in. High FEI means fewer datasets are in stress: recovery or mid-cycle conditions. The status line above summarizes the latest reading. FEI is a confluence context tool, not a standalone buy/sell trigger. Combine it with price structure and your own risk framework.',
+                },
+              ]}
+            />
+          </ChartUnderSection>
         </>
       )}
     </div>

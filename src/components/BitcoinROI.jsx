@@ -8,6 +8,7 @@ import BitcoinFees from './BitcoinTransactionFees';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import LastUpdated from '../hooks/LastUpdated';
+import ChartInfoSections from './ChartInfoSections';
 
 const BitcoinROI = ({ isDashboard = false }) => {
   const theme = useTheme();
@@ -518,12 +519,18 @@ const BitcoinROI = ({ isDashboard = false }) => {
         {!isDashboard && <BitcoinFees />}
       </div>
       {!isDashboard && (
-        <p className='chart-info'>
-          The return on investment for each year is calculated as a shifted logarithmic scale (log10(price / basePrice) + 1),
-          where ROI = 1 indicates no change, above 1 indicates positive returns, and below 1 indicates negative returns.
-          Select years to average, use 'Deselect / Select All' in the legend to toggle all years, or click legend items to toggle visibility.
-          Usage Example: Take the average of the post-halving years to compare against the current post-halving year ROI.
-        </p>
+        <ChartInfoSections
+          sections={[
+            {
+              title: 'How it is built',
+              content: 'The return on investment for each year is calculated as a shifted logarithmic scale (log10(price / basePrice) + 1), where ROI = 1 indicates no change, above 1 indicates positive returns, and below 1 indicates negative returns.',
+            },
+            {
+              title: 'How to interpret',
+              content: 'Select years to average, use \'Deselect / Select All\' in the legend to toggle all years, or click legend items to toggle visibility. Usage example: take the average of the post-halving years to compare against the current post-halving year ROI.',
+            },
+          ]}
+        />
       )}
     </div>
   );

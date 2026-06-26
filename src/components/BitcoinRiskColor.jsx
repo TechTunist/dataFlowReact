@@ -7,6 +7,7 @@ import '../styling/bitcoinChart.css';
 import LastUpdated from '../hooks/LastUpdated';
 import BitcoinFees from './BitcoinTransactionFees';
 import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
+import ChartInfoSections from './ChartInfoSections';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import { calculateRiskMetric } from '../utility/riskMetric';
@@ -475,9 +476,18 @@ const BitcoinRiskColor = ({ isDashboard = false, riskData: propRiskData }) => {
       )}
       {!isDashboard && (
         <div>
-          <p className='chart-info'>
-            The risk metric assesses {selectedAssetLabel}'s investment risk over time by comparing its daily prices to a 374-day moving average, incorporating a factor that accounts for sustained periods above the moving average. It calculates a normalized score between 0 and 1, where a higher score indicates higher risk, particularly after prolonged bull markets amplified by higher price levels. A lower score indicates lower risk. This method provides a view of when it might be riskier or safer to invest in {selectedAssetLabel} based on historical price movements and market maturity.
-          </p>
+          <ChartInfoSections
+            sections={[
+              {
+                title: 'What it is',
+                content: <>The risk metric assesses {selectedAssetLabel}&apos;s investment risk over time by comparing its daily prices to a 374-day moving average, incorporating a factor that accounts for sustained periods above the moving average.</>,
+              },
+              {
+                title: 'How to interpret',
+                content: <>It calculates a normalized score between 0 and 1, where a higher score indicates higher risk, particularly after prolonged bull markets amplified by higher price levels. A lower score indicates lower risk. This method provides a view of when it might be riskier or safer to invest in {selectedAssetLabel} based on historical price movements and market maturity.</>,
+              },
+            ]}
+          />
         </div>
       )}
     </div>

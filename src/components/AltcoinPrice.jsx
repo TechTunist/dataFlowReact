@@ -17,6 +17,7 @@ import {
   calculateMovingAverage 
 } from '../utils/technicalIndicators';
 import { getCurrentPrice } from '../utils/currentPrice';
+import ChartInfoSections from './ChartInfoSections';
 
 const AltcoinPrice = ({ isDashboard = false, defaultSelectedCoin }) => {
   const chartContainerRef = useRef();
@@ -1035,19 +1036,24 @@ const AltcoinPrice = ({ isDashboard = false, defaultSelectedCoin }) => {
         </Box>
       )}
       {!isDashboard && (
-        <p className="chart-info">
-          The altcoin market is the wild-west of the crypto world. This asset class faces regulatory uncertainty, scams perpetuated by bad actors,
-          extreme volatility and the tendency to lose anywhere between 70-99% of a token's value in a bear market, with no guarantee that the price will ever recover.
-          There is however a core of projects that are being driven by some talented and respected developers and technologists that are implementing
-          smart-contract functionality (permissionless and immutable executable code that is deployed on the blockchain) and are genuinely attempting
-          to build the next generation of the internet through distributed ledger blockchain technology. These crypto assets are used to drive the
-          functionality and security of their respective blockchain.
-          These projects are far riskier, but during certain phases of the business cycle (severe drops in bitcoin dominance paired with looser monetary policy)
-          they have historically offered far greater returns than that of traditional markets and the 2 crypto blue-chips; Bitcoin & Ethereum.
-          Since Bitcoin is the lowest risk crypto asset, it makes sense to value these altcoins against not only their USD pair, but also their BTC pair.
-          If the altcoin is underperforming against BTC, it makes no sense to hold the far riskier asset.
-          This chart allows you to compare the performance of various altcoins against Bitcoin.
-        </p>
+        <ChartInfoSections
+          sections={[
+            {
+              title: 'What it is',
+              content:
+                'The altcoin market faces regulatory uncertainty, scams, extreme volatility, and the tendency to lose 70-99% of a token\'s value in a bear market, with no guarantee of recovery. A core of projects driven by respected developers implements smart-contract functionality (permissionless, immutable code on the blockchain) and distributed ledger technology to power the next generation of the internet.',
+            },
+            {
+              title: 'What this chart shows',
+              content: 'Performance of various altcoins against Bitcoin, with optional USD denomination.',
+            },
+            {
+              title: 'How to interpret',
+              content:
+                'Bitcoin is the lowest-risk crypto asset, so altcoins should be valued against their BTC pair as well as USD. If an altcoin underperforms BTC, holding the far riskier asset makes little sense. During certain business-cycle phases (sharp drops in Bitcoin dominance paired with looser monetary policy), altcoins have historically offered greater returns than traditional markets and the two blue-chips, Bitcoin and Ethereum.',
+            },
+          ]}
+        />
       )}
     </div>
   );

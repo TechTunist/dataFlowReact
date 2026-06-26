@@ -6,6 +6,7 @@ import '../styling/bitcoinChart.css';
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
 import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
+import ChartInfoSections from './ChartInfoSections';
 import BitcoinFees from './BitcoinTransactionFees';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
@@ -340,11 +341,18 @@ const BitcoinHistoricalVolatility = ({ isDashboard = false }) => {
               Current {timeframe} Volatility: <b style={{ color: colors.greenAccent[500] }}>{currentVolatility}%</b> (<b style={{ color: colors.greenAccent[500] }}>${currentBtcPrice.toFixed(0)}k</b>)
             </span>
           </UnderChartValue>
-          <p className="chart-info">
-            The historical volatility is calculated as the annualized standard deviation of daily logarithmic returns over the selected timeframe, expressed as a percentage. Volatility data is only shown after the selected timeframe has passed from the start of the dataset. Select different timeframes to analyze volatility over various periods.
-            The visual spikes in volatility indicate periods of significant price fluctuations, which can be useful for understanding market behavior and potential changes in price momentum after volatility peaks and changes direction.
-            If the price is moving upwards and the volatility peaks, it may indicate a top and potential move downwards, while a peak in volatility during a downward price movement may indicate a potential bottom and reversal upwards.
-          </p>
+          <ChartInfoSections
+            sections={[
+              {
+                title: 'How it is built',
+                content: 'The historical volatility is calculated as the annualized standard deviation of daily logarithmic returns over the selected timeframe, expressed as a percentage. Volatility data is only shown after the selected timeframe has passed from the start of the dataset.',
+              },
+              {
+                title: 'How to interpret',
+                content: 'Select different timeframes to analyze volatility over various periods. The visual spikes in volatility indicate periods of significant price fluctuations, which can be useful for understanding market behavior and potential changes in price momentum after volatility peaks and changes direction. If the price is moving upwards and the volatility peaks, it may indicate a top and potential move downwards, while a peak in volatility during a downward price movement may indicate a potential bottom and reversal upwards.',
+              },
+            ]}
+          />
         </div>
       )}
     </div>

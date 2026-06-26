@@ -8,6 +8,7 @@ import LastUpdated from '../hooks/LastUpdated';
 import BitcoinFees from './BitcoinTransactionFees';
 import { Box, useMediaQuery } from '@mui/material';
 import { UnderChartRow } from './ChartUnderSection';
+import ChartInfoSections from './ChartInfoSections';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import ChartTooltip from './ChartTooltip';
@@ -380,15 +381,22 @@ const BitcoinMvrvZScoreChart = ({ isDashboard = false, txMvrvData: propTxMvrvDat
       )}
       
       {!isDashboard && (
-        <p className='chart-info'>
-          The Bitcoin Price & MVRV Z-Score chart shows the Bitcoin price, smoothed realized price (28-day SMA of spot price ÷ MVRV), and MVRV Z-Score starting from April 16th, 2011, illustrating price trends and standardized valuation deviations. Realized price shares the left-hand price scale with spot price. The MVRV Z-Score is only calculated and displayed after at least 365 data points to avoid initial instability due to small sample size.
-          <br />
-          <br />
-          This chart shows the Bitcoin price and MVRV Z-Score, providing a snapshot of how Bitcoin’s value and standardized metrics interact over time.
-          The MVRV Z-Score is the relative indicator, which is the circulating market value of Bitcoin minus the realized market value, standardized by the running standard deviation of the circulating market value up to that point.
-          When this indicator is too high, it means that the market value of Bitcoin is overvalued relative to its actual value; otherwise, it means undervaluation.
-          <br /><br /><br />
-        </p>
+        <ChartInfoSections
+          sections={[
+            {
+              title: 'What this chart shows',
+              content: 'The Bitcoin Price & MVRV Z-Score chart shows the Bitcoin price, smoothed realized price (28-day SMA of spot price ÷ MVRV), and MVRV Z-Score starting from April 16th, 2011, illustrating price trends and standardized valuation deviations. Realized price shares the left-hand price scale with spot price. The MVRV Z-Score is only calculated and displayed after at least 365 data points to avoid initial instability due to small sample size.',
+            },
+            {
+              title: 'How it is built',
+              content: 'The MVRV Z-Score is the relative indicator, which is the circulating market value of Bitcoin minus the realized market value, standardized by the running standard deviation of the circulating market value up to that point.',
+            },
+            {
+              title: 'How to interpret',
+              content: 'When this indicator is too high, it means that the market value of Bitcoin is overvalued relative to its actual value; otherwise, it means undervaluation.',
+            },
+          ]}
+        />
       )}
     </div>
   );

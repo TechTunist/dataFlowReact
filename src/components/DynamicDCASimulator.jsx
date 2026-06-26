@@ -33,6 +33,13 @@ const ROI_RISK_DEFAULT_BUY_STRONG = 0.09;
 const ROI_RISK_DEFAULT_SELL_STRONG = 0.95;
 const ROI_RISK_METRIC_LINE_COLOR = '#ff0062';
 
+const FREQUENCY_OPTIONS = [
+  { value: 1, label: 'Daily' },
+  { value: 7, label: 'Weekly' },
+  { value: 14, label: 'Bi-weekly' },
+  { value: 28, label: 'Monthly' },
+];
+
 // Tx Tension ratio scale varies widely by smoothing (e.g. ~74 on 7-day SMA vs ~850 on 3-day SMA).
 // Tier defaults are expressed as fractions of the series max so they stay meaningful across smoothings.
 const TX_TIER_DEFAULT_FRACTIONS = {
@@ -224,7 +231,8 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
 
   // Common simulation params
   const [dcaAmount, setDcaAmount] = useState(100);
-  const [frequency, setFrequency] = useState(7); // days
+  const [buyFrequency, setBuyFrequency] = useState(28);
+  const [sellFrequency, setSellFrequency] = useState(7);
   const [startDate, setStartDate] = useState('2016-01-01');
 
   // Risk specific tiers (example starting point inspired by existing)
@@ -590,9 +598,9 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
     let currentPrice = 0;
 
     let lastBuyDate = new Date(startDate);
-    lastBuyDate.setDate(lastBuyDate.getDate() - frequency);
+    lastBuyDate.setDate(lastBuyDate.getDate() - buyFrequency);
     let lastSellDate = new Date(startDate);
-    lastSellDate.setDate(lastSellDate.getDate() - frequency);
+    lastSellDate.setDate(lastSellDate.getDate() - sellFrequency);
 
     if (data.length > 0) {
       portfolioSeries.push({
@@ -613,8 +621,8 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
 
       const daysSinceBuy = (dayDate - lastBuyDate) / (1000 * 60 * 60 * 24);
       const daysSinceSell = (dayDate - lastSellDate) / (1000 * 60 * 60 * 24);
-      const buyIntervalOk = daysSinceBuy >= frequency;
-      const sellIntervalOk = daysSinceSell >= frequency;
+      const buyIntervalOk = daysSinceBuy >= buyFrequency;
+      const sellIntervalOk = daysSinceSell >= sellFrequency;
 
       if (action.type === 'buy' && buyIntervalOk) {
         const usdToSpend = dcaAmount * (action.multiplier || 1);
@@ -712,12 +720,12 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
     let staticBtc = 0;
     let staticInvested = 0;
     let staticLastDate = new Date(startDate);
-    staticLastDate.setDate(staticLastDate.getDate() - frequency);
+    staticLastDate.setDate(staticLastDate.getDate() - buyFrequency);
 
     data.forEach(day => {
       const d = new Date(day.time);
       const delta = (d - staticLastDate) / (1000 * 60 * 60 * 24);
-      if (delta >= frequency && day.price > 0) {
+      if (delta >= buyFrequency && day.price > 0) {
         staticBtc += dcaAmount / day.price;
         staticInvested += dcaAmount;
         staticLastDate = d;
@@ -765,7 +773,7 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
       lastPrice: currentPrice,
       dataPoints: data.length,
     };
-  }, [simSeriesData, dcaAmount, frequency, startDate, getActionForIndicator, strategyDisplayName]);
+  }, [simSeriesData, dcaAmount, buyFrequency, sellFrequency, startDate, getActionForIndicator, strategyDisplayName]);
 
   const hasResultsForCurrentStrategy = useMemo(
     () => Boolean(
@@ -1101,7 +1109,10 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
         if (saved.strategy) setStrategy(saved.strategy);
         if (typeof saved.txSmoothing === 'string') setTxSmoothing(saved.txSmoothing);
         if (typeof saved.dcaAmount === 'number') setDcaAmount(saved.dcaAmount);
-        if (typeof saved.frequency === 'number') setFrequency(saved.frequency);
+        if (typeof saved.buyFrequency === 'number') setBuyFrequency(saved.buyFrequency);
+        else if (typeof saved.frequency === 'number') setBuyFrequency(saved.frequency);
+        if (typeof saved.sellFrequency === 'number') setSellFrequency(saved.sellFrequency);
+        else if (typeof saved.frequency === 'number') setSellFrequency(saved.frequency);
         if (typeof saved.startDate === 'string') setStartDate(saved.startDate);
         if (typeof saved.buyStrategy === 'string') setBuyStrategy(saved.buyStrategy);
         if (typeof saved.enableDynamicSelling === 'boolean') setEnableDynamicSelling(saved.enableDynamicSelling);
@@ -1144,7 +1155,8 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
       strategy,
       txSmoothing,
       dcaAmount,
-      frequency,
+      buyFrequency,
+      sellFrequency,
       startDate,
       buyStrategy,
       enableDynamicSelling,
@@ -1171,7 +1183,8 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
     strategy,
     txSmoothing,
     dcaAmount,
-    frequency,
+    buyFrequency,
+    sellFrequency,
     startDate,
     buyStrategy,
     enableDynamicSelling,
@@ -1285,12 +1298,21 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
           </Grid>
           <Grid item xs={12} sm={6} md={2}>
             <FormControl fullWidth size="small">
-              <InputLabel>Frequency (days)</InputLabel>
-              <Select value={frequency} label="Frequency (days)" onChange={e => setFrequency(parseInt(e.target.value))}>
-                <MenuItem value={1}>Daily</MenuItem>
-                <MenuItem value={7}>Weekly</MenuItem>
-                <MenuItem value={14}>Bi-weekly</MenuItem>
-                <MenuItem value={28}>Monthly</MenuItem>
+              <InputLabel>Buy Frequency</InputLabel>
+              <Select value={buyFrequency} label="Buy Frequency" onChange={e => setBuyFrequency(parseInt(e.target.value, 10))}>
+                {FREQUENCY_OPTIONS.map((opt) => (
+                  <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} sm={6} md={2}>
+            <FormControl fullWidth size="small">
+              <InputLabel>Sell Frequency</InputLabel>
+              <Select value={sellFrequency} label="Sell Frequency" onChange={e => setSellFrequency(parseInt(e.target.value, 10))}>
+                {FREQUENCY_OPTIONS.map((opt) => (
+                  <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                ))}
               </Select>
             </FormControl>
           </Grid>
@@ -1303,30 +1325,44 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
               fullWidth size="small" InputLabelProps={{ shrink: true }}
             />
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Typography variant="caption" sx={{ color: colors.grey[200], display: 'block' }}>Buy Mode</Typography>
-            <Box sx={{ display: 'flex', gap: 0.5, mt: 0.5, flexWrap: 'wrap' }}>
-              <Button size="small" variant={buyStrategy === 'periodic-boost' ? 'contained' : 'outlined'} onClick={() => setBuyStrategy('periodic-boost')}
-                sx={{ color: buyStrategy === 'periodic-boost' ? '#111' : colors.greenAccent[500], borderColor: colors.greenAccent[500], backgroundColor: buyStrategy === 'periodic-boost' ? colors.greenAccent[500] : 'transparent', fontSize: '0.7rem', px: 1, py: 0.25 }}>
-                Constant
-              </Button>
-              <Button size="small" variant={buyStrategy === 'trigger-only' ? 'contained' : 'outlined'} onClick={() => setBuyStrategy('trigger-only')}
-                sx={{ color: buyStrategy === 'trigger-only' ? '#111' : colors.blueAccent[400], borderColor: colors.blueAccent[400], backgroundColor: buyStrategy === 'trigger-only' ? colors.blueAccent[400] : 'transparent', fontSize: '0.7rem', px: 1, py: 0.25 }}>
-                On Trigger
-              </Button>
-            </Box>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Typography variant="caption" sx={{ color: colors.grey[200], display: 'block' }}>Exit Strategy</Typography>
-            <Box sx={{ display: 'flex', gap: 0.5, mt: 0.5, flexWrap: 'wrap' }}>
-              <Button size="small" variant={enableDynamicSelling ? 'contained' : 'outlined'} onClick={() => setEnableDynamicSelling(true)}
-                sx={{ color: enableDynamicSelling ? '#111' : colors.blueAccent[400], borderColor: colors.blueAccent[400], backgroundColor: enableDynamicSelling ? colors.blueAccent[400] : 'transparent', fontSize: '0.7rem', px: 1, py: 0.25 }}>
-                Selling On
-              </Button>
-              <Button size="small" variant={!enableDynamicSelling ? 'contained' : 'outlined'} onClick={() => setEnableDynamicSelling(false)}
-                sx={{ color: !enableDynamicSelling ? '#111' : colors.grey[400], borderColor: colors.grey[500], backgroundColor: !enableDynamicSelling ? colors.grey[400] : 'transparent', fontSize: '0.7rem', px: 1, py: 0.25 }}>
-                Hodl BTC
-              </Button>
+          <Grid item xs={12} md={4}>
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: { xs: 'flex-start', md: 'flex-end' },
+                alignItems: 'flex-end',
+                gap: 2.5,
+                flexWrap: 'wrap',
+                ml: { md: 'auto' },
+              }}
+            >
+              <Box>
+                <Typography variant="caption" sx={{ color: colors.grey[200], display: 'block' }}>Buy Mode</Typography>
+                <Box sx={{ display: 'flex', gap: 0.5, mt: 0.5, flexWrap: 'wrap' }}>
+                  <Button size="small" variant={buyStrategy === 'periodic-boost' ? 'contained' : 'outlined'} onClick={() => setBuyStrategy('periodic-boost')}
+                    sx={{ color: buyStrategy === 'periodic-boost' ? '#111' : colors.greenAccent[500], borderColor: colors.greenAccent[500], backgroundColor: buyStrategy === 'periodic-boost' ? colors.greenAccent[500] : 'transparent', fontSize: '0.7rem', px: 1, py: 0.25 }}>
+                    Constant
+                  </Button>
+                  <Button size="small" variant={buyStrategy === 'trigger-only' ? 'contained' : 'outlined'} onClick={() => setBuyStrategy('trigger-only')}
+                    sx={{ color: buyStrategy === 'trigger-only' ? '#111' : colors.blueAccent[400], borderColor: colors.blueAccent[400], backgroundColor: buyStrategy === 'trigger-only' ? colors.blueAccent[400] : 'transparent', fontSize: '0.7rem', px: 1, py: 0.25 }}>
+                    On Trigger
+                  </Button>
+                </Box>
+              </Box>
+              <Divider orientation="vertical" flexItem sx={{ borderColor: colors.primary[600], display: { xs: 'none', sm: 'block' } }} />
+              <Box>
+                <Typography variant="caption" sx={{ color: colors.grey[200], display: 'block' }}>Exit Strategy</Typography>
+                <Box sx={{ display: 'flex', gap: 0.5, mt: 0.5, flexWrap: 'wrap' }}>
+                  <Button size="small" variant={enableDynamicSelling ? 'contained' : 'outlined'} onClick={() => setEnableDynamicSelling(true)}
+                    sx={{ color: enableDynamicSelling ? '#111' : colors.blueAccent[400], borderColor: colors.blueAccent[400], backgroundColor: enableDynamicSelling ? colors.blueAccent[400] : 'transparent', fontSize: '0.7rem', px: 1, py: 0.25 }}>
+                    Selling On
+                  </Button>
+                  <Button size="small" variant={!enableDynamicSelling ? 'contained' : 'outlined'} onClick={() => setEnableDynamicSelling(false)}
+                    sx={{ color: !enableDynamicSelling ? '#111' : colors.grey[400], borderColor: colors.grey[500], backgroundColor: !enableDynamicSelling ? colors.grey[400] : 'transparent', fontSize: '0.7rem', px: 1, py: 0.25 }}>
+                    Hodl BTC
+                  </Button>
+                </Box>
+              </Box>
             </Box>
           </Grid>
           <Grid item xs={12}>
@@ -1353,9 +1389,10 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
         </Grid>
         <Typography variant="caption" sx={{ mt: 1, display: 'block', color: colors.grey[500] }}>
           Run backtest computes all four combinations (Constant / Trigger-Level × Selling On / Hold BTC Only) for instant comparison.
+          Buy and sell frequencies are independent: use a slower buy cadence (e.g. monthly) and a faster sell cadence (e.g. weekly) so exit signals are not missed.
           {enableDynamicSelling
             ? ' Selling On: portfolio = cash from sells (price-stable) + remaining BTC (moves with price).'
-            : ' Hold BTC Only: portfolio = 100% BTC holdings — entire value moves with Bitcoin price.'}
+            : ' Hold BTC Only: portfolio = 100% BTC holdings. Entire value moves with Bitcoin price.'}
         </Typography>
       </Paper>
 
@@ -1383,7 +1420,7 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
               </Button>
             </Box>
             <Typography variant="caption" sx={{ color: colors.grey[400], display: 'block', mb: 1.5 }}>
-              These control the buy-boost and sell rules for the current strategy. Use the top bar for amount, frequency, start date and buy mode.
+              These control the buy-boost and sell rules for the current strategy. Use the top bar for amount, buy/sell frequency, start date, buy mode, and exit strategy.
             </Typography>
 
             {/* Buy / Oversold tiers */}

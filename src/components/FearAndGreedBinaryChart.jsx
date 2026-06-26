@@ -9,6 +9,7 @@ import { FearAndGreedBinaryContext } from '../FearAndGreedBinaryContext';
 import { DataContext } from '../DataContext';
 import Plotly from 'plotly.js-gl2d-dist';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
+import ChartInfoSections from './ChartInfoSections';
 
 const FearAndGreedBinaryChart = ({ isDashboard = false }) => {
   const theme = useTheme();
@@ -304,14 +305,32 @@ const FearAndGreedBinaryChart = ({ isDashboard = false }) => {
       </div>
 
       {!isDashboard && (
-        <p className='chart-info' style={{ marginTop: '10px', textAlign: 'left', width: '100%' }}>
-          <b>Data only available starting from February 2018.</b><br /><br />
-          The Fear and Greed index is a metric that measures the sentiment of the market by analyzing various sources of data,
-          including surveys, social media, volatility, market momentum, and volume among others.
-          This chart plots the fear and greed indicator over the corresponding bitcoin price.
-          <br /> The information for this chart has been obtained from this source:
-          <a href="https://alternative.me/crypto/fear-and-greed-index/">https://alternative.me/crypto/fear-and-greed-index/</a>
-        </p>
+        <ChartInfoSections
+          sx={{ marginTop: '10px', textAlign: 'left', width: '100%' }}
+          sections={[
+            {
+              title: 'What it is',
+              content:
+                'The Fear and Greed index measures crypto market sentiment by analyzing surveys, social media, volatility, market momentum, volume, and other data sources.',
+            },
+            {
+              title: 'What this chart shows',
+              content:
+                'The Fear and Greed indicator plotted against Bitcoin price. Data is only available starting from February 2018.',
+            },
+            {
+              title: 'How to interpret',
+              content: (
+                <>
+                  Source:{' '}
+                  <a href="https://alternative.me/crypto/fear-and-greed-index/">
+                    https://alternative.me/crypto/fear-and-greed-index/
+                  </a>
+                </>
+              ),
+            },
+          ]}
+        />
       )}
     </div>
   );

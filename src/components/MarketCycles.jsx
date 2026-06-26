@@ -10,6 +10,7 @@ import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import LastUpdated from '../hooks/LastUpdated';
 import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
+import ChartInfoSections from './ChartInfoSections';
 
 const MarketCycles = ({ isDashboard = false }) => {
   const theme = useTheme();
@@ -564,12 +565,18 @@ const MarketCycles = ({ isDashboard = false }) => {
       )}
 
       {!isDashboard && (
-        <p className='chart-info'>
-          The return on investment between market cycles is calculated as a shifted logarithmic scale (log10(price / basePrice) + 1),
-          where ROI = 1 indicates no change, above 1 indicates positive returns, and below 1 indicates negative returns.
-          The average ROI line (if selected) represents the mean of the chosen historical cycles on this shifted scale.
-          Select cycles to average or toggle visibility via the legend.
-        </p>
+        <ChartInfoSections
+          sections={[
+            {
+              title: 'How it is built',
+              content: 'The return on investment between market cycles is calculated as a shifted logarithmic scale (log10(price / basePrice) + 1), where ROI = 1 indicates no change, above 1 indicates positive returns, and below 1 indicates negative returns. The average ROI line (if selected) represents the mean of the chosen historical cycles on this shifted scale.',
+            },
+            {
+              title: 'How to interpret',
+              content: 'Select cycles to average or toggle visibility via the legend.',
+            },
+          ]}
+        />
       )}
     </div>
   );

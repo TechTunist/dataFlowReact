@@ -7,7 +7,8 @@ import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
 import BitcoinFees from './BitcoinTransactionFees';
 import { Box, FormControl, InputLabel, Select, MenuItem, ToggleButton, ToggleButtonGroup, useMediaQuery, Checkbox, Typography } from '@mui/material';
-import { UnderChartRow, ChartUnderSection, UnderChartScroll, ChartInfo } from './ChartUnderSection';
+import { UnderChartRow, ChartUnderSection, UnderChartScroll } from './ChartUnderSection';
+import ChartInfoSections from './ChartInfoSections';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import ChartTooltip from './ChartTooltip';
@@ -1015,18 +1016,28 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, isChartPage = false, txMvrvDa
             )}
           </UnderChartScroll>
 
-          {/* Main long-form explanation - outside the scroll (always visible) and using the centralized ChartInfo / .chart-info for bigger/prominent text vs the small activetrends metas */}
-          <ChartInfo sx={{ mt: 1, color: colors.grey[300] }}>
-              <br />
-              The Bitcoin Tx Count, Price & MVRV chart shows the {displayMode === 'tx-mvrv' ? `${smoothingMode === 'none' ? 'daily transaction count' : getSmoothingLabel(smoothingMode)} of transaction count and scaled MVRV` : `MVRV-to-transaction-count ratio${smoothingMode === 'none' ? '' : ` with ${smoothingMode.startsWith('ema-') ? 'exponential' : 'simple'} moving average`}`} and Bitcoin price starting from October 21, 2014, illustrating network activity, price trends, and valuation. {displayMode === 'ratio' ? `The MVRV/Tx Ratio is the normalized MVRV divided by normalized transaction count, dynamically normalized to a rolling maximum and optionally smoothed with a moving average.${activeTrends.includes('bottom') ? ' The Bottom Indicator projects historical ratio lows forward.' : ''}${activeTrends.includes('threshold') ? ' The Overbought Threshold is a horizontal line near the historical max, signaling potential tops when breached.' : ''}` : 'MVRV is scaled by 100,000 to fit the linear axis.'}
-              <br /><br />
-              This chart shows the Bitcoin transaction count, Bitcoin price, MVRV ratio, or MVRV/Tx ratio, providing a snapshot of how Bitcoin’s network and value interact over time.
-              The transaction count reflects activity on the Bitcoin network, and potential hype cycles that see an influx of new investors, and conversely bear markets where interest has decreased.
-              The MVRV (market value to realised value) ratio shows the difference between the current market value of bitcoin and the realised value (the average value of all Bitcoin when last transacted).
-              <br /><br />
-              The MVRV/Tx ratio compares the MVRV to network activity. One interpretation of the spikes of this ratio is that the price has increased speculatively without corresponding network activity that would have led to a "natural" increase of value.
-              There is currently a monotonically increasing trendline under the lows in the MVRV/Tx ratio that has held for 10 years and has indicated relatively low risk entry points.
-          </ChartInfo>
+          {/* Main long-form explanation - outside the scroll (always visible) via ChartInfoSections */}
+          <ChartInfoSections
+            sx={{ mt: 1, color: colors.grey[300] }}
+            sections={[
+              {
+                title: 'What this chart shows',
+                content: (
+                  <>
+                    The Bitcoin Tx Count, Price & MVRV chart shows the {displayMode === 'tx-mvrv' ? `${smoothingMode === 'none' ? 'daily transaction count' : getSmoothingLabel(smoothingMode)} of transaction count and scaled MVRV` : `MVRV-to-transaction-count ratio${smoothingMode === 'none' ? '' : ` with ${smoothingMode.startsWith('ema-') ? 'exponential' : 'simple'} moving average`}`} and Bitcoin price starting from October 21, 2014, illustrating network activity, price trends, and valuation. {displayMode === 'ratio' ? `The MVRV/Tx Ratio is the normalized MVRV divided by normalized transaction count, dynamically normalized to a rolling maximum and optionally smoothed with a moving average.${activeTrends.includes('bottom') ? ' The Bottom Indicator projects historical ratio lows forward.' : ''}${activeTrends.includes('threshold') ? ' The Overbought Threshold is a horizontal line near the historical max, signaling potential tops when breached.' : ''}` : 'MVRV is scaled by 100,000 to fit the linear axis.'}
+                  </>
+                ),
+              },
+              {
+                title: 'How it is built',
+                content: 'The transaction count reflects activity on the Bitcoin network, and potential hype cycles that see an influx of new investors, and conversely bear markets where interest has decreased. The MVRV (market value to realised value) ratio shows the difference between the current market value of bitcoin and the realised value (the average value of all Bitcoin when last transacted).',
+              },
+              {
+                title: 'How to interpret',
+                content: 'The MVRV/Tx ratio compares the MVRV to network activity. One interpretation of the spikes of this ratio is that the price has increased speculatively without corresponding network activity that would have led to a "natural" increase of value. There is currently a monotonically increasing trendline under the lows in the MVRV/Tx ratio that has held for 10 years and has indicated relatively low risk entry points.',
+              },
+            ]}
+          />
         </ChartUnderSection>
       )}
     </Box>

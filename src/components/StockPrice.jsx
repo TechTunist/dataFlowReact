@@ -19,6 +19,7 @@ import {
 import { getCurrentPrice } from '../utils/currentPrice';
 import StockGroupSelect from './StockGroupSelect';
 import { stockLoadingMessage } from '../config/stocksConfig';
+import ChartInfoSections from './ChartInfoSections';
 
 const StockPrice = ({ isDashboard = false, defaultSelectedCoin }) => {
   const chartContainerRef = useRef();
@@ -998,12 +999,25 @@ const StockPrice = ({ isDashboard = false, defaultSelectedCoin }) => {
         </Box>
       )}
       {!isDashboard && (
-        <p className="chart-info">
-          Stocks like TSLA provide exposure to individual companies with real-world fundamentals, earnings, and sector dynamics (EV, tech, AI, etc.).
-          They tend to be less volatile than altcoins but can still experience significant drawdowns. This viewer lets you analyze price action with moving averages,
-          RSI, and other technical indicators, and optionally compare against BTC (as a "risk-on" macro proxy) or USD.
-          Stocks are grouped by Mega Cap Tech, Crypto-Adjacent, Market Benchmarks, and Retail Sentiment — pick any symbol with daily historical data in the platform.
-        </p>
+        <ChartInfoSections
+          sections={[
+            {
+              title: 'What it is',
+              content:
+                'A stock price chart for individual companies with real-world fundamentals, earnings, and sector dynamics (EV, tech, AI, etc.). Stocks tend to be less volatile than altcoins but can still experience significant drawdowns.',
+            },
+            {
+              title: 'What this chart shows',
+              content:
+                'Daily price for the selected stock with optional moving averages, RSI, Mayer Multiple, Fed balance sheet overlay, and USD or BTC denomination.',
+            },
+            {
+              title: 'How to interpret',
+              content:
+                'Use technical overlays to study trend and momentum. Comparing against BTC can highlight relative strength in risk-on conditions. Stocks are grouped by Mega Cap Tech, Crypto-Adjacent, Market Benchmarks, and Retail Sentiment. Pick any symbol with daily historical data in the platform.',
+            },
+          ]}
+        />
       )}
     </div>
   );

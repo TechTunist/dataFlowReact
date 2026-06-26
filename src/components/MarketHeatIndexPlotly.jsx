@@ -7,6 +7,7 @@ import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
+import ChartInfoSections from './ChartInfoSections';
 // Helper function to calculate Risk Metric
 const calculateRiskMetric = (data) => {
   const movingAverage = data.map((item, index) => {
@@ -283,7 +284,7 @@ const MarketHeatIndexChart = ({ isDashboard = false }) => {
         const heatOffset = 0;
         piCycleHeat = Math.max(0, Math.min(100, (((latestRatio - minRatio) / buffer) * 100) + heatOffset));
       }
-      // Weighted Average — only include F&G when data is actually available for the day
+      // Weighted Average: only include F&G when data is actually available for the day
       const scores = { mvrv: mvrvHeat, mayer: mayerHeat, risk: riskHeat, piCycle: piCycleHeat };
       const weights = { mvrv: 0.25, mayer: 0.25, risk: 0.25, piCycle: 0.25 };
       let weightedSum = 0;
@@ -512,9 +513,30 @@ const MarketHeatIndexChart = ({ isDashboard = false }) => {
           <div style={{ display: 'inline-block', marginTop: '10px', fontSize: '1.2rem', color: colors.primary[100] }}>
             Current Index: <b>{smoothedData.length > 0 ? smoothedData[smoothedData.length - 1].index.toFixed(1) : 'N/A'}</b>
           </div>
-          <p className="chart-info">
-            The Market Heat Index combines multiple indicators (MVRV, Mayer Multiple, Risk, Fear and Greed, PiCycle) to assess overall market conditions. A value closer to 100 indicates an overheated market, while a value closer to 0 indicates a cold market. Core indicators extend back to ~2011 (MVRV + derived factors); Fear & Greed only contributes from 2018 onward (weights renormalized on days when it is available). Select different smoothing periods to view historical trends. Bitcoin price is shown for reference on a logarithmic scale.
-          </p>
+          <ChartInfoSections
+            sections={[
+              {
+                title: 'What it is',
+                content:
+                  'The Market Heat Index combines multiple indicators (MVRV, Mayer Multiple, Risk, Fear and Greed, PiCycle) to assess overall market conditions.',
+              },
+              {
+                title: 'What this chart shows',
+                content:
+                  'The index from 0 to 100 with Bitcoin price on a logarithmic scale. Select smoothing periods to view historical trends.',
+              },
+              {
+                title: 'How it is built',
+                content:
+                  'Core indicators extend back to ~2011 (MVRV and derived factors). Fear and Greed contributes from 2018 onward, with weights renormalized on days when it is available.',
+              },
+              {
+                title: 'How to interpret',
+                content:
+                  'A value closer to 100 indicates an overheated market. A value closer to 0 indicates a cold market.',
+              },
+            ]}
+          />
         </div>
       )}
     </div>

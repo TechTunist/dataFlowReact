@@ -9,6 +9,7 @@ import BitcoinFees from './BitcoinTransactionFees';
 import LastUpdated from '../hooks/LastUpdated';
 import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
 import ChartTooltip from './ChartTooltip';
+import ChartInfoSections from './ChartInfoSections';
 
 const MarketCapDifference = ({ isDashboard = false }) => {
   const chartContainerRef = useRef();
@@ -244,26 +245,47 @@ const MarketCapDifference = ({ isDashboard = false }) => {
       )}
       
       {!isDashboard && (
-        <div className="chart-info">
-          The percentage of the total market cap relative to the Fair Value of all crypto assets combined.
-          The Fair Value line (at 100%) represents where the market cap equals the Fair Value, calculated using
-          a logarithmic regression model fitted to historical data. When the total market cap equals the Fair Value,
-          the percentage is 100%. Values below 100% indicate the market cap is less than the Fair Value (undervalued),
-          while values above 100% indicate the market cap exceeds the Fair Value (overvalued).
-          <br /><br />
-          The core calculation involves determining the slope (m) and intercept (b) of the best-fit
-          line for the Fair Value, using the following formulas:
-          <br />
-          <ul>
-            <li><b>m = (n * sum(ln(x) * ln(y)) - sum(ln(x)) * sum(ln(y))) / (n * sum(ln(x)^2) - (sum(ln(x)))^2)</b></li>
-            <li><b>b = (sum(ln(y)) - m * sum(ln(x))) / n</b></li>
-          </ul>
-          <br />
-          n = the total number of data points, <br />
-          x = the time index (after taking the natural logarithm), and <br />
-          y = the data value (after taking the natural logarithm) <br />
-          <br />
-        </div>
+        <ChartInfoSections
+          sections={[
+            {
+              title: 'What it is',
+              content:
+                'The percentage of total crypto market cap relative to fair value for the entire asset class.',
+            },
+            {
+              title: 'What this chart shows',
+              content:
+                'Grey line (left): total market cap. Blue line (right): percentage of fair value. The dashed green line at 100% is where market cap equals fair value.',
+            },
+            {
+              title: 'How it is built',
+              content: (
+                <>
+                  Fair value comes from a logarithmic regression model fitted to historical total market cap
+                  data. Slope (m) and intercept (b) of the best-fit line are derived as:
+                  <ul>
+                    <li>
+                      <strong>
+                        m = (n * sum(ln(x) * ln(y)) - sum(ln(x)) * sum(ln(y))) / (n * sum(ln(x)^2) -
+                        (sum(ln(x)))^2)
+                      </strong>
+                    </li>
+                    <li>
+                      <strong>b = (sum(ln(y)) - m * sum(ln(x))) / n</strong>
+                    </li>
+                  </ul>
+                  n is the total number of data points, x is the time index (after ln), and y is the data
+                  value (after ln).
+                </>
+              ),
+            },
+            {
+              title: 'How to interpret',
+              content:
+                'Values below 100% mean market cap is below fair value (undervalued). Values above 100% mean market cap exceeds fair value (overvalued). The over/undervaluation readout above reflects the latest gap from 100%.',
+            },
+          ]}
+        />
       )}
     
         {!isDashboard && (

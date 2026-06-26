@@ -1186,6 +1186,7 @@ import {
 } from '../utils/technicalIndicators';
 import { getCurrentBitcoinPrice } from '../utils/currentPrice';
 import ChartTooltip from './ChartTooltip';
+import ChartInfoSections from './ChartInfoSections';
 const BitcoinPrice = ({ isDashboard = false }) => {
   const chartContainerRef = useRef();
   const chartRef = useRef(null);
@@ -2262,13 +2263,18 @@ const BitcoinPrice = ({ isDashboard = false }) => {
       )}
 
       {!isDashboard && (
-        <p className='chart-info'>
-          Bitcoin represents a significant advancement in digital finance. It operates on a globally distributed and permissionless ledger,
-          secured by a network of miners. This system is designed to be transparent, secure, and resilient. Bitcoin enables the transfer of
-          value without intermediaries, offering a unique digital asset that can be sent anywhere in the world almost instantly.
-          As a finite digital currency, it provides a novel way to store and transfer wealth, with potential implications for global finance and value exchange.
-          <br /><br /><br />
-        </p>
+        <ChartInfoSections
+          sections={[
+            {
+              title: 'What it is',
+              content: 'Bitcoin represents a significant advancement in digital finance. It operates on a globally distributed and permissionless ledger, secured by a network of miners. This system is designed to be transparent, secure, and resilient.',
+            },
+            {
+              title: 'What this chart shows',
+              content: 'Bitcoin enables the transfer of value without intermediaries, offering a unique digital asset that can be sent anywhere in the world almost instantly. As a finite digital currency, it provides a novel way to store and transfer wealth, with potential implications for global finance and value exchange.',
+            },
+          ]}
+        />
       )}
     </div>
   );

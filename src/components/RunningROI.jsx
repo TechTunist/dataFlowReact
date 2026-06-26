@@ -7,6 +7,7 @@ import '../styling/bitcoinChart.css';
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
 import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
+import ChartInfoSections from './ChartInfoSections';
 import BitcoinFees from './BitcoinTransactionFees';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
@@ -512,9 +513,18 @@ const RunningROI = ({ isDashboard = false }) => {
               Current {timeframe} ROI: <b style={{ color: colors.greenAccent[500] }}>{currentRoi}x</b> (<b>${currentPrice.toFixed(0)}k</b>)
             </span>
           </UnderChartValue>
-          <p className="chart-info">
-            The running ROI is calculated as the return on investment over the selected timeframe, showing the multiplicative change in {altcoins.find(asset => asset.value === selectedAsset)?.label} price from the start of the period to each day (e.g., 1x for no change, 2x for 100% increase, 0.5x for 50% decrease). ROI data is only shown after the selected timeframe has passed from the start of the dataset. Select different assets and timeframes to analyze ROI over various periods.
-          </p>
+          <ChartInfoSections
+            sections={[
+              {
+                title: 'What it is',
+                content: <>The running ROI is calculated as the return on investment over the selected timeframe, showing the multiplicative change in {altcoins.find(asset => asset.value === selectedAsset)?.label} price from the start of the period to each day (e.g., 1x for no change, 2x for 100% increase, 0.5x for 50% decrease).</>,
+              },
+              {
+                title: 'How to interpret',
+                content: 'ROI data is only shown after the selected timeframe has passed from the start of the dataset. Select different assets and timeframes to analyze ROI over various periods.',
+              },
+            ]}
+          />
         </div>
       )}
     </div>

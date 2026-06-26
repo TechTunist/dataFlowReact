@@ -19,6 +19,7 @@ import '../styling/bitcoinChart.css';
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
 import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
+import ChartInfoSections from './ChartInfoSections';
 import BitcoinFees from './BitcoinTransactionFees';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
@@ -953,9 +954,18 @@ const RunningROIRisk = ({ isDashboard = false }) => {
             </span>
           </UnderChartValue>
 
-          <p className="chart-info">
-            Running ROI is the multiplicative return over a fixed 1-year lookback (1× = flat, 2× = doubled). Data before 1 November 2011 is omitted. Optional 3-, 7-, or 28-day simple moving averages smooth the ROI line; <b>ROI Risk</b> (0–1) is derived from the same smoothed ROI and normalises for diminishing returns across cycles so peaks and drawdowns stay comparable over time.
-          </p>
+          <ChartInfoSections
+            sections={[
+              {
+                title: 'What it is',
+                content: <>Running ROI is the multiplicative return over a fixed 1-year lookback (1x = flat, 2x = doubled). Data before 1 November 2011 is omitted.</>,
+              },
+              {
+                title: 'How it is built',
+                content: <>Optional 3-, 7-, or 28-day simple moving averages smooth the ROI line. <b>ROI Risk</b> (0-1) is derived from the same smoothed ROI and normalises for diminishing returns across cycles so peaks and drawdowns stay comparable over time.</>,
+              },
+            ]}
+          />
         </div>
       )}
     </div>

@@ -6,6 +6,7 @@ import '../styling/bitcoinChart.css';
 import LastUpdated from '../hooks/LastUpdated';
 import BitcoinFees from './BitcoinTransactionFees';
 import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
+import ChartInfoSections from './ChartInfoSections';
 import useIsMobile from '../hooks/useIsMobile';
 import { DataContext } from '../DataContext';
 import { Box, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
@@ -470,14 +471,22 @@ const AssetRiskBandDuration = ({ isDashboard = false, riskData: propRiskData }) 
       )}
       {!isDashboard && (
         <div>
-          <p className='chart-info'>
-            This chart shows the total amount of time {selectedAssetLabel} has spent in each risk band over its entire existence,
-            adjustable by risk band size (0.05, 0.1, or 0.2 increments). This helps to understand the distribution
-            of time spent across different risk levels. The risk metric assesses {selectedAssetLabel}'s investment risk over time
-            by comparing its daily prices to a 374-day moving average, incorporating a factor that accounts for sustained periods above the moving average. 
-            It calculates a normalized score between 0 and 1, where a higher score indicates higher risk, particularly after prolonged bull markets amplified by higher price levels. 
-            A lower score indicates lower risk.
-          </p>
+          <ChartInfoSections
+            sections={[
+              {
+                title: 'What this chart shows',
+                content: <>The total amount of time {selectedAssetLabel} has spent in each risk band over its entire existence, adjustable by risk band size (0.05, 0.1, or 0.2 increments). This helps to understand the distribution of time spent across different risk levels.</>,
+              },
+              {
+                title: 'How it is built',
+                content: <>The risk metric assesses {selectedAssetLabel}&apos;s investment risk over time by comparing its daily prices to a 374-day moving average, incorporating a factor that accounts for sustained periods above the moving average.</>,
+              },
+              {
+                title: 'How to interpret',
+                content: 'It calculates a normalized score between 0 and 1, where a higher score indicates higher risk, particularly after prolonged bull markets amplified by higher price levels. A lower score indicates lower risk.',
+              },
+            ]}
+          />
         </div>
       )}
     </div>

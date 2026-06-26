@@ -10,6 +10,7 @@ import LastUpdated from '../hooks/LastUpdated';
 import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
 import logger from '../utils/logger';
 import ChartTooltip from './ChartTooltip';
+import ChartInfoSections from './ChartInfoSections';
 
 const TotalMarketCap = ({ isDashboard = false }) => {
   const chartContainerRef = useRef();
@@ -348,32 +349,43 @@ const TotalMarketCap = ({ isDashboard = false }) => {
       )}
 
       {!isDashboard && (
-        <div className="chart-info">
-          The total market cap of every crypto asset combined. The regression bands have been fitted to
-          the absolute lows, highs, and fair value levels over the total history of the asset class.
-          The bands are calculated using a logarithmic regression model.
-          <br />
-          <br />
-          The core calculation involves determining the slope (m) and intercept (b) of the best-fit
-          line. These are derived using the following formulas:
-          <br />
-          <ul>
-            <li>
-              <b>
-                m = (n * sum(ln(x) * ln(y)) - sum(ln(x)) * sum(ln(y))) / (n * sum(ln(x)^2) -
-                (sum(ln(x)))^2)
-              </b>
-            </li>
-            <li>
-              <b>b = (sum(ln(y)) - m * sum(ln(x))) / n</b>
-            </li>
-          </ul>
-          <br />
-          n = the total number of data points, <br />
-          x = the time index (after taking the natural logarithm), and <br />
-          y = the data value (after taking the natural logarithm) <br />
-          <br />
-        </div>
+        <ChartInfoSections
+          sections={[
+            {
+              title: 'What it is',
+              content:
+                'The total market cap of every crypto asset combined, shown on a logarithmic scale with fitted regression bands.',
+            },
+            {
+              title: 'How it is built',
+              content: (
+                <>
+                  Regression bands are fitted to the absolute lows, highs, and fair value levels over the full
+                  history of the asset class. The bands use a logarithmic regression model. Slope (m) and
+                  intercept (b) of the best-fit line are derived as:
+                  <ul>
+                    <li>
+                      <strong>
+                        m = (n * sum(ln(x) * ln(y)) - sum(ln(x)) * sum(ln(y))) / (n * sum(ln(x)^2) -
+                        (sum(ln(x)))^2)
+                      </strong>
+                    </li>
+                    <li>
+                      <strong>b = (sum(ln(y)) - m * sum(ln(x))) / n</strong>
+                    </li>
+                  </ul>
+                  n is the total number of data points, x is the time index (after ln), and y is the data
+                  value (after ln).
+                </>
+              ),
+            },
+            {
+              title: 'How to interpret',
+              content:
+                'The violet mid band is fair value. Price above fair value suggests overvaluation; below suggests undervaluation. Upper bands (green, lime) mark historic exuberance zones; lower bands (red, maroon) mark deep value areas. The over/undervaluation readout above compares the latest market cap to the fair value band.',
+            },
+          ]}
+        />
       )}
     </div>
   );

@@ -81,14 +81,6 @@ export const FLOOR_ECHO_SMOOTHING_OPTIONS = [
   { value: 365, label: '12 Months' },
 ];
 
-export const FLOOR_ECHO_DESCRIPTION = `The Floor Echo Index (FEI) is a crypto-native capitulation confluence indicator. It was built to spot when multiple independent datasets align the way they have at prior Bitcoin cycle lows — a "floor echo" rather than a single-metric panic spike.
-
-Inputs (daily, aligned to BTC): Fear & Greed; on-chain risk (MVRV, Puell, SOPL); transaction activity; BTC dominance and altcoin-season regime; and miner thermo-cap stress. Macro series and crypto-equity ratios are excluded because they often stress early in bears (e.g. 2022) before price reaches the actual floor.
-
-Each component is converted to a 0–1 stress score (absolute for sentiment and on-chain risk; expanding historical percentiles for activity and regime metrics), then combined with weights: on-chain risk 30%, fear & greed 18%, alt regime 18%, tx activity 16%, miner stress 18%. The blend is scaled by BTC drawdown from the rolling ~2-year peak so shallow corrections (e.g. $60k→$40k) cannot trigger a full floor reading. Finally, capitulation is ranked against full history so extreme readings cluster in a consistent low band across cycles.
-
-Low FEI (near the red/yellow reference lines) deep into a drawdown suggests capitulation confluence — watch for a local minimum. It is a confluence tool, not a precise timing signal.`;
-
 /** Simple moving average for display smoothing of precomputed FEI. */
 export function applyFeiSmoothing(series, period = 7) {
   if (!series?.length || !period || period <= 1) return series || [];
@@ -437,11 +429,11 @@ export function getCurrentFloorEchoState(series) {
     ...last,
     levels,
     signal: last.nearHistoricFloor
-      ? 'Floor Echo — approaching prior bottom cluster'
+      ? 'Floor Echo: approaching prior bottom cluster'
       : last.inFloorZone
-        ? 'Capitulation zone — watch for local minimum'
+        ? 'Capitulation zone: watch for local minimum'
         : last.fei < (levels.median ?? 50)
-          ? 'Below median — cooling'
+          ? 'Below median: cooling'
           : 'Neutral / recovery',
   };
 }

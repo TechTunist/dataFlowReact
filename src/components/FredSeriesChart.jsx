@@ -12,6 +12,7 @@ import ChartTooltip from './ChartTooltip';
 import MacroChartControls, { getOverlaySeriesLabel } from './macro/MacroChartControls';
 import useMacroOverlaySeries from '../hooks/useMacroOverlaySeries';
 import { getMacroSeriesExplanation } from '../config/macroSeriesExplanations';
+import ChartInfoSections from './ChartInfoSections';
 import { availableMacroSeries } from './workbench/availableSeries';
 import {
   OVERLAY_NONE,
@@ -38,6 +39,18 @@ import {
   calculateMovingAverage as calculateMA,
   BULL_MARKET_SUPPORT_BAND,
 } from '../utils/technicalIndicators';
+
+function buildMacroExplanationSections(text) {
+  if (!text) return [];
+  const sentences = text.match(/[^.!?]+[.!?]+(?:\s|$)/g)?.map((s) => s.trim()) || [text.trim()];
+  if (sentences.length <= 1) {
+    return [{ title: 'What it is', content: text.trim() }];
+  }
+  return [
+    { title: 'What it is', content: sentences.slice(0, -1).join(' ') },
+    { title: 'How to interpret', content: sentences[sentences.length - 1] },
+  ];
+}
 
 const FredSeriesChart = ({
   seriesId,
@@ -854,7 +867,9 @@ const FredSeriesChart = ({
 
       
 
-      {!isDashboard && chartExplanation && <p className="chart-info">{chartExplanation}</p>}
+      {!isDashboard && chartExplanation && (
+        <ChartInfoSections sections={buildMacroExplanationSections(chartExplanation)} />
+      )}
 
         {!isDashboard && (
           <ChartTooltip tooltipData={tooltipData} chartContainerRef={chartContainerRef} xNudge={70} render={(tooltipData) => (

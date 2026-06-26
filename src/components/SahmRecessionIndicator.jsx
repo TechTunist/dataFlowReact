@@ -9,6 +9,7 @@ import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import LastUpdated from '../hooks/LastUpdated';
 import ChartTooltip from './ChartTooltip';
+import ChartInfoSections from './ChartInfoSections';
 
 const SahmRecessionIndicator = ({ isDashboard = false, explanation = '' }) => {
   const chartContainerRef = useRef();
@@ -625,11 +626,25 @@ const SahmRecessionIndicator = ({ isDashboard = false, explanation = '' }) => {
         )}
       </div>
       {!isDashboard && (
-        <p className="chart-info">
-          The Sahm Recession Indicator, developed by economist Claudia Sahm, is a real-time economic metric that signals a U.S. recession when the three-month moving average of the unemployment rate rises 0.5 percentage points or more above its 12-month low.
-          This simple yet effective rule, based on data from the Bureau of Labor Statistics, helps identify deteriorating labor market conditions. The chart visualizes the Sahm Indicator as an area series with a red dashed line at 0.5, alongside S&P 500 trends (logarithmic scale) and recession periods (histogram).
-          It demonstrates the indicator’s accuracy by aligning spikes above 0.5 with historical recessions, while the S&P 500 provides market context, showing declines during these periods.
-        </p>
+        <ChartInfoSections
+          sections={[
+            {
+              title: 'What it is',
+              content:
+                'The Sahm Recession Indicator, developed by economist Claudia Sahm, signals a U.S. recession when the three-month moving average of the unemployment rate rises 0.5 percentage points or more above its 12-month low. Based on Bureau of Labor Statistics data.',
+            },
+            {
+              title: 'What this chart shows',
+              content:
+                'The Sahm Indicator as an area series with a red dashed line at 0.5, S&P 500 trends on a logarithmic scale, and recession periods as a histogram.',
+            },
+            {
+              title: 'How to interpret',
+              content:
+                'Spikes above 0.5 have historically aligned with recessions. The S&P 500 overlay provides market context, often declining during these periods.',
+            },
+          ]}
+        />
       )}
     </div>
   );

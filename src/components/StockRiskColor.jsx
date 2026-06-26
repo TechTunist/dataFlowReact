@@ -11,6 +11,7 @@ import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import { calculateStockRiskMetric } from '../utility/stockRiskMetric';
 import { STOCKS, stockLoadingMessage, stockRiskInsufficientHistoryMessage } from '../config/stocksConfig';
 import StockGroupSelect from './StockGroupSelect';
+import ChartInfoSections from './ChartInfoSections';
 
 const StockRiskColor = ({ isDashboard = false }) => {
   const theme = useTheme();
@@ -345,11 +346,25 @@ const StockRiskColor = ({ isDashboard = false }) => {
         </UnderChartValue>
       )}
       {!isDashboard && (
-        <p className="chart-info">
-          Stock risk uses price vs the 200-day average, a 3-year calibration band, 21-day smoothing, and log-odds tail
-          compression so colour bands cluster in the middle unless price is truly extended. Warmer colours mean
-          stretched vs trend; cooler colours mean relative value.
-        </p>
+        <ChartInfoSections
+          sections={[
+            {
+              title: 'What it is',
+              content:
+                'A scatter view of stock price (log scale) with each point colored by its risk band for the selected stock.',
+            },
+            {
+              title: 'How it is built',
+              content:
+                'Stock risk uses price vs the 200-day average, a 3-year calibration band, 21-day smoothing, and log-odds tail compression so colour bands cluster in the middle unless price is truly extended.',
+            },
+            {
+              title: 'How to interpret',
+              content:
+                'Warmer colours mean stretched vs trend; cooler colours mean relative value. Double-click a legend entry to isolate a band. The current risk readout above summarizes the latest score.',
+            },
+          ]}
+        />
       )}
     </div>
   );

@@ -8,6 +8,7 @@ import LastUpdated from '../hooks/LastUpdated';
 import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
+import ChartInfoSections from './ChartInfoSections';
 
 const EthereumRisk = ({ isDashboard = false, riskData: propRiskData }) => {
   const chartContainerRef = useRef();
@@ -210,12 +211,24 @@ const EthereumRisk = ({ isDashboard = false, riskData: propRiskData }) => {
             </span>
           </UnderChartValue>
 
-          <p className='chart-info'>
-            The risk metric assesses Ethereum's investment risk over time by comparing its daily prices to a 374-day moving average.
-            It does so by calculating the normalized logarithmic difference between the price and the moving average,
-            producing a score between 0 and 1. A higher score indicates higher risk, and a lower score indicates lower risk.
-            This method provides a simplified view of when it might be riskier or safer to invest in Ethereum based on historical price movements.
-          </p>
+          <ChartInfoSections
+            sections={[
+              {
+                title: 'What it is',
+                content: 'A risk metric that assesses Ethereum investment risk over time.',
+              },
+              {
+                title: 'How it is built',
+                content:
+                  'Compares daily prices to a 374-day moving average, calculating the normalized logarithmic difference to produce a score between 0 and 1.',
+              },
+              {
+                title: 'How to interpret',
+                content:
+                  'A higher score indicates higher risk; a lower score indicates lower risk. This provides a simplified view of when it might be riskier or safer to invest in Ethereum based on historical price movements.',
+              },
+            ]}
+          />
         </>
       )}
     </div>

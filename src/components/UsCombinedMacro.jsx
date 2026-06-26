@@ -5,6 +5,7 @@ import { useTheme } from "@mui/material";
 import '../styling/bitcoinChart.css';
 import useIsMobile from '../hooks/useIsMobile';
 import { DataContext } from '../DataContext';
+import ChartInfoSections from './ChartInfoSections';
 
 const UsCombinedMacroChart = ({ isDashboard = false }) => {
     const theme = useTheme();
@@ -154,10 +155,25 @@ const UsCombinedMacroChart = ({ isDashboard = false }) => {
                 )}
             </div>
             {!isDashboard && (
-                <p className='chart-info'>
-                    This combined view plots U.S. inflation, unemployment, and interest rates together so you can see how the Fed&apos;s policy stance relates to price stability and labor conditions.
-                    It is useful for spotting stagflationary setups (high inflation + rising unemployment), policy pivot points, and how macro stress has evolved relative to prior cycles.
-                </p>
+                <ChartInfoSections
+                    sections={[
+                        {
+                            title: 'What it is',
+                            content:
+                                'A combined view of U.S. inflation, unemployment, and interest rates.',
+                        },
+                        {
+                            title: 'What this chart shows',
+                            content:
+                                'How the Fed policy stance relates to price stability and labor conditions on one timeline.',
+                        },
+                        {
+                            title: 'How to interpret',
+                            content:
+                                'Useful for spotting stagflationary setups (high inflation with rising unemployment), policy pivot points, and how macro stress has evolved relative to prior cycles.',
+                        },
+                    ]}
+                />
             )}
         </div>
     );

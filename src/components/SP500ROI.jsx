@@ -8,6 +8,7 @@ import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import LastUpdated from '../hooks/LastUpdated';
 import { useFavorites } from '../contexts/FavoritesContext';
+import ChartInfoSections from './ChartInfoSections';
 
 const RECESSION_CRISIS_LABELS = {
     2000: 'Dot-com peak',
@@ -513,13 +514,26 @@ const SP500ROI = ({ isDashboard = false }) => {
                 )}
             </div>
             {!isDashboard && (
-                <p className='chart-info' style={{ color: colors.primary[100] }}>
-                    The return on investment for each year is calculated as a shifted logarithmic scale (log10(price / basePrice) + 1),
-                    where ROI = 1 indicates no change, above 1 indicates positive returns, and below 1 indicates negative returns.
-                    Select years to average, use 'Deselect / Select All' in the legend to toggle all years,
-                    or click legend items to toggle visibility. Significant years in the dropdown include recession/crisis
-                    years, presidential election years, and midterm election years.
-                </p>
+                <ChartInfoSections
+                    sx={{ color: colors.primary[100] }}
+                    sections={[
+                        {
+                            title: 'What it is',
+                            content:
+                                'Year-by-year S&P 500 return on investment (ROI) on a shifted logarithmic scale.',
+                        },
+                        {
+                            title: 'How it is built',
+                            content:
+                                'ROI = log10(price / basePrice) + 1, where 1 means no change, above 1 is positive return, and below 1 is negative return.',
+                        },
+                        {
+                            title: 'How to interpret',
+                            content:
+                                'Select years to average, use Deselect / Select All in the legend to toggle all years, or click legend items to toggle visibility. Significant years include recession/crisis years, presidential election years, and midterm election years.',
+                        },
+                    ]}
+                />
             )}
         </div>
     );

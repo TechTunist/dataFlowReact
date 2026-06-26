@@ -9,6 +9,7 @@ import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import ChartTooltip from './ChartTooltip';
+import ChartInfoSections from './ChartInfoSections';
 
 const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
   const chartContainerRef = useRef();
@@ -484,9 +485,29 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
               Current Index: <b style={{ color: colors.greenAccent[500] }}>{currentIndex}</b>
             </span>
           </UnderChartValue>
-          <p className="chart-info">
-            The Altcoin Season Index measures the performance of altcoins relative to Bitcoin over 90-day periods. A value closer to 100 indicates an altcoin season, where most available altcoins outperform Bitcoin, while a value closer to 0 indicates a Bitcoin season. The index is calculated as the percentage of altcoins with data (varies by date, starting from January 2018) outperforming Bitcoin in price change. Select different smoothing periods to view historical trends. Bitcoin price is shown for reference, starting from January 2018.
-          </p>
+          <ChartInfoSections
+            sections={[
+              {
+                title: 'What it is',
+                content: 'The Altcoin Season Index measures how altcoins perform relative to Bitcoin over 90-day periods.',
+              },
+              {
+                title: 'What this chart shows',
+                content:
+                  'The index from 0 to 100 with Bitcoin price for reference (data from January 2018). Select smoothing periods to view historical trends.',
+              },
+              {
+                title: 'How it is built',
+                content:
+                  'Calculated as the percentage of altcoins with available data (varies by date) that outperform Bitcoin in price change.',
+              },
+              {
+                title: 'How to interpret',
+                content:
+                  'A value closer to 100 indicates altcoin season, where most altcoins outperform Bitcoin. A value closer to 0 indicates Bitcoin season.',
+              },
+            ]}
+          />
         </div>
       )}
     </div>

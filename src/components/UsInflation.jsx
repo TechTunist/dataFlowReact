@@ -9,6 +9,7 @@ import BitcoinFees from './BitcoinTransactionFees';
 import ChartTooltip from './ChartTooltip';
 import MacroChartControls, { getOverlaySeriesLabel } from './macro/MacroChartControls';
 import useUsMacroChartEnhancements from '../hooks/useUsMacroChartEnhancements';
+import ChartInfoSections from './ChartInfoSections';
 
 const UsInflationChart = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
@@ -241,11 +242,24 @@ const UsInflationChart = ({ isDashboard = false }) => {
                 {!isDashboard && <BitcoinFees />}
             </div>
             {!isDashboard && (
-                <p className='chart-info'>
-                    This chart shows the historical annualized U.S. inflation rate, with the latest datapoint reflecting the most recent month.
-                    Overlay an asset such as Bitcoin or the S&amp;P 500 to compare how inflation regimes have aligned with market performance.
-                    Use smoothing to reduce monthly noise and reveal the underlying trend.
-                </p>
+                <ChartInfoSections
+                    sections={[
+                        {
+                            title: 'What it is',
+                            content: 'Historical annualized U.S. inflation rate.',
+                        },
+                        {
+                            title: 'What this chart shows',
+                            content:
+                                'Monthly inflation readings (latest datapoint is the most recent month) with optional asset overlays such as Bitcoin or the S&P 500.',
+                        },
+                        {
+                            title: 'How to interpret',
+                            content:
+                                'Compare how inflation regimes have aligned with market performance. Use smoothing to reduce monthly noise and reveal the underlying trend.',
+                        },
+                    ]}
+                />
             )}
         </div>
     );

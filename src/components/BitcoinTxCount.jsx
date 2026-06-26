@@ -8,6 +8,7 @@ import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import ChartTooltip from './ChartTooltip';
 import LastUpdated from '../hooks/LastUpdated';
+import ChartInfoSections from './ChartInfoSections';
 
 const BitcoinTxCountChart = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
@@ -197,10 +198,18 @@ const BitcoinTxCountChart = ({ isDashboard = false }) => {
                 )}
             </div>
             {!isDashboard && (
-                <p className='chart-info'>
-                    This chart shows the {useWeekly ? 'weekly' : 'daily'} transaction count on the Bitcoin blockchain,
-                    with the latest datapoint representing the most recent {useWeekly ? 'week\'s' : 'day\'s'} transaction volume.
-                </p>
+                <ChartInfoSections
+                    sections={[
+                        {
+                            title: 'What it is',
+                            content: 'The Bitcoin transaction count measures how many transactions are confirmed on the blockchain over time, reflecting network usage and activity.',
+                        },
+                        {
+                            title: 'What this chart shows',
+                            content: <>This chart shows the {useWeekly ? 'weekly' : 'daily'} transaction count on the Bitcoin blockchain, with the latest datapoint representing the most recent {useWeekly ? 'week\'s' : 'day\'s'} transaction volume.</>,
+                        },
+                    ]}
+                />
             )}
         </div>
     );

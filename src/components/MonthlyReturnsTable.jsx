@@ -7,6 +7,7 @@ import LastUpdated from '../hooks/LastUpdated';
 import BitcoinFees from './BitcoinTransactionFees';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
+import ChartInfoSections from './ChartInfoSections';
 
 const BitcoinMonthlyReturnsTable = ({ isDashboard = false }) => {
   const theme = useTheme();
@@ -278,9 +279,18 @@ const BitcoinMonthlyReturnsTable = ({ isDashboard = false }) => {
         {!isDashboard && <BitcoinFees />}
       </div>
       {!isDashboard && (
-        <p className="chart-info">
-          This table displays Bitcoin's monthly returns as a percentage change from the first to the last day of each month. Positive returns are highlighted in green, negative returns in red. Returns for the current month (marked with an asterisk *) are not finalized as the month is ongoing. Data starts from August 2010, as Bitcoin price data begins on July 18, 2010.
-        </p>
+        <ChartInfoSections
+          sections={[
+            {
+              title: 'What it is',
+              content: 'Bitcoin monthly returns measure the percentage change from the first to the last day of each month.',
+            },
+            {
+              title: 'What this chart shows',
+              content: 'Positive returns are highlighted in green, negative returns in red. Returns for the current month (marked with an asterisk *) are not finalized as the month is ongoing. Data starts from August 2010, as Bitcoin price data begins on July 18, 2010.',
+            },
+          ]}
+        />
       )}
     </div>
   );

@@ -5,6 +5,7 @@ import { useTheme } from "@mui/material";
 import '../styling/bitcoinChart.css';
 import useIsMobile from '../hooks/useIsMobile';
 import { DataContext } from '../DataContext';
+import ChartInfoSections from './ChartInfoSections';
 
 const TxCombinedChart = ({ isDashboard = false }) => {
     const theme = useTheme();
@@ -188,9 +189,25 @@ const TxCombinedChart = ({ isDashboard = false }) => {
                 )}
             </div>
             {!isDashboard && (
-                <p className='chart-info'>
-                    This chart shows Bitcoin transaction count alongside US inflation rate, unemployment rate, and Fed funds rate over time, using the latest available monthly data for macro indicators.
-                </p>
+                <ChartInfoSections
+                    sections={[
+                        {
+                            title: 'What it is',
+                            content:
+                                'A combined on-chain and macro view linking Bitcoin network activity to U.S. economic conditions.',
+                        },
+                        {
+                            title: 'What this chart shows',
+                            content:
+                                'Bitcoin transaction count alongside U.S. inflation, unemployment, and Fed funds rate over time.',
+                        },
+                        {
+                            title: 'How it is built',
+                            content:
+                                'Macro indicators use the latest available monthly data aligned to the transaction count series.',
+                        },
+                    ]}
+                />
             )}
         </div>
     );

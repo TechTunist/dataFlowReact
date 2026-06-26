@@ -5,6 +5,7 @@ import { useTheme, Button, Box, FormControl, InputLabel, Select, MenuItem } from
 import '../styling/bitcoinChart.css';
 import LastUpdated from '../hooks/LastUpdated';
 import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
+import ChartInfoSections from './ChartInfoSections';
 import BitcoinFees from './BitcoinTransactionFees';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
@@ -569,9 +570,18 @@ const PuellMultiple = ({ isDashboard = false }) => {
         </div>
       )}
       <div>
-        <p className="chart-info">
-          The Puell Multiple is calculated as the ratio of daily Bitcoin issuance (in USD) to its 365-day moving average. A high Puell Multiple (e.g., above 4) may indicate that miners are earning significantly more than their historical average, often signaling overvaluation or potential price tops. A low Puell Multiple (e.g., below 0.5) suggests miners are earning less, which may indicate undervaluation or potential price bottoms.
-        </p>
+        <ChartInfoSections
+          sections={[
+            {
+              title: 'How it is built',
+              content: 'The Puell Multiple is calculated as the ratio of daily Bitcoin issuance (in USD) to its 365-day moving average.',
+            },
+            {
+              title: 'How to interpret',
+              content: 'A high Puell Multiple (e.g., above 4) may indicate that miners are earning significantly more than their historical average, often signaling overvaluation or potential price tops. A low Puell Multiple (e.g., below 0.5) suggests miners are earning less, which may indicate undervaluation or potential price bottoms.',
+            },
+          ]}
+        />
       </div>
     </div>
   );
