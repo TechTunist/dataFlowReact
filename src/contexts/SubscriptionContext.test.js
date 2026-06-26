@@ -9,18 +9,40 @@
 // We assert the documented contract instead of fragile import.
 
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
-
-const EXPECTED_FREE = {
-  basic_charts: true,
-  advanced_charts: false,
-  custom_indicators: false,
-};
+import { DEFAULT_FREE_FEATURES, hasPremiumAccess, normalizeSubscriptionStatus } from '../utils/subscriptionAccess';
+import { isPremiumCacheId } from '../utils/premiumCache';
+import { canUsePremiumCache, setPremiumAccessSnapshot } from '../utils/subscriptionRevocation';
 
 describe('Subscription gating basics (professionalization coverage)', () => {
   test('DEFAULT_FREE_FEATURES shape matches expected (used in RestrictToPaid + SubscriptionContext)', () => {
-    expect(EXPECTED_FREE.basic_charts).toBe(true);
-    expect(EXPECTED_FREE.advanced_charts).toBe(false);
-    expect(EXPECTED_FREE.custom_indicators).toBe(false);
+    expect(DEFAULT_FREE_FEATURES.basic_charts).toBe(true);
+    expect(DEFAULT_FREE_FEATURES.advanced_charts).toBe(false);
+    expect(DEFAULT_FREE_FEATURES.custom_indicators).toBe(false);
+  });
+
+  test('premium cache snapshot blocks premium ids after revocation', () => {
+    setPremiumAccessSnapshot(false);
+    expect(canUsePremiumCache()).toBe(false);
+    expect(isPremiumCacheId('mvrvData')).toBe(true);
+
+    setPremiumAccessSnapshot(true);
+    expect(canUsePremiumCache()).toBe(true);
+    setPremiumAccessSnapshot(false);
+  });
+
+  test('normalize + hasPremiumAccess reflects promo end for free users', () => {
+    const duringPromo = normalizeSubscriptionStatus({
+      access: 'Full',
+      promo_active: true,
+      subscription_status: 'free',
+    });
+    const afterPromo = normalizeSubscriptionStatus({
+      access: 'Limited',
+      promo_active: false,
+      subscription_status: 'free',
+    });
+    expect(hasPremiumAccess(duringPromo)).toBe(true);
+    expect(hasPremiumAccess(afterPromo)).toBe(false);
   });
 
   test('restrictToPaidSubscription is a HOC function', () => {

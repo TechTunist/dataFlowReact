@@ -7,6 +7,8 @@ import logger from './utils/logger';
 import { initializeDataService, getBtcPriceSeries, getEthPriceSeries, getMvrvSeries, getMarketCapSeries, getDominanceSeries, formatRiskSeries } from './data'; // New data layer (Phase 1)
 import { waitForPreloadIfNeeded } from './utils/waitForPreloadIfNeeded'; // Phase 1: extracted preload guard helper
 import { getAuthHeaders } from './utils/clerkAuth';
+import { isPremiumCacheId } from './utils/premiumCache';
+import { canUsePremiumCache, notifySubscriptionRequired } from './utils/subscriptionRevocation';
 
 export const DataContext = createContext();
 
@@ -98,6 +100,9 @@ const fetchFreshAndUpdate = async ({
     if (!response.ok) {
       if (response.status === 401 || response.status === 403) {
         logger.warn(`[Auth] Background refresh got ${response.status} on ${cacheId}`);
+        if (response.status === 403) {
+          notifySubscriptionRequired();
+        }
         return; // graceful — use whatever is in state/cache
       }
       throw new Error(`HTTP ${response.status}`);
@@ -151,8 +156,9 @@ const fetchWithCache = async ({
     const currentTimestamp = Date.now();
 
     const cached = await getCachedData(cacheId);
+    const premiumCacheBlocked = isPremiumCacheId(cacheId) && !canUsePremiumCache();
 
-    if (cached && cached.data) {
+    if (cached && cached.data && !premiumCacheBlocked) {
       let cachedData = Array.isArray(cached.data) ? cached.data : [cached.data];
       if (cachedData.length > 0) {
         cachedData = [...cachedData].sort((a, b) => {
@@ -260,6 +266,9 @@ const fetchWithCache = async ({
           // The backend PremiumDataGateMiddleware returns 403 with code 'subscription_required' for the latter.
           // We treat them as non-retriable here; callers (esp. preload vs on-demand premium components) should handle gracefully.
           logger.warn(`[Auth] ${response.status} on ${apiUrl} — token not yet available, dev bypass inactive, or subscription gate (free user on premium data)`);
+          if (response.status === 403) {
+            notifySubscriptionRequired();
+          }
           // Do not retry auth/subscription errors aggressively; let caller use cache or fail gracefully
           throw new Error(`HTTP ${response.status} (auth)`);
         }

@@ -3,6 +3,20 @@ import React, { createContext, useState, useEffect, useCallback, useContext, use
 import { useUser, useAuth } from '@clerk/clerk-react';
 import { apiUrl } from '../config/api';
 import { setClerkTokenGetter, getClerkToken } from '../utils/clerkAuth';
+import {
+  didAccessRevoke,
+  getPromoRefetchDelayMs,
+  hasPremiumAccess,
+  normalizeSubscriptionStatus,
+  PROMO_POLL_INTERVAL_MS,
+  shouldPollSubscriptionStatus,
+  subscriptionStatusesEqual,
+} from '../utils/subscriptionAccess';
+import { purgePremiumCache } from '../utils/premiumCache';
+import {
+  setPremiumAccessSnapshot,
+  setSubscriptionRequiredHandler,
+} from '../utils/subscriptionRevocation';
 
 const readClerkSessionToken = async () => {
   if (window.Clerk?.session) {
@@ -15,41 +29,11 @@ const DEV_BYPASS_AUTH = process.env.REACT_APP_DEV_BYPASS_AUTH === 'true';
 
 const SubscriptionContext = createContext();
 
-const DEFAULT_FREE_FEATURES = {
-  basic_charts: true,
-  advanced_charts: false,
-  custom_indicators: false,
-};
-
-const normalizeSubscriptionStatus = (data) => ({
-  plan: data.plan || 'Free',
-  subscription_status: data.subscription_status || 'free',
-  current_period_end: data.current_period_end ? new Date(data.current_period_end) : null,
-  features: data.features && typeof data.features === 'object' ? data.features : DEFAULT_FREE_FEATURES,
-  access: data.access || 'Limited',
-});
-
-const subscriptionStatusesEqual = (a, b) => {
-  if (!a || !b) return a === b;
-  return (
-    a.plan === b.plan
-    && a.subscription_status === b.subscription_status
-    && a.access === b.access
-    && (a.current_period_end?.getTime() ?? null) === (b.current_period_end?.getTime() ?? null)
-    && JSON.stringify(a.features) === JSON.stringify(b.features)
-  );
-};
-
 export const SubscriptionProvider = ({ children }) => {
   const { user, isSignedIn } = useUser();
   const { isLoaded } = useAuth();
   const userId = user?.id ?? null;
 
-  // All hooks must be called unconditionally and in the same order on every render.
-  // This is required by react-hooks/rules-of-hooks.
-
-  // Register once — always reads the live Clerk session (avoids refetch storms when
-  // Clerk "touch" updates hook object identities without changing the signed-in user).
   useEffect(() => {
     if (DEV_BYPASS_AUTH) return;
     setClerkTokenGetter(readClerkSessionToken);
@@ -59,6 +43,19 @@ export const SubscriptionProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const hasFetchedRef = useRef(false);
+  const subscriptionStatusRef = useRef(null);
+
+  const applySubscriptionStatus = useCallback((nextStatus) => {
+    const previousStatus = subscriptionStatusRef.current;
+    if (didAccessRevoke(previousStatus, nextStatus)) {
+      void purgePremiumCache();
+    }
+    subscriptionStatusRef.current = nextStatus;
+    setPremiumAccessSnapshot(hasPremiumAccess(nextStatus));
+    setSubscriptionStatus((prev) => (
+      subscriptionStatusesEqual(prev, nextStatus) ? prev : nextStatus
+    ));
+  }, []);
 
   const fetchSubscriptionStatus = useCallback(async () => {
     if (DEV_BYPASS_AUTH) return;
@@ -67,6 +64,8 @@ export const SubscriptionProvider = ({ children }) => {
 
     if (!isSignedIn || !userId) {
       hasFetchedRef.current = false;
+      subscriptionStatusRef.current = null;
+      setPremiumAccessSnapshot(false);
       setSubscriptionStatus(null);
       setError('');
       setLoading(false);
@@ -96,13 +95,9 @@ export const SubscriptionProvider = ({ children }) => {
         throw new Error(`HTTP error! status: ${response.status}, message: ${errorData.error || 'Unknown error'}`);
       }
       const data = await response.json();
-      const nextStatus = normalizeSubscriptionStatus(data);
-      setSubscriptionStatus((prev) => (
-        subscriptionStatusesEqual(prev, nextStatus) ? prev : nextStatus
-      ));
+      applySubscriptionStatus(normalizeSubscriptionStatus(data));
       hasFetchedRef.current = true;
     } catch (err) {
-      // Do not assume Free on transient auth/network failures — that flashes a false upgrade prompt.
       setError(`Failed to verify subscription: ${err.message}`);
       hasFetchedRef.current = true;
     } finally {
@@ -110,7 +105,7 @@ export const SubscriptionProvider = ({ children }) => {
         setLoading(false);
       }
     }
-  }, [isLoaded, isSignedIn, userId]);
+  }, [applySubscriptionStatus, isLoaded, isSignedIn, userId]);
 
   useEffect(() => {
     if (DEV_BYPASS_AUTH) return;
@@ -122,6 +117,8 @@ export const SubscriptionProvider = ({ children }) => {
 
     if (!isSignedIn || !userId) {
       hasFetchedRef.current = false;
+      subscriptionStatusRef.current = null;
+      setPremiumAccessSnapshot(false);
       setSubscriptionStatus(null);
       setLoading(false);
       setError('');
@@ -131,7 +128,50 @@ export const SubscriptionProvider = ({ children }) => {
     fetchSubscriptionStatus();
   }, [isLoaded, isSignedIn, userId, fetchSubscriptionStatus]);
 
-  // Memoize the context value to prevent unnecessary rerenders
+  useEffect(() => {
+    if (DEV_BYPASS_AUTH) return;
+    setSubscriptionRequiredHandler(fetchSubscriptionStatus);
+    return () => setSubscriptionRequiredHandler(null);
+  }, [fetchSubscriptionStatus]);
+
+  useEffect(() => {
+    if (DEV_BYPASS_AUTH || !isSignedIn) return undefined;
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchSubscriptionStatus();
+      }
+    };
+
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange);
+  }, [fetchSubscriptionStatus, isSignedIn]);
+
+  useEffect(() => {
+    if (DEV_BYPASS_AUTH || !shouldPollSubscriptionStatus(subscriptionStatus)) {
+      return undefined;
+    }
+
+    const intervalId = window.setInterval(() => {
+      fetchSubscriptionStatus();
+    }, PROMO_POLL_INTERVAL_MS);
+
+    return () => window.clearInterval(intervalId);
+  }, [fetchSubscriptionStatus, subscriptionStatus]);
+
+  useEffect(() => {
+    if (DEV_BYPASS_AUTH) return undefined;
+
+    const delayMs = getPromoRefetchDelayMs(subscriptionStatus);
+    if (delayMs == null) return undefined;
+
+    const timeoutId = window.setTimeout(() => {
+      fetchSubscriptionStatus();
+    }, delayMs);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [fetchSubscriptionStatus, subscriptionStatus?.promo_ends_at]);
+
   const contextValue = useMemo(
     () => ({
       subscriptionStatus,
@@ -142,17 +182,14 @@ export const SubscriptionProvider = ({ children }) => {
     [subscriptionStatus, loading, error, fetchSubscriptionStatus]
   );
 
-  // === Render decision (after ALL hooks have been called) ===
   if (DEV_BYPASS_AUTH) {
-    // Provide a fake full-access subscription so every premium chart and
-    // component that uses useSubscription() sees "Full" access.
-    const devFullAccess = {
+    const devFullAccess = normalizeSubscriptionStatus({
       plan: 'Premium',
       subscription_status: 'active',
-      current_period_end: new Date(Date.now() + 1000 * 60 * 60 * 24 * 365),
+      current_period_end: new Date(Date.now() + 1000 * 60 * 60 * 24 * 365).toISOString(),
       features: { basic_charts: true, advanced_charts: true, custom_indicators: true },
       access: 'Full',
-    };
+    });
 
     return (
       <SubscriptionContext.Provider
@@ -160,7 +197,7 @@ export const SubscriptionProvider = ({ children }) => {
           subscriptionStatus: devFullAccess,
           loading: false,
           error: '',
-          fetchSubscriptionStatus: () => {}, // no-op
+          fetchSubscriptionStatus: () => {},
         }}
       >
         {children}
@@ -168,7 +205,6 @@ export const SubscriptionProvider = ({ children }) => {
     );
   }
 
-  // Normal (production / real auth) path
   return (
     <SubscriptionContext.Provider value={contextValue}>
       {children}

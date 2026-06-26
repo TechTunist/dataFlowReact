@@ -4,6 +4,7 @@ import { Box, Typography, useTheme, Button, CircularProgress } from '@mui/materi
 import { tokens } from '../theme';
 import { Link } from 'react-router-dom';
 import { useSubscription } from '../contexts/SubscriptionContext';
+import { hasPremiumAccess } from '../utils/subscriptionAccess';
 
 // Dev bypass: when REACT_APP_DEV_BYPASS_AUTH=true, premium charts render fully
 // without any Clerk sign-in or subscription checks. Useful for local development.
@@ -90,18 +91,7 @@ const RestrictedComponent = memo(
       );
     }
 
-    // Check if user has premium access (authoritative from backend, which includes grace period logic)
-    // or fallback canceled/canceling with valid current_period_end + grace (1 day buffer to match backend GRACE_PERIOD).
-    // This prevents clock skew / race conditions from prematurely revoking access.
-    const hasPremiumAccess = subscriptionStatus.access === 'Full';
-    const rawStatus = (subscriptionStatus.subscription_status || '').toLowerCase();
-    const GRACE_MS = 24 * 60 * 60 * 1000; // 1 day, matching backend
-    const isCancelledButValid =
-      (rawStatus === 'canceled' || rawStatus === 'canceling') &&
-      subscriptionStatus.current_period_end &&
-      subscriptionStatus.current_period_end > new Date(Date.now() - GRACE_MS);
-
-    if (hasPremiumAccess || isCancelledButValid) {
+    if (hasPremiumAccess(subscriptionStatus)) {
       return <WrappedComponent {...props} />;
     }
 
