@@ -10,9 +10,10 @@ When ready to run the promo:
 
 1. Set backend env vars (UTC ISO-8601):
    ```
-   PROMO_OPEN_ACCESS_START=2026-06-28T00:00:00+00:00
-   PROMO_OPEN_ACCESS_END=2026-06-30T23:59:59+00:00
+   PROMO_OPEN_ACCESS_START=2026-07-03T11:00:00+00:00
+   PROMO_OPEN_ACCESS_END=2026-07-05T23:59:59+00:00
    ```
+   Launch aligns with Friday 3 July 2026 ~lunch BST; full access through Sunday night UTC.
 2. Redeploy **backend first**, then **frontend** (backend-only is safe; frontend-only can show broken charts).
 3. Verify with a free test account: `/api/subscription-status/` returns `access: "Full"` and `promo_active: true`.
 4. Complete the three pre-launch items in [Still to do before launch](#still-to-do-before-launch) below.
@@ -67,8 +68,8 @@ Paid subscribers are unaffected: promo only elevates free users during the windo
   "subscription_status": "free",
   "access": "Full",
   "promo_active": true,
-  "promo_starts_at": "2026-06-28T00:00:00+00:00",
-  "promo_ends_at": "2026-06-30T23:59:59+00:00"
+  "promo_starts_at": "2026-07-03T11:00:00+00:00",
+  "promo_ends_at": "2026-07-05T23:59:59+00:00"
 }
 ```
 

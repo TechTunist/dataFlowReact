@@ -27,6 +27,7 @@ import { Link } from 'react-router-dom';
 import TrackedSignupLink from '../components/marketing/TrackedSignupLink';
 import ScrollHint from '../components/marketing/ScrollHint';
 import StickySignupCta from '../components/marketing/StickySignupCta';
+import HundredDayWindowBanner, { HUNDRED_DAY_WINDOW_BANNER_HEIGHT } from '../components/marketing/HundredDayWindowBanner';
 import InspirationLogos from '../components/marketing/InspirationLogos';
 import ChartPreviewLink from '../components/marketing/ChartPreviewLink';
 import SplashRiskColorPreview from '../components/marketing/SplashRiskColorPreview';
@@ -63,6 +64,8 @@ const ctaHoverSx = (colors) => ({
   '&:hover': { backgroundColor: colors.greenAccent[400] },
 });
 
+const NAVBAR_HEIGHT = { xs: 64, sm: 80 };
+
 const SplashPage = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
@@ -78,6 +81,10 @@ const SplashPage = () => {
         minHeight: '100vh',
         width: '100%',
         boxSizing: 'border-box',
+        pt: {
+          xs: `${HUNDRED_DAY_WINDOW_BANNER_HEIGHT.xs + NAVBAR_HEIGHT.xs}px`,
+          sm: `${HUNDRED_DAY_WINDOW_BANNER_HEIGHT.sm + NAVBAR_HEIGHT.sm}px`,
+        },
       }}
     >
       <SeoHead
@@ -87,7 +94,8 @@ const SplashPage = () => {
         keywords={splashSeo.keywords}
         jsonLd={[organizationJsonLd, webSiteJsonLd, softwareApplicationJsonLd]}
       />
-      <Navbar colors={colors} />
+      <HundredDayWindowBanner colors={colors} />
+      <Navbar colors={colors} topOffset={HUNDRED_DAY_WINDOW_BANNER_HEIGHT} />
       <StickySignupCta colors={colors} signupPath={FREE_SIGNUP} />
 
       {/* Hero */}

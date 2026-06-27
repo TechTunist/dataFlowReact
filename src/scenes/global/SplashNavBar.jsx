@@ -3,7 +3,7 @@ import { AppBar, Toolbar, Container, Button, Box } from "@mui/material";
 import { Link } from "react-router-dom";
 import { useAuth } from "@clerk/clerk-react";
 
-const Navbar = ({ colors }) => {
+const Navbar = ({ colors, topOffset = 0 }) => {
   const { isLoaded, isSignedIn } = useAuth();
   const [visible, setVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
@@ -41,9 +41,9 @@ const Navbar = ({ colors }) => {
         background: colors.primary[900] + ' !important', // Force exact color
         backgroundColor: colors.primary[900], // Fallback
         boxShadow: 'none',
-        top: 0,
+        top: topOffset,
         width: '100%',
-        zIndex: 3,
+        zIndex: 4,
         opacity: 1, // No transparency
         backdropFilter: 'none', // Prevent blending
         transform: visible ? 'translateY(0)' : 'translateY(-100%)',
