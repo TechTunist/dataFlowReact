@@ -14,7 +14,6 @@ export const FREE_TIER_CACHE_IDS = new Set([
   'total3Data',
   'fearAndGreedData',
   'latestFearAndGreed',
-  'fearAndGreedBinaryData',
   'macroData',
   'inflationData',
   'initialClaimsData',

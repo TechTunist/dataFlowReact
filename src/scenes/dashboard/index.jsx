@@ -37,7 +37,6 @@ import PuellMultiple from "../../components/PuellMultiple";
 import BitcoinRisk from "../../components/BitcoinRisk";
 import FearAndGreedChart from "../../components/FearAndGreedChart";
 import FearAndGreed3D from "../../components/FearAndGreed3D";
-import FearAndGreedBinaryChart from "../../components/FearAndGreedBinaryChart";
 import BitcoinTransactionFees from "../../components/BitcoinTransactionFees";
 import UsInflationChart from "../../components/UsInflation";
 import UsInterestChart from "../../components/UsInterest";
@@ -103,7 +102,6 @@ const chartConfig = [
   { id: "market-cycles", title: "Bitcoin Market Cycles", linkTo: "/market-cycles", component: (props) => <MarketCycles isDashboard={true} {...props} />, description: "Compare previous crypto market cycles." },
   { id: "fear-and-greed-chart", title: "Fear and Greed Chart", linkTo: "/fear-and-greed-chart", component: (props) => <FearAndGreedChart isDashboard={true} {...props} />, description: "Chart of Fear and Greed index over time." },
   { id: "fear-and-greed-3d", title: "Fear and Greed 3D", linkTo: "/fear-and-greed-3d", component: (props) => <FearAndGreed3D isDashboard={true} {...props} />, description: "3D visualization of Fear and Greed." },
-  { id: "fear-and-greed-binary", title: "Fear and Greed Binary", linkTo: "/fear-and-greed-binary-chart", component: (props) => <FearAndGreedBinaryChart isDashboard={true} {...props} />, description: "Binary Fear and Greed states over time." },
   { id: "us-inflation", title: "US Inflation", linkTo: "/us-inflation", component: (props) => <UsInflationChart isDashboard={true} {...props} />, description: "US inflation rates over time." },
   { id: "us-interest", title: "US Interest Rates", linkTo: "/us-interest", component: (props) => <UsInterestChart isDashboard={true} {...props} />, description: "US interest rates over time." },
   { id: "us-combined-macro", title: "US Combined Macro", linkTo: "/us-combined-macro", component: (props) => <UsCombinedMacroChart isDashboard={true} {...props} />, description: "Combined US macroeconomic indicators." },

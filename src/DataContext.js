@@ -56,7 +56,6 @@ const CACHE_CONFIG = {
   altcoinSeasonData: { ttl: 6 * 60 * 60 * 1000, useDateCheck: true },
   altcoinSeasonTimeseriesData: { ttl: 6 * 60 * 60 * 1000, useDateCheck: true },
   sp500DivUnrateData: { ttl: 24 * 60 * 60 * 1000, useDateCheck: true },
-  fearAndGreedBinaryData: { ttl: 15 * 60 * 1000, useDateCheck: false }, // short for "live" feel
   // FRED etc: long
   'fredSeriesData_SP500': { ttl: 24 * 60 * 60 * 1000, useDateCheck: false },
   // Default for anything not listed (including dynamic altcoin_* and fred_*)

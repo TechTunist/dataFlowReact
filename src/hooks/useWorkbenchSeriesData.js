@@ -41,6 +41,7 @@ import {
   availableIndicatorSeries,
   availableStockSeries,
 } from '../components/workbench/availableSeries';
+import { resolveIndicatorRawData } from '../utils/workbenchSeriesUtils';
 
 export function useWorkbenchSeriesData({ dataContext, derivedData = {}, derivedSeriesDefs = [] }) {
   const getType = useCallback((id) => {
@@ -113,8 +114,7 @@ export function useWorkbenchSeriesData({ dataContext, derivedData = {}, derivedS
     if (type === 'indicator') {
       const info = availableIndicatorSeries[id];
       if (!info) return [];
-      // Some indicators (risks etc) may be precomputed in context; dominance/marketCap now also delegated in DS.
-      return dataContext?.[info.dataKey] || [];
+      return resolveIndicatorRawData(info, dataContext);
     }
     if (type === 'stock') {
       const info = availableStockSeries[id];

@@ -25,6 +25,10 @@
 
 import { useState, useCallback } from 'react';
 import logger from '../utils/logger';
+import {
+  fetchIndicatorDependencies,
+  isIndicatorDataLoaded,
+} from '../utils/workbenchSeriesUtils';
 
 export function useWorkbenchSeriesManagement({ dataContext, setIsLoading, setError, onSnackbar = () => {} } = {}) {
   const [activeMacroSeries, setActiveMacroSeries] = useState([]);
@@ -114,13 +118,13 @@ export function useWorkbenchSeriesManagement({ dataContext, setIsLoading, setErr
     selected.forEach(id => {
       const seriesInfo = availableIndicator[id];
       if (!seriesInfo) return;
-      if ((dataContext?.[seriesInfo.dataKey] || []).length === 0) {
+      if (!isIndicatorDataLoaded(seriesInfo, dataContext)) {
         setIsLoading?.(true);
         setError?.(null);
-        dataContext[seriesInfo.fetchFunction]()
+        fetchIndicatorDependencies(seriesInfo, dataContext)
           .catch(err => {
             setError?.(`Failed to fetch data for ${id}. Please try again later.`);
-            logger.error(`Error fetching ${id}:`, err);  // was console.error; now routed
+            logger.error(`Error fetching ${id}:`, err);
           })
           .finally(() => setIsLoading?.(false));
       }

@@ -54,8 +54,6 @@ import UsInterestChart from "./components/UsInterest";
 import UsInitialClaimsChart from "./components/UsInitialClaims";
 import UsCombinedMacroChart from "./components/UsCombinedMacro";
 import FredSeriesChart from "./components/FredSeriesChart";
-import FearAndGreedBinaryChart from "./components/FearAndGreedBinaryChart";
-import { FearAndGreedBinaryProvider } from "./FearAndGreedBinaryContext";
 import SP500ROI from "./components/SP500ROI";
 import Total2Chart from "./components/Total2Marketcap";
 import Total3Chart from "./components/Total3Marketcap";
@@ -192,7 +190,6 @@ const appRoutes = [
   { path: "/altcoin-risk", component: AltcoinRisk, useBasicChart: true, protected: true },
   { path: "/market-cycles", component: MarketCycles, useBasicChart: true, protected: true },
   { path: "/fear-and-greed-chart", component: FearAndGreedChart, useBasicChart: true, protected: true },
-  { path: "/fear-and-greed-binary-chart", component: FearAndGreedBinaryChart, useBasicChart: true, protected: true },
   { path: "/us-inflation", component: UsInflationChart, useBasicChart: true, protected: true },
   { path: "/us-interest", component: UsInterestChart, useBasicChart: true, protected: true },
   { path: "/us-combined-macro", component: UsCombinedMacroChart, useBasicChart: true, protected: true },
@@ -438,7 +435,6 @@ const AppContent = memo(() => {
                     {isUserMenuPage && <div style={{ height: "65px" }} />}
                     <ErrorBoundary fallbackMessage="The main application area failed to load.">
                       <Suspense fallback={<LoadingFallback message="Loading..." fullScreen />}>
-                      <FearAndGreedBinaryProvider>
                       <Routes>
                       {/* All routes are now driven by the appRoutes config + createRouteElement helper above.
                           This replaced ~850 lines of repetitive manual <Route> definitions. */}
@@ -450,7 +446,6 @@ const AppContent = memo(() => {
                         />
                       ))}
                     </Routes>
-                      </FearAndGreedBinaryProvider>
                       </Suspense>
                     </ErrorBoundary>
                   </main>

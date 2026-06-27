@@ -34,8 +34,6 @@ export const routeToChartId = {
   "/altcoin-risk": "altcoin-risk",
   "/market-cycles": "market-cycles",
   "/fear-and-greed-chart": "fear-and-greed-chart",
-  "/fear-and-greed-binary": "fear-and-greed-binary",
-  "/fear-and-greed-binary-chart": "fear-and-greed-binary",
   "/us-inflation": "us-inflation",
   "/us-unemployment": "us-unemployment",
   "/us-interest": "us-interest",
