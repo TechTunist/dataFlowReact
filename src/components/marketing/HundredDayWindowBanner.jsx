@@ -1,12 +1,13 @@
 import React, { useMemo } from 'react';
 import { Box, Container, Typography } from '@mui/material';
+import { Link } from 'react-router-dom';
 import { useData } from '../../DataContext';
-import { AVG_DAYS_TOP_TO_BOTTOM, getCycleBottomDaysLeft } from '../../utility/cycleBottomDaysLeft';
+import { getCycleBottomDaysLeft } from '../../utility/cycleBottomDaysLeft';
 
 /** Fixed height offsets — keep in sync with SplashNavBar `topOffset`. */
 export const HUNDRED_DAY_WINDOW_BANNER_HEIGHT = { xs: 40, sm: 44 };
 
-const HundredDayWindowBanner = ({ colors }) => {
+const HundredDayWindowBanner = ({ colors, linkTo = '/100-day-window' }) => {
   const { btcData } = useData();
 
   const daysLeft = useMemo(() => {
@@ -16,24 +17,41 @@ const HundredDayWindowBanner = ({ colors }) => {
     return getCycleBottomDaysLeft(referenceDate).daysLeft;
   }, [btcData]);
 
+  const bannerSx = {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 5,
+    minHeight: HUNDRED_DAY_WINDOW_BANNER_HEIGHT,
+    display: 'flex',
+    alignItems: 'center',
+    backgroundColor: colors.primary[800],
+    borderBottom: `1px solid ${colors.primary[600]}`,
+  };
+
+  const interactiveSx = linkTo
+    ? {
+        textDecoration: 'none',
+        cursor: 'pointer',
+        transition: 'background-color 0.2s ease',
+        '&:hover': { backgroundColor: colors.primary[700] },
+      }
+    : {};
+
   return (
     <Box
+      component={linkTo ? Link : 'div'}
+      to={linkTo || undefined}
       className="hundred-day-window-banner"
       role="status"
       aria-live="polite"
-      aria-label={`${daysLeft} days to cycle bottom`}
-      sx={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 5,
-        minHeight: HUNDRED_DAY_WINDOW_BANNER_HEIGHT,
-        display: 'flex',
-        alignItems: 'center',
-        backgroundColor: colors.primary[800],
-        borderBottom: `1px solid ${colors.primary[600]}`,
-      }}
+      aria-label={
+        linkTo
+          ? `${daysLeft} days to cycle bottom — learn about the 100-day window`
+          : `${daysLeft} days to cycle bottom`
+      }
+      sx={{ ...bannerSx, ...interactiveSx }}
     >
       <Container
         maxWidth="lg"

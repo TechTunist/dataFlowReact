@@ -20,6 +20,7 @@ const FOOTER_SECTIONS = [
     title: 'Learn',
     links: [
       { to: '/bitcoin-whitepaper', label: 'Why Bitcoin?' },
+      { to: '/100-day-window', label: 'The 100-Day Window' },
       { to: '/login-signup?mode=signup', label: 'Sign Up Free' },
       { to: '/login-signup?mode=signin', label: 'Login' },
     ],

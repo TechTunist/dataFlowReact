@@ -15,6 +15,7 @@ import { CssBaseline, ThemeProvider } from "@mui/material";
 import { ColorModeContext, useMode } from "./theme";
 import SplashPage from "./scenes/splash";
 import BitcoinWhitepaper from "./scenes/BitcoinWhitepaper";
+import HundredDayWindow from "./scenes/HundredDayWindow";
 import PublicChartGallery from "./scenes/PublicChartGallery";
 import SeoLandingPage from "./scenes/seo/SeoLandingPage";
 import LoginSignup from "./scenes/LoginSignup";
@@ -117,6 +118,7 @@ export const PUBLIC_ROUTE_PATHS = [
   "/login-signup",
   "/chart-gallery",
   "/bitcoin-whitepaper",
+  "/100-day-window",
   "/bitcoin-analytics",
   "/on-chain-metrics",
   "/crypto-charts-tools",
@@ -129,6 +131,7 @@ const appRoutes = [
   { path: "/login-signup", element: <LoginSignup />, public: true },
   { path: "/chart-gallery", element: <PublicChartGallery />, public: true },
   { path: "/bitcoin-whitepaper", element: <BitcoinWhitepaper />, public: true },
+  { path: "/100-day-window", element: <HundredDayWindow />, public: true },
   { path: "/bitcoin-analytics", element: <SeoLandingPage />, public: true },
   { path: "/on-chain-metrics", element: <SeoLandingPage />, public: true },
   { path: "/crypto-charts-tools", element: <SeoLandingPage />, public: true },
@@ -340,6 +343,7 @@ const AppContent = memo(() => {
     isSplashPage ||
     isLoginSignupPage ||
     location.pathname === "/bitcoin-whitepaper" ||
+    location.pathname === "/100-day-window" ||
     location.pathname === "/chart-gallery" ||
     seoLandingPaths.includes(location.pathname);
   // Memoize theme and colorMode to prevent unnecessary updates

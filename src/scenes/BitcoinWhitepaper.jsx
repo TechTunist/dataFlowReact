@@ -29,9 +29,11 @@ import SeoPublicFooter from "./seo/SeoPublicFooter";
 import { SEO_PAGES } from "../seo/staticPageContent";
 import TrackedSignupLink from "../components/marketing/TrackedSignupLink";
 import StickySignupCta from "../components/marketing/StickySignupCta";
+import HundredDayWindowBanner, { HUNDRED_DAY_WINDOW_BANNER_HEIGHT } from "../components/marketing/HundredDayWindowBanner";
 import "../styling/splashPage.css";
 
 const FREE_SIGNUP = "/login-signup?mode=signup";
+const NAVBAR_HEIGHT = { xs: 64, sm: 80 };
 
 const whitepaperSeo = SEO_PAGES["bitcoin-whitepaper"];
 
@@ -161,6 +163,10 @@ const BitcoinWhitepaper = () => {
         minHeight: "100vh",
         width: "100%",
         boxSizing: "border-box",
+        pt: {
+          xs: `${HUNDRED_DAY_WINDOW_BANNER_HEIGHT.xs + NAVBAR_HEIGHT.xs}px`,
+          sm: `${HUNDRED_DAY_WINDOW_BANNER_HEIGHT.sm + NAVBAR_HEIGHT.sm}px`,
+        },
       }}
     >
       <SeoHead
@@ -169,7 +175,8 @@ const BitcoinWhitepaper = () => {
         path="/bitcoin-whitepaper"
         keywords={whitepaperSeo.keywords}
       />
-      <Navbar colors={colors} />
+      <HundredDayWindowBanner colors={colors} />
+      <Navbar colors={colors} topOffset={HUNDRED_DAY_WINDOW_BANNER_HEIGHT} />
       <StickySignupCta
         colors={colors}
         signupPath={FREE_SIGNUP}
@@ -181,7 +188,7 @@ const BitcoinWhitepaper = () => {
         component="section"
         sx={{
           width: "100%",
-          pt: { xs: 12, sm: 14 },
+          pt: { xs: 4, sm: 6 },
           pb: { xs: 6, md: 8 },
           background: `linear-gradient(180deg, ${colors.primary[900]} 0%, ${colors.primary[800]} 100%)`,
         }}

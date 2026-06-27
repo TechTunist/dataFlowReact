@@ -34,6 +34,7 @@ export const SEO_PAGES = {
       { href: '/crypto-charts-tools', label: 'Crypto charting tools' },
       { href: '/chart-gallery', label: 'Browse all charts' },
       { href: '/bitcoin-whitepaper', label: 'Why Bitcoin? Plain-English guide' },
+      { href: '/100-day-window', label: 'The 100-Day Window explained' },
       { href: '/login-signup?mode=signup', label: 'Sign up free' },
     ],
   },
@@ -147,6 +148,36 @@ export const SEO_PAGES = {
       { href: '/bitcoin-analytics', label: 'Bitcoin analytics' },
       { href: '/on-chain-metrics', label: 'On-chain metrics' },
       { href: '/login-signup?mode=signup', label: 'Get started free' },
+    ],
+  },
+  '100-day-window': {
+    path: '/100-day-window',
+    title: 'The 100-Day Window — Bitcoin Cycle Bottom Countdown Explained',
+    description:
+      'What does "days left til cycle bottom" mean? Learn how Cryptological tracks the post-peak window using historical Bitcoin bear-market averages — free public guide, no account required.',
+    keywords:
+      'bitcoin cycle bottom, 100 day window, bitcoin bear market, market cycles, cycle countdown, cryptological',
+    h1: 'The 100-Day Window',
+    sections: [
+      {
+        h2: 'Bitcoin cycle countdown — explained plainly',
+        paragraphs: [
+          'After each major bull-market top, Bitcoin has historically spent roughly a year in drawdown before the next cycle low. Cryptological tracks days remaining against that average — measured from the October 2025 peak.',
+          'This is a historical compass, not a price prediction. Past cycles varied in length; the counter helps patient holders prepare during the quietest phases.',
+        ],
+      },
+      {
+        h2: 'How the countdown is calculated',
+        paragraphs: [
+          'Three methods cluster around late October 2026: all three top→bottom phases average 382 days (~23 Oct), bottom-to-bottom spacing averages 1435 days (~26 Oct), and the last two bears average 370 days (~11 Oct). Cryptological uses the 370-day line deliberately — to bias preparation ahead of the window. Days left equals 370 minus days elapsed since the 6 October 2025 peak.',
+        ],
+      },
+    ],
+    links: [
+      { href: '/splash', label: 'Cryptological home' },
+      { href: '/bitcoin-whitepaper', label: 'Why Bitcoin?' },
+      { href: '/chart-gallery', label: 'Explore charts' },
+      { href: '/login-signup?mode=signup', label: 'Sign up free' },
     ],
   },
   'bitcoin-whitepaper': {

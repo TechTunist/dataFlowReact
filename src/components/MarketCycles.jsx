@@ -11,6 +11,13 @@ import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import LastUpdated from '../hooks/LastUpdated';
 import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
 import ChartInfoSections from './ChartInfoSections';
+import {
+  AVG_DAYS_TOP_TO_BOTTOM,
+  CYCLE_TOP_DATE,
+  PROJECTED_BOTTOM_DATE,
+  BOTTOM_TO_BOTTOM_AVG_DAYS,
+  formatCycleDate,
+} from '../utility/cycleBottomDaysLeft';
 
 const MarketCycles = ({ isDashboard = false }) => {
   const theme = useTheme();
@@ -30,9 +37,9 @@ const MarketCycles = ({ isDashboard = false }) => {
 
   // Constants for cycle timing (used both for slicing historical cycle data in the chart
   // and for the "current position" metrics shown under the chart).
-  const CYCLE4_END_DATE = '2025-10-06';      // 2025 bull market peak date (end of Cycle 4)
+  const CYCLE4_END_DATE = CYCLE_TOP_DATE;      // 2025 bull market peak date (end of Cycle 4)
   const NEW_CYCLE_START_DATE = '2025-10-07';
-  const AVG_BEAR_FROM_PEAK = 370;           // Avg days from cycle peak (top) to next bottom (bear phase), as measured from cycle peak
+  const AVG_BEAR_FROM_PEAK = AVG_DAYS_TOP_TO_BOTTOM; // 2-cycle top→bottom avg (363 + 376) → ~11 Oct 2026
   const AVG_PEAK_TO_PEAK = 1425;            // Avg peak-to-peak days (full cycle length). Computed from Cycle 2 (1424 days) + Cycle 3 (1426 days)
 
   // Local helper to compute days between dates (inclusive-ish, matches existing calcs)
@@ -553,7 +560,7 @@ const MarketCycles = ({ isDashboard = false }) => {
         <>
           <UnderChartValue>
             <span style={{ fontSize: '1.15rem', color: colors.primary[100] }}>
-              Days left til Bottom: <b style={{ color: colors.greenAccent[500] }}>{cycleDaysStats.daysLeftBottom.left}</b> (avg: {cycleDaysStats.daysLeftBottom.avg} as measured from cycle peak)
+              Days left til Bottom: <b style={{ color: colors.greenAccent[500] }}>{cycleDaysStats.daysLeftBottom.left}</b> (avg: {cycleDaysStats.daysLeftBottom.avg} days from peak · projected ~{formatCycleDate(PROJECTED_BOTTOM_DATE)})
             </span>
           </UnderChartValue>
           <UnderChartValue>
@@ -574,6 +581,10 @@ const MarketCycles = ({ isDashboard = false }) => {
             {
               title: 'How to interpret',
               content: 'Select cycles to average or toggle visibility via the legend.',
+            },
+            {
+              title: 'Days left til bottom',
+              content: `Measured from the 6 Oct 2025 bull-market top. Three completed top→bottom phases lasted 407, 363, and 376 days (average 382 → ~23 Oct 2026). Measuring bottom-to-bottom from the last three lows (15 Jan 2015, 15 Dec 2018, 21 Nov 2022) gives a ${BOTTOM_TO_BOTTOM_AVG_DAYS}-day average → ~26 Oct 2026. This chart uses the last two top→bottom durations only (${AVG_DAYS_TOP_TO_BOTTOM} days) → ~11 Oct 2026 — a deliberate choice to bias preparation and gradual accumulation ahead of the window, rather than waiting for a later historical average. Not financial advice; past cycles varied and the actual bottom may come earlier or later.`,
             },
           ]}
         />
