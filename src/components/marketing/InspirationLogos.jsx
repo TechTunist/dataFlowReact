@@ -29,7 +29,7 @@ const InspirationLogos = ({ colors }) => (
       sx={{ color: colors.grey[400], maxWidth: 720, mx: 'auto', mb: 5, lineHeight: 1.7 }}
     >
       Cryptological unifies the kind of cycle charts, on-chain context, and market dashboards serious
-      holders follow across the ecosystem — in one place, with a generous free tier.
+      holders follow across the ecosystem, in one place, with a generous free tier.
     </Typography>
     <Grid container spacing={3} justifyContent="center" alignItems="center">
       {INSPIRATION_BRANDS.map((brand) => (
@@ -65,7 +65,7 @@ const InspirationLogos = ({ colors }) => (
       ))}
     </Grid>
     <Typography variant="caption" sx={{ color: colors.grey[600], mt: 4, display: 'block' }}>
-      Independent product — not affiliated with or endorsed by the brands above.
+      Independent product, not affiliated with or endorsed by the brands above.
     </Typography>
   </Container>
 );

@@ -117,7 +117,7 @@ const Subscription = memo(() => {
       if (error) {
         console.error('Stripe redirect error:', error);
         window.location.href = url;
-        setError('Automatic redirect failed—opening Checkout manually.');
+        setError('Automatic redirect failed, opening Checkout manually.');
       }
     } catch (err) {
       setError(`Failed to initiate checkout: ${err.message}`);

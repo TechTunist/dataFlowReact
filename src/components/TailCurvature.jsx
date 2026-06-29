@@ -494,7 +494,7 @@ const TailCurvature = ({ isDashboard = false }) => {
             onClick={(e) => e.stopPropagation()}   
           >
             <div className="modal-header">
-              <h3>Projected Quantile Values — Model Only (through 2050s)</h3>
+              <h3>Projected Quantile Values, Model Only (through 2050s)</h3>
               <button 
                 className="close-button"
                 onClick={() => setShowProjectionTable(false)}

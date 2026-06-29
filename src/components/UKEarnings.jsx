@@ -179,7 +179,7 @@ const UKEarnings = ({ isDashboard = false }) => {
           <div style={{ color: colors.grey[100], fontSize: '15px', lineHeight: 1.4, textAlign: 'left' }}>
             This chart shows median weekly earnings in the UK from the official Annual Survey of Hours and Earnings. You can switch between male / female / total. It captures what the typical worker actually takes home (not skewed by a few high earners).
             <br /><br />
-            Explanation: rising earnings usually mean stronger wage growth and healthier consumer spending power; falling or stagnant wages can signal weak demand or cost-of-living pressure. In the app this gives you a direct read on UK household income trends — important context for whether the economy (and therefore risk appetite for crypto and markets) is getting better or worse for ordinary people.
+            Explanation: rising earnings usually mean stronger wage growth and healthier consumer spending power; falling or stagnant wages can signal weak demand or cost-of-living pressure. In the app this gives you a direct read on UK household income trends, important context for whether the economy (and therefore risk appetite for crypto and markets) is getting better or worse for ordinary people.
           </div>
           <div style={{ marginTop: '6px', fontSize: '12px', color: '#888', textAlign: 'left' }}>Source: Nomis (ONS). Direct frontend fetch. Consistent monthly/annual series.</div>
         </div>

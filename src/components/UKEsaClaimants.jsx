@@ -131,9 +131,9 @@ const UKEsaClaimants = ({ isDashboard = false }) => {
         <div className="under-chart" style={{ flexShrink: 0, padding: '10px 0 20px 0', display: 'block' }}>
           {data.length > 0 && <div style={{ marginBottom: '8px', color: colors.grey[100], fontSize: '15px', textAlign: 'left' }}>Current UK ESA Claimants ({genderLabel}): <span style={{ color: '#f87171', fontWeight: 600 }}>{formatVal(data[data.length-1]?.value)}</span></div>}
           <div style={{ color: colors.grey[100], fontSize: '15px', lineHeight: 1.4, textAlign: 'left' }}>
-            This shows how many people in the UK are claiming Employment and Support Allowance (ESA) — government support for people who can't work because of illness or disability. (Note: this view currently uses a closely related Jobseeker's Allowance dataset as a timely proxy; the dedicated ESA table in Nomis has more breakdowns by age, condition and ethnicity when data is published.)
+            This shows how many people in the UK are claiming Employment and Support Allowance (ESA), government support for people who can't work because of illness or disability. (Note: this view currently uses a closely related Jobseeker's Allowance dataset as a timely proxy; the dedicated ESA table in Nomis has more breakdowns by age, condition and ethnicity when data is published.)
             <br /><br />
-            Explanation: more claimants often means more people struggling with health or finding it harder to get jobs — a sign of economic pressure or a weaker jobs market. In this app, UK labour-market stress like this gives context for how the broader economy is doing. Weak UK data can weigh on risk appetite in global markets, including crypto.
+            Explanation: more claimants often means more people struggling with health or finding it harder to get jobs, a sign of economic pressure or a weaker jobs market. In this app, UK labour-market stress like this gives context for how the broader economy is doing. Weak UK data can weigh on risk appetite in global markets, including crypto.
           </div>
           <div style={{ marginTop: '6px', fontSize: '12px', color: '#888', textAlign: 'left' }}>Source: Nomis (ONS). Consistent monthly series.</div>
         </div>

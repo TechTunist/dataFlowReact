@@ -53,7 +53,7 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, isChartPage = false, txMvrvDa
     [txMvrvRatioDataBySmoothing, smoothingMode]
   );
 
-  // Calculate EMA (stable) — used for tx-mvrv display mode only
+  // Calculate EMA (stable), used for tx-mvrv display mode only
   const calculateEMA = useCallback((data, period, key = 'value') => {
     const alpha = 2 / (period + 1);
     const result = [{ time: data[0].time, value: data[0][key] }];
@@ -180,7 +180,7 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, isChartPage = false, txMvrvDa
       .filter(point => point.value === 1)
   ), []);
 
-  // Memoize processed data — ratio mode uses server-precomputed series; tx-mvrv mode stays client-side
+  // Memoize processed data, ratio mode uses server-precomputed series; tx-mvrv mode stays client-side
   const processedData = useMemo(() => {
     const cutoffDate = new Date('2014-10-21');
     const filteredBtcData = btcData.filter(item => new Date(item.time) >= cutoffDate);

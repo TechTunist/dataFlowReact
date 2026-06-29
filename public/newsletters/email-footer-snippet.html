@@ -1,0 +1,19 @@
+<!-- Zoho newsletter footer snippet. Import newsletter_subscribers.csv from:
+     python manage.py export_emails
+     Map UnsubscribeURL as a merge field, then use {{UnsubscribeURL}} in the link below. -->
+<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width:600px;margin:24px auto 0;font-family:Arial,sans-serif;">
+  <tr>
+    <td style="padding:16px 0;border-top:1px solid #333;text-align:center;font-size:12px;line-height:1.6;color:#888;">
+      <p style="margin:0 0 8px;">Cryptological · Educational market analytics</p>
+      <p style="margin:0 0 8px;">Sent from matt@cryptological.app</p>
+      <p style="margin:0;">
+        <a href="{{UnsubscribeURL}}" style="color:#37DF9C;text-decoration:underline;">Unsubscribe</a>
+        &nbsp;·&nbsp;
+        <a href="https://cryptological.app/settings" style="color:#37DF9C;text-decoration:underline;">Email preferences</a>
+      </p>
+      <p style="margin:12px 0 0;font-size:11px;color:#666;">
+        Not investment advice. For education only.
+      </p>
+    </td>
+  </tr>
+</table>

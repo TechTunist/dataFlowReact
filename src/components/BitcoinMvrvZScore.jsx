@@ -131,7 +131,7 @@ const BitcoinMvrvZScoreChart = ({ isDashboard = false, txMvrvData: propTxMvrvDat
   }, [fetchTxMvrvData, fetchBtcData]);
 
   useEffect(() => {
-    // Use memoized derived data — prevents expensive chart recreation when DataContext
+    // Use memoized derived data, prevents expensive chart recreation when DataContext
     // causes new array references for unrelated data updates elsewhere in the app.
     if (filteredTxMvrvData.length === 0 || filteredBtcData.length === 0) {
       return;
@@ -239,7 +239,7 @@ const BitcoinMvrvZScoreChart = ({ isDashboard = false, txMvrvData: propTxMvrvDat
     });
     realizedPriceSeriesRef.current = realizedPriceSeries;
     realizedPriceSeries.setData(realizedPriceData);
-    // MVRV Z-Score Series — use pre-computed memoized zScoreData
+    // MVRV Z-Score Series, use pre-computed memoized zScoreData
     const zScoreSeries = chart.addLineSeries({
       priceScaleId: 'right',
       color: zScoreColors.lineColor,

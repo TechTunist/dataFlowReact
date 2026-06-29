@@ -130,7 +130,7 @@ const UKLabourByAge = ({ isDashboard = false }) => {
           <div style={{ color: colors.grey[100], fontSize: '15px', lineHeight: 1.4, textAlign: 'left' }}>
             This shows labour market status (employment rate, unemployment rate, inactivity) for different age groups in the UK, from the Annual Population Survey. Switch gender and age band.
             <br /><br />
-            Explanation: it tells you how well different generations are doing in the jobs market — e.g. are young people (16-24) finding work at normal rates, or are older workers (50+) dropping out? High youth unemployment or rising inactivity can point to structural problems. In the app these demographic cuts help you judge whether UK labour strength is broad-based or fragile in key groups.
+            Explanation: it tells you how well different generations are doing in the jobs market, e.g. are young people (16-24) finding work at normal rates, or are older workers (50+) dropping out? High youth unemployment or rising inactivity can point to structural problems. In the app these demographic cuts help you judge whether UK labour strength is broad-based or fragile in key groups.
           </div>
           <div style={{ marginTop: '6px', fontSize: '12px', color: '#888', textAlign: 'left' }}>Source: Nomis (ONS). Consistent quarterly series.</div>
         </div>

@@ -124,7 +124,7 @@ export function useWorkbenchTooltip({
     });
 
     const dateStr = tooltipInfo.date && tooltipInfo.date.toString().substring(0, 4) === new Date().getFullYear().toString()
-      ? `${tooltipInfo.date} — latest`
+      ? `${tooltipInfo.date}, latest`
       : (tooltipInfo.date || '');
     html += `<div style="margin-top: 4px; opacity: 0.85; font-size: 12px;">${dateStr}</div>`;
     el.innerHTML = html;

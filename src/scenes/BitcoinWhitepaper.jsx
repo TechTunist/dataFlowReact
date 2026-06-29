@@ -40,27 +40,27 @@ const whitepaperSeo = SEO_PAGES["bitcoin-whitepaper"];
 const WHITEPAPER_SECTIONS = [
   {
     id: "intro",
-    title: "1. Introduction — money without a middleman",
+    title: "1. Introduction, money without a middleman",
     summary: "Satoshi Nakamoto's opening argument is simple: online commerce still depends on financial institutions we are forced to trust.",
     body: [
-      "Today, when you pay online, a bank, card network, or payment processor sits in the middle. They can reverse charges, freeze accounts, or refuse service — sometimes with little explanation.",
+      "Today, when you pay online, a bank, card network, or payment processor sits in the middle. They can reverse charges, freeze accounts, or refuse service, sometimes with little explanation.",
       "Bitcoin was proposed as peer-to-peer electronic cash: you send value directly to another person over the internet, the same way you might hand someone cash in person, without asking a company for permission first.",
       "The whitepaper is not a marketing document. It is an engineering blueprint for replacing that trusted middleman with mathematics, cryptography, and a network of independent participants.",
     ],
   },
   {
     id: "transactions",
-    title: "2. Transactions — digital signatures as proof",
+    title: "2. Transactions, digital signatures as proof",
     summary: "Ownership is defined by cryptographic keys, not by an account database at a bank.",
     body: [
       "Each Bitcoin transfer is a chain of digital signatures. If you control a private key, you can authorise a payment. Everyone else can verify the signature without knowing your secret.",
-      "This is the layman's version of \"not your keys, not your coins.\" Custodial platforms hold keys on your behalf — convenient, but you are trusting them exactly like a bank.",
+      "This is the layman's version of \"not your keys, not your coins.\" Custodial platforms hold keys on your behalf, convenient, but you are trusting them exactly like a bank.",
       "Signatures solve authorisation. They do not, by themselves, solve the harder problem: how do we prevent the same coin being spent twice?",
     ],
   },
   {
     id: "timestamp",
-    title: "3. Timestamp server — ordering history publicly",
+    title: "3. Timestamp server, ordering history publicly",
     summary: "History is recorded in blocks linked together, forming a chain anyone can audit.",
     body: [
       "Imagine a public ledger where each page of transactions is stamped with the time and glued to the previous page. Change one page and every page after it looks wrong.",
@@ -70,17 +70,17 @@ const WHITEPAPER_SECTIONS = [
   },
   {
     id: "pow",
-    title: "4. Proof-of-work — making rewriting history expensive",
+    title: "4. Proof-of-work, making rewriting history expensive",
     summary: "Computers compete to solve puzzles so that rewriting the past costs real-world resources.",
     body: [
       "If updating the ledger were free, an attacker could fabricate an alternative history where they never spent their coins. Proof-of-work makes that attack costly.",
       "Miners bundle transactions into blocks and expend electricity and hardware to publish them. The honest chain with the most work invested becomes the accepted history.",
-      "This is not perfect magic — it is economic security. Stealing or rewriting Bitcoin at scale means outspending the rest of the network, which grows harder as participation increases.",
+      "This is not perfect magic, it is economic security. Stealing or rewriting Bitcoin at scale means outspending the rest of the network, which grows harder as participation increases.",
     ],
   },
   {
     id: "network",
-    title: "5. Network — rules enforced by many nodes",
+    title: "5. Network, rules enforced by many nodes",
     summary: "No single CEO can change the rules overnight if the community of nodes refuses.",
     body: [
       "Participants run software that checks every transaction against the rules: valid signatures, no double spends, correct issuance schedule.",
@@ -90,17 +90,17 @@ const WHITEPAPER_SECTIONS = [
   },
   {
     id: "incentive",
-    title: "6. Incentive — why strangers help secure the system",
+    title: "6. Incentive, why strangers help secure the system",
     summary: "People are paid in newly issued bitcoin and fees to play by the rules.",
     body: [
       "Rational participants earn more by securing the network than by attacking it. Block rewards and transaction fees align self-interest with honest behaviour.",
-      "Issuance decreases on a predictable schedule until no new coins are created — contrasting with fiat currencies whose supply can expand when policymakers choose.",
+      "Issuance decreases on a predictable schedule until no new coins are created, contrasting with fiat currencies whose supply can expand when policymakers choose.",
       "The incentive design is why the system can run without a government guarantee or corporate sponsor.",
     ],
   },
   {
     id: "spv",
-    title: "7. Simplified payment verification — light wallets",
+    title: "7. Simplified payment verification, light wallets",
     summary: "You do not need a full copy of history to accept a payment, only strong evidence it was included.",
     body: [
       "Everyday users can rely on lightweight wallets that check block headers and Merkle proofs rather than downloading the entire chain.",
@@ -109,20 +109,20 @@ const WHITEPAPER_SECTIONS = [
   },
   {
     id: "privacy",
-    title: "8. Privacy — pseudonymity, not anonymity",
+    title: "8. Privacy, pseudonymity, not anonymity",
     summary: "Bitcoin does not put your name on the ledger, but the flow of funds is public.",
     body: [
       "Addresses are random-looking strings, not passports. Privacy is closer to using a public nickname than to a Swiss numbered account.",
-      "The whitepaper recommends using fresh addresses and not reusing them. Transparency and privacy trade off — a design choice very different from banking secrecy.",
+      "The whitepaper recommends using fresh addresses and not reusing them. Transparency and privacy trade off, a design choice very different from banking secrecy.",
     ],
   },
   {
     id: "conclusion",
-    title: "9. Conclusion — a system that does not depend on trust alone",
+    title: "9. Conclusion, a system that does not depend on trust alone",
     summary: "Bitcoin proposes trust minimisation: assume participants may cheat, then make cheating unprofitable.",
     body: [
       "Traditional finance asks you to trust institutions, regulators, and courts. Bitcoin asks you to verify mathematics and observe incentives.",
-      "That spirit — permissionless, auditable, resistant to silent debasement — is what many people mean when they say \"sound money\" in a digital age.",
+      "That spirit, permissionless, auditable, resistant to silent debasement, is what many people mean when they say \"sound money\" in a digital age.",
     ],
   },
 ];
@@ -138,7 +138,7 @@ const OTHER_NETWORKS = [
   },
   {
     title: "Not all are alternatives in the same sense",
-    text: "A token run by a small committee, a company treasury, or unclear monetary policy may be innovative software — but it may not offer the same credible neutrality Bitcoin aimed for. Judge each network by who can change the rules, freeze balances, or inflate supply.",
+    text: "A token run by a small committee, a company treasury, or unclear monetary policy may be innovative software, but it may not offer the same credible neutrality Bitcoin aimed for. Judge each network by who can change the rules, freeze balances, or inflate supply.",
   },
 ];
 
@@ -228,7 +228,7 @@ const BitcoinWhitepaper = () => {
           >
             In October 2008, as faith in banks was collapsing, Satoshi Nakamoto published a nine-page paper describing
             electronic cash that does not require trusting a financial institution. This page explains that vision for
-            anyone curious about money, power, and why cryptographic networks matter — no jargon required to start.
+            anyone curious about money, power, and why cryptographic networks matter, no jargon required to start.
           </Typography>
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems="center">
             <Button
@@ -306,7 +306,7 @@ const BitcoinWhitepaper = () => {
           }}
         >
           Bitcoin was not created to make day-trading easier. It was created because centrally controlled money can be
-          debased, censored, and confiscated — sometimes slowly through inflation, sometimes suddenly when a third party
+          debased, censored, and confiscated, sometimes slowly through inflation, sometimes suddenly when a third party
           decides you are no longer a customer.
         </Typography>
         <Grid container spacing={3}>
@@ -319,12 +319,12 @@ const BitcoinWhitepaper = () => {
             {
               icon: <GavelIcon sx={{ fontSize: 40, color: colors.greenAccent[500] }} />,
               title: "Arbitrary control",
-              text: "Banks and processors can freeze accounts, block donations, or reverse payments. That power may be used for compliance — but it is still power over your economic life, often without a trial.",
+              text: "Banks and processors can freeze accounts, block donations, or reverse payments. That power may be used for compliance, but it is still power over your economic life, often without a trial.",
             },
             {
               icon: <LockOpenIcon sx={{ fontSize: 40, color: colors.greenAccent[500] }} />,
               title: "Permission",
-              text: "Bitcoin aims to let any two willing parties transact online without asking a gatekeeper first. Participation is voluntary and global — closer to cash than to a membership programme.",
+              text: "Bitcoin aims to let any two willing parties transact online without asking a gatekeeper first. Participation is voluntary and global, closer to cash than to a membership programme.",
             },
           ].map((item) => (
             <Grid item xs={12} md={4} key={item.title}>
@@ -356,7 +356,7 @@ const BitcoinWhitepaper = () => {
             You understand why Bitcoin. Now see where the market is.
           </Typography>
           <Typography sx={{ color: colors.grey[300], mb: 3, lineHeight: 1.7, maxWidth: 560, mx: "auto" }}>
-            Cryptological turns abstract ideas into observable history — risk cycles, on-chain behaviour, and market
+            Cryptological turns abstract ideas into observable history, risk cycles, on-chain behaviour, and market
             structure. Start with free charts; no payment details needed.
           </Typography>
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2} justifyContent="center">
@@ -466,7 +466,7 @@ const BitcoinWhitepaper = () => {
               mx: "auto",
             }}
           >
-            Satoshi's paper is technical. Below is a lay translation of each major part — what problem it solves and why
+            Satoshi's paper is technical. Below is a lay translation of each major part, what problem it solves and why
             it matters for ordinary people.
           </Typography>
           {WHITEPAPER_SECTIONS.map((section) => (
@@ -522,7 +522,7 @@ const BitcoinWhitepaper = () => {
             {
               step: "1",
               title: "You hold a secret key",
-              text: "Like a password that proves you control certain coins. Lose it without a backup and no help desk can recover it — that is the trade-off for self-custody.",
+              text: "Like a password that proves you control certain coins. Lose it without a backup and no help desk can recover it, that is the trade-off for self-custody.",
             },
             {
               step: "2",
@@ -537,7 +537,7 @@ const BitcoinWhitepaper = () => {
             {
               step: "4",
               title: "Everyone updates their copy",
-              text: "Thousands of computers keep the same timeline. You can run one yourself — no invitation needed.",
+              text: "Thousands of computers keep the same timeline. You can run one yourself, no invitation needed.",
             },
           ].map((item) => (
             <Grid item xs={12} sm={6} md={3} key={item.step}>
@@ -583,7 +583,7 @@ const BitcoinWhitepaper = () => {
             </Typography>
           </Stack>
           <Typography sx={{ color: colors.grey[400], textAlign: "center", mb: 4, lineHeight: 1.7 }}>
-            Once you understand Bitcoin's design goal — minimise trusted third parties — you can evaluate other projects
+            Once you understand Bitcoin's design goal, minimise trusted third parties, you can evaluate other projects
             with the same lens instead of treating every ticker as interchangeable.
           </Typography>
           {OTHER_NETWORKS.map((block) => (
@@ -610,7 +610,7 @@ const BitcoinWhitepaper = () => {
             mb: 2,
           }}
         >
-          Honest limits — what Bitcoin does not fix
+          Honest limits, what Bitcoin does not fix
         </Typography>
         <Typography sx={{ color: colors.grey[300], lineHeight: 1.8, mb: 2 }}>
           No system is utopia. Bitcoin does not make you anonymous by default, does not reverse scams for you, and does
@@ -638,7 +638,7 @@ const BitcoinWhitepaper = () => {
             See the data behind the story
           </Typography>
           <Typography sx={{ color: colors.grey[300], mb: 4, lineHeight: 1.7 }}>
-            You understand the philosophy. See the on-chain data that reflects it — risk bands, cycle positioning,
+            You understand the philosophy. See the on-chain data that reflects it, risk bands, cycle positioning,
             and market heat. Free account, no card required.
           </Typography>
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2} justifyContent="center">

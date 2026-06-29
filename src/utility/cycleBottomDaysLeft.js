@@ -1,4 +1,4 @@
-/** Bull market top (Cycle 4) — reference for post-peak bear countdown. */
+/** Bull market top (Cycle 4), reference for post-peak bear countdown. */
 export const CYCLE_TOP_DATE = '2025-10-06';
 
 /**

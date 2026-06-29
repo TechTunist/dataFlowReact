@@ -767,7 +767,7 @@ const WorkbenchChart = ({
         html += `<div style="margin: 1px 0;"><span style="color:${color};">${info?.label || id}${ma}: ${val}</span></div>`;
       });
       const dateStr = tooltipInfo.date.toString().substring(0, 4) === new Date().getFullYear().toString()
-        ? `${tooltipInfo.date} — latest`
+        ? `${tooltipInfo.date}, latest`
         : tooltipInfo.date;
       html += `<div style="margin-top: 4px; opacity: 0.85; font-size: 12px;">${dateStr}</div>`;
       el.innerHTML = html;
@@ -790,7 +790,7 @@ const WorkbenchChart = ({
         return;
       }
 
-      // Build tooltip data (still does work per move — further optimization can pre-build lookup maps per series)
+      // Build tooltip data (still does work per move, further optimization can pre-build lookup maps per series)
       const tooltip = {
         date: param.time,
         values: {},
@@ -1522,11 +1522,11 @@ const WorkbenchChart = ({
                     '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
                   }}
                 >
-                  <MenuItem value="linear">Linear — straight line (y = a + b·x)</MenuItem>
-                  <MenuItem value="logarithmic">Logarithmic — slow growth/decline (y = a + b·ln(x))</MenuItem>
-                  <MenuItem value="polynomial">Polynomial — smooth curve with bends</MenuItem>
-                  <MenuItem value="power">Power — scaling relationship (y = a · x^b)</MenuItem>
-                  <MenuItem value="exponential">Exponential — compound growth (y = a · e^(b·x))</MenuItem>
+                  <MenuItem value="linear">Linear, straight line (y = a + b·x)</MenuItem>
+                  <MenuItem value="logarithmic">Logarithmic, slow growth/decline (y = a + b·ln(x))</MenuItem>
+                  <MenuItem value="polynomial">Polynomial, smooth curve with bends</MenuItem>
+                  <MenuItem value="power">Power, scaling relationship (y = a · x^b)</MenuItem>
+                  <MenuItem value="exponential">Exponential, compound growth (y = a · e^(b·x))</MenuItem>
                 </Select>
               </FormControl>
               {(derivedHook.newDerivedTrendType || 'linear') === 'polynomial' && (
@@ -1546,9 +1546,9 @@ const WorkbenchChart = ({
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
                     }}
                   >
-                    <MenuItem value={2}>Degree 2 — quadratic (one bend)</MenuItem>
-                    <MenuItem value={3}>Degree 3 — cubic (two bends)</MenuItem>
-                    <MenuItem value={4}>Degree 4 — quartic (more flexible)</MenuItem>
+                    <MenuItem value={2}>Degree 2, quadratic (one bend)</MenuItem>
+                    <MenuItem value={3}>Degree 3, cubic (two bends)</MenuItem>
+                    <MenuItem value={4}>Degree 4, quartic (more flexible)</MenuItem>
                   </Select>
                 </FormControl>
               )}
@@ -1866,7 +1866,7 @@ const WorkbenchChart = ({
           </div>
         )}
       </div>
-      {/* Old React tooltip disabled — we now use a high-performance direct-DOM tooltip updated via requestAnimationFrame.
+      {/* Old React tooltip disabled, we now use a high-performance direct-DOM tooltip updated via requestAnimationFrame.
           This enables smooth, constant (per-frame) updates even with heavy long-series data like SP500 + many macros. */}
       {/* {!isDashboard && tooltipData && ... (old React tooltip removed for perf) } */}
       {!isDashboard && explanation && (

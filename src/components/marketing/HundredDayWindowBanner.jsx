@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { useData } from '../../DataContext';
 import { getCycleBottomDaysLeft } from '../../utility/cycleBottomDaysLeft';
 
-/** Fixed height offsets — keep in sync with SplashNavBar `topOffset`. */
+/** Fixed height offsets, keep in sync with SplashNavBar `topOffset`. */
 export const HUNDRED_DAY_WINDOW_BANNER_HEIGHT = { xs: 40, sm: 44 };
 
 const HundredDayWindowBanner = ({ colors, linkTo = '/100-day-window' }) => {
@@ -48,7 +48,7 @@ const HundredDayWindowBanner = ({ colors, linkTo = '/100-day-window' }) => {
       aria-live="polite"
       aria-label={
         linkTo
-          ? `${daysLeft} days to cycle bottom — learn about the 100-day window`
+          ? `${daysLeft} days to cycle bottom, learn about the 100-day window`
           : `${daysLeft} days to cycle bottom`
       }
       sx={{ ...bannerSx, ...interactiveSx }}

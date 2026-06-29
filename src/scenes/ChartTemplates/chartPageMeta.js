@@ -119,7 +119,7 @@ export const getTitleAndSubtitle = (pathname, isMobile = false) => {
     case "/market-heat-index":
       return { title: "Market Heat Index", subtitle: isMobile ? "Tunable multi-factor market heat" : "Live tunable composite of MVRV, Mayer, Risk, F&G, PiCycle, Alt Season" };
     case "/bitcoin-floor-echo":
-      return { title: "Bitcoin Floor Echo", subtitle: isMobile ? "Cross-dataset bottom confluence" : "Capitulation confluence index — lows echo prior cycle bottoms" };
+      return { title: "Bitcoin Floor Echo", subtitle: isMobile ? "Cross-dataset bottom confluence" : "Capitulation confluence index, lows echo prior cycle bottoms" };
     case "/fear-and-greed":
       return { title: "Fear & Greed", subtitle: "Market Sentiment" };
     case "/logarithmic-regression":
@@ -287,7 +287,7 @@ export const getTitleAndSubtitle = (pathname, isMobile = false) => {
     case "/total3":
       return { title: "Total3", subtitle: "Total Crypto Market Cap Minus BTC & ETH" };
     case "/tail-curvature":
-      return { title: "Tail Curvature", subtitle: isMobile ? "Asymmetric Quantiles" : "Asymmetric Tail Curvature in Bitcoin Price Quantiles — Cowen (2026)" };
+      return { title: "Tail Curvature", subtitle: isMobile ? "Asymmetric Quantiles" : "Asymmetric Tail Curvature in Bitcoin Price Quantiles, Cowen (2026)" };
     case "/dynamic-dca":
       return { title: "Dynamic DCA Simulator", subtitle: isMobile ? "Risk & Tx backtesting" : "Compare dynamic DCA vs lump sum using Risk Metric or Tx Tension" };
     default:

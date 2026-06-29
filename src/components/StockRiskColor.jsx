@@ -82,7 +82,7 @@ const StockRiskColor = ({ isDashboard = false }) => {
   );
 
   useEffect(() => {
-    // [] is truthy — only skip fetch when we already have rows
+    // [] is truthy, only skip fetch when we already have rows
     if (!altcoinData[selectedStock]?.length) {
       fetchAltcoinData(selectedStock);
     }

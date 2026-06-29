@@ -182,7 +182,7 @@ const SplashRiskColorPreview = () => {
               mb: 2,
             }}
           >
-            Try the Risk Colour chart — live in your browser
+            Try the Risk Colour chart, live in your browser
           </Typography>
           <Typography sx={{ color: colors.grey[300], maxWidth: 720, mx: 'auto', lineHeight: 1.7 }}>
             This is a <strong>Premium</strong> chart (not on the free plan). Pan, zoom, and toggle risk
@@ -253,7 +253,7 @@ const SplashRiskColorPreview = () => {
               '&:hover': { backgroundColor: colors.greenAccent[400] },
             }}
           >
-            Create free account — 30 seconds
+            Create free account, 30 seconds
           </Button>
           <Button
             component={TrackedSignupLink}

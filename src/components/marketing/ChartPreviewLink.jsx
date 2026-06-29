@@ -4,7 +4,7 @@ import { Box, Link, Typography } from '@mui/material';
 import { trackCtaClick } from '../../utils/plausibleEvents';
 import { gallerySectionHref } from '../../config/gallerySectionUtils';
 
-/** Gallery screenshot tile — full capture visible, links to chart gallery section. */
+/** Gallery screenshot tile, full capture visible, links to chart gallery section. */
 export default function ChartPreviewLink({ image, alt, title, gallerySection, colors }) {
   return (
     <Link

@@ -290,7 +290,7 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
   // 'trigger-only' = only buy when a buy tier is hit (freq then acts as cooldown since last buy). No automatic "normal" buys.
   const [buyStrategy, setBuyStrategy] = useState('periodic-boost');
 
-  // When false, sell tiers are ignored — portfolio stays 100% in BTC (no exit/de-risk strategy).
+  // When false, sell tiers are ignored, portfolio stays 100% in BTC (no exit/de-risk strategy).
   const [enableDynamicSelling, setEnableDynamicSelling] = useState(true);
 
   // Persisted results per strategy so switching chips reloads the previous run's chart/portfolio curve for visual comparison
@@ -443,7 +443,7 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
     altcoinSeasonTimeseriesData,
   ]);
 
-  // Tx Tension ratio range for the active smoothing — drives slider bounds and metric chart Y-axis
+  // Tx Tension ratio range for the active smoothing, drives slider bounds and metric chart Y-axis
   const txIndicatorRange = useMemo(() => {
     if (!isTx || fullChartData.length === 0) {
       return computeTxIndicatorRange([]);
@@ -585,7 +585,7 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
     return 'Bitcoin Risk Metric';
   }, [isTx, isHeat, isRoiRisk]);
 
-  // Core backtesting engine — pure computation for a single buy mode + selling setting
+  // Core backtesting engine, pure computation for a single buy mode + selling setting
   const computeBacktestResult = useCallback((buyMode, sellingEnabled) => {
     if (simSeriesData.length === 0) return null;
 
@@ -881,11 +881,11 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
   const txLevelDecimals = txIndicatorRange.max > 100 ? 0 : 1;
 
   const currentTiersDisplay = isTx
-    ? `MVRV/Tx Ratio (${txSmoothing}) — observed range ~${txIndicatorRange.dataMin.toFixed(txLevelDecimals)}–${txIndicatorRange.dataMax.toFixed(txLevelDecimals)}; tier sliders span 0–${txIndicatorRange.max}. Lower = oversold/buy; higher = overbought/sell.`
+    ? `MVRV/Tx Ratio (${txSmoothing}), observed range ~${txIndicatorRange.dataMin.toFixed(txLevelDecimals)}–${txIndicatorRange.dataMax.toFixed(txLevelDecimals)}; tier sliders span 0–${txIndicatorRange.max}. Lower = oversold/buy; higher = overbought/sell.`
     : isHeat
-      ? `Market Heat Index (0-100) — synced with /market-heat-index (${getMarketHeatSmaLabel(heatSmaPeriod)} smoothing${heatStretchToFullRange ? ', stretched to 0–100' : ''}). Low = cold/oversold; high = hot/overbought.`
+      ? `Market Heat Index (0-100), synced with /market-heat-index (${getMarketHeatSmaLabel(heatSmaPeriod)} smoothing${heatStretchToFullRange ? ', stretched to 0–100' : ''}). Low = cold/oversold; high = hot/overbought.`
       : isRoiRisk
-        ? 'Running ROI Risk (0–1) — same normalized 1Y ROI signal as /running-roi-risk. Low = oversold/buy; high = overbought/sell.'
+        ? 'Running ROI Risk (0–1), same normalized 1Y ROI signal as /running-roi-risk. Low = oversold/buy; high = overbought/sell.'
         : 'Risk (0 = low risk / good entry, 1 = high risk)';
 
   // Note: getSimulatorLevels was previously used to overlay tiers on the embedded risk/tx charts.
@@ -988,7 +988,7 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
       prevBuy = tier.level;
     });
 
-    // Sell zones (higher = stronger sell) — greyed when exit strategy is Hold BTC Only
+    // Sell zones (higher = stronger sell), greyed when exit strategy is Hold BTC Only
     const sellActive = enableDynamicSelling;
     let prevSell = null;
     sellsSortedDesc.forEach((tier, idx) => {
@@ -1431,7 +1431,7 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
               <AccordionDetails>
                 {buyTiers.map((tier, idx) => (
                   <Box key={idx} sx={{ mb: 2, p: 1.5, background: colors.primary[500], borderLeft: `4px solid ${colors.greenAccent[500]}`, borderRadius: 1 }}>
-                    <Typography variant="caption" sx={{ color: colors.greenAccent[200] }}>{tier.label || `Tier ${idx + 1}`} — {Number(tier.level).toFixed(isTx ? txLevelDecimals : 2)}</Typography>
+                    <Typography variant="caption" sx={{ color: colors.greenAccent[200] }}>{tier.label || `Tier ${idx + 1}`}, {Number(tier.level).toFixed(isTx ? txLevelDecimals : 2)}</Typography>
                     <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mt: 0.5 }}>
                       <Box sx={{ flex: 1 }}>
                         <Typography variant="caption" sx={{ color: colors.grey[200] }}>Trigger Level</Typography>
@@ -1480,7 +1480,7 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
               <AccordionDetails>
                 {sellTiers.map((tier, idx) => (
                   <Box key={idx} sx={{ mb: 2, p: 1.5, background: colors.primary[500], borderLeft: `4px solid ${colors.blueAccent[400]}`, borderRadius: 1 }}>
-                    <Typography variant="caption" sx={{ color: colors.blueAccent[200] }}>{tier.label || `Tier ${idx + 1}`} — {Number(tier.level).toFixed(isTx ? txLevelDecimals : 2)}</Typography>
+                    <Typography variant="caption" sx={{ color: colors.blueAccent[200] }}>{tier.label || `Tier ${idx + 1}`}, {Number(tier.level).toFixed(isTx ? txLevelDecimals : 2)}</Typography>
                     <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mt: 0.5 }}>
                       <Box sx={{ flex: 1 }}>
                         <Typography variant="caption" sx={{ color: colors.grey[200] }}>Trigger Level</Typography>
@@ -1520,8 +1520,8 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
                 </Button>
                 <Typography variant="caption" sx={{ display: 'block', mt: 1, color: colors.grey[400] }}>
                   Higher tiers take precedence when multiple levels are triggered.
-                  {!enableDynamicSelling && hasResultsForCurrentStrategy && ' (Viewing Hold BTC Only results — toggle Selling On above to compare exit strategy benefit.)'}
-                  {!enableDynamicSelling && !hasResultsForCurrentStrategy && ' (Hold BTC Only selected — run backtest to compare against Selling On.)'}
+                  {!enableDynamicSelling && hasResultsForCurrentStrategy && ' (Viewing Hold BTC Only results, toggle Selling On above to compare exit strategy benefit.)'}
+                  {!enableDynamicSelling && !hasResultsForCurrentStrategy && ' (Hold BTC Only selected, run backtest to compare against Selling On.)'}
                 </Typography>
               </AccordionDetails>
             </Accordion>
@@ -1650,7 +1650,7 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
               Green = capital you put in over time. Blue = total portfolio value at each point
               {simulationResults?.sellStrategyEnabled
                 ? ' (cash from sells stays flat in USD + remaining BTC moves with price).'
-                : ' (100% BTC — entire portfolio moves with Bitcoin price).'}
+                : ' (100% BTC, entire portfolio moves with Bitcoin price).'}
               {' '}Toggle buy mode and exit strategy above to compare all cached results instantly.
             </Typography>
 
@@ -1710,7 +1710,7 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
                 </Box>
                 <Typography variant="caption" sx={{ color: colors.grey[500], mt: 0.5, display: 'block', fontSize: '0.65rem' }}>
                   Green/teal bands = buy boost zones. Red bands = active sell / take-profit zones.
-                  {!enableDynamicSelling && ' Grey bands = sell tiers (inactive while Hold BTC Only is selected — still editable via sliders, turn red when Selling On).'}
+                  {!enableDynamicSelling && ' Grey bands = sell tiers (inactive while Hold BTC Only is selected, still editable via sliders, turn red when Selling On).'}
                   {' '}Update tiers on the left and re-run to see impact on the portfolio chart above.
                 </Typography>
               </Box>
@@ -1897,7 +1897,7 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
                 <Box sx={{ mb: 2, p: 1.5, backgroundColor: colors.primary[500], border: `1px solid ${colors.greenAccent[500]}`, borderRadius: 1 }}>
                   <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
                     <Typography variant="caption" sx={{ color: colors.greenAccent[300], fontWeight: 500 }}>
-                      {simulationResults.buyModeLabel || buyModeLabel} — {simulationResults.strategy}
+                      {simulationResults.buyModeLabel || buyModeLabel}, {simulationResults.strategy}
                     </Typography>
                     <Chip size="small" label={simulationResults.sellStrategyEnabled ? 'Exit: Selling On' : 'Exit: Hold BTC Only'} sx={{ fontSize: '0.65rem', height: 20 }} />
                   </Box>
@@ -1939,7 +1939,7 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
               </Box>
 
               <Button onClick={() => setShowTrades(!showTrades)} sx={{ mb: 2 }}>
-                {showTrades ? 'Hide' : 'Show'} Trade Log — {simulationResults.buyModeLabel || buyModeLabel} ({simulationResults.transactions.length} trades)
+                {showTrades ? 'Hide' : 'Show'} Trade Log, {simulationResults.buyModeLabel || buyModeLabel} ({simulationResults.transactions.length} trades)
               </Button>
 
               {showTrades && simulationResults.transactions.length > 0 && (
@@ -1988,7 +1988,7 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
 
       <UnderChartRow>
         <Typography variant="caption" sx={{ color: colors.grey[400] }}>
-          Data is loaded client-side. Configure buy/sell tiers, set parameters, then run the backtest. All four combinations are computed — toggle buy mode and exit strategy anytime to compare. Hold BTC Only: portfolio tracks Bitcoin price entirely. Selling On: cash from sells is price-stable; only remaining BTC moves with price — showing the benefit of taking profits at overbought levels.
+          Data is loaded client-side. Configure buy/sell tiers, set parameters, then run the backtest. All four combinations are computed, toggle buy mode and exit strategy anytime to compare. Hold BTC Only: portfolio tracks Bitcoin price entirely. Selling On: cash from sells is price-stable; only remaining BTC moves with price, showing the benefit of taking profits at overbought levels.
         </Typography>
       </UnderChartRow>
     </Box>

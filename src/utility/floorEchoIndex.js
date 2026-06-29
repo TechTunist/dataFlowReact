@@ -4,7 +4,7 @@
  * Novel cross-workbench capitulation confluence indicator for Bitcoin cycle bottoms.
  * Combines crypto on-chain, sentiment, macro stress, dominance/alt-season, network
  * activity, and crypto-equity (MSTR vs BTC) into a single oscillator that tends to
- * bottom at prior cycle lows — when multiple independent datasets capitulate together.
+ * bottom at prior cycle lows, when multiple independent datasets capitulate together.
  *
  * Low FEI ≈ floor echo zone (potential cycle bottom forming).
  * High FEI ≈ recovery / mid-cycle.
@@ -12,7 +12,7 @@
 
 import { normalizeDateKey } from './marketHeatUtils';
 
-/** Crypto-native inputs only — macro/MSTR fire early in bears (e.g. 2022) before price floors. */
+/** Crypto-native inputs only, macro/MSTR fire early in bears (e.g. 2022) before price floors. */
 export const FLOOR_ECHO_WEIGHTS = {
   fearGreed: 0.18,
   onChainRisk: 0.30,
@@ -49,7 +49,7 @@ export function rollingPercentileRank(values, index, window = FLOOR_ECHO_ROLLING
   return below / (slice.length - 1);
 }
 
-/** Expanding (historical) percentile rank — compares value to all prior observations. */
+/** Expanding (historical) percentile rank, compares value to all prior observations. */
 export function expandingPercentileRank(values, index) {
   const slice = values.slice(0, index + 1).filter((v) => v != null && isFinite(v));
   const current = values[index];
@@ -59,7 +59,7 @@ export function expandingPercentileRank(values, index) {
   return below / (slice.length - 1);
 }
 
-/** Full-sample percentile rank — aligns extremes across cycles on the complete series. */
+/** Full-sample percentile rank, aligns extremes across cycles on the complete series. */
 export function globalPercentileRank(values, index) {
   const current = values[index];
   if (current == null || !isFinite(current)) return null;
@@ -69,7 +69,7 @@ export function globalPercentileRank(values, index) {
   return below / (valid.length - 1);
 }
 
-/** Fixed reference bands — cycle bottoms cluster near these after historical calibration. */
+/** Fixed reference bands, cycle bottoms cluster near these after historical calibration. */
 export const FLOOR_ECHO_FIXED_FLOOR_BAND = 12;
 export const FLOOR_ECHO_FIXED_ECHO_BAND = 20;
 

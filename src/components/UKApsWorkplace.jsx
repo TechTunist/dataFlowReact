@@ -117,9 +117,9 @@ const UKApsWorkplace = ({ isDashboard = false }) => {
         <div className="under-chart" style={{ flexShrink: 0, padding: '10px 0 20px 0', display: 'block' }}>
           {data.length > 0 && <div style={{ marginBottom: '8px', color: colors.grey[100], fontSize: '15px', textAlign: 'left' }}>Current UK APS Workplace: <span style={{ color: '#ec4899', fontWeight: 600 }}>{formatVal(data[data.length-1]?.value)}</span></div>}
           <div style={{ color: colors.grey[100], fontSize: '15px', lineHeight: 1.4, textAlign: 'left' }}>
-            This is workplace-based employment from the Annual Population Survey — it counts people by where they work rather than where they live (residence-based). Toggle gender.
+            This is workplace-based employment from the Annual Population Survey, it counts people by where they work rather than where they live (residence-based). Toggle gender.
             <br /><br />
-            Explanation: it gives a picture of job locations and commuting patterns. Strong workplace numbers in cities or regions show where economic activity is concentrated. In the app it complements the other UK labour charts so you can see a fuller, consistent view of employment strength — again, a key ingredient when judging the UK economic tailwinds or headwinds for risk markets.
+            Explanation: it gives a picture of job locations and commuting patterns. Strong workplace numbers in cities or regions show where economic activity is concentrated. In the app it complements the other UK labour charts so you can see a fuller, consistent view of employment strength, again, a key ingredient when judging the UK economic tailwinds or headwinds for risk markets.
           </div>
           <div style={{ marginTop: '6px', fontSize: '12px', color: '#888', textAlign: 'left' }}>Source: Nomis (ONS). Consistent quarterly series.</div>
         </div>

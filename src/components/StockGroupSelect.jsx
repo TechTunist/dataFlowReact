@@ -5,7 +5,7 @@ import { STOCK_GROUPS } from '../config/stocksConfig';
 /**
  * Grouped stock dropdown used by StockPrice, StockRisk, and StockRiskColor.
  *
- * MUI Select only recognises direct MenuItem children — do NOT wrap options in
+ * MUI Select only recognises direct MenuItem children, do NOT wrap options in
  * Fragment or other containers or the select will see zero valid values.
  */
 const StockGroupSelect = ({

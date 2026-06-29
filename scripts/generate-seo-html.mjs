@@ -87,7 +87,7 @@ function buildStaticBody(page) {
   return `
     <main id="seo-static-content" aria-hidden="true">
       <header>
-        <p><strong>Cryptological</strong> — Bitcoin &amp; crypto analytics</p>
+        <p><strong>Cryptological</strong>, Bitcoin &amp; crypto analytics</p>
         <h1>${escapeHtml(page.h1)}</h1>
       </header>
       ${sections}

@@ -12,11 +12,17 @@ import {
   InputAdornment,
   Chip,
   Divider,
+  FormControlLabel,
+  Checkbox,
 } from "@mui/material";
 import { tokens } from "../../theme";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import { trackSignupCompleted, trackSignupStarted } from "../../utils/plausibleEvents";
+import {
+  applyNewsletterOptIn,
+  setPendingNewsletterOptIn,
+} from "../../utils/newsletterOptIn";
 
 const PREMIUM_DEST = "/subscription?checkout=1";
 const FREE_DEST = "/dashboard";
@@ -38,9 +44,10 @@ export default function LoginSignup() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [passwordError, setPasswordError] = useState("");
+  const [newsletterOptIn, setNewsletterOptIn] = useState(false);
   const { signUp, setActive } = useSignUp();
   const { signIn } = useSignIn();
-  const { isLoaded, isSignedIn } = useAuth();
+  const { isLoaded, isSignedIn, getToken } = useAuth();
   const navigate = useNavigate();
 
   const plan = useMemo(() => new URLSearchParams(location.search).get("plan"), [location.search]);
@@ -50,14 +57,14 @@ export default function LoginSignup() {
 
   const planChipLabel = isSignUp
     ? isPremiumIntent
-      ? "Premium — payment after signup"
+      ? "Premium, payment after signup"
       : "Free account"
     : null;
 
   const planHelperText = isSignUp
     ? isPremiumIntent
       ? "After verifying your email you'll go straight to secure Stripe checkout."
-      : "Access 15+ free charts instantly — no card required."
+      : "Access 15+ free charts instantly, no card required."
     : null;
 
   useEffect(() => {
@@ -69,6 +76,9 @@ export default function LoginSignup() {
   const handleGoogle = async () => {
     setIsLoading(true);
     trackSignupStarted("google", isPremiumIntent ? "premium" : "free");
+    if (isSignUp) {
+      setPendingNewsletterOptIn(newsletterOptIn);
+    }
     try {
       const redirectUrlComplete = isSignUp
         ? isPremiumIntent
@@ -136,6 +146,13 @@ export default function LoginSignup() {
       const result = await signUp.attemptEmailAddressVerification({ code });
       if (result.status === "complete") {
         await setActive({ session: result.createdSessionId });
+        if (newsletterOptIn) {
+          try {
+            await applyNewsletterOptIn(getToken, true);
+          } catch (optInErr) {
+            console.error("Newsletter opt-in failed:", optInErr);
+          }
+        }
         trackSignupCompleted(isPremiumIntent ? "premium" : "free");
         navigate(postSignupDestination);
       } else {
@@ -273,7 +290,7 @@ export default function LoginSignup() {
   if (isLoaded && isSignedIn) {
     return (
       <AppBootScreen
-        message={isPremiumIntent ? "Taking you to checkout..." : "You're in — loading your dashboard..."}
+        message={isPremiumIntent ? "Taking you to checkout..." : "You're in, loading your dashboard..."}
       />
     );
   }
@@ -376,6 +393,23 @@ export default function LoginSignup() {
               <Typography variant="body1" sx={{ color: colors.grey[300], marginBottom: "24px", lineHeight: 1.6 }}>
                 {planHelperText}
               </Typography>
+            )}
+
+            {isSignUp && (
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={newsletterOptIn}
+                    onChange={(e) => setNewsletterOptIn(e.target.checked)}
+                    sx={{
+                      color: colors.grey[400],
+                      "&.Mui-checked": { color: colors.greenAccent[500] },
+                    }}
+                  />
+                }
+                label="Send me the weekly newsletter (optional)"
+                sx={{ color: colors.grey[300], mb: 2, display: "flex", alignItems: "flex-start" }}
+              />
             )}
 
             {isSignUp && (

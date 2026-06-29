@@ -102,7 +102,7 @@ const fetchFreshAndUpdate = async ({
         if (response.status === 403) {
           notifySubscriptionRequired();
         }
-        return; // graceful — use whatever is in state/cache
+        return; // graceful, use whatever is in state/cache
       }
       throw new Error(`HTTP ${response.status}`);
     }
@@ -198,7 +198,7 @@ const fetchWithCache = async ({
         }
 
         // Gaps or long flat runs in the middle of the series (e.g. Polygon Oct–Jun corruption).
-        // Latest date alone is not enough — invalidate and refetch without clearing IDB manually.
+        // Latest date alone is not enough, invalidate and refetch without clearing IDB manually.
         if (shouldReuseCache && shouldInvalidateDailyCache(cachedData, effectiveUseDateCheck)) {
           const integrity = detectTimeSeriesIntegrityIssues(cachedData, { daily: true });
           logger.log(`[Cache] INTEGRITY miss for ${cacheId}: ${integrity.reasons.join(', ')}`);
@@ -216,7 +216,7 @@ const fetchWithCache = async ({
 
         // Stale-while-revalidate: serve instantly, but only bg-revalidate if the *entry* is older than half TTL
         // (reduces pointless re-fetches compared to always-reval on any !date-hit).
-        // Skip serving corrupt/incomplete series — force a blocking refetch instead.
+        // Skip serving corrupt/incomplete series, force a blocking refetch instead.
         const cacheIntegrityBad = shouldInvalidateDailyCache(
           Array.isArray(cached.data) ? cachedData : cached.data,
           effectiveUseDateCheck
@@ -264,7 +264,7 @@ const fetchWithCache = async ({
           // - free-tier user hitting a premium-only endpoint (e.g. mvrv, altcoin-season, sp500-div-unrate when MarketOverview or other paid pages are involved)
           // The backend PremiumDataGateMiddleware returns 403 with code 'subscription_required' for the latter.
           // We treat them as non-retriable here; callers (esp. preload vs on-demand premium components) should handle gracefully.
-          logger.warn(`[Auth] ${response.status} on ${apiUrl} — token not yet available, dev bypass inactive, or subscription gate (free user on premium data)`);
+          logger.warn(`[Auth] ${response.status} on ${apiUrl}, token not yet available, dev bypass inactive, or subscription gate (free user on premium data)`);
           if (response.status === 403) {
             notifySubscriptionRequired();
           }
@@ -599,7 +599,7 @@ export const DataProvider = ({ children }) => {
 
   const fetchDifferenceData = useCallback(async () => {
     if (isDifferenceDataFetched) return;
-    // preloadComplete guard removed — differenceData is now demand-loaded only (Phase 2 final trim)
+    // preloadComplete guard removed, differenceData is now demand-loaded only (Phase 2 final trim)
     await fetchWithCache({
       cacheId: 'differenceData',
       apiUrl: apiUrl('/api/total/difference/'),
@@ -635,7 +635,7 @@ export const DataProvider = ({ children }) => {
 
   const fetchTotal2Data = useCallback(async () => {
     if (isTotal2DataFetched) return;
-    // preloadComplete guard removed — total2Data is now demand-loaded only (Phase 2 final trim)
+    // preloadComplete guard removed, total2Data is now demand-loaded only (Phase 2 final trim)
     await fetchWithCache({
       cacheId: 'total2Data',
       apiUrl: apiUrl('/api/total2/'),
@@ -667,7 +667,7 @@ export const DataProvider = ({ children }) => {
 
   const fetchTotal3Data = useCallback(async () => {
     if (isTotal3DataFetched) return;
-    // preloadComplete guard removed — total3Data is now demand-loaded only (Phase 2 final trim)
+    // preloadComplete guard removed, total3Data is now demand-loaded only (Phase 2 final trim)
     await fetchWithCache({
       cacheId: 'total3Data',
       apiUrl: apiUrl('/api/total3/'),
@@ -728,7 +728,7 @@ export const DataProvider = ({ children }) => {
 
     const fetchAltcoinSeasonTimeseriesData = useCallback(async () => {
       if (isAltcoinSeasonTimeseriesDataFetched) return;
-      // preloadComplete guard removed — this dataset is now demand-loaded only
+      // preloadComplete guard removed, this dataset is now demand-loaded only
       await fetchWithCache({
         cacheId: 'altcoinSeasonTimeseriesData',
         apiUrl: apiUrl('/api/altcoin-season-index-timeseries/'),
@@ -876,7 +876,7 @@ export const DataProvider = ({ children }) => {
 
   const fetchFedBalanceData = useCallback(async () => {
     if (isFedBalanceDataFetched) return;
-    // preloadComplete guard removed — this dataset is now demand-loaded only
+    // preloadComplete guard removed, this dataset is now demand-loaded only
     await fetchWithCache({
       cacheId: 'fedBalanceData',
       apiUrl: apiUrl('/api/fed-balance/'),
@@ -1042,7 +1042,7 @@ const fetchDominanceData = useCallback(async () => {
 
   const fetchMacroData = useCallback(async () => {
     if (isMacroDataFetched) return;
-    // preloadComplete guard removed — macroData is now demand-loaded only (Phase 2)
+    // preloadComplete guard removed, macroData is now demand-loaded only (Phase 2)
     await fetchWithCache({
       cacheId: 'macroData',
       apiUrl: apiUrl('/api/combined-macro-data/'),
@@ -1065,7 +1065,7 @@ const fetchDominanceData = useCallback(async () => {
 
   const fetchInflationData = useCallback(async () => {
     if (isInflationDataFetched) return;
-    // preloadComplete guard removed — this dataset is now demand-loaded only
+    // preloadComplete guard removed, this dataset is now demand-loaded only
     await fetchWithCache({
       cacheId: 'inflationData',
       apiUrl: apiUrl('/api/us-inflation/'),
@@ -1091,7 +1091,7 @@ const fetchDominanceData = useCallback(async () => {
 
   const fetchInitialClaimsData = useCallback(async () => {
     if (isInitialClaimsDataFetched) return;
-    // preloadComplete guard removed — this dataset is now demand-loaded only
+    // preloadComplete guard removed, this dataset is now demand-loaded only
     await fetchWithCache({
       cacheId: 'initialClaimsData',
       apiUrl: apiUrl('/api/initial-claims/'),
@@ -1117,7 +1117,7 @@ const fetchDominanceData = useCallback(async () => {
 
   const fetchInterestData = useCallback(async () => {
     if (isInterestDataFetched) return;
-    // preloadComplete guard removed — this dataset is now demand-loaded only
+    // preloadComplete guard removed, this dataset is now demand-loaded only
     await fetchWithCache({
       cacheId: 'interestData',
       apiUrl: apiUrl('/api/us-interest/'),
@@ -1143,7 +1143,7 @@ const fetchDominanceData = useCallback(async () => {
 
   const fetchUnemploymentData = useCallback(async () => {
     if (isUnemploymentDataFetched) return;
-    // preloadComplete guard removed — this dataset is now demand-loaded only
+    // preloadComplete guard removed, this dataset is now demand-loaded only
     await fetchWithCache({
       cacheId: 'unemploymentData',
       apiUrl: apiUrl('/api/us-unemployment/'),
@@ -1202,7 +1202,7 @@ const fetchDominanceData = useCallback(async () => {
 
   const fetchTxCountCombinedData = useCallback(async () => {
     if (isTxCountCombinedDataFetched) return;
-    // preloadComplete guard removed — this dataset is now demand-loaded only
+    // preloadComplete guard removed, this dataset is now demand-loaded only
     await fetchWithCache({
       cacheId: 'txCountCombinedData',
       apiUrl: apiUrl('/api/tx-macro/'),
@@ -1270,7 +1270,7 @@ const fetchDominanceData = useCallback(async () => {
 
   const fetchTxMvrvData = useCallback(async () => {
     if (isTxMvrvDataFetched) return;
-    // preloadComplete guard removed — this dataset is now demand-loaded only
+    // preloadComplete guard removed, this dataset is now demand-loaded only
     await fetchWithCache({
       // v2: cache bust after realized_cap derivation fix (CapRealUSD no longer updated in DB)
       cacheId: 'txMvrvData_v2',
@@ -1449,7 +1449,7 @@ const fetchDominanceData = useCallback(async () => {
 
   const fetchAltcoinSeasonData = useCallback(async () => {
     if (isAltcoinSeasonDataFetched) return;
-    // preloadComplete guard removed — altcoinSeasonData is now demand-loaded only (Phase 2)
+    // preloadComplete guard removed, altcoinSeasonData is now demand-loaded only (Phase 2)
     await fetchWithCache({
       cacheId: 'altcoinSeasonData',
       apiUrl: apiUrl('/api/altcoin-season-index/'),

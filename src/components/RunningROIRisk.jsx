@@ -776,7 +776,7 @@ const RunningROIRisk = ({ isDashboard = false }) => {
             <Box>
               <Typography variant="caption" sx={{ color: buyZoneAccent, display: 'block', mb: 0.25 }}>
                 Buy signal{isRiskMetricView ? ' (risk)' : ' (raw)'}: <b>{buySignalThreshold.toFixed(isRiskMetricView ? 2 : 2)}{isRiskMetricView ? '' : 'x'}</b>
-                {' — '}
+                {', '}
                 <b style={{ color: inBuyZone ? buyZoneAccent : colors.grey[400] }}>
                   {inBuyZone ? 'BUY' : 'NO BUY'}
                 </b>
@@ -800,7 +800,7 @@ const RunningROIRisk = ({ isDashboard = false }) => {
                 Sell signal (ROI Risk): <b>{sellSignalThreshold.toFixed(2)}</b>
                 {isRiskMetricView && (
                   <>
-                    {' — '}
+                    {', '}
                     <b style={{ color: inSellZone ? sellZoneAccent : colors.grey[400] }}>
                       {inSellZone ? 'SELL' : 'NO SELL'}
                     </b>

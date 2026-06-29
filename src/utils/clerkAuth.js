@@ -64,7 +64,7 @@ export function hasClerkTokenGetter() {
  * Builds Authorization headers for our backend API calls.
  * Always attempts to include a fresh Clerk JWT so that protected (and future-locked)
  * data endpoints succeed and allow the IndexedDB cache layer to populate.
- * Falls back to {} (no auth) — backend may still allow via dev bypass.
+ * Falls back to {} (no auth), backend may still allow via dev bypass.
  * This is the single source for attaching auth to *all* our data fetches (central + customs).
  */
 export async function getAuthHeaders(options = {}) {

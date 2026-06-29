@@ -9,7 +9,7 @@
  * This eliminates a common source of duplicate network requests and race
  * conditions between eager preload and demand-loaded chart fetches.
  *
- * Pure utility with zero dependencies — safe to import from DataContext.
+ * Pure utility with zero dependencies, safe to import from DataContext.
  */
 export async function waitForPreloadIfNeeded(preloadComplete, isAlreadyFetchedFn) {
   if (preloadComplete) {

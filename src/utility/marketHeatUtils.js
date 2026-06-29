@@ -279,7 +279,7 @@ export function stretchMarketHeatRange(smoothedData, stretchToFullRange = false)
 }
 
 /**
- * Full Market Heat Index pipeline — matches /market-heat-index chart series.
+ * Full Market Heat Index pipeline, matches /market-heat-index chart series.
  */
 export function computeMarketHeatPipeline({
   btcData = [],

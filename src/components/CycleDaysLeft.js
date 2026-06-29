@@ -101,7 +101,7 @@ const CycleDaysLeft = ({ onlyBottom = false }) => {
   }, [averageCycleLengths, btcData, cycleDates]);
 
   if (onlyBottom) {
-    // Single "Days left til bottom" box — based on average time from bull market top to bottom (matches Market Overview)
+    // Single "Days left til bottom" box, based on average time from bull market top to bottom (matches Market Overview)
     return (
       <Box
         sx={{

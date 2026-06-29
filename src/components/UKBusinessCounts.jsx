@@ -120,7 +120,7 @@ const UKBusinessCounts = ({ isDashboard = false }) => {
           <div style={{ color: colors.grey[100], fontSize: '15px', lineHeight: 1.4, textAlign: 'left' }}>
             This shows the number of businesses (enterprises) operating in the UK, broken down by industry and size where available.
             <br /><br />
-            Explanation: a rising count of businesses usually means entrepreneurship and economic vitality — new companies are forming and the private sector is expanding. Falling counts can mean closures and tougher trading conditions. In the app this is another real-economy pulse check: healthy business formation supports jobs and growth, which in turn tends to be positive for broader market and crypto risk appetite.
+            Explanation: a rising count of businesses usually means entrepreneurship and economic vitality, new companies are forming and the private sector is expanding. Falling counts can mean closures and tougher trading conditions. In the app this is another real-economy pulse check: healthy business formation supports jobs and growth, which in turn tends to be positive for broader market and crypto risk appetite.
           </div>
           <div style={{ marginTop: '6px', fontSize: '12px', color: '#888', textAlign: 'left' }}>Source: Nomis (ONS). Consistent annual series.</div>
         </div>

@@ -250,7 +250,7 @@ const STOCK_COLOR_PALETTE = [
   '#00BBF9', '#00F5D4', '#FEE440', '#F15BB5',
 ];
 
-// Available Stock series — daily OHLCV via fetchAltcoinData (same cache layer as altcoins)
+// Available Stock series, daily OHLCV via fetchAltcoinData (same cache layer as altcoins)
 export const availableStockSeries = STOCKS.reduce((acc, stock, index) => {
   acc[stock.value] = {
     label: stock.label,

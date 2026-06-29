@@ -44,7 +44,7 @@ export const RETAIL_SENTIMENT_STOCKS = [
   { label: 'Palantir (PLTR)', value: 'PLTR' },
 ];
 
-/** @deprecated Use STOCK_GROUPS — kept for any legacy imports */
+/** @deprecated Use STOCK_GROUPS, kept for any legacy imports */
 export const OTHER_STOCKS = [...CRYPTO_ADJACENT_STOCKS, ...RETAIL_SENTIMENT_STOCKS];
 
 export const STOCK_GROUPS = [

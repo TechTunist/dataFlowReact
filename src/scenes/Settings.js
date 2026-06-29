@@ -12,7 +12,7 @@ const Settings = () => {
   const { user, isSignedIn } = useUser();
   const { getToken } = useAuth();
   const navigate = useNavigate();
-  const [emailNotifications, setEmailNotifications] = useState(true);
+  const [emailNotifications, setEmailNotifications] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -85,11 +85,12 @@ const Settings = () => {
                 }}
               />
             }
-            label="Weekly Newsletter"
+            label="Weekly newsletter"
             sx={{ color: colors.grey[100] }}
           />
-          <Typography variant="body2" sx={{ color: colors.grey[100], ml: 4 }}>
-            Receive our weekly newsletter with market insights and updates.
+          <Typography variant="body2" sx={{ color: colors.grey[100], ml: 4, lineHeight: 1.6 }}>
+            Opt in to receive our weekly newsletter with educational market insights. You can
+            unsubscribe any time from the link in each email or here in Settings.
           </Typography>
         </Box>
         <Typography variant="h4" sx={{ color: colors.grey[100], mb: 2 }}>Account</Typography>

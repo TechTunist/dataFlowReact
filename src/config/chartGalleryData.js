@@ -451,7 +451,7 @@ export const chartSections = {
       {
         path: "/bitcoin-floor-echo",
         title: "Bitcoin Floor Echo Index",
-        description: "Cross-workbench capitulation confluence — FEI bottoms tend to echo prior Bitcoin cycle lows",
+        description: "Cross-workbench capitulation confluence, FEI bottoms tend to echo prior Bitcoin cycle lows",
         image: '/assets/workbench.png',
       },
       {

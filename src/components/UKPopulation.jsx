@@ -166,7 +166,7 @@ const UKPopulation = ({ isDashboard = false }) => {
           <div style={{ color: colors.grey[100], fontSize: '15px', lineHeight: 1.4, textAlign: 'left' }}>
             This shows the total UK population broken down by gender (switchable). It comes from official mid-year population estimates.
             <br /><br />
-            Explanation: population size and age mix tell us how many workers, consumers and taxpayers the country has in the long run. A growing working-age population supports economic growth; ageing or shrinking population can create labour shortages and pressure on public finances. In this app it provides the demographic backdrop — bigger/stronger economy generally supports better risk environment for assets like crypto.
+            Explanation: population size and age mix tell us how many workers, consumers and taxpayers the country has in the long run. A growing working-age population supports economic growth; ageing or shrinking population can create labour shortages and pressure on public finances. In this app it provides the demographic backdrop, bigger/stronger economy generally supports better risk environment for assets like crypto.
           </div>
           <div style={{ marginTop: '6px', fontSize: '12px', color: '#888', textAlign: 'left' }}>Source: Nomis (ONS). Consistent annual series.</div>
         </div>

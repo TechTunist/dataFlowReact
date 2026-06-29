@@ -27,6 +27,8 @@ import { SEO_PAGES } from '../seo/staticPageContent';
 import TrackedSignupLink from '../components/marketing/TrackedSignupLink';
 import StickySignupCta from '../components/marketing/StickySignupCta';
 import HundredDayWindowBanner, { HUNDRED_DAY_WINDOW_BANNER_HEIGHT } from '../components/marketing/HundredDayWindowBanner';
+import HundredDayWindowOriginStory from '../components/marketing/HundredDayWindowOriginStory';
+import EducationalDisclaimer from '../components/marketing/EducationalDisclaimer';
 import { useData } from '../DataContext';
 import {
   ALTERNATIVE_PROJECTIONS,
@@ -63,7 +65,7 @@ const PROJECTION_METHODS = [
     label: '2-cycle top → bottom (ours)',
     avg: `${AVG_DAYS_TOP_TO_BOTTOM} days`,
     projected: formatCycleDate(PROJECTED_BOTTOM_DATE),
-    note: 'Last two bears only — the working countdown',
+    note: 'Last two bears only, the working countdown',
     highlight: true,
   },
 ];
@@ -71,15 +73,15 @@ const PROJECTION_METHODS = [
 const FAQ_ITEMS = [
   {
     q: 'Is this a price prediction?',
-    a: 'No. These are historical averages — a compass, not a crystal ball. The three methods above cluster around late October 2026, but the actual bottom could arrive earlier or later. Use it as context for preparation, not as trading advice.',
+    a: 'No. These are historical averages, a compass, not a crystal ball. The three methods above cluster around late October 2026, but the actual bottom could arrive earlier or later. Use it as context for preparation, not as trading advice.',
   },
   {
     q: 'Why measure from the October 2025 peak?',
-    a: 'After a major bull-market top, the relevant question is how far through the typical post-peak drawdown we are. We use 6 October 2025 as the Cycle 4 top — the same anchor in our Market Cycles chart and Market Overview widget.',
+    a: 'After a major bull-market top, the relevant question is how far through the typical post-peak drawdown we are. We use 6 October 2025 as the Cycle 4 top, the same anchor in our Market Cycles chart and Market Overview widget.',
   },
   {
     q: 'Why use 370 days instead of 382?',
-    a: 'All three completed top→bottom phases average 382 days (~23 Oct 2026). We deliberately use only the last two (363 + 376 → 370 days → ~11 Oct 2026) because it biases action over waiting — preparing and gradually accumulating ahead of the window rather than sitting out until a later historical average. That reflects a personal DCA-style approach, not a recommendation.',
+    a: 'All three completed top→bottom phases average 382 days (~23 Oct 2026). We deliberately use only the last two (363 + 376 → 370 days → ~11 Oct 2026) because that average errs on the side of caution: better to be looking early than to miss the bottom. That reflects a personal study habit, not a recommendation to buy or sell.',
   },
   {
     q: 'Where do I see the live countdown?',
@@ -131,7 +133,7 @@ const HundredDayWindow = () => {
       <StickySignupCta
         colors={colors}
         signupPath={FREE_SIGNUP}
-        label="Sign up free — see the countdown live"
+        label="Sign up free, see the countdown live"
       />
 
       {/* Hero */}
@@ -175,7 +177,7 @@ const HundredDayWindow = () => {
               mb: 4,
             }}
           >
-            History shows the biggest opportunities in Bitcoin often arrive in the quietest stretches —
+            History shows the biggest opportunities in Bitcoin often arrive in the quietest stretches,
             the months after a bull-market top, while most of the crowd has moved on. This page explains
             the countdown you see on Cryptological and how we calculate it.
           </Typography>
@@ -215,6 +217,8 @@ const HundredDayWindow = () => {
         </Container>
       </Box>
 
+      <HundredDayWindowOriginStory colors={colors} />
+
       {/* Core idea */}
       <Container maxWidth="lg" sx={{ py: { xs: 6, md: 8 } }}>
         <Typography
@@ -241,7 +245,7 @@ const HundredDayWindow = () => {
           }}
         >
           After each major bull-market top, Bitcoin has historically spent roughly a year in drawdown
-          before the next cycle low. The countdown tracks days remaining on our working estimate —
+          before the next cycle low. The countdown tracks days remaining on our working estimate,
           measured from the October 2025 peak, targeting ~11 October 2026.
         </Typography>
 
@@ -250,17 +254,17 @@ const HundredDayWindow = () => {
             {
               icon: <TimelineIcon sx={{ fontSize: 40, color: colors.greenAccent[500] }} />,
               title: 'A preparation window',
-              text: 'When the counter reads ~100 days, you are entering the final third of the typical post-peak phase — historically a period when patient holders could study the market without the noise of a raging bull run.',
+              text: 'When the counter reads ~100 days, you are entering the final third of the typical post-peak phase, historically a period when patient holders could study the market without the noise of a raging bull run.',
             },
             {
               icon: <HistoryIcon sx={{ fontSize: 40, color: colors.greenAccent[500] }} />,
               title: 'Grounded in past cycles',
-              text: 'Three methods point to late October 2026. We use the shortest credible top→bottom average (370 days from the last two bears) as our working line — transparent, auditable, and intentionally forward-leaning.',
+              text: 'Three methods point to late October 2026. We use the shortest credible top→bottom average (370 days from the last two bears) as our working line, transparent, auditable, and intentionally forward-leaning.',
             },
             {
               icon: <InsightsIcon sx={{ fontSize: 40, color: colors.greenAccent[500] }} />,
               title: 'Tools for the quiet phase',
-              text: 'Cryptological bundles cycle charts, on-chain metrics, risk indicators, and macro overlays so you can watch structure form — the same toolkit serious analysts use, without Glassnode prices.',
+              text: 'Cryptological bundles cycle charts, on-chain metrics, risk indicators, and macro overlays so you can watch structure form, the same toolkit serious analysts use, without Glassnode prices.',
             },
           ].map((item) => (
             <Grid item xs={12} md={4} key={item.title}>
@@ -293,7 +297,7 @@ const HundredDayWindow = () => {
             How we calculate it
           </Typography>
           <Typography sx={{ color: colors.grey[300], lineHeight: 1.8, mb: 3 }}>
-            <strong style={{ color: colors.grey[100] }}>Anchor:</strong> 6 October 2025 — the Cycle 4 bull-market top.
+            <strong style={{ color: colors.grey[100] }}>Anchor:</strong> 6 October 2025, the Cycle 4 bull-market top.
           </Typography>
 
           <Typography sx={{ color: colors.grey[200], fontWeight: 600, mb: 1.5 }}>
@@ -346,7 +350,7 @@ const HundredDayWindow = () => {
           </Stack>
 
           <Typography sx={{ color: colors.grey[200], fontWeight: 600, mb: 2 }}>
-            Three estimates — one countdown
+            Three estimates, one countdown
           </Typography>
           <Stack spacing={1.5} sx={{ mb: 4 }}>
             {PROJECTION_METHODS.map((method) => (
@@ -368,11 +372,57 @@ const HundredDayWindow = () => {
             ))}
           </Stack>
 
-          <Typography sx={{ color: colors.grey[300], lineHeight: 1.8, mb: 2 }}>
-            <strong style={{ color: colors.grey[100] }}>Why 11 October?</strong> The three methods cluster within two weeks in late October 2026. We use the 370-day line (~11 Oct) because it biases preparation over waiting — building a position gradually through the window rather than holding out for a later average. That reflects a personal DCA-style mindset, not financial advice.
-          </Typography>
           <Typography sx={{ color: colors.grey[300], lineHeight: 1.8 }}>
-            <strong style={{ color: colors.grey[100] }}>Live formula:</strong> days left = {AVG_DAYS_TOP_TO_BOTTOM} − days elapsed since the peak. The counter updates daily. It reaches zero once that window passes — whether or not the market has actually bottomed.
+            <strong style={{ color: colors.grey[100] }}>Live formula:</strong> days left = {AVG_DAYS_TOP_TO_BOTTOM} − days elapsed since the peak. The counter updates daily. It reaches zero once that window passes, whether or not the market has actually bottomed.
+          </Typography>
+        </Container>
+      </Box>
+
+      {/* Why 11 October */}
+      <Box
+        component="section"
+        sx={{
+          width: '100%',
+          py: { xs: 6, md: 8 },
+          backgroundColor: colors.primary[900],
+          borderTop: `1px solid ${colors.primary[600]}`,
+          borderBottom: `1px solid ${colors.primary[600]}`,
+        }}
+      >
+        <Container maxWidth="md">
+          <Typography
+            component="h2"
+            variant="h2"
+            sx={{
+              color: colors.grey[100],
+              fontWeight: 'bold',
+              fontSize: { xs: '1.75rem', md: '2.25rem' },
+              mb: 3,
+              textAlign: 'center',
+              lineHeight: 1.25,
+            }}
+          >
+            Why 11 October?
+          </Typography>
+          <Typography
+            sx={{
+              color: colors.grey[300],
+              fontSize: { xs: '1.05rem', md: '1.12rem' },
+              lineHeight: 1.85,
+              mb: 2.5,
+            }}
+          >
+            The three projection methods cluster within two weeks in late October 2026. We use the{' '}
+            <strong style={{ color: colors.grey[100] }}>{AVG_DAYS_TOP_TO_BOTTOM}-day line (~11 Oct)</strong>{' '}
+            as our working countdown because that figure is the average top-to-bottom length across the{' '}
+            <strong style={{ color: colors.grey[100] }}>last two completed cycles</strong> (363 days from
+            the 2017 top and 376 days from the 2021 top). It deliberately errs on the side of caution: it
+            is better to be looking early, studying structure and on-chain context ahead of the window,
+            than to hold out for a later historical average and risk missing the bottom entirely.
+          </Typography>
+          <Typography sx={{ color: colors.grey[400], fontSize: '0.95rem', lineHeight: 1.75 }}>
+            That is the creator&apos;s personal framing for educational context only, not financial advice.
+            Past cycles varied in length; no method guarantees when the next low arrives.
           </Typography>
         </Container>
       </Box>
@@ -425,7 +475,7 @@ const HundredDayWindow = () => {
             Track the window on your dashboard
           </Typography>
           <Typography sx={{ color: colors.grey[300], mb: 4, lineHeight: 1.7 }}>
-            Sign up free — no card required — and see the same countdown inside Market Cycles and Market Overview,
+            Sign up free, no card required, and see the same countdown inside Market Cycles and Market Overview,
             alongside risk metrics, MVRV, and macro overlays.
           </Typography>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} justifyContent="center">
@@ -459,9 +509,7 @@ const HundredDayWindow = () => {
               Back to home
             </Button>
           </Stack>
-          <Typography sx={{ color: colors.grey[500], mt: 3, fontSize: '0.85rem' }}>
-            Not financial advice. Backtests are historical. Sign up free at cryptological.app to see the countdown live.
-          </Typography>
+          <EducationalDisclaimer colors={colors} sx={{ mt: 3, textAlign: 'left' }} />
         </Container>
       </Box>
 

@@ -52,7 +52,7 @@ const SeoLandingPage = () => {
       >
         <Container maxWidth="md">
           <Chip
-            label="Cryptological — Bitcoin & crypto analytics"
+            label="Cryptological, Bitcoin & crypto analytics"
             sx={{
               mb: 2,
               backgroundColor: colors.greenAccent[800],

@@ -152,7 +152,7 @@ const SplashPage = () => {
           >
             Glassnode-depth metrics without Glassnode prices.
             <br />
-            See where the market is in the cycle — free to start.
+            See where the market is in the cycle, free to start.
           </Typography>
           <Button
             component={TrackedSignupLink}
@@ -171,7 +171,7 @@ const SplashPage = () => {
               ...ctaHoverSx(colors),
             }}
           >
-            Sign up free — 30 seconds
+            Sign up free, 30 seconds
           </Button>
           <Typography variant="body1" sx={{ color: colors.grey[300], mt: 2 }}>
             No card required · 15+ free charts · Cancel premium anytime
@@ -193,7 +193,7 @@ const SplashPage = () => {
         <ScrollHint color={colors.grey[500]} />
       </Box>
 
-      {/* Dynamic DCA Simulator — flagship feature */}
+      {/* Dynamic DCA Simulator, flagship feature */}
       <Box sx={{ width: '100%', py: 10, backgroundColor: colors.primary[800] }}>
         <Container maxWidth="lg">
           <Box sx={{ textAlign: 'center', mb: 5 }}>
@@ -210,7 +210,7 @@ const SplashPage = () => {
               Take the emotion out of investing
             </Typography>
             <Typography sx={{ color: colors.grey[300], maxWidth: 720, mx: 'auto', fontSize: '1.15rem', lineHeight: 1.7 }}>
-              The <strong>Dynamic DCA Simulator</strong> backtests real buy and sell rules against history —
+              The <strong>Dynamic DCA Simulator</strong> backtests real buy and sell rules against history,
               then pits your strategy against plain HODL.
             </Typography>
           </Box>
@@ -255,11 +255,11 @@ const SplashPage = () => {
               </Stack>
               <Typography sx={{ color: colors.grey[300], mb: 2, lineHeight: 1.7 }}>
                 Set adjustable buy and sell zones on each metric, then compare periodic investing vs
-                trigger-only entries — with optional dynamic selling when conditions flip.
+                trigger-only entries, with optional dynamic selling when conditions flip.
               </Typography>
               <Typography sx={{ color: colors.grey[400], mb: 3, lineHeight: 1.7, fontSize: '0.95rem' }}>
                 Every simulated trade is logged. Benchmark against HODL from the same start date to see
-                whether your rules would have helped — or hurt.
+                whether your rules would have helped, or hurt.
               </Typography>
               <Button
                 component={Link}
@@ -279,7 +279,7 @@ const SplashPage = () => {
         </Container>
       </Box>
 
-      {/* Interactive premium draw — real frozen BTC risk data */}
+      {/* Interactive premium draw, real frozen BTC risk data */}
       <SplashRiskColorPreview />
 
       {/* Features */}
@@ -292,7 +292,7 @@ const SplashPage = () => {
             {[
               { title: 'Risk Metrics', text: 'Build investment rules around proprietary risk scores for every major crypto asset.' },
               { title: 'Market Heat Index', text: 'One composite score for how under- or over-heated the market is right now.' },
-              { title: 'Customizable Dashboards', text: 'Curate the charts that matter most — favourites sync across devices.' },
+              { title: 'Customizable Dashboards', text: 'Curate the charts that matter most, favourites sync across devices.' },
             ].map((f) => (
               <Grid item xs={12} md={4} key={f.title}>
                 <Card sx={{ backgroundColor: colors.primary[900], p: 4, height: '100%' }}>
@@ -337,7 +337,7 @@ const SplashPage = () => {
           </Typography>
           <Grid container spacing={6} justifyContent="center">
             {[
-              { step: '1', title: 'Sign up free', text: 'Create your account in seconds — no card needed.' },
+              { step: '1', title: 'Sign up free', text: 'Create your account in seconds, no card needed.' },
               { step: '2', title: 'Explore insights', text: 'Open free charts and build your dashboard.' },
               { step: '3', title: 'Upgrade when ready', text: 'Unlock advanced risk metrics and full history for $13.45/mo.' },
             ].map((item) => (
@@ -360,7 +360,7 @@ const SplashPage = () => {
             Choose the plan that fits your journey
           </Typography>
           <Typography variant="body1" sx={{ color: colors.grey[300], mb: 6 }}>
-            Start free or go premium for full access — $13.45/month, cancel anytime.
+            Start free or go premium for full access, $13.45/month, cancel anytime.
           </Typography>
 
           <Box sx={{ display: { xs: 'block', md: 'none' } }}>
@@ -435,10 +435,10 @@ const SplashPage = () => {
                   <Grid container>
                     <Grid item md={4} sx={{ p: 2 }}><Typography>{label}</Typography></Grid>
                     <Grid item md={4} sx={{ p: 2, backgroundColor: colors.primary[800], textAlign: 'center' }}>
-                      {free ? <CheckIcon sx={{ color: colors.greenAccent[500] }} /> : '—'}
+                      {free ? <CheckIcon sx={{ color: colors.greenAccent[500] }} /> : '-'}
                     </Grid>
                     <Grid item md={4} sx={{ p: 2, textAlign: 'center' }}>
-                      {premium ? <CheckIcon sx={{ color: colors.greenAccent[500] }} /> : '—'}
+                      {premium ? <CheckIcon sx={{ color: colors.greenAccent[500] }} /> : '-'}
                     </Grid>
                   </Grid>
                   <Divider />
@@ -485,7 +485,7 @@ const SplashPage = () => {
         </Typography>
         {[
           { q: 'Is Cryptological suitable for beginners?', a: 'Yes. Every chart includes a plain-English description, and the free tier covers the essentials without overwhelming you.' },
-          { q: 'Can I cancel anytime?', a: 'Yes. Each payment covers one month of access. Cancel and you keep access until the period ends — no further charges.' },
+          { q: 'Can I cancel anytime?', a: 'Yes. Each payment covers one month of access. Cancel and you keep access until the period ends, no further charges.' },
           { q: 'Do you get real-time data?', a: 'Prices are real-time or previous daily close depending on the asset. Macro and on-chain series update when new data is published.' },
         ].map((faq) => (
           <Accordion key={faq.q} sx={{ backgroundColor: colors.primary[800], mb: 2 }}>
@@ -503,7 +503,7 @@ const SplashPage = () => {
       <Box sx={{ width: '100%', py: 12, textAlign: 'center', backgroundColor: colors.greenAccent[800] }}>
         <Container maxWidth="md">
           <Typography variant="h2" sx={{ color: colors.grey[100], fontWeight: 'bold', mb: 4, fontSize: { xs: '2.5rem', md: '3.5rem' } }}>
-            See where we are in the cycle — free
+            See where we are in the cycle, free
           </Typography>
           <Typography variant="h5" sx={{ color: colors.grey[100], mb: 6, fontSize: { xs: '1.2rem', md: '1.5rem' } }}>
             80+ charts, updated daily. Create your free account in under a minute.

@@ -45,7 +45,7 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
     return propDominanceData || contextDominanceData || [];
   }, [propDominanceData, contextDominanceData]);
 
-  // ONLY CHANGE: Remove duplicate dates — fixes Lightweight Charts crash
+  // ONLY CHANGE: Remove duplicate dates, fixes Lightweight Charts crash
   const dedupedDominanceData = useMemo(() => {
     const seen = new Set();
     return rawDominanceData

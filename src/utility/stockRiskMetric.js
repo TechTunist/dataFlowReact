@@ -1,11 +1,11 @@
 /**
- * Equity risk metric — stable Mayer-style extension with tail compression.
+ * Equity risk metric, stable Mayer-style extension with tail compression.
  *
  * Pipeline:
  * 1. price / 200-day SMA (extension ratio)
  * 2. Map into 0–1 via rolling 20th/80th percentile band
  * 3. 21-day EMA smoothing
- * 4. Log-odds tail compression — progressively harder to reach 0 or 1 unless
+ * 4. Log-odds tail compression, progressively harder to reach 0 or 1 unless
  *    price extension is genuinely beyond the historical band (earns "extremity credit")
  */
 
@@ -19,7 +19,7 @@ const P_LOW = 20;
 const P_MID = 50;
 const P_HIGH = 80;
 
-/** Base log-odds steepness — higher = more time spent away from 0/1 */
+/** Base log-odds steepness, higher = more time spent away from 0/1 */
 const BASE_TAIL_STEEPNESS = 5.5;
 
 const clamp = (v, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, v));

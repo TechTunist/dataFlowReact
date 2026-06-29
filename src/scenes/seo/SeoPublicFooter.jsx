@@ -49,7 +49,7 @@ const SeoPublicFooter = () => {
               {SITE_NAME}
             </Typography>
             <Typography variant="body2" sx={{ color: colors.grey[400], lineHeight: 1.7 }}>
-              Bitcoin and cryptocurrency analytics — on-chain metrics, risk indicators, macro overlays,
+              Bitcoin and cryptocurrency analytics, on-chain metrics, risk indicators, macro overlays,
               and market cycle tools for serious investors.
             </Typography>
           </Grid>

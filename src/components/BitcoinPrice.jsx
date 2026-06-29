@@ -1203,7 +1203,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
   const [isInteractive, setIsInteractive] = useState(false);
   const [activeIndicators, setActiveIndicators] = useState([]);
   const [activeSMAs, setActiveSMAs] = useState([]);
-  const [maFilter, setMaFilter] = useState('daily'); // 'daily' | 'weekly' — controls the MA dropdown view
+  const [maFilter, setMaFilter] = useState('daily'); // 'daily' | 'weekly', controls the MA dropdown view
   const isNarrowScreen = useMediaQuery('(max-width:600px)');
   const [activeRsiPeriod, setActiveRsiPeriod] = useState('');
 
@@ -1232,7 +1232,7 @@ const BitcoinPrice = ({ isDashboard = false }) => {
       description: 'The ratio of Bitcoin\'s current price to its 200-day moving average. Above 2.4 often signals overbought conditions; below 1 may indicate undervaluation.'
     }
   }), []);
-  // Full power from the shared master list — the daily/weekly filter in the dropdown makes the long list usable
+  // Full power from the shared master list, the daily/weekly filter in the dropdown makes the long list usable
   const maIndicators = useMemo(() => getAllMovingAverageOptions(), []);
   const rsiPeriods = useMemo(() => ({
     'Daily': { days: 14, label: 'Daily RSI' },

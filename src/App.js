@@ -19,6 +19,8 @@ import HundredDayWindow from "./scenes/HundredDayWindow";
 import PublicChartGallery from "./scenes/PublicChartGallery";
 import SeoLandingPage from "./scenes/seo/SeoLandingPage";
 import LoginSignup from "./scenes/LoginSignup";
+import NewsletterUnsubscribe from "./scenes/NewsletterUnsubscribe";
+import { applyPendingNewsletterOptIn } from "./utils/newsletterOptIn";
 import useIsMobile from "./hooks/useIsMobile";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AccountNavBar from "./scenes/global/AccountNavBar";
@@ -116,6 +118,7 @@ export const PUBLIC_ROUTE_PATHS = [
   "/",
   "/splash",
   "/login-signup",
+  "/newsletter/unsubscribe",
   "/chart-gallery",
   "/bitcoin-whitepaper",
   "/100-day-window",
@@ -129,6 +132,7 @@ const appRoutes = [
   { path: "/", element: <Navigate to="/splash" replace />, public: true },
   { path: "/splash", element: <SplashPage />, public: true },
   { path: "/login-signup", element: <LoginSignup />, public: true },
+  { path: "/newsletter/unsubscribe", element: <NewsletterUnsubscribe />, public: true },
   { path: "/chart-gallery", element: <PublicChartGallery />, public: true },
   { path: "/bitcoin-whitepaper", element: <BitcoinWhitepaper />, public: true },
   { path: "/100-day-window", element: <HundredDayWindow />, public: true },
@@ -300,7 +304,7 @@ if (!PUBLISHABLE_KEY) {
 const AuthWrapper = memo(() => {
   // Hooks must always be called unconditionally (top of component, same order every render)
   // to satisfy react-hooks/rules-of-hooks. We call them first, then decide what to render.
-  const { isLoaded, isSignedIn } = useAuth();
+  const { isLoaded, isSignedIn, getToken } = useAuth();
   const location = useLocation();
 
   // Register token getter once on mount (reads live Clerk session each call).
@@ -313,6 +317,13 @@ const AuthWrapper = memo(() => {
       return null;
     });
   }, []);
+
+  useEffect(() => {
+    if (DEV_BYPASS_AUTH || !isSignedIn) return;
+    applyPendingNewsletterOptIn(getToken).catch((err) => {
+      console.error("Pending newsletter opt-in failed:", err);
+    });
+  }, [isSignedIn, getToken]);
 
   if (DEV_BYPASS_AUTH) {
     // Dev escape hatch: run the entire app (including all protected charts)
@@ -342,6 +353,7 @@ const AppContent = memo(() => {
   const isStandalonePublicPage =
     isSplashPage ||
     isLoginSignupPage ||
+    location.pathname === "/newsletter/unsubscribe" ||
     location.pathname === "/bitcoin-whitepaper" ||
     location.pathname === "/100-day-window" ||
     location.pathname === "/chart-gallery" ||

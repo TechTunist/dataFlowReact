@@ -48,7 +48,7 @@ async function checkForNewDeployment() {
       reloadOnce('new-deployment-detected');
     }
   } catch {
-    // Network may still be waking after sleep — ignore
+    // Network may still be waking after sleep, ignore
   } finally {
     deployCheckInFlight = false;
   }
@@ -91,7 +91,7 @@ export function registerAppRecovery() {
 
   window.addEventListener('pageshow', (event) => {
     if (!event.persisted) return;
-    // Restored from bfcache after sleep/navigation — SPAs often need a fresh load.
+    // Restored from bfcache after sleep/navigation, SPAs often need a fresh load.
     if (!window.__CRYPTOLOGICAL_APP_MOUNTED__) {
       reloadOnce('bfcache-before-mount');
       return;

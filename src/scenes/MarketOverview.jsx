@@ -120,7 +120,7 @@ const MarketOverview = memo(() => {
       });
       if (isMounted) {
         setIsLoading(false);
-        // Do not setError here — let the grids/widgets render; they tolerate empty data.
+        // Do not setError here, let the grids/widgets render; they tolerate empty data.
       }
     };
     fetchAllData();
@@ -1547,7 +1547,7 @@ const DaysLeftWidget = memo(({ type }) => {
   // Historical average top-to-bottom duration (bull market top → next cycle bottom)
   // Based on 2017-12-17 top → 2018-12-15 bottom (~363 days)
   // and 2021-11-08 top → 2022-11-21 bottom (~378 days)
-  const averageTopToBottomDays = 370; // ~1 year average — accurate & coherent with historical cycle data
+  const averageTopToBottomDays = 370; // ~1 year average, accurate & coherent with historical cycle data
 
   // Calculate average cycle lengths (kept for backward compatibility)
   const averageCycleLengths = useMemo(() => {

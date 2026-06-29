@@ -142,7 +142,7 @@ const UKJSAByEthnicity = ({ isDashboard = false }) => {
           <div style={{ color: colors.grey[100], fontSize: '15px', lineHeight: 1.4, textAlign: 'left' }}>
             This shows Jobseeker&apos;s Allowance claimants broken down by broad ethnic groups (White, Asian, Black, Chinese, Mixed, etc.). Select ethnicity, gender etc. above.
             <br /><br />
-            Explanation: it reveals whether unemployment is hitting some communities harder than others — useful for understanding fairness and where economic pain is concentrated. In the app, seeing uneven impacts across society adds colour to the overall UK economic health picture that feeds into macro sentiment and risk assets.
+            Explanation: it reveals whether unemployment is hitting some communities harder than others, useful for understanding fairness and where economic pain is concentrated. In the app, seeing uneven impacts across society adds colour to the overall UK economic health picture that feeds into macro sentiment and risk assets.
           </div>
           <div style={{ marginTop: '6px', fontSize: '12px', color: '#888', textAlign: 'left' }}>Source: Nomis (ONS). Data shown at available geographic level for ethnicity detail. Consistent series.</div>
         </div>

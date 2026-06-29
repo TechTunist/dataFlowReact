@@ -216,12 +216,12 @@ const MarketHeatIndex = ({ isDashboard = false, isChartPage = false }) => {
     return btcData.filter(item => new Date(item.time) >= new Date(startDate));
   }, [btcData, factorScoresBase]);
 
-  // Defer only the chart redraw — stats/slider labels stay immediate while weight blending is cheap
+  // Defer only the chart redraw, stats/slider labels stay immediate while weight blending is cheap
   const deferredPlottedData = useDeferredValue(plottedData);
 
   // Raw stats (pre-stretch) so user can see the natural excursion and tune weights to expand it
   const heatStats = useMemo(() => {
-    if (!smoothedData.length) return { min: '—', max: '—', avg: '—' };
+    if (!smoothedData.length) return { min: '-', max: '-', avg: '-' };
     const vals = smoothedData.map(d => d.value);
     const min = Math.min(...vals);
     const max = Math.max(...vals);
@@ -393,7 +393,7 @@ const MarketHeatIndex = ({ isDashboard = false, isChartPage = false }) => {
     }
   }, [colors]);
 
-  // Dynamic price lines (Overheated / Cold) — recreated when thresholds or theme change.
+  // Dynamic price lines (Overheated / Cold), recreated when thresholds or theme change.
   // This lets the user move the reference levels while experimenting with weights.
   useEffect(() => {
     const hs = heatSeriesRef.current;
@@ -438,7 +438,7 @@ const MarketHeatIndex = ({ isDashboard = false, isChartPage = false }) => {
       heatSeriesRef.current.setData(
         deferredPlottedData.map(data => ({ time: data.time, value: data.value }))
       );
-      // Only fit on initial data load — avoid resetting zoom on every weight tweak
+      // Only fit on initial data load, avoid resetting zoom on every weight tweak
       if (prevPlottedLenRef.current === 0) {
         chartRef.current?.timeScale().fitContent();
       }
@@ -478,7 +478,7 @@ const MarketHeatIndex = ({ isDashboard = false, isChartPage = false }) => {
     }
   }, [isInteractive, smaPeriod]);
 
-  // Update current heat value — when stretch is on this reflects the stretched value (useful for seeing relative position vs thresholds)
+  // Update current heat value, when stretch is on this reflects the stretched value (useful for seeing relative position vs thresholds)
   useEffect(() => {
     const latestData = plottedData[plottedData.length - 1];
     setCurrentHeat(latestData ? latestData.value.toFixed(1) : null);
@@ -641,7 +641,7 @@ const MarketHeatIndex = ({ isDashboard = false, isChartPage = false }) => {
           border: `1px solid ${colors.primary[300]}`,
         }}>
           <Typography variant="subtitle2" sx={{ color: colors.grey[100], mb: 0.5, fontSize: '0.85rem' }}>
-            Weight Tuning &amp; Range (experimental — live updates the historic chart)
+            Weight Tuning &amp; Range (experimental, live updates the historic chart)
           </Typography>
 
           <Box sx={{

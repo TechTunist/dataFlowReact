@@ -13,7 +13,7 @@ export function reloadOnce(reason) {
     const reloadCount = Number.parseInt(sessionStorage.getItem(RELOAD_COUNT_KEY) || '0', 10);
     if (reloadCount >= MAX_RELOADS_PER_SESSION) {
       if (typeof console !== 'undefined') {
-        console.warn(`[app-recovery] Skipping reload (${reason}) — session limit reached`);
+        console.warn(`[app-recovery] Skipping reload (${reason}), session limit reached`);
       }
       return false;
     }
@@ -26,7 +26,7 @@ export function reloadOnce(reason) {
     sessionStorage.setItem(RELOAD_GUARD_KEY, String(now));
     sessionStorage.setItem(RELOAD_COUNT_KEY, String(reloadCount + 1));
   } catch {
-    // sessionStorage may be unavailable (private mode quirks) — still attempt one reload
+    // sessionStorage may be unavailable (private mode quirks), still attempt one reload
   }
 
   if (typeof console !== 'undefined') {

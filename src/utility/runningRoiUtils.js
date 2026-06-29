@@ -40,7 +40,7 @@ export const RISK_METRIC_LOW_END_EXPONENT = 0.6;
 
 /** Risk score at the earliest cycle bottoms (deep historical drawdowns). */
 export const RISK_METRIC_FIRST_BOTTOM_TARGET = 0.1;
-/** Risk score at later cycle bottoms — shallower raw drawdowns can reach lower risk. */
+/** Risk score at later cycle bottoms, shallower raw drawdowns can reach lower risk. */
 export const RISK_METRIC_LAST_BOTTOM_TARGET = 0.04;
 /** Softer concave curve on the open cycle so modest drawdowns can dip lower. */
 export const RISK_METRIC_OPEN_CYCLE_EXPONENT = 0.75;
@@ -724,7 +724,7 @@ export function easeInOutSmoothstep(t) {
 
 /**
  * Daily running ROI risk scores (0–1) for composite indicators such as Market Heat Index.
- * Derived client-side from cached BTC price — same inputs as the /running-roi-risk chart.
+ * Derived client-side from cached BTC price, same inputs as the /running-roi-risk chart.
  *
  * @param {Array<{ time: string, value: number }>} priceData
  * @param {{ peaks?: Array, lookbackDays?: number }} [options]

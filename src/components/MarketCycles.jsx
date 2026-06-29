@@ -584,7 +584,7 @@ const MarketCycles = ({ isDashboard = false }) => {
             },
             {
               title: 'Days left til bottom',
-              content: `Measured from the 6 Oct 2025 bull-market top. Three completed top→bottom phases lasted 407, 363, and 376 days (average 382 → ~23 Oct 2026). Measuring bottom-to-bottom from the last three lows (15 Jan 2015, 15 Dec 2018, 21 Nov 2022) gives a ${BOTTOM_TO_BOTTOM_AVG_DAYS}-day average → ~26 Oct 2026. This chart uses the last two top→bottom durations only (${AVG_DAYS_TOP_TO_BOTTOM} days) → ~11 Oct 2026 — a deliberate choice to bias preparation and gradual accumulation ahead of the window, rather than waiting for a later historical average. Not financial advice; past cycles varied and the actual bottom may come earlier or later.`,
+              content: `Measured from the 6 Oct 2025 bull-market top. Three completed top→bottom phases lasted 407, 363, and 376 days (average 382 → ~23 Oct 2026). Measuring bottom-to-bottom from the last three lows (15 Jan 2015, 15 Dec 2018, 21 Nov 2022) gives a ${BOTTOM_TO_BOTTOM_AVG_DAYS}-day average → ~26 Oct 2026. This chart uses the last two top→bottom durations only (${AVG_DAYS_TOP_TO_BOTTOM} days) → ~11 Oct 2026, a deliberate choice to bias preparation and gradual accumulation ahead of the window, rather than waiting for a later historical average. Not financial advice; past cycles varied and the actual bottom may come earlier or later.`,
             },
           ]}
         />
