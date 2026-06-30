@@ -110,13 +110,34 @@ const AssetRiskBandDuration = ({ isDashboard = false, riskData: propRiskData }) 
       bandCounts[bandIndex]++;
     }
     const totalDays = bandCounts.reduce((sum, count) => sum + count, 0);
+
+    const cumulativeBelow = [];
+    let runningBelow = 0;
+    for (let i = 0; i < bandCounts.length; i++) {
+      runningBelow += bandCounts[i];
+      cumulativeBelow.push(runningBelow);
+    }
+
+    const cumulativeAbove = [];
+    let runningAbove = 0;
+    for (let i = bandCounts.length - 1; i >= 0; i--) {
+      runningAbove += bandCounts[i];
+      cumulativeAbove.unshift(runningAbove);
+    }
+
     return bandCounts.map((count, index) => {
       const bandStart = (index * bandSize).toFixed(2);
       const bandEnd = Math.min((index + 1) * bandSize, 1.0).toFixed(2);
+      const daysBelowAndCurrent = cumulativeBelow[index];
+      const daysAboveAndCurrent = cumulativeAbove[index];
       return {
         band: `${bandStart} - ${bandEnd}`,
         percentage: (count / totalDays * 100).toFixed(2),
         days: count,
+        daysBelowAndCurrent,
+        pctBelowAndCurrent: (daysBelowAndCurrent / totalDays * 100).toFixed(2),
+        daysAboveAndCurrent,
+        pctAboveAndCurrent: (daysAboveAndCurrent / totalDays * 100).toFixed(2),
       };
     });
   }, []);
@@ -226,8 +247,14 @@ const AssetRiskBandDuration = ({ isDashboard = false, riskData: propRiskData }) 
       x: riskBandDurations.map(risk => risk.band),
       y: riskBandDurations.map(risk => parseFloat(risk.percentage)),
       hoverinfo: 'text+x',
-      hovertemplate: 'Risk Band: %{x}<br>Time in: %{y}%<br>Total Days: %{customdata} days<extra></extra>',
-      customdata: riskBandDurations.map(risk => risk.days),
+      hovertemplate: 'Risk Band: %{x}<br>Time in: %{y}%<br>Total Days: %{customdata[0]} days<br>Current and below: %{customdata[1]} days (%{customdata[2]}%)<br>Current and above: %{customdata[3]} days (%{customdata[4]}%)<extra></extra>',
+      customdata: riskBandDurations.map(risk => [
+        risk.days,
+        risk.daysBelowAndCurrent,
+        risk.pctBelowAndCurrent,
+        risk.daysAboveAndCurrent,
+        risk.pctAboveAndCurrent,
+      ]),
       marker: {
         color: riskBandDurations.map((risk, index) => {
           if (currentRiskLevel !== null && risk.band === currentRiskLevel) {
