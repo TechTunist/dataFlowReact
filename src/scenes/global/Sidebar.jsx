@@ -187,7 +187,7 @@ const itemsData = [
   { title: "Total Market Cap", to: "/total", category: "Market Capitalisation", icon: <AttachMoneyIcon />, categoryIcon: <AnalyticsIcon /> },
   { title: "Total 2 Market Cap", to: "/total2", category: "Market Capitalisation", icon: <AttachMoneyIcon />, categoryIcon: <AnalyticsIcon /> },
   { title: "Total 3 Market Cap", to: "/total3", category: "Market Capitalisation", icon: <AttachMoneyIcon />, categoryIcon: <AnalyticsIcon /> },
-  { title: "Total Cap to Fair Value", to: "/total-difference", category: "Market Capitalisation", icon: <BalanceIcon />, categoryIcon: <AnalyticsIcon /> },
+  { title: "Market Cap to Fair Value", to: "/total-difference", category: "Market Capitalisation", icon: <BalanceIcon />, categoryIcon: <AnalyticsIcon /> },
   
   // === RISK ANALYSIS ===
   // Category Icon: WarningIcon - Core risk alerting

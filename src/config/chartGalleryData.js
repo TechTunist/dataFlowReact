@@ -10,8 +10,8 @@ export const chartSections = {
       },
       {
         path: "/total-difference",
-        title: "Market Cap Difference",
-        description: "The percentage of the total market cap relative to the Fair Value of all crypto assets combined.",
+        title: "Market Cap to Fair Value",
+        description: "Market cap or price relative to fair value for Bitcoin, Total, Total 2, and Total 3.",
         image: '/assets/totalDifference.png',
       },
       {
@@ -92,8 +92,8 @@ export const chartSections = {
       },
       {
         path: "/total-difference",
-        title: "Market Cap Difference",
-        description: "The percentage of the total market cap relative to the Fair Value of all crypto assets combined.",
+        title: "Market Cap to Fair Value",
+        description: "Market cap or price relative to fair value for Bitcoin, Total, Total 2, and Total 3.",
         image: '/assets/totalDifference.png',
       },
       {

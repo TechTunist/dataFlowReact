@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState, useMemo, useCallback, useContext } 
 import { createChart } from 'lightweight-charts';
 import '../styling/bitcoinChart.css';
 import { tokens } from '../theme';
-import { useTheme, useMediaQuery } from '@mui/material';
+import { useTheme, useMediaQuery, Box, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import useIsMobile from '../hooks/useIsMobile';
 import { DataContext } from '../DataContext';
 import BitcoinFees from './BitcoinTransactionFees';
@@ -10,6 +10,16 @@ import LastUpdated from '../hooks/LastUpdated';
 import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
 import ChartTooltip from './ChartTooltip';
 import ChartInfoSections from './ChartInfoSections';
+import {
+  MARKET_CAP_FAIR_VALUE_TYPES,
+  dedupeSortSeries,
+  computeFairValueDifferenceSeries,
+} from '../utility/marketCapFairValueUtils';
+
+const MARKET_TYPE_OPTIONS = Object.entries(MARKET_CAP_FAIR_VALUE_TYPES).map(([value, config]) => ({
+  value,
+  label: config.label,
+}));
 
 const MarketCapDifference = ({ isDashboard = false }) => {
   const chartContainerRef = useRef();
@@ -19,48 +29,77 @@ const MarketCapDifference = ({ isDashboard = false }) => {
   const theme = useTheme();
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
   const isMobile = useIsMobile();
-  const { 
-    marketCapData: contextMarketCapData, 
-    fetchMarketCapData, 
-    marketCapLastUpdated, 
-    differenceData: contextDifferenceData, 
-    fetchDifferenceData, 
-    differenceLastUpdated 
+  const {
+    btcData: contextBtcData,
+    fetchBtcData,
+    btcLastUpdated,
+    marketCapData: contextMarketCapData,
+    fetchMarketCapData,
+    marketCapLastUpdated,
+    total2Data: contextTotal2Data,
+    fetchTotal2Data,
+    total2LastUpdated,
+    total3Data: contextTotal3Data,
+    fetchTotal3Data,
+    total3LastUpdated,
   } = useContext(DataContext);
+  const [selectedMarketType, setSelectedMarketType] = useState('total');
   const [tooltipData, setTooltipData] = useState(null);
   const [isInteractive, setIsInteractive] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const isNarrowScreen = useMediaQuery('(max-width:600px)');
 
-  // ONLY CHANGE: Deduplicate + sort both datasets (fixes Lightweight Charts crash)
-  const marketCapData = useMemo(() => {
-    const seen = new Set();
-    return (contextMarketCapData || [])
-      .filter(item => {
-        const time = item.time || item.date;
-        if (!time) return false;
-        const key = typeof time === 'string' ? time : time.toString();
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      })
-      .sort((a, b) => new Date(a.time || a.date) - new Date(b.time || b.date));
-  }, [contextMarketCapData]);
+  const marketTypeConfig = MARKET_CAP_FAIR_VALUE_TYPES[selectedMarketType];
 
-  const differenceData = useMemo(() => {
-    const seen = new Set();
-    return (contextDifferenceData || [])
-      .filter(item => {
-        const time = item.time || item.date;
-        if (!time) return false;
-        const key = typeof time === 'string' ? time : time.toString();
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      })
-      .sort((a, b) => new Date(a.time || a.date) - new Date(b.time || b.date));
-  }, [contextDifferenceData]);
+  const rawSeriesData = useMemo(() => {
+    switch (selectedMarketType) {
+      case 'btc':
+        return contextBtcData;
+      case 'total2':
+        return contextTotal2Data;
+      case 'total3':
+        return contextTotal3Data;
+      default:
+        return contextMarketCapData;
+    }
+  }, [selectedMarketType, contextBtcData, contextMarketCapData, contextTotal2Data, contextTotal3Data]);
+
+  const seriesData = useMemo(() => dedupeSortSeries(rawSeriesData), [rawSeriesData]);
+
+  const differenceData = useMemo(
+    () => computeFairValueDifferenceSeries(seriesData, selectedMarketType),
+    [seriesData, selectedMarketType]
+  );
+
+  const seriesLastUpdated = useMemo(() => {
+    switch (selectedMarketType) {
+      case 'btc':
+        return btcLastUpdated;
+      case 'total2':
+        return total2LastUpdated;
+      case 'total3':
+        return total3LastUpdated;
+      default:
+        return marketCapLastUpdated;
+    }
+  }, [selectedMarketType, btcLastUpdated, marketCapLastUpdated, total2LastUpdated, total3LastUpdated]);
+
+  const fetchSeriesData = useCallback(async () => {
+    switch (selectedMarketType) {
+      case 'btc':
+        await fetchBtcData();
+        break;
+      case 'total2':
+        await fetchTotal2Data();
+        break;
+      case 'total3':
+        await fetchTotal3Data();
+        break;
+      default:
+        await fetchMarketCapData();
+    }
+  }, [selectedMarketType, fetchBtcData, fetchMarketCapData, fetchTotal2Data, fetchTotal3Data]);
 
   const percentageFormatter = useCallback((value) => `${value.toFixed(2)}%`, []);
   const compactNumberFormatter = useCallback((value) => {
@@ -71,7 +110,7 @@ const MarketCapDifference = ({ isDashboard = false }) => {
     return value.toFixed(0);
   }, []);
 
-  const setInteractivityHandler = useCallback(() => setIsInteractive(prev => !prev), []);
+  const setInteractivityHandler = useCallback(() => setIsInteractive((prev) => !prev), []);
   const resetChartView = useCallback(() => chartRef.current?.timeScale().fitContent(), []);
 
   const valuationDifference = useMemo(() => {
@@ -89,11 +128,11 @@ const MarketCapDifference = ({ isDashboard = false }) => {
 
   useEffect(() => {
     const fetchData = async () => {
+      if (seriesData.length > 0) return;
       setIsLoading(true);
       setError(null);
       try {
-        if (marketCapData.length === 0) await fetchMarketCapData();
-        if (differenceData.length === 0) await fetchDifferenceData();
+        await fetchSeriesData();
       } catch (err) {
         setError('Failed to fetch data. Please try again later.');
         console.error('Error fetching data:', err);
@@ -102,10 +141,10 @@ const MarketCapDifference = ({ isDashboard = false }) => {
       }
     };
     fetchData();
-  }, [fetchMarketCapData, fetchDifferenceData, marketCapData.length, differenceData.length]);
+  }, [fetchSeriesData, seriesData.length]);
 
   useEffect(() => {
-    if (differenceData.length === 0 || marketCapData.length === 0) return;
+    if (differenceData.length === 0 || seriesData.length === 0) return;
 
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
@@ -126,7 +165,7 @@ const MarketCapDifference = ({ isDashboard = false }) => {
       priceFormat: { type: 'custom', formatter: compactNumberFormatter },
     });
     marketCapSeriesRef.current = marketCapSeries;
-    marketCapSeries.setData(marketCapData);
+    marketCapSeries.setData(seriesData);
 
     const differenceSeries = chart.addLineSeries({
       priceScaleId: 'right',
@@ -194,7 +233,7 @@ const MarketCapDifference = ({ isDashboard = false }) => {
       chart.remove();
       window.removeEventListener('resize', resizeChart);
     };
-  }, [differenceData, marketCapData, colors, percentageFormatter, compactNumberFormatter, resetChartView]);
+  }, [differenceData, seriesData, colors, percentageFormatter, compactNumberFormatter, resetChartView]);
 
   useEffect(() => {
     if (chartRef.current) {
@@ -202,37 +241,93 @@ const MarketCapDifference = ({ isDashboard = false }) => {
     }
   }, [isInteractive]);
 
+  const handleMarketTypeChange = useCallback((event) => {
+    setSelectedMarketType(event.target.value);
+    resetChartView();
+  }, [resetChartView]);
+
+  const tooltipValueLabel = selectedMarketType === 'btc' ? 'Price' : 'Market Cap';
+
   return (
     <div style={{ height: '100%' }}>
       {!isDashboard && (
-        <div className="chart-top-div" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '5px 10px' }}>
-          <div className="span-container">
-            <span style={{ marginRight: '20px', display: 'inline-block' }}>
-              <span style={{ backgroundColor: colors.primary[300], height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
-              Total Market Cap
-            </span>
-            <span style={{ display: 'inline-block' }}>
-              <span style={{ backgroundColor: colors.blueAccent[500], height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
-              Fair Value Delta
-            </span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: isNarrowScreen ? 'column' : 'row',
+            justifyContent: 'space-between',
+            alignItems: isNarrowScreen ? 'stretch' : 'center',
+            gap: '12px',
+            padding: '5px 10px',
+          }}
+        >
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: isNarrowScreen ? 'column' : 'row',
+              alignItems: isNarrowScreen ? 'stretch' : 'center',
+              gap: '16px',
+              flex: 1,
+            }}
+          >
+            <FormControl sx={{ minWidth: isNarrowScreen ? '100%' : '200px', maxWidth: '220px' }}>
+              <InputLabel
+                id="market-cap-type-label"
+                sx={{
+                  color: colors.grey[100],
+                  '&.Mui-focused': { color: colors.greenAccent[500] },
+                }}
+              >
+                Market
+              </InputLabel>
+              <Select
+                value={selectedMarketType}
+                onChange={handleMarketTypeChange}
+                label="Market"
+                labelId="market-cap-type-label"
+                sx={{
+                  color: colors.grey[100],
+                  backgroundColor: colors.primary[500],
+                  borderRadius: '8px',
+                  '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
+                  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                  '& .MuiSelect-select': { py: 1.5, pl: 2 },
+                }}
+              >
+                {MARKET_TYPE_OPTIONS.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <div className="span-container">
+              <span style={{ marginRight: '20px', display: 'inline-block' }}>
+                <span style={{ backgroundColor: colors.primary[300], height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
+                {marketTypeConfig.seriesLabel}
+              </span>
+              <span style={{ display: 'inline-block' }}>
+                <span style={{ backgroundColor: colors.blueAccent[500], height: '10px', width: '10px', display: 'inline-block', marginRight: '5px' }}></span>
+                Fair Value Delta
+              </span>
+            </div>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
             {isLoading && <span style={{ color: colors.grey[100] }}>Loading...</span>}
             {error && <span style={{ color: colors.redAccent[500] }}>{error}</span>}
-          </div>
-          <div style={{ display: 'flex', gap: '10px' }}>
             <button onClick={setInteractivityHandler} className="button-reset" style={{ backgroundColor: isInteractive ? '#4cceac' : 'transparent', color: isInteractive ? 'black' : '#31d6aa', borderColor: isInteractive ? 'violet' : '#70d8bd' }}>
               {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
             </button>
             <button onClick={resetChartView} className="button-reset extra-margin">Reset Chart</button>
-          </div>
-        </div>
+          </Box>
+        </Box>
       )}
-      <div className="chart-container" style={{ position: 'relative', height: isDashboard ? '100%' : 'calc(100% - 40px)', width: '100%', border: '2px solid #a9a9a9' }}>
+      <div className="chart-container" style={{ position: 'relative', height: isDashboard ? '100%' : isNarrowScreen ? 'calc(100% - 140px)' : 'calc(100% - 56px)', width: '100%', border: '2px solid #a9a9a9' }}>
         <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} onDoubleClick={setInteractivityHandler} />
       </div>
       <UnderChartRow>
-        {!isDashboard && differenceData.length > 0 && <LastUpdated customDate={marketCapLastUpdated} />}
+        {!isDashboard && differenceData.length > 0 && <LastUpdated customDate={seriesLastUpdated} />}
         {!isDashboard && <BitcoinFees />}
       </UnderChartRow>
 
@@ -243,26 +338,25 @@ const MarketCapDifference = ({ isDashboard = false }) => {
           </span>
         </UnderChartValue>
       )}
-      
+
       {!isDashboard && (
         <ChartInfoSections
           sections={[
             {
               title: 'What it is',
-              content:
-                'The percentage of total crypto market cap relative to fair value for the entire asset class.',
+              content: `The percentage of ${marketTypeConfig.label} ${marketTypeConfig.valueNoun} relative to fair value.`,
             },
             {
               title: 'What this chart shows',
-              content:
-                'Grey line (left): total market cap. Blue line (right): percentage of fair value. The dashed green line at 100% is where market cap equals fair value.',
+              content: `Grey line (left): ${marketTypeConfig.seriesLabel.toLowerCase()}. Blue line (right): percentage of fair value. The dashed green line at 100% is where ${marketTypeConfig.valueNoun} equals fair value.`,
             },
             {
               title: 'How it is built',
               content: (
                 <>
-                  Fair value comes from a logarithmic regression model fitted to historical total market cap
-                  data. Slope (m) and intercept (b) of the best-fit line are derived as:
+                  Fair value comes from a logarithmic regression model fitted to historical {marketTypeConfig.label}{' '}
+                  {marketTypeConfig.valueNoun} data, using the same mid-band parameters as the corresponding market
+                  capitalisation chart. Slope (m) and intercept (b) of the best-fit line are derived as:
                   <ul>
                     <li>
                       <strong>
@@ -281,25 +375,23 @@ const MarketCapDifference = ({ isDashboard = false }) => {
             },
             {
               title: 'How to interpret',
-              content:
-                'Values below 100% mean market cap is below fair value (undervalued). Values above 100% mean market cap exceeds fair value (overvalued). The over/undervaluation readout above reflects the latest gap from 100%.',
+              content: `Values below 100% mean ${marketTypeConfig.valueNoun} is below fair value (undervalued). Values above 100% mean ${marketTypeConfig.valueNoun} exceeds fair value (overvalued). The over/undervaluation readout above reflects the latest gap from 100%.`,
             },
           ]}
         />
       )}
-    
-        {!isDashboard && (
-          <ChartTooltip tooltipData={tooltipData} chartContainerRef={chartContainerRef} isNarrowScreen={isNarrowScreen} render={(tooltipData) => (
-<>
-<b>
-            {tooltipData.marketCap && <div style={{ fontSize: '15px', color: colors.primary[300] }}>Market Cap: ${tooltipData.marketCap}</div>}
-            {tooltipData.difference && <div style={{ fontSize: '15px', color: colors.blueAccent[500] }}>Percentage of Fair Value: {tooltipData.difference}</div>}
-            {tooltipData.difference && <div style={{ fontSize: '15px', color: colors.greenAccent[500] }}>Fair Value: 100%</div>}
-            {tooltipData.date && <div style={{ fontSize: '13px' }}>{tooltipData.date}</div>}
+
+      {!isDashboard && (
+        <ChartTooltip tooltipData={tooltipData} chartContainerRef={chartContainerRef} isNarrowScreen={isNarrowScreen} render={(data) => (
+          <b>
+            {data.marketCap && <div style={{ fontSize: '15px', color: colors.primary[300] }}>{tooltipValueLabel}: ${data.marketCap}</div>}
+            {data.difference && <div style={{ fontSize: '15px', color: colors.blueAccent[500] }}>Percentage of Fair Value: {data.difference}</div>}
+            {data.difference && <div style={{ fontSize: '15px', color: colors.greenAccent[500] }}>Fair Value: 100%</div>}
+            {data.date && <div style={{ fontSize: '13px' }}>{data.date}</div>}
           </b>
-</>
-)} />
-        )}</div>
+        )} />
+      )}
+    </div>
   );
 };
 

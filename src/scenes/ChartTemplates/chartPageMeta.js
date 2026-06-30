@@ -267,7 +267,7 @@ export const getTitleAndSubtitle = (pathname, isMobile = false) => {
       return { title: "General Market Conditions", subtitle: isMobile ? "Overview" : "Select features of the current market conditions" };
 
     case "/total-difference":
-      return { title: "Total Cap to Fair Value", subtitle: isMobile ? "Total Cap to Fair Value" : "Total Market Cap to Fair Value Difference" };
+      return { title: "Market Cap to Fair Value", subtitle: isMobile ? "Market Cap to Fair Value" : "Market Cap Relative to Fair Value" };
     case "/historical-volatility":
       return { title: "Bitcoin Volatility", subtitle: isMobile ? "Historical Volatility" : "Historical Volatility to Predict Changes of Momentum" };
     case "/altcoin-season-index":
