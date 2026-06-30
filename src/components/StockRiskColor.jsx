@@ -2,16 +2,21 @@ import React, { useEffect, useState, useContext, useMemo, useCallback, useRef } 
 import Plot from 'react-plotly.js';
 import { tokens } from '../theme';
 import { useTheme } from '@mui/material';
-import { Box, FormControl, InputLabel, useMediaQuery } from '@mui/material';
+import { Box, FormControl, InputLabel, MenuItem, Select, useMediaQuery } from '@mui/material';
 import '../styling/bitcoinChart.css';
 import LastUpdated from '../hooks/LastUpdated';
 import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
-import { calculateStockRiskMetric } from '../utility/stockRiskMetric';
+import {
+  calculateStockRiskMetricByVersion,
+  STOCK_RISK_METRIC_VERSIONS,
+} from '../utility/stockRiskMetric';
 import { STOCKS, stockLoadingMessage, stockRiskInsufficientHistoryMessage } from '../config/stocksConfig';
 import StockGroupSelect from './StockGroupSelect';
 import ChartInfoSections from './ChartInfoSections';
+
+const STOCK_RISK_VERSION_STORAGE_KEY = 'stockRiskMetricVersion';
 
 const StockRiskColor = ({ isDashboard = false }) => {
   const theme = useTheme();
@@ -21,6 +26,14 @@ const StockRiskColor = ({ isDashboard = false }) => {
   const plotRef = useRef(null);
   const containerRef = useRef(null);
   const [selectedStock, setSelectedStock] = useState('MSTR');
+  const [riskMetricVersion, setRiskMetricVersion] = useState(() => {
+    try {
+      const stored = localStorage.getItem(STOCK_RISK_VERSION_STORAGE_KEY);
+      return stored === 'v2' ? 'v2' : 'v1';
+    } catch {
+      return 'v1';
+    }
+  });
 
   const selectedStockLabel = useMemo(() => {
     const match = STOCKS.find((s) => s.value === selectedStock);
@@ -37,8 +50,11 @@ const StockRiskColor = ({ isDashboard = false }) => {
   );
 
   const chartData = useMemo(
-    () => (chartSourceData.length > 0 ? calculateStockRiskMetric(chartSourceData) : []),
-    [chartSourceData]
+    () =>
+      chartSourceData.length > 0
+        ? calculateStockRiskMetricByVersion(chartSourceData, riskMetricVersion)
+        : [],
+    [chartSourceData, riskMetricVersion]
   );
 
   const currentRisk = chartData.length > 0 ? chartData[chartData.length - 1].Risk : null;
@@ -200,6 +216,17 @@ const StockRiskColor = ({ isDashboard = false }) => {
     return false;
   };
 
+  const handleRiskMetricVersionChange = (event) => {
+    const nextVersion = event.target.value;
+    setRiskMetricVersion(nextVersion);
+    try {
+      localStorage.setItem(STOCK_RISK_VERSION_STORAGE_KEY, nextVersion);
+    } catch {
+      // ignore storage failures
+    }
+    resetChartView();
+  };
+
   const handleStockChange = (event) => {
     setSelectedStock(event.target.value);
     setDatasets(
@@ -256,6 +283,47 @@ const StockRiskColor = ({ isDashboard = false }) => {
                 labelId="stock-risk-color-label"
                 colors={colors}
               />
+            </FormControl>
+            <FormControl
+              sx={{
+                ...(isNarrowScreen
+                  ? { flex: 2, minWidth: '100px' }
+                  : { minWidth: '100px', width: { xs: '100%', sm: '240px' } }),
+              }}
+            >
+              <InputLabel
+                id="stock-risk-color-model-label"
+                shrink
+                sx={{
+                  color: colors.grey[100],
+                  '&.Mui-focused': { color: colors.greenAccent[500] },
+                  top: 0,
+                  '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' },
+                }}
+              >
+                Risk Model
+              </InputLabel>
+              <Select
+                value={riskMetricVersion}
+                onChange={handleRiskMetricVersionChange}
+                label="Risk Model"
+                labelId="stock-risk-color-model-label"
+                sx={{
+                  color: colors.grey[100],
+                  backgroundColor: colors.primary[500],
+                  borderRadius: '8px',
+                  '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
+                  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                  '& .MuiSelect-select': { py: 1.5, pl: 2 },
+                }}
+              >
+                {Object.entries(STOCK_RISK_METRIC_VERSIONS).map(([value, config]) => (
+                  <MenuItem key={value} value={value}>
+                    {config.label}
+                  </MenuItem>
+                ))}
+              </Select>
             </FormControl>
             <button
               onClick={resetChartView}

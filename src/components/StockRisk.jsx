@@ -9,10 +9,15 @@ import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
 import { Select, MenuItem, FormControl, InputLabel, Box } from '@mui/material';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
-import { calculateStockRiskMetric } from '../utility/stockRiskMetric';
+import {
+  calculateStockRiskMetricByVersion,
+  STOCK_RISK_METRIC_VERSIONS,
+} from '../utility/stockRiskMetric';
 import { stockLoadingMessage, stockRiskInsufficientHistoryMessage } from '../config/stocksConfig';
 import StockGroupSelect from './StockGroupSelect';
 import ChartInfoSections from './ChartInfoSections';
+
+const STOCK_RISK_VERSION_STORAGE_KEY = 'stockRiskMetricVersion';
 
 const StockRisk = ({ isDashboard = false }) => {
   const chartContainerRef = useRef();
@@ -28,6 +33,14 @@ const StockRisk = ({ isDashboard = false }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [currentStockPrice, setCurrentStockPrice] = useState(0);
   const [currentRiskLevel, setCurrentRiskLevel] = useState(null);
+  const [riskMetricVersion, setRiskMetricVersion] = useState(() => {
+    try {
+      const stored = localStorage.getItem(STOCK_RISK_VERSION_STORAGE_KEY);
+      return stored === 'v2' ? 'v2' : 'v1';
+    } catch {
+      return 'v1';
+    }
+  });
   const { altcoinData, fetchAltcoinData, btcData, fetchBtcData, isAltcoinDataFetched } = useContext(DataContext);
 
   const handleSelectChange = (event) => {
@@ -36,6 +49,17 @@ const StockRisk = ({ isDashboard = false }) => {
 
   const handleDenominatorChange = (event) => {
     setDenominator(event.target.value);
+  };
+
+  const handleRiskMetricVersionChange = (event) => {
+    const nextVersion = event.target.value;
+    setRiskMetricVersion(nextVersion);
+    try {
+      localStorage.setItem(STOCK_RISK_VERSION_STORAGE_KEY, nextVersion);
+    } catch {
+      // ignore storage failures
+    }
+    resetChartView();
   };
 
   const setInteractivity = () => {
@@ -98,7 +122,7 @@ const StockRisk = ({ isDashboard = false }) => {
           .filter(Boolean);
       }
       if (baseData.length > 0) {
-        const withRiskMetric = calculateStockRiskMetric(baseData);
+        const withRiskMetric = calculateStockRiskMetricByVersion(baseData, riskMetricVersion);
         setChartData(withRiskMetric);
       } else {
         setChartData([]);
@@ -106,7 +130,7 @@ const StockRisk = ({ isDashboard = false }) => {
     } else {
       setChartData([]);
     }
-  }, [altcoinData, selectedCoin, denominator, btcData]);
+  }, [altcoinData, selectedCoin, denominator, btcData, riskMetricVersion]);
 
   useEffect(() => {
     if (chartData.length === 0) return;
@@ -234,6 +258,30 @@ const StockRisk = ({ isDashboard = false }) => {
               <MenuItem value="BTC">BTC</MenuItem>
             </Select>
           </FormControl>
+          <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '240px' } }}>
+            <InputLabel id="risk-model-label" shrink sx={{ color: colors.grey[100], '&.Mui-focused': { color: colors.greenAccent[500] }, top: 0, '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' } }}>Risk Model</InputLabel>
+            <Select
+              value={riskMetricVersion}
+              onChange={handleRiskMetricVersionChange}
+              label="Risk Model"
+              labelId="risk-model-label"
+              sx={{
+                color: colors.grey[100],
+                backgroundColor: colors.primary[500],
+                borderRadius: '8px',
+                '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
+                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+                '& .MuiSelect-select': { py: 1.5, pl: 2 },
+              }}
+            >
+              {Object.entries(STOCK_RISK_METRIC_VERSIONS).map(([value, config]) => (
+                <MenuItem key={value} value={value}>
+                  {config.label}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
         </Box>
       )}
       {!isDashboard && (
@@ -305,7 +353,9 @@ const StockRisk = ({ isDashboard = false }) => {
               {
                 title: 'How it is built',
                 content:
-                  'Risk compares price to its 200-day average, maps that ratio into a 0-1 band from 3-year history, smooths over 21 days, then applies log-odds tail compression so readings only reach the outer extremes when price is genuinely stretched beyond its normal range.',
+                  riskMetricVersion === 'v2'
+                    ? 'High-band resistance (v2) uses the same v1 pipeline but adds grind resistance above 0.5 before tail compression. Steady climbs are slowed, while genuine blow-offs (price far above the rolling upper band) can still spike toward 1.0 briefly, then fade as the band catches up. Switch back to Stable (v1) any time via the Risk Model selector.'
+                    : 'Stable v1 compares price to its 200-day average, maps that ratio into a 0-1 band from 3-year history, smooths over 21 days, then applies log-odds tail compression so readings only reach the outer extremes when price is genuinely stretched beyond its normal range.',
               },
               {
                 title: 'How to interpret',

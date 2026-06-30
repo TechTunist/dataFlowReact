@@ -1,12 +1,16 @@
 /**
  * Equity risk metric, stable Mayer-style extension with tail compression.
  *
- * Pipeline:
+ * v1 pipeline:
  * 1. price / 200-day SMA (extension ratio)
  * 2. Map into 0–1 via rolling 20th/80th percentile band
  * 3. 21-day EMA smoothing
- * 4. Log-odds tail compression, progressively harder to reach 0 or 1 unless
- *    price extension is genuinely beyond the historical band (earns "extremity credit")
+ * 4. Log-odds tail compression
+ *
+ * v2: identical pipeline with extremity-aware upward resistance on the smoothed
+ * score before tail compression. Grinds face progressive drag above 0.5; genuine
+ * blow-offs (extension far above the rolling upper band) bypass resistance so
+ * risk can briefly reach ~1.0, then fall back as the band catches up.
  */
 
 const MA_WINDOW = 200;
@@ -21,6 +25,22 @@ const P_HIGH = 80;
 
 /** Base log-odds steepness, higher = more time spent away from 0/1 */
 const BASE_TAIL_STEEPNESS = 5.5;
+
+export const STOCK_RISK_METRIC_VERSIONS = {
+  v1: { label: 'Stable (v1)', description: '200-day MA + rolling percentile + tail compression' },
+  v2: {
+    label: 'High-band resistance (v2)',
+    description: 'v1 with grind resistance above 0.5; blow-offs can still reach ~1.0 briefly',
+  },
+};
+
+export const STOCK_RISK_V2_DEFAULTS = {
+  onset: 0.5,
+  stepSize: 0.01,
+  resistancePerStep: 0.07,
+  /** Extension credit (× upper-band width) needed to fully bypass upward resistance. */
+  extremityFullPass: 1.2,
+};
 
 const clamp = (v, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, v));
 
@@ -44,12 +64,138 @@ const ema = (values, period) => {
   });
 };
 
+const computeMovingAverage = (data, maWindow) =>
+  data.map((item, index) => {
+    const start = Math.max(index - maWindow + 1, 0);
+    const subset = data.slice(start, index + 1);
+    const avg =
+      subset.reduce((sum, curr) => sum + parseFloat(curr.value), 0) / subset.length;
+    return { ...item, MA: avg };
+  });
+
+const computeExtensionScores = (
+  withMA,
+  {
+    maWindow = MA_WINDOW,
+    lookback = LOOKBACK,
+    minLookback = MIN_LOOKBACK,
+  } = {}
+) => {
+  const warmup = maWindow;
+  const scored = [];
+
+  for (let i = warmup; i < withMA.length; i++) {
+    const item = withMA[i];
+    if (item.MA <= 0) continue;
+
+    const extension = parseFloat(item.value) / item.MA;
+    const windowStart = Math.max(warmup, i - lookback + 1);
+    const extensionWindow = [];
+
+    for (let j = windowStart; j <= i; j++) {
+      const row = withMA[j];
+      if (row.MA > 0) {
+        extensionWindow.push(parseFloat(row.value) / row.MA);
+      }
+    }
+
+    if (extensionWindow.length < minLookback) continue;
+
+    const sorted = [...extensionWindow].sort((a, b) => a - b);
+    const pLow = percentile(sorted, P_LOW);
+    const pMid = percentile(sorted, P_MID);
+    const pHigh = percentile(sorted, P_HIGH);
+    const span = pHigh - pLow;
+    const rawRisk = span <= 1e-9 ? 0.5 : clamp((extension - pLow) / span);
+
+    scored.push({ ...item, RawRisk: rawRisk, extension, pLow, pMid, pHigh });
+  }
+
+  return scored;
+};
+
+/**
+ * Progressively dampens risk above onset. Each 0.01 band requires more
+ * underlying momentum to penetrate — delays early high readings during
+ * steady grinds higher while leaving sub-onset behaviour unchanged.
+ */
+export const applyUpwardResistance = (risk, options = {}) => {
+  const {
+    onset = STOCK_RISK_V2_DEFAULTS.onset,
+    stepSize = STOCK_RISK_V2_DEFAULTS.stepSize,
+    resistancePerStep = STOCK_RISK_V2_DEFAULTS.resistancePerStep,
+  } = options;
+
+  const clamped = clamp(risk);
+  if (clamped <= onset) return clamped;
+
+  let output = onset;
+  let inputPos = onset;
+  let band = 0;
+
+  while (inputPos < clamped - 1e-9) {
+    const nextInput = Math.min(clamped, inputPos + stepSize);
+    const inputMarginal = nextInput - inputPos;
+    const resistanceFactor = 1 / (1 + resistancePerStep * band);
+    output += inputMarginal * resistanceFactor;
+    inputPos = nextInput;
+    band += 1;
+  }
+
+  return clamp(output);
+};
+
+const extensionExtremity = (extension, pLow, pMid, pHigh) => {
+  if (extension > pHigh && pHigh > pMid) {
+    return (extension - pHigh) / (pHigh - pMid);
+  }
+  if (extension < pLow && pMid > pLow) {
+    return (pLow - extension) / (pMid - pLow);
+  }
+  return 0;
+};
+
+/**
+ * Delays grind-high readings via upward resistance, but relaxes toward the raw
+ * smoothed score as extension proves genuinely extreme (brief blow-off spikes).
+ */
+export const applyExtremityAwareUpwardResistance = (
+  smoothedRisk,
+  extension,
+  pLow,
+  pMid,
+  pHigh,
+  options = {}
+) => {
+  const {
+    extremityFullPass = STOCK_RISK_V2_DEFAULTS.extremityFullPass,
+    ...resistanceOptions
+  } = options;
+
+  if (smoothedRisk <= (resistanceOptions.onset ?? STOCK_RISK_V2_DEFAULTS.onset)) {
+    return smoothedRisk;
+  }
+
+  const resisted = applyUpwardResistance(smoothedRisk, resistanceOptions);
+  const upperExtremity = Math.max(0, extensionExtremity(extension, pLow, pMid, pHigh));
+  const relax = clamp(upperExtremity / extremityFullPass, 0, 1);
+
+  return resisted * (1 - relax) + smoothedRisk * relax;
+};
+
 /**
  * Compress risk toward 0.5 using log-odds scaling.
  * Steepness relaxes when extension is materially beyond the calibration band,
  * so only genuine blow-offs / crashes can reach the outer risk bands.
  */
-export const compressRiskTails = (risk, extension, pLow, pMid, pHigh) => {
+export const compressRiskTails = (
+  risk,
+  extension,
+  pLow,
+  pMid,
+  pHigh,
+  baseTailSteepness = BASE_TAIL_STEEPNESS
+) => {
   const eps = 1e-4;
   const r = clamp(risk, eps, 1 - eps);
 
@@ -60,56 +206,19 @@ export const compressRiskTails = (risk, extension, pLow, pMid, pHigh) => {
     extremity = (pLow - extension) / (pMid - pLow);
   }
 
-  // extremity 0 → full compression; extremity ≥ 2 → ~3× easier to reach tails
   const relax = 1 + Math.min(Math.max(extremity, 0), 2);
-  const steepness = BASE_TAIL_STEEPNESS / relax;
+  const steepness = baseTailSteepness / relax;
 
   const logit = Math.log(r / (1 - r));
   const scaled = logit / steepness;
   return clamp(1 / (1 + Math.exp(-scaled)));
 };
 
-export const calculateStockRiskMetric = (data) => {
+const runStockRiskPipeline = (data, { applyResistance = false, resistanceOptions } = {}) => {
   if (!data || data.length < MIN_DATA) return [];
 
-  const withMA = data.map((item, index) => {
-    const start = Math.max(index - MA_WINDOW + 1, 0);
-    const subset = data.slice(start, index + 1);
-    const avg =
-      subset.reduce((sum, curr) => sum + parseFloat(curr.value), 0) / subset.length;
-    return { ...item, MA: avg };
-  });
-
-  const warmup = MA_WINDOW;
-  const scored = [];
-
-  for (let i = warmup; i < withMA.length; i++) {
-    const item = withMA[i];
-    if (item.MA <= 0) continue;
-
-    const extension = parseFloat(item.value) / item.MA;
-    const windowStart = Math.max(warmup, i - LOOKBACK + 1);
-    const extensionWindow = [];
-
-    for (let j = windowStart; j <= i; j++) {
-      const row = withMA[j];
-      if (row.MA > 0) {
-        extensionWindow.push(parseFloat(row.value) / row.MA);
-      }
-    }
-
-    if (extensionWindow.length < MIN_LOOKBACK) continue;
-
-    const sorted = [...extensionWindow].sort((a, b) => a - b);
-    const pLow = percentile(sorted, P_LOW);
-    const pMid = percentile(sorted, P_MID);
-    const pHigh = percentile(sorted, P_HIGH);
-    const span = pHigh - pLow;
-
-    const rawRisk = span <= 1e-9 ? 0.5 : clamp((extension - pLow) / span);
-
-    scored.push({ ...item, RawRisk: rawRisk, extension, pLow, pMid, pHigh });
-  }
+  const withMA = computeMovingAverage(data, MA_WINDOW);
+  const scored = computeExtensionScores(withMA);
 
   if (scored.length === 0) return [];
 
@@ -118,8 +227,48 @@ export const calculateStockRiskMetric = (data) => {
     SMOOTH_PERIOD
   );
 
-  return scored.map((row, idx) => ({
+  return scored.map((row, idx) => {
+    const smoothedRisk = smoothed[idx];
+    const adjustedSmoothed = applyResistance
+      ? applyExtremityAwareUpwardResistance(
+          smoothedRisk,
+          row.extension,
+          row.pLow,
+          row.pMid,
+          row.pHigh,
+          resistanceOptions
+        )
+      : smoothedRisk;
+
+    return {
+      ...row,
+      SmoothedRisk: smoothedRisk,
+      AdjustedSmoothed: adjustedSmoothed,
+      Risk: compressRiskTails(
+        adjustedSmoothed,
+        row.extension,
+        row.pLow,
+        row.pMid,
+        row.pHigh
+      ),
+    };
+  });
+};
+
+/** Stable production metric — unchanged behaviour. */
+export const calculateStockRiskMetric = (data) =>
+  runStockRiskPipeline(data).map((row) => ({ ...row, MetricVersion: 'v1' }));
+
+/** v1 pipeline + extremity-aware upward resistance before tail compression. */
+export const calculateStockRiskMetricV2 = (data, options = {}) => {
+  const resistanceOptions = { ...STOCK_RISK_V2_DEFAULTS, ...options };
+  return runStockRiskPipeline(data, { applyResistance: true, resistanceOptions }).map((row) => ({
     ...row,
-    Risk: compressRiskTails(smoothed[idx], row.extension, row.pLow, row.pMid, row.pHigh),
+    MetricVersion: 'v2',
   }));
+};
+
+export const calculateStockRiskMetricByVersion = (data, version = 'v1', options) => {
+  if (version === 'v2') return calculateStockRiskMetricV2(data, options);
+  return calculateStockRiskMetric(data);
 };
