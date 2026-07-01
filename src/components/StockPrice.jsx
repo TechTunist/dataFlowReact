@@ -17,6 +17,7 @@ import {
   calculateMovingAverage 
 } from '../utils/technicalIndicators';
 import { getCurrentStockPrice } from '../utils/currentStockPrice';
+import { effectiveStockQuoteDate, isUsWeekday } from '../utils/stockQuoteDate';
 import StockGroupSelect from './StockGroupSelect';
 import { stockLoadingMessage } from '../config/stocksConfig';
 import ChartInfoSections from './ChartInfoSections';
@@ -372,25 +373,29 @@ const StockPrice = ({ isDashboard = false, defaultSelectedCoin }) => {
 
   const lastBarDate = chartData.length > 0 ? chartData[chartData.length - 1].time : null;
 
-  // Quote as_of_date from backend cache (Twelve Data /quote) — used for LastUpdated.
+  // Raw as_of_date from Twelve Data (often prior session during pre-market).
   const liveQuoteAsOfDate = useMemo(() => {
     if (!stockLiveQuote?.as_of_date || !lastBarDate) return null;
     if (stockLiveQuote.as_of_date < lastBarDate) return null;
     return stockLiveQuote.as_of_date;
   }, [stockLiveQuote, lastBarDate]);
 
+  // Display date: on US weekdays bump to calendar today when quote lags (pre-market).
+  const liveQuoteDisplayDate = useMemo(() => {
+    if (!liveQuoteAsOfDate || stockLiveQuote?.price == null) return null;
+    return effectiveStockQuoteDate(liveQuoteAsOfDate);
+  }, [liveQuoteAsOfDate, stockLiveQuote?.price]);
+
   // Chart overlay only on weekdays (no synthetic Sat/Sun points).
   const liveQuoteOverlayDate = useMemo(() => {
-    if (!liveQuoteAsOfDate) return null;
-    const today = new Date();
-    if (today.getDay() === 0 || today.getDay() === 6) return null;
-    return liveQuoteAsOfDate;
-  }, [liveQuoteAsOfDate]);
+    if (!liveQuoteDisplayDate || !isUsWeekday()) return null;
+    return liveQuoteDisplayDate;
+  }, [liveQuoteDisplayDate]);
 
   const lastUpdatedDisplayDate = useMemo(() => {
-    if (liveQuoteAsOfDate) return liveQuoteAsOfDate;
+    if (liveQuoteDisplayDate) return liveQuoteDisplayDate;
     return lastBarDate;
-  }, [liveQuoteAsOfDate, lastBarDate]);
+  }, [liveQuoteDisplayDate, lastBarDate]);
 
   // Append live quote from backend cache (Twelve Data /quote via server).
   // Use update() ONLY — never fitContent here, to avoid resetting user zoom/pan.
