@@ -114,9 +114,12 @@ const UKEsaClaimantsChart = lazyWithRetry(() => import('./components/UKEsaClaima
  * This replaces the previous 800+ lines of repetitive <Route> JSX.
  * Much easier to maintain, review, and extend.
  */
+/** Canonical public homepage — splash content lives here for SEO and routing. */
+export const HOME_PATH = "/";
+
 export const PUBLIC_ROUTE_PATHS = [
-  "/",
-  "/splash",
+  HOME_PATH,
+  "/splash", // legacy; 301 + client redirect to HOME_PATH
   "/login-signup",
   "/newsletter/unsubscribe",
   "/chart-gallery",
@@ -129,8 +132,8 @@ export const PUBLIC_ROUTE_PATHS = [
 
 const appRoutes = [
   // Public routes (no auth required)
-  { path: "/", element: <Navigate to="/splash" replace />, public: true },
-  { path: "/splash", element: <SplashPage />, public: true },
+  { path: HOME_PATH, element: <SplashPage />, public: true },
+  { path: "/splash", element: <Navigate to={HOME_PATH} replace />, public: true },
   { path: "/login-signup", element: <LoginSignup />, public: true },
   { path: "/newsletter/unsubscribe", element: <NewsletterUnsubscribe />, public: true },
   { path: "/chart-gallery", element: <PublicChartGallery />, public: true },
@@ -336,7 +339,7 @@ const AuthWrapper = memo(() => {
   }
   // Redirect to splash if not signed in and trying to access a protected route
   if (!isSignedIn && !PUBLIC_ROUTE_PATHS.includes(location.pathname)) {
-    return <Navigate to="/splash" replace state={{ from: location }} />;
+    return <Navigate to={HOME_PATH} replace state={{ from: location }} />;
   }
   return <AppContent />;
 });
@@ -347,7 +350,7 @@ const AppContent = memo(() => {
   const [isSidebar, setIsSidebar] = useState(!isMobile);
   const location = useLocation();
   const isDashboardTopbar = location.pathname === "/dashboard";
-  const isSplashPage = location.pathname === "/splash";
+  const isSplashPage = location.pathname === HOME_PATH;
   const isLoginSignupPage = location.pathname === "/login-signup";
   const seoLandingPaths = ["/bitcoin-analytics", "/on-chain-metrics", "/crypto-charts-tools"];
   const isStandalonePublicPage =

@@ -16,7 +16,7 @@ const SeoLandingPage = () => {
   const page = Object.values(SEO_PAGES).find((p) => p.path === pathname);
 
   if (!page) {
-    return <Navigate to="/splash" replace />;
+    return <Navigate to="/" replace />;
   }
 
   return (

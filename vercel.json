@@ -21,6 +21,13 @@
       ]
     }
   ],
+  "redirects": [
+    {
+      "source": "/splash",
+      "destination": "/",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     {
       "source": "/api/(.*)",

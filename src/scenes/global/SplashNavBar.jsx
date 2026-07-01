@@ -59,7 +59,7 @@ const Navbar = ({ colors, topOffset = 0 }) => {
             alignItems: 'center', // Ensure content is centered vertically
           }}
         >
-          <Link to="/splash" style={{ display: "flex", alignItems: "center" }}>
+          <Link to="/" style={{ display: "flex", alignItems: "center" }}>
             <img
               src="/assets/cryptological-original-logo.png"
               alt="Cryptological Logo"

@@ -13,7 +13,6 @@ const SITE_URL = 'https://www.cryptological.app';
 
 const PRIORITY = {
   '/': 1.0,
-  '/splash': 1.0,
   '/bitcoin-analytics': 0.9,
   '/on-chain-metrics': 0.9,
   '/crypto-charts-tools': 0.9,
@@ -26,9 +25,7 @@ const CHANGEFREQ = {
   '/bitcoin-whitepaper': 'monthly',
 };
 
-const paths = ['/', ...Object.values(SEO_PAGES).map((p) => p.path)];
-
-const uniquePaths = [...new Set(paths)];
+const uniquePaths = [...new Set(Object.values(SEO_PAGES).map((p) => p.path))];
 
 const urls = uniquePaths
   .map((path) => {

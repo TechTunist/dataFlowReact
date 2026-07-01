@@ -497,7 +497,7 @@ const HundredDayWindow = () => {
             </Button>
             <Button
               component={Link}
-              to="/splash"
+              to="/"
               variant="outlined"
               size="large"
               sx={{

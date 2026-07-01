@@ -5,7 +5,7 @@
 
 export const SEO_PAGES = {
   splash: {
-    path: '/splash',
+    path: '/',
     title: 'Cryptological, Bitcoin & Crypto Analytics Dashboard',
     description:
       'Professional Bitcoin and cryptocurrency analytics with on-chain metrics, risk indicators, market cycles, and macro data. Free signup, explore charts like Glassnode and LookIntoBitcoin in one platform.',
@@ -72,7 +72,7 @@ export const SEO_PAGES = {
     links: [
       { href: '/on-chain-metrics', label: 'On-chain metrics' },
       { href: '/chart-gallery', label: 'Full chart gallery' },
-      { href: '/splash', label: 'Home' },
+      { href: '/', label: 'Home' },
       { href: '/login-signup?mode=signup', label: 'Create free account' },
     ],
   },
@@ -181,7 +181,7 @@ export const SEO_PAGES = {
       },
     ],
     links: [
-      { href: '/splash', label: 'Cryptological home' },
+      { href: '/', label: 'Cryptological home' },
       { href: '/bitcoin-whitepaper', label: 'Why Bitcoin?' },
       { href: '/chart-gallery', label: 'Explore charts' },
       { href: '/login-signup?mode=signup', label: 'Sign up free' },
@@ -204,7 +204,7 @@ export const SEO_PAGES = {
       },
     ],
     links: [
-      { href: '/splash', label: 'Cryptological home' },
+      { href: '/', label: 'Cryptological home' },
       { href: '/bitcoin-analytics', label: 'Bitcoin analytics tools' },
       { href: '/chart-gallery', label: 'Explore charts' },
     ],
@@ -229,12 +229,11 @@ export const SEO_PAGES = {
     links: [
       { href: '/login-signup?mode=signup', label: 'Sign up free' },
       { href: '/bitcoin-analytics', label: 'Bitcoin analytics' },
-      { href: '/splash', label: 'Home' },
+      { href: '/', label: 'Home' },
     ],
   },
 };
 
 export const PRERENDER_PATHS = [
-  '/',
-  ...Object.keys(SEO_PAGES).map((key) => SEO_PAGES[key].path),
+  ...new Set(Object.values(SEO_PAGES).map((p) => p.path)),
 ];

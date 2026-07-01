@@ -9,7 +9,7 @@ const FOOTER_SECTIONS = [
   {
     title: 'Explore',
     links: [
-      { to: '/splash', label: 'Home' },
+      { to: '/', label: 'Home' },
       { to: '/bitcoin-analytics', label: 'Bitcoin Analytics' },
       { to: '/on-chain-metrics', label: 'On-Chain Metrics' },
       { to: '/crypto-charts-tools', label: 'Crypto Charting Tools' },

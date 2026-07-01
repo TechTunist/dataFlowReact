@@ -90,7 +90,7 @@ const SplashPage = () => {
       <SeoHead
         title={splashSeo.title}
         description={splashSeo.description}
-        path="/splash"
+        path="/"
         keywords={splashSeo.keywords}
         jsonLd={[organizationJsonLd, webSiteJsonLd, softwareApplicationJsonLd]}
       />

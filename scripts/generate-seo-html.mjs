@@ -199,15 +199,11 @@ function writeForPath(template, page, routePath) {
 }
 
 const template = readFileSync(join(buildDir, 'index.html'), 'utf8');
-const splashPage = SEO_PAGES.splash;
 
 console.log('Generating crawlable static HTML for public routes...');
 
 for (const routePath of PRERENDER_PATHS) {
-  const page =
-    routePath === '/'
-      ? splashPage
-      : Object.values(SEO_PAGES).find((p) => p.path === routePath);
+  const page = Object.values(SEO_PAGES).find((p) => p.path === routePath);
 
   if (!page) {
     console.warn(`  ⚠ No SEO content for ${routePath}, skipping`);
