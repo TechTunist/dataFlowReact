@@ -372,18 +372,25 @@ const StockPrice = ({ isDashboard = false, defaultSelectedCoin }) => {
 
   const lastBarDate = chartData.length > 0 ? chartData[chartData.length - 1].time : null;
 
-  const liveQuoteDisplayDate = useMemo(() => {
+  // Quote as_of_date from backend cache (Twelve Data /quote) — used for LastUpdated.
+  const liveQuoteAsOfDate = useMemo(() => {
     if (!stockLiveQuote?.as_of_date || !lastBarDate) return null;
     if (stockLiveQuote.as_of_date < lastBarDate) return null;
-    const today = new Date();
-    if (today.getDay() === 0 || today.getDay() === 6) return null;
     return stockLiveQuote.as_of_date;
   }, [stockLiveQuote, lastBarDate]);
 
+  // Chart overlay only on weekdays (no synthetic Sat/Sun points).
+  const liveQuoteOverlayDate = useMemo(() => {
+    if (!liveQuoteAsOfDate) return null;
+    const today = new Date();
+    if (today.getDay() === 0 || today.getDay() === 6) return null;
+    return liveQuoteAsOfDate;
+  }, [liveQuoteAsOfDate]);
+
   const lastUpdatedDisplayDate = useMemo(() => {
-    if (liveQuoteDisplayDate) return liveQuoteDisplayDate;
+    if (liveQuoteAsOfDate) return liveQuoteAsOfDate;
     return lastBarDate;
-  }, [liveQuoteDisplayDate, lastBarDate]);
+  }, [liveQuoteAsOfDate, lastBarDate]);
 
   // Append live quote from backend cache (Twelve Data /quote via server).
   // Use update() ONLY — never fitContent here, to avoid resetting user zoom/pan.
@@ -391,17 +398,17 @@ const StockPrice = ({ isDashboard = false, defaultSelectedCoin }) => {
     if (
       priceSeriesRef.current &&
       stockLiveQuote?.price != null &&
-      liveQuoteDisplayDate &&
+      liveQuoteOverlayDate &&
       chartData.length > 0 &&
       denominator === 'USD'
     ) {
       try {
-        priceSeriesRef.current.update({ time: liveQuoteDisplayDate, value: stockLiveQuote.price });
+        priceSeriesRef.current.update({ time: liveQuoteOverlayDate, value: stockLiveQuote.price });
       } catch (error) {
         console.error('Error updating live stock price on chart:', error);
       }
     }
-  }, [stockLiveQuote, liveQuoteDisplayDate, denominator, chartData.length]);
+  }, [stockLiveQuote, liveQuoteOverlayDate, denominator, chartData.length]);
 
   // Update Fed balance series data
   useEffect(() => {
