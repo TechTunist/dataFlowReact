@@ -54,6 +54,16 @@ describe('subscriptionAccess', () => {
     expect(hasPremiumAccess(canceledUser)).toBe(true);
   });
 
+  test('hasPremiumAccess denies canceling user without period end', () => {
+    const legacyCanceling = normalizeSubscriptionStatus({
+      plan: 'Full Access (Beta)',
+      subscription_status: 'canceling',
+      access: 'Full',
+      current_period_end: null,
+    });
+    expect(hasPremiumAccess(legacyCanceling)).toBe(false);
+  });
+
   test('didAccessRevoke detects promo ending', () => {
     const duringPromo = normalizeSubscriptionStatus({
       access: 'Full',

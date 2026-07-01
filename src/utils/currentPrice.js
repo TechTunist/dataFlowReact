@@ -1,12 +1,45 @@
 /**
  * Lightweight current (live) price fetcher using CoinGecko public API.
  * Supports BTC, ETH, and all altcoins in the app via coingecko ids.
- * 60s in-memory cache + LS fallback for BTC/ETH.
+ * 1h in-memory + localStorage cache per coin to stay within free-tier limits.
  * Called only once per chart load (after rendering) to provide up-to-date price.
  * Does not poll repeatedly to avoid interfering with charts.
  */
-const CACHE_TTL_MS = 60 * 1000;
+const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 const cache = new Map();
+
+function lsPriceKey(coinCode) {
+  return `livePrice_${coinCode.toUpperCase()}`;
+}
+
+function lsTimeKey(coinCode) {
+  return `livePrice_${coinCode.toUpperCase()}_ts`;
+}
+
+function readLsCache(coinCode, now) {
+  try {
+    const cachedPrice = localStorage.getItem(lsPriceKey(coinCode));
+    const cacheTime = localStorage.getItem(lsTimeKey(coinCode));
+    if (cachedPrice && cacheTime && now - parseInt(cacheTime, 10) < CACHE_TTL_MS) {
+      const p = JSON.parse(cachedPrice);
+      if (Number.isFinite(p)) {
+        return { price: p, ts: parseInt(cacheTime, 10) };
+      }
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
+function writeLsCache(coinCode, price, now) {
+  try {
+    localStorage.setItem(lsPriceKey(coinCode), JSON.stringify(price));
+    localStorage.setItem(lsTimeKey(coinCode), now.toString());
+  } catch {
+    // quota / private mode
+  }
+}
 
 // Map from our coin codes (upper) to CoinGecko ids
 const COINGECKO_ID_MAP = {
@@ -54,40 +87,62 @@ async function fetchPrice(coinId) {
 }
 
 export async function getCurrentPrice(coinCode = 'BTC') {
-  const cgId = COINGECKO_ID_MAP[coinCode.toUpperCase()] || coinCode.toLowerCase();
+  const upper = coinCode.toUpperCase();
+  const cgId = COINGECKO_ID_MAP[upper] || coinCode.toLowerCase();
   const key = cgId;
   const now = Date.now();
+
   const hit = cache.get(key);
   if (hit && now - hit.ts < CACHE_TTL_MS) return hit.price;
+
+  const lsHit = readLsCache(upper, now);
+  if (lsHit) {
+    cache.set(key, lsHit);
+    return lsHit.price;
+  }
+
   try {
     const price = await fetchPrice(cgId);
     if (price != null) {
       cache.set(key, { price, ts: now });
-      // Legacy LS only for BTC/ETH for backward compat with other widgets
+      writeLsCache(upper, price, now);
+      // Legacy LS keys for BTC/ETH widgets that still read btcPrice/ethPrice
       if (cgId === 'bitcoin') {
-        try { localStorage.setItem('btcPrice', JSON.stringify(price)); localStorage.setItem('cacheTime', now.toString()); } catch(e){}
+        try {
+          localStorage.setItem('btcPrice', JSON.stringify(price));
+          localStorage.setItem('cacheTime', now.toString());
+        } catch {
+          // ignore
+        }
       } else if (cgId === 'ethereum') {
-        try { localStorage.setItem('ethPrice', JSON.stringify(price)); localStorage.setItem('ethCacheTime', now.toString()); } catch(e){}
+        try {
+          localStorage.setItem('ethPrice', JSON.stringify(price));
+          localStorage.setItem('ethCacheTime', now.toString());
+        } catch {
+          // ignore
+        }
       }
       return price;
     }
-  } catch(e){}
-  // Fallback to LS for BTC/ETH
-  if (cgId === 'bitcoin') {
-    try {
-      const cachedPrice = localStorage.getItem('btcPrice'); const cacheTime = localStorage.getItem('cacheTime');
-      if (cachedPrice && cacheTime && now - parseInt(cacheTime,10) < CACHE_TTL_MS*5) {
-        const p = JSON.parse(cachedPrice); cache.set(key, {price: p, ts: parseInt(cacheTime,10)}); return p;
-      }
-    } catch(e){}
-  } else if (cgId === 'ethereum') {
-    try {
-      const cached = localStorage.getItem('ethPrice'); const t = localStorage.getItem('ethCacheTime');
-      if (cached && t && now - parseInt(t,10) < CACHE_TTL_MS*5) {
-        const p=JSON.parse(cached); cache.set(key,{price:p,ts:parseInt(t,10)}); return p;
-      }
-    } catch(e){}
+  } catch {
+    // fall through to LS
   }
+
+  // Legacy BTC/ETH fallback keys
+  if (cgId === 'bitcoin') {
+    const legacy = readLsCache('BTC', now);
+    if (legacy) {
+      cache.set(key, legacy);
+      return legacy.price;
+    }
+  } else if (cgId === 'ethereum') {
+    const legacy = readLsCache('ETH', now);
+    if (legacy) {
+      cache.set(key, legacy);
+      return legacy.price;
+    }
+  }
+
   return null;
 }
 

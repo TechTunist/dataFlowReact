@@ -36,19 +36,21 @@ export const subscriptionStatusesEqual = (a, b) => {
 export const isCancelledButValid = (subscriptionStatus) => {
   if (!subscriptionStatus) return false;
   const rawStatus = (subscriptionStatus.subscription_status || '').toLowerCase();
-  return (
-    (rawStatus === 'canceled' || rawStatus === 'canceling')
-    && subscriptionStatus.current_period_end
-    && subscriptionStatus.current_period_end > new Date(Date.now() - GRACE_MS)
-  );
+  if (rawStatus !== 'canceled' && rawStatus !== 'canceling') return false;
+  if (!subscriptionStatus.current_period_end) return false;
+  return subscriptionStatus.current_period_end > new Date(Date.now() - GRACE_MS);
 };
 
 /** Authoritative premium check used by RestrictToPaid and cache gating. */
 export const hasPremiumAccess = (subscriptionStatus) => {
   if (!subscriptionStatus) return false;
   if (subscriptionStatus.promo_active) return true;
+  const rawStatus = (subscriptionStatus.subscription_status || '').toLowerCase();
+  if (rawStatus === 'canceling' || rawStatus === 'canceled') {
+    return isCancelledButValid(subscriptionStatus);
+  }
   if (subscriptionStatus.access === 'Full') return true;
-  return isCancelledButValid(subscriptionStatus);
+  return false;
 };
 
 /** True when access dropped from premium to limited (promo ended, cancel expired, etc.). */

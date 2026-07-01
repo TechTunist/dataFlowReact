@@ -16,7 +16,7 @@ import {
   BULL_MARKET_SUPPORT_BAND,
   calculateMovingAverage 
 } from '../utils/technicalIndicators';
-import { getCurrentPrice } from '../utils/currentPrice';
+import { getCurrentStockPrice } from '../utils/currentStockPrice';
 import StockGroupSelect from './StockGroupSelect';
 import { stockLoadingMessage } from '../config/stocksConfig';
 import ChartInfoSections from './ChartInfoSections';
@@ -42,7 +42,7 @@ const StockPrice = ({ isDashboard = false, defaultSelectedCoin }) => {
   const [activeSMAs, setActiveSMAs] = useState([]);
   const [maFilter, setMaFilter] = useState('daily'); // 'daily' | 'weekly'
   const [activeRsiPeriod, setActiveRsiPeriod] = useState('');
-  const [currentAltPrice, setCurrentAltPrice] = useState(null);
+  const [stockLiveQuote, setStockLiveQuote] = useState(null);
   const clearMovingAverages = useCallback(() => {
     setActiveSMAs([]);
   }, []);
@@ -184,18 +184,18 @@ const StockPrice = ({ isDashboard = false, defaultSelectedCoin }) => {
     }
   }, [denominator, altcoinData, selectedCoin, btcData, activeIndicators, fedBalanceData, isAltcoinDataFetched]);
 
-  // Fetch current price for the selected altcoin from CoinGecko ONCE after its data is loaded.
-  // Only once per coin load to avoid interference with chart zoom.
+  // Fetch live stock quote from backend cache ONCE after historical data loads.
   useEffect(() => {
-    currentPriceFetched.current = false; // reset on coin change
+    currentPriceFetched.current = false;
+    setStockLiveQuote(null);
   }, [selectedCoin]);
 
   useEffect(() => {
     const altDataForCoin = altcoinData[selectedCoin] || [];
     if (altDataForCoin.length > 0 && !currentPriceFetched.current) {
       currentPriceFetched.current = true;
-      getCurrentPrice(selectedCoin).then(price => {
-        if (price != null) setCurrentAltPrice(price);
+      getCurrentStockPrice(selectedCoin).then(quote => {
+        if (quote != null) setStockLiveQuote(quote);
       }).catch(() => {});
     }
   }, [selectedCoin, altcoinData]);
@@ -370,19 +370,38 @@ const StockPrice = ({ isDashboard = false, defaultSelectedCoin }) => {
     }
   }, [chartData]);
 
-  // Update price series with live current price (from CoinGecko, fetched once per coin load).
-  // Use update() ONLY - never fitContent here, to avoid resetting user zoom/pan.
-  // Only update series point when in USD denominator (to keep units consistent); USD current always shown in legend.
+  const lastBarDate = chartData.length > 0 ? chartData[chartData.length - 1].time : null;
+
+  const liveQuoteDisplayDate = useMemo(() => {
+    if (!stockLiveQuote?.as_of_date || !lastBarDate) return null;
+    if (stockLiveQuote.as_of_date < lastBarDate) return null;
+    const today = new Date();
+    if (today.getDay() === 0 || today.getDay() === 6) return null;
+    return stockLiveQuote.as_of_date;
+  }, [stockLiveQuote, lastBarDate]);
+
+  const lastUpdatedDisplayDate = useMemo(() => {
+    if (liveQuoteDisplayDate) return liveQuoteDisplayDate;
+    return lastBarDate;
+  }, [liveQuoteDisplayDate, lastBarDate]);
+
+  // Append live quote from backend cache (Twelve Data /quote via server).
+  // Use update() ONLY — never fitContent here, to avoid resetting user zoom/pan.
   useEffect(() => {
-    if (priceSeriesRef.current && currentAltPrice != null && chartData.length > 0 && denominator === 'USD') {
-      const today = new Date().toISOString().split('T')[0];
+    if (
+      priceSeriesRef.current &&
+      stockLiveQuote?.price != null &&
+      liveQuoteDisplayDate &&
+      chartData.length > 0 &&
+      denominator === 'USD'
+    ) {
       try {
-        priceSeriesRef.current.update({ time: today, value: currentAltPrice });
+        priceSeriesRef.current.update({ time: liveQuoteDisplayDate, value: stockLiveQuote.price });
       } catch (error) {
-        console.error('Error updating current alt price on chart:', error);
+        console.error('Error updating live stock price on chart:', error);
       }
     }
-  }, [currentAltPrice, denominator]);
+  }, [stockLiveQuote, liveQuoteDisplayDate, denominator, chartData.length]);
 
   // Update Fed balance series data
   useEffect(() => {
@@ -972,7 +991,10 @@ const StockPrice = ({ isDashboard = false, defaultSelectedCoin }) => {
               gap: '10px',
             }}
           >
-            <LastUpdated storageKey={`${selectedCoin.toLowerCase()}Data`} />
+            <LastUpdated
+              storageKey={`${selectedCoin.toLowerCase()}Data`}
+              customDate={lastUpdatedDisplayDate}
+            />
             {activeIndicators.includes('fed-balance') && (
               <LastUpdated storageKey="fedBalanceData" />
             )}

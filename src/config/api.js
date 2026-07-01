@@ -48,6 +48,7 @@ export const API_ENDPOINTS = {
   floorEcho: () => apiUrl('/api/floor-echo/'),
   txMacro: () => apiUrl('/api/tx-macro/'),
   altcoinPrice: (coin) => apiUrl(`/api/${coin.toLowerCase()}/price/`),
+  stockLiveQuote: (symbol) => apiUrl(`/api/stock-live-quote/${symbol.toLowerCase()}/`),
   tslaPrice: () => apiUrl('/api/tsla/price/'),
   altcoinSeasonIndex: () => apiUrl('/api/altcoin-season-index/'),
   altcoinSeasonTimeseries: () => apiUrl('/api/altcoin-season-index-timeseries/'),
