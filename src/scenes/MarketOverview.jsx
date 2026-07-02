@@ -27,6 +27,7 @@ import ShowChartIcon from '@mui/icons-material/ShowChart';
 import { saveCycleDaysData, getCycleDaysData } from '../utility/idbUtils';
 import { useNavigate } from 'react-router-dom';
 import { calculateRiskMetric } from '../utility/riskMetric';
+import { getBtcReferenceDate } from '../utility/cycleBottomDaysLeft';
 import logger from '../utils/logger';
 
 
@@ -1587,7 +1588,7 @@ const DaysLeftWidget = memo(({ type }) => {
       return data;
     }
 
-    const currentDate = btcData[btcData.length - 1]?.time || new Date().toISOString().split('T')[0];
+    const currentDate = getBtcReferenceDate(btcData);
     const parsedCurrentDate = new Date(currentDate);
     if (isNaN(parsedCurrentDate)) {
       console.warn('Invalid current date:', currentDate);

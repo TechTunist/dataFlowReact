@@ -4,6 +4,7 @@ import { useTheme } from '@mui/material';
 import { tokens } from "../theme";
 import '../styling/LastUpdated.css';
 import { DataContext } from '../DataContext';
+import { effectiveDailyReferenceDate } from '../utils/dailyReferenceDate';
 
 const LastUpdated = ({ storageKey, customDate }) => {
   const theme = useTheme();
@@ -21,6 +22,7 @@ const LastUpdated = ({ storageKey, customDate }) => {
     dominanceLastUpdated,
     altcoinLastUpdated,
     fetchBtcData,
+    refreshBtcData,
     fetchFedBalanceData,
     fetchMvrvData,
     fetchEthData,
@@ -38,15 +40,25 @@ const LastUpdated = ({ storageKey, customDate }) => {
 
   // Map storageKey to fetch function
   const fetchFunctionMap = {
-    btcData: fetchBtcData,
+    btcData: refreshBtcData,
     fedBalanceData: fetchFedBalanceData,
     mvrvData: fetchMvrvData,
     ethData: fetchEthData,
   };
 
+  const displayDateForKey = (key, rawDate) => {
+    if (!rawDate) return rawDate;
+    if (key === 'btcData') return effectiveDailyReferenceDate(rawDate);
+    return rawDate;
+  };
+
   // Format date to dd-mm-yyyy
   const formatDate = (date) => {
     if (!date) return '';
+    if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      const [year, month, day] = date.split('-');
+      return `${day}-${month}-${year}`;
+    }
     const d = new Date(date);
     const day = String(d.getDate()).padStart(2, '0');
     const month = String(d.getMonth() + 1).padStart(2, '0'); // Months are 0-based
@@ -58,7 +70,7 @@ const LastUpdated = ({ storageKey, customDate }) => {
   useEffect(() => {
     // Use customDate if provided, otherwise fall back to context-derived date
     if (customDate) {
-      setLastUpdated(formatDate(customDate));
+      setLastUpdated(formatDate(displayDateForKey(storageKey, customDate)));
     } else {
       // Check if storageKey is for an altcoin (e.g., solData, ethData)
       const coin = Object.keys(altcoinLastUpdated).find(
@@ -69,7 +81,7 @@ const LastUpdated = ({ storageKey, customDate }) => {
       } else {
         const lastUpdatedDate = lastUpdatedMap[storageKey];
         if (lastUpdatedDate) {
-          setLastUpdated(formatDate(lastUpdatedDate));
+          setLastUpdated(formatDate(displayDateForKey(storageKey, lastUpdatedDate)));
         } else {
           setLastUpdated('');
         }

@@ -9,6 +9,8 @@ import { waitForPreloadIfNeeded } from './utils/waitForPreloadIfNeeded'; // Phas
 import { getAuthHeaders } from './utils/clerkAuth';
 import { isPremiumCacheId } from './utils/premiumCache';
 import { canUsePremiumCache, notifySubscriptionRequired } from './utils/subscriptionRevocation';
+import { calendarTodayISO } from './utils/stockQuoteDate';
+import { effectiveDailyReferenceDate } from './utils/dailyReferenceDate';
 
 export const DataContext = createContext();
 
@@ -116,7 +118,10 @@ const fetchFreshAndUpdate = async ({
 
     setData(formattedData);
     if (latestFetchedDate && setLastUpdated) {
-      setLastUpdated(latestFetchedDate);
+      const displayDate = cacheId === 'btcData'
+        ? effectiveDailyReferenceDate(latestFetchedDate)
+        : latestFetchedDate;
+      setLastUpdated(displayDate);
     }
     await cacheData(cacheId, formattedData, currentTimestamp || Date.now());
   } catch (err) {
@@ -151,7 +156,7 @@ const fetchWithCache = async ({
     inflightFetches.add(cacheId);
 
     setIsFetched(true);
-    const currentDate = new Date().toISOString().split('T')[0];
+    const currentDate = calendarTodayISO();
     const currentTimestamp = Date.now();
 
     const cached = await getCachedData(cacheId);
@@ -209,7 +214,10 @@ const fetchWithCache = async ({
           logger.log(`[Cache] HIT (fresh) for ${cacheId}`);
           setData(Array.isArray(cached.data) ? cachedData : cached.data);
           if (setLastUpdated) {
-            setLastUpdated(latestCachedDate);
+            const displayDate = cacheId === 'btcData'
+              ? effectiveDailyReferenceDate(latestCachedDate)
+              : latestCachedDate;
+            setLastUpdated(displayDate);
           }
           return true;
         }
@@ -226,7 +234,10 @@ const fetchWithCache = async ({
           logger.log(`[Cache] HIT (stale, revalidating in background) for ${cacheId}`);
           setData(Array.isArray(cached.data) ? cachedData : cached.data);
           if (setLastUpdated) {
-            setLastUpdated(latestCachedDate);
+            const displayDate = cacheId === 'btcData'
+              ? effectiveDailyReferenceDate(latestCachedDate)
+              : latestCachedDate;
+            setLastUpdated(displayDate);
           }
           if (shouldRevalidate) {
             fetchFreshAndUpdate({
@@ -302,7 +313,10 @@ const fetchWithCache = async ({
       ) {
         setData(Array.isArray(cached.data) ? cachedArr : cached.data);
         if (setLastUpdated) {
-          setLastUpdated(latestCachedDate);
+          const displayDate = cacheId === 'btcData'
+            ? effectiveDailyReferenceDate(latestCachedDate)
+            : latestCachedDate;
+          setLastUpdated(displayDate);
         }
         await cacheData(cacheId, cached.data, currentTimestamp);
         return true;
@@ -311,7 +325,10 @@ const fetchWithCache = async ({
 
     setData(formattedData);
     if (latestFetchedDate && setLastUpdated) {
-      setLastUpdated(latestFetchedDate);
+      const displayDate = cacheId === 'btcData'
+        ? effectiveDailyReferenceDate(latestFetchedDate)
+        : latestFetchedDate;
+      setLastUpdated(displayDate);
     }
     await cacheData(cacheId, formattedData, currentTimestamp);
     logger.log(`[Cache] MISS (fetched fresh) for ${cacheId}`);
@@ -539,7 +556,7 @@ export const DataProvider = ({ children }) => {
           if (freshCached && freshCached.data) {
             const sortedCachedData = [...freshCached.data].sort((a, b) => new Date(a.time) - new Date(b.time));
             const latestCachedDate = sortedCachedData[sortedCachedData.length - 1].time;
-            const currentDate = new Date().toISOString().split('T')[0];
+            const currentDate = calendarTodayISO();
 
             // Phase 3: same unified rule as fetchWithCache (TTL primary + date booster)
             let shouldReuseCache = false;
@@ -561,7 +578,10 @@ export const DataProvider = ({ children }) => {
             if (shouldReuseCache) {
               if (isMounted) {
                 setData(sortedCachedData);
-                setLastUpdated(latestCachedDate);
+                const displayDate = id === 'btcData'
+                  ? effectiveDailyReferenceDate(latestCachedDate)
+                  : latestCachedDate;
+                setLastUpdated(displayDate);
                 setIsFetched(true);
               }
               return;

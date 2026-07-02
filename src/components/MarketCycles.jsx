@@ -17,6 +17,7 @@ import {
   PROJECTED_BOTTOM_DATE,
   BOTTOM_TO_BOTTOM_AVG_DAYS,
   formatCycleDate,
+  getBtcReferenceDate,
 } from '../utility/cycleBottomDaysLeft';
 
 const MarketCycles = ({ isDashboard = false }) => {
@@ -64,7 +65,7 @@ const MarketCycles = ({ isDashboard = false }) => {
     }
 
     const peakDate = CYCLE4_END_DATE;
-    const currentDateStr = btcData[btcData.length - 1].time;
+    const currentDateStr = getBtcReferenceDate(btcData);
     const elapsedSincePeak = calculateDays(peakDate, currentDateStr) || 0;
 
     // Bear phase remaining (from this cycle peak)

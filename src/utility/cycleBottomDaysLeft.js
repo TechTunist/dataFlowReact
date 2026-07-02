@@ -1,3 +1,6 @@
+import { calendarTodayISO } from '../utils/stockQuoteDate';
+import { getBtcReferenceDate } from '../utils/dailyReferenceDate';
+
 /** Bull market top (Cycle 4), reference for post-peak bear countdown. */
 export const CYCLE_TOP_DATE = '2025-10-06';
 
@@ -47,7 +50,7 @@ export function daysBetween(start, end) {
  * Matches Market Cycles countdown; Market Overview uses the same 370-day average.
  */
 export function getCycleBottomDaysLeft(referenceDate) {
-  const ref = referenceDate || new Date().toISOString().split('T')[0];
+  const ref = referenceDate || calendarTodayISO();
   const elapsed = daysBetween(CYCLE_TOP_DATE, ref);
   return {
     daysLeft: Math.max(0, AVG_DAYS_TOP_TO_BOTTOM - elapsed),
@@ -61,3 +64,6 @@ export function formatCycleDate(dateStr) {
   const date = new Date(dateStr);
   return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
+
+/** Reference date for cycle counters: last BTC daily bar, bumped to today when lagging. */
+export { getBtcReferenceDate };

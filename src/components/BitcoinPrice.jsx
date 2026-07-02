@@ -1185,6 +1185,7 @@ import {
   calculateMovingAverage 
 } from '../utils/technicalIndicators';
 import { getCurrentBitcoinPrice } from '../utils/currentPrice';
+import { effectiveDailyReferenceDate } from '../utils/dailyReferenceDate';
 import ChartTooltip from './ChartTooltip';
 import ChartInfoSections from './ChartInfoSections';
 const BitcoinPrice = ({ isDashboard = false }) => {
@@ -1593,16 +1594,21 @@ const BitcoinPrice = ({ isDashboard = false }) => {
   // Update price series with live current price (from CoinGecko, fetched once).
   // Use update() only - do NOT call fitContent() here, as that would reset user zoom.
   // This ensures the chart shows up-to-date price without interfering with interactions.
+  const lastBarDate = btcData.length > 0 ? btcData[btcData.length - 1].time : null;
+  const liveOverlayDate = useMemo(
+    () => (currentBtcPrice != null ? effectiveDailyReferenceDate(lastBarDate) : null),
+    [currentBtcPrice, lastBarDate],
+  );
+
   useEffect(() => {
-    if (priceSeriesRef.current && currentBtcPrice != null) {
-      const today = new Date().toISOString().split('T')[0];
+    if (priceSeriesRef.current && currentBtcPrice != null && liveOverlayDate) {
       try {
-        priceSeriesRef.current.update({ time: today, value: currentBtcPrice });
+        priceSeriesRef.current.update({ time: liveOverlayDate, value: currentBtcPrice });
       } catch (error) {
         console.error('Error updating current BTC price on chart:', error);
       }
     }
-  }, [currentBtcPrice]);
+  }, [currentBtcPrice, liveOverlayDate]);
 
   useEffect(() => {
     if (mvrvSeriesRef.current && btcData.length > 0 && mvrvData.length > 0) {

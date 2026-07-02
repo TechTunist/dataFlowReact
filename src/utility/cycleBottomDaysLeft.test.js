@@ -6,6 +6,7 @@ import {
   PROJECTED_BOTTOM_DATE,
   THREE_CYCLE_AVG_TOP_TO_BOTTOM,
 } from './cycleBottomDaysLeft';
+import { calendarTodayISO } from '../utils/stockQuoteDate';
 
 describe('cycleBottomDaysLeft', () => {
   test('daysBetween counts calendar days between ISO dates', () => {
@@ -20,7 +21,7 @@ describe('cycleBottomDaysLeft', () => {
   });
 
   test('getCycleBottomDaysLeft uses today when reference omitted', () => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = calendarTodayISO();
     const expected = Math.max(0, AVG_DAYS_TOP_TO_BOTTOM - daysBetween(CYCLE_TOP_DATE, today));
     expect(getCycleBottomDaysLeft().daysLeft).toBe(expected);
   });

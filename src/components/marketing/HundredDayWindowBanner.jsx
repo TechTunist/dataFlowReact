@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { Box, Container, Typography } from '@mui/material';
 import { Link } from 'react-router-dom';
 import { useData } from '../../DataContext';
-import { getCycleBottomDaysLeft } from '../../utility/cycleBottomDaysLeft';
+import { getCycleBottomDaysLeft, getBtcReferenceDate } from '../../utility/cycleBottomDaysLeft';
 
 /** Fixed height offsets, keep in sync with SplashNavBar `topOffset`. */
 export const HUNDRED_DAY_WINDOW_BANNER_HEIGHT = { xs: 40, sm: 44 };
@@ -11,10 +11,7 @@ const HundredDayWindowBanner = ({ colors, linkTo = '/100-day-window' }) => {
   const { btcData } = useData();
 
   const daysLeft = useMemo(() => {
-    const referenceDate = btcData.length > 0
-      ? btcData[btcData.length - 1].time
-      : undefined;
-    return getCycleBottomDaysLeft(referenceDate).daysLeft;
+    return getCycleBottomDaysLeft(getBtcReferenceDate(btcData)).daysLeft;
   }, [btcData]);
 
   const bannerSx = {

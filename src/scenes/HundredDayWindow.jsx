@@ -40,6 +40,7 @@ import {
   THREE_CYCLE_AVG_TOP_TO_BOTTOM,
   formatCycleDate,
   getCycleBottomDaysLeft,
+  getBtcReferenceDate,
 } from '../utility/cycleBottomDaysLeft';
 import '../styling/splashPage.css';
 
@@ -95,8 +96,7 @@ const HundredDayWindow = () => {
   const { btcData } = useData();
 
   const cycleStats = useMemo(() => {
-    const referenceDate = btcData.length > 0 ? btcData[btcData.length - 1].time : undefined;
-    return getCycleBottomDaysLeft(referenceDate);
+    return getCycleBottomDaysLeft(getBtcReferenceDate(btcData));
   }, [btcData]);
 
   const sectionCardSx = {
