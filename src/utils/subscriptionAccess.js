@@ -1,7 +1,7 @@
 export const DEFAULT_FREE_FEATURES = {
   basic_charts: true,
-  advanced_charts: false,
-  custom_indicators: false,
+  advanced_charts: true,
+  custom_indicators: true,
 };
 
 export const GRACE_MS = 24 * 60 * 60 * 1000;
@@ -41,21 +41,16 @@ export const isCancelledButValid = (subscriptionStatus) => {
   return subscriptionStatus.current_period_end > new Date(Date.now() - GRACE_MS);
 };
 
-/** Authoritative premium check used by RestrictToPaid and cache gating. */
-export const hasPremiumAccess = (subscriptionStatus) => {
-  if (!subscriptionStatus) return false;
-  if (subscriptionStatus.promo_active) return true;
-  const rawStatus = (subscriptionStatus.subscription_status || '').toLowerCase();
-  if (rawStatus === 'canceling' || rawStatus === 'canceled') {
-    return isCancelledButValid(subscriptionStatus);
-  }
-  if (subscriptionStatus.access === 'Full') return true;
-  return false;
-};
+/**
+ * Authoritative access check used by RestrictToPaid and cache gating.
+ * All signed-in accounts (free or paid) receive full app access.
+ */
+export const hasPremiumAccess = (subscriptionStatus) => Boolean(subscriptionStatus);
 
-/** True when access dropped from premium to limited (promo ended, cancel expired, etc.). */
+/** True when a signed-in user loses access (sign-out or status cleared). */
 export const didAccessRevoke = (previousStatus, nextStatus) => {
-  if (!previousStatus || !nextStatus) return false;
+  if (!previousStatus) return false;
+  if (!nextStatus) return hasPremiumAccess(previousStatus);
   return hasPremiumAccess(previousStatus) && !hasPremiumAccess(nextStatus);
 };
 

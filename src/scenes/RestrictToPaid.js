@@ -1,10 +1,9 @@
 import React, { memo } from 'react';
 import { useUser, useAuth } from '@clerk/clerk-react';
-import { Box, Typography, useTheme, Button, CircularProgress } from '@mui/material';
+import { Box, Typography, useTheme, CircularProgress } from '@mui/material';
 import { tokens } from '../theme';
-import { Link } from 'react-router-dom';
-import { useSubscription } from '../contexts/SubscriptionContext';
-import { hasPremiumAccess } from '../utils/subscriptionAccess';
+
+
 
 // Dev bypass: when REACT_APP_DEV_BYPASS_AUTH=true, premium charts render fully
 // without any Clerk sign-in or subscription checks. Useful for local development.
@@ -41,15 +40,10 @@ const RestrictedComponent = memo(
   ({
     WrappedComponent,
     props,
-    fallbackMessage,
-    subscriptionStatus,
-    loading,
-    error,
     isLoaded,
     isSignedIn,
     user,
     colors,
-    onRetry,
   }) => {
     if (!isLoaded) {
       return <LoadingStatus colors={colors} />;
@@ -65,75 +59,19 @@ const RestrictedComponent = memo(
       );
     }
 
-    // Wait for a confirmed subscription status before showing upgrade messaging.
-    if (loading || !subscriptionStatus) {
-      return <LoadingStatus colors={colors} />;
-    }
-
-    if (error) {
-      return (
-        <StatusMessage>
-          <Typography variant="h6" sx={{ color: colors.grey[100] }}>
-            {error}
-          </Typography>
-          <Button
-            onClick={onRetry}
-            sx={{
-              backgroundColor: colors.greenAccent[500],
-              color: colors.grey[900],
-              fontWeight: 'bold',
-              '&:hover': { backgroundColor: colors.greenAccent[600] },
-            }}
-          >
-            Try again
-          </Button>
-        </StatusMessage>
-      );
-    }
-
-    if (hasPremiumAccess(subscriptionStatus)) {
-      return <WrappedComponent {...props} />;
-    }
-
-    return (
-      <StatusMessage>
-        <Typography variant="h5" sx={{ color: colors.grey[100] }}>
-          {fallbackMessage}
-        </Typography>
-        <Button
-          component={Link}
-          to="/subscription"
-          sx={{
-            backgroundColor: colors.greenAccent[500],
-            color: colors.grey[900],
-            padding: '10px 20px',
-            fontWeight: 'bold',
-            '&:hover': {
-              backgroundColor: colors.greenAccent[600],
-            },
-          }}
-        >
-          Upgrade Now
-        </Button>
-      </StatusMessage>
-    );
+    return <WrappedComponent {...props} />;
   }
 );
 
-const restrictToPaidSubscription = (
-  WrappedComponent,
-  fallbackMessage = 'Please upgrade to a paid subscription to view this chart.'
-) => {
+const restrictToPaidSubscription = (WrappedComponent) => {
   return (props) => {
     // Hooks must be called unconditionally (rules-of-hooks compliance).
     const { user, isSignedIn } = useUser();
     const { isLoaded } = useAuth();
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
-    const { subscriptionStatus, loading, error, fetchSubscriptionStatus } = useSubscription();
 
     if (DEV_BYPASS_AUTH) {
-      // In local dev bypass mode, render the real premium component directly.
       return <WrappedComponent {...props} />;
     }
 
@@ -141,15 +79,10 @@ const restrictToPaidSubscription = (
       <RestrictedComponent
         WrappedComponent={WrappedComponent}
         props={props}
-        fallbackMessage={fallbackMessage}
-        subscriptionStatus={subscriptionStatus}
-        loading={loading}
-        error={error}
         isLoaded={isLoaded}
         isSignedIn={isSignedIn}
         user={user}
         colors={colors}
-        onRetry={fetchSubscriptionStatus}
       />
     );
   };

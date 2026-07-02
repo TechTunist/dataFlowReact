@@ -72,6 +72,8 @@ export const SubscriptionProvider = ({ children }) => {
       return;
     }
 
+    setPremiumAccessSnapshot(true);
+
     const isInitialFetch = !hasFetchedRef.current;
     if (isInitialFetch) {
       setLoading(true);
@@ -125,6 +127,7 @@ export const SubscriptionProvider = ({ children }) => {
       return;
     }
 
+    setPremiumAccessSnapshot(true);
     fetchSubscriptionStatus();
   }, [isLoaded, isSignedIn, userId, fetchSubscriptionStatus]);
 

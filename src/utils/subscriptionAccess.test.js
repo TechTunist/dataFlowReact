@@ -32,14 +32,14 @@ describe('subscriptionAccess', () => {
     expect(hasPremiumAccess(promoUser)).toBe(true);
   });
 
-  test('hasPremiumAccess denies limited free user after promo', () => {
+  test('hasPremiumAccess grants free signed-in accounts full access', () => {
     const freeUser = normalizeSubscriptionStatus({
       plan: 'Free',
       subscription_status: 'free',
       access: 'Limited',
       promo_active: false,
     });
-    expect(hasPremiumAccess(freeUser)).toBe(false);
+    expect(hasPremiumAccess(freeUser)).toBe(true);
   });
 
   test('hasPremiumAccess allows canceled user within grace', () => {
@@ -54,30 +54,21 @@ describe('subscriptionAccess', () => {
     expect(hasPremiumAccess(canceledUser)).toBe(true);
   });
 
-  test('hasPremiumAccess denies canceling user without period end', () => {
-    const legacyCanceling = normalizeSubscriptionStatus({
-      plan: 'Full Access (Beta)',
-      subscription_status: 'canceling',
-      access: 'Full',
-      current_period_end: null,
-    });
-    expect(hasPremiumAccess(legacyCanceling)).toBe(false);
+  test('hasPremiumAccess is false only when status is missing', () => {
+    expect(hasPremiumAccess(null)).toBe(false);
+    expect(hasPremiumAccess(undefined)).toBe(false);
   });
 
-  test('didAccessRevoke detects promo ending', () => {
-    const duringPromo = normalizeSubscriptionStatus({
+  test('didAccessRevoke only fires when signed-in status is cleared', () => {
+    const signedIn = normalizeSubscriptionStatus({
       access: 'Full',
-      promo_active: true,
-      subscription_status: 'free',
-    });
-    const afterPromo = normalizeSubscriptionStatus({
-      access: 'Limited',
       promo_active: false,
       subscription_status: 'free',
     });
 
-    expect(didAccessRevoke(duringPromo, afterPromo)).toBe(true);
-    expect(didAccessRevoke(afterPromo, duringPromo)).toBe(false);
+    expect(didAccessRevoke(signedIn, null)).toBe(true);
+    expect(didAccessRevoke(null, signedIn)).toBe(false);
+    expect(didAccessRevoke(signedIn, signedIn)).toBe(false);
   });
 
   test('didAccessRevoke ignores paid users staying on Full', () => {

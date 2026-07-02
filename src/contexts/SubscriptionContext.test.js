@@ -14,10 +14,10 @@ import { isPremiumCacheId } from '../utils/premiumCache';
 import { canUsePremiumCache, setPremiumAccessSnapshot } from '../utils/subscriptionRevocation';
 
 describe('Subscription gating basics (professionalization coverage)', () => {
-  test('DEFAULT_FREE_FEATURES shape matches expected (used in RestrictToPaid + SubscriptionContext)', () => {
+  test('DEFAULT_FREE_FEATURES grants full chart access for free accounts', () => {
     expect(DEFAULT_FREE_FEATURES.basic_charts).toBe(true);
-    expect(DEFAULT_FREE_FEATURES.advanced_charts).toBe(false);
-    expect(DEFAULT_FREE_FEATURES.custom_indicators).toBe(false);
+    expect(DEFAULT_FREE_FEATURES.advanced_charts).toBe(true);
+    expect(DEFAULT_FREE_FEATURES.custom_indicators).toBe(true);
   });
 
   test('premium cache snapshot blocks premium ids after revocation', () => {
@@ -30,19 +30,14 @@ describe('Subscription gating basics (professionalization coverage)', () => {
     setPremiumAccessSnapshot(false);
   });
 
-  test('normalize + hasPremiumAccess reflects promo end for free users', () => {
-    const duringPromo = normalizeSubscriptionStatus({
-      access: 'Full',
-      promo_active: true,
-      subscription_status: 'free',
-    });
-    const afterPromo = normalizeSubscriptionStatus({
+  test('hasPremiumAccess is true for any loaded free-account status', () => {
+    const freeUser = normalizeSubscriptionStatus({
       access: 'Limited',
       promo_active: false,
       subscription_status: 'free',
     });
-    expect(hasPremiumAccess(duringPromo)).toBe(true);
-    expect(hasPremiumAccess(afterPromo)).toBe(false);
+    expect(hasPremiumAccess(freeUser)).toBe(true);
+    expect(hasPremiumAccess(null)).toBe(false);
   });
 
   test('restrictToPaidSubscription is a HOC function', () => {
