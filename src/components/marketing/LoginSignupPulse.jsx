@@ -82,7 +82,7 @@ const LoginSignupPulse = ({ colors }) => {
         }}
       >
         {promoActive
-          ? 'Live snapshot · Free account unlocks all charts (limited promo)'
+          ? 'Live snapshot · Free account unlocks all charts'
           : 'Live market snapshot · Free account unlocks full charts'}
       </Typography>
       {loading ? (
