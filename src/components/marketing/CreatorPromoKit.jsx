@@ -64,7 +64,7 @@ const CreatorPromoKit = ({ colors }) => {
       <Container maxWidth="lg">
         <Box sx={{ textAlign: 'center', mb: 4 }}>
           <Chip
-            label="For videos & content · Copy and go"
+            label="Internal · Promo video kit (not for public visitors)"
             sx={{
               mb: 2,
               backgroundColor: colors.greenAccent[900],
@@ -84,8 +84,8 @@ const CreatorPromoKit = ({ colors }) => {
             Creator kit for your promo
           </Typography>
           <Typography sx={{ color: colors.grey[300], maxWidth: 720, mx: 'auto', lineHeight: 1.6 }}>
-            Talking points you can say on camera. Built so cold viewers understand limited free access,
-            free-account signup, and what they get before vs after signing up.
+            Private toolkit for your videos. Enable with REACT_APP_SHOW_CREATOR_KIT=true.
+            Talking points so cold viewers hear limited free access, free-account signup, and what unlocks after sign-up.
           </Typography>
         </Box>
 

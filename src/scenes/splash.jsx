@@ -34,7 +34,6 @@ import SplashRiskColorPreview from '../components/marketing/SplashRiskColorPrevi
 import OpenAccessPromoBanner from '../components/marketing/OpenAccessPromoBanner';
 import PromoPriceDisplay from '../components/marketing/PromoPriceDisplay';
 import PublicMarketPulse from '../components/marketing/PublicMarketPulse';
-import PublicTrendPreviews from '../components/marketing/PublicTrendPreviews';
 import CreatorPromoKit from '../components/marketing/CreatorPromoKit';
 import {
   getBottomCtaCopy,
@@ -232,10 +231,12 @@ const SplashPage = () => {
         <ScrollHint color={colors.grey[500]} />
       </Box>
 
-      {/* Public market pulse — value before signup */}
+      {/* Public market pulse — numbers + short trends (single section; avoid duplicating "path" below) */}
       <PublicMarketPulse colors={colors} />
-      <PublicTrendPreviews colors={colors} />
-      <CreatorPromoKit colors={colors} />
+      {/* Internal only: set REACT_APP_SHOW_CREATOR_KIT=true (not for public visitors) */}
+      {process.env.REACT_APP_SHOW_CREATOR_KIT === 'true' && (
+        <CreatorPromoKit colors={colors} />
+      )}
 
       {/* Dynamic DCA Simulator, flagship feature */}
       <Box sx={{ width: '100%', py: 10, backgroundColor: colors.primary[800] }}>

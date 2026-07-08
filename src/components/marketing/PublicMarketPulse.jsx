@@ -229,7 +229,7 @@ const PublicMarketPulse = ({ colors }) => {
               lineHeight: 1.6,
             }}
           >
-            A free daily snapshot anyone can view, with recent trends. Interactive charts, the workbench,
+            Free daily levels and recent paths, no account required. Interactive charts, the workbench,
             and full history unlock when you create a free account
             {promoActive ? ' (limited free access while the promotion lasts).' : '.'}
           </Typography>

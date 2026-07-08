@@ -122,18 +122,7 @@ const PublicChartGallery = () => {
             >
               See live market pulse
             </Button>
-            <Button
-              component={Link}
-              to="/#public-trends"
-              variant="text"
-              sx={{
-                color: colors.grey[300],
-                textTransform: "none",
-                "&:hover": { color: colors.greenAccent[300] },
-              }}
-            >
-              Public trend previews
-            </Button>
+
           </Stack>
         </Container>
       </Box>
