@@ -68,7 +68,7 @@ This is a living list of free options to evaluate. Nothing here is auto-wired un
    python manage.py populate_fred_series --series-ids WALCL PCEPILFE CPILFESL MORTGAGE30US DTWEXBGS
    python manage.py update_fred_macro --series-ids WALCL PCEPILFE CPILFESL MORTGAGE30US DTWEXBGS --backfill
    ```
-2. **DefiLlama** stablecoin / total crypto TVL as a weekly series (liquidity context next to BTC).
+2. ~~**DefiLlama** stablecoin / total DeFi TVL~~ — **shipped on growth branch (slice 4)** as public pulse enrichment only (no DB tables): `api.llama.fi/charts` + `stablecoins.llama.fi/stablecoins`, 15‑min cache, non-fatal if down. Optional later: daily Neon series for Workbench history.
 3. **mempool.space** fee history if not already covered well by current fees chart.
 4. **CoinPaprika** as failover when CoinGecko rate-limits bottom-16 alts.
 

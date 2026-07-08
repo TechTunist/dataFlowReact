@@ -28,6 +28,7 @@ import {
   getSignupHelperText,
   isOpenAccessPromoActive,
 } from "../../config/openAccessPromo";
+import LoginSignupPulse from "../../components/marketing/LoginSignupPulse";
 
 const PREMIUM_DEST = "/subscription?checkout=1";
 const FREE_DEST = "/dashboard?welcome=1";
@@ -320,6 +321,7 @@ export default function LoginSignup() {
           boxShadow: "0 4px 6px rgba(0, 0, 0, 0.15)",
         }}
       >
+        {!pendingVerification && <LoginSignupPulse colors={colors} />}
         {pendingVerification ? (
           <form onSubmit={handleVerificationSubmit}>
             <Typography

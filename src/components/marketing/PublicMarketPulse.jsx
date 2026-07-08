@@ -166,6 +166,24 @@ const PublicMarketPulse = ({ colors }) => {
     });
   }
 
+  if (data?.defi_tvl?.value != null) {
+    cards.push({
+      label: 'DeFi TVL',
+      value: formatUsd(data.defi_tvl.value),
+      sub: data.defi_tvl.date ? `DefiLlama · ${data.defi_tvl.date}` : 'DefiLlama (free)',
+      sparkline: sparklines.defi_tvl,
+      sparkLabel: 'DeFi total value locked, recent history',
+    });
+  }
+
+  if (data?.stablecoin_mcap?.value != null) {
+    cards.push({
+      label: 'Stablecoin mcap',
+      value: formatUsd(data.stablecoin_mcap.value),
+      sub: data.stablecoin_mcap.date ? `DefiLlama · ${data.stablecoin_mcap.date}` : 'DefiLlama (free)',
+    });
+  }
+
   return (
     <Box
       id="market-pulse"

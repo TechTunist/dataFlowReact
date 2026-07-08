@@ -129,6 +129,15 @@ const PublicTrendPreviews = ({ colors }) => {
     },
   ];
 
+  if ((data?.sparklines?.defi_tvl?.length || 0) >= 2 || data?.defi_tvl?.value != null) {
+    cards.push({
+      title: 'DeFi TVL',
+      value: formatUsd(data?.defi_tvl?.value),
+      blurb: 'Total value locked across DeFi (DefiLlama free API). Liquidity context next to risk charts.',
+      points: data?.sparklines?.defi_tvl || [],
+    });
+  }
+
   return (
     <Box
       id="public-trends"
@@ -180,7 +189,7 @@ const PublicTrendPreviews = ({ colors }) => {
         ) : (
           <Grid container spacing={2}>
             {cards.map((c) => (
-              <Grid item xs={12} md={4} key={c.title}>
+              <Grid item xs={12} sm={6} md={cards.length > 3 ? 3 : 4} key={c.title}>
                 <TrendCard
                   title={c.title}
                   value={c.value}
