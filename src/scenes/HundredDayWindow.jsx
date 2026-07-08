@@ -29,6 +29,7 @@ import StickySignupCta from '../components/marketing/StickySignupCta';
 import HundredDayWindowBanner, { HUNDRED_DAY_WINDOW_BANNER_HEIGHT } from '../components/marketing/HundredDayWindowBanner';
 import HundredDayWindowOriginStory from '../components/marketing/HundredDayWindowOriginStory';
 import EducationalDisclaimer from '../components/marketing/EducationalDisclaimer';
+import FreePremiumAccessSticker from '../components/marketing/FreePremiumAccessSticker';
 import { useData } from '../DataContext';
 import {
   ALTERNATIVE_PROJECTIONS,
@@ -140,11 +141,13 @@ const HundredDayWindow = () => {
       <Box
         component="section"
         sx={{
+          position: 'relative',
           width: '100%',
           py: { xs: 6, md: 8 },
           background: `linear-gradient(180deg, ${colors.primary[900]} 0%, ${colors.primary[800]} 100%)`,
         }}
       >
+        <FreePremiumAccessSticker corner="top-right" />
         <Container maxWidth="md" sx={{ textAlign: 'center' }}>
           <Chip
             label="Public guide · No account required"

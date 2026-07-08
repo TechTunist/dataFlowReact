@@ -31,6 +31,16 @@ import HundredDayWindowBanner, { HUNDRED_DAY_WINDOW_BANNER_HEIGHT } from '../com
 import InspirationLogos from '../components/marketing/InspirationLogos';
 import ChartPreviewLink from '../components/marketing/ChartPreviewLink';
 import SplashRiskColorPreview from '../components/marketing/SplashRiskColorPreview';
+import OpenAccessPromoBanner from '../components/marketing/OpenAccessPromoBanner';
+import PromoPriceDisplay from '../components/marketing/PromoPriceDisplay';
+import {
+  getHeroPricingHint,
+  getHowItWorksSteps,
+  getPricingSectionSubtitle,
+  getPromoFaqs,
+  isOpenAccessPromoActive,
+  OPEN_ACCESS_PROMO,
+} from '../config/openAccessPromo';
 import { gallerySectionHref } from '../config/gallerySectionUtils';
 
 const splashSeo = SEO_PAGES.splash;
@@ -69,6 +79,9 @@ const NAVBAR_HEIGHT = { xs: 64, sm: 80 };
 const SplashPage = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
+  const promoActive = isOpenAccessPromoActive();
+  const howItWorksSteps = getHowItWorksSteps(promoActive);
+  const promoFaqs = getPromoFaqs(promoActive);
 
   return (
     <Box
@@ -96,7 +109,11 @@ const SplashPage = () => {
       />
       <HundredDayWindowBanner colors={colors} />
       <Navbar colors={colors} topOffset={HUNDRED_DAY_WINDOW_BANNER_HEIGHT} />
-      <StickySignupCta colors={colors} signupPath={FREE_SIGNUP} />
+      <StickySignupCta
+        colors={colors}
+        signupPath={FREE_SIGNUP}
+        label={promoActive ? 'Get full access free' : 'Sign up free'}
+      />
 
       {/* Hero */}
       <Box
@@ -152,8 +169,15 @@ const SplashPage = () => {
           >
             Glassnode-depth metrics without Glassnode prices.
             <br />
-            See where the market is in the cycle, free to start.
+            {promoActive
+              ? 'See where the market is in the cycle, full access currently free.'
+              : 'See where the market is in the cycle, free to start.'}
           </Typography>
+          {promoActive && (
+            <Box sx={{ mb: 3, maxWidth: 560, mx: 'auto' }}>
+              <OpenAccessPromoBanner colors={colors} compact />
+            </Box>
+          )}
           <Button
             component={TrackedSignupLink}
             to={FREE_SIGNUP}
@@ -171,10 +195,10 @@ const SplashPage = () => {
               ...ctaHoverSx(colors),
             }}
           >
-            Sign up free, 30 seconds
+            {promoActive ? 'Get full access free' : 'Sign up free, 30 seconds'}
           </Button>
           <Typography variant="body1" sx={{ color: colors.grey[300], mt: 2 }}>
-            No card required · 15+ free charts · Cancel premium anytime
+            {getHeroPricingHint(promoActive)}
           </Typography>
           <Button
             component={Link}
@@ -198,7 +222,7 @@ const SplashPage = () => {
         <Container maxWidth="lg">
           <Box sx={{ textAlign: 'center', mb: 5 }}>
             <Chip
-              label="Premium · Flagship tool"
+              label={promoActive ? 'Included free · Flagship tool' : 'Premium · Flagship tool'}
               sx={{
                 mb: 2,
                 backgroundColor: colors.greenAccent[800],
@@ -336,11 +360,7 @@ const SplashPage = () => {
             How Cryptological works
           </Typography>
           <Grid container spacing={6} justifyContent="center">
-            {[
-              { step: '1', title: 'Sign up free', text: 'Create your account in seconds, no card needed.' },
-              { step: '2', title: 'Explore insights', text: 'Open free charts and build your dashboard.' },
-              { step: '3', title: 'Upgrade when ready', text: 'Unlock advanced risk metrics and full history for $13.45/mo.' },
-            ].map((item) => (
+            {howItWorksSteps.map((item) => (
               <Grid item xs={12} md={4} key={item.step}>
                 <Typography variant="h3" sx={{ color: colors.greenAccent[500], mb: 2 }}>{item.step}</Typography>
                 <Typography variant="h5" sx={{ color: colors.grey[100], mb: 2 }}>{item.title}</Typography>
@@ -359,8 +379,13 @@ const SplashPage = () => {
           <Typography variant="h2" sx={{ color: colors.grey[100], fontWeight: 'bold', mb: 2, fontSize: { xs: '2.5rem', md: '3rem' } }}>
             Choose the plan that fits your journey
           </Typography>
+          {promoActive && (
+            <Box sx={{ mb: 4, maxWidth: 720, mx: 'auto' }}>
+              <OpenAccessPromoBanner colors={colors} />
+            </Box>
+          )}
           <Typography variant="body1" sx={{ color: colors.grey[300], mb: 6 }}>
-            Start free or go premium for full access, $13.45/month, cancel anytime.
+            {getPricingSectionSubtitle(promoActive)}
           </Typography>
 
           <Box sx={{ display: { xs: 'block', md: 'none' } }}>
@@ -389,7 +414,11 @@ const SplashPage = () => {
               <Grid item xs={12} sm={6}>
                 <Card sx={{ backgroundColor: colors.primary[900], p: 4, border: `2px solid ${colors.greenAccent[500]}` }}>
                   <Typography variant="h5" sx={{ color: colors.grey[100], mb: 1 }}>Premium Plan</Typography>
-                  <Typography variant="h6" sx={{ color: colors.greenAccent[500], mb: 2 }}>$13.45 / month</Typography>
+                  {promoActive ? (
+                    <PromoPriceDisplay colors={colors} sx={{ mb: 2 }} />
+                  ) : (
+                    <Typography variant="h6" sx={{ color: colors.greenAccent[500], mb: 2 }}>{OPEN_ACCESS_PROMO.premiumPriceUsd}</Typography>
+                  )}
                   {['Everything in Free', 'Advanced risk metrics', 'Full market insights', 'Priority support'].map((f) => (
                     <Typography key={f} sx={{ color: colors.grey[300], mb: 1, textAlign: 'left' }}>
                       <CheckIcon sx={{ color: colors.greenAccent[500], mr: 1, fontSize: 18 }} />{f}
@@ -397,14 +426,14 @@ const SplashPage = () => {
                   ))}
                   <Button
                     component={TrackedSignupLink}
-                    to={PREMIUM_SIGNUP}
+                    to={promoActive ? FREE_SIGNUP : PREMIUM_SIGNUP}
                     location="pricing-premium-mobile"
-                    plan="premium"
+                    plan={promoActive ? undefined : 'premium'}
                     variant="contained"
                     fullWidth
                     sx={{ mt: 2, backgroundColor: colors.greenAccent[500], color: colors.grey[900], ...ctaHoverSx(colors) }}
                   >
-                    Upgrade to Premium
+                    {promoActive ? 'Get full access free' : 'Upgrade to Premium'}
                   </Button>
                 </Card>
               </Grid>
@@ -421,7 +450,11 @@ const SplashPage = () => {
                 </Grid>
                 <Grid item md={4} sx={{ p: 2, border: `2px solid ${colors.greenAccent[500]}`, textAlign: 'center' }}>
                   <Typography variant="h5" sx={{ color: colors.grey[100], mb: 1 }}>Premium Plan</Typography>
-                  <Typography variant="h6" sx={{ color: colors.greenAccent[500] }}>$13.45 / month</Typography>
+                  {promoActive ? (
+                    <PromoPriceDisplay colors={colors} sx={{ mb: 0 }} />
+                  ) : (
+                    <Typography variant="h6" sx={{ color: colors.greenAccent[500] }}>{OPEN_ACCESS_PROMO.premiumPriceUsd}</Typography>
+                  )}
                 </Grid>
               </Grid>
               <Divider />
@@ -461,20 +494,24 @@ const SplashPage = () => {
                 <Grid item md={4} sx={{ p: 4 }}>
                   <Button
                     component={TrackedSignupLink}
-                    to={PREMIUM_SIGNUP}
+                    to={promoActive ? FREE_SIGNUP : PREMIUM_SIGNUP}
                     location="pricing-premium-desktop"
-                    plan="premium"
+                    plan={promoActive ? undefined : 'premium'}
                     variant="contained"
                     fullWidth
                     sx={{ backgroundColor: colors.greenAccent[500], color: colors.grey[900], ...ctaHoverSx(colors) }}
                   >
-                    Upgrade to Premium
+                    {promoActive ? 'Get full access free' : 'Upgrade to Premium'}
                   </Button>
                 </Grid>
               </Grid>
             </Card>
           </Box>
-          <Typography sx={{ color: colors.grey[300], mt: 4 }}>Cancel anytime from your account settings.</Typography>
+          <Typography sx={{ color: colors.grey[300], mt: 4 }}>
+            {promoActive
+              ? 'No payment required during the promotion. Create a free account to unlock everything.'
+              : 'Cancel anytime from your account settings.'}
+          </Typography>
         </Container>
       </Box>
 
@@ -483,11 +520,7 @@ const SplashPage = () => {
         <Typography variant="h2" sx={{ color: colors.grey[100], fontWeight: 'bold', mb: 6, textAlign: 'center', fontSize: { xs: '2.5rem', md: '3rem' } }}>
           Frequently asked questions
         </Typography>
-        {[
-          { q: 'Is Cryptological suitable for beginners?', a: 'Yes. Every chart includes a plain-English description, and the free tier covers the essentials without overwhelming you.' },
-          { q: 'Can I cancel anytime?', a: 'Yes. Each payment covers one month of access. Cancel and you keep access until the period ends, no further charges.' },
-          { q: 'Do you get real-time data?', a: 'Prices are real-time or previous daily close depending on the asset. Macro and on-chain series update when new data is published.' },
-        ].map((faq) => (
+        {promoFaqs.map((faq) => (
           <Accordion key={faq.q} sx={{ backgroundColor: colors.primary[800], mb: 2 }}>
             <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: colors.grey[100] }} />}>
               <Typography variant="h6" sx={{ color: colors.grey[100] }}>{faq.q}</Typography>
@@ -503,10 +536,12 @@ const SplashPage = () => {
       <Box sx={{ width: '100%', py: 12, textAlign: 'center', backgroundColor: colors.greenAccent[800] }}>
         <Container maxWidth="md">
           <Typography variant="h2" sx={{ color: colors.grey[100], fontWeight: 'bold', mb: 4, fontSize: { xs: '2.5rem', md: '3.5rem' } }}>
-            See where we are in the cycle, free
+            {promoActive ? 'Full access is currently free' : 'See where we are in the cycle, free'}
           </Typography>
           <Typography variant="h5" sx={{ color: colors.grey[100], mb: 6, fontSize: { xs: '1.2rem', md: '1.5rem' } }}>
-            80+ charts, updated daily. Create your free account in under a minute.
+            {promoActive
+              ? '80+ charts, updated daily. Sign up free and explore everything, no card required.'
+              : '80+ charts, updated daily. Create your free account in under a minute.'}
           </Typography>
           <Button
             component={TrackedSignupLink}

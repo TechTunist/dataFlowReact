@@ -30,6 +30,12 @@
     animation: fadeIn 1s ease-out;
   }
 
+  /* Promo corner ribbon: never inherit fadeIn (it overrides rotate and causes a visible flip) */
+  .free-premium-access-sticker-wrap,
+  .free-premium-access-sticker {
+    animation: none !important;
+  }
+
   /* src/styling/splashPage.css */
 .splash-page {
   scroll-behavior: smooth;

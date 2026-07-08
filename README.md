@@ -211,6 +211,8 @@ Backend:
 
 See `PROFESSIONALIZATION_REMAINING.md` (the current living consolidated list for professionalization, efficiency, bulletproofing, and sale-readiness work across FE+BE). Older `TODO.md` / backend `ToDo.md` now point to it. Also see `forGrokBuild.md` for session history.
 
+For the **open-access promotion** (free accounts get full premium, splash strikethrough pricing, how to revert): see `FREE_WEEKEND_PROMO.md` (duplicated in both frontend and backend repos).
+
 ---
 
 ## 9. Getting Started (for Developers)

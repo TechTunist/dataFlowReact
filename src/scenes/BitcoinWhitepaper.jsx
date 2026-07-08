@@ -30,6 +30,7 @@ import { SEO_PAGES } from "../seo/staticPageContent";
 import TrackedSignupLink from "../components/marketing/TrackedSignupLink";
 import StickySignupCta from "../components/marketing/StickySignupCta";
 import HundredDayWindowBanner, { HUNDRED_DAY_WINDOW_BANNER_HEIGHT } from "../components/marketing/HundredDayWindowBanner";
+import FreePremiumAccessSticker from "../components/marketing/FreePremiumAccessSticker";
 import "../styling/splashPage.css";
 
 const FREE_SIGNUP = "/login-signup?mode=signup";
@@ -187,12 +188,14 @@ const BitcoinWhitepaper = () => {
       <Box
         component="section"
         sx={{
+          position: "relative",
           width: "100%",
           pt: { xs: 4, sm: 6 },
           pb: { xs: 6, md: 8 },
           background: `linear-gradient(180deg, ${colors.primary[900]} 0%, ${colors.primary[800]} 100%)`,
         }}
       >
+        <FreePremiumAccessSticker corner="top-right" />
         <Container maxWidth="md">
           <Chip
             label="Public guide · No account required"
