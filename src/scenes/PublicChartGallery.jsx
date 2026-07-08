@@ -10,6 +10,7 @@ import SeoHead from "../components/SeoHead";
 import SeoPublicFooter from "./seo/SeoPublicFooter";
 import { SEO_PAGES } from "../seo/staticPageContent";
 import { isOpenAccessPromoActive, OPEN_ACCESS_PROMO } from "../config/openAccessPromo";
+import ShareActions from "../components/marketing/ShareActions";
 import "../styling/splashPage.css";
 
 const gallerySeo = SEO_PAGES["chart-gallery"];
@@ -139,6 +140,14 @@ const PublicChartGallery = () => {
 
       <Box sx={{ width: "100%", pb: 8 }}>
         <ChartGalleryContent linkable={false} />
+        <Box sx={{ mt: 4, px: 2 }}>
+          <ShareActions
+            colors={colors}
+            promoActive={promoActive}
+            path="/chart-gallery"
+            location="chart-gallery"
+          />
+        </Box>
       </Box>
       <SeoPublicFooter />
     </Box>

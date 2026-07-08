@@ -20,6 +20,7 @@ export const FUNNEL_EVENTS = {
   ONBOARDING_SHOWN: 'Onboarding Shown',
   ONBOARDING_DISMISSED: 'Onboarding Dismissed',
   ONBOARDING_STEP: 'Onboarding Step Click',
+  SHARE_ACTION: 'Share Action',
 };
 
 export function trackCtaClick(location, plan = 'free') {
@@ -58,4 +59,8 @@ export function trackOnboardingDismissed(reason = 'dismiss') {
 
 export function trackOnboardingStep(path) {
   trackPlausible(FUNNEL_EVENTS.ONBOARDING_STEP, { path });
+}
+
+export function trackShareAction(action, location = 'unknown') {
+  trackPlausible(FUNNEL_EVENTS.SHARE_ACTION, { action, location });
 }

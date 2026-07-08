@@ -35,6 +35,7 @@ import OpenAccessPromoBanner from '../components/marketing/OpenAccessPromoBanner
 import PromoPriceDisplay from '../components/marketing/PromoPriceDisplay';
 import PublicMarketPulse from '../components/marketing/PublicMarketPulse';
 import PublicTrendPreviews from '../components/marketing/PublicTrendPreviews';
+import CreatorPromoKit from '../components/marketing/CreatorPromoKit';
 import {
   getBottomCtaCopy,
   getHeroPricingHint,
@@ -234,6 +235,7 @@ const SplashPage = () => {
       {/* Public market pulse — value before signup */}
       <PublicMarketPulse colors={colors} />
       <PublicTrendPreviews colors={colors} />
+      <CreatorPromoKit colors={colors} />
 
       {/* Dynamic DCA Simulator, flagship feature */}
       <Box sx={{ width: '100%', py: 10, backgroundColor: colors.primary[800] }}>

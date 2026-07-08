@@ -15,6 +15,7 @@ import MiniSparkline from './MiniSparkline';
 import { fetchPublicMarketPulse } from '../../data/publicMarketPulse';
 import { isOpenAccessPromoActive } from '../../config/openAccessPromo';
 import { trackPreviewInteraction } from '../../utils/plausibleEvents';
+import ShareActions from './ShareActions';
 
 const formatUsd = (value) => {
   if (value == null || Number.isNaN(Number(value))) return '—';
@@ -204,6 +205,16 @@ const PublicTrendPreviews = ({ colors }) => {
         )}
 
         <Box sx={{ textAlign: 'center', mt: 4 }}>
+          <Box sx={{ mb: 2.5 }}>
+            <ShareActions
+              colors={colors}
+              pulse={data}
+              promoActive={promoActive}
+              path="/#public-trends"
+              location="public-trends"
+              compact
+            />
+          </Box>
           <Button
             component={TrackedSignupLink}
             to="/login-signup?mode=signup"

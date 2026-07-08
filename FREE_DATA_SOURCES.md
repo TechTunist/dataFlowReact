@@ -71,6 +71,10 @@ This is a living list of free options to evaluate. Nothing here is auto-wired un
 2. ~~**DefiLlama** stablecoin / total DeFi TVL~~ — **shipped on growth branch (slice 4)** as public pulse enrichment only (no DB tables): `api.llama.fi/charts` + `stablecoins.llama.fi/stablecoins`, 15‑min cache, non-fatal if down. Optional later: daily Neon series for Workbench history.
 3. **mempool.space** fee history if not already covered well by current fees chart.
 4. **CoinPaprika** as failover when CoinGecko rate-limits bottom-16 alts.
+   - Free tier: `https://api.coinpaprika.com/v1/` (no key for many endpoints).
+   - Good for: OHLCV / tickers when CoinGecko 429s on bottom-16 altcoin cron.
+   - **Not wired yet** — add as secondary path in `altcoin_fetch.py` only after local rate-limit tests.
+   - Prefer server-side daily ingest (same batching + pause pattern as CoinGecko).
 
 ## Out of scope until budget exists
 

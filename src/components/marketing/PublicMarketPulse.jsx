@@ -19,6 +19,7 @@ import {
 } from '../../config/openAccessPromo';
 import { fetchPublicMarketPulse } from '../../data/publicMarketPulse';
 import { trackMarketPulseView } from '../../utils/plausibleEvents';
+import ShareActions from './ShareActions';
 
 const formatUsd = (value) => {
   if (value == null || Number.isNaN(Number(value))) return '—';
@@ -285,6 +286,18 @@ const PublicMarketPulse = ({ colors }) => {
           <Typography sx={{ color: colors.grey[500], fontSize: '0.8rem', mb: 2 }}>
             {getHeroPricingHint(promoActive)}
           </Typography>
+          {!loading && !error && (
+            <Box sx={{ mb: 2.5 }}>
+              <ShareActions
+                colors={colors}
+                pulse={data}
+                promoActive={promoActive}
+                path="/#market-pulse"
+                location="market-pulse"
+                compact
+              />
+            </Box>
+          )}
           <Button
             component={TrackedSignupLink}
             to="/login-signup?mode=signup"
