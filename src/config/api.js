@@ -63,6 +63,7 @@ export const API_ENDPOINTS = {
 
   // Public (no auth) — cold-visitor marketing snapshot only
   publicMarketPulse: () => apiUrl('/api/public/market-pulse/'),
+  publicDataHealth: () => apiUrl('/api/public/data-health/'),
 
   // Authenticated endpoints
   subscriptionStatus: () => apiUrl('/api/subscription-status/'),

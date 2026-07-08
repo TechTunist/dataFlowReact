@@ -31,6 +31,11 @@ import TrackedSignupLink from "../components/marketing/TrackedSignupLink";
 import StickySignupCta from "../components/marketing/StickySignupCta";
 import HundredDayWindowBanner, { HUNDRED_DAY_WINDOW_BANNER_HEIGHT } from "../components/marketing/HundredDayWindowBanner";
 import FreePremiumAccessSticker from "../components/marketing/FreePremiumAccessSticker";
+import {
+  getHeroPricingHint,
+  isOpenAccessPromoActive,
+  OPEN_ACCESS_PROMO,
+} from "../config/openAccessPromo";
 import "../styling/splashPage.css";
 
 const FREE_SIGNUP = "/login-signup?mode=signup";
@@ -146,6 +151,7 @@ const OTHER_NETWORKS = [
 const BitcoinWhitepaper = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
+  const promoActive = isOpenAccessPromoActive();
 
   const sectionCardSx = {
     backgroundColor: colors.primary[800],
@@ -181,7 +187,7 @@ const BitcoinWhitepaper = () => {
       <StickySignupCta
         colors={colors}
         signupPath={FREE_SIGNUP}
-        label="Get cycle charts free"
+        label={promoActive ? "Sign up free (limited access)" : "Get cycle charts free"}
       />
 
       {/* Hero */}
@@ -198,7 +204,11 @@ const BitcoinWhitepaper = () => {
         <FreePremiumAccessSticker corner="top-right" />
         <Container maxWidth="md">
           <Chip
-            label="Public guide · No account required"
+            label={
+              promoActive
+                ? OPEN_ACCESS_PROMO.limitedAccessChip
+                : "Public guide · No account required"
+            }
             sx={{
               mb: 2,
               backgroundColor: colors.greenAccent[800],
@@ -226,13 +236,18 @@ const BitcoinWhitepaper = () => {
               fontWeight: 400,
               fontSize: { xs: "1.05rem", md: "1.25rem" },
               lineHeight: 1.7,
-              mb: 3,
+              mb: 2,
             }}
           >
             In October 2008, as faith in banks was collapsing, Satoshi Nakamoto published a nine-page paper describing
             electronic cash that does not require trusting a financial institution. This page explains that vision for
             anyone curious about money, power, and why cryptographic networks matter, no jargon required to start.
           </Typography>
+          {promoActive && (
+            <Typography sx={{ color: colors.grey[400], mb: 3, fontSize: "0.95rem", lineHeight: 1.6 }}>
+              {OPEN_ACCESS_PROMO.bannerSubtext} {getHeroPricingHint(true)}
+            </Typography>
+          )}
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems="center">
             <Button
               component={TrackedSignupLink}
@@ -248,7 +263,20 @@ const BitcoinWhitepaper = () => {
                 "&:hover": { backgroundColor: colors.greenAccent[400] },
               }}
             >
-              Create free account
+              {promoActive ? "Sign up free with email" : "Create free account"}
+            </Button>
+            <Button
+              component={Link}
+              to="/#market-pulse"
+              variant="outlined"
+              sx={{
+                color: colors.greenAccent[400],
+                borderColor: colors.greenAccent[500],
+                fontWeight: "bold",
+                "&:hover": { borderColor: colors.greenAccent[300], backgroundColor: `${colors.greenAccent[900]}44` },
+              }}
+            >
+              Public market pulse
             </Button>
             <Button
               component={Link}
@@ -261,7 +289,7 @@ const BitcoinWhitepaper = () => {
                 "&:hover": { borderColor: colors.greenAccent[300], backgroundColor: `${colors.greenAccent[900]}44` },
               }}
             >
-              Explore free charts
+              Chart gallery
             </Button>
             <Button
               component="a"

@@ -34,6 +34,7 @@ import SplashRiskColorPreview from '../components/marketing/SplashRiskColorPrevi
 import OpenAccessPromoBanner from '../components/marketing/OpenAccessPromoBanner';
 import PromoPriceDisplay from '../components/marketing/PromoPriceDisplay';
 import PublicMarketPulse from '../components/marketing/PublicMarketPulse';
+import PublicTrendPreviews from '../components/marketing/PublicTrendPreviews';
 import {
   getBottomCtaCopy,
   getHeroPricingHint,
@@ -232,6 +233,7 @@ const SplashPage = () => {
 
       {/* Public market pulse — value before signup */}
       <PublicMarketPulse colors={colors} />
+      <PublicTrendPreviews colors={colors} />
 
       {/* Dynamic DCA Simulator, flagship feature */}
       <Box sx={{ width: '100%', py: 10, backgroundColor: colors.primary[800] }}>

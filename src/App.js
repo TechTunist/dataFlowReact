@@ -30,6 +30,7 @@ import { SubscriptionProvider } from './contexts/SubscriptionContext';
 import { useMemo } from "react";
 import { FavoritesProvider } from './contexts/FavoritesContext';
 import restrictToPaidSubscription from './scenes/RestrictToPaid';
+import DataFreshnessBanner from './components/marketing/DataFreshnessBanner';
 
 // Core components still directly referenced (kept minimal after route refactor)
 import BitcoinPrice from "./components/BitcoinPrice";
@@ -419,6 +420,8 @@ const AppContent = memo(() => {
                   DEV MODE: Clerk + subscription checks bypassed (REACT_APP_DEV_BYPASS_AUTH=true). All charts (including premium) available locally.
                 </div>
               )}
+              {/* In-app data freshness for signed-in shell only (public health endpoint). */}
+              {!isStandalonePublicPage && <DataFreshnessBanner />}
               <div className="app" style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
                 {/* Render Topbar or AccountNavBar only if signed in */}
                 {shouldRenderTopbar && (

@@ -10,7 +10,6 @@ import {
   Typography,
   Chip,
 } from '@mui/material';
-import { API_ENDPOINTS } from '../../config/api';
 import TrackedSignupLink from './TrackedSignupLink';
 import MiniSparkline from './MiniSparkline';
 import {
@@ -18,6 +17,7 @@ import {
   isOpenAccessPromoActive,
   OPEN_ACCESS_PROMO,
 } from '../../config/openAccessPromo';
+import { fetchPublicMarketPulse } from '../../data/publicMarketPulse';
 import { trackMarketPulseView } from '../../utils/plausibleEvents';
 
 const formatUsd = (value) => {
@@ -106,12 +106,7 @@ const PublicMarketPulse = ({ colors }) => {
       setLoading(true);
       setError(false);
       try {
-        const res = await fetch(API_ENDPOINTS.publicMarketPulse(), {
-          method: 'GET',
-          headers: { Accept: 'application/json' },
-        });
-        if (!res.ok) throw new Error(`pulse ${res.status}`);
-        const json = await res.json();
+        const json = await fetchPublicMarketPulse();
         if (!cancelled) {
           setData(json);
           trackMarketPulseView(Boolean(json?.sparklines?.btc?.length));
