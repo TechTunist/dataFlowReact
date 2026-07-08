@@ -33,7 +33,9 @@ import ChartPreviewLink from '../components/marketing/ChartPreviewLink';
 import SplashRiskColorPreview from '../components/marketing/SplashRiskColorPreview';
 import OpenAccessPromoBanner from '../components/marketing/OpenAccessPromoBanner';
 import PromoPriceDisplay from '../components/marketing/PromoPriceDisplay';
+import PublicMarketPulse from '../components/marketing/PublicMarketPulse';
 import {
+  getBottomCtaCopy,
   getHeroPricingHint,
   getHowItWorksSteps,
   getPricingSectionSubtitle,
@@ -68,6 +70,12 @@ const FREE_PLAN_FEATURES = [
   'Fear & Greed, log regression & dominance',
   'Total market cap & US macro overlays',
   'Customizable dashboard (1 favourite)',
+];
+
+const PROMO_FREE_PLAN_FEATURES = [
+  'Limited free access to all 80+ charts (account required)',
+  'Sign up with email and password, no card needed',
+  'Dashboard, workbench, DCA simulator, risk tools',
 ];
 
 const ctaHoverSx = (colors) => ({
@@ -112,7 +120,7 @@ const SplashPage = () => {
       <StickySignupCta
         colors={colors}
         signupPath={FREE_SIGNUP}
-        label={promoActive ? 'Get full access free' : 'Sign up free'}
+        label={promoActive ? 'Sign up free (limited access)' : 'Sign up free'}
       />
 
       {/* Hero */}
@@ -170,11 +178,11 @@ const SplashPage = () => {
             Glassnode-depth metrics without Glassnode prices.
             <br />
             {promoActive
-              ? 'See where the market is in the cycle, full access currently free.'
+              ? 'See where the market is in the cycle. Limited free access for free accounts only.'
               : 'See where the market is in the cycle, free to start.'}
           </Typography>
           {promoActive && (
-            <Box sx={{ mb: 3, maxWidth: 560, mx: 'auto' }}>
+            <Box sx={{ mb: 3, maxWidth: 640, mx: 'auto' }}>
               <OpenAccessPromoBanner colors={colors} compact />
             </Box>
           )}
@@ -195,11 +203,16 @@ const SplashPage = () => {
               ...ctaHoverSx(colors),
             }}
           >
-            {promoActive ? 'Get full access free' : 'Sign up free, 30 seconds'}
+            {promoActive ? 'Sign up free with email' : 'Sign up free, 30 seconds'}
           </Button>
           <Typography variant="body1" sx={{ color: colors.grey[300], mt: 2 }}>
             {getHeroPricingHint(promoActive)}
           </Typography>
+          {promoActive && (
+            <Typography variant="body2" sx={{ color: colors.grey[400], mt: 1, maxWidth: 520, mx: 'auto' }}>
+              Interactive charts require a free account (email and password). The promotion is time-limited and does not apply to anonymous visitors.
+            </Typography>
+          )}
           <Button
             component={Link}
             to="/bitcoin-whitepaper"
@@ -216,6 +229,9 @@ const SplashPage = () => {
         </Container>
         <ScrollHint color={colors.grey[500]} />
       </Box>
+
+      {/* Public market pulse — value before signup */}
+      <PublicMarketPulse colors={colors} />
 
       {/* Dynamic DCA Simulator, flagship feature */}
       <Box sx={{ width: '100%', py: 10, backgroundColor: colors.primary[800] }}>
@@ -392,9 +408,13 @@ const SplashPage = () => {
             <Grid container spacing={4} justifyContent="center">
               <Grid item xs={12} sm={6}>
                 <Card sx={{ backgroundColor: colors.primary[800], p: 4 }}>
-                  <Typography variant="h5" sx={{ color: colors.grey[100], mb: 1 }}>Free Plan</Typography>
-                  <Typography variant="h6" sx={{ color: colors.greenAccent[500], mb: 2 }}>$0 / month</Typography>
-                  {FREE_PLAN_FEATURES.map((f) => (
+                  <Typography variant="h5" sx={{ color: colors.grey[100], mb: 1 }}>
+                    {promoActive ? 'Free account' : 'Free Plan'}
+                  </Typography>
+                  <Typography variant="h6" sx={{ color: colors.greenAccent[500], mb: 2 }}>
+                    {promoActive ? 'Limited free access' : '$0 / month'}
+                  </Typography>
+                  {(promoActive ? PROMO_FREE_PLAN_FEATURES : FREE_PLAN_FEATURES).map((f) => (
                     <Typography key={f} sx={{ color: colors.grey[300], mb: 1, textAlign: 'left' }}>
                       <CheckIcon sx={{ color: colors.greenAccent[500], mr: 1, fontSize: 18 }} />{f}
                     </Typography>
@@ -407,7 +427,7 @@ const SplashPage = () => {
                     fullWidth
                     sx={{ mt: 2, backgroundColor: colors.greenAccent[500], color: colors.grey[900], ...ctaHoverSx(colors) }}
                   >
-                    Get started free
+                    {promoActive ? 'Sign up with email' : 'Get started free'}
                   </Button>
                 </Card>
               </Grid>
@@ -419,7 +439,10 @@ const SplashPage = () => {
                   ) : (
                     <Typography variant="h6" sx={{ color: colors.greenAccent[500], mb: 2 }}>{OPEN_ACCESS_PROMO.premiumPriceUsd}</Typography>
                   )}
-                  {['Everything in Free', 'Advanced risk metrics', 'Full market insights', 'Priority support'].map((f) => (
+                  {(promoActive
+                    ? ['All charts unlocked with free account', 'Requires email + password signup', 'Promotional, time-limited', 'No card required now']
+                    : ['Everything in Free', 'Advanced risk metrics', 'Full market insights', 'Priority support']
+                  ).map((f) => (
                     <Typography key={f} sx={{ color: colors.grey[300], mb: 1, textAlign: 'left' }}>
                       <CheckIcon sx={{ color: colors.greenAccent[500], mr: 1, fontSize: 18 }} />{f}
                     </Typography>
@@ -433,7 +456,7 @@ const SplashPage = () => {
                     fullWidth
                     sx={{ mt: 2, backgroundColor: colors.greenAccent[500], color: colors.grey[900], ...ctaHoverSx(colors) }}
                   >
-                    {promoActive ? 'Get full access free' : 'Upgrade to Premium'}
+                    {promoActive ? 'Sign up free (limited access)' : 'Upgrade to Premium'}
                   </Button>
                 </Card>
               </Grid>
@@ -445,8 +468,12 @@ const SplashPage = () => {
               <Grid container alignItems="center">
                 <Grid item md={4} sx={{ p: 2 }}><Typography>Feature</Typography></Grid>
                 <Grid item md={4} sx={{ p: 2, backgroundColor: colors.primary[800], textAlign: 'center' }}>
-                  <Typography variant="h5" sx={{ color: colors.grey[100], mb: 1 }}>Free Plan</Typography>
-                  <Typography variant="h6" sx={{ color: colors.greenAccent[500] }}>$0 / month</Typography>
+                  <Typography variant="h5" sx={{ color: colors.grey[100], mb: 1 }}>
+                    {promoActive ? 'Free account' : 'Free Plan'}
+                  </Typography>
+                  <Typography variant="h6" sx={{ color: colors.greenAccent[500] }}>
+                    {promoActive ? 'Limited free access' : '$0 / month'}
+                  </Typography>
                 </Grid>
                 <Grid item md={4} sx={{ p: 2, border: `2px solid ${colors.greenAccent[500]}`, textAlign: 'center' }}>
                   <Typography variant="h5" sx={{ color: colors.grey[100], mb: 1 }}>Premium Plan</Typography>
@@ -458,12 +485,20 @@ const SplashPage = () => {
                 </Grid>
               </Grid>
               <Divider />
-              {[
-                ['Basic charts', true, true],
-                ['Advanced risk metrics', false, true],
-                ['Full market insights', false, true],
-                ['Priority support', false, true],
-              ].map(([label, free, premium]) => (
+              {(promoActive
+                ? [
+                    ['All interactive charts (account required)', true, true],
+                    ['Email + password free signup', true, true],
+                    ['Promotional / time-limited free access', true, true],
+                    ['No card required during promo', true, true],
+                  ]
+                : [
+                    ['Basic charts', true, true],
+                    ['Advanced risk metrics', false, true],
+                    ['Full market insights', false, true],
+                    ['Priority support', false, true],
+                  ]
+              ).map(([label, free, premium]) => (
                 <React.Fragment key={label}>
                   <Grid container>
                     <Grid item md={4} sx={{ p: 2 }}><Typography>{label}</Typography></Grid>
@@ -488,7 +523,7 @@ const SplashPage = () => {
                     fullWidth
                     sx={{ backgroundColor: colors.greenAccent[500], color: colors.grey[900], ...ctaHoverSx(colors) }}
                   >
-                    Get started free
+                    {promoActive ? 'Sign up with email' : 'Get started free'}
                   </Button>
                 </Grid>
                 <Grid item md={4} sx={{ p: 4 }}>
@@ -501,7 +536,7 @@ const SplashPage = () => {
                     fullWidth
                     sx={{ backgroundColor: colors.greenAccent[500], color: colors.grey[900], ...ctaHoverSx(colors) }}
                   >
-                    {promoActive ? 'Get full access free' : 'Upgrade to Premium'}
+                    {promoActive ? 'Sign up free (limited access)' : 'Upgrade to Premium'}
                   </Button>
                 </Grid>
               </Grid>
@@ -509,7 +544,7 @@ const SplashPage = () => {
           </Box>
           <Typography sx={{ color: colors.grey[300], mt: 4 }}>
             {promoActive
-              ? 'No payment required during the promotion. Create a free account to unlock everything.'
+              ? 'Limited free access for free accounts only (email + password). No card during the promotion. Anonymous visitors see previews and the public market pulse only.'
               : 'Cancel anytime from your account settings.'}
           </Typography>
         </Container>
@@ -536,12 +571,10 @@ const SplashPage = () => {
       <Box sx={{ width: '100%', py: 12, textAlign: 'center', backgroundColor: colors.greenAccent[800] }}>
         <Container maxWidth="md">
           <Typography variant="h2" sx={{ color: colors.grey[100], fontWeight: 'bold', mb: 4, fontSize: { xs: '2.5rem', md: '3.5rem' } }}>
-            {promoActive ? 'Full access is currently free' : 'See where we are in the cycle, free'}
+            {getBottomCtaCopy(promoActive).title}
           </Typography>
           <Typography variant="h5" sx={{ color: colors.grey[100], mb: 6, fontSize: { xs: '1.2rem', md: '1.5rem' } }}>
-            {promoActive
-              ? '80+ charts, updated daily. Sign up free and explore everything, no card required.'
-              : '80+ charts, updated daily. Create your free account in under a minute.'}
+            {getBottomCtaCopy(promoActive).body}
           </Typography>
           <Button
             component={TrackedSignupLink}
@@ -560,7 +593,7 @@ const SplashPage = () => {
               '&:hover': { backgroundColor: colors.primary[800], color: colors.greenAccent[400], transform: 'scale(1.03)' },
             }}
           >
-            Create your free account
+            {getBottomCtaCopy(promoActive).button}
           </Button>
         </Container>
       </Box>

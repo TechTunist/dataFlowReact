@@ -23,9 +23,14 @@ import {
   applyNewsletterOptIn,
   setPendingNewsletterOptIn,
 } from "../../utils/newsletterOptIn";
+import {
+  getSignupChipLabel,
+  getSignupHelperText,
+  isOpenAccessPromoActive,
+} from "../../config/openAccessPromo";
 
 const PREMIUM_DEST = "/subscription?checkout=1";
-const FREE_DEST = "/dashboard";
+const FREE_DEST = "/dashboard?welcome=1";
 
 export default function LoginSignup() {
   const theme = useTheme();
@@ -52,19 +57,16 @@ export default function LoginSignup() {
 
   const plan = useMemo(() => new URLSearchParams(location.search).get("plan"), [location.search]);
   const isPremiumIntent = plan === "premium";
+  const promoActive = isOpenAccessPromoActive();
 
   const postSignupDestination = isPremiumIntent ? PREMIUM_DEST : FREE_DEST;
 
   const planChipLabel = isSignUp
-    ? isPremiumIntent
-      ? "Premium, payment after signup"
-      : "Free account"
+    ? getSignupChipLabel(promoActive, isPremiumIntent)
     : null;
 
   const planHelperText = isSignUp
-    ? isPremiumIntent
-      ? "After verifying your email you'll go straight to secure Stripe checkout."
-      : "Access 15+ free charts instantly, no card required."
+    ? getSignupHelperText(promoActive, isPremiumIntent)
     : null;
 
   useEffect(() => {

@@ -2,17 +2,27 @@
 
 > **Filename note:** This file is still named `FREE_WEEKEND_PROMO.md` for historical reasons. It documents the **current open-access user-acquisition promotion** (not only a weekend window). Read this first when working on promo access, splash pricing copy, or reverting to paid premium.
 
-**Last updated:** July 2026
+**Last updated:** July 2026 (growth branch: limited-access messaging + public market pulse)
 
 ---
 
 ## What the promotion is
 
-**Goal:** Grow signups by letting anyone with a **free Clerk account** use the full product (all premium charts and tools) without paying.
+**Goal:** Grow signups by letting anyone with a **free Clerk account** use the full product (all premium charts and tools) without paying, while marketing content/videos drive cold traffic.
 
-**Business model unchanged:** Stripe subscriptions still exist. The promotion temporarily removes the paywall for signed-in free users so they can experience the product before upgrading.
+**Business model unchanged:** Stripe subscriptions still exist. The promotion temporarily removes the paywall for signed-in free users so they can experience the product before upgrading. **Payment plan UI is intentionally not being changed during this growth push.**
 
-**Users still must sign in** — anonymous visitors cannot load chart data.
+**Users still must sign in** — anonymous visitors cannot load interactive chart data. They can see:
+- Marketing pages + public chart gallery (screenshots)
+- Interactive risk-colour **preview** (static snapshot)
+- **Public market pulse** (`GET /api/public/market-pulse/`) — small daily snapshot, no auth
+
+**Copy must always say clearly (cold visitors):**
+1. Free full access is **limited / promotional** (not permanent).
+2. It requires a **free account (email + password)**.
+3. **No card** during the promo.
+
+Central copy: `src/config/openAccessPromo.js` (and splash / login / sticky CTA / FAQ consumers).
 
 ---
 

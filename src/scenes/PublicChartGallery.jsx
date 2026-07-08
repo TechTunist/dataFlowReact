@@ -81,8 +81,9 @@ const PublicChartGallery = () => {
               mb: 3,
             }}
           >
-            Browse every chart available on Cryptological. Create a free account to open interactive charts,
-            customise your dashboard, and track the metrics that matter to you.
+            Browse every chart available on Cryptological. This gallery is a public preview with
+            screenshots only. Interactive charts require a free account (email and password).
+            Full access for free accounts is limited-time promotional, no card required.
           </Typography>
           <Button
             component={Link}
@@ -95,7 +96,7 @@ const PublicChartGallery = () => {
               "&:hover": { backgroundColor: colors.greenAccent[400] },
             }}
           >
-            Sign up free
+            Sign up free to open charts
           </Button>
         </Container>
       </Box>

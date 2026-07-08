@@ -67,6 +67,7 @@ import Total2Chart from "../../components/Total2Marketcap";
 import Total3Chart from "../../components/Total3Marketcap";
 import TailCurvature from "../../components/TailCurvature";
 import SahmRecessionIndicator from "../../components/SahmRecessionIndicator";
+import FirstWinOnboarding from "../../components/marketing/FirstWinOnboarding";
 
 const chartConfig = [
   { id: "bitcoin-20-ext", title: "Bitcoin 20 Week Extension", linkTo: "/btc-20-ext", component: (props) => <Bitcoin20WeekExtension isDashboard={true} {...props} />, description: "Bitcoin price with 20-week extension analysis." },
@@ -328,6 +329,7 @@ const Dashboard = memo(({ isMobile, isSidebar }) => {
       m: { xs: "12px", md: "20px" },
       ...(isMobile ? { maxWidth: "100%", overflow: "hidden", boxSizing: "border-box" } : {}),
     }}>
+      <FirstWinOnboarding colors={colors} />
       <Snackbar
         open={!!error}
         autoHideDuration={4000}
@@ -380,23 +382,25 @@ const Dashboard = memo(({ isMobile, isSidebar }) => {
               See also enhanced badges in /charts page. */}
           <Box mt={4}>
             <Typography variant="h6" color={colors.grey[100]} mb={1}>
-              Free tier highlights (no subscription required):
+              Popular charts to open first:
             </Typography>
             <Box display="flex" flexWrap="wrap" justifyContent="center" gap={1}>
               {[
+                { id: 'risk-color', label: 'Risk Colour' },
                 { id: 'total-market-cap', label: 'Total Market Cap' },
                 { id: 'bitcoin-dominance', label: 'Bitcoin Dominance' },
                 { id: 'logarithmic-regression', label: 'Log Regression' },
                 { id: 'fear-and-greed', label: 'Fear & Greed' },
                 { id: 'risk-bands', label: 'Risk Bands' },
-                { id: 'us-inflation', label: 'US Inflation' },
               ].map(f => (
                 <Button key={f.id} component={Link} to={chartConfig.find(c => c.id === f.id)?.linkTo || '/charts'} size="small" variant="outlined" sx={{ borderColor: colors.greenAccent[500], color: colors.greenAccent[500] }}>
-                  {f.label} <Box component="span" sx={{ ml: 0.5, fontSize: '0.7em', bgcolor: colors.greenAccent[500], color: colors.grey[900], px: 0.5, borderRadius: 0.5 }}>FREE</Box>
+                  {f.label}
                 </Button>
               ))}
             </Box>
-            <Typography variant="caption" color={colors.grey[400]}>More free charts on the Charts page (public access)</Typography>
+            <Typography variant="caption" color={colors.grey[400]} display="block" mt={1}>
+              Browse the full gallery from Charts in the sidebar. Star any chart to pin it here.
+            </Typography>
           </Box>
         </Box>
       ) : (
