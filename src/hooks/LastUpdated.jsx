@@ -6,7 +6,7 @@ import '../styling/LastUpdated.css';
 import { DataContext } from '../DataContext';
 import { effectiveDailyReferenceDate } from '../utils/dailyReferenceDate';
 
-const LastUpdated = ({ storageKey, customDate }) => {
+const LastUpdated = ({ storageKey, customDate, onRefresh }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const [lastUpdated, setLastUpdated] = useState('');
@@ -94,6 +94,11 @@ const LastUpdated = ({ storageKey, customDate }) => {
     setRefresh(prev => prev + 1);
     setIsClicked(true);
     setTimeout(() => setIsClicked(false), 300);
+
+    if (onRefresh) {
+      onRefresh();
+      return;
+    }
 
     // Trigger fetch for altcoin or mapped data
     const coin = Object.keys(altcoinLastUpdated).find(

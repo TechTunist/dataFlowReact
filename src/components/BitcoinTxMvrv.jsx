@@ -43,6 +43,8 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, isChartPage = false, txMvrvDa
     fetchBtcData,
     txMvrvLastUpdated,
     txMvrvRatioLastUpdated,
+    refreshTxMvrvData,
+    refreshTxMvrvRatioData,
   } = useContext(DataContext);
 
   // Memoize raw data selection for stable references (like MVRV Z-Score hardening)
@@ -268,6 +270,14 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, isChartPage = false, txMvrvDa
   const lastUpdatedDate = displayMode === 'ratio'
     ? txMvrvRatioLastUpdated?.[smoothingMode]
     : txMvrvLastUpdated;
+
+  const handleRefreshData = useCallback(() => {
+    if (displayMode === 'ratio') {
+      refreshTxMvrvRatioData(smoothingMode);
+    } else {
+      refreshTxMvrvData();
+    }
+  }, [displayMode, smoothingMode, refreshTxMvrvData, refreshTxMvrvRatioData]);
 
   useEffect(() => {
     fetchBtcData();
@@ -978,7 +988,7 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, isChartPage = false, txMvrvDa
 
       {!isDashboard && (
         <UnderChartRow>
-          <LastUpdated customDate={lastUpdatedDate} />
+          <LastUpdated customDate={lastUpdatedDate} onRefresh={handleRefreshData} />
           <BitcoinFees />
         </UnderChartRow>
       )}

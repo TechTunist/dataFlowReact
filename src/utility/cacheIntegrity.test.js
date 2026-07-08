@@ -1,4 +1,9 @@
-import { detectTimeSeriesIntegrityIssues, shouldInvalidateDailyCache } from './cacheIntegrity';
+import {
+  detectTimeSeriesIntegrityIssues,
+  resolveCachedLatestDate,
+  resolveCachedSeriesPoints,
+  shouldInvalidateDailyCache,
+} from './cacheIntegrity';
 
 describe('cacheIntegrity', () => {
   const daily = (start, count, valueFn) =>
@@ -33,5 +38,17 @@ describe('cacheIntegrity', () => {
   it('invalidates when useDateCheck is off', () => {
     const data = daily('2026-01-01', 10, () => 1);
     expect(shouldInvalidateDailyCache(data, false)).toBe(false);
+  });
+
+  it('uses series tail for tx mvrv ratio cache freshness', () => {
+    const payload = {
+      time: '2026-07-06',
+      series: [
+        { time: '2026-06-01', value: 1 },
+        { time: '2026-06-08', value: 2 },
+      ],
+    };
+    expect(resolveCachedLatestDate('txMvrvRatioData_v2_sma-7', payload, null)).toBe('2026-06-08');
+    expect(resolveCachedSeriesPoints('txMvrvRatioData_v2_sma-7', payload)).toHaveLength(2);
   });
 });

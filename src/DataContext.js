@@ -1,7 +1,12 @@
 // src/DataContext.js
 import React, { createContext, useState, useCallback, useContext, useEffect, useMemo, useRef } from 'react';
 import { initDB, cacheData, getCachedData, clearCache, isCacheFresh, getFreshCachedData, DEFAULT_CACHE_TTL, pruneOldCache } from './utility/idbUtils';
-import { detectTimeSeriesIntegrityIssues, shouldInvalidateDailyCache } from './utility/cacheIntegrity';
+import {
+  detectTimeSeriesIntegrityIssues,
+  resolveCachedLatestDate,
+  resolveCachedSeriesPoints,
+  shouldInvalidateDailyCache,
+} from './utility/cacheIntegrity';
 import { apiUrl } from './config/api';
 import logger from './utils/logger';
 import { initializeDataService, getBtcPriceSeries, getEthPriceSeries, getMvrvSeries, getMarketCapSeries, getDominanceSeries, formatRiskSeries } from './data'; // New data layer (Phase 1)
@@ -69,7 +74,9 @@ function getCacheConfig(cacheId) {
   if (CACHE_CONFIG[cacheId]) return CACHE_CONFIG[cacheId];
   if (cacheId && cacheId.startsWith('fredSeriesData_')) return CACHE_CONFIG['fredSeriesData_SP500'] || CACHE_CONFIG._default;
   if (cacheId && cacheId.startsWith('altcoinData_')) return { ttl: 6 * 60 * 60 * 1000, useDateCheck: true };
-  if (cacheId && cacheId.startsWith('txMvrvRatioData_')) return { ttl: 6 * 60 * 60 * 1000, useDateCheck: true };
+  if (cacheId && (cacheId.startsWith('txMvrvRatioData_v2_') || cacheId.startsWith('txMvrvRatioData_'))) {
+    return { ttl: 6 * 60 * 60 * 1000, useDateCheck: true };
+  }
   if (cacheId && cacheId.startsWith('fredSeriesData_')) return { ttl: 24 * 60 * 60 * 1000, useDateCheck: false };
   return CACHE_CONFIG._default;
 }
@@ -182,6 +189,7 @@ const fetchWithCache = async ({
         if (!firstCachedDate && firstRecord.timestamp) {
           firstCachedDate = new Date(parseInt(firstRecord.timestamp, 10) * 1000).toISOString().split('T')[0];
         }
+        latestCachedDate = resolveCachedLatestDate(cacheId, cached.data, latestCachedDate);
 
         // Phase 3: TTL is now primary (via getFreshCachedData + isCacheFresh).
         // useDateCheck (from config or caller) acts as a *strong* early hit if we literally cover "today".
@@ -204,8 +212,11 @@ const fetchWithCache = async ({
 
         // Gaps or long flat runs in the middle of the series (e.g. Polygon Oct–Jun corruption).
         // Latest date alone is not enough, invalidate and refetch without clearing IDB manually.
-        if (shouldReuseCache && shouldInvalidateDailyCache(cachedData, effectiveUseDateCheck)) {
-          const integrity = detectTimeSeriesIntegrityIssues(cachedData, { daily: true });
+        if (shouldReuseCache && shouldInvalidateDailyCache(cachedData, effectiveUseDateCheck, cacheId)) {
+          const integrity = detectTimeSeriesIntegrityIssues(
+            resolveCachedSeriesPoints(cacheId, cached.data),
+            { daily: true },
+          );
           logger.log(`[Cache] INTEGRITY miss for ${cacheId}: ${integrity.reasons.join(', ')}`);
           shouldReuseCache = false;
         }
@@ -227,7 +238,8 @@ const fetchWithCache = async ({
         // Skip serving corrupt/incomplete series, force a blocking refetch instead.
         const cacheIntegrityBad = shouldInvalidateDailyCache(
           Array.isArray(cached.data) ? cachedData : cached.data,
-          effectiveUseDateCheck
+          effectiveUseDateCheck,
+          cacheId,
         );
         if (staleWhileRevalidate && cached && cached.data && !cacheIntegrityBad) {
           const shouldRevalidate = !isCacheFresh(cached, Math.floor(effectiveTTL / 2));
@@ -1329,7 +1341,7 @@ const fetchDominanceData = useCallback(async () => {
 
     setIsTxMvrvRatioDataFetched((prev) => ({ ...prev, [smoothing]: true }));
     const success = await fetchWithCache({
-      cacheId: `txMvrvRatioData_${smoothing}`,
+      cacheId: `txMvrvRatioData_v2_${smoothing}`,
       apiUrl: apiUrl(`/api/tx-mvrv-ratio/?smoothing=${smoothing}`),
       formatData: (data) => {
         const series = (data.series || [])
@@ -1361,7 +1373,7 @@ const fetchDominanceData = useCallback(async () => {
 
   const refreshTxMvrvRatioData = useCallback(async (smoothing = 'sma-7') => {
     await refreshData({
-      cacheId: `txMvrvRatioData_${smoothing}`,
+      cacheId: `txMvrvRatioData_v2_${smoothing}`,
       setData: () =>
         setTxMvrvRatioDataBySmoothing((prev) => {
           const next = { ...prev };
