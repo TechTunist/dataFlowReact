@@ -12,7 +12,11 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import { Link } from 'react-router-dom';
 import { isOpenAccessPromoActive, OPEN_ACCESS_PROMO } from '../../config/openAccessPromo';
-import { trackPlausible } from '../../utils/plausibleEvents';
+import {
+  trackOnboardingDismissed,
+  trackOnboardingShown,
+  trackOnboardingStep,
+} from '../../utils/plausibleEvents';
 
 const STORAGE_KEY = 'cryptological_first_win_dismissed_v1';
 
@@ -50,8 +54,10 @@ const FirstWinOnboarding = ({ colors }) => {
       if (typeof window === 'undefined') return;
       if (window.localStorage.getItem(STORAGE_KEY) === '1') return;
       setVisible(true);
+      trackOnboardingShown();
     } catch {
       setVisible(true);
+      trackOnboardingShown();
     }
   }, []);
 
@@ -61,7 +67,7 @@ const FirstWinOnboarding = ({ colors }) => {
     } catch {
       /* ignore quota */
     }
-    trackPlausible('Onboarding Dismissed', { reason });
+    trackOnboardingDismissed(reason);
     setVisible(false);
   };
 
@@ -130,7 +136,7 @@ const FirstWinOnboarding = ({ colors }) => {
                   component={Link}
                   to={step.to}
                   onClick={() => {
-                    trackPlausible('Onboarding Step Click', { path: step.to });
+                    trackOnboardingStep(step.to);
                     dismiss(`step:${step.to}`);
                   }}
                   size="small"

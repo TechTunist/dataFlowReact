@@ -63,7 +63,11 @@ This is a living list of free options to evaluate. Nothing here is auto-wired un
 
 ## Highest-ROI free adds (no new paid vendors)
 
-1. More **FRED** series in Workbench (`WALCL`, `PCEPILFE`, `MORTGAGE30US`, `DTWEXBGS`) — already supported by `/api/series/{id}/`.
+1. ~~More **FRED** series in Workbench (`WALCL`, `PCEPILFE`, `CPILFESL`, `MORTGAGE30US`, `DTWEXBGS`)~~ — **shipped on growth branch** (FE routes + Workbench + `populate_fred_series` defaults). **Ops:** run against Neon once:
+   ```bash
+   python manage.py populate_fred_series --series-ids WALCL PCEPILFE CPILFESL MORTGAGE30US DTWEXBGS
+   python manage.py update_fred_macro --series-ids WALCL PCEPILFE CPILFESL MORTGAGE30US DTWEXBGS --backfill
+   ```
 2. **DefiLlama** stablecoin / total crypto TVL as a weekly series (liquidity context next to BTC).
 3. **mempool.space** fee history if not already covered well by current fees chart.
 4. **CoinPaprika** as failover when CoinGecko rate-limits bottom-16 alts.

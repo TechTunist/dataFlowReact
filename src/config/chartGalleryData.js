@@ -440,6 +440,36 @@ export const chartSections = {
         description: "Monthly German 10-Year Government Bond Yield.",
         image: '/assets/german10year.png',
       },
+      {
+        path: "/fred/fed-balance-sheet",
+        title: "Fed Balance Sheet (WALCL)",
+        description: "Weekly Federal Reserve total assets. Core liquidity series for crypto cycles.",
+        image: '/assets/m2.png',
+      },
+      {
+        path: "/fred/core-pce",
+        title: "Core PCE",
+        description: "Fed preferred inflation measure (ex food and energy).",
+        image: '/assets/cpi.png',
+      },
+      {
+        path: "/fred/core-cpi",
+        title: "Core CPI",
+        description: "Consumer prices excluding food and energy.",
+        image: '/assets/inflation.png',
+      },
+      {
+        path: "/fred/mortgage-30y",
+        title: "30-Year Mortgage Rate",
+        description: "US 30-year fixed mortgage rate. Real-economy financing pressure.",
+        image: '/assets/interest.png',
+      },
+      {
+        path: "/fred/trade-weighted-dollar",
+        title: "Trade-Weighted USD Index",
+        description: "Broad dollar strength vs major trading partners.",
+        image: '/assets/euroUsd.png',
+      },
     ],
     "Advanced Models": [
       {

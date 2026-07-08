@@ -83,6 +83,11 @@ export const routeToChartId = {
   "/fred/case-shiller": "fred-case-shiller",
   "/fred/nikkei-225": "fred-nikkei-225",
   "/fred/german-bond-yield": "fred-german-bond-yield",
+  "/fred/fed-balance-sheet": "fred-fed-balance-sheet",
+  "/fred/core-pce": "fred-core-pce",
+  "/fred/core-cpi": "fred-core-cpi",
+  "/fred/mortgage-30y": "fred-mortgage-30y",
+  "/fred/trade-weighted-dollar": "fred-trade-weighted-dollar",
   "/fred/sahm-recession-indicator": "sahm-recession-indicator",
   "/workbench": "workbench",
   "/sp500-roi": "sp500-roi",
@@ -257,6 +262,16 @@ export const getTitleAndSubtitle = (pathname, isMobile = false) => {
       return { title: "Nikkei 225", subtitle: isMobile ? "Stock Index" : "Nikkei 225 Index" };
     case "/fred/german-bond-yield":
       return { title: "German Bond Yield", subtitle: isMobile ? "Bond Yield" : "German 10-Year Bond Yield" };
+    case "/fred/fed-balance-sheet":
+      return { title: "Fed Balance Sheet", subtitle: isMobile ? "WALCL" : "Federal Reserve Total Assets (WALCL)" };
+    case "/fred/core-pce":
+      return { title: "Core PCE", subtitle: isMobile ? "Inflation" : "Core PCE Price Index (Fed preferred)" };
+    case "/fred/core-cpi":
+      return { title: "Core CPI", subtitle: isMobile ? "Inflation" : "Core CPI ex Food and Energy" };
+    case "/fred/mortgage-30y":
+      return { title: "30Y Mortgage Rate", subtitle: isMobile ? "Mortgage" : "US 30-Year Fixed Mortgage Rate" };
+    case "/fred/trade-weighted-dollar":
+      return { title: "Trade-Weighted USD", subtitle: isMobile ? "Dollar" : "Broad Trade-Weighted US Dollar Index" };
     case "/indicators/btc-yield-recession":
       return { title: "Bitcoin to 10 Year Yield", subtitle: isMobile ? "BTC vs 10 Year" : "Bitcoin Vs 10 year Bond Yield with Recesion Indicator" };
     case "/workbench":

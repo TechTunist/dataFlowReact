@@ -7,6 +7,11 @@ import Navbar from '../global/SplashNavBar.jsx';
 import SeoPublicFooter from './SeoPublicFooter';
 import SeoHead, { organizationJsonLd, softwareApplicationJsonLd } from '../../components/SeoHead';
 import { SEO_PAGES } from '../../seo/staticPageContent';
+import {
+  getHeroPricingHint,
+  isOpenAccessPromoActive,
+  OPEN_ACCESS_PROMO,
+} from '../../config/openAccessPromo';
 import '../../styling/splashPage.css';
 
 const SeoLandingPage = () => {
@@ -14,6 +19,7 @@ const SeoLandingPage = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const page = Object.values(SEO_PAGES).find((p) => p.path === pathname);
+  const promoActive = isOpenAccessPromoActive();
 
   if (!page) {
     return <Navigate to="/" replace />;
@@ -52,7 +58,11 @@ const SeoLandingPage = () => {
       >
         <Container maxWidth="md">
           <Chip
-            label="Cryptological, Bitcoin & crypto analytics"
+            label={
+              promoActive
+                ? OPEN_ACCESS_PROMO.limitedAccessChip
+                : 'Cryptological, Bitcoin & crypto analytics'
+            }
             sx={{
               mb: 2,
               backgroundColor: colors.greenAccent[800],
@@ -68,11 +78,19 @@ const SeoLandingPage = () => {
               fontWeight: 'bold',
               fontSize: { xs: '2rem', sm: '2.75rem', md: '3.25rem' },
               lineHeight: 1.2,
-              mb: 3,
+              mb: 2,
             }}
           >
             {page.h1}
           </Typography>
+          {promoActive && (
+            <Typography sx={{ color: colors.grey[300], mb: 3, lineHeight: 1.6 }}>
+              {OPEN_ACCESS_PROMO.bannerSubtext}{' '}
+              <Box component="span" sx={{ color: colors.grey[400] }}>
+                {getHeroPricingHint(true)}
+              </Box>
+            </Typography>
+          )}
 
           {page.sections.map((section) => (
             <Box key={section.h2} sx={{ mb: 4 }}>
@@ -108,7 +126,7 @@ const SeoLandingPage = () => {
                 '&:hover': { backgroundColor: colors.greenAccent[400] },
               }}
             >
-              Sign up free
+              {promoActive ? 'Sign up free with email' : 'Sign up free'}
             </Button>
             <Button
               component={Link}
@@ -121,6 +139,18 @@ const SeoLandingPage = () => {
               }}
             >
               Browse chart gallery
+            </Button>
+            <Button
+              component={Link}
+              to="/#market-pulse"
+              variant="text"
+              sx={{
+                color: colors.grey[300],
+                textTransform: 'none',
+                '&:hover': { color: colors.greenAccent[300] },
+              }}
+            >
+              Public market pulse
             </Button>
           </Stack>
 

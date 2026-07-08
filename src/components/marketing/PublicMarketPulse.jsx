@@ -12,11 +12,13 @@ import {
 } from '@mui/material';
 import { API_ENDPOINTS } from '../../config/api';
 import TrackedSignupLink from './TrackedSignupLink';
+import MiniSparkline from './MiniSparkline';
 import {
   getHeroPricingHint,
   isOpenAccessPromoActive,
   OPEN_ACCESS_PROMO,
 } from '../../config/openAccessPromo';
+import { trackMarketPulseView } from '../../utils/plausibleEvents';
 
 const formatUsd = (value) => {
   if (value == null || Number.isNaN(Number(value))) return '—';
@@ -34,13 +36,10 @@ const formatPct = (value) => {
 
 const formatRisk = (value) => {
   if (value == null || Number.isNaN(Number(value))) return '—';
-  const n = Number(value);
-  // sopl_risk and similar are often already 0–1-ish; clamp display
-  if (n >= 0 && n <= 1.5) return n.toFixed(2);
-  return n.toFixed(2);
+  return Number(value).toFixed(2);
 };
 
-const MetricCard = ({ label, value, sub, colors }) => (
+const MetricCard = ({ label, value, sub, colors, sparkline, sparkLabel }) => (
   <Card
     sx={{
       height: '100%',
@@ -48,7 +47,7 @@ const MetricCard = ({ label, value, sub, colors }) => (
       border: `1px solid ${colors.primary[600]}`,
     }}
   >
-    <CardContent sx={{ textAlign: 'center', py: 2.5 }}>
+    <CardContent sx={{ textAlign: 'center', py: 2.5, px: 1.5 }}>
       <Typography
         sx={{
           color: colors.grey[400],
@@ -64,14 +63,26 @@ const MetricCard = ({ label, value, sub, colors }) => (
         sx={{
           color: colors.greenAccent[400],
           fontWeight: 800,
-          fontSize: { xs: '1.35rem', sm: '1.6rem' },
+          fontSize: { xs: '1.25rem', sm: '1.5rem' },
           lineHeight: 1.2,
         }}
       >
         {value}
       </Typography>
+      {sparkline?.length >= 2 && (
+        <Box sx={{ mt: 1.25, mb: 0.5 }}>
+          <MiniSparkline
+            points={sparkline}
+            width={140}
+            height={40}
+            stroke={colors.greenAccent[400]}
+            fill={`${colors.greenAccent[500]}22`}
+            ariaLabel={sparkLabel || `${label} recent trend`}
+          />
+        </Box>
+      )}
       {sub && (
-        <Typography sx={{ color: colors.grey[500], fontSize: '0.75rem', mt: 0.75 }}>
+        <Typography sx={{ color: colors.grey[500], fontSize: '0.75rem', mt: 0.5 }}>
           {sub}
         </Typography>
       )}
@@ -101,7 +112,10 @@ const PublicMarketPulse = ({ colors }) => {
         });
         if (!res.ok) throw new Error(`pulse ${res.status}`);
         const json = await res.json();
-        if (!cancelled) setData(json);
+        if (!cancelled) {
+          setData(json);
+          trackMarketPulseView(Boolean(json?.sparklines?.btc?.length));
+        }
       } catch {
         if (!cancelled) setError(true);
       } finally {
@@ -114,11 +128,16 @@ const PublicMarketPulse = ({ colors }) => {
     };
   }, []);
 
+  const sparklines = data?.sparklines || {};
+  const freshnessAsOf = data?.freshness?.as_of;
+
   const cards = [
     {
       label: 'Bitcoin',
       value: formatUsd(data?.btc_price?.value),
       sub: data?.btc_price?.date ? `Daily close · ${data.btc_price.date}` : 'Daily close',
+      sparkline: sparklines.btc,
+      sparkLabel: 'Bitcoin price, last ~90 days',
     },
     {
       label: 'Fear & Greed',
@@ -127,11 +146,15 @@ const PublicMarketPulse = ({ colors }) => {
           ? `${Math.round(Number(data.fear_and_greed.value))}`
           : '—',
       sub: data?.fear_and_greed?.classification || 'Market sentiment',
+      sparkline: sparklines.fear_and_greed,
+      sparkLabel: 'Fear and Greed index, recent history',
     },
     {
       label: 'BTC Dominance',
       value: formatPct(data?.btc_dominance_pct?.value),
       sub: data?.btc_dominance_pct?.date || 'Share of crypto market',
+      sparkline: sparklines.btc_dominance,
+      sparkLabel: 'Bitcoin dominance, last ~90 days',
     },
     {
       label: 'Total Market Cap',
@@ -150,6 +173,7 @@ const PublicMarketPulse = ({ colors }) => {
 
   return (
     <Box
+      id="market-pulse"
       component="section"
       sx={{
         width: '100%',
@@ -157,6 +181,7 @@ const PublicMarketPulse = ({ colors }) => {
         backgroundColor: colors.primary[800],
         borderTop: `1px solid ${colors.primary[700]}`,
         borderBottom: `1px solid ${colors.primary[700]}`,
+        scrollMarginTop: '96px',
       }}
     >
       <Container maxWidth="lg">
@@ -190,10 +215,15 @@ const PublicMarketPulse = ({ colors }) => {
               lineHeight: 1.6,
             }}
           >
-            A free daily snapshot anyone can view. Interactive charts, the workbench, and full history
-            unlock when you create a free account
+            A free daily snapshot anyone can view, with recent trends. Interactive charts, the workbench,
+            and full history unlock when you create a free account
             {promoActive ? ' (limited free access while the promotion lasts).' : '.'}
           </Typography>
+          {freshnessAsOf && !loading && !error && (
+            <Typography sx={{ color: colors.grey[500], mt: 1.5, fontSize: '0.85rem' }}>
+              Data as of {freshnessAsOf} · Updated daily from free public sources
+            </Typography>
+          )}
         </Box>
 
         {loading && (
@@ -202,7 +232,7 @@ const PublicMarketPulse = ({ colors }) => {
               <Grid item xs={6} md={3} key={k}>
                 <Skeleton
                   variant="rounded"
-                  height={120}
+                  height={160}
                   sx={{ bgcolor: colors.primary[700] }}
                 />
               </Grid>
@@ -220,7 +250,14 @@ const PublicMarketPulse = ({ colors }) => {
           <Grid container spacing={2} justifyContent="center">
             {cards.map((c) => (
               <Grid item xs={6} sm={4} md={cards.length >= 5 ? 2 : 3} key={c.label}>
-                <MetricCard label={c.label} value={c.value} sub={c.sub} colors={colors} />
+                <MetricCard
+                  label={c.label}
+                  value={c.value}
+                  sub={c.sub}
+                  colors={colors}
+                  sparkline={c.sparkline}
+                  sparkLabel={c.sparkLabel}
+                />
               </Grid>
             ))}
           </Grid>
