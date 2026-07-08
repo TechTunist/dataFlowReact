@@ -69,7 +69,6 @@ import TailCurvature from "../../components/TailCurvature";
 import SahmRecessionIndicator from "../../components/SahmRecessionIndicator";
 import FirstWinOnboarding from "../../components/marketing/FirstWinOnboarding";
 import WelcomeSignupBanner from "../../components/marketing/WelcomeSignupBanner";
-import DashboardMarketBrief from "../../components/marketing/DashboardMarketBrief";
 
 const chartConfig = [
   { id: "bitcoin-20-ext", title: "Bitcoin 20 Week Extension", linkTo: "/btc-20-ext", component: (props) => <Bitcoin20WeekExtension isDashboard={true} {...props} />, description: "Bitcoin price with 20-week extension analysis." },
@@ -333,7 +332,6 @@ const Dashboard = memo(({ isMobile, isSidebar }) => {
     }}>
       <WelcomeSignupBanner colors={colors} />
       <FirstWinOnboarding colors={colors} />
-      <DashboardMarketBrief colors={colors} />
       <Snackbar
         open={!!error}
         autoHideDuration={4000}

@@ -1,6 +1,6 @@
 import React from "react";
 import { useGalleryHashScroll } from "../hooks/useGalleryHashScroll";
-import { Box, Button, Container, Typography, Chip, Stack } from "@mui/material";
+import { Box, Button, Container, Typography, Chip } from "@mui/material";
 import { Link } from "react-router-dom";
 import { useTheme } from "@mui/material";
 import { tokens } from "../theme";
@@ -9,8 +9,6 @@ import ChartGalleryContent from "../components/ChartGalleryContent";
 import SeoHead from "../components/SeoHead";
 import SeoPublicFooter from "./seo/SeoPublicFooter";
 import { SEO_PAGES } from "../seo/staticPageContent";
-import { isOpenAccessPromoActive, OPEN_ACCESS_PROMO } from "../config/openAccessPromo";
-import ShareActions from "../components/marketing/ShareActions";
 import "../styling/splashPage.css";
 
 const gallerySeo = SEO_PAGES["chart-gallery"];
@@ -18,7 +16,6 @@ const gallerySeo = SEO_PAGES["chart-gallery"];
 const PublicChartGallery = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
-  const promoActive = isOpenAccessPromoActive();
   useGalleryHashScroll();
 
   return (
@@ -53,11 +50,7 @@ const PublicChartGallery = () => {
       >
         <Container maxWidth="md">
           <Chip
-            label={
-              promoActive
-                ? OPEN_ACCESS_PROMO.limitedAccessChip
-                : "Public preview · No account required"
-            }
+            label="Public preview · No account required"
             sx={{
               mb: 2,
               backgroundColor: colors.greenAccent[800],
@@ -88,55 +81,27 @@ const PublicChartGallery = () => {
               mb: 3,
             }}
           >
-            Browse every chart available on Cryptological. This gallery is a public preview with
-            screenshots only. Interactive charts require a free account (email and password).
-            {promoActive
-              ? " Full access for free accounts is limited-time promotional, no card required."
-              : " Create a free account to open interactive charts."}
-            {" "}For live numbers without signup, see the public market pulse on the home page.
+            Browse every chart available on Cryptological. Create a free account to open interactive charts,
+            customise your dashboard, and track the metrics that matter to you.
           </Typography>
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ mb: 1 }}>
-            <Button
-              component={Link}
-              to="/login-signup?mode=signup"
-              variant="contained"
-              sx={{
-                backgroundColor: colors.greenAccent[500],
-                color: colors.grey[900],
-                fontWeight: "bold",
-                "&:hover": { backgroundColor: colors.greenAccent[400] },
-              }}
-            >
-              Sign up free to open charts
-            </Button>
-            <Button
-              component={Link}
-              to="/#market-pulse"
-              variant="outlined"
-              sx={{
-                color: colors.greenAccent[400],
-                borderColor: colors.greenAccent[500],
-                fontWeight: "bold",
-                "&:hover": { borderColor: colors.greenAccent[300] },
-              }}
-            >
-              See live market pulse
-            </Button>
-
-          </Stack>
+          <Button
+            component={Link}
+            to="/login-signup?mode=signup"
+            variant="contained"
+            sx={{
+              backgroundColor: colors.greenAccent[500],
+              color: colors.grey[900],
+              fontWeight: "bold",
+              "&:hover": { backgroundColor: colors.greenAccent[400] },
+            }}
+          >
+            Sign up free
+          </Button>
         </Container>
       </Box>
 
       <Box sx={{ width: "100%", pb: 8 }}>
         <ChartGalleryContent linkable={false} />
-        <Box sx={{ mt: 4, px: 2 }}>
-          <ShareActions
-            colors={colors}
-            promoActive={promoActive}
-            path="/chart-gallery"
-            location="chart-gallery"
-          />
-        </Box>
       </Box>
       <SeoPublicFooter />
     </Box>

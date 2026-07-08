@@ -93,7 +93,7 @@ const FirstWinOnboarding = ({ colors }) => {
         <Box pr={4}>
           {promoActive && (
             <Chip
-              label={OPEN_ACCESS_PROMO.limitedAccessChip}
+              label={OPEN_ACCESS_PROMO.stickerLabel || 'Free Premium Access'}
               size="small"
               sx={{
                 mb: 1.5,
@@ -108,7 +108,7 @@ const FirstWinOnboarding = ({ colors }) => {
           </Typography>
           <Typography sx={{ color: colors.grey[300], mb: 2.5, maxWidth: 720 }}>
             {promoActive
-              ? 'You have limited free access to every chart with your free account. Three quick wins to feel the product in under five minutes:'
+              ? 'Full access is currently free with your account. Three quick wins to feel the product in under five minutes:'
               : 'Three quick wins to feel the product in under five minutes:'}
           </Typography>
         </Box>

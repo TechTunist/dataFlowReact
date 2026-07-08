@@ -30,11 +30,6 @@ import HundredDayWindowBanner, { HUNDRED_DAY_WINDOW_BANNER_HEIGHT } from '../com
 import HundredDayWindowOriginStory from '../components/marketing/HundredDayWindowOriginStory';
 import EducationalDisclaimer from '../components/marketing/EducationalDisclaimer';
 import FreePremiumAccessSticker from '../components/marketing/FreePremiumAccessSticker';
-import {
-  getHeroPricingHint,
-  isOpenAccessPromoActive,
-  OPEN_ACCESS_PROMO,
-} from '../config/openAccessPromo';
 import { useData } from '../DataContext';
 import {
   ALTERNATIVE_PROJECTIONS,
@@ -99,7 +94,6 @@ const FAQ_ITEMS = [
 const HundredDayWindow = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
-  const promoActive = isOpenAccessPromoActive();
   const { btcData } = useData();
 
   const cycleStats = useMemo(() => {
@@ -140,7 +134,7 @@ const HundredDayWindow = () => {
       <StickySignupCta
         colors={colors}
         signupPath={FREE_SIGNUP}
-        label={promoActive ? 'Sign up free (limited access)' : 'Sign up free, see the countdown live'}
+        label="Sign up free, see the countdown live"
       />
 
       {/* Hero */}
@@ -156,11 +150,7 @@ const HundredDayWindow = () => {
         <FreePremiumAccessSticker corner="top-right" />
         <Container maxWidth="md" sx={{ textAlign: 'center' }}>
           <Chip
-            label={
-              promoActive
-                ? OPEN_ACCESS_PROMO.limitedAccessChip
-                : 'Public guide · No account required'
-            }
+            label="Public guide · No account required"
             sx={{
               mb: 2,
               backgroundColor: colors.greenAccent[800],
@@ -180,11 +170,6 @@ const HundredDayWindow = () => {
           >
             {pageSeo.h1}
           </Typography>
-          {promoActive && (
-            <Typography sx={{ color: colors.grey[400], mb: 2, fontSize: '0.95rem', lineHeight: 1.6 }}>
-              {OPEN_ACCESS_PROMO.bannerSubtext} {getHeroPricingHint(true)}
-            </Typography>
-          )}
           <Typography
             sx={{
               color: colors.grey[300],
@@ -493,9 +478,8 @@ const HundredDayWindow = () => {
             Track the window on your dashboard
           </Typography>
           <Typography sx={{ color: colors.grey[300], mb: 4, lineHeight: 1.7 }}>
-            {promoActive
-              ? 'Limited free access for free accounts (email + password). See the countdown inside Market Cycles and Market Overview, with risk metrics, MVRV, and macro overlays, no card required during the promo.'
-              : 'Sign up free, no card required, and see the same countdown inside Market Cycles and Market Overview, alongside risk metrics, MVRV, and macro overlays.'}
+            Sign up free, no card required, and see the same countdown inside Market Cycles and Market Overview,
+            alongside risk metrics, MVRV, and macro overlays.
           </Typography>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} justifyContent="center">
             <Button
@@ -512,20 +496,7 @@ const HundredDayWindow = () => {
                 '&:hover': { backgroundColor: colors.greenAccent[400] },
               }}
             >
-              {promoActive ? 'Sign up free with email' : 'Create free account'}
-            </Button>
-            <Button
-              component={Link}
-              to="/#market-pulse"
-              variant="outlined"
-              size="large"
-              sx={{
-                color: colors.grey[100],
-                borderColor: colors.grey[500],
-                '&:hover': { borderColor: colors.grey[300] },
-              }}
-            >
-              Public market pulse
+              Create free account
             </Button>
             <Button
               component={Link}

@@ -40,7 +40,7 @@ const WelcomeSignupBanner = ({ colors }) => {
         }}
       >
         <Typography sx={{ fontWeight: 700, mb: 0.5 }}>
-          {promoActive ? 'Welcome, limited free access is on' : 'Welcome to Cryptological'}
+          {promoActive ? 'Welcome, full access is free right now' : 'Welcome to Cryptological'}
         </Typography>
         <Typography sx={{ fontSize: '0.9rem', color: colors.grey[300], mb: 1 }}>
           {promoActive

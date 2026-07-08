@@ -1,20 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Button, Container, Typography } from '@mui/material';
 import TrackedSignupLink from './TrackedSignupLink';
-import {
-  getStickyCtaHint,
-  isOpenAccessPromoActive,
-} from '../../config/openAccessPromo';
 
-const StickySignupCta = ({
-  colors,
-  signupPath = '/login-signup?mode=signup',
-  label,
-}) => {
+const StickySignupCta = ({ colors, signupPath = '/login-signup?mode=signup', label = 'Sign up free' }) => {
   const [visible, setVisible] = useState(false);
-  const promoActive = isOpenAccessPromoActive();
-  const buttonLabel =
-    label || (promoActive ? 'Sign up free (limited access)' : 'Sign up free');
 
   useEffect(() => {
     const onScroll = () => {
@@ -52,8 +41,8 @@ const StickySignupCta = ({
           flexWrap: 'wrap',
         }}
       >
-        <Typography sx={{ color: colors.grey[300], fontSize: { xs: '0.85rem', sm: '0.95rem' } }}>
-          {getStickyCtaHint(promoActive)}
+        <Typography sx={{ color: colors.grey[300], fontSize: { xs: '0.9rem', sm: '1rem' } }}>
+          Glassnode-depth metrics without Glassnode prices.
         </Typography>
         <Button
           component={TrackedSignupLink}
@@ -68,7 +57,7 @@ const StickySignupCta = ({
             '&:hover': { backgroundColor: colors.greenAccent[400] },
           }}
         >
-          {buttonLabel}
+          {label}
         </Button>
       </Container>
     </Box>

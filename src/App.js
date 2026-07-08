@@ -129,11 +129,7 @@ export const PUBLIC_ROUTE_PATHS = [
   "/bitcoin-analytics",
   "/on-chain-metrics",
   "/crypto-charts-tools",
-  // Internal creator kit (only useful when REACT_APP_SHOW_CREATOR_KIT=true; else redirects home)
-  "/creator-kit",
 ];
-
-const CreatorKitPage = lazyWithRetry(() => import('./scenes/CreatorKitPage'));
 
 const appRoutes = [
   // Public routes (no auth required)
@@ -147,7 +143,6 @@ const appRoutes = [
   { path: "/bitcoin-analytics", element: <SeoLandingPage />, public: true },
   { path: "/on-chain-metrics", element: <SeoLandingPage />, public: true },
   { path: "/crypto-charts-tools", element: <SeoLandingPage />, public: true },
-  { path: "/creator-kit", component: CreatorKitPage, public: true },
 
   // Core protected scenes (not using BasicChart wrapper)
   { path: "/dashboard", component: Dashboard, protected: true, props: (ctx) => ({ isMobile: ctx.isMobile, isSidebar: ctx.isSidebar }) },
