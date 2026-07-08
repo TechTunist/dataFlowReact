@@ -9,8 +9,9 @@ const DISMISS_KEY = 'cryptological_data_health_dismiss_v1';
 const POLL_MS = 10 * 60 * 1000;
 
 /**
- * Subtle in-app banner for signed-in users when daily free data is stale/degraded.
- * Uses public health endpoint (no JWT). Dismissible per status+as_of for the session day.
+ * In-app data freshness for signed-in shell.
+ * - ok: subtle "Data current" strip (dismissible)
+ * - stale / degraded: stronger notice (dismissible)
  */
 const DataFreshnessBanner = () => {
   const theme = useTheme();
@@ -27,7 +28,7 @@ const DataFreshnessBanner = () => {
         const data = await fetchPublicDataHealth();
         if (cancelled || !data) return;
         setHealth(data);
-        if (data.status === 'stale' || data.status === 'degraded') {
+        if (data.status === 'stale' || data.status === 'degraded' || data.status === 'ok') {
           trackPlausible('Data Health Notice', { status: data.status });
         }
       } catch {
@@ -60,11 +61,20 @@ const DataFreshnessBanner = () => {
   }, [health]);
 
   if (!health || hidden) return null;
-  if (health.status !== 'stale' && health.status !== 'degraded') return null;
+  if (!['ok', 'stale', 'degraded'].includes(health.status)) return null;
 
+  const isOk = health.status === 'ok';
   const isDegraded = health.status === 'degraded';
-  const bg = isDegraded ? colors.redAccent?.[800] || '#5c1a1a' : colors.primary[700];
-  const border = isDegraded ? colors.redAccent?.[500] || '#ef5350' : colors.greenAccent[700];
+  const bg = isOk
+    ? colors.primary[800]
+    : isDegraded
+      ? colors.redAccent?.[800] || '#5c1a1a'
+      : colors.primary[700];
+  const border = isOk
+    ? colors.greenAccent[800]
+    : isDegraded
+      ? colors.redAccent?.[500] || '#ef5350'
+      : colors.greenAccent[700];
   const fg = colors.grey[100];
 
   const dismiss = () => {
@@ -79,12 +89,16 @@ const DataFreshnessBanner = () => {
     setHidden(true);
   };
 
+  const message = isOk
+    ? (health.user_message || `Data current${health.as_of ? ` as of ${health.as_of}` : ''}.`)
+    : health.user_message;
+
   return (
     <Box
       role="status"
       sx={{
         width: '100%',
-        py: 0.75,
+        py: isOk ? 0.5 : 0.75,
         px: 1.5,
         backgroundColor: bg,
         borderBottom: `1px solid ${border}`,
@@ -99,14 +113,15 @@ const DataFreshnessBanner = () => {
       <Typography
         sx={{
           color: fg,
-          fontSize: { xs: '0.75rem', sm: '0.85rem' },
+          fontSize: { xs: '0.72rem', sm: '0.82rem' },
           textAlign: 'center',
           pr: 4,
           lineHeight: 1.4,
+          opacity: isOk ? 0.95 : 1,
         }}
       >
-        {isDegraded ? 'Data notice: ' : 'Heads up: '}
-        {health.user_message}
+        {isOk ? '✓ ' : isDegraded ? 'Data notice: ' : 'Heads up: '}
+        {message}
       </Typography>
       <IconButton
         aria-label="Dismiss data notice"

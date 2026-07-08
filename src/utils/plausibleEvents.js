@@ -21,6 +21,8 @@ export const FUNNEL_EVENTS = {
   ONBOARDING_DISMISSED: 'Onboarding Dismissed',
   ONBOARDING_STEP: 'Onboarding Step Click',
   SHARE_ACTION: 'Share Action',
+  BRIEF_VIEW: 'Brief View',
+  BRIEF_CHART_CLICK: 'Brief Chart Click',
 };
 
 export function trackCtaClick(location, plan = 'free') {
@@ -63,4 +65,12 @@ export function trackOnboardingStep(path) {
 
 export function trackShareAction(action, location = 'unknown') {
   trackPlausible(FUNNEL_EVENTS.SHARE_ACTION, { action, location });
+}
+
+export function trackBriefView(healthStatus = 'unknown') {
+  trackPlausible(FUNNEL_EVENTS.BRIEF_VIEW, { health: healthStatus });
+}
+
+export function trackBriefChartClick(path) {
+  trackPlausible(FUNNEL_EVENTS.BRIEF_CHART_CLICK, { path });
 }

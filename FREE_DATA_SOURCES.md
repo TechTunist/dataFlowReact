@@ -76,6 +76,18 @@ This is a living list of free options to evaluate. Nothing here is auto-wired un
    - **Not wired yet** — add as secondary path in `altcoin_fetch.py` only after local rate-limit tests.
    - Prefer server-side daily ingest (same batching + pause pattern as CoinGecko).
 
+## Newsletter brief export (growth slice 6)
+
+Manual weekly copy for Zoho (no paid email API):
+
+```bash
+cd SaaS/src
+python manage.py export_weekly_brief --output=weekly_market_brief.txt --stdout
+python manage.py export_emails   # subscriber list separately
+```
+
+Paste `weekly_market_brief.txt` into the campaign body; import the CSV for recipients.
+
 ## Out of scope until budget exists
 
 Glassnode, CryptoQuant, paid CoinMetrics, paid CoinDesk/CryptoCompare plans, Kaiko, Amberdata, etc. Design features so they can plug in later without rewriting free paths.
