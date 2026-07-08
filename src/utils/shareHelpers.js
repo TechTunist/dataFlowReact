@@ -8,7 +8,6 @@ export const SITE_ORIGIN = 'https://cryptological.app';
 export const DEFAULT_SHARE_PATHS = {
   home: '/',
   marketPulse: '/#market-pulse',
-  trends: '/#public-trends',
   gallery: '/chart-gallery',
   whitepaper: '/bitcoin-whitepaper',
   hundredDay: '/100-day-window',
