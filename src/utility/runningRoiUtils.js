@@ -763,3 +763,336 @@ export function getRunningRoiSignalSnapshot(roiData, riskMetricData, buyThreshol
     sellZonePoints: buildAboveThresholdZones(riskMetricData, sellThreshold),
   };
 }
+
+// ---------------------------------------------------------------------------
+// What-if scenario calculator (price ↔ raw ROI ↔ risk at a chosen date)
+// ---------------------------------------------------------------------------
+
+/** Relative price ladder around a target price (−20% … +20%). */
+export const WHAT_IF_PRICE_OFFSETS = [-0.2, -0.1, -0.05, 0, 0.05, 0.1, 0.2];
+
+/** Multipliers of a target ROI for surrounding ROI scenarios. */
+export const WHAT_IF_ROI_FACTORS = [0.5, 0.75, 0.9, 1, 1.1, 1.25, 1.5];
+
+/**
+ * Shift an ISO date (YYYY-MM-DD) by a whole number of calendar days (UTC).
+ */
+export function shiftIsoDate(isoDate, days) {
+  if (!isoDate) return null;
+  const d = new Date(`${isoDate}T00:00:00Z`);
+  if (Number.isNaN(d.getTime())) return null;
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+/**
+ * Lookback price for 1Y running ROI on `asOfDate`, matching calculateRunningROI:
+ * first price at or after (asOf − lookbackDays) and strictly before asOf.
+ * Requires the lookback point to be at least ~90% of the window away from asOf
+ * so short series cannot pretend to be a full-year ROI.
+ *
+ * @returns {{ time: string, price: number } | null}
+ */
+export function getRunningRoiLookbackPrice(priceData, asOfDate, lookbackDays = 365) {
+  if (!priceData?.length || !asOfDate) return null;
+
+  const asOfMs = new Date(`${asOfDate}T00:00:00Z`).getTime();
+  if (Number.isNaN(asOfMs)) return null;
+
+  const dayMs = 24 * 60 * 60 * 1000;
+  const windowStartMs = asOfMs - lookbackDays * dayMs;
+  const minGapMs = lookbackDays * 0.9 * dayMs;
+  let firstInWindow = null;
+
+  for (const point of priceData) {
+    const t = new Date(`${point.time}T00:00:00Z`).getTime();
+    if (Number.isNaN(t) || t >= asOfMs) break;
+    if (t >= windowStartMs) {
+      firstInWindow = point;
+      break;
+    }
+  }
+
+  let candidate = firstInWindow;
+
+  if (!candidate) {
+    // Sparse history: use last available price on or before the window start.
+    let lastBeforeWindow = null;
+    for (const point of priceData) {
+      const t = new Date(`${point.time}T00:00:00Z`).getTime();
+      if (Number.isNaN(t) || t >= asOfMs) break;
+      if (t <= windowStartMs) lastBeforeWindow = point;
+    }
+    candidate = lastBeforeWindow;
+  }
+
+  if (!candidate || !(candidate.value > 0)) return null;
+
+  const candidateMs = new Date(`${candidate.time}T00:00:00Z`).getTime();
+  if (asOfMs - candidateMs < minGapMs) return null;
+
+  return { time: candidate.time, price: candidate.value };
+}
+
+/**
+ * Build a mapper that converts (date, raw 1Y ROI) → risk score using the same
+ * cycle structure as mapRunningRoiToRiskSeries (peaks, dual-anchor, open cycle).
+ *
+ * @returns {null | {
+ *   mapRisk: (time: string, rawRoi: number) => {
+ *     riskScore: number,
+ *     adjustedRoi: number,
+ *     rawRoi: number,
+ *     scaleFactor: number,
+ *   }
+ * }}
+ */
+export function buildRoiRiskMapper(
+  roiData,
+  {
+    peaks = null,
+    targetPeak = RISK_METRIC_TARGET_PEAK,
+    lowFloor = RISK_METRIC_LOW_FLOOR,
+    lowEndExponent = RISK_METRIC_LOW_END_EXPONENT,
+    firstBottomTarget = RISK_METRIC_FIRST_BOTTOM_TARGET,
+    lastBottomTarget = RISK_METRIC_LAST_BOTTOM_TARGET,
+    openCycleExponent = RISK_METRIC_OPEN_CYCLE_EXPONENT,
+  } = {}
+) {
+  if (!roiData || roiData.length === 0) return null;
+
+  const resolvedPeaks = peaks?.length ? peaks : resolveCyclePeaks(roiData);
+  const diminished = resolvedPeaks.length > 0
+    ? applyPeakOnlyNormalization(roiData, resolvedPeaks, targetPeak)
+    : roiData.map((point) => ({ ...point, rawRoi: point.roi }));
+
+  const sValues = resolvedPeaks.length > 0
+    ? computePeakScalingFactors(resolvedPeaks, targetPeak)
+    : null;
+
+  const scaleAt = (time) => (sValues ? interpolateScalingFactor(time, sValues) : 1);
+
+  if (resolvedPeaks.length >= 2) {
+    const sortedPeaks = [...resolvedPeaks].sort((a, b) => a.time.localeCompare(b.time));
+    const lastPeakTime = sortedPeaks[sortedPeaks.length - 1].time;
+    const bottoms = detectConfirmedCycleBottoms(roiData, sortedPeaks);
+    const bottomRiskTargets = computeBottomRiskTargets(bottoms, {
+      firstTarget: firstBottomTarget,
+      lastTarget: lastBottomTarget,
+    });
+    const openCycleFloor = bottomRiskTargets.length > 0
+      ? bottomRiskTargets[bottomRiskTargets.length - 1].targetRisk
+      : RISK_METRIC_LAST_BOTTOM_TARGET;
+
+    const historicalDiminished = diminished.filter((point) => point.time <= lastPeakTime);
+    const turningPoints = buildCycleTurningPoints(historicalDiminished, sortedPeaks, bottoms);
+    const bottomTargetByTime = new Map(
+      bottomRiskTargets.map((target) => [target.time, target.targetRisk])
+    );
+
+    return {
+      mapRisk(time, rawRoi) {
+        if (rawRoi == null || !Number.isFinite(rawRoi)) {
+          return {
+            riskScore: openCycleFloor,
+            adjustedRoi: null,
+            rawRoi,
+            scaleFactor: scaleAt(time),
+          };
+        }
+        const scaleFactor = scaleAt(time);
+        const adjustedRoi = rawRoi * scaleFactor;
+
+        if (time > lastPeakTime || turningPoints.length < 2) {
+          const riskScore = clampRiskScore(
+            mapAdjustedRoiToRiskScore(adjustedRoi, targetPeak, {
+              lowFloor: openCycleFloor,
+              exponent: openCycleExponent,
+            })
+          );
+          return { riskScore, adjustedRoi, rawRoi, scaleFactor };
+        }
+
+        const segmentIndex = findSegmentIndex(time, turningPoints);
+        const p0 = turningPoints[segmentIndex];
+        const p1 = turningPoints[segmentIndex + 1] ?? turningPoints[segmentIndex];
+        const norm0 = riskTargetForTurningPoint(p0, targetPeak, bottomTargetByTime);
+        const norm1 = riskTargetForTurningPoint(p1, targetPeak, bottomTargetByTime);
+        const { a, b } = computeAffineCoefficients(p0.roi, norm0, p1.roi, norm1);
+        const riskScore = clampRiskScore(adjustedRoi * a + b);
+        return { riskScore, adjustedRoi, rawRoi, scaleFactor };
+      },
+    };
+  }
+
+  const adjustedRois = diminished
+    .map((point) => point.roi)
+    .filter((roi) => roi != null && Number.isFinite(roi));
+  const maxRoi = adjustedRois.length > 0 ? Math.max(...adjustedRois) : targetPeak;
+
+  return {
+    mapRisk(time, rawRoi) {
+      if (rawRoi == null || !Number.isFinite(rawRoi)) {
+        return {
+          riskScore: lowFloor,
+          adjustedRoi: null,
+          rawRoi,
+          scaleFactor: scaleAt(time),
+        };
+      }
+      const scaleFactor = scaleAt(time);
+      const adjustedRoi = rawRoi * scaleFactor;
+      const riskScore = mapAdjustedRoiToRiskScore(adjustedRoi, maxRoi, {
+        lowFloor,
+        exponent: lowEndExponent,
+      });
+      return { riskScore, adjustedRoi, rawRoi, scaleFactor };
+    },
+  };
+}
+
+/**
+ * Build a scenario row from lookback price, end price, date, and risk mapper.
+ */
+function buildWhatIfRow({ price, lookbackPrice, date, mapper, isTarget = false, offsetLabel = null }) {
+  const rawRoi = lookbackPrice > 0 ? price / lookbackPrice : null;
+  const mapped = mapper && rawRoi != null
+    ? mapper.mapRisk(date, rawRoi)
+    : { riskScore: null, adjustedRoi: null, rawRoi, scaleFactor: 1 };
+
+  return {
+    price,
+    rawRoi: mapped.rawRoi,
+    riskScore: mapped.riskScore,
+    adjustedRoi: mapped.adjustedRoi,
+    scaleFactor: mapped.scaleFactor,
+    isTarget,
+    offsetLabel,
+  };
+}
+
+/**
+ * Calculate a what-if scenario for 1Y running ROI risk.
+ *
+ * Modes:
+ * - `price`: given targetPrice + date → risk (star) + raw ROI; ladder of nearby prices
+ * - `roi`: given targetRoi + date → implied price + risk; ladder of nearby ROIs
+ *
+ * @param {{
+ *   priceData: Array<{ time: string, value: number }>,
+ *   date: string,
+ *   mode: 'price' | 'roi',
+ *   targetPrice?: number,
+ *   targetRoi?: number,
+ *   lookbackDays?: number,
+ *   peaks?: Array | null,
+ *   roiData?: Array | null,
+ *   priceOffsets?: number[],
+ *   roiFactors?: number[],
+ * }} params
+ */
+export function calculateRunningRoiWhatIf({
+  priceData,
+  date,
+  mode = 'price',
+  targetPrice,
+  targetRoi,
+  lookbackDays = 365,
+  peaks = null,
+  roiData = null,
+  priceOffsets = WHAT_IF_PRICE_OFFSETS,
+  roiFactors = WHAT_IF_ROI_FACTORS,
+} = {}) {
+  if (!priceData?.length) {
+    return { ok: false, error: 'No price data available for this asset.' };
+  }
+  if (!date) {
+    return { ok: false, error: 'Choose a date for the scenario.' };
+  }
+
+  const lookback = getRunningRoiLookbackPrice(priceData, date, lookbackDays);
+  if (!lookback || !(lookback.price > 0)) {
+    return {
+      ok: false,
+      error: `No lookback price ~${lookbackDays} days before ${date}. Pick a later date or wait for more history.`,
+    };
+  }
+
+  const seriesRoi = roiData?.length
+    ? roiData
+    : calculateRunningROI(filterPriceDataFromStart(priceData), lookbackDays);
+
+  const mapper = buildRoiRiskMapper(seriesRoi, { peaks });
+  if (!mapper) {
+    return { ok: false, error: 'Not enough ROI history to map risk for this asset.' };
+  }
+
+  let centerPrice;
+  let centerRoi;
+
+  if (mode === 'roi') {
+    if (targetRoi == null || !Number.isFinite(Number(targetRoi)) || Number(targetRoi) <= 0) {
+      return { ok: false, error: 'Enter a positive 1Y ROI multiplier (e.g. 1.5 for +50%).' };
+    }
+    centerRoi = Number(targetRoi);
+    centerPrice = centerRoi * lookback.price;
+  } else {
+    if (targetPrice == null || !Number.isFinite(Number(targetPrice)) || Number(targetPrice) <= 0) {
+      return { ok: false, error: 'Enter a positive price for the scenario.' };
+    }
+    centerPrice = Number(targetPrice);
+    centerRoi = centerPrice / lookback.price;
+  }
+
+  const formatPct = (offset) => {
+    const pct = Math.round(offset * 100);
+    if (pct === 0) return 'target';
+    return pct > 0 ? `+${pct}%` : `${pct}%`;
+  };
+
+  let rows;
+  if (mode === 'roi') {
+    rows = roiFactors.map((factor) => {
+      const rawRoi = centerRoi * factor;
+      const price = rawRoi * lookback.price;
+      const isTarget = factor === 1;
+      const offsetLabel = isTarget
+        ? 'target'
+        : `${factor.toFixed(2).replace(/\.?0+$/, '')}× ROI`;
+      return buildWhatIfRow({
+        price,
+        lookbackPrice: lookback.price,
+        date,
+        mapper,
+        isTarget,
+        offsetLabel,
+      });
+    });
+  } else {
+    rows = priceOffsets.map((offset) => {
+      const price = centerPrice * (1 + offset);
+      return buildWhatIfRow({
+        price,
+        lookbackPrice: lookback.price,
+        date,
+        mapper,
+        isTarget: offset === 0,
+        offsetLabel: formatPct(offset),
+      });
+    });
+  }
+
+  const center = rows.find((row) => row.isTarget) ?? rows[Math.floor(rows.length / 2)];
+
+  return {
+    ok: true,
+    mode,
+    date,
+    lookbackDays,
+    lookback,
+    center,
+    rows,
+    targetPrice: centerPrice,
+    targetRoi: centerRoi,
+  };
+}

@@ -5,6 +5,7 @@ import { tokens } from "../theme";
 import {
   useTheme,
   Box,
+  Button,
   FormControl,
   InputLabel,
   Select,
@@ -24,6 +25,7 @@ import BitcoinFees from './BitcoinTransactionFees';
 import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import ChartTooltip from './ChartTooltip';
+import RunningRoiWhatIfDialog from './RunningRoiWhatIfDialog';
 import {
   calculateRunningROI,
   filterPriceDataFromStart,
@@ -107,6 +109,7 @@ const RunningROIRisk = ({ isDashboard = false }) => {
   const [showRiskMetric, setShowRiskMetric] = useState(true);
   const [activeSignalZones, setActiveSignalZones] = useState([]);
   const [smoothingMode, setSmoothingMode] = useState('none');
+  const [whatIfOpen, setWhatIfOpen] = useState(false);
 
   const isSignalsEnabled = !isDashboard;
   const isRiskMetricView = showRiskMetric;
@@ -759,6 +762,34 @@ const RunningROIRisk = ({ isDashboard = false }) => {
               </Select>
             </FormControl>
           )}
+          <Button
+            variant="outlined"
+            size="medium"
+            onClick={() => setWhatIfOpen(true)}
+            disabled={chartData.length === 0}
+            sx={{
+              minWidth: { xs: '150px', sm: 'auto' },
+              height: 48,
+              px: 2,
+              color: colors.grey[100],
+              borderColor: colors.grey[300],
+              backgroundColor: colors.primary[500],
+              borderRadius: '8px',
+              textTransform: 'none',
+              fontWeight: 600,
+              whiteSpace: 'nowrap',
+              '&:hover': {
+                borderColor: colors.greenAccent[500],
+                backgroundColor: colors.primary[600],
+              },
+              '&.Mui-disabled': {
+                borderColor: colors.grey[700],
+                color: colors.grey[600],
+              },
+            }}
+          >
+            What-if
+          </Button>
         </Box>
       )}
 
@@ -962,11 +993,24 @@ const RunningROIRisk = ({ isDashboard = false }) => {
               },
               {
                 title: 'How it is built',
-                content: <>Optional 3-, 7-, or 28-day simple moving averages smooth the ROI line. <b>ROI Risk</b> (0-1) is derived from the same smoothed ROI and normalises for diminishing returns across cycles so peaks and drawdowns stay comparable over time.</>,
+                content: <>Optional 3-, 7-, or 28-day simple moving averages smooth the ROI line. <b>ROI Risk</b> (0-1) is derived from the same smoothed ROI and normalises for diminishing returns across cycles so peaks and drawdowns stay comparable over time. Use <b>What-if</b> to test a hypothetical price or ROI on a date and see the implied risk score.</>,
               },
             ]}
           />
         </div>
+      )}
+
+      {!isDashboard && (
+        <RunningRoiWhatIfDialog
+          open={whatIfOpen}
+          onClose={() => setWhatIfOpen(false)}
+          priceData={chartData}
+          roiData={roiData}
+          assetLabel={altcoins.find((asset) => asset.value === selectedAsset)?.label || selectedAsset}
+          assetSymbol={selectedAsset}
+          defaultDate={chartData.length > 0 ? chartData[chartData.length - 1].time : null}
+          defaultPrice={chartData.length > 0 ? chartData[chartData.length - 1].value : null}
+        />
       )}
     </div>
   );

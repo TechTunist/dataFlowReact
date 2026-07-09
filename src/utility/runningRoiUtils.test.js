@@ -28,6 +28,10 @@ import {
   smoothRunningRoiSeries,
   parseRoiSmoothingPeriod,
   getRoiSmoothingLabel,
+  shiftIsoDate,
+  getRunningRoiLookbackPrice,
+  buildRoiRiskMapper,
+  calculateRunningRoiWhatIf,
 } from './runningRoiUtils';
 
 describe('runningRoiUtils', () => {
@@ -296,5 +300,115 @@ describe('runningRoiUtils', () => {
       expect(point.riskScore).toBeGreaterThanOrEqual(0);
       expect(point.riskScore).toBeLessThanOrEqual(1);
     });
+  });
+
+  test('shiftIsoDate shifts calendar days in UTC', () => {
+    expect(shiftIsoDate('2024-03-01', -1)).toBe('2024-02-29');
+    expect(shiftIsoDate('2024-01-01', 365)).toBe('2024-12-31');
+  });
+
+  function buildDailyPrices(startIso, days, startPrice = 10000, dailyReturn = 1.001) {
+    const prices = [];
+    let value = startPrice;
+    for (let i = 0; i < days; i++) {
+      const time = shiftIsoDate(startIso, i);
+      prices.push({ time, value });
+      value *= dailyReturn;
+    }
+    return prices;
+  }
+
+  test('getRunningRoiLookbackPrice finds first price inside the 365d window', () => {
+    const prices = buildDailyPrices('2020-01-01', 400, 10000, 1.001);
+    const asOf = prices[390].time;
+    const lookback = getRunningRoiLookbackPrice(prices, asOf, 365);
+    expect(lookback).not.toBeNull();
+    expect(lookback.price).toBeGreaterThan(0);
+    const gapDays =
+      (new Date(`${asOf}T00:00:00Z`) - new Date(`${lookback.time}T00:00:00Z`)) /
+      (1000 * 60 * 60 * 24);
+    expect(gapDays).toBeLessThanOrEqual(365);
+    expect(gapDays).toBeGreaterThan(360);
+  });
+
+  test('buildRoiRiskMapper agrees with mapRunningRoiToRiskSeries on known points', () => {
+    const prices = buildDailyPrices('2012-01-01', 2000, 100, 1.002);
+    const roiData = calculateRunningROI(prices, 365);
+    const riskSeries = mapRunningRoiToRiskSeries(roiData, { peaks: BITCOIN_1Y_ROI_CYCLE_PEAKS });
+    const mapper = buildRoiRiskMapper(roiData, { peaks: BITCOIN_1Y_ROI_CYCLE_PEAKS });
+    expect(mapper).not.toBeNull();
+
+    const samples = [
+      riskSeries[0],
+      riskSeries[Math.floor(riskSeries.length / 2)],
+      riskSeries[riskSeries.length - 1],
+    ];
+    samples.forEach((point) => {
+      const raw = point.rawRoi ?? point.roi;
+      const mapped = mapper.mapRisk(point.time, raw);
+      expect(mapped.riskScore).toBeCloseTo(point.riskScore ?? point.roi, 5);
+    });
+  });
+
+  test('calculateRunningRoiWhatIf price mode: ROI = price / lookback and risk in 0–1', () => {
+    const prices = buildDailyPrices('2012-01-01', 2000, 100, 1.002);
+    const asOf = prices[prices.length - 1].time;
+    const lookback = getRunningRoiLookbackPrice(prices, asOf, 365);
+    const targetPrice = lookback.price * 2;
+
+    const result = calculateRunningRoiWhatIf({
+      priceData: prices,
+      date: asOf,
+      mode: 'price',
+      targetPrice,
+      peaks: BITCOIN_1Y_ROI_CYCLE_PEAKS,
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.center.rawRoi).toBeCloseTo(2, 5);
+    expect(result.center.price).toBeCloseTo(targetPrice, 5);
+    expect(result.center.riskScore).toBeGreaterThanOrEqual(0);
+    expect(result.center.riskScore).toBeLessThanOrEqual(1);
+    expect(result.rows.length).toBe(7);
+    expect(result.rows.filter((r) => r.isTarget)).toHaveLength(1);
+    // Higher prices should not produce lower risk in open-cycle monotonic mapping
+    const targetIdx = result.rows.findIndex((r) => r.isTarget);
+    if (targetIdx > 0) {
+      expect(result.rows[targetIdx].riskScore).toBeGreaterThanOrEqual(
+        result.rows[0].riskScore - 1e-9
+      );
+    }
+  });
+
+  test('calculateRunningRoiWhatIf roi mode: price = ROI × lookback', () => {
+    const prices = buildDailyPrices('2012-01-01', 2000, 100, 1.002);
+    const asOf = prices[prices.length - 1].time;
+    const lookback = getRunningRoiLookbackPrice(prices, asOf, 365);
+
+    const result = calculateRunningRoiWhatIf({
+      priceData: prices,
+      date: asOf,
+      mode: 'roi',
+      targetRoi: 1.5,
+      peaks: BITCOIN_1Y_ROI_CYCLE_PEAKS,
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.center.rawRoi).toBeCloseTo(1.5, 5);
+    expect(result.center.price).toBeCloseTo(1.5 * lookback.price, 5);
+    expect(result.center.riskScore).toBeGreaterThanOrEqual(0);
+    expect(result.center.riskScore).toBeLessThanOrEqual(1);
+  });
+
+  test('calculateRunningRoiWhatIf rejects missing lookback history', () => {
+    const prices = buildDailyPrices('2024-01-01', 30, 40000, 1.001);
+    const result = calculateRunningRoiWhatIf({
+      priceData: prices,
+      date: '2024-01-15',
+      mode: 'price',
+      targetPrice: 50000,
+    });
+    expect(result.ok).toBe(false);
+    expect(result.error).toMatch(/lookback/i);
   });
 });
