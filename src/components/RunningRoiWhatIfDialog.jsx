@@ -174,7 +174,7 @@ const RunningRoiWhatIfDialog = ({
       <DialogTitle sx={{ color: colors.grey[100], pb: 1 }}>
         What-if: 1Y ROI risk
         <Typography variant="body2" sx={{ color: colors.grey[400], mt: 0.5, fontWeight: 400 }}>
-          {assetLabel} — hypothetical price or ROI on a date → risk score (0–1)
+          {assetLabel}: hypothetical price or ROI on a date, mapped to a risk score (0-1)
         </Typography>
       </DialogTitle>
 
@@ -304,8 +304,8 @@ const RunningRoiWhatIfDialog = ({
 
               <Typography variant="caption" sx={{ color: colors.grey[400], display: 'block', mt: 1 }}>
                 Lookback price {formatPrice(result.lookback.price)} on{' '}
-                {formatDateDisplay(result.lookback.time)} (≈{result.lookbackDays}d window).
-                Illustrative only — not a forecast.
+                {formatDateDisplay(result.lookback.time)} (~{result.lookbackDays}d window).
+                Illustrative only, not a forecast.
               </Typography>
             </Box>
           )}
