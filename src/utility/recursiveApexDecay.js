@@ -2,20 +2,20 @@
  * Recursive Apex Decay (RAD)
  *
  * Projects the next Bitcoin cycle bottom and top from the rate of change
- * (and rate-of-rate of change) of historical cycle apexes — major tops and bottoms.
+ * (and rate-of-rate of change) of historical cycle apexes (major tops and bottoms).
  *
  * Method:
  * 1. Measure transition multipliers/ratios between successive apexes
- *    (top→top, bottom→bottom, top→bottom retention, bottom→top bull mult).
+ *    (top-to-top, bottom-to-bottom, top-to-bottom retention, bottom-to-top bull mult).
  * 2. Compute successive rates of change of those multipliers.
  * 3. Extrapolate the next rate by adding the observed delta of rates (second-order).
  * 4. Apply the projected multiplier to the latest apex to get B4 / T5.
  *
  * Seed apexes are verified against public daily series (Yahoo BTC-USD highs/lows
- * for 2015–2025; Blockchain.com market-price for 2013). When live btcData is
+ * for 2015-2025; Blockchain.com market-price for 2013). When live btcData is
  * available, prices are refined from local max/min near each seed date.
  *
- * Educational model only — not financial advice.
+ * Educational model only. Not financial advice.
  */
 
 /** Canonical cycle apexes (verified seed values). */
@@ -78,7 +78,7 @@ export const RAD_ABBREV = 'RAD';
 export const RAD_REFINE_WINDOW_DAYS = 3;
 
 /**
- * Floor on log-price σ so small-sample multi-path spread doesn't understate model risk.
+ * Floor on log-price sigma so a tiny multi-path spread cannot look more precise than it is.
  * ~15% / ~22% relative at 1σ for bottom / top respectively.
  */
 export const RAD_MIN_LOG_SIGMA_B4 = 0.15;
@@ -102,7 +102,7 @@ export function addDays(isoDate, days) {
 }
 
 export function formatRadDate(isoDate) {
-  if (!isoDate) return '—';
+  if (!isoDate) return 'n/a';
   const d = new Date(`${String(isoDate).slice(0, 10)}T00:00:00Z`);
   if (Number.isNaN(d.getTime())) return String(isoDate);
   return d.toLocaleDateString('en-GB', {
@@ -114,7 +114,7 @@ export function formatRadDate(isoDate) {
 }
 
 export function formatRadPrice(price, { compact = false } = {}) {
-  if (price == null || !Number.isFinite(price)) return '—';
+  if (price == null || !Number.isFinite(price)) return 'n/a';
   if (compact) {
     if (price >= 1_000_000) return `$${(price / 1_000_000).toFixed(2)}M`;
     if (price >= 10_000) return `$${Math.round(price).toLocaleString('en-US')}`;
@@ -197,7 +197,7 @@ export function successiveRatios(values) {
   return out;
 }
 
-/** Sample standard deviation (n−1). Returns 0 if fewer than 2 finite values. */
+/** Sample standard deviation (n-1). Returns 0 if fewer than 2 finite values. */
 export function sampleStd(values) {
   const xs = (values || []).filter((v) => v != null && Number.isFinite(v));
   if (xs.length < 2) return 0;
@@ -409,7 +409,7 @@ export function computeRadAnalysis(apexes = RAD_SEED_APEXES) {
 
   // Primary projection path: T4 → B4 (retention) → T5 (bull mult)
   let projectedRetention = retentionProj.projected;
-  // Clamp retention to (0, 1) — bottoms are below tops historically
+  // Clamp retention to (0, 1); bottoms are below tops historically
   if (projectedRetention != null) {
     projectedRetention = Math.min(0.95, Math.max(0.05, projectedRetention));
   }
@@ -492,7 +492,7 @@ export function computeRadAnalysis(apexes = RAD_SEED_APEXES) {
     });
   }
 
-  // —— Uncertainty (±1σ displayed; 2σ still computed for optional use) ——
+  // Uncertainty: ±1σ is shown in the UI; 2σ is still computed for optional use 
   // Timing: sample SD of historical phase lengths (with floors for small n).
   const bearDaysSigma = Math.max(RAD_MIN_DAYS_SIGMA_BEAR, sampleStd(bearDaysList));
   const bullDaysSigma = Math.max(RAD_MIN_DAYS_SIGMA_BULL, sampleStd(bullDaysList));
@@ -565,9 +565,9 @@ export function computeRadAnalysis(apexes = RAD_SEED_APEXES) {
       combinedDaysSigma: Math.round(t5DaysSigmaFromT4),
     },
     note:
-      '±1σ bands combine (a) sample SD of historical bear/bull lengths for dates and ' +
-      '(b) log-space spread of alternative RAD estimators for prices, with minimum floors ' +
-      'so small sample size does not understate model risk. Approximate — not statistical guarantees.',
+      '±1σ bands use sample standard deviation of historical bear/bull lengths for dates, and ' +
+      'log-space spread of alternative RAD estimators for prices, with minimum floors so a small ' +
+      'sample cannot look more precise than it is. Approximate ranges only, not statistical guarantees.',
   };
 
   return {
@@ -657,12 +657,13 @@ export function radLaymanSummary(analysis) {
   const drop = projection.b4.dropPct;
   const bull = projection.t5.bullMult;
   return {
-    headline: 'Recursive Apex Decay (RAD) projects the next cycle floor and peak from how past tops and bottoms have been changing.',
+    headline:
+      'Recursive Apex Decay (RAD) projects the next cycle floor and peak from how past tops and bottoms have been changing.',
     bullets: [
-      'Each cycle, Bitcoin still grows from bottom to top — but the “times bigger” number is shrinking (decay).',
+      'Each cycle Bitcoin still grows from bottom to top, but the recovery multiple is shrinking (decay).',
       'Crashes from top to bottom are getting less severe (shallower drawdowns).',
-      `RAD extends that pattern: next crash ≈ ${drop != null ? `${drop.toFixed(0)}%` : '—'} off the latest top, then a ≈ ${bull != null ? `${bull.toFixed(1)}×` : '—'} recovery to the next top.`,
-      'Dates use historical average lengths of bear and bull phases (~4-year full cycles).',
+      `RAD extends that pattern: next crash about ${drop != null ? `${drop.toFixed(0)}%` : 'n/a'} off the latest top, then about a ${bull != null ? `${bull.toFixed(1)}x` : 'n/a'} recovery to the next top.`,
+      'Dates use historical average lengths of bear and bull phases (roughly 4-year full cycles).',
     ],
     retentionTrend: transitions.topToBottom.multipliers,
     bullTrend: transitions.bottomToTop.multipliers,

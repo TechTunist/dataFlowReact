@@ -149,7 +149,7 @@ export const getTitleAndSubtitle = (pathname, isMobile = false) => {
       return {
         title: "Recursive Apex Decay",
         subtitle: isMobile
-          ? "RAD next bottom & top"
+          ? "RAD next bottom and top"
           : "Project next cycle floor and peak from the rate of change of past tops and bottoms",
       };
     case "/bitcoin-roi":

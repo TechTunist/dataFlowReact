@@ -223,7 +223,7 @@ const RecursiveApexDecay = ({ isDashboard = false }) => {
 
   const plotLayout = useMemo(
     () => ({
-      title: isDashboard ? '' : `${RAD_ABBREV} — cycle apexes & projection`,
+      title: isDashboard ? '' : `${RAD_ABBREV}: cycle apexes and projection`,
       margin: {
         l: isMobile ? 48 : 60,
         r: isMobile ? 16 : 30,
@@ -275,22 +275,22 @@ const RecursiveApexDecay = ({ isDashboard = false }) => {
   }, []);
 
   const fmtMult = (m) => {
-    if (m == null || !Number.isFinite(m)) return '—';
+    if (m == null || !Number.isFinite(m)) return 'n/a';
     if (m >= 10) return `${m.toFixed(1)}×`;
     return `${m.toFixed(2)}×`;
   };
 
   const fmtPct = (p) => {
-    if (p == null || !Number.isFinite(p)) return '—';
+    if (p == null || !Number.isFinite(p)) return 'n/a';
     return `${p.toFixed(0)}%`;
   };
 
   const fmtRate = (r) => {
-    if (r == null || !Number.isFinite(r)) return '—';
+    if (r == null || !Number.isFinite(r)) return 'n/a';
     return r.toFixed(3);
   };
 
-  // —— Dashboard compact view ——
+  // Dashboard compact view 
   if (isDashboard) {
     return (
       <Box sx={{ height: '100%', width: '100%', display: 'flex', flexDirection: 'column', p: 0.5 }}>
@@ -327,7 +327,7 @@ const RecursiveApexDecay = ({ isDashboard = false }) => {
     );
   }
 
-  // —— Full page ——
+  // Full page 
   return (
     <Box
       className="recursive-apex-decay"
@@ -361,7 +361,7 @@ const RecursiveApexDecay = ({ isDashboard = false }) => {
             fontSize: isMobile ? '0.95rem' : '1.05rem',
           }}
         >
-          {summary.headline} Each cycle the growth multiplies less and the crash is a bit milder —
+          {summary.headline} Each cycle the growth multiplies less and the crash is a bit milder.
           RAD extends that pattern to the next floor and the next peak.
         </Typography>
       </Box>
@@ -422,11 +422,11 @@ const RecursiveApexDecay = ({ isDashboard = false }) => {
               </Typography>
               <Typography sx={{ fontSize: '0.8rem', color: colors.grey[300], lineHeight: 1.45 }}>
                 <strong style={{ color: colors.greenAccent[400] }}>Price:</strong>{' '}
-                {formatRadPrice(b4Unc.price.sigma1.low, { compact: true })} –{' '}
+                {formatRadPrice(b4Unc.price.sigma1.low, { compact: true })} to{' '}
                 {formatRadPrice(b4Unc.price.sigma1.high, { compact: true })}
                 <br />
                 <strong style={{ color: colors.greenAccent[400] }}>Date:</strong>{' '}
-                {formatRadDate(b4Unc.date.sigma1.start)} – {formatRadDate(b4Unc.date.sigma1.end)}
+                {formatRadDate(b4Unc.date.sigma1.start)} to {formatRadDate(b4Unc.date.sigma1.end)}
               </Typography>
             </Box>
           )}
@@ -473,11 +473,11 @@ const RecursiveApexDecay = ({ isDashboard = false }) => {
               </Typography>
               <Typography sx={{ fontSize: '0.8rem', color: colors.grey[300], lineHeight: 1.45 }}>
                 <strong style={{ color: '#f7c948' }}>Price:</strong>{' '}
-                {formatRadPrice(t5Unc.price.sigma1.low, { compact: true })} –{' '}
+                {formatRadPrice(t5Unc.price.sigma1.low, { compact: true })} to{' '}
                 {formatRadPrice(t5Unc.price.sigma1.high, { compact: true })}
                 <br />
                 <strong style={{ color: '#f7c948' }}>Date:</strong>{' '}
-                {formatRadDate(t5Unc.date.sigma1.start)} – {formatRadDate(t5Unc.date.sigma1.end)}
+                {formatRadDate(t5Unc.date.sigma1.start)} to {formatRadDate(t5Unc.date.sigma1.end)}
               </Typography>
             </Box>
           )}
@@ -497,11 +497,12 @@ const RecursiveApexDecay = ({ isDashboard = false }) => {
         >
           <strong style={{ color: colors.grey[200] }}>What ±1σ means:</strong> the Greek letter{' '}
           <strong style={{ color: colors.grey[200] }}>σ</strong> (sigma) stands for{' '}
-          <strong style={{ color: colors.grey[200] }}>standard deviation</strong> — a common way to
-          measure how spread out a set of numbers is around its centre. Here, “±1 standard deviation”
-          is our reasonable error band around the RAD point estimate: most of the time you would
-          expect the real outcome to land inside that range if history is a fair guide, not a guarantee
-          that it will. The band is wider when past cycles disagreed more; narrower when they lined up.
+          <strong style={{ color: colors.grey[200] }}>standard deviation</strong>, which measures how
+          spread out numbers are around their centre. On this page, ±1 standard deviation is the error
+          band around each RAD estimate. If past cycle patterns keep holding, the real bottom or top
+          is more likely to fall inside that band than far outside it. Wider bands mean past cycles
+          disagreed more; tighter bands mean they were more consistent. It is still only a model range,
+          not a promise.
         </Typography>
       )}
 
@@ -530,12 +531,12 @@ const RecursiveApexDecay = ({ isDashboard = false }) => {
           },
           {
             label: 'Avg bear length',
-            value: timing.bearAvgLast2 != null ? `${Math.round(timing.bearAvgLast2)}d` : '—',
+            value: timing.bearAvgLast2 != null ? `${Math.round(timing.bearAvgLast2)}d` : 'n/a',
             sub: 'last 2 top→bottom',
           },
           {
             label: 'Avg bull length',
-            value: timing.bullAvgAll != null ? `${Math.round(timing.bullAvgAll)}d` : '—',
+            value: timing.bullAvgAll != null ? `${Math.round(timing.bullAvgAll)}d` : 'n/a',
             sub: 'bottom→next top',
           },
         ].map((w) => (
@@ -566,7 +567,7 @@ const RecursiveApexDecay = ({ isDashboard = false }) => {
       )}
       {isLoading && (
         <Typography sx={{ color: colors.grey[400], px: 1, fontSize: '0.9rem' }}>
-          Loading Bitcoin price history…
+          Loading Bitcoin price history...
         </Typography>
       )}
 
@@ -692,7 +693,7 @@ const RecursiveApexDecay = ({ isDashboard = false }) => {
                       display: { xs: 'none', md: 'table-cell' },
                     }}
                   >
-                    {c.bullMult != null ? fmtMult(c.bullMult) : '— (projected)'}
+                    {c.bullMult != null ? fmtMult(c.bullMult) : '- (projected)'}
                   </TableCell>
                 </TableRow>
               ))}
@@ -732,14 +733,14 @@ const RecursiveApexDecay = ({ isDashboard = false }) => {
           </Table>
         </TableContainer>
         <Typography variant="body2" sx={{ mt: 1.25, color: colors.grey[400], lineHeight: 1.5 }}>
-          Crashes are getting milder ({cycles.map((c) => fmtPct(c.dropPct)).join(' → ')} → projected{' '}
-          {fmtPct(b4.dropPct)}). Recovery “times bigger” is slowing (
-          {transitions.bottomToTop.multipliers.map((m) => fmtMult(m)).join(' → ')} → projected{' '}
+          Crashes are getting milder ({cycles.map((c) => fmtPct(c.dropPct)).join(' -> ')} -> projected{' '}
+          {fmtPct(b4.dropPct)}). Recovery multiples from bottom to next top are slowing (
+          {transitions.bottomToTop.multipliers.map((m) => fmtMult(m)).join(' -> ')} -> projected{' '}
           {fmtMult(t5.bullMult)}).
         </Typography>
       </Box>
 
-      {/* Detailed methodology — below the fold */}
+      {/* Detailed methodology (below the fold) */}
       <Box
         sx={{
           mt: 1,
@@ -768,7 +769,7 @@ const RecursiveApexDecay = ({ isDashboard = false }) => {
           <strong>Bottom→bottom:</strong>{' '}
           {transitions.bottomToBottom.multipliers.length
             ? transitions.bottomToBottom.multipliers.map((m) => fmtMult(m)).join(' · ')
-            : '—'}
+            : 'n/a'}
         </Typography>
 
         <Typography variant="subtitle1" sx={{ fontWeight: 600, color: colors.greenAccent[400], mt: 2 }}>
@@ -779,7 +780,7 @@ const RecursiveApexDecay = ({ isDashboard = false }) => {
           <br />
           rate₁ = m₁/m₀, rate₂ = m₂/m₁
           <br />
-          Δrate (second-order) = rate₂ − rate₁
+          Δrate (second-order) = rate₂ - rate₁
           <br />
           rate₃ = rate₂ + Δrate
           <br />
@@ -797,7 +798,7 @@ const RecursiveApexDecay = ({ isDashboard = false }) => {
           }}
         >
           <li>
-            Retention rates: {transitions.topToBottom.projection.rates?.map(fmtRate).join(', ') || '—'}
+            Retention rates: {transitions.topToBottom.projection.rates?.map(fmtRate).join(', ') || 'n/a'}
             {transitions.topToBottom.projection.rateOfRate != null && (
               <>
                 {' '}
@@ -808,7 +809,7 @@ const RecursiveApexDecay = ({ isDashboard = false }) => {
             )}
           </li>
           <li>
-            Bull mult rates: {transitions.bottomToTop.projection.rates?.map(fmtRate).join(', ') || '—'}
+            Bull mult rates: {transitions.bottomToTop.projection.rates?.map(fmtRate).join(', ') || 'n/a'}
             {transitions.bottomToTop.projection.rateOfRate != null && (
               <>
                 {' '}
@@ -818,7 +819,7 @@ const RecursiveApexDecay = ({ isDashboard = false }) => {
             )}
           </li>
           <li>
-            Top→top rates: {transitions.topToTop.projection.rates?.map(fmtRate).join(', ') || '—'}
+            Top→top rates: {transitions.topToTop.projection.rates?.map(fmtRate).join(', ') || 'n/a'}
             {transitions.topToTop.projection.rateOfRate != null && (
               <>
                 {' '}
@@ -839,12 +840,12 @@ const RecursiveApexDecay = ({ isDashboard = false }) => {
           {formatRadPrice(t5.fromBottomPath)}).
           <br />
           <strong>Timing:</strong> B4 date = T4 + last-two-cycle average top→bottom (
-          {timing.bearAvgLast2 != null ? Math.round(timing.bearAvgLast2) : '—'} days). T5 date = B4 +
-          average bottom→top ({timing.bullAvgAll != null ? Math.round(timing.bullAvgAll) : '—'} days).
+          {timing.bearAvgLast2 != null ? Math.round(timing.bearAvgLast2) : 'n/a'} days). T5 date = B4 +
+          average bottom→top ({timing.bullAvgAll != null ? Math.round(timing.bullAvgAll) : 'n/a'} days).
           <br />
           <strong>Cross-check (top→top only):</strong> T5 ≈ {formatRadPrice(t5.fromTopPath)} around{' '}
           {formatRadDate(t5.dateFromTops)} (peak-to-peak avg{' '}
-          {timing.peakToPeakAvg != null ? Math.round(timing.peakToPeakAvg) : '—'} days). Geometric-mean
+          {timing.peakToPeakAvg != null ? Math.round(timing.peakToPeakAvg) : 'n/a'} days). Geometric-mean
           blend of both T5 paths: {formatRadPrice(t5.blended)}.
           {projection.crossChecks.b4FromBottoms != null && (
             <>
@@ -861,19 +862,19 @@ const RecursiveApexDecay = ({ isDashboard = false }) => {
         </Typography>
         <Typography variant="body2" sx={{ color: colors.grey[300], mb: 1, lineHeight: 1.55 }}>
           <strong>σ (sigma)</strong> means <strong>standard deviation</strong>: how much values
-          typically scatter around an average. “±1σ” is a one-standard-deviation error band around
-          each RAD estimate — a practical “most plausible range,” not a promise.
+          typically scatter around an average. ±1σ is a one-standard-deviation error band around
+          each RAD estimate (a practical range, not a promise).
           <br />
           {uncertainty?.note ||
-            '±1σ bands combine historical phase-length scatter (dates) with multi-path price alternatives (log space).'}
+            '±1σ bands use historical phase-length scatter for dates and multi-path price alternatives in log space.'}
           <br />
-          <strong>Date band:</strong> sample standard deviation of past top→bottom lengths (B4) and
-          combined bear+bull length scatter in quadrature (T5). Floors ≥14d bear / ≥21d bull so a
-          tight sample never implies false precision.
+          <strong>Date band:</strong> sample standard deviation of past top-to-bottom lengths (B4) and
+          combined bear+bull length scatter in quadrature (T5). Floors of at least 14d bear / 21d bull
+          avoid false precision when the sample is tight.
           <br />
           <strong>Price band:</strong> log-space spread of alternative estimators (hold-last, mean,
           first-order rate, cross-check paths) around the primary RAD point, with minimum relative
-          floors (~15% bottom / ~22% top).
+          floors (about 15% bottom / 22% top).
           {b4Unc?.price && (
             <>
               <br />

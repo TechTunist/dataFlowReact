@@ -112,7 +112,7 @@ describe('recursiveApexDecay', () => {
   });
 
   test('sampleStd matches known sample SD', () => {
-    // Population SD of [2,4,4,4,5,5,7,9] is 2; sample SD uses n−1 → √(8/7)·2
+    // Population SD of [2,4,4,4,5,5,7,9] is 2; sample SD uses n-1 → √(8/7)·2
     expect(sampleStd([2, 4, 4, 4, 5, 5, 7, 9])).toBeCloseTo(2 * Math.sqrt(8 / 7), 5);
     expect(sampleStd([1])).toBe(0);
   });
