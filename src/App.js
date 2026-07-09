@@ -85,6 +85,7 @@ const Bitcoin20WeekExtension = lazyWithRetry(() => import('./components/Bitcoin2
 const SahmRecessionIndicator = lazyWithRetry(() => import('./components/SahmRecessionIndicator'));
 const MarketHeatIndex = lazyWithRetry(() => import('./components/MarketHeatIndex'));
 const BitcoinFloorEcho = lazyWithRetry(() => import('./components/BitcoinFloorEcho'));
+const RecursiveApexDecay = lazyWithRetry(() => import('./components/RecursiveApexDecay'));
 
 const FearAndGreed3D = lazyWithRetry(() => import('./components/FearAndGreed3D'));
 const WorkbenchChart = lazyWithRetry(() => import('./components/Workbench'));
@@ -199,6 +200,8 @@ const appRoutes = [
   { path: "/stock-risk-color", component: StockRiskColor, useBasicChart: true, protected: true },
   { path: "/altcoin-risk", component: AltcoinRisk, useBasicChart: true, protected: true },
   { path: "/market-cycles", component: MarketCycles, useBasicChart: true, protected: true },
+  // Free while open-access promo is on; add requirePaid: true when the paywall returns.
+  { path: "/recursive-apex-decay", component: RecursiveApexDecay, useBasicChart: true, protected: true, basicChartProps: { chartMinHeight: "clamp(520px, 72vh, 960px)" } },
   { path: "/fear-and-greed-chart", component: FearAndGreedChart, useBasicChart: true, protected: true },
   { path: "/us-inflation", component: UsInflationChart, useBasicChart: true, protected: true },
   { path: "/us-interest", component: UsInterestChart, useBasicChart: true, protected: true },

@@ -57,6 +57,7 @@ import UKAPSWorkplaceChart from "../../components/UKApsWorkplace";
 import UKEsaClaimantsChart from "../../components/UKEsaClaimants";
 import MarketHeatIndex from "../../components/MarketHeatIndex";
 import BitcoinFloorEcho from "../../components/BitcoinFloorEcho";
+import RecursiveApexDecay from "../../components/RecursiveApexDecay";
 import OnChainHistoricalRisk from "../../components/OnChainHistoricalRisk";
 import AltcoinSeasonIndexChart from "../../components/AltcoinSeasonIndexChart";
 import FredSeriesChart from "../../components/FredSeriesChart";
@@ -100,6 +101,7 @@ const chartConfig = [
   { id: "stock-risk", title: "Stock Risk", linkTo: "/stock-risk", component: (props) => <StockRisk isDashboard={true} {...props} />, description: "Equity risk metric (200-day MA + rolling 5-year percentile) with USD or BTC denomination." },
   { id: "stock-risk-color", title: "Stock Risk Colour", linkTo: "/stock-risk-color", component: (props) => <StockRiskColor isDashboard={true} {...props} />, description: "Colorized stock price by risk band, compare crypto-adjacent names vs benchmarks." },
   { id: "market-cycles", title: "Bitcoin Market Cycles", linkTo: "/market-cycles", component: (props) => <MarketCycles isDashboard={true} {...props} />, description: "Compare previous crypto market cycles." },
+  { id: "recursive-apex-decay", title: "Recursive Apex Decay", linkTo: "/recursive-apex-decay", component: (props) => <RecursiveApexDecay isDashboard={true} {...props} />, description: "RAD: project next cycle bottom and top from apex rate-of-change." },
   { id: "fear-and-greed-chart", title: "Fear and Greed Chart", linkTo: "/fear-and-greed-chart", component: (props) => <FearAndGreedChart isDashboard={true} {...props} />, description: "Chart of Fear and Greed index over time." },
   { id: "fear-and-greed-3d", title: "Fear and Greed 3D", linkTo: "/fear-and-greed-3d", component: (props) => <FearAndGreed3D isDashboard={true} {...props} />, description: "3D visualization of Fear and Greed." },
   { id: "us-inflation", title: "US Inflation", linkTo: "/us-inflation", component: (props) => <UsInflationChart isDashboard={true} {...props} />, description: "US inflation rates over time." },

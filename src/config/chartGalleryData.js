@@ -235,6 +235,12 @@ export const chartSections = {
         image: '/assets/cycles.png',
       },
       {
+        path: "/recursive-apex-decay",
+        title: "Recursive Apex Decay (RAD)",
+        description: "Project the next Bitcoin cycle bottom and top from the rate of change of historical tops and bottoms.",
+        image: '/assets/cycles.png',
+      },
+      {
         path: "/altcoin-season-index",
         title: "Altcoin Season Index",
         description: "Index indicating whether it is altseason or Bitcoin season.",

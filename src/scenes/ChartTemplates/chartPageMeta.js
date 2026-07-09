@@ -33,6 +33,7 @@ export const routeToChartId = {
   "/stock-risk-color": "stock-risk-color",
   "/altcoin-risk": "altcoin-risk",
   "/market-cycles": "market-cycles",
+  "/recursive-apex-decay": "recursive-apex-decay",
   "/fear-and-greed-chart": "fear-and-greed-chart",
   "/us-inflation": "us-inflation",
   "/us-unemployment": "us-unemployment",
@@ -144,6 +145,13 @@ export const getTitleAndSubtitle = (pathname, isMobile = false) => {
       return { title: "Login / Signup", subtitle: "Under Construction" };
     case "/market-cycles":
       return { title: "Bitcoin Cycles", subtitle: isMobile ? "Compare Market Cycles" : "Start from either the cycle bottom or from the halving" };
+    case "/recursive-apex-decay":
+      return {
+        title: "Recursive Apex Decay",
+        subtitle: isMobile
+          ? "RAD next bottom & top"
+          : "Project next cycle floor and peak from the rate of change of past tops and bottoms",
+      };
     case "/bitcoin-roi":
       return { title: "Bitcoin ROI", subtitle: isMobile ? "ROI" : "Annualised ROI for Bitcoin" };
     case "/btc-20-ext":

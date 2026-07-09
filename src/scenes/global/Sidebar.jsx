@@ -170,6 +170,7 @@ const itemsData = [
   // Category Icon: CurrencyBitcoinIcon - Directly represents Bitcoin as the primary cryptocurrency
   { title: "Bitcoin Chart", to: "/bitcoin", category: "Bitcoin", icon: <CandlestickChartIcon />, categoryIcon: <CurrencyBitcoinIcon /> }, // CandlestickChartIcon: Represents price charts and trading data
   { title: "Market cycles", to: "/market-cycles", category: "Bitcoin", icon: <RepeatIcon />, categoryIcon: <CurrencyBitcoinIcon /> }, // RepeatIcon: Symbolizes cycles and repetition in market patterns
+  { title: "Recursive Apex Decay", to: "/recursive-apex-decay", category: "Bitcoin", icon: <TrendingUpIcon />, categoryIcon: <CurrencyBitcoinIcon /> },
   { title: "Bitcoin Monthly Returns", to: "/monthly-returns", category: "Bitcoin", icon: <CalendarMonthIcon />, categoryIcon: <CurrencyBitcoinIcon /> }, // CalendarMonthIcon: Focuses on monthly time-based returns
   { title: "Bitcoin Dominance", to: "/bitcoin-dominance", category: "Bitcoin", icon: <PieChartIcon />, categoryIcon: <CurrencyBitcoinIcon /> }, // PieChartIcon: Represents market share/dominance as portions of a whole
   { title: "Historical BTC Volatility", to: "/historical-volatility", category: "Bitcoin", icon: <TimelineIcon />, categoryIcon: <CurrencyBitcoinIcon /> }, // TimelineIcon: Shows historical trends over time
