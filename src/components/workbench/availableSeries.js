@@ -68,6 +68,12 @@ export const availableMacroSeries = {
   CSUSHPINSA: { label: 'Case-Shiller Home Price Index', color: '#6A5ACD', chartType: 'area', scaleId: 'csushpinsa-scale', allowLogScale: true, isFred: true, seriesId: 'CSUSHPINSA', fetchFunction: 'fetchFredSeriesData', valueKey: 'value' },
   NIKKEI225: { label: 'Nikkei 225 Index', color: '#FF69B4', chartType: 'area', scaleId: 'nikkei225-scale', allowLogScale: true, isFred: true, seriesId: 'NIKKEI225', fetchFunction: 'fetchFredSeriesData', valueKey: 'value' },
   IRLTLT01DEM156N: { label: 'German 10-Year Bond Yield', color: '#BDB76B', chartType: 'line', scaleId: 'irltlt01dem156n-scale', allowLogScale: false, isFred: true, seriesId: 'IRLTLT01DEM156N', fetchFunction: 'fetchFredSeriesData', valueKey: 'value' },
+  // Growth slice: high-ROI free FRED series (populate + update_fred_macro required in prod)
+  WALCL: { label: 'Fed Balance Sheet (WALCL)', color: '#20B2AA', chartType: 'area', scaleId: 'walcl-scale', allowLogScale: true, isFred: true, seriesId: 'WALCL', fetchFunction: 'fetchFredSeriesData', valueKey: 'value' },
+  PCEPILFE: { label: 'Core PCE Price Index', color: '#FF7F50', chartType: 'area', scaleId: 'pcepilfe-scale', allowLogScale: true, isFred: true, seriesId: 'PCEPILFE', fetchFunction: 'fetchFredSeriesData', valueKey: 'value' },
+  CPILFESL: { label: 'Core CPI (ex Food & Energy)', color: '#48D1CC', chartType: 'area', scaleId: 'cpilfesl-scale', allowLogScale: true, isFred: true, seriesId: 'CPILFESL', fetchFunction: 'fetchFredSeriesData', valueKey: 'value' },
+  MORTGAGE30US: { label: '30-Year Mortgage Rate', color: '#DA70D6', chartType: 'line', scaleId: 'mortgage30us-scale', allowLogScale: false, isFred: true, seriesId: 'MORTGAGE30US', fetchFunction: 'fetchFredSeriesData', valueKey: 'value' },
+  DTWEXBGS: { label: 'Trade-Weighted USD Index (Broad)', color: '#87CEEB', chartType: 'line', scaleId: 'dtwexbgs-scale', allowLogScale: true, isFred: true, seriesId: 'DTWEXBGS', fetchFunction: 'fetchFredSeriesData', valueKey: 'value' },
 };
 
 // Available Crypto series for selection

@@ -1,13 +1,13 @@
-import React, { useEffect, useState, useContext, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import Plot from 'react-plotly.js';
 import { tokens } from '../theme';
 import { useTheme, Box, FormControl, InputLabel, Select, MenuItem, useMediaQuery, Typography } from '@mui/material';
 import '../styling/bitcoinChart.css';
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
-import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import ChartInfoSections from './ChartInfoSections';
+import { useChartData, useChartDataActions } from '../hooks/useChartData';
 // Helper function to calculate Risk Metric
 const calculateRiskMetric = (data) => {
   const movingAverage = data.map((item, index) => {
@@ -107,7 +107,8 @@ const MarketHeatIndexChart = ({ isDashboard = false }) => {
   const theme = useTheme();
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
   const isMobile = useIsMobile();
-  const { btcData, mvrvData, fearAndGreedData, fetchBtcData, fetchMvrvData, fetchFearAndGreedData } = useContext(DataContext);
+  const { btcData, mvrvData, fearAndGreedData } = useChartData();
+  const { fetchBtcData, fetchMvrvData, fetchFearAndGreedData } = useChartDataActions();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [smaPeriod, setSmaPeriod] = useState('28d');

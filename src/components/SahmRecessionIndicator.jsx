@@ -1,11 +1,11 @@
 // src/components/SahmRecessionIndicator.jsx
-import React, { useRef, useEffect, useState, useMemo, useContext, useCallback } from 'react';
+import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import { createChart } from 'lightweight-charts';
 import { tokens } from "../theme";
 import { useTheme, Box, Button } from "@mui/material";
 import '../styling/bitcoinChart.css';
 import useIsMobile from '../hooks/useIsMobile';
-import { DataContext } from '../DataContext';
+import { useChartData, useChartDataActions } from '../hooks/useChartData';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import LastUpdated from '../hooks/LastUpdated';
 import ChartTooltip from './ChartTooltip';
@@ -18,7 +18,8 @@ const SahmRecessionIndicator = ({ isDashboard = false, explanation = '' }) => {
   const theme = useTheme();
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
   const isMobile = useIsMobile();
-  const { fredSeriesData, fetchFredSeriesData } = useContext(DataContext);
+  const { fredSeriesData } = useChartData();
+  const { fetchFredSeriesData } = useChartDataActions();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [isInteractive, setIsInteractive] = useState(false);

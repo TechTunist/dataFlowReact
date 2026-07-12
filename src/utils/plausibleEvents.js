@@ -16,6 +16,13 @@ export const FUNNEL_EVENTS = {
   SIGNUP_COMPLETED: 'Signup Completed',
   CHECKOUT_STARTED: 'Checkout Started',
   PREVIEW_INTERACTION: 'Preview Interaction',
+  MARKET_PULSE_VIEW: 'Market Pulse View',
+  ONBOARDING_SHOWN: 'Onboarding Shown',
+  ONBOARDING_DISMISSED: 'Onboarding Dismissed',
+  ONBOARDING_STEP: 'Onboarding Step Click',
+  SHARE_ACTION: 'Share Action',
+  BRIEF_VIEW: 'Brief View',
+  BRIEF_CHART_CLICK: 'Brief Chart Click',
 };
 
 export function trackCtaClick(location, plan = 'free') {
@@ -36,4 +43,34 @@ export function trackCheckoutStarted(source = 'subscription-page') {
 
 export function trackPreviewInteraction(chart = 'risk-color') {
   trackPlausible(FUNNEL_EVENTS.PREVIEW_INTERACTION, { chart });
+}
+
+export function trackMarketPulseView(hasSparklines = false) {
+  trackPlausible(FUNNEL_EVENTS.MARKET_PULSE_VIEW, {
+    sparklines: hasSparklines ? 'yes' : 'no',
+  });
+}
+
+export function trackOnboardingShown() {
+  trackPlausible(FUNNEL_EVENTS.ONBOARDING_SHOWN);
+}
+
+export function trackOnboardingDismissed(reason = 'dismiss') {
+  trackPlausible(FUNNEL_EVENTS.ONBOARDING_DISMISSED, { reason });
+}
+
+export function trackOnboardingStep(path) {
+  trackPlausible(FUNNEL_EVENTS.ONBOARDING_STEP, { path });
+}
+
+export function trackShareAction(action, location = 'unknown') {
+  trackPlausible(FUNNEL_EVENTS.SHARE_ACTION, { action, location });
+}
+
+export function trackBriefView(healthStatus = 'unknown') {
+  trackPlausible(FUNNEL_EVENTS.BRIEF_VIEW, { health: healthStatus });
+}
+
+export function trackBriefChartClick(path) {
+  trackPlausible(FUNNEL_EVENTS.BRIEF_CHART_CLICK, { path });
 }

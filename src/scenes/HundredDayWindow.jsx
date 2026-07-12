@@ -30,7 +30,7 @@ import HundredDayWindowBanner, { HUNDRED_DAY_WINDOW_BANNER_HEIGHT } from '../com
 import HundredDayWindowOriginStory from '../components/marketing/HundredDayWindowOriginStory';
 import EducationalDisclaimer from '../components/marketing/EducationalDisclaimer';
 import FreePremiumAccessSticker from '../components/marketing/FreePremiumAccessSticker';
-import { useData } from '../DataContext';
+import { useChartData } from '../hooks/useChartData';
 import {
   ALTERNATIVE_PROJECTIONS,
   AVG_DAYS_TOP_TO_BOTTOM,
@@ -94,7 +94,7 @@ const FAQ_ITEMS = [
 const HundredDayWindow = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
-  const { btcData } = useData();
+  const { btcData } = useChartData();
 
   const cycleStats = useMemo(() => {
     return getCycleBottomDaysLeft(getBtcReferenceDate(btcData));

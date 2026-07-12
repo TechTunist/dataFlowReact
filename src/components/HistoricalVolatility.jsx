@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useContext, useCallback, useMemo, memo } from 'react';
+import React, { useRef, useEffect, useState, useCallback, useMemo, memo } from 'react';
 import { createChart } from 'lightweight-charts';
 import { tokens } from "../theme";
 import { useTheme, Box, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
@@ -8,9 +8,9 @@ import LastUpdated from '../hooks/LastUpdated';
 import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
 import ChartInfoSections from './ChartInfoSections';
 import BitcoinFees from './BitcoinTransactionFees';
-import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import ChartTooltip from './ChartTooltip';
+import { useChartData, useChartDataActions } from '../hooks/useChartData';
 
 // Static timeframes (hoisted for stable reference across renders)
 const TIMEFRAMES = [
@@ -28,7 +28,8 @@ const BitcoinHistoricalVolatility = ({ isDashboard = false }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const isMobile = useIsMobile();
-  const { btcData: contextBtcData, fetchBtcData } = useContext(DataContext);
+  const { btcData: contextBtcData } = useChartData();
+  const { fetchBtcData } = useChartDataActions();
   const [isInteractive, setIsInteractive] = useState(false);
   const [currentBtcPrice, setCurrentBtcPrice] = useState(0);
   const [currentVolatility, setCurrentVolatility] = useState(null);

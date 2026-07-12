@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Typography, useTheme } from '@mui/material';
-import { DataContext } from '../DataContext';
-
+import { useChartData, useChartDataActions } from '../hooks/useChartData';
 const FearAndGreed3D = () => {
   const theme = useTheme();
-  const { latestFearAndGreed, fetchLatestFearAndGreed } = useContext(DataContext);
+  const { latestFearAndGreed } = useChartData();
+  const { fetchLatestFearAndGreed } = useChartDataActions();
   const [fearAndGreedValue, setFearAndGreedValue] = useState(50);
 
   useEffect(() => {

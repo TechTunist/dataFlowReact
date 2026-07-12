@@ -1,10 +1,10 @@
 // LastUpdated.jsx
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTheme } from '@mui/material';
 import { tokens } from "../theme";
 import '../styling/LastUpdated.css';
-import { DataContext } from '../DataContext';
 import { effectiveDailyReferenceDate } from '../utils/dailyReferenceDate';
+import { useChartData, useChartDataActions } from './useChartData';
 
 const LastUpdated = ({ storageKey, customDate, onRefresh }) => {
   const theme = useTheme();
@@ -14,20 +14,8 @@ const LastUpdated = ({ storageKey, customDate, onRefresh }) => {
   const [isClicked, setIsClicked] = useState(false);
 
   // Access DataContext
-  const {
-    btcLastUpdated,
-    fedLastUpdated,
-    mvrvLastUpdated,
-    ethLastUpdated,
-    dominanceLastUpdated,
-    altcoinLastUpdated,
-    fetchBtcData,
-    refreshBtcData,
-    fetchFedBalanceData,
-    fetchMvrvData,
-    fetchEthData,
-    fetchAltcoinData,
-  } = useContext(DataContext);
+  const { btcLastUpdated, fedLastUpdated, mvrvLastUpdated, ethLastUpdated, dominanceLastUpdated, altcoinLastUpdated } = useChartData();
+  const { fetchBtcData, refreshBtcData, fetchFedBalanceData, fetchMvrvData, fetchEthData, fetchAltcoinData } = useChartDataActions();
 
   // Map storageKey to last updated date
   const lastUpdatedMap = {

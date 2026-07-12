@@ -1,21 +1,22 @@
-import React, { useEffect, useState, useContext, useMemo, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import Plot from 'react-plotly.js';
 import { tokens } from "../theme";
 import { useTheme, Box, FormControl, InputLabel, Select, MenuItem, Checkbox, Button, useMediaQuery } from "@mui/material";
 import '../styling/bitcoinChart.css';
 import useIsMobile from '../hooks/useIsMobile';
 import BitcoinFees from './BitcoinTransactionFees';
-import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import LastUpdated from '../hooks/LastUpdated';
 import ChartInfoSections from './ChartInfoSections';
+import { useChartData, useChartDataActions } from '../hooks/useChartData';
 
 const BitcoinROI = ({ isDashboard = false }) => {
   const theme = useTheme();
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
   const isMobile = useIsMobile();
   const isNarrowScreen = useMediaQuery('(max-width:600px)');
-  const { btcData, fetchBtcData } = useContext(DataContext);
+  const { btcData } = useChartData();
+  const { fetchBtcData } = useChartDataActions();
   const [yearDataSets, setYearDataSets] = useState([]);
   const [visibilityMap, setVisibilityMap] = useState({});
   const [isLoading, setIsLoading] = useState(false);

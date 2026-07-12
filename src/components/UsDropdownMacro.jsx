@@ -1,11 +1,11 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState } from 'react';
 import Plot from 'react-plotly.js';
 import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
 import '../styling/bitcoinChart.css';
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
-import { DataContext } from '../DataContext';
+import { useChartData, useChartDataActions } from '../hooks/useChartData';
 import ChartInfoSections from './ChartInfoSections';
 
 const UsCombinedMacroChart = ({ isDashboard = false }) => {
@@ -24,7 +24,8 @@ const UsCombinedMacroChart = ({ isDashboard = false }) => {
         });
     };
 
-    const { macroData, fetchMacroData } = useContext(DataContext);
+    const { macroData } = useChartData();
+    const { fetchMacroData } = useChartDataActions();
 
     // Use central macroData (guaranteed IDB cache via fetchWithCache + auth attachment).
     // Local re-format preserves exact chart visuals + behavior.

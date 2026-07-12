@@ -1,24 +1,143 @@
-import React, { useContext, useEffect, useMemo, useState, useRef } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { tokens } from "../theme";
-import { useTheme, Box, Table, TableBody, TableCell, TableContainer, TableFooter, TableHead, TableRow, Tooltip, Paper } from "@mui/material";
+import {
+  useTheme,
+  Box,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableFooter,
+  TableHead,
+  TableRow,
+  Tooltip,
+  Paper,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  ListSubheader,
+} from "@mui/material";
 import '../styling/bitcoinChart.css';
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
 import BitcoinFees from './BitcoinTransactionFees';
-import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import ChartInfoSections from './ChartInfoSections';
+import { useChartData, useChartDataActions } from '../hooks/useChartData';
+
+/**
+ * Known BTC halving calendar years. Cycle phases for a year Y use offset from the
+ * most recent halving year ≤ Y:
+ *   0 = halving year, 1 = post-halving, 2 = midterm, 3 = pre-halving
+ * Years before the first halving (2010–2011) are labeled pre-halving.
+ */
+const HALVING_YEARS = [2012, 2016, 2020, 2024, 2028, 2032];
+
+const PHASE_META = {
+  'pre-halving': { id: 'pre-halving', label: 'Pre-halving', short: 'pre-halving' },
+  halving: { id: 'halving', label: 'Halving year', short: 'halving' },
+  'post-halving': { id: 'post-halving', label: 'Post-halving', short: 'post-halving' },
+  midterm: { id: 'midterm', label: 'Midterm', short: 'midterm' },
+};
+
+export function cyclePhaseForYear(year) {
+  const y = Number(year);
+  if (!Number.isFinite(y)) return null;
+  let prev = null;
+  for (const h of HALVING_YEARS) {
+    if (h <= y) prev = h;
+    else break;
+  }
+  if (prev == null) {
+    // Before first halfving: treat 2011 as pre-halving; 2010 as midterm of prior era
+    if (y === 2011) return 'pre-halving';
+    if (y === 2010) return 'midterm';
+    return 'pre-halving';
+  }
+  const offset = y - prev;
+  if (offset === 0) return 'halving';
+  if (offset === 1) return 'post-halving';
+  if (offset === 2) return 'midterm';
+  if (offset === 3) return 'pre-halving';
+  return 'pre-halving';
+}
+
+function phaseLabel(phase) {
+  return PHASE_META[phase]?.label || phase;
+}
+
+function yearDisplayLabel(year) {
+  const phase = cyclePhaseForYear(year);
+  return `${year} — ${phaseLabel(phase)}`;
+}
+
+/**
+ * Filter key:
+ *  - all
+ *  - phase:pre-halving | phase:halving | phase:post-halving | phase:midterm
+ *  - year:YYYY  (single calendar year)
+ */
+function yearsMatchingFilter(allYears, filterKey) {
+  if (!filterKey || filterKey === 'all') return allYears;
+  if (filterKey.startsWith('phase:')) {
+    const phase = filterKey.slice('phase:'.length);
+    return allYears.filter((y) => cyclePhaseForYear(y) === phase);
+  }
+  if (filterKey.startsWith('year:')) {
+    const y = filterKey.slice('year:'.length);
+    return allYears.filter((yr) => String(yr) === String(y));
+  }
+  // Legacy: bare year string meant "from that year onward"
+  if (/^\d{4}$/.test(filterKey)) {
+    const min = parseInt(filterKey, 10);
+    return allYears.filter((y) => parseInt(y, 10) >= min);
+  }
+  return allYears;
+}
+
+function filterDescription(filterKey) {
+  if (!filterKey || filterKey === 'all') return 'all available years (from 2010)';
+  if (filterKey.startsWith('phase:')) {
+    const phase = filterKey.slice('phase:'.length);
+    return `all ${phaseLabel(phase).toLowerCase()} years`;
+  }
+  if (filterKey.startsWith('year:')) {
+    const y = filterKey.slice('year:'.length);
+    return yearDisplayLabel(y);
+  }
+  if (/^\d{4}$/.test(filterKey)) return `years from ${filterKey} onward`;
+  return filterKey;
+}
+
+const selectControlSx = (colors) => ({
+  color: colors.grey[100],
+  backgroundColor: colors.primary[500],
+  borderRadius: '8px',
+  '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
+  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+  '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+  '& .MuiSelect-select': { py: 1.5, pl: 2 },
+});
+
+const labelSx = (colors) => ({
+  color: colors.grey[100],
+  '&.Mui-focused': { color: colors.greenAccent[500] },
+  top: 0,
+  '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' },
+});
 
 const BitcoinMonthlyReturnsTable = ({ isDashboard = false }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const isMobile = useIsMobile();
-  const { btcData, fetchBtcData } = useContext(DataContext);
+  const { btcData } = useChartData();
+  const { fetchBtcData } = useChartDataActions();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [yearFilter, setYearFilter] = useState('all');
   const tableRef = useRef(null);
 
-  // Fetch data on mount to ensure freshness
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
@@ -35,16 +154,51 @@ const BitcoinMonthlyReturnsTable = ({ isDashboard = false }) => {
     fetchData();
   }, [fetchBtcData]);
 
-  // Force re-render on isMobile change to ensure layout updates
   useEffect(() => {
     if (tableRef.current) {
       tableRef.current.style.width = '100%';
     }
   }, [isMobile]);
 
-  // Process data to calculate monthly returns
+  const dataYearRange = useMemo(() => {
+    if (!btcData?.length) {
+      const cy = new Date().getFullYear();
+      return { minYear: 2010, maxYear: cy };
+    }
+    let min = Infinity;
+    let max = -Infinity;
+    btcData.forEach((item) => {
+      const y = new Date(item.time).getFullYear();
+      if (y < min) min = y;
+      if (y > max) max = y;
+    });
+    if (!Number.isFinite(min)) min = 2010;
+    if (!Number.isFinite(max)) max = new Date().getFullYear();
+    return { minYear: min, maxYear: max };
+  }, [btcData]);
+
+  const filterOptions = useMemo(() => {
+    const { minYear, maxYear } = dataYearRange;
+    const individual = [];
+    for (let y = maxYear; y >= minYear; y--) {
+      individual.push({
+        value: `year:${y}`,
+        label: yearDisplayLabel(y),
+      });
+    }
+    return {
+      phases: [
+        { value: 'phase:pre-halving', label: 'All pre-halving years' },
+        { value: 'phase:halving', label: 'All halving years' },
+        { value: 'phase:post-halving', label: 'All post-halving years' },
+        { value: 'phase:midterm', label: 'All midterm years' },
+      ],
+      individual,
+    };
+  }, [dataYearRange]);
+
   const monthlyReturnsData = useMemo(() => {
-    if (btcData.length === 0) return { years: [], months: [], returns: [], averages: [] };
+    if (btcData.length === 0) return { years: [], months: [], returns: [], averages: [], yearPhases: {} };
 
     const sortedBtcData = [...btcData].sort((a, b) => new Date(a.time) - new Date(b.time));
     const dataByYearMonth = sortedBtcData.reduce((acc, item) => {
@@ -75,23 +229,32 @@ const BitcoinMonthlyReturnsTable = ({ isDashboard = false }) => {
     const currentDate = new Date();
     const currentYear = currentDate.getFullYear();
     const currentMonth = currentDate.getMonth();
-    const years = [];
-    for (let y = 2010; y <= currentYear; y++) years.push(y.toString());
-    years.sort((a, b) => b - a);
+    const { minYear, maxYear } = dataYearRange;
+
+    const allYears = [];
+    for (let y = minYear; y <= maxYear; y++) allYears.push(y.toString());
+    // Newest first for table
+    allYears.sort((a, b) => b - a);
+
+    const years = yearsMatchingFilter(allYears, yearFilter);
+    const yearPhases = {};
+    years.forEach((y) => {
+      yearPhases[y] = cyclePhaseForYear(y);
+    });
 
     const months = isMobile
       ? ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D']
       : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
     const returns = [];
-    years.forEach(year => {
+    years.forEach((year) => {
       const yearReturns = [];
       for (let month = 0; month < 12; month++) {
-        if (parseInt(year) === 2010 && month < 7) {
+        if (parseInt(year, 10) === 2010 && month < 7) {
           yearReturns.push(null);
           continue;
         }
-        if (parseInt(year) === currentYear && month > currentMonth) {
+        if (parseInt(year, 10) === currentYear && month > currentMonth) {
           yearReturns.push(null);
           continue;
         }
@@ -102,13 +265,13 @@ const BitcoinMonthlyReturnsTable = ({ isDashboard = false }) => {
         }
         monthData.sort((a, b) => a.date - b.date);
         const lastPrice = monthData[monthData.length - 1].value;
-        let firstPrice = getPreviousMonthClose(parseInt(year), month);
+        let firstPrice = getPreviousMonthClose(parseInt(year, 10), month);
         if (firstPrice === null) {
           firstPrice = monthData[0].value;
         }
         const monthlyReturn = firstPrice !== 0 ? ((lastPrice - firstPrice) / firstPrice) * 100 : 0;
         const displayValue =
-          parseInt(year) === currentYear && month === currentMonth
+          parseInt(year, 10) === currentYear && month === currentMonth
             ? `${monthlyReturn.toFixed(1)}*`
             : monthlyReturn.toFixed(1);
         yearReturns.push(displayValue);
@@ -123,7 +286,7 @@ const BitcoinMonthlyReturnsTable = ({ isDashboard = false }) => {
       for (let y = 0; y < returns.length; y++) {
         const valStr = returns[y][month];
         if (valStr !== null) {
-          const val = parseFloat(valStr.replace('*', ''));
+          const val = parseFloat(String(valStr).replace('*', ''));
           if (!isNaN(val)) {
             sum += val;
             count++;
@@ -133,10 +296,22 @@ const BitcoinMonthlyReturnsTable = ({ isDashboard = false }) => {
       averages.push(count > 0 ? (sum / count).toFixed(1) : null);
     }
 
-    return { years, months, returns, averages };
-  }, [btcData, isMobile]);
+    return { years, months, returns, averages, yearPhases };
+  }, [btcData, isMobile, yearFilter, dataYearRange]);
 
-  const { years, months, returns, averages } = monthlyReturnsData;
+  const { years, months, returns, averages, yearPhases } = monthlyReturnsData;
+
+  const averageRowLabel = useMemo(() => {
+    if (yearFilter === 'all') return 'Average';
+    if (yearFilter.startsWith('phase:')) {
+      const phase = yearFilter.slice('phase:'.length);
+      return `Avg · ${phaseLabel(phase)}`;
+    }
+    if (yearFilter.startsWith('year:')) {
+      return `Avg · ${yearFilter.slice(5)}`;
+    }
+    return 'Average';
+  }, [yearFilter]);
 
   return (
     <div style={{ height: '100%', position: 'relative' }}>
@@ -144,15 +319,73 @@ const BitcoinMonthlyReturnsTable = ({ isDashboard = false }) => {
         <Box
           sx={{
             display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
             justifyContent: 'center',
-            marginBottom: '10px',
-            marginTop: '8px',
+            alignItems: 'center',
+            gap: '20px',
+            marginBottom: '20px',
+            marginTop: '20px',
+            flexDirection: { xs: 'column', sm: 'row' },
+            width: '100%',
+            px: { xs: 1, sm: 0 },
           }}
         >
-          {isLoading && <span style={{ color: colors.grey[100], marginBottom: '10px' }}>Loading...</span>}
-          {error && <span style={{ color: colors.redAccent[500], marginBottom: '10px' }}>{error}</span>}
+          <FormControl sx={{ minWidth: '150px', width: { xs: '100%', sm: '320px' } }}>
+            <InputLabel
+              id="monthly-returns-year-filter-label"
+              shrink
+              sx={labelSx(colors)}
+            >
+              Years
+            </InputLabel>
+            <Select
+              value={yearFilter}
+              onChange={(e) => setYearFilter(e.target.value)}
+              label="Years"
+              labelId="monthly-returns-year-filter-label"
+              sx={selectControlSx(colors)}
+              MenuProps={{
+                PaperProps: {
+                  sx: {
+                    maxHeight: 420,
+                    backgroundColor: colors.primary[500],
+                    color: colors.grey[100],
+                  },
+                },
+              }}
+            >
+              <MenuItem value="all">All years</MenuItem>
+              <ListSubheader
+                sx={{
+                  backgroundColor: colors.primary[600],
+                  color: colors.greenAccent[400],
+                  lineHeight: '36px',
+                }}
+              >
+                Cycle phases
+              </ListSubheader>
+              {filterOptions.phases.map((opt) => (
+                <MenuItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </MenuItem>
+              ))}
+              <ListSubheader
+                sx={{
+                  backgroundColor: colors.primary[600],
+                  color: colors.greenAccent[400],
+                  lineHeight: '36px',
+                }}
+              >
+                Individual years
+              </ListSubheader>
+              {filterOptions.individual.map((opt) => (
+                <MenuItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          {isLoading && <span style={{ color: colors.grey[100] }}>Loading...</span>}
+          {error && <span style={{ color: colors.redAccent[500] }}>{error}</span>}
         </Box>
       )}
       <TableContainer
@@ -184,7 +417,13 @@ const BitcoinMonthlyReturnsTable = ({ isDashboard = false }) => {
         <Table stickyHeader>
           <TableHead>
             <TableRow>
-              <TableCell sx={{ backgroundColor: colors.primary[700], color: colors.primary[100], minWidth: isMobile ? 60 : 80 }}>
+              <TableCell
+                sx={{
+                  backgroundColor: colors.primary[700],
+                  color: colors.primary[100],
+                  minWidth: isMobile ? 90 : 130,
+                }}
+              >
                 Year
               </TableCell>
               {months.map((month) => (
@@ -203,52 +442,89 @@ const BitcoinMonthlyReturnsTable = ({ isDashboard = false }) => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {years.map((year, yIdx) => (
-              <TableRow key={year}>
-                <TableCell sx={{ backgroundColor: colors.primary[700], color: colors.primary[100] }}>{year}</TableCell>
-                {months.map((month, mIdx) => {
-                  const value = returns[yIdx][mIdx];
-                  if (value === null) return <TableCell key={mIdx} />;
-                  const num = parseFloat(value.replace('*', ''));
-                  const bgColor = num > 0 ? '#28822d' : num < 0 ? '#9c4f4f' : colors.primary[700];
-                  const tooltipTitle = `Return for ${months[mIdx]} ${year}: ${value}%${value.includes('*') ? ' (ongoing)' : ''}`;
-                  return (
-                    <Tooltip
-                      key={mIdx}
-                      title={tooltipTitle}
-                      enterDelay={isMobile ? 0 : 300}
-                      enterTouchDelay={0}
-                      PopperProps={{
-                        sx: {
-                          '& .MuiTooltip-tooltip': {
-                            fontSize: '1rem',
-                            padding: '8px 12px',
-                          },
-                        },
+            {years.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={months.length + 1}
+                  sx={{ backgroundColor: colors.primary[700], color: colors.grey[100] }}
+                >
+                  No years match this filter.
+                </TableCell>
+              </TableRow>
+            ) : (
+              years.map((year, yIdx) => {
+                const phase = yearPhases?.[year];
+                const phaseShort = PHASE_META[phase]?.short || '';
+                return (
+                  <TableRow key={year}>
+                    <TableCell
+                      sx={{
+                        backgroundColor: colors.primary[700],
+                        color: colors.primary[100],
+                        textAlign: 'left',
+                        pl: isMobile ? 1 : 1.5,
                       }}
                     >
-                      <TableCell sx={{ backgroundColor: bgColor }}>
-                        <span>{value}</span>
-                      </TableCell>
-                    </Tooltip>
-                  );
-                })}
-              </TableRow>
-            ))}
+                      <div style={{ lineHeight: 1.2 }}>
+                        <div>{year}</div>
+                        {!isMobile && phaseShort && (
+                          <div style={{ fontSize: '0.7rem', opacity: 0.75 }}>{phaseShort}</div>
+                        )}
+                      </div>
+                    </TableCell>
+                    {months.map((month, mIdx) => {
+                      const value = returns[yIdx][mIdx];
+                      if (value === null) return <TableCell key={mIdx} />;
+                      const num = parseFloat(String(value).replace('*', ''));
+                      const bgColor = num > 0 ? '#28822d' : num < 0 ? '#9c4f4f' : colors.primary[700];
+                      const tooltipTitle = `Return for ${months[mIdx]} ${year} (${phaseShort}): ${value}%${String(value).includes('*') ? ' (ongoing)' : ''}`;
+                      return (
+                        <Tooltip
+                          key={mIdx}
+                          title={tooltipTitle}
+                          enterDelay={isMobile ? 0 : 300}
+                          enterTouchDelay={0}
+                          PopperProps={{
+                            sx: {
+                              '& .MuiTooltip-tooltip': {
+                                fontSize: '1rem',
+                                padding: '8px 12px',
+                              },
+                            },
+                          }}
+                        >
+                          <TableCell sx={{ backgroundColor: bgColor }}>
+                            <span>{value}</span>
+                          </TableCell>
+                        </Tooltip>
+                      );
+                    })}
+                  </TableRow>
+                );
+              })
+            )}
           </TableBody>
           <TableFooter>
-            {/* Separator row */}
             <TableRow>
               <TableCell colSpan={months.length + 1} sx={{ height: '8px', backgroundColor: colors.primary[700], padding: 0 }} />
             </TableRow>
-            {/* Average row */}
             <TableRow>
-              <TableCell sx={{ backgroundColor: colors.primary[700], color: colors.primary[100] }}>Average</TableCell>
+              <TableCell
+                sx={{
+                  backgroundColor: colors.primary[700],
+                  color: colors.primary[100],
+                  textAlign: 'left',
+                  pl: isMobile ? 1 : 1.5,
+                  fontSize: isMobile ? '0.7rem' : '0.8rem',
+                }}
+              >
+                {averageRowLabel}
+              </TableCell>
               {averages.map((avg, idx) => {
                 if (avg === null) return <TableCell key={idx} />;
                 const num = parseFloat(avg);
                 const bgColor = num > 0 ? '#28822d' : num < 0 ? '#9c4f4f' : colors.primary[700];
-                const tooltipTitle = `Average return for ${months[idx]}: ${avg}%`;
+                const tooltipTitle = `${averageRowLabel} for ${months[idx]}: ${avg}% (${years.length} year${years.length === 1 ? '' : 's'})`;
                 return (
                   <Tooltip
                     key={idx}
@@ -286,8 +562,19 @@ const BitcoinMonthlyReturnsTable = ({ isDashboard = false }) => {
               content: 'Bitcoin monthly returns measure the percentage change from the first to the last day of each month.',
             },
             {
-              title: 'What this chart shows',
-              content: 'Positive returns are highlighted in green, negative returns in red. Returns for the current month (marked with an asterisk *) are not finalized as the month is ongoing. Data starts from August 2010, as Bitcoin price data begins on July 18, 2010.',
+              title: 'Year filters & cycle phases',
+              content: (
+                <>
+                  Use <strong>Years</strong> to average only the history you care about. Cycle phases are relative to BTC halvings (2012, 2016, 2020, 2024, …):{' '}
+                  <strong>halving year</strong> = the year of a halving; <strong>post-halving</strong> = year after;{' '}
+                  <strong>midterm</strong> = two years after; <strong>pre-halving</strong> = year before the next halving.
+                  Choose a phase (e.g. all pre-halving years) to see typical monthly behaviour in that part of the cycle, or pick a single year for that year alone.
+                </>
+              ),
+            },
+            {
+              title: 'What this table shows',
+              content: `Positive returns are green, negative red. Current month values marked * are not final. Showing ${filterDescription(yearFilter)}. The average row uses only the years in the selection.`,
             },
           ]}
         />

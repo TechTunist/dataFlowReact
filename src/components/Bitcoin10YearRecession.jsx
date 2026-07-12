@@ -1,13 +1,13 @@
 // src/scenes/Charts/Bitcoin10YearChart.js
-import React, { useRef, useEffect, useState, useMemo, useCallback, useContext } from 'react';
+import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import { createChart } from 'lightweight-charts';
 import '../styling/bitcoinChart.css';
 import { tokens } from '../theme';
 import { useTheme, Box, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import useIsMobile from '../hooks/useIsMobile';
-import { DataContext } from '../DataContext';
 import ChartTooltip from './ChartTooltip';
 import ChartInfoSections from './ChartInfoSections';
+import { useChartData, useChartDataActions } from '../hooks/useChartData';
 
 const Bitcoin10YearChart = ({ indicatorId = 'btc-yield-recession', explanation, isDashboard = false }) => {
   const chartContainerRef = useRef();
@@ -21,7 +21,8 @@ const Bitcoin10YearChart = ({ indicatorId = 'btc-yield-recession', explanation, 
   const theme = useTheme();
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
   const isMobile = useIsMobile();
-  const { indicatorData, fetchIndicatorData } = useContext(DataContext);
+  const { indicatorData } = useChartData();
+  const { fetchIndicatorData } = useChartDataActions();
 
   const [tooltipData, setTooltipData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);

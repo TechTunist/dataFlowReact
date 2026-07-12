@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useContext, useMemo } from 'react';
+import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { createChart } from 'lightweight-charts';
 import '../styling/bitcoinChart.css';
 import { tokens } from "../theme";
@@ -8,7 +8,7 @@ import LastUpdated from '../hooks/LastUpdated';
 import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
 import ChartInfoSections from './ChartInfoSections';
 import BitcoinFees from './BitcoinTransactionFees';
-import { DataContext } from '../DataContext';
+import { useChartData, useChartDataActions } from '../hooks/useChartData';
 import ChartTooltip from './ChartTooltip';
 
 const BitcoinLogRegression = ({ isDashboard = false, priceData: propPriceData }) => {
@@ -28,8 +28,8 @@ const BitcoinLogRegression = ({ isDashboard = false, priceData: propPriceData })
   const isMobile = useIsMobile();
   const isNarrowScreen = useMediaQuery('(max-width:600px)');
 
-  // Access DataContext
-  const { btcData: contextPriceData, fetchBtcData } = useContext(DataContext);
+  const { btcData: contextPriceData } = useChartData();
+  const { fetchBtcData } = useChartDataActions();
 
   // Use prop data if provided, otherwise fall back to context data
   const priceData = propPriceData || contextPriceData;

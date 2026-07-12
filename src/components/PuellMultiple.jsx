@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useContext, useMemo, useCallback, memo } from 'react';
+import React, { useRef, useEffect, useState, useMemo, useCallback, memo } from 'react';
 import { createChart } from 'lightweight-charts';
 import { tokens } from "../theme";
 import { useTheme, Button, Box, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
@@ -7,9 +7,9 @@ import LastUpdated from '../hooks/LastUpdated';
 import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
 import ChartInfoSections from './ChartInfoSections';
 import BitcoinFees from './BitcoinTransactionFees';
-import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import ChartTooltip from './ChartTooltip';
+import { useChartData, useChartDataActions } from '../hooks/useChartData';
 
 const PuellMultiple = ({ isDashboard = false }) => {
   const chartContainerRef = useRef();
@@ -19,7 +19,8 @@ const PuellMultiple = ({ isDashboard = false }) => {
   const normalizedPuellSeriesRef = useRef(null);
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
-  const { btcData, onchainMetricsData, fetchBtcData, fetchOnchainMetricsData } = useContext(DataContext);
+  const { btcData, onchainMetricsData } = useChartData();
+  const { fetchBtcData, fetchOnchainMetricsData } = useChartDataActions();
   const [isInteractive, setIsInteractive] = useState(false);
   const [showNormalizedPuell, setShowNormalizedPuell] = useState(false);
   const [currentBtcPrice, setCurrentBtcPrice] = useState(0);

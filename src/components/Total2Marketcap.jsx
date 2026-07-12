@@ -1,15 +1,15 @@
-import React, { useRef, useEffect, useState, useMemo, useCallback, useContext } from 'react';
+import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import { createChart } from 'lightweight-charts';
 import '../styling/bitcoinChart.css';
 import { tokens } from '../theme';
 import { useTheme, useMediaQuery } from '@mui/material';
 import useIsMobile from '../hooks/useIsMobile';
-import { DataContext } from '../DataContext';
 import BitcoinFees from './BitcoinTransactionFees';
 import LastUpdated from '../hooks/LastUpdated';
 import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
 import ChartTooltip from './ChartTooltip';
 import ChartInfoSections from './ChartInfoSections';
+import { useChartData, useChartDataActions } from '../hooks/useChartData';
 
 const Total2Chart = ({ isDashboard = false }) => {
   const chartContainerRef = useRef();
@@ -18,7 +18,8 @@ const Total2Chart = ({ isDashboard = false }) => {
   const theme = useTheme();
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
   const isMobile = useIsMobile();
-  const { total2Data: contextTotal2Data, fetchTotal2Data, total2LastUpdated } = useContext(DataContext);
+  const { total2Data: contextTotal2Data, total2LastUpdated } = useChartData();
+  const { fetchTotal2Data } = useChartDataActions();
   const [tooltipData, setTooltipData] = useState(null);
   const [isInteractive, setIsInteractive] = useState(false);
   const [isLoading, setIsLoading] = useState(false);

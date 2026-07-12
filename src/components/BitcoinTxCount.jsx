@@ -1,10 +1,10 @@
-import React, { useRef, useEffect, useState, useMemo, useCallback, useContext } from 'react';
+import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import { createChart } from 'lightweight-charts';
 import '../styling/bitcoinChart.css';
 import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
 import useIsMobile from '../hooks/useIsMobile';
-import { DataContext } from '../DataContext';
+import { useChartData, useChartDataActions } from '../hooks/useChartData';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import ChartTooltip from './ChartTooltip';
 import LastUpdated from '../hooks/LastUpdated';
@@ -17,7 +17,8 @@ const BitcoinTxCountChart = ({ isDashboard = false }) => {
     const theme = useTheme();
     const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
     const isMobile = useIsMobile();
-    const { txCountData, fetchTxCountData, txCountLastUpdated } = useContext(DataContext);
+    const { txCountData, txCountLastUpdated } = useChartData();
+    const { fetchTxCountData } = useChartDataActions();
 
     const [scaleMode, setScaleMode] = useState(0); // Start with logarithmic (1) instead of linear (0)
     const [tooltipData, setTooltipData] = useState(null);

@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useContext, useMemo, useCallback, memo } from 'react';
+import React, { useRef, useEffect, useState, useMemo, useCallback, memo } from 'react';
 import { createChart } from 'lightweight-charts';
 import '../styling/bitcoinChart.css';
 import { tokens } from "../theme";
@@ -9,9 +9,9 @@ import BitcoinFees from './BitcoinTransactionFees';
 import { Box, FormControl, InputLabel, Select, MenuItem, ToggleButton, ToggleButtonGroup, useMediaQuery, Checkbox, Typography } from '@mui/material';
 import { UnderChartRow, ChartUnderSection, UnderChartScroll } from './ChartUnderSection';
 import ChartInfoSections from './ChartInfoSections';
-import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import ChartTooltip from './ChartTooltip';
+import { useChartData, useChartDataActions } from '../hooks/useChartData';
 
 const BitcoinTxMvrvChart = ({ isDashboard = false, isChartPage = false, txMvrvData: propTxMvrvData, hideControls = false }) => {
   const chartContainerRef = useRef();
@@ -34,18 +34,8 @@ const BitcoinTxMvrvChart = ({ isDashboard = false, isChartPage = false, txMvrvDa
   const colors = tokens(theme.palette.mode);
   const isMobile = useIsMobile();
   const isNarrowScreen = useMediaQuery('(max-width:600px)');
-  const {
-    txMvrvData: contextTxMvrvData,
-    fetchTxMvrvData,
-    txMvrvRatioDataBySmoothing,
-    fetchTxMvrvRatioData,
-    btcData: contextBtcData,
-    fetchBtcData,
-    txMvrvLastUpdated,
-    txMvrvRatioLastUpdated,
-    refreshTxMvrvData,
-    refreshTxMvrvRatioData,
-  } = useContext(DataContext);
+  const { txMvrvData: contextTxMvrvData, txMvrvRatioDataBySmoothing, btcData: contextBtcData, txMvrvLastUpdated, txMvrvRatioLastUpdated } = useChartData();
+  const { fetchTxMvrvData, fetchTxMvrvRatioData, fetchBtcData, refreshTxMvrvData, refreshTxMvrvRatioData } = useChartDataActions();
 
   // Memoize raw data selection for stable references (like MVRV Z-Score hardening)
   const txMvrvData = useMemo(() => (propTxMvrvData || contextTxMvrvData) || [], [propTxMvrvData, contextTxMvrvData]);

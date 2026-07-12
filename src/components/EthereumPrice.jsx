@@ -1,10 +1,9 @@
-import React, { useRef, useEffect, useState, useMemo, useCallback, useContext } from 'react';
+import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import { createChart } from 'lightweight-charts';
 import '../styling/bitcoinChart.css';
 import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
 import useIsMobile from '../hooks/useIsMobile';
-import { DataContext } from '../DataContext';
 import { Select, MenuItem, FormControl, InputLabel, Box, Checkbox, ListSubheader } from '@mui/material';
 import { 
   getAllMovingAverageOptions, 
@@ -18,6 +17,7 @@ import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import { getCurrentEthereumPrice } from '../utils/currentPrice';
 import ChartTooltip from './ChartTooltip';
 import ChartInfoSections from './ChartInfoSections';
+import { useChartData, useChartDataActions } from '../hooks/useChartData';
 
 const EthereumPrice = ({ isDashboard = false }) => {
   const chartContainerRef = useRef();
@@ -31,7 +31,8 @@ const EthereumPrice = ({ isDashboard = false }) => {
   const theme = useTheme();
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
   const isMobile = useIsMobile();
-  const { ethData, fetchEthData, fedBalanceData, fetchFedBalanceData, ethLastUpdated } = useContext(DataContext);
+  const { ethData, fedBalanceData, ethLastUpdated } = useChartData();
+  const { fetchEthData, fetchFedBalanceData } = useChartDataActions();
 
   const [scaleMode, setScaleMode] = useState(1);
   const [tooltipData, setTooltipData] = useState(null);

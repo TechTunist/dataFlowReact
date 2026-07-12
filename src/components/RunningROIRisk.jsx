@@ -1,5 +1,5 @@
 // src/components/RunningROIRisk.jsx
-import React, { useRef, useEffect, useState, useContext, useMemo, useCallback } from 'react';
+import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import { createChart } from 'lightweight-charts';
 import { tokens } from "../theme";
 import {
@@ -22,10 +22,10 @@ import LastUpdated from '../hooks/LastUpdated';
 import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
 import ChartInfoSections from './ChartInfoSections';
 import BitcoinFees from './BitcoinTransactionFees';
-import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import ChartTooltip from './ChartTooltip';
 import RunningRoiWhatIfDialog from './RunningRoiWhatIfDialog';
+import { useChartData, useChartDataActions } from '../hooks/useChartData';
 import {
   calculateRunningROI,
   filterPriceDataFromStart,
@@ -93,7 +93,8 @@ const RunningROIRisk = ({ isDashboard = false }) => {
     [theme.palette.mode]
   );
   const isMobile = useIsMobile();
-  const { btcData, fetchBtcData, ethData, fetchEthData, altcoinData, fetchAltcoinData } = useContext(DataContext);
+  const { btcData, ethData, altcoinData } = useChartData();
+  const { fetchBtcData, fetchEthData, fetchAltcoinData } = useChartDataActions();
   const [isInteractive, setIsInteractive] = useState(false);
   const [currentPrice, setCurrentPrice] = useState(0);
   const [currentRoi, setCurrentRoi] = useState(null);

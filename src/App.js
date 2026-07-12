@@ -30,6 +30,7 @@ import { SubscriptionProvider } from './contexts/SubscriptionContext';
 import { useMemo } from "react";
 import { FavoritesProvider } from './contexts/FavoritesContext';
 import restrictToPaidSubscription from './scenes/RestrictToPaid';
+import DataFreshnessBanner from './components/marketing/DataFreshnessBanner';
 
 // Core components still directly referenced (kept minimal after route refactor)
 import BitcoinPrice from "./components/BitcoinPrice";
@@ -258,6 +259,11 @@ const appRoutes = [
   { path: "/fred/case-shiller", component: FredSeriesChart, useBasicChart: true, requirePaid: true, protected: true, basicChartProps: { seriesId: "CSUSHPINSA", chartType: "area", valueFormatter: (v) => v.toLocaleString(), showSP500Overlay: true } },
   { path: "/fred/nikkei-225", component: FredSeriesChart, useBasicChart: true, requirePaid: true, protected: true, basicChartProps: { seriesId: "NIKKEI225", chartType: "area", valueFormatter: (v) => v.toLocaleString(), showSP500Overlay: true } },
   { path: "/fred/german-bond-yield", component: FredSeriesChart, useBasicChart: true, requirePaid: true, protected: true, basicChartProps: { seriesId: "IRLTLT01DEM156N", chartType: "line", valueFormatter: (v) => `${v.toFixed(2)}%`, showSP500Overlay: true } },
+  { path: "/fred/fed-balance-sheet", component: FredSeriesChart, useBasicChart: true, requirePaid: true, protected: true, basicChartProps: { seriesId: "WALCL", chartType: "area", valueFormatter: (v) => v.toLocaleString(), showSP500Overlay: true, explanation: "Federal Reserve total assets (WALCL). Key liquidity series for crypto cycles." } },
+  { path: "/fred/core-pce", component: FredSeriesChart, useBasicChart: true, requirePaid: true, protected: true, basicChartProps: { seriesId: "PCEPILFE", chartType: "area", valueFormatter: (v) => v.toLocaleString(), showSP500Overlay: true, explanation: "Core PCE is the Fed's preferred inflation measure (ex food and energy)." } },
+  { path: "/fred/core-cpi", component: FredSeriesChart, useBasicChart: true, requirePaid: true, protected: true, basicChartProps: { seriesId: "CPILFESL", chartType: "area", valueFormatter: (v) => v.toLocaleString(), showSP500Overlay: true, explanation: "Core CPI excludes food and energy from consumer prices." } },
+  { path: "/fred/mortgage-30y", component: FredSeriesChart, useBasicChart: true, requirePaid: true, protected: true, basicChartProps: { seriesId: "MORTGAGE30US", chartType: "line", valueFormatter: (v) => `${v.toFixed(2)}%`, showSP500Overlay: true, explanation: "Average 30-year fixed mortgage rate in the United States." } },
+  { path: "/fred/trade-weighted-dollar", component: FredSeriesChart, useBasicChart: true, requirePaid: true, protected: true, basicChartProps: { seriesId: "DTWEXBGS", chartType: "line", valueFormatter: (v) => v.toFixed(2), showSP500Overlay: true, explanation: "Trade Weighted U.S. Dollar Index: Broad, Goods. Dollar strength vs major partners." } },
 
   // Catch-all
   { path: "*", element: <Navigate to="/dashboard" replace /> },
@@ -417,6 +423,8 @@ const AppContent = memo(() => {
                   DEV MODE: Clerk + subscription checks bypassed (REACT_APP_DEV_BYPASS_AUTH=true). All charts (including premium) available locally.
                 </div>
               )}
+              {/* In-app data freshness for signed-in shell only (public health endpoint). */}
+              {!isStandalonePublicPage && <DataFreshnessBanner />}
               <div className="app" style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
                 {/* Render Topbar or AccountNavBar only if signed in */}
                 {shouldRenderTopbar && (

@@ -209,9 +209,13 @@ Backend:
 - Daily automated data refresh in production.
 - Some legacy code paths (two Clerk webhook endpoints) exist from iterative security hardening.
 
-See `PROFESSIONALIZATION_REMAINING.md` (the current living consolidated list for professionalization, efficiency, bulletproofing, and sale-readiness work across FE+BE). Older `TODO.md` / backend `ToDo.md` now point to it. Also see `forGrokBuild.md` for session history.
+**Status & backlog:** monorepo root [`STATUS.md`](../STATUS.md) (living). Superseded roadmaps/session notes: [`docs/archive/`](../docs/archive/README.md).
 
-For the **open-access promotion** (free accounts get full premium, splash strikethrough pricing, how to revert): see `FREE_WEEKEND_PROMO.md` (duplicated in both frontend and backend repos).
+**How charts load data (read first):** [`docs/DATA_LAYER.md`](docs/DATA_LAYER.md) — `useChartData` / `useChartDataActions` + DataService.
+
+**Pipeline safety:** [`BACKEND_DATA_PIPELINE_SAFETY_RUNBOOK.md`](BACKEND_DATA_PIPELINE_SAFETY_RUNBOOK.md).
+
+**Open-access / free-weekend promo:** [`FREE_WEEKEND_PROMO.md`](FREE_WEEKEND_PROMO.md) (canonical copy here; root and SaaS have pointers only).
 
 ---
 

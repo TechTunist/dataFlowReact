@@ -1,17 +1,18 @@
-import React, { useEffect, useState, useMemo, useCallback, useContext} from 'react';
+import React, { useEffect, useState, useMemo, useCallback} from 'react';
 import Plot from 'react-plotly.js';
 import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
 import '../styling/bitcoinChart.css';
 import useIsMobile from '../hooks/useIsMobile';
-import { DataContext } from '../DataContext';
 import ChartInfoSections from './ChartInfoSections';
+import { useChartData, useChartDataActions } from '../hooks/useChartData';
 
 const UsCombinedMacroChart = ({ isDashboard = false }) => {
     const theme = useTheme();
     const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
     const isMobile = useIsMobile();
-    const { macroData, fetchMacroData } = useContext(DataContext);
+    const { macroData } = useChartData();
+    const { fetchMacroData } = useChartDataActions();
 
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);

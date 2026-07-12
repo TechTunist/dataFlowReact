@@ -1,15 +1,15 @@
-import React, { useRef, useEffect, useState, useMemo, useCallback, useContext } from 'react';
+import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import { createChart } from 'lightweight-charts';
 import '../styling/bitcoinChart.css';
 import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
 import useIsMobile from '../hooks/useIsMobile';
-import { DataContext } from '../DataContext';
 import BitcoinFees from './BitcoinTransactionFees';
 import ChartTooltip from './ChartTooltip';
 import MacroChartControls, { getOverlaySeriesLabel } from './macro/MacroChartControls';
 import useUsMacroChartEnhancements from '../hooks/useUsMacroChartEnhancements';
 import ChartInfoSections from './ChartInfoSections';
+import { useChartData, useChartDataActions } from '../hooks/useChartData';
 
 const UsInitialClaimsChart = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
@@ -21,7 +21,8 @@ const UsInitialClaimsChart = ({ isDashboard = false }) => {
     const theme = useTheme();
     const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
     const isMobile = useIsMobile();
-    const { initialClaimsData, fetchInitialClaimsData } = useContext(DataContext);
+    const { initialClaimsData } = useChartData();
+    const { fetchInitialClaimsData } = useChartDataActions();
 
     const [scaleMode, setScaleMode] = useState(1);
     const [tooltipData, setTooltipData] = useState(null);

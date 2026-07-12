@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useContext, useMemo, useCallback } from 'react';
+import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import { createChart } from 'lightweight-charts';
 import { tokens } from '../theme';
 import { useTheme, Box, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
@@ -10,11 +10,11 @@ import {
   ChartUnderSection,
 } from './ChartUnderSection';
 import ChartInfoSections from './ChartInfoSections';
-import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import ChartTooltip from './ChartTooltip';
 import LastUpdated from '../hooks/LastUpdated';
 import useIsMobile from '../hooks/useIsMobile';
+import { useChartData, useChartDataActions } from '../hooks/useChartData';
 import {
   applyFeiSmoothing,
   getFloorEchoReferenceLevels,
@@ -40,12 +40,8 @@ const BitcoinFloorEcho = ({ isDashboard = false, isChartPage = false }) => {
   const [dataError, setDataError] = useState(null);
   const [smoothingPeriod, setSmoothingPeriod] = useState(7);
 
-  const {
-    floorEchoData,
-    fetchFloorEchoData,
-    floorEchoLastUpdated,
-    isFloorEchoDataFetched,
-  } = useContext(DataContext);
+  const { floorEchoData, floorEchoLastUpdated, isFloorEchoDataFetched } = useChartData();
+  const { fetchFloorEchoData } = useChartDataActions();
 
   const rawSeries = useMemo(() => floorEchoData?.series || [], [floorEchoData]);
 

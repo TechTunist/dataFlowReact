@@ -61,6 +61,10 @@ export const API_ENDPOINTS = {
   fredSeries: (seriesId) => apiUrl(`/api/series/${seriesId}/observations/`),
   sp500DivUnrate: () => apiUrl('/api/sp500-div-unrate-squared/'),
 
+  // Public (no auth) — cold-visitor marketing snapshot only
+  publicMarketPulse: () => apiUrl('/api/public/market-pulse/'),
+  publicDataHealth: () => apiUrl('/api/public/data-health/'),
+
   // Authenticated endpoints
   subscriptionStatus: () => apiUrl('/api/subscription-status/'),
   createCheckout: () => apiUrl('/api/create-checkout-session/'),

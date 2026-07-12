@@ -1,39 +1,19 @@
 /**
  * useWorkbenchSeriesData
  *
- * Custom hook extracted from Workbench.jsx during professionalization sprint.
- * Centralizes:
- * - getRawData (with branching for macro/crypto/indicator/derived + fred vs custom)
- * - getNormalizedData (delegates to DataService normalize + dedup)
- * - getType, getValueKey, getSeriesInfo, getSeriesColor (for non-state colors), getLastTime
+ * Centralizes Workbench raw/normalized reads from DataContext cache state.
+ * Normalize/dedup and ensureSeriesLoaded come from DataService.
  *
- * Data access integration notes:
- * - Currently sources raw series from DataContext state (the source of truth for loaded data).
- * - BTC/ETH/MarketCap/Dominance etc are populated in context via DataService.getBtcPriceSeries etc (see DataContext delegations).
- * - Macro/FRED still use direct context.fredSeriesData + fetchFredSeriesData.
- * - This hook is the place to evolve reads toward DataService when it grows read-side APIs (e.g. getSeriesObservations or cached getters).
- *
- * // INTEGRATE WITH DATA LAYER
- * TODO (for data-layer agent or future): 
- *   - Add DataService.getMacroSeries(id), getFredSeries(seriesId), getIndicatorSeries etc that return current cached values (sync or via subscription).
- *   - Then refactor getRawData here to prefer service reads (with fallback to context during transition).
- *   - Move more of the fetch triggering (currently in useWorkbenchSeriesManagement) into service-aware hooks.
- *   - For derived: see useWorkbenchDerivedSeries + future DataService.getDerivedSeries(def, sources).
- *
- * Preserves 100% original behavior and LOCF/mixed-freq handling expectations.
- * No side effects; pure getters + stable callbacks.
+ * Reads stay sync from context (source of truth after loads). Loads are triggered
+ * by useWorkbenchSeriesManagement via ensureSeriesLoaded.
  */
 
 import { useCallback, useMemo } from 'react';
-import { normalizePriceData, deduplicateByTime } from '../data';
-// DataService specific getters available for future routing / comments (do not call for state reads yet)
 import {
-  getPriceSeries,
-  getBtcPriceSeries,
-  getEthPriceSeries,
-  getMvrvSeries,
-  getMarketCapSeries,
-  getDominanceSeries,
+  normalizePriceData,
+  deduplicateByTime,
+  ensureSeriesLoaded,
+  series as dataServiceSeries,
 } from '../data';
 import {
   availableMacroSeries,
@@ -55,12 +35,17 @@ export function useWorkbenchSeriesData({ dataContext, derivedData = {}, derivedS
   const getSeriesType = useCallback((id, activeDerived = []) => {
     const t = getType(id);
     if (t) return t;
-    if (derivedSeriesDefs.some(d => d.id === id) || activeDerived.includes(id)) return 'derived';
+    if (derivedSeriesDefs.some((d) => d.id === id) || activeDerived.includes(id)) return 'derived';
     return null;
   }, [getType, derivedSeriesDefs]);
 
   const getValueKey = useCallback((id) => {
-    return (availableMacroSeries[id] || availableCryptoSeries[id] || availableIndicatorSeries[id] || availableStockSeries[id])?.valueKey || 'value';
+    return (
+      availableMacroSeries[id] ||
+      availableCryptoSeries[id] ||
+      availableIndicatorSeries[id] ||
+      availableStockSeries[id]
+    )?.valueKey || 'value';
   }, []);
 
   const getSeriesInfo = useCallback((id, type) => {
@@ -68,21 +53,22 @@ export function useWorkbenchSeriesData({ dataContext, derivedData = {}, derivedS
     if (type === 'crypto') return availableCryptoSeries[id];
     if (type === 'indicator') return availableIndicatorSeries[id];
     if (type === 'stock') return availableStockSeries[id];
-    if (type === 'derived') return derivedSeriesDefs.find(d => d.id === id);
+    if (type === 'derived') return derivedSeriesDefs.find((d) => d.id === id);
     return null;
   }, [derivedSeriesDefs]);
 
-  // Note: full color resolution that checks seriesColors state lives in the orchestrator or moving-avg hook for now.
-  // This provides the base/fallback.
   const getSeriesColorBase = useCallback((id, type) => {
     if (type === 'macro') return availableMacroSeries[id]?.color || '#00FFFF';
     if (type === 'crypto') return availableCryptoSeries[id]?.color || '#00FFFF';
     if (type === 'indicator') return availableIndicatorSeries[id]?.color || '#00FFFF';
     if (type === 'stock') return availableStockSeries[id]?.color || '#00FFFF';
-    if (type === 'derived') return derivedSeriesDefs.find(d => d.id === id)?.color || '#00FFFF';
+    if (type === 'derived') return derivedSeriesDefs.find((d) => d.id === id)?.color || '#00FFFF';
     return '#00FFFF';
   }, [derivedSeriesDefs]);
 
+  /**
+   * Sync read of already-loaded series from context (populated by DataService-backed fetches).
+   */
   const getRawData = useCallback((id, type) => {
     if (type === 'derived') {
       return derivedData[id] || [];
@@ -91,7 +77,6 @@ export function useWorkbenchSeriesData({ dataContext, derivedData = {}, derivedS
       const info = availableMacroSeries[id];
       if (!info) return [];
       if (info.isFred) {
-        // fredSeriesData is keyed by seriesId (e.g. 'SP500')
         return dataContext?.fredSeriesData?.[info.seriesId] || [];
       }
       return dataContext?.[info.dataKey] || [];
@@ -99,13 +84,6 @@ export function useWorkbenchSeriesData({ dataContext, derivedData = {}, derivedS
     if (type === 'crypto') {
       const info = availableCryptoSeries[id];
       if (!info) return [];
-      // INTEGRATE WITH DATA LAYER
-      // Context.btcData / ethData are populated by DataContext.fetchBtcData which now delegates
-      // to DataService.getBtcPriceSeries (see DataContext.js). Same for others.
-      // We read the already-normalized {time, value} from context state here (sync getter).
-      // TODO: When DataService exposes a getLoadedSeries(cacheId) or integrates with a store,
-      // route e.g. if (id==='BTC') return await getBtcPriceSeries(...) but since this must be sync
-      // and context is the current subscriber, keep for now + comment.
       if (info.dataKey === 'btcData') return dataContext?.btcData || [];
       if (info.dataKey === 'ethData') return dataContext?.ethData || [];
       if (info.dataKey === 'altcoinData') return dataContext?.altcoinData?.[info.coin] || [];
@@ -125,8 +103,6 @@ export function useWorkbenchSeriesData({ dataContext, derivedData = {}, derivedS
   }, [dataContext, derivedData]);
 
   const getNormalizedData = useCallback((rawData, valueKey) => {
-    // Fully delegated to DataService helpers (normalizePriceData + deduplicateByTime).
-    // This was the first integration point; kept here for all call sites (derived creation + chart prep).
     const normalized = normalizePriceData(rawData, valueKey);
     return deduplicateByTime(normalized);
   }, []);
@@ -135,18 +111,56 @@ export function useWorkbenchSeriesData({ dataContext, derivedData = {}, derivedS
     const raw = getRawData(id, type);
     if (!raw || raw.length === 0) return 0;
     const last = raw[raw.length - 1];
-    const timeField = last.time || last.date || last.end_date ||
+    const timeField =
+      last.time ||
+      last.date ||
+      last.end_date ||
       (last.timestamp ? new Date(last.timestamp * 1000).toISOString().split('T')[0] : 0);
     return new Date(timeField).getTime();
   }, [getRawData]);
 
-  // Memoized list helpers if useful to consumers
-  const allAvailable = useMemo(() => ({
-    macro: availableMacroSeries,
-    crypto: availableCryptoSeries,
-    indicator: availableIndicatorSeries,
-    stock: availableStockSeries,
-  }), []);
+  /**
+   * Ensure a catalog series is loaded into context (async). Useful for callers
+   * that know a series id but not which fetch* to call.
+   */
+  const ensureLoaded = useCallback(
+    async (id, type) => {
+      const t = type || getType(id);
+      const info = getSeriesInfo(id, t);
+      if (!info || !dataContext) return getRawData(id, t);
+
+      if (t === 'macro') {
+        if (info.isFred) {
+          await ensureSeriesLoaded(dataContext, { isFred: true, seriesId: info.seriesId || id });
+        } else {
+          await ensureSeriesLoaded(dataContext, {
+            dataKey: info.dataKey,
+            fetchFunction: info.fetchFunction,
+          });
+        }
+      } else if (t === 'crypto') {
+        if (info.dataKey === 'altcoinData') {
+          await ensureSeriesLoaded(dataContext, { dataKey: 'altcoinData', coin: info.coin });
+        } else {
+          await ensureSeriesLoaded(dataContext, { dataKey: info.dataKey });
+        }
+      } else if (t === 'stock') {
+        await ensureSeriesLoaded(dataContext, { dataKey: 'altcoinData', coin: info.symbol });
+      }
+      return getRawData(id, t);
+    },
+    [dataContext, getType, getSeriesInfo, getRawData]
+  );
+
+  const allAvailable = useMemo(
+    () => ({
+      macro: availableMacroSeries,
+      crypto: availableCryptoSeries,
+      indicator: availableIndicatorSeries,
+      stock: availableStockSeries,
+    }),
+    []
+  );
 
   return {
     getType,
@@ -157,16 +171,9 @@ export function useWorkbenchSeriesData({ dataContext, derivedData = {}, derivedS
     getRawData,
     getNormalizedData,
     getLastTime,
+    ensureLoaded,
     allAvailable,
-    // Re-export DS accessors for consumers that want to trigger loads explicitly in future
-    dataService: {
-      getPriceSeries,
-      getBtcPriceSeries,
-      getEthPriceSeries,
-      getMvrvSeries,
-      getMarketCapSeries,
-      getDominanceSeries,
-    },
+    dataService: dataServiceSeries,
   };
 }
 

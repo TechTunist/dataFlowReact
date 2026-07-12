@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useContext, useCallback, useMemo } from 'react';
+import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { createChart } from 'lightweight-charts';
 import { tokens } from '../theme';
 import { useTheme, Box, FormControl, InputLabel, Select, MenuItem, useMediaQuery } from '@mui/material';
@@ -6,7 +6,7 @@ import '../styling/bitcoinChart.css';
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
 import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
-import { DataContext } from '../DataContext';
+import { useChartData, useChartDataActions } from '../hooks/useChartData';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import ChartTooltip from './ChartTooltip';
 import ChartInfoSections from './ChartInfoSections';
@@ -19,7 +19,8 @@ const AltcoinSeasonIndexChart = ({ isDashboard = false }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const isMobile = useIsMobile();
-  const { altcoinSeasonTimeseriesData, fetchAltcoinSeasonTimeseriesData, btcData, fetchBtcData } = useContext(DataContext);
+  const { altcoinSeasonTimeseriesData, btcData } = useChartData();
+  const { fetchAltcoinSeasonTimeseriesData, fetchBtcData } = useChartDataActions();
   const [isInteractive, setIsInteractive] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(null);
   const [smaPeriod, setSmaPeriod] = useState('28d');

@@ -1,10 +1,9 @@
-import React, { useRef, useEffect, useState, useMemo, useCallback, useContext } from 'react';
+import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import { createChart } from 'lightweight-charts';
 import '../styling/bitcoinChart.css';
 import { tokens } from '../theme';
 import { useTheme } from '@mui/material';
 import useIsMobile from '../hooks/useIsMobile';
-import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import logger from '../utils/logger';
 import LastUpdated from '../hooks/LastUpdated';
@@ -32,6 +31,7 @@ import {
   ListSubheader,
 } from '@mui/material';
 
+import { useChartData, useChartDataActions } from '../hooks/useChartData';
 import {
   getAllMovingAverageOptions,
   getDailyMAs,
@@ -78,7 +78,8 @@ const FredSeriesChart = ({
   const theme = useTheme();
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
   const isMobile = useIsMobile();
-  const { fredSeriesData, fetchFredSeriesData } = useContext(DataContext);
+  const { fredSeriesData } = useChartData();
+  const { fetchFredSeriesData } = useChartDataActions();
 
   // Full power from the shared master list (daily/weekly tabs make the long list easy to use)
   const maIndicators = useMemo(() => getAllMovingAverageOptions(), []);

@@ -1,9 +1,8 @@
-import React, { useRef, useEffect, useState, useMemo, useCallback, useContext } from 'react';
+import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import { createChart } from 'lightweight-charts';
 import '../styling/bitcoinChart.css';
 import { useTheme, useMediaQuery } from '@mui/material';
 import { tokens } from '../theme';
-import { DataContext } from '../DataContext';
 import BitcoinFees from './BitcoinTransactionFees';
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
@@ -11,6 +10,7 @@ import { Box } from '@mui/material';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import ChartTooltip from './ChartTooltip';
 import ChartInfoSections from './ChartInfoSections';
+import { useChartData, useChartDataActions } from '../hooks/useChartData';
 
 const PiCycleTopChart = ({ isDashboard = false }) => {
     const chartContainerRef = useRef();
@@ -20,7 +20,8 @@ const PiCycleTopChart = ({ isDashboard = false }) => {
     const theme = useTheme();
     const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
     const isMobile = useIsMobile();
-    const { btcData, fetchBtcData } = useContext(DataContext);
+    const { btcData } = useChartData();
+    const { fetchBtcData } = useChartDataActions();
 
     const [scaleMode] = useState(1); // 1 for logarithmic, 0 for linear
     const [showMarkers, setShowMarkers] = useState(false);

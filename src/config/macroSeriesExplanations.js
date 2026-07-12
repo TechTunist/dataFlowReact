@@ -28,6 +28,11 @@ const macroSeriesExplanations = {
   IRLTLT01DEM156N: 'The German 10-Year government bond yield is a benchmark for euro-area long-term rates. It influences European borrowing costs and is compared with U.S. yields to assess transatlantic rate differentials and growth expectations.',
   SP500: 'The S&P 500 Index tracks 500 large U.S. companies and is the primary benchmark for American equities. It reflects corporate earnings expectations, monetary policy, and global risk sentiment. Long-term trends help frame business-cycle positioning.',
   USRECD: 'The NBER-based U.S. recession indicator marks official recession periods (shaded regions). Overlaying macro or asset data against recessions helps assess how indicators behaved in past downturns and whether current readings resemble historical stress periods.',
+  WALCL: 'Total assets on the Federal Reserve balance sheet (WALCL). Weekly data in millions of USD. Expansion (QE) injects system liquidity that historically supports risk assets including Bitcoin; contraction (QT) withdraws liquidity. Pair with BTC price in the Workbench to study liquidity cycles.',
+  PCEPILFE: 'Core PCE is the Federal Reserve\'s preferred inflation gauge, excluding food and energy. Markets reprice rate expectations when Core PCE surprises. Useful context for risk assets when inflation is sticky versus cooling.',
+  CPILFESL: 'Core CPI excludes food and energy from the consumer price basket. It is a widely watched companion to headline CPI and helps separate volatile commodity swings from underlying inflation pressure.',
+  MORTGAGE30US: 'The 30-year fixed mortgage rate is a real-economy financing cost that feeds housing demand, consumer cash flow, and risk appetite. Rising mortgage rates often tighten financial conditions even when equity markets are calm.',
+  DTWEXBGS: 'The Trade Weighted U.S. Dollar Index (Broad) measures the dollar against a basket of major trading partners. A strong dollar can pressure global liquidity and risk assets; a weaker dollar often coincides with easier financial conditions for crypto and emerging markets.',
 };
 
 export function getMacroSeriesExplanation(seriesId, fallback = '') {

@@ -1,18 +1,19 @@
-import React, { useEffect, useState, useContext, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import GaugeChart from 'react-gauge-chart';
 import { tokens } from '../theme';
 import { useTheme } from '@mui/material';
 import useIsMobile from '../hooks/useIsMobile';
-import { DataContext } from '../DataContext';
 import LastUpdated from '../hooks/LastUpdated';
 import BitcoinFees from './BitcoinTransactionFees';
 import ChartInfoSections from './ChartInfoSections';
+import { useChartData, useChartDataActions } from '../hooks/useChartData';
 
 function CryptoFearAndGreedIndex({ isDashboard }) {
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
     const isMobile = useIsMobile();
-    const { fetchLatestFearAndGreed, latestFearAndGreed, isLatestFearAndGreedFetched, latestFearAndGreedLastUpdated } = useContext(DataContext);
+    const { latestFearAndGreed, isLatestFearAndGreedFetched, latestFearAndGreedLastUpdated } = useChartData();
+    const { fetchLatestFearAndGreed } = useChartDataActions();
     const [isLoading, setIsLoading] = useState(!isLatestFearAndGreedFetched);
     const [error, setError] = useState(null);
 

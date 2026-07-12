@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext, useMemo, useCallback, memo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, memo } from 'react';
 import Plot from 'react-plotly.js';
 import { tokens } from "../theme";
 import { useTheme, useMediaQuery } from "@mui/material";
@@ -8,9 +8,9 @@ import BitcoinFees from './BitcoinTransactionFees';
 import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
 import ChartInfoSections from './ChartInfoSections';
 import useIsMobile from '../hooks/useIsMobile';
-import { DataContext } from '../DataContext';
 import { Box, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import { calculateRiskMetric } from '../utility/riskMetric';
+import { useChartData, useChartDataActions } from '../hooks/useChartData';
 
 const altcoins = [
   { label: 'Ethereum', value: 'ETH' },
@@ -51,7 +51,8 @@ const AssetRiskBandDuration = ({ isDashboard = false, riskData: propRiskData }) 
   const theme = useTheme();
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
   const isMobile = useIsMobile();
-  const { btcData: contextBtcData, fetchBtcData, altcoinData: contextAltcoinData, fetchAltcoinData } = useContext(DataContext);
+  const { btcData: contextBtcData, altcoinData: contextAltcoinData } = useChartData();
+  const { fetchBtcData, fetchAltcoinData } = useChartDataActions();
 
   // Memoize raw data for stable references (resilience to DataContext array/object churn)
   const btcData = useMemo(() => contextBtcData || [], [contextBtcData]);

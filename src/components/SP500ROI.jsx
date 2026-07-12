@@ -1,14 +1,14 @@
-import React, { useEffect, useState, useContext, useMemo, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import Plot from 'react-plotly.js';
 import { tokens } from "../theme";
 import { useTheme, Box, FormControl, InputLabel, Select, MenuItem, Checkbox, Button } from "@mui/material";
 import '../styling/bitcoinChart.css';
 import useIsMobile from '../hooks/useIsMobile';
-import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import LastUpdated from '../hooks/LastUpdated';
 import { useFavorites } from '../contexts/FavoritesContext';
 import ChartInfoSections from './ChartInfoSections';
+import { useChartData, useChartDataActions } from '../hooks/useChartData';
 
 const RECESSION_CRISIS_LABELS = {
     2000: 'Dot-com peak',
@@ -48,7 +48,8 @@ const SP500ROI = ({ isDashboard = false }) => {
     const theme = useTheme();
     const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
     const isMobile = useIsMobile();
-    const { fredSeriesData, fetchFredSeriesData } = useContext(DataContext);
+    const { fredSeriesData } = useChartData();
+    const { fetchFredSeriesData } = useChartDataActions();
     const { favoriteCharts, addFavoriteChart, removeFavoriteChart } = useFavorites();
     const [yearDataSets, setYearDataSets] = useState([]);
     const [visibilityMap, setVisibilityMap] = useState({});

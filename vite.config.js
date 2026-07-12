@@ -11,7 +11,7 @@ import react from '@vitejs/plugin-react';
  * - envPrefix supports both REACT_APP_ and VITE_ going forward.
  * - Default npm scripts remain CRA (`npm run build`, `npm start`) for stability. Parallel: `npm run build:vite`, `npm run dev:vite`.
  * - Other parallel agents (data-layer, workbench, polish): if you edit package.json, keep changes additive and leave default "build" + "start" alone. You can test Vite path post `npm install`.
- * - Vite migration in progress - default still CRA for stability. See PROFESSIONALIZATION_REMAINING.md and package.json "modernization" key.
+ * - Vite migration in progress - default still CRA for stability. See monorepo STATUS.md and package.json "modernization" key.
  * - Later: can flip default, update vercel buildCommand if needed, move to dist/, full TS, remove CRA.
  *
  * To use: after `npm install`, `npm run dev:vite` or `npm run build:vite`.

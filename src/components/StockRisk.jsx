@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useContext } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { createChart } from 'lightweight-charts';
 import '../styling/bitcoinChart.css';
 import { tokens } from "../theme";
@@ -7,7 +7,6 @@ import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
 import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
 import { Select, MenuItem, FormControl, InputLabel, Box } from '@mui/material';
-import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import {
   calculateStockRiskMetricByVersion,
@@ -16,6 +15,7 @@ import {
 import { stockLoadingMessage, stockRiskInsufficientHistoryMessage } from '../config/stocksConfig';
 import StockGroupSelect from './StockGroupSelect';
 import ChartInfoSections from './ChartInfoSections';
+import { useChartData, useChartDataActions } from '../hooks/useChartData';
 
 const STOCK_RISK_VERSION_STORAGE_KEY = 'stockRiskMetricVersion';
 
@@ -41,7 +41,8 @@ const StockRisk = ({ isDashboard = false }) => {
       return 'v1';
     }
   });
-  const { altcoinData, fetchAltcoinData, btcData, fetchBtcData, isAltcoinDataFetched } = useContext(DataContext);
+  const { altcoinData, btcData, isAltcoinDataFetched } = useChartData();
+  const { fetchAltcoinData, fetchBtcData } = useChartDataActions();
 
   const handleSelectChange = (event) => {
     setSelectedCoin(event.target.value);

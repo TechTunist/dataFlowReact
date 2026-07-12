@@ -9,7 +9,40 @@ import {
 } from './utility/cacheIntegrity';
 import { apiUrl } from './config/api';
 import logger from './utils/logger';
-import { initializeDataService, getBtcPriceSeries, getEthPriceSeries, getMvrvSeries, getMarketCapSeries, getDominanceSeries, formatRiskSeries } from './data'; // New data layer (Phase 1)
+import {
+  initializeDataService,
+  getBtcPriceSeries,
+  getEthPriceSeries,
+  getMvrvSeries,
+  getMarketCapSeries,
+  getDominanceSeries,
+  getAltcoinPriceSeries,
+  getFearAndGreedSeries,
+  getLatestFearAndGreed,
+  getDifferenceSeries,
+  getTotal2Series,
+  getTotal3Series,
+  getSp500DivUnrateSeries,
+  getAltcoinSeasonSeries,
+  getAltcoinSeasonTimeseriesSeries,
+  getMacroDataSeries,
+  getInflationSeries,
+  getInitialClaimsSeries,
+  getInterestSeries,
+  getUnemploymentSeries,
+  getFedBalanceSeries,
+  getTxCountSeries,
+  getTxCountCombinedSeries,
+  getTxMvrvSeries,
+  getTxMvrvRatioSeries,
+  getFloorEchoSeries,
+  getRiskSeries,
+  getFredSeries,
+  loadOnchainMetrics,
+  loadBtcYieldRecessionIndicator,
+  enrichTxMvrvDataset as enrichTxMvrvDatasetFromService,
+  RISK_METRIC_CACHE,
+} from './data'; // Data layer — fetch bodies delegate here
 import { waitForPreloadIfNeeded } from './utils/waitForPreloadIfNeeded'; // Phase 1: extracted preload guard helper
 import { getAuthHeaders } from './utils/clerkAuth';
 import { isPremiumCacheId } from './utils/premiumCache';
@@ -18,6 +51,13 @@ import { calendarTodayISO } from './utils/stockQuoteDate';
 import { effectiveDailyReferenceDate } from './utils/dailyReferenceDate';
 
 export const DataContext = createContext();
+
+/**
+ * Stable fetch/refresh actions only. Prefer this when a component only triggers loads
+ * and should not re-render when unrelated series data updates.
+ * Full useData() remains the primary API (data + actions, backward compatible).
+ */
+export const DataActionsContext = createContext({});
 
 /**
  * Centralized per-cacheId freshness policy.
@@ -370,42 +410,6 @@ const refreshData = async ({
   }
 };
 
-async function fetchAllPages(url) {
-  let results = [];
-  let nextUrl = url;
-  // Always attach auth for our data endpoints. This is essential for risk-metrics,
-  // onchain, address metrics etc. so fetches succeed and we can cache in IndexedDB
-  // instead of hammering the backend on every load.
-  const headers = await getAuthHeaders({ maxRetries: 1, delayMs: 250 });
-  while (nextUrl) {
-    try {
-      const response = await fetch(nextUrl, { headers, signal: AbortSignal.timeout(15000) });
-      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-      const data = await response.json();
-      // Handle both flat array and paginated responses
-      if (Array.isArray(data)) {
-        // Flat array response (e.g., /risk-metrics/)
-        results = results.concat(data);
-        nextUrl = null; // No pagination for flat arrays
-      } else if (data.results && Array.isArray(data.results)) {
-        // Paginated response (e.g., /onchain-metrics/)
-        const validResults = data.results.filter(item => item && typeof item === 'object');
-        results = results.concat(validResults);
-        nextUrl = data.next;
-      } else {
-        // console.error(`Invalid API response: unexpected structure for ${nextUrl}`, data);
-        throw new Error('Invalid API response structure');
-      }
-      // Log the final results for debugging
-      // console.debug(`Fetched ${results.length} items from ${url}`);
-    } catch (err) {
-      // console.error(`Error fetching page ${nextUrl}:`, err);
-      throw err;
-    }
-  }
-  return results;
-}
-
 export const DataProvider = ({ children }) => {
   const [preloadComplete, setPreloadComplete] = useState(false);
   const [btcData, setBtcData] = useState([]);
@@ -631,24 +635,7 @@ export const DataProvider = ({ children }) => {
 
   const fetchDifferenceData = useCallback(async () => {
     if (isDifferenceDataFetched) return;
-    // preloadComplete guard removed, differenceData is now demand-loaded only (Phase 2 final trim)
-    await fetchWithCache({
-      cacheId: 'differenceData',
-      apiUrl: apiUrl('/api/total/difference/'),
-      formatData: (data) =>
-        data
-          .map((item) => {
-            if (!item.time || typeof item.time !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(item.time) || isNaN(parseFloat(item.value))) {
-              logger.warn('Invalid differenceData item:', item);
-              return null;
-            }
-            return {
-              time: item.time,
-              value: parseFloat(item.value) + 100,
-            };
-          })
-          .filter((item) => item !== null)
-          .sort((a, b) => new Date(a.time) - new Date(b.time)),
+    await getDifferenceSeries({
       setData: setDifferenceData,
       setLastUpdated: setDifferenceLastUpdated,
       setIsFetched: setIsDifferenceDataFetched,
@@ -667,20 +654,7 @@ export const DataProvider = ({ children }) => {
 
   const fetchTotal2Data = useCallback(async () => {
     if (isTotal2DataFetched) return;
-    // preloadComplete guard removed, total2Data is now demand-loaded only (Phase 2 final trim)
-    await fetchWithCache({
-      cacheId: 'total2Data',
-      apiUrl: apiUrl('/api/total2/'),
-      formatData: (data) => {
-        const cutoffDate = new Date('2014-06-18');
-        return data
-          .filter(item => new Date(item.date) >= cutoffDate)
-          .map(item => ({
-            time: item.date,
-            value: parseFloat(item.total2)
-          }))
-          .sort((a, b) => new Date(a.time) - new Date(b.time));
-      },
+    await getTotal2Series({
       setData: setTotal2Data,
       setLastUpdated: setTotal2LastUpdated,
       setIsFetched: setIsTotal2DataFetched,
@@ -699,20 +673,7 @@ export const DataProvider = ({ children }) => {
 
   const fetchTotal3Data = useCallback(async () => {
     if (isTotal3DataFetched) return;
-    // preloadComplete guard removed, total3Data is now demand-loaded only (Phase 2 final trim)
-    await fetchWithCache({
-      cacheId: 'total3Data',
-      apiUrl: apiUrl('/api/total3/'),
-      formatData: (data) => {
-        const cutoffDate = new Date('2014-06-21');
-        return data
-          .filter(item => new Date(item.date) >= cutoffDate)
-          .map(item => ({
-            time: item.date,
-            value: parseFloat(item.total3)
-          }))
-          .sort((a, b) => new Date(a.time) - new Date(b.time));
-      },
+    await getTotal3Series({
       setData: setTotal3Data,
       setLastUpdated: setTotal3LastUpdated,
       setIsFetched: setIsTotal3DataFetched,
@@ -729,19 +690,9 @@ export const DataProvider = ({ children }) => {
     });
   }, [fetchTotal3Data]);
 
-  // SP500DivUnrate (demand-loaded; uses central fetchWithCache so it gets IDB + auth + freshness)
   const fetchSp500DivUnrateData = useCallback(async () => {
     if (isSp500DivUnrateDataFetched) return;
-    await fetchWithCache({
-      cacheId: 'sp500DivUnrateData',
-      apiUrl: apiUrl('/api/sp500-div-unrate-squared/'),
-      formatData: (data) =>
-        data
-          .map((item) => ({
-            time: item.time,
-            value: parseFloat(item.value),
-          }))
-          .sort((a, b) => new Date(a.time) - new Date(b.time)),
+    await getSp500DivUnrateSeries({
       setData: setSp500DivUnrateData,
       setLastUpdated: setSp500DivUnrateLastUpdated,
       setIsFetched: setIsSp500DivUnrateDataFetched,
@@ -760,19 +711,7 @@ export const DataProvider = ({ children }) => {
 
     const fetchAltcoinSeasonTimeseriesData = useCallback(async () => {
       if (isAltcoinSeasonTimeseriesDataFetched) return;
-      // preloadComplete guard removed, this dataset is now demand-loaded only
-      await fetchWithCache({
-        cacheId: 'altcoinSeasonTimeseriesData',
-        apiUrl: apiUrl('/api/altcoin-season-index-timeseries/'),
-        formatData: (data) => data.map(item => ({
-          index: parseFloat(item.index),
-          start_date: item.start_date,
-          end_date: item.end_date,
-          altcoin_count: parseInt(item.altcoin_count, 10),
-          altcoins_outperforming: parseInt(item.altcoins_outperforming, 10),
-          season: item.season,
-          time: item.end_date,
-        })).sort((a, b) => new Date(a.time) - new Date(b.time)),
+      await getAltcoinSeasonTimeseriesSeries({
         setData: setAltcoinSeasonTimeseriesData,
         setLastUpdated: setAltcoinSeasonTimeseriesLastUpdated,
         setIsFetched: setIsAltcoinSeasonTimeseriesDataFetched,
@@ -816,27 +755,15 @@ export const DataProvider = ({ children }) => {
   }, [fetchBtcData]);
 
   const fetchLatestFearAndGreed = useCallback(async () => {
-    // Removed isLatestFearAndGreedFetched guard so that we can re-fetch the latest (volatile) data
-    // when needed (e.g. daily updates). fetchWithCache will still short-circuit on fresh cache (1h TTL).
-    // This fixes the widget showing stale "last calculated" value.
-
-    // Phase 1: Use shared helper to avoid duplicate work during preload
+    // Volatile single-point: allow re-fetch; fetchWithCache still respects 1h TTL.
     if (await waitForPreloadIfNeeded(preloadComplete, () => isLatestFearAndGreedFetched)) {
       return;
     }
-    await fetchWithCache({
-      cacheId: 'latestFearAndGreed',
-      apiUrl: apiUrl('/api/fear-and-greed-binary-latest/'),
-      formatData: (data) => ({
-        value: parseInt(data.value),
-        value_classification: data.value_classification,
-        timestamp: data.timestamp,
-        time: new Date(data.timestamp * 1000).toISOString().split('T')[0],
-      }),
+    await getLatestFearAndGreed({
       setData: setLatestFearAndGreed,
       setLastUpdated: setLatestFearAndGreedLastUpdated,
       setIsFetched: setIsLatestFearAndGreedFetched,
-      useDateCheck: true,
+      useDateCheck: false,
     });
   }, [isLatestFearAndGreedFetched, preloadComplete]);
 
@@ -851,46 +778,16 @@ export const DataProvider = ({ children }) => {
 
   const fetchOnchainMetricsData = useCallback(async () => {
     if (isOnchainMetricsDataFetched) return;
-    const cacheId = 'onchainMetricsData';
-    const currentDate = new Date().toISOString().split('T')[0];
-    const currentTimestamp = Date.now();
+    setIsOnchainMetricsDataFetched(true);
+    setOnchainFetchError(null);
 
-    try {
-      setIsOnchainMetricsDataFetched(true);
-      setOnchainFetchError(null);
-
-      const cached = await getCachedData(cacheId);
-      if (cached && cached.data.length > 0) {
-        const sortedCachedData = [...cached.data].sort((a, b) => new Date(a.time) - new Date(b.time));
-        const latestCachedDate = sortedCachedData[sortedCachedData.length - 1].time;
-        if (latestCachedDate >= currentDate) {
-          setOnchainMetricsData(sortedCachedData);
-          setOnchainMetricsLastUpdated(latestCachedDate);
-          return;
-        }
-      }
-
-      const onchainUrl = apiUrl(`/api/onchain-metrics/?metric=PriceUSD&metric=IssContUSD&start_time=2010-01-01`);
-      const allData = await fetchAllPages(onchainUrl);
-
-      if (!allData || allData.length === 0) {
-        throw new Error('No onchain metrics data returned');
-      }
-
-      const formattedData = allData.map((item) => ({
-        time: item.time,
-        metric: item.metric,
-        value: item.value !== null ? parseFloat(item.value) : null,
-        asset: item.asset,
-      }));
-
-      setOnchainMetricsData(formattedData);
-      setOnchainMetricsLastUpdated(formattedData[formattedData.length - 1].time);
-      await cacheData(cacheId, formattedData, currentTimestamp);
-    } catch (error) {
-      // console.error('Error fetching onchain metrics:', error);
+    const result = await loadOnchainMetrics();
+    if (result.ok) {
+      setOnchainMetricsData(result.data);
+      setOnchainMetricsLastUpdated(result.lastUpdated);
+    } else {
       setIsOnchainMetricsDataFetched(false);
-      setOnchainFetchError(error.message);
+      setOnchainFetchError(result.error);
     }
   }, [isOnchainMetricsDataFetched]);
 
@@ -901,22 +798,13 @@ export const DataProvider = ({ children }) => {
       setIsOnchainMetricsDataFetched(false);
       await fetchOnchainMetricsData();
     } catch (error) {
-      // console.error('Error refreshing onchain metrics:', error);
       setOnchainFetchError(error.message);
     }
   }, [fetchOnchainMetricsData]);
 
   const fetchFedBalanceData = useCallback(async () => {
     if (isFedBalanceDataFetched) return;
-    // preloadComplete guard removed, this dataset is now demand-loaded only
-    await fetchWithCache({
-      cacheId: 'fedBalanceData',
-      apiUrl: apiUrl('/api/fed-balance/'),
-      formatData: (data) =>
-        data.map((item) => ({
-          time: item.observation_date,
-          value: parseFloat(item.value) / 1000000,
-        })),
+    await getFedBalanceSeries({
       setData: setFedBalanceData,
       setLastUpdated: setFedLastUpdated,
       setIsFetched: setIsFedBalanceDataFetched,
@@ -1014,28 +902,20 @@ const fetchDominanceData = useCallback(async () => {
   }, [fetchEthData]);
 
   const fetchFearAndGreedData = useCallback(async () => {
-    if (isFearAndGreedDataFetched) return;
+    // Allow retry when a prior attempt left the series empty (e.g. race / failed preload).
+    if (isFearAndGreedDataFetched && fearAndGreedData.length > 0) return;
 
-    // Phase 1: Use shared helper to avoid duplicate work during preload
-    if (await waitForPreloadIfNeeded(preloadComplete, () => isFearAndGreedDataFetched)) {
+    if (await waitForPreloadIfNeeded(preloadComplete, () => isFearAndGreedDataFetched && fearAndGreedData.length > 0)) {
       return;
     }
-    await fetchWithCache({
-      cacheId: 'fearAndGreedData',
-      apiUrl: apiUrl('/api/fear-and-greed-binary-json/'),
-      formatData: (data) =>
-        data.map(item => ({
-          value: item.value.toString(),
-          value_classification: item.category,
-          timestamp: item.date.toString(),
-          time: new Date(item.date * 1000).toISOString().split('T')[0],
-        })),
+    await getFearAndGreedSeries({
       setData: setFearAndGreedData,
       setLastUpdated: setFearAndGreedLastUpdated,
       setIsFetched: setIsFearAndGreedDataFetched,
-      useDateCheck: true,
+      // F&G often plateaus; match CACHE_CONFIG (useDateCheck: false).
+      useDateCheck: false,
     });
-  }, [isFearAndGreedDataFetched, preloadComplete]);
+  }, [isFearAndGreedDataFetched, fearAndGreedData.length, preloadComplete]);
 
   const refreshFearAndGreedData = useCallback(async () => {
     await refreshData({
@@ -1074,11 +954,7 @@ const fetchDominanceData = useCallback(async () => {
 
   const fetchMacroData = useCallback(async () => {
     if (isMacroDataFetched) return;
-    // preloadComplete guard removed, macroData is now demand-loaded only (Phase 2)
-    await fetchWithCache({
-      cacheId: 'macroData',
-      apiUrl: apiUrl('/api/combined-macro-data/'),
-      formatData: (data) => data,
+    await getMacroDataSeries({
       setData: setMacroData,
       setLastUpdated: setMacroLastUpdated,
       setIsFetched: setIsMacroDataFetched,
@@ -1097,14 +973,7 @@ const fetchDominanceData = useCallback(async () => {
 
   const fetchInflationData = useCallback(async () => {
     if (isInflationDataFetched) return;
-    // preloadComplete guard removed, this dataset is now demand-loaded only
-    await fetchWithCache({
-      cacheId: 'inflationData',
-      apiUrl: apiUrl('/api/us-inflation/'),
-      formatData: (data) => {
-        const mapped = data.map((item) => ({ time: item.date, value: parseFloat(item.value) }));
-        return [...new Map(mapped.map(item => [item.time, item])).values()];
-      },
+    await getInflationSeries({
       setData: setInflationData,
       setLastUpdated: setInflationLastUpdated,
       setIsFetched: setIsInflationDataFetched,
@@ -1123,14 +992,7 @@ const fetchDominanceData = useCallback(async () => {
 
   const fetchInitialClaimsData = useCallback(async () => {
     if (isInitialClaimsDataFetched) return;
-    // preloadComplete guard removed, this dataset is now demand-loaded only
-    await fetchWithCache({
-      cacheId: 'initialClaimsData',
-      apiUrl: apiUrl('/api/initial-claims/'),
-      formatData: (data) => {
-        const mapped = data.map((item) => ({ time: item.date, value: parseInt(item.value, 10) }));
-        return [...new Map(mapped.map(item => [item.time, item])).values()];
-      },
+    await getInitialClaimsSeries({
       setData: setInitialClaimsData,
       setLastUpdated: setInitialClaimsLastUpdated,
       setIsFetched: setIsInitialClaimsDataFetched,
@@ -1149,14 +1011,7 @@ const fetchDominanceData = useCallback(async () => {
 
   const fetchInterestData = useCallback(async () => {
     if (isInterestDataFetched) return;
-    // preloadComplete guard removed, this dataset is now demand-loaded only
-    await fetchWithCache({
-      cacheId: 'interestData',
-      apiUrl: apiUrl('/api/us-interest/'),
-      formatData: (data) => {
-        const mapped = data.map((item) => ({ time: item.date, value: parseFloat(item.value) }));
-        return [...new Map(mapped.map(item => [item.time, item])).values()];
-      },
+    await getInterestSeries({
       setData: setInterestData,
       setLastUpdated: setInterestLastUpdated,
       setIsFetched: setIsInterestDataFetched,
@@ -1175,14 +1030,7 @@ const fetchDominanceData = useCallback(async () => {
 
   const fetchUnemploymentData = useCallback(async () => {
     if (isUnemploymentDataFetched) return;
-    // preloadComplete guard removed, this dataset is now demand-loaded only
-    await fetchWithCache({
-      cacheId: 'unemploymentData',
-      apiUrl: apiUrl('/api/us-unemployment/'),
-      formatData: (data) => {
-        const mapped = data.map((item) => ({ time: item.date, value: parseFloat(item.value) }));
-        return [...new Map(mapped.map(item => [item.time, item])).values()];
-      },
+    await getUnemploymentSeries({
       setData: setUnemploymentData,
       setLastUpdated: setUnemploymentLastUpdated,
       setIsFetched: setIsUnemploymentDataFetched,
@@ -1202,20 +1050,10 @@ const fetchDominanceData = useCallback(async () => {
   const fetchTxCountData = useCallback(async () => {
     if (isTxCountDataFetched) return;
 
-    // Phase 1: Use shared helper to avoid duplicate work during preload
     if (await waitForPreloadIfNeeded(preloadComplete, () => isTxCountDataFetched)) {
       return;
     }
-    await fetchWithCache({
-      cacheId: 'txCountData',
-      apiUrl: apiUrl('/api/btc-tx-count/'),
-      formatData: (data) =>
-        data
-          .map((item) => ({
-            time: item.time.split('T')[0],
-            value: parseFloat(item.tx_count),
-          }))
-          .sort((a, b) => new Date(a.time) - new Date(b.time)),
+    await getTxCountSeries({
       setData: setTxCountData,
       setLastUpdated: setTxCountLastUpdated,
       setIsFetched: setIsTxCountDataFetched,
@@ -1234,30 +1072,7 @@ const fetchDominanceData = useCallback(async () => {
 
   const fetchTxCountCombinedData = useCallback(async () => {
     if (isTxCountCombinedDataFetched) return;
-    // preloadComplete guard removed, this dataset is now demand-loaded only
-    await fetchWithCache({
-      cacheId: 'txCountCombinedData',
-      apiUrl: apiUrl('/api/tx-macro/'),
-      formatData: (data) => {
-        let lastInflation = null;
-        let lastUnemployment = null;
-        let lastFedFunds = null;
-        return data
-          .map((item) => {
-            if (item.inflation_rate !== null) lastInflation = parseFloat(item.inflation_rate);
-            if (item.unemployment_rate !== null) lastUnemployment = parseFloat(item.unemployment_rate);
-            if (item.interest_rate !== null) lastFedFunds = parseFloat(item.interest_rate);
-            return {
-              time: item.date.split('T')[0],
-              tx_count: item.tx_count ? parseFloat(item.tx_count) : null,
-              price: item.price ? parseFloat(item.price) : null,
-              inflation_rate: lastInflation,
-              unemployment_rate: lastUnemployment,
-              fed_funds_rate: lastFedFunds,
-            };
-          })
-          .sort((a, b) => new Date(a.time) - new Date(b.time));
-      },
+    await getTxCountCombinedSeries({
       setData: setTxCountCombinedData,
       setLastUpdated: setTxCountCombinedLastUpdated,
       setIsFetched: setIsTxCountCombinedDataFetched,
@@ -1274,27 +1089,7 @@ const fetchDominanceData = useCallback(async () => {
     });
   }, [fetchTxCountCombinedData]);
 
-  const enrichTxMvrvDataset = useCallback((data) => {
-    if (!Array.isArray(data)) return data;
-    return data.map((item) => {
-      const mvrv = item.mvrv;
-      const marketCap = item.market_cap;
-      let realizedCap = item.realized_cap;
-      if (
-        (realizedCap === null || realizedCap === undefined || Number.isNaN(realizedCap)) &&
-        marketCap !== null &&
-        marketCap !== undefined &&
-        !Number.isNaN(marketCap) &&
-        mvrv !== null &&
-        mvrv !== undefined &&
-        !Number.isNaN(mvrv) &&
-        mvrv !== 0
-      ) {
-        realizedCap = marketCap / mvrv;
-      }
-      return realizedCap !== item.realized_cap ? { ...item, realized_cap: realizedCap } : item;
-    });
-  }, []);
+  const enrichTxMvrvDataset = useCallback((data) => enrichTxMvrvDatasetFromService(data), []);
 
   const setEnrichedTxMvrvData = useCallback((data) => {
     setTxMvrvData(enrichTxMvrvDataset(data));
@@ -1302,30 +1097,14 @@ const fetchDominanceData = useCallback(async () => {
 
   const fetchTxMvrvData = useCallback(async () => {
     if (isTxMvrvDataFetched) return;
-    // preloadComplete guard removed, this dataset is now demand-loaded only
-    await fetchWithCache({
-      // v2: cache bust after realized_cap derivation fix (CapRealUSD no longer updated in DB)
-      cacheId: 'txMvrvData_v2',
-      apiUrl: apiUrl('/api/tx-mvrv/'),
-      formatData: (data) =>
-        enrichTxMvrvDataset(
-          data
-            .filter(item => item.date && item.mvrv !== null && !isNaN(parseFloat(item.mvrv)))
-            .map((item) => ({
-              time: item.date,
-              tx_count: parseFloat(item.tx_count),
-              mvrv: parseFloat(item.mvrv),
-              market_cap: item.market_cap !== null ? parseFloat(item.market_cap) : null,
-              realized_cap: item.realized_cap !== null ? parseFloat(item.realized_cap) : null,
-            }))
-            .sort((a, b) => new Date(a.time) - new Date(b.time))
-        ),
+    // cacheId txMvrvData_v2: bust after realized_cap derivation fix
+    await getTxMvrvSeries({
       setData: setEnrichedTxMvrvData,
       setLastUpdated: setTxMvrvLastUpdated,
       setIsFetched: setIsTxMvrvDataFetched,
       useDateCheck: true,
     });
-  }, [isTxMvrvDataFetched, enrichTxMvrvDataset, setEnrichedTxMvrvData]);
+  }, [isTxMvrvDataFetched, setEnrichedTxMvrvData]);
 
   const refreshTxMvrvData = useCallback(async () => {
     await refreshData({
@@ -1340,24 +1119,7 @@ const fetchDominanceData = useCallback(async () => {
     if (isTxMvrvRatioDataFetched[smoothing]) return;
 
     setIsTxMvrvRatioDataFetched((prev) => ({ ...prev, [smoothing]: true }));
-    const success = await fetchWithCache({
-      cacheId: `txMvrvRatioData_v2_${smoothing}`,
-      apiUrl: apiUrl(`/api/tx-mvrv-ratio/?smoothing=${smoothing}`),
-      formatData: (data) => {
-        const series = (data.series || [])
-          .map((item) => ({
-            time: item.time,
-            value: parseFloat(item.value),
-          }))
-          .filter((item) => !isNaN(item.value))
-          .sort((a, b) => new Date(a.time) - new Date(b.time));
-        return {
-          smoothing: data.smoothing,
-          horizontalThreshold: parseFloat(data.horizontal_threshold),
-          time: data.last_updated || series[series.length - 1]?.time || null,
-          series,
-        };
-      },
+    const success = await getTxMvrvRatioSeries(smoothing, {
       setData: (formattedData) =>
         setTxMvrvRatioDataBySmoothing((prev) => ({ ...prev, [smoothing]: formattedData })),
       setLastUpdated: (time) =>
@@ -1389,32 +1151,7 @@ const fetchDominanceData = useCallback(async () => {
   const fetchFloorEchoData = useCallback(async () => {
     if (isFloorEchoDataFetched) return;
 
-    const success = await fetchWithCache({
-      cacheId: 'floorEchoData',
-      apiUrl: apiUrl('/api/floor-echo/'),
-      formatData: (data) => {
-        const series = (data.series || [])
-          .map((item) => ({
-            time: item.time,
-            fei: parseFloat(item.fei),
-            btcPrice: item.btc_price != null ? parseFloat(item.btc_price) : null,
-            capitulation: item.capitulation != null ? parseFloat(item.capitulation) : null,
-            drawdown: item.drawdown != null ? parseFloat(item.drawdown) : null,
-            dampening: item.dampening != null ? parseFloat(item.dampening) : null,
-            inFloorZone: Boolean(item.in_floor_zone),
-            nearHistoricFloor: Boolean(item.near_historic_floor),
-          }))
-          .filter((item) => !Number.isNaN(item.fei))
-          .sort((a, b) => new Date(a.time) - new Date(b.time));
-
-        return {
-          formulaVersion: data.formula_version,
-          floorBand: data.floor_band != null ? parseFloat(data.floor_band) : null,
-          echoBand: data.echo_band != null ? parseFloat(data.echo_band) : null,
-          time: data.last_updated || series[series.length - 1]?.time || null,
-          series,
-        };
-      },
+    const success = await getFloorEchoSeries({
       setData: setFloorEchoData,
       setLastUpdated: setFloorEchoLastUpdated,
       setIsFetched: setIsFloorEchoDataFetched,
@@ -1437,26 +1174,11 @@ const fetchDominanceData = useCallback(async () => {
   const fetchAltcoinData = useCallback(async (coin) => {
     if (isAltcoinDataFetched[coin]) return;
 
-    // Phase 1: Use shared helper to avoid duplicate work during preload
     if (await waitForPreloadIfNeeded(preloadComplete, () => isAltcoinDataFetched[coin])) {
       return;
     }
     setIsAltcoinDataFetched((prev) => ({ ...prev, [coin]: true }));
-    const success = await fetchWithCache({
-      cacheId: `altcoinData_${coin}`,
-      apiUrl: apiUrl(`/api/${coin.toLowerCase()}/price/`),
-      formatData: (data) =>
-        data
-          .filter(
-            (item) =>
-              item.close != null &&
-              !isNaN(parseFloat(item.close)) &&
-              parseFloat(item.close) > 0
-          )
-          .map((item) => ({
-            time: item.date,
-            value: parseFloat(item.close),
-          })),
+    const success = await getAltcoinPriceSeries(coin, {
       setData: (data) => setAltcoinData((prev) => ({ ...prev, [coin]: data })),
       setLastUpdated: (time) =>
         setAltcoinLastUpdated((prev) => ({ ...prev, [coin]: time })),
@@ -1481,19 +1203,7 @@ const fetchDominanceData = useCallback(async () => {
 
   const fetchAltcoinSeasonData = useCallback(async () => {
     if (isAltcoinSeasonDataFetched) return;
-    // preloadComplete guard removed, altcoinSeasonData is now demand-loaded only (Phase 2)
-    await fetchWithCache({
-      cacheId: 'altcoinSeasonData',
-      apiUrl: apiUrl('/api/altcoin-season-index/'),
-      formatData: (data) => ({
-        index: parseFloat(data.index),
-        start_date: data.start_date,
-        end_date: data.end_date,
-        altcoin_count: parseInt(data.altcoin_count, 10),
-        altcoins_outperforming: parseInt(data.altcoins_outperforming, 10),
-        season: data.season,
-        time: data.end_date,
-      }),
+    await getAltcoinSeasonSeries({
       setData: setAltcoinSeasonData,
       setLastUpdated: setAltcoinSeasonLastUpdated,
       setIsFetched: setIsAltcoinSeasonDataFetched,
@@ -1513,40 +1223,14 @@ const fetchDominanceData = useCallback(async () => {
   const fetchFredSeriesData = useCallback(async (seriesId) => {
     if (fredSeriesData[seriesId]?.length > 0) return;
 
-    // Phase 1: Use shared helper to avoid duplicate work during preload
     if (await waitForPreloadIfNeeded(preloadComplete, () => fredSeriesData[seriesId]?.length > 0)) {
       return;
     }
-    const success = await fetchWithCache({
-      cacheId: `fredSeriesData_${seriesId}`,
-      apiUrl: apiUrl(`/api/series/${seriesId}/observations/`),
-      formatData: (data) => {
-        let lastValidValue = null;
-        return data
-          .map((item) => {
-            const value =
-              item.value != null && !isNaN(parseFloat(item.value))
-                ? parseFloat(item.value)
-                : lastValidValue;
-            if (value !== null) {
-              lastValidValue = value;
-            }
-            return {
-              time: item.date,
-              value,
-            };
-          })
-          .filter((item) => item.value !== null);
-      },
+    await getFredSeries(seriesId, {
       setData: (data) => setFredSeriesData((prev) => ({ ...prev, [seriesId]: data })),
       setLastUpdated: () => {},
       setIsFetched: () => {},
-      useDateCheck: false,
-      cacheDuration: 7 * 24 * 60 * 60 * 1000,
     });
-    if (!success) {
-      // console.error(`Failed to fetch series ${seriesId}`);
-    }
   }, [fredSeriesData, preloadComplete]);
 
   const refreshFredSeriesData = useCallback(async (seriesId) => {
@@ -1562,104 +1246,15 @@ const fetchDominanceData = useCallback(async () => {
     if (indicatorId !== 'btc-yield-recession') return;
     if (isIndicatorDataFetched[indicatorId]) return;
 
-    // Phase 1: Use shared helper to avoid duplicate work during preload
     if (await waitForPreloadIfNeeded(preloadComplete, () => isIndicatorDataFetched[indicatorId])) {
       return;
     }
 
     setIsIndicatorDataFetched((prev) => ({ ...prev, [indicatorId]: true }));
-    const cacheId = 'indicatorData_btc-yield-recession';
-    const currentDate = new Date().toISOString().split('T')[0];
-    const currentTimestamp = Date.now();
-
-    if (typeof indexedDB !== 'undefined') {
-      try {
-        const cached = await getCachedData(cacheId);
-        if (cached && cached.data.length > 0) {
-          const { data: cachedData } = cached;
-          const latestCachedDate = cachedData[cachedData.length - 1].date;
-          if (latestCachedDate >= currentDate) {
-            setIndicatorData((prev) => ({ ...prev, [indicatorId]: cachedData }));
-            setIsIndicatorDataFetched((prev) => ({ ...prev, [indicatorId]: true }));
-            return;
-          }
-        }
-      } catch (error) {
-        // console.error('Error accessing IndexedDB for indicator data:', error);
-      }
-    }
-
-    try {
-      // Attach auth to these direct sub-fetches too (indicator is derived but hits our API).
-      // Prevents 401s that would skip the cacheData at the end of this path.
-      const indHeaders = await getAuthHeaders({ maxRetries: 1, delayMs: 200 });
-      const fetchOpts = { headers: indHeaders };
-
-      const btcResponse = await fetch(apiUrl('/api/btc/price/'), fetchOpts);
-      const btcData = await btcResponse.json();
-      const t10y2yResponse = await fetch(apiUrl('/api/series/T10Y2Y/observations/'), fetchOpts);
-      const t10y2yData = await t10y2yResponse.json();
-      const usrecdResponse = await fetch(apiUrl('/api/series/USRECD/observations/'), fetchOpts);
-      let usrecdData = await usrecdResponse.json();
-      const fedFundsResponse = await fetch(apiUrl('/api/us-interest/'), fetchOpts);
-      const fedFundsData = await fedFundsResponse.json();
-      const m2Response = await fetch(apiUrl('/api/series/M2SL/observations/'), fetchOpts);
-      const m2Data = await m2Response.json();
-
-      const startDate = '2011-08-19';
-      const endDate = currentDate;
-      const dateRange = [];
-      let currentDateObj = new Date(startDate);
-      while (currentDateObj <= new Date(endDate)) {
-        dateRange.push(currentDateObj.toISOString().split('T')[0]);
-        currentDateObj.setDate(currentDateObj.getDate() + 1);
-      }
-
-      const btcMap = new Map(btcData.map((d) => [d.date, parseFloat(d.close)]));
-      const t10y2yMap = new Map(t10y2yData.map((d) => [d.date, parseFloat(d.value)]));
-      const usrecdMap = new Map(usrecdData.map((d) => [d.date, parseInt(d.value)]));
-      const fedFundsMap = new Map(fedFundsData.map((d) => [d.date, parseFloat(d.value)]));
-      const m2Map = new Map(m2Data.map((d) => [d.date, parseFloat(d.value)]));
-
-      const m2GrowthMap = new Map();
-      dateRange.forEach((date) => {
-        const dateObj = new Date(date);
-        const oneYearAgo = new Date(dateObj);
-        oneYearAgo.setFullYear(dateObj.getFullYear() - 1);
-        const oneYearAgoDate = oneYearAgo.toISOString().split('T')[0];
-        const currentM2 = m2Map.get(date) || m2Map.get([...m2Map.keys()].reverse().find((d) => d < date));
-        const pastM2 =
-          m2Map.get(oneYearAgoDate) || m2Map.get([...m2Map.keys()].reverse().find((d) => d < oneYearAgoDate));
-        if (currentM2 && pastM2) {
-          const growth = ((currentM2 - pastM2) / pastM2) * 100;
-          m2GrowthMap.set(date, growth);
-        }
-      });
-
-      usrecdData = dateRange.map((date) => {
-        const value = usrecdMap.get(date) || usrecdMap.get([...usrecdMap.keys()].reverse().find((d) => d < date)) || 0;
-        return { date, value };
-      });
-      usrecdMap.clear();
-      usrecdData.forEach((d) => usrecdMap.set(d.date, d.value));
-
-      const combinedData = dateRange
-        .map((date) => ({
-          date,
-          btc: btcMap.get(date) || btcMap.get([...btcMap.keys()].reverse().find((d) => d < date)),
-          t10y2y: t10y2yMap.get(date) || t10y2yMap.get([...t10y2yMap.keys()].reverse().find((d) => d < date)),
-          fedFunds: fedFundsMap.get(date) || fedFundsMap.get([...fedFundsMap.keys()].reverse().find((d) => d < date)),
-          m2Growth: m2GrowthMap.get(date) || m2GrowthMap.get([...m2GrowthMap.keys()].reverse().find((d) => d < date)),
-          usrecd: usrecdMap.get(date) || 0,
-        }))
-        .filter((d) => d.btc !== undefined && d.t10y2y !== undefined && d.fedFunds !== undefined && d.m2Growth !== undefined);
-
-      setIndicatorData((prev) => ({ ...prev, [indicatorId]: combinedData }));
-      if (typeof indexedDB !== 'undefined' && combinedData.length > 0) {
-        await cacheData(cacheId, combinedData, Date.now());
-      }
-    } catch (error) {
-      // console.error('Error fetching indicator data:', error);
+    const result = await loadBtcYieldRecessionIndicator();
+    if (result.ok) {
+      setIndicatorData((prev) => ({ ...prev, [indicatorId]: result.data }));
+    } else {
       setIsIndicatorDataFetched((prev) => ({ ...prev, [indicatorId]: false }));
     }
   }, [isIndicatorDataFetched, preloadComplete]);
@@ -1680,19 +1275,17 @@ const fetchDominanceData = useCallback(async () => {
     if (isMvrvRiskDataFetched && isPuellRiskDataFetched && isMinerCapThermoCapRiskDataFetched && isFeeRiskDataFetched && isSoplRiskDataFetched) return;
 
     const riskMetricDefs = [
-      { metric: 'mvrv_zscore', cacheId: 'mvrvRiskData', setData: setMvrvRiskData, setIsFetched: setIsMvrvRiskDataFetched, setLastUpdated: setMvrvRiskLastUpdated },
-      { metric: 'puell_multiple', cacheId: 'puellRiskData', setData: setPuellRiskData, setIsFetched: setIsPuellRiskDataFetched, setLastUpdated: setPuellRiskLastUpdated },
-      { metric: 'miner_cap_thermo', cacheId: 'minerCapThermoCapRiskData', setData: setMinerCapThermoCapRiskData, setIsFetched: setIsMinerCapThermoCapRiskDataFetched, setLastUpdated: setMinerCapThermoCapRiskLastUpdated },
-      { metric: 'fee_risk', cacheId: 'feeRiskData', setData: setFeeRiskData, setIsFetched: setIsFeeRiskDataFetched, setLastUpdated: setFeeRiskLastUpdated },
-      { metric: 'sopl_risk', cacheId: 'soplRiskData', setData: setSoplRiskData, setIsFetched: setIsSoplRiskDataFetched, setLastUpdated: setSoplRiskLastUpdated },
+      { metric: 'mvrv_zscore', setData: setMvrvRiskData, setIsFetched: setIsMvrvRiskDataFetched, setLastUpdated: setMvrvRiskLastUpdated },
+      { metric: 'puell_multiple', setData: setPuellRiskData, setIsFetched: setIsPuellRiskDataFetched, setLastUpdated: setPuellRiskLastUpdated },
+      { metric: 'miner_cap_thermo', setData: setMinerCapThermoCapRiskData, setIsFetched: setIsMinerCapThermoCapRiskDataFetched, setLastUpdated: setMinerCapThermoCapRiskLastUpdated },
+      { metric: 'fee_risk', setData: setFeeRiskData, setIsFetched: setIsFeeRiskDataFetched, setLastUpdated: setFeeRiskLastUpdated },
+      { metric: 'sopl_risk', setData: setSoplRiskData, setIsFetched: setIsSoplRiskDataFetched, setLastUpdated: setSoplRiskLastUpdated },
     ];
 
     await Promise.all(
-      riskMetricDefs.map(({ metric, cacheId, setData, setIsFetched, setLastUpdated }) =>
-        fetchWithCache({
-          cacheId,
-          apiUrl: apiUrl(`/api/risk-metrics/?metric=${metric}&time__gte=2010-09-05`),
-          formatData: formatRiskSeries,
+      riskMetricDefs.map(({ metric, setData, setIsFetched, setLastUpdated }) =>
+        getRiskSeries(metric, {
+          cacheId: RISK_METRIC_CACHE[metric],
           setData,
           setLastUpdated,
           setIsFetched,
@@ -1703,8 +1296,8 @@ const fetchDominanceData = useCallback(async () => {
     isMvrvRiskDataFetched,
     isPuellRiskDataFetched,
     isMinerCapThermoCapRiskDataFetched,
-    isFeeRiskDataFetched, // New
-    isSoplRiskDataFetched, // New
+    isFeeRiskDataFetched,
+    isSoplRiskDataFetched,
   ]);
 
   const refreshRiskMetricsData = useCallback(async () => {
@@ -1732,98 +1325,128 @@ const fetchDominanceData = useCallback(async () => {
     }
   }, [fetchRiskMetricsData]);
 
-  const contextValue = useMemo(
+  // ---------------------------------------------------------------------------
+  // Stable actions: identity never changes; always call latest fetch/refresh.
+  // Removes fetch* from data useMemo deps so action churn doesn't thrash consumers.
+  // ---------------------------------------------------------------------------
+  const actionsRef = useRef({});
+  actionsRef.current = {
+    fetchBtcData,
+    refreshBtcData,
+    fetchFedBalanceData,
+    refreshFedBalanceData,
+    fetchMvrvData,
+    refreshMvrvData,
+    fetchDominanceData,
+    refreshDominanceData,
+    fetchEthData,
+    refreshEthData,
+    fetchFearAndGreedData,
+    refreshFearAndGreedData,
+    fetchLatestFearAndGreed,
+    refreshLatestFearAndGreed,
+    fetchMarketCapData,
+    refreshMarketCapData,
+    fetchMacroData,
+    refreshMacroData,
+    fetchInflationData,
+    refreshInflationData,
+    fetchInitialClaimsData,
+    refreshInitialClaimsData,
+    fetchInterestData,
+    refreshInterestData,
+    fetchUnemploymentData,
+    refreshUnemploymentData,
+    fetchTxCountData,
+    refreshTxCountData,
+    fetchTxCountCombinedData,
+    refreshTxCountCombinedData,
+    fetchTxMvrvData,
+    refreshTxMvrvData,
+    fetchTxMvrvRatioData,
+    refreshTxMvrvRatioData,
+    fetchFloorEchoData,
+    refreshFloorEchoData,
+    fetchAltcoinData,
+    refreshAltcoinData,
+    fetchFredSeriesData,
+    refreshFredSeriesData,
+    fetchIndicatorData,
+    refreshIndicatorData,
+    fetchAltcoinSeasonData,
+    refreshAltcoinSeasonData,
+    fetchOnchainMetricsData,
+    refreshOnchainMetricsData,
+    fetchRiskMetricsData,
+    refreshRiskMetricsData,
+    fetchAltcoinSeasonTimeseriesData,
+    refreshAltcoinSeasonTimeseriesData,
+    fetchDifferenceData,
+    refreshDifferenceData,
+    fetchTotal2Data,
+    refreshTotal2Data,
+    fetchTotal3Data,
+    refreshTotal3Data,
+    fetchSp500DivUnrateData,
+    refreshSp500DivUnrateData,
+  };
+
+  const stableActions = useMemo(() => {
+    const names = Object.keys(actionsRef.current);
+    const obj = {};
+    for (const name of names) {
+      obj[name] = (...args) => actionsRef.current[name]?.(...args);
+    }
+    return obj;
+  }, []);
+
+  // Data-only memo: re-renders only when series state changes (not when fetch identities change).
+  const dataValue = useMemo(
     () => ({
       btcData,
-      fetchBtcData,
-      refreshBtcData,
       btcLastUpdated,
       fedBalanceData,
-      fetchFedBalanceData,
-      refreshFedBalanceData,
       fedLastUpdated,
       mvrvData,
-      fetchMvrvData,
-      refreshMvrvData,
       mvrvLastUpdated,
       dominanceData,
-      fetchDominanceData,
-      refreshDominanceData,
       dominanceLastUpdated,
       ethData,
-      fetchEthData,
-      refreshEthData,
       ethLastUpdated,
       fearAndGreedData,
-      fetchFearAndGreedData,
-      refreshFearAndGreedData,
       fearAndGreedLastUpdated,
       latestFearAndGreed,
-      fetchLatestFearAndGreed,
-      refreshLatestFearAndGreed,
       latestFearAndGreedLastUpdated,
       marketCapData,
-      fetchMarketCapData,
-      refreshMarketCapData,
       marketCapLastUpdated,
       macroData,
-      fetchMacroData,
-      refreshMacroData,
       macroLastUpdated,
       inflationData,
-      fetchInflationData,
-      refreshInflationData,
       inflationLastUpdated,
       initialClaimsData,
-      fetchInitialClaimsData,
-      refreshInitialClaimsData,
       initialClaimsLastUpdated,
       interestData,
-      fetchInterestData,
-      refreshInterestData,
       interestLastUpdated,
       unemploymentData,
-      fetchUnemploymentData,
-      refreshUnemploymentData,
       unemploymentLastUpdated,
       txCountData,
-      fetchTxCountData,
-      refreshTxCountData,
       txCountLastUpdated,
       txCountCombinedData,
-      fetchTxCountCombinedData,
-      refreshTxCountCombinedData,
       txCountCombinedLastUpdated,
       txMvrvData,
-      fetchTxMvrvData,
-      refreshTxMvrvData,
       txMvrvLastUpdated,
       txMvrvRatioDataBySmoothing,
-      fetchTxMvrvRatioData,
-      refreshTxMvrvRatioData,
       txMvrvRatioLastUpdated,
       floorEchoData,
-      fetchFloorEchoData,
-      refreshFloorEchoData,
       floorEchoLastUpdated,
       isFloorEchoDataFetched,
       altcoinData,
-      fetchAltcoinData,
-      refreshAltcoinData,
       altcoinLastUpdated,
       fredSeriesData,
-      fetchFredSeriesData,
-      refreshFredSeriesData,
       indicatorData,
-      fetchIndicatorData,
-      refreshIndicatorData,
       altcoinSeasonData,
-      fetchAltcoinSeasonData,
-      refreshAltcoinSeasonData,
       altcoinSeasonLastUpdated,
       onchainMetricsData,
-      fetchOnchainMetricsData,
-      refreshOnchainMetricsData,
       onchainMetricsLastUpdated,
       onchainFetchError,
       isAltcoinDataFetched,
@@ -1832,130 +1455,73 @@ const fetchDominanceData = useCallback(async () => {
       mvrvRiskData,
       puellRiskData,
       minerCapThermoCapRiskData,
-      fetchRiskMetricsData,
-      refreshRiskMetricsData,
       mvrvRiskLastUpdated,
       puellRiskLastUpdated,
       minerCapThermoCapRiskLastUpdated,
-      feeRiskData, // New
-      soplRiskData, // New
-      feeRiskLastUpdated, // New
-      soplRiskLastUpdated, // New
-      isFeeRiskDataFetched, // New
-      isSoplRiskDataFetched, // New
+      feeRiskData,
+      soplRiskData,
+      feeRiskLastUpdated,
+      soplRiskLastUpdated,
+      isFeeRiskDataFetched,
+      isSoplRiskDataFetched,
       altcoinSeasonTimeseriesData,
-      fetchAltcoinSeasonTimeseriesData,
-      refreshAltcoinSeasonTimeseriesData,
       altcoinSeasonTimeseriesLastUpdated,
       differenceData,
-      fetchDifferenceData,
-      refreshDifferenceData,
       differenceLastUpdated,
       total2Data,
-      fetchTotal2Data,
-      refreshTotal2Data,
       total2LastUpdated,
       total3Data,
-      fetchTotal3Data,
-      refreshTotal3Data,
       total3LastUpdated,
-      // SP500 migrated for central caching
       sp500DivUnrateData,
-      fetchSp500DivUnrateData,
-      refreshSp500DivUnrateData,
       sp500DivUnrateLastUpdated,
+      /** Nested actions bag for selective consumers; also spread at top level for compat */
+      actions: stableActions,
     }),
     [
       btcData,
-      fetchBtcData,
-      refreshBtcData,
       btcLastUpdated,
       fedBalanceData,
-      fetchFedBalanceData,
-      refreshFedBalanceData,
       fedLastUpdated,
       mvrvData,
-      fetchMvrvData,
-      refreshMvrvData,
       mvrvLastUpdated,
       dominanceData,
-      fetchDominanceData,
-      refreshDominanceData,
       dominanceLastUpdated,
       ethData,
-      fetchEthData,
-      refreshEthData,
       ethLastUpdated,
       fearAndGreedData,
-      fetchFearAndGreedData,
-      refreshFearAndGreedData,
       fearAndGreedLastUpdated,
       latestFearAndGreed,
-      fetchLatestFearAndGreed,
-      refreshLatestFearAndGreed,
       latestFearAndGreedLastUpdated,
       marketCapData,
-      fetchMarketCapData,
-      refreshMarketCapData,
       marketCapLastUpdated,
       macroData,
-      fetchMacroData,
-      refreshMacroData,
       macroLastUpdated,
       inflationData,
-      fetchInflationData,
-      refreshInflationData,
       inflationLastUpdated,
       initialClaimsData,
-      fetchInitialClaimsData,
-      refreshInitialClaimsData,
       initialClaimsLastUpdated,
       interestData,
-      fetchInterestData,
-      refreshInterestData,
       interestLastUpdated,
       unemploymentData,
-      fetchUnemploymentData,
-      refreshUnemploymentData,
       unemploymentLastUpdated,
       txCountData,
-      fetchTxCountData,
-      refreshTxCountData,
       txCountLastUpdated,
       txCountCombinedData,
-      fetchTxCountCombinedData,
-      refreshTxCountCombinedData,
       txCountCombinedLastUpdated,
       txMvrvData,
-      fetchTxMvrvData,
-      refreshTxMvrvData,
       txMvrvLastUpdated,
       txMvrvRatioDataBySmoothing,
-      fetchTxMvrvRatioData,
-      refreshTxMvrvRatioData,
       txMvrvRatioLastUpdated,
       floorEchoData,
-      fetchFloorEchoData,
-      refreshFloorEchoData,
       floorEchoLastUpdated,
       isFloorEchoDataFetched,
       altcoinData,
-      fetchAltcoinData,
-      refreshAltcoinData,
       altcoinLastUpdated,
       fredSeriesData,
-      fetchFredSeriesData,
-      refreshFredSeriesData,
       indicatorData,
-      fetchIndicatorData,
-      refreshIndicatorData,
       altcoinSeasonData,
-      fetchAltcoinSeasonData,
-      refreshAltcoinSeasonData,
       altcoinSeasonLastUpdated,
       onchainMetricsData,
-      fetchOnchainMetricsData,
-      refreshOnchainMetricsData,
       onchainMetricsLastUpdated,
       onchainFetchError,
       isAltcoinDataFetched,
@@ -1964,43 +1530,39 @@ const fetchDominanceData = useCallback(async () => {
       mvrvRiskData,
       puellRiskData,
       minerCapThermoCapRiskData,
-      fetchRiskMetricsData,
-      refreshRiskMetricsData,
       mvrvRiskLastUpdated,
       puellRiskLastUpdated,
       minerCapThermoCapRiskLastUpdated,
-      feeRiskData, 
-      soplRiskData, 
-      feeRiskLastUpdated, 
-      soplRiskLastUpdated, 
-      isFeeRiskDataFetched, 
-      isSoplRiskDataFetched, 
+      feeRiskData,
+      soplRiskData,
+      feeRiskLastUpdated,
+      soplRiskLastUpdated,
+      isFeeRiskDataFetched,
+      isSoplRiskDataFetched,
       altcoinSeasonTimeseriesData,
-      fetchAltcoinSeasonTimeseriesData,
-      refreshAltcoinSeasonTimeseriesData,
       altcoinSeasonTimeseriesLastUpdated,
       differenceData,
-      fetchDifferenceData,
-      refreshDifferenceData,
       differenceLastUpdated,
       total2Data,
-      fetchTotal2Data,
-      refreshTotal2Data,
       total2LastUpdated,
       total3Data,
-      fetchTotal3Data,
-      refreshTotal3Data,
       total3LastUpdated,
-      // SP500 migrated for central caching
       sp500DivUnrateData,
-      fetchSp500DivUnrateData,
-      refreshSp500DivUnrateData,
       sp500DivUnrateLastUpdated,
+      stableActions,
     ]
   );
 
-  // Initialize the new data layer exactly once (Phase 1).
-  // We use a ref to guarantee this runs only on the first mount.
+  // Combined value: data + top-level fetch*/refresh* for existing useData() destructuring.
+  const contextValue = useMemo(
+    () => ({
+      ...dataValue,
+      ...stableActions,
+    }),
+    [dataValue, stableActions]
+  );
+
+  // Initialize the data layer once on first mount.
   const dataLayerInitialized = useRef(false);
   if (!dataLayerInitialized.current) {
     initializeDataService({
@@ -2011,14 +1573,22 @@ const fetchDominanceData = useCallback(async () => {
   }
 
   return (
-    <DataContext.Provider value={contextValue}>
-      {children}
-    </DataContext.Provider>
+    <DataActionsContext.Provider value={stableActions}>
+      <DataContext.Provider value={contextValue}>
+        {children}
+      </DataContext.Provider>
+    </DataActionsContext.Provider>
   );
 };
 
+/**
+ * Full context value (data + fetch*). Prefer `useChartData` / `useChartDataActions`
+ * from `hooks/useChartData.js` in chart components — see docs/DATA_LAYER.md.
+ */
 export const useData = () => useContext(DataContext);
 
-// Re-export the core fetch primitives for the data layer (fetchUtils + future DataService evolution).
-// This allows the thin wrappers to exist without import hacks and keeps the "single central path" promise.
+/** Actions-only hook: stable identity; does not re-render when series data changes. */
+export const useDataActions = () => useContext(DataActionsContext);
+
+// Re-export the core fetch primitives for the data layer.
 export { fetchWithCache, refreshData };
