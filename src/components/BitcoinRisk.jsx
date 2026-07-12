@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useContext, useMemo } from 'react';
+import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { createChart } from 'lightweight-charts';
 import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
@@ -8,10 +8,10 @@ import LastUpdated from '../hooks/LastUpdated';
 import BitcoinFees from './BitcoinTransactionFees';
 import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
 import ChartInfoSections from './ChartInfoSections';
-import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import { saveBitcoinRisk } from '../utility/idbUtils';
 import { calculateRiskMetric } from '../utility/riskMetric';
+import { useChartData, useChartDataActions } from '../hooks/useChartData';
 
 const BitcoinRisk = ({ isDashboard = false, isChartPage = false, riskData: propRiskData, simulatorDcaLevels = null, hideControls = false }) => {
   const chartContainerRef = useRef();
@@ -25,7 +25,8 @@ const BitcoinRisk = ({ isDashboard = false, isChartPage = false, riskData: propR
   const [isInteractive, setIsInteractive] = useState(false);
   const isMobile = useIsMobile();
 
-  const { btcData, fetchBtcData } = useContext(DataContext);
+  const { btcData } = useChartData();
+  const { fetchBtcData } = useChartDataActions();
 
   const chartData = propRiskData || (btcData.length > 0 ? calculateRiskMetric(btcData) : []);
 

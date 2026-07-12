@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useContext, useMemo, useCallback } from 'react';
+import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import { createChart } from 'lightweight-charts';
 import '../styling/bitcoinChart.css';
 import { tokens } from "../theme";
@@ -19,7 +19,7 @@ import {
   FormControlLabel,
   useMediaQuery
 } from '@mui/material';
-import { DataContext } from '../DataContext';
+import { useChartData, useChartDataActions } from '../hooks/useChartData';
 import ChartTooltip from './ChartTooltip';
 
 const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominanceData }) => {
@@ -37,7 +37,8 @@ const BitcoinDominanceChart = ({ isDashboard = false, dominanceData: propDominan
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const isMobile = useIsMobile();
-  const { dominanceData: contextDominanceData, fetchDominanceData } = useContext(DataContext);
+  const { dominanceData: contextDominanceData } = useChartData();
+  const { fetchDominanceData } = useChartDataActions();
   const isNarrowScreen = useMediaQuery('(max-width:600px)');
 
   // Get raw data source (prioritize props over context)

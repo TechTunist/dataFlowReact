@@ -1,5 +1,5 @@
 // src/components/RunningROI.js
-import React, { useRef, useEffect, useState, useContext, useCallback, useMemo } from 'react';
+import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { createChart } from 'lightweight-charts';
 import { tokens } from "../theme";
 import { useTheme, Box, FormControl, InputLabel, Select, MenuItem, Button } from "@mui/material";
@@ -9,9 +9,9 @@ import LastUpdated from '../hooks/LastUpdated';
 import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
 import ChartInfoSections from './ChartInfoSections';
 import BitcoinFees from './BitcoinTransactionFees';
-import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import ChartTooltip from './ChartTooltip';
+import { useChartData, useChartDataActions } from '../hooks/useChartData';
 
 const RunningROI = ({ isDashboard = false }) => {
   const chartContainerRef = useRef(null);
@@ -21,7 +21,8 @@ const RunningROI = ({ isDashboard = false }) => {
   const theme = useTheme();
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
   const isMobile = useIsMobile();
-  const { btcData, fetchBtcData, ethData, fetchEthData, altcoinData, fetchAltcoinData } = useContext(DataContext);
+  const { btcData, ethData, altcoinData } = useChartData();
+  const { fetchBtcData, fetchEthData, fetchAltcoinData } = useChartDataActions();
   const [isInteractive, setIsInteractive] = useState(false);
   const [currentPrice, setCurrentPrice] = useState(0);
   const [currentRoi, setCurrentRoi] = useState(null);

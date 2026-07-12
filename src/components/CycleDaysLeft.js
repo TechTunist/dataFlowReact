@@ -1,12 +1,12 @@
 import React, { useMemo } from 'react';
 import { Box, Typography, useTheme } from '@mui/material';
 import { tokens } from '../theme';
-import { useData } from '../DataContext';
-
+import { useChartData } from '../hooks/useChartData';
+/** Reads btcData only (no fetch). Still via useData until series-specific contexts exist. */
 const CycleDaysLeft = ({ onlyBottom = false }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
-  const { btcData } = useData();
+  const { btcData } = useChartData();
 
   // Define cycle dates
   const cycleDates = useMemo(() => ({

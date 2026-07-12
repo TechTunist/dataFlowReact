@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useContext, useMemo, useCallback, memo } from 'react';
+import React, { useRef, useEffect, useState, useMemo, useCallback, memo } from 'react';
 import { createChart } from 'lightweight-charts';
 import '../styling/bitcoinChart.css';
 import { tokens } from "../theme";
@@ -7,12 +7,12 @@ import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
 import BitcoinFees from './BitcoinTransactionFees';
 import { Box, useMediaQuery } from '@mui/material';
-import { UnderChartRow } from './ChartUnderSection';
+import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
 import ChartInfoSections from './ChartInfoSections';
-import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import ChartTooltip from './ChartTooltip';
 import { calculateSMA } from '../utils/technicalIndicators';
+import { useChartData, useChartDataActions } from '../hooks/useChartData';
 
 const REALIZED_PRICE_SMA_PERIOD = 28;
 
@@ -27,7 +27,8 @@ const BitcoinMvrvZScoreChart = ({ isDashboard = false, txMvrvData: propTxMvrvDat
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const isMobile = useIsMobile();
-  const { txMvrvData: contextTxMvrvData, fetchTxMvrvData, btcData, fetchBtcData, txMvrvLastUpdated } = useContext(DataContext);
+  const { txMvrvData: contextTxMvrvData, btcData, txMvrvLastUpdated } = useChartData();
+  const { fetchTxMvrvData, fetchBtcData } = useChartDataActions();
   const rawTxMvrvData = propTxMvrvData || contextTxMvrvData;
   const isNarrowScreen = useMediaQuery('(max-width:600px)');
 
@@ -136,6 +137,9 @@ const BitcoinMvrvZScoreChart = ({ isDashboard = false, txMvrvData: propTxMvrvDat
     if (filteredTxMvrvData.length === 0 || filteredBtcData.length === 0) {
       return;
     }
+    // Dual scales (same pattern as Floor Echo / dual-axis risk charts):
+    // left = BTC spot + realized price (log), right = MVRV Z-Score (linear).
+    // Left scale must set visible: true — lightweight-charts hides it by default.
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
       height: chartContainerRef.current.clientHeight,
@@ -153,16 +157,33 @@ const BitcoinMvrvZScoreChart = ({ isDashboard = false, txMvrvData: propTxMvrvDat
       handleScroll: isInteractive && !isDashboard,
       handleScale: isInteractive && !isDashboard,
       leftPriceScale: {
-        mode: 1,
-        borderVisible: false,
+        visible: true,
+        mode: 1, // logarithmic for price
+        borderVisible: true,
+        borderColor: 'rgba(197, 203, 206, 0.35)',
+        scaleMargins: { top: 0.08, bottom: 0.08 },
+        entireTextOnly: false,
       },
       rightPriceScale: {
-        mode: 0,
-        borderVisible: false,
+        visible: true,
+        mode: 0, // linear for Z-score
+        borderVisible: true,
+        borderColor: 'rgba(197, 203, 206, 0.35)',
+        scaleMargins: { top: 0.08, bottom: 0.08 },
       },
     });
-    chart.priceScale('left').applyOptions({ mode: 1, borderVisible: false });
-    chart.priceScale('right').applyOptions({ mode: 0, borderVisible: false });
+    chart.priceScale('left').applyOptions({
+      visible: true,
+      mode: 1,
+      borderVisible: true,
+      scaleMargins: { top: 0.08, bottom: 0.08 },
+    });
+    chart.priceScale('right').applyOptions({
+      visible: true,
+      mode: 0,
+      borderVisible: true,
+      scaleMargins: { top: 0.08, bottom: 0.08 },
+    });
     chart.timeScale().fitContent();
     chart.subscribeCrosshairMove(param => {
       if (
@@ -210,40 +231,50 @@ const BitcoinMvrvZScoreChart = ({ isDashboard = false, txMvrvData: propTxMvrvDat
     };
     const { zScore: zScoreColors, price: priceColors, realizedPrice: realizedPriceColors } =
       theme.palette.mode === 'dark' ? darkThemeColors : lightThemeColors;
-    // Bitcoin Price Series
+    const priceAxisFormatter = (value) =>
+      value >= 1000 ? `${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}k` : value.toFixed(0);
+
+    // Bitcoin price — left Y-axis (log), last value label so the scale is readable
     const priceSeries = chart.addLineSeries({
       priceScaleId: 'left',
       color: priceColors.lineColor,
       lineWidth: 0.7,
+      priceLineVisible: false,
+      lastValueVisible: true,
       priceFormat: {
         type: 'custom',
-        formatter: value => (value >= 1000 ? (value / 1000).toFixed(0) + 'k' : value.toFixed(0)),
+        formatter: priceAxisFormatter,
       },
       visible: true,
     });
     priceSeriesRef.current = priceSeries;
     priceSeries.setData(filteredBtcData.map(data => ({ time: data.time, value: data.value })));
+
+    // Realized price — same left scale; blue last-value label on the price axis (non-intrusive)
     const realizedPriceSeries = chart.addLineSeries({
       priceScaleId: 'left',
       color: realizedPriceColors.lineColor,
       lineWidth: 1.2,
       lineStyle: 2,
       priceLineVisible: false,
-      lastValueVisible: false,
+      lastValueVisible: true,
       crosshairMarkerVisible: false,
       priceFormat: {
         type: 'custom',
-        formatter: value => (value >= 1000 ? (value / 1000).toFixed(1) + 'k' : value.toFixed(0)),
+        formatter: priceAxisFormatter,
       },
       visible: true,
     });
     realizedPriceSeriesRef.current = realizedPriceSeries;
     realizedPriceSeries.setData(realizedPriceData);
-    // MVRV Z-Score Series, use pre-computed memoized zScoreData
+
+    // MVRV Z-Score — right Y-axis
     const zScoreSeries = chart.addLineSeries({
       priceScaleId: 'right',
       color: zScoreColors.lineColor,
       lineWidth: 2,
+      priceLineVisible: false,
+      lastValueVisible: true,
       priceFormat: { type: 'price', precision: 2, minMove: 0.01 },
       visible: true,
     });
@@ -282,25 +313,65 @@ const BitcoinMvrvZScoreChart = ({ isDashboard = false, txMvrvData: propTxMvrvDat
   return (
     <div style={{ height: '100%' }}>
       {!isDashboard && (
-        <div className='chart-top-div' style={{ display: 'flex', alignItems: 'center' }}>
-          <div style={{ flexGrow: 1 }}></div>
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button
-              onClick={setInteractivity}
-              className="button-reset"
-              style={{
-                backgroundColor: isInteractive ? '#4cceac' : 'transparent',
-                color: isInteractive ? 'black' : '#31d6aa',
-                borderColor: isInteractive ? 'violet' : '#70d8bd',
-              }}
-            >
-              {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
-            </button>
-            <button onClick={resetChartView} className="button-reset extra-margin">
-              Reset Chart
-            </button>
+        <>
+          <div className="chart-top-div" style={{ display: 'flex', alignItems: 'center' }}>
+            <div style={{ flexGrow: 1 }} />
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                onClick={setInteractivity}
+                className="button-reset"
+                style={{
+                  backgroundColor: isInteractive ? '#4cceac' : 'transparent',
+                  color: isInteractive ? 'black' : '#31d6aa',
+                  borderColor: isInteractive ? 'violet' : '#70d8bd',
+                }}
+              >
+                {isInteractive ? 'Disable Interactivity' : 'Enable Interactivity'}
+              </button>
+              <button onClick={resetChartView} className="button-reset extra-margin">
+                Reset Chart
+              </button>
+            </div>
           </div>
-        </div>
+          {/* Series key outside the chart (same pattern as Floor Echo / risk pages) so left-axis labels stay visible */}
+          <div className="chart-top-div">
+            <div className="span-container">
+              {Object.entries(indicators).map(([key, { label, color }]) => (
+                <span
+                  key={key}
+                  style={{
+                    marginRight: '20px',
+                    display: 'inline-block',
+                    color: colors.primary[100],
+                    fontSize: isNarrowScreen ? '11px' : '13px',
+                  }}
+                >
+                  <span
+                    style={{
+                      backgroundColor: color,
+                      height: '10px',
+                      width: '10px',
+                      display: 'inline-block',
+                      marginRight: '5px',
+                      borderRadius: key === 'realized-price' ? 0 : 1,
+                      // dashed-line cue for realized price
+                      ...(key === 'realized-price'
+                        ? {
+                            backgroundColor: 'transparent',
+                            borderBottom: `2px dashed ${color}`,
+                            height: 0,
+                            width: '16px',
+                            verticalAlign: 'middle',
+                          }
+                        : {}),
+                    }}
+                  />
+                  {label}
+                </span>
+              ))}
+            </div>
+          </div>
+        </>
       )}
       <div
         className="chart-container"
@@ -315,55 +386,27 @@ const BitcoinMvrvZScoreChart = ({ isDashboard = false, txMvrvData: propTxMvrvDat
       >
         <div ref={chartContainerRef} style={{ height: '100%', width: '100%', zIndex: 1 }} />
         {!isDashboard && (
-          <div
-            style={{
-              position: 'absolute',
-              top: '10px',
-              left: '10px',
-              zIndex: 2,
-              backgroundColor: colors.primary[900],
-              padding: '5px 10px',
-              borderRadius: '4px',
-              color: colors.grey[100],
-              fontSize: isNarrowScreen ? '8px' : '12px',
-            }}
-          >
-            {Object.entries(indicators).map(([key, { label, color }]) => (
-              <div
-                key={key}
-                style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}
-              >
-                <span
-                  style={{
-                    display: 'inline-block',
-                    width: '10px',
-                    height: '10px',
-                    backgroundColor: color,
-                    marginRight: '5px',
-                  }}
-                />
-                {label}
-              </div>
-            ))}
-          </div>
+          <ChartTooltip
+            tooltipData={tooltipData}
+            chartContainerRef={chartContainerRef}
+            isNarrowScreen={isNarrowScreen}
+            render={(td) => (
+              <>
+                <div style={{ fontSize: '15px', color: 'gray' }}>
+                  BTC Price: ${td.price ? (td.price / 1000).toFixed(1) + 'k' : 'N/A'}
+                </div>
+                <div style={{ color: indicators['realized-price'].color }}>
+                  Realized Price: ${td.realizedPrice ? (td.realizedPrice / 1000).toFixed(1) + 'k' : 'N/A'}
+                </div>
+                <div style={{ color: indicators['z-score'].color }}>
+                  MVRV Z-Score: {td.zScore?.toFixed(2) ?? 'N/A'}
+                </div>
+                <div>{td.date?.toString()}</div>
+              </>
+            )}
+          />
         )}
-      
-        {!isDashboard && (
-          <ChartTooltip tooltipData={tooltipData} chartContainerRef={chartContainerRef} isNarrowScreen={isNarrowScreen} render={(tooltipData) => (
-<>
-<div style={{ fontSize: '15px', color: 'gray' }}>
-            BTC Price: ${tooltipData.price ? (tooltipData.price / 1000).toFixed(1) + 'k' : 'N/A'}
-          </div>
-          <div style={{ color: indicators['realized-price'].color }}>
-            Realized Price: ${tooltipData.realizedPrice ? (tooltipData.realizedPrice / 1000).toFixed(1) + 'k' : 'N/A'}
-          </div>
-          <div style={{ color: indicators['z-score'].color }}>
-            MVRV Z-Score: {tooltipData.zScore?.toFixed(2) ?? 'N/A'}
-          </div>
-          <div>{tooltipData.date?.toString()}</div>
-</>
-)} />
-        )}</div>
+      </div>
       <UnderChartRow>
         {!isDashboard && (
           <LastUpdated customDate={txMvrvLastUpdated} />
@@ -371,33 +414,35 @@ const BitcoinMvrvZScoreChart = ({ isDashboard = false, txMvrvData: propTxMvrvDat
         {!isDashboard && <BitcoinFees />}
       </UnderChartRow>
       {!isDashboard && (
-        <Box sx={{ margin: '10px 0', color: colors.grey[100] }}>
-          {Object.entries(indicators).filter(([key]) => key === 'z-score' || key === 'realized-price').map(([key, { label, color, description }]) => (
-            <p key={key} style={{ margin: '5px 0' }}>
-              <strong style={{ color: color }}>{label}:</strong> {description}
-            </p>
-          ))}
-        </Box>
+        <>
+          <UnderChartValue>
+            <Box sx={{ color: colors.primary[100], fontSize: { xs: '0.9rem', sm: '1rem' }, lineHeight: 1.5 }}>
+              {Object.entries(indicators).map(([key, { label, color, description }]) => (
+                <p key={key} style={{ margin: '4px 0' }}>
+                  <strong style={{ color }}>{label}:</strong> {description}
+                </p>
+              ))}
+            </Box>
+          </UnderChartValue>
+          <ChartInfoSections
+            sections={[
+              {
+                title: 'What this chart shows',
+                content: 'The Bitcoin Price & MVRV Z-Score chart shows Bitcoin spot price and smoothed realized price (28-day SMA of spot ÷ MVRV) on the left Y-axis (log scale), and the MVRV Z-Score on the right Y-axis. The blue label on the left axis is the latest realized price. The Z-Score is only calculated after at least 365 data points to avoid early-sample instability.',
+              },
+              {
+                title: 'How it is built',
+                content: 'The MVRV Z-Score is the relative indicator, which is the circulating market value of Bitcoin minus the realized market value, standardized by the running standard deviation of the circulating market value up to that point.',
+              },
+              {
+                title: 'How to interpret',
+                content: 'When this indicator is too high, it means that the market value of Bitcoin is overvalued relative to its actual value; otherwise, it means undervaluation.',
+              },
+            ]}
+          />
+        </>
       )}
-      
-      {!isDashboard && (
-        <ChartInfoSections
-          sections={[
-            {
-              title: 'What this chart shows',
-              content: 'The Bitcoin Price & MVRV Z-Score chart shows the Bitcoin price, smoothed realized price (28-day SMA of spot price ÷ MVRV), and MVRV Z-Score starting from April 16th, 2011, illustrating price trends and standardized valuation deviations. Realized price shares the left-hand price scale with spot price. The MVRV Z-Score is only calculated and displayed after at least 365 data points to avoid initial instability due to small sample size.',
-            },
-            {
-              title: 'How it is built',
-              content: 'The MVRV Z-Score is the relative indicator, which is the circulating market value of Bitcoin minus the realized market value, standardized by the running standard deviation of the circulating market value up to that point.',
-            },
-            {
-              title: 'How to interpret',
-              content: 'When this indicator is too high, it means that the market value of Bitcoin is overvalued relative to its actual value; otherwise, it means undervaluation.',
-            },
-          ]}
-        />
-      )}
+
     </div>
   );
 };

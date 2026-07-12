@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useContext, useMemo } from 'react';
+import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { createChart } from 'lightweight-charts';
 import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
@@ -6,9 +6,9 @@ import '../styling/bitcoinChart.css';
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
 import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
-import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import ChartInfoSections from './ChartInfoSections';
+import { useChartData, useChartDataActions } from '../hooks/useChartData';
 
 const EthereumRisk = ({ isDashboard = false, riskData: propRiskData }) => {
   const chartContainerRef = useRef();
@@ -19,7 +19,8 @@ const EthereumRisk = ({ isDashboard = false, riskData: propRiskData }) => {
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
   const [isInteractive, setIsInteractive] = useState(false);
   const isMobile = useIsMobile();
-  const { ethData, fetchEthData } = useContext(DataContext);
+  const { ethData } = useChartData();
+  const { fetchEthData } = useChartDataActions();
   const [currentRiskLevel, setCurrentRiskLevel] = useState(null);
   const [currentEthPrice, setCurrentEthPrice] = useState(0);
 

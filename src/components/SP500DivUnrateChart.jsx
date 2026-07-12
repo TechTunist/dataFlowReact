@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useContext } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { createChart } from 'lightweight-charts';
 import '../styling/bitcoinChart.css';
 import { tokens } from "../theme";
@@ -6,9 +6,9 @@ import { useTheme } from "@mui/material";
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
 import BitcoinFees from './BitcoinTransactionFees'; // Replace or remove if not needed
-import { DataContext } from '../DataContext';
 import ChartTooltip from './ChartTooltip';
 import ChartInfoSections from './ChartInfoSections';
+import { useChartData, useChartDataActions } from '../hooks/useChartData';
 
 const SP500DivUnrateChart = ({ isDashboard = false }) => {
   const chartContainerRef = useRef();
@@ -21,10 +21,8 @@ const SP500DivUnrateChart = ({ isDashboard = false }) => {
   const colors = tokens(theme.palette.mode);
   const isMobile = useIsMobile();
 
-  const {
-    sp500DivUnrateData: contextSp500Data,
-    fetchSp500DivUnrateData,
-  } = useContext(DataContext);
+  const { sp500DivUnrateData: contextSp500Data } = useChartData();
+  const { fetchSp500DivUnrateData } = useChartDataActions();
 
   // Use central cached data (guarantees IndexedDB + auth + no direct API bypass)
   const data = contextSp500Data || [];

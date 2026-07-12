@@ -1,5 +1,5 @@
 // src/scenes/MarketOverview.js
-import React, { useState, useEffect, useContext, memo, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, memo, useMemo, useCallback } from 'react';
 import FearAndGreed3D from '../components/FearAndGreed3D';
 import ProgressBar3D from '../components/ProgressBar3D';
 import {
@@ -19,7 +19,6 @@ import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import { Box, Typography, useTheme, LinearProgress, CircularProgress } from '@mui/material';
 import { tokens } from '../theme';
-import { DataContext } from '../DataContext';
 import useIsMobile from '../hooks/useIsMobile';
 import { getBitcoinRisk, saveRoiData, getRoiData, clearRoiData, saveBitcoinRisk } from '../utility/idbUtils';
 import InfoIcon from '@mui/icons-material/Info';
@@ -29,6 +28,7 @@ import { useNavigate } from 'react-router-dom';
 import { calculateRiskMetric } from '../utility/riskMetric';
 import { getBtcReferenceDate } from '../utility/cycleBottomDaysLeft';
 import logger from '../utils/logger';
+import { useChartData, useChartDataActions } from '../hooks/useChartData';
 
 
 // Wrap GridLayout with WidthProvider for responsiveness
@@ -73,22 +73,8 @@ const MarketOverview = memo(() => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const isMobile = useIsMobile();
-  const {
-    btcData,
-    fetchBtcData,
-    ethData,
-    fetchEthData,
-    fearAndGreedData,
-    fetchFearAndGreedData,
-    inflationData,
-    fetchInflationData,
-    marketCapData,
-    fetchMarketCapData,
-    mvrvData,
-    fetchMvrvData,
-    altcoinSeasonData,
-    fetchAltcoinSeasonData,
-  } = useContext(DataContext);
+  const { btcData, ethData, fearAndGreedData, inflationData, marketCapData, mvrvData, altcoinSeasonData } = useChartData();
+  const { fetchBtcData, fetchEthData, fetchFearAndGreedData, fetchInflationData, fetchMarketCapData, fetchMvrvData, fetchAltcoinSeasonData } = useChartDataActions();
   // State for loading
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -409,7 +395,7 @@ const onChainLayouts = {
     const [heatScore, setHeatScore] = useState(null);
     const [currentIndex, setCurrentIndex] = useState(null);
     const [isInfoVisible, setIsInfoVisible] = useState(false);
-    const { altcoinSeasonData } = useContext(DataContext);
+    const { altcoinSeasonData } = useChartData();
 
     useEffect(() => {
       if (altcoinSeasonData && altcoinSeasonData.index !== undefined) {
@@ -587,7 +573,7 @@ const RoiCycleComparisonWidget = memo(() => {
   const [avgRoi, setAvgRoi] = useState(null);
   const [zScore, setZScore] = useState(null);
   const [heatScore, setHeatScore] = useState(null);
-  const { btcData } = useContext(DataContext);
+  const { btcData } = useChartData();
   const [isInfoVisible, setIsInfoVisible] = useState(false);
 
   useEffect(() => {
@@ -1057,7 +1043,7 @@ const RoiCycleComparisonWidget = memo(() => {
 
   const BitcoinRiskWidget = memo(() => {
   const [riskLevel, setRiskLevel] = useState(null);
-  const { btcData } = useContext(DataContext);
+  const { btcData } = useChartData();
 
   // 1. Load IDB cached risk once on mount for instant non-zero display (before btcData arrives)
   useEffect(() => {
@@ -1200,7 +1186,8 @@ const RoiCycleComparisonWidget = memo(() => {
   const FearAndGreedGauge = memo(() => {
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
-    const { fearAndGreedData, fetchFearAndGreedData, latestFearAndGreed, fetchLatestFearAndGreed } = useContext(DataContext);
+    const { fearAndGreedData, latestFearAndGreed } = useChartData();
+    const { fetchFearAndGreedData, fetchLatestFearAndGreed } = useChartDataActions();
     const [isInfoVisible, setIsInfoVisible] = useState(false);
     // Prefer the freshest latestFearAndGreed (from binary-latest endpoint) over last of full fearAndGreedData
     const latestFg = latestFearAndGreed || (fearAndGreedData && fearAndGreedData.length > 0 ? fearAndGreedData[fearAndGreedData.length - 1] : null);
@@ -1498,7 +1485,7 @@ const RoiCycleComparisonWidget = memo(() => {
 const DaysLeftWidget = memo(({ type }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
-  const { btcData } = useContext(DataContext);
+  const { btcData } = useChartData();
   const [isInfoVisible, setIsInfoVisible] = useState(false);
   const [heatScore, setHeatScore] = useState(null);
 
@@ -1761,7 +1748,7 @@ const MarketHeatGaugeWidget = memo(() => {
   const [heatScore, setHeatScore] = useState(null);
   const [debugScores, setDebugScores] = useState({});
   const [debugInputs, setDebugInputs] = useState({});
-  const { mvrvData, btcData, fearAndGreedData, latestFearAndGreed } = useContext(DataContext);
+  const { mvrvData, btcData, fearAndGreedData, latestFearAndGreed } = useChartData();
 
   useEffect(() => {
     if (mvrvData?.length > 0 && btcData?.length > 350 && fearAndGreedData?.length > 0) {
@@ -2149,7 +2136,7 @@ const MarketHeatGaugeWidget = memo(() => {
 
 // New Daily RSI Widget (added here)
 const DailyRsiWidget = memo(() => {
-  const { btcData } = useContext(DataContext);
+  const { btcData } = useChartData();
   const [latestRsi, setLatestRsi] = useState(null);
   const [heatScore, setHeatScore] = useState(null);
 
@@ -2294,7 +2281,7 @@ const DailyRsiWidget = memo(() => {
 
 // Weekly RSI Widget
 const WeeklyRsiWidget = memo(() => {
-  const { btcData } = useContext(DataContext);
+  const { btcData } = useChartData();
   const [latestRsi, setLatestRsi] = useState(null);
   const [heatScore, setHeatScore] = useState(null);
 

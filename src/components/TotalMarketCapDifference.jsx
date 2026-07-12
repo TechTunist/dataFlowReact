@@ -1,15 +1,15 @@
-import React, { useRef, useEffect, useState, useMemo, useCallback, useContext } from 'react';
+import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import { createChart } from 'lightweight-charts';
 import '../styling/bitcoinChart.css';
 import { tokens } from '../theme';
 import { useTheme, useMediaQuery, Box, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import useIsMobile from '../hooks/useIsMobile';
-import { DataContext } from '../DataContext';
 import BitcoinFees from './BitcoinTransactionFees';
 import LastUpdated from '../hooks/LastUpdated';
 import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
 import ChartTooltip from './ChartTooltip';
 import ChartInfoSections from './ChartInfoSections';
+import { useChartData, useChartDataActions } from '../hooks/useChartData';
 import {
   MARKET_CAP_FAIR_VALUE_TYPES,
   dedupeSortSeries,
@@ -29,20 +29,8 @@ const MarketCapDifference = ({ isDashboard = false }) => {
   const theme = useTheme();
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
   const isMobile = useIsMobile();
-  const {
-    btcData: contextBtcData,
-    fetchBtcData,
-    btcLastUpdated,
-    marketCapData: contextMarketCapData,
-    fetchMarketCapData,
-    marketCapLastUpdated,
-    total2Data: contextTotal2Data,
-    fetchTotal2Data,
-    total2LastUpdated,
-    total3Data: contextTotal3Data,
-    fetchTotal3Data,
-    total3LastUpdated,
-  } = useContext(DataContext);
+  const { btcData: contextBtcData, btcLastUpdated, marketCapData: contextMarketCapData, marketCapLastUpdated, total2Data: contextTotal2Data, total2LastUpdated, total3Data: contextTotal3Data, total3LastUpdated } = useChartData();
+  const { fetchBtcData, fetchMarketCapData, fetchTotal2Data, fetchTotal3Data } = useChartDataActions();
   const [selectedMarketType, setSelectedMarketType] = useState('total');
   const [tooltipData, setTooltipData] = useState(null);
   const [isInteractive, setIsInteractive] = useState(false);

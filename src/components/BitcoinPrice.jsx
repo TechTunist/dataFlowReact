@@ -1,4 +1,4 @@
-// import React, { useRef, useEffect, useState, useContext, useCallback, useMemo } from 'react';
+// import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 // import { createChart } from 'lightweight-charts';
 // import '../styling/bitcoinChart.css';
 // import { tokens } from "../theme";
@@ -7,8 +7,7 @@
 // import LastUpdated from '../hooks/LastUpdated';
 // import BitcoinFees from './BitcoinTransactionFees';
 // import { Select, MenuItem, FormControl, InputLabel, Box, Checkbox, useMediaQuery, ListSubheader } from '@mui/material';
-// import { DataContext } from '../DataContext';
-// import restrictToPaidSubscription from '../scenes/RestrictToPaid';
+// // import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 
 // const BitcoinPrice = ({ isDashboard = false }) => {
 //   const chartContainerRef = useRef();
@@ -34,14 +33,7 @@
 //   const theme = useTheme();
 //   const colors = tokens(theme.palette.mode);
 //   const isMobile = useIsMobile();
-//   const {
-//     btcData,
-//     fedBalanceData,
-//     mvrvData,
-//     fetchBtcData,
-//     fetchFedBalanceData,
-//     fetchMvrvData,
-//   } = useContext(DataContext);
+//   const { //     btcData, //     fedBalanceData, //     mvrvData, //     fetchBtcData, //     fetchFedBalanceData, //     fetchMvrvData, // } = useChartData();
 //   const indicators = useMemo(() => ({
 //     'fed-balance': {
 //       color: 'purple',
@@ -1166,7 +1158,7 @@
 
 
 
-import React, { useRef, useEffect, useState, useContext, useCallback, useMemo } from 'react';
+import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { createChart } from 'lightweight-charts';
 import '../styling/bitcoinChart.css';
 import { tokens } from "../theme";
@@ -1175,7 +1167,6 @@ import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
 import BitcoinFees from './BitcoinTransactionFees';
 import { Select, MenuItem, FormControl, InputLabel, Box, Checkbox, useMediaQuery, ListSubheader } from '@mui/material';
-import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import { 
   getAllMovingAverageOptions, 
@@ -1188,6 +1179,7 @@ import { getCurrentBitcoinPrice } from '../utils/currentPrice';
 import { effectiveDailyReferenceDate } from '../utils/dailyReferenceDate';
 import ChartTooltip from './ChartTooltip';
 import ChartInfoSections from './ChartInfoSections';
+import { useChartData, useChartDataActions } from '../hooks/useChartData';
 const BitcoinPrice = ({ isDashboard = false }) => {
   const chartContainerRef = useRef();
   const chartRef = useRef(null);
@@ -1215,12 +1207,8 @@ const BitcoinPrice = ({ isDashboard = false }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const isMobile = useIsMobile();
-  const {
-    btcData,
-    mvrvData,
-    fetchBtcData,
-    fetchMvrvData,
-  } = useContext(DataContext);
+  const { btcData, mvrvData } = useChartData();
+  const { fetchBtcData, fetchMvrvData } = useChartDataActions();
   const indicators = useMemo(() => ({
     'mvrv': {
       color: 'orange',

@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useContext, useMemo, useCallback } from 'react';
+import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import { createChart } from 'lightweight-charts';
 import '../styling/bitcoinChart.css';
 import { tokens } from "../theme";
@@ -6,7 +6,6 @@ import { useTheme } from "@mui/material";
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
 import { Select, MenuItem, FormControl, InputLabel, Box, Checkbox, useMediaQuery, ListSubheader } from '@mui/material';
-import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import ChartTooltip from './ChartTooltip';
 import { 
@@ -18,6 +17,7 @@ import {
 } from '../utils/technicalIndicators';
 import { getCurrentPrice } from '../utils/currentPrice';
 import ChartInfoSections from './ChartInfoSections';
+import { useChartData, useChartDataActions } from '../hooks/useChartData';
 
 const AltcoinPrice = ({ isDashboard = false, defaultSelectedCoin }) => {
   const chartContainerRef = useRef();
@@ -48,16 +48,8 @@ const AltcoinPrice = ({ isDashboard = false, defaultSelectedCoin }) => {
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
   const isNarrowScreen = useMediaQuery('(max-width:600px)');
   const isMobile = useIsMobile();
-  const {
-    altcoinData,
-    fetchAltcoinData,
-    altcoinLastUpdated,
-    btcData,
-    fetchBtcData,
-    fedBalanceData,
-    fetchFedBalanceData,
-    fedLastUpdated,
-  } = useContext(DataContext);
+  const { altcoinData, altcoinLastUpdated, btcData, fedBalanceData, fedLastUpdated } = useChartData();
+  const { fetchAltcoinData, fetchBtcData, fetchFedBalanceData } = useChartDataActions();
 
   // Define indicators
   const indicators = useMemo(() => ({

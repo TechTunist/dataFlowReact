@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useContext } from 'react';
-import { DataContext } from '../DataContext';
+import { useCallback, useEffect, useMemo } from 'react';
+import { useData } from '../DataContext';
 import {
   availableMacroSeries,
   availableCryptoSeries,
@@ -72,7 +72,7 @@ export function useMacroOverlaySeries({
   setIsLoading,
   setError,
 }) {
-  const dataContext = useContext(DataContext);
+  const dataContext = useData();
 
   const overlayMeta = useMemo(
     () => (overlaySeriesId === OVERLAY_NONE ? null : getSeriesMeta(overlaySeriesId)),

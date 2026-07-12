@@ -72,7 +72,7 @@ Any change that risks breaking #3 or #5, or that could corrupt the data collecte
 
 Any proposal that touches the data pipeline must include:
 
-1. Risk level (using the framework in JOINT_PROFESSIONALIZATION_PLAN.md)
+1. Risk level (0–4; see monorepo `STATUS.md` non-goals and historical framework in `docs/archive/2026-professionalization/fe-JOINT_PROFESSIONALIZATION_PLAN.md`)
 2. Whether it is purely additive
 3. How we would detect if it went wrong
 4. Rollback / recovery steps

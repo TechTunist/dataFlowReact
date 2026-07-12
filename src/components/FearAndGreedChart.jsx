@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext, useMemo, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import Plot from 'react-plotly.js';
 import { tokens } from '../theme';
 import { useTheme } from '@mui/material';
@@ -13,12 +13,12 @@ import {
 import '../styling/bitcoinChart.css';
 import BitcoinFees from './BitcoinTransactionFees';
 import useIsMobile from '../hooks/useIsMobile';
-import { DataContext } from '../DataContext';
 import Plotly from 'plotly.js-gl2d-dist';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import LastUpdated from '../hooks/LastUpdated';
 import { UnderChartRow } from './ChartUnderSection';
 import ChartInfoSections from './ChartInfoSections';
+import { useChartData, useChartDataActions } from '../hooks/useChartData';
 
 // Helper functions for moving averages
 const calculateSMA = (data, period) => {
@@ -50,7 +50,8 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
   const theme = useTheme();
   const isMobile = useIsMobile();
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
-  const { btcData, fetchBtcData, fearAndGreedData, fetchFearAndGreedData, latestFearAndGreed, fetchLatestFearAndGreed } = useContext(DataContext);
+  const { btcData, fearAndGreedData, latestFearAndGreed } = useChartData();
+  const { fetchBtcData, fetchFearAndGreedData, fetchLatestFearAndGreed } = useChartDataActions();
   const plotRef = useRef(null);
   const containerRef = useRef(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -109,6 +110,16 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
     }
   };
 
+  // Prefer preformatted YYYY-MM-DD `time`; fall back to unix `timestamp` (seconds or ms).
+  const fgDateKey = (item) => {
+    if (item?.time) return item.time;
+    if (item?.timestamp == null || item.timestamp === '') return null;
+    const ts = Number(item.timestamp);
+    if (!Number.isFinite(ts)) return null;
+    const ms = ts > 1e12 ? ts : ts * 1000;
+    return new Date(ms).toISOString().slice(0, 10);
+  };
+
   // Memoized datasets
   const datasets = useMemo(() => {
     if (btcData.length === 0 || (fearAndGreedData.length === 0 && !latestFearAndGreed)) return [];
@@ -116,7 +127,8 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
     const btcFormattedData = btcData.filter(item => new Date(item.time) >= startDate);
     const fearGreedMap = {};
     fearAndGreedData.forEach(item => {
-      const date = new Date(item.timestamp * 1000).toISOString().slice(0, 10);
+      const date = fgDateKey(item);
+      if (!date) return;
       const value = Number(item.value);
       if (!isNaN(value)) {
         fearGreedMap[date] = { value, classification: item.value_classification };
@@ -159,7 +171,8 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
     if (viewMode === 'scatter') {
       const fearGreedGroups = {};
       fearAndGreedData.forEach(item => {
-        const date = new Date(item.timestamp * 1000).toISOString().slice(0, 10);
+        const date = fgDateKey(item);
+        if (!date) return;
         const classification = item.value_classification;
         if (!fearGreedGroups[classification]) fearGreedGroups[classification] = [];
         fearGreedGroups[classification].push({
@@ -298,20 +311,24 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
       };
       return [btcPriceLine, fgLine];
     }
-  }, [btcData, fearAndGreedData, viewMode, smoothing, smoothingPeriod, colors]);
+  }, [btcData, fearAndGreedData, latestFearAndGreed, viewMode, smoothing, smoothingPeriod, colors]);
 
-  // Fetch data
+  // Fetch data.
+  // Historical series (fearAndGreedData) is required for the chart; latestFearAndGreed alone
+  // only supplies today's point and must NOT short-circuit the full-series fetch.
   useEffect(() => {
     const fetchData = async () => {
-      const hasFg = fearAndGreedData.length > 0 || !!latestFearAndGreed;
-      if (btcData.length > 0 && hasFg) return;
+      const needsBtc = btcData.length === 0;
+      const needsHistory = fearAndGreedData.length === 0;
+      const needsLatest = !latestFearAndGreed;
+      if (!needsBtc && !needsHistory && !needsLatest) return;
       setIsLoading(true);
       setError(null);
       try {
         await Promise.all([
-          btcData.length === 0 && fetchBtcData(),
-          fearAndGreedData.length === 0 && fetchFearAndGreedData(),
-          !latestFearAndGreed && fetchLatestFearAndGreed(),
+          needsBtc && fetchBtcData(),
+          needsHistory && fetchFearAndGreedData(),
+          needsLatest && fetchLatestFearAndGreed(),
         ]);
       } catch (err) {
         setError('Failed to fetch data. Please try again later.');
@@ -321,7 +338,14 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
       }
     };
     fetchData();
-  }, [fetchBtcData, fetchFearAndGreedData, btcData.length, fearAndGreedData.length, latestFearAndGreed]);
+  }, [
+    fetchBtcData,
+    fetchFearAndGreedData,
+    fetchLatestFearAndGreed,
+    btcData.length,
+    fearAndGreedData.length,
+    latestFearAndGreed,
+  ]);
 
   const resetChartView = useCallback(() => {
     setLayoutState({
@@ -345,7 +369,8 @@ const FearAndGreedChart = ({ isDashboard = false }) => {
       });
       const fearGreedMap = {};
       fearAndGreedData.forEach(item => {
-        const date = new Date(item.timestamp * 1000).toISOString().slice(0, 10);
+        const date = fgDateKey(item);
+        if (!date) return;
         const value = Number(item.value);
         if (!isNaN(value)) {
           fearGreedMap[date] = { value, classification: item.value_classification };

@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useContext } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { createChart } from 'lightweight-charts';
 import '../styling/bitcoinChart.css';
 import { tokens } from "../theme";
@@ -7,9 +7,9 @@ import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
 import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
 import { Select, MenuItem, FormControl, InputLabel, Box } from '@mui/material';
-import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import ChartInfoSections from './ChartInfoSections';
+import { useChartData, useChartDataActions } from '../hooks/useChartData';
 
 const AltcoinRisk = ({ isDashboard = false }) => {
   const chartContainerRef = useRef();
@@ -25,7 +25,8 @@ const AltcoinRisk = ({ isDashboard = false }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [currentAltcoinPrice, setCurrentAltcoinPrice] = useState(0);
   const [currentRiskLevel, setCurrentRiskLevel] = useState(null);
-  const { altcoinData, fetchAltcoinData, btcData, fetchBtcData } = useContext(DataContext);
+  const { altcoinData, btcData } = useChartData();
+  const { fetchAltcoinData, fetchBtcData } = useChartDataActions();
 
   const altcoins = [
     { label: 'Ethereum', value: 'ETH' },

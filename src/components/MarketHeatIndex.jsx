@@ -1,11 +1,10 @@
-import React, { useRef, useEffect, useState, useContext, useCallback, useMemo, useDeferredValue } from 'react';
+import React, { useRef, useEffect, useState, useCallback, useMemo, useDeferredValue } from 'react';
 import { createChart } from 'lightweight-charts';
 import { tokens } from '../theme';
 import { useTheme, Box, FormControl, InputLabel, Select, MenuItem, useMediaQuery, Typography, Button, Slider, Switch, FormControlLabel } from '@mui/material';
 import '../styling/bitcoinChart.css';
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
-import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import logger from '../utils/logger';
 import { UnderChartRow, ChartUnderSection, UnderChartValue, UnderChartScroll } from './ChartUnderSection';
@@ -13,6 +12,7 @@ import ChartTooltip from './ChartTooltip';
 
 import { useAuth, useUser } from '@clerk/clerk-react';
 import { apiUrl } from '../config/api';
+import { useChartData, useChartDataActions } from '../hooks/useChartData';
 import {
   TX_MVRV_SMOOTHING,
   MARKET_HEAT_WEIGHT_KEYS,
@@ -36,7 +36,8 @@ const MarketHeatIndex = ({ isDashboard = false, isChartPage = false }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const isMobile = useIsMobile();
-  const { btcData, mvrvData, fearAndGreedData, altcoinSeasonTimeseriesData, txMvrvRatioDataBySmoothing, fetchBtcData, fetchMvrvData, fetchFearAndGreedData, fetchAltcoinSeasonTimeseriesData, fetchTxMvrvRatioData } = useContext(DataContext);
+  const { btcData, mvrvData, fearAndGreedData, altcoinSeasonTimeseriesData, txMvrvRatioDataBySmoothing } = useChartData();
+  const { fetchBtcData, fetchMvrvData, fetchFearAndGreedData, fetchAltcoinSeasonTimeseriesData, fetchTxMvrvRatioData } = useChartDataActions();
   // Clerk for user-settings persistence (load/save tunable sliders)
   const { isSignedIn, getToken } = useAuth();
   const { user } = useUser();

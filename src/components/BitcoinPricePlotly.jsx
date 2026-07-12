@@ -1,16 +1,16 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState } from 'react';
 import Plot from 'react-plotly.js';
 import { useTheme } from "@mui/material";
 import { tokens } from "../theme"; // Ensure the path matches your project structure
-import { DataContext } from '../DataContext';
-
+import { useChartData, useChartDataActions } from '../hooks/useChartData';
 const BitcoinPrice = ({ isDashboard = false }) => {
     const [chartData, setChartData] = useState([]);
     const [scaleMode, setScaleMode] = useState('log'); // 'log' for logarithmic, 'linear' for linear
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
 
-    const { btcData, fetchBtcData } = useContext(DataContext);
+    const { btcData } = useChartData();
+    const { fetchBtcData } = useChartDataActions();
 
     // Consume from central (IDB cached + auth). Map to Plotly x/y shape for visual parity.
     useEffect(() => {

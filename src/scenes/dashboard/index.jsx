@@ -1,9 +1,8 @@
 // src/scenes/dashboard/index.js
-import { useState, useEffect, useContext, memo } from "react";
+import { useState, useEffect, memo } from "react";
 import { Box, Card, CardContent, Typography, Grid, useTheme, Snackbar, Alert, Button, IconButton } from "@mui/material";
 import { tokens } from "../../theme";
 import { Link } from "react-router-dom";
-import { DataContext } from "../../DataContext";
 import { useFavorites } from "../../contexts/FavoritesContext";
 import LazyLoad from "react-lazyload";
 import StarIcon from "@mui/icons-material/Star";
@@ -69,6 +68,7 @@ import TailCurvature from "../../components/TailCurvature";
 import SahmRecessionIndicator from "../../components/SahmRecessionIndicator";
 import FirstWinOnboarding from "../../components/marketing/FirstWinOnboarding";
 import WelcomeSignupBanner from "../../components/marketing/WelcomeSignupBanner";
+import { useChartData } from '../../hooks/useChartData';
 
 const chartConfig = [
   { id: "bitcoin-20-ext", title: "Bitcoin 20 Week Extension", linkTo: "/btc-20-ext", component: (props) => <Bitcoin20WeekExtension isDashboard={true} {...props} />, description: "Bitcoin price with 20-week extension analysis." },
@@ -294,7 +294,7 @@ const Dashboard = memo(({ isMobile, isSidebar }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const [chartsVisible, setChartsVisible] = useState(!isMobile || !isSidebar);
-  const { btcData, ethData, riskData, marketCapData } = useContext(DataContext);
+  const { btcData, ethData, riskData, marketCapData } = useChartData();
   const { favoriteCharts, addFavoriteChart, removeFavoriteChart, error, clearError } = useFavorites();
 
   useEffect(() => {

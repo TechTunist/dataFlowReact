@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useContext, useMemo, useCallback, memo } from 'react';
+import React, { useRef, useEffect, useState, useMemo, useCallback, memo } from 'react';
 import { createChart } from 'lightweight-charts';
 import { tokens } from '../theme';
 import { useTheme, Select, MenuItem, FormControl, InputLabel, Box, Typography } from '@mui/material';
@@ -6,10 +6,10 @@ import '../styling/bitcoinChart.css';
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
 import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
-import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import ChartTooltip from './ChartTooltip';
 import ChartInfoSections from './ChartInfoSections';
+import { useChartData, useChartDataActions } from '../hooks/useChartData';
 
 const OnChainHistoricalRisk = ({ isDashboard = false }) => {
   const chartContainerRef = useRef();
@@ -27,26 +27,8 @@ const OnChainHistoricalRisk = ({ isDashboard = false }) => {
   const [dataError, setDataError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [tooltipData, setTooltipData] = useState(null);
-  const {
-    btcData,
-    mvrvRiskData,
-    puellRiskData,
-    minerCapThermoCapRiskData,
-    feeRiskData,
-    soplRiskData,
-    mvrvRiskLastUpdated,
-    puellRiskLastUpdated,
-    minerCapThermoCapRiskLastUpdated,
-    feeRiskLastUpdated,
-    soplRiskLastUpdated,
-    isMvrvRiskDataFetched,
-    isPuellRiskDataFetched,
-    isMinerCapThermoCapRiskDataFetched,
-    isFeeRiskDataFetched,
-    isSoplRiskDataFetched,
-    fetchRiskMetricsData,
-    fetchBtcData,
-  } = useContext(DataContext);
+  const { btcData, mvrvRiskData, puellRiskData, minerCapThermoCapRiskData, feeRiskData, soplRiskData, mvrvRiskLastUpdated, puellRiskLastUpdated, minerCapThermoCapRiskLastUpdated, feeRiskLastUpdated, soplRiskLastUpdated, isMvrvRiskDataFetched, isPuellRiskDataFetched, isMinerCapThermoCapRiskDataFetched, isFeeRiskDataFetched, isSoplRiskDataFetched } = useChartData();
+  const { fetchRiskMetricsData, fetchBtcData } = useChartDataActions();
 
   const metricLabels = {
     mvrv: 'MVRV Risk',

@@ -1,12 +1,12 @@
-import React, { useRef, useEffect, useState, useMemo, useCallback, useContext } from 'react';
+import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import { createChart } from 'lightweight-charts';
 import '../styling/bitcoinChart.css';
 import { tokens } from '../theme';
 import { useTheme } from '@mui/material';
 import useIsMobile from '../hooks/useIsMobile';
-import { DataContext } from '../DataContext';
 import BitcoinFees from './BitcoinTransactionFees';
 import LastUpdated from '../hooks/LastUpdated';
+import { useChartData } from '../hooks/useChartData';
 
 // NOTE: IndexedDB caching + auth attachment for central path (and migrated bypasses) has been
 // hardened (auth helper, fetchAllPages, unified directs, inflight, TTL-primary freshness).
@@ -76,7 +76,7 @@ const TailCurvature = ({ isDashboard = false }) => {
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
   const isMobile = useIsMobile();
 
-  const { btcData: contextBtcData, btcLastUpdated } = useContext(DataContext);
+  const { btcData: contextBtcData, btcLastUpdated } = useChartData();
 
   const [tooltipData, setTooltipData] = useState(null);
   const [isInteractive, setIsInteractive] = useState(false);

@@ -1,20 +1,21 @@
-import React, { useEffect, useState, useContext, useMemo, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import Plot from 'react-plotly.js';
 import { tokens } from "../theme";
 import { useTheme, useMediaQuery } from "@mui/material";
 import '../styling/bitcoinChart.css';
-import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import LastUpdated from '../hooks/LastUpdated';
 import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
 import ChartInfoSections from './ChartInfoSections';
 import BitcoinFees from './BitcoinTransactionFees';
 import useIsMobile from '../hooks/useIsMobile';
+import { useChartData, useChartDataActions } from '../hooks/useChartData';
 
 const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
   const theme = useTheme();
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
-  const { btcData, fetchBtcData } = useContext(DataContext);
+  const { btcData } = useChartData();
+  const { fetchBtcData } = useChartDataActions();
   const plotRef = useRef(null);
   const containerRef = useRef(null);
   const isMobile = useIsMobile();

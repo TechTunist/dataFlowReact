@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState, useMemo, useRef } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import Plot from 'react-plotly.js';
 import { tokens } from "../theme";
 import { useTheme, Box, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
@@ -6,15 +6,16 @@ import '../styling/bitcoinChart.css';
 import useIsMobile from '../hooks/useIsMobile';
 import LastUpdated from '../hooks/LastUpdated';
 import BitcoinFees from './BitcoinTransactionFees';
-import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import ChartInfoSections from './ChartInfoSections';
+import { useChartData, useChartDataActions } from '../hooks/useChartData';
 
 const MonthlyAverageROI = ({ isDashboard = false }) => {
   const theme = useTheme();
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
   const isMobile = useIsMobile();
-  const { btcData, fetchBtcData, isBtcDataFetched, ethData, fetchEthData, isEthDataFetched, altcoinData, fetchAltcoinData, isAltcoinDataFetched } = useContext(DataContext);
+  const { btcData, isBtcDataFetched, ethData, isEthDataFetched, altcoinData, isAltcoinDataFetched } = useChartData();
+  const { fetchBtcData, fetchEthData, fetchAltcoinData } = useChartDataActions();
   const [selectedAsset, setSelectedAsset] = useState('BTC');
   const [timeframe, setTimeframe] = useState('1y');
   const [startYear, setStartYear] = useState('All');

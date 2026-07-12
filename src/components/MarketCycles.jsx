@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext, useMemo, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import Plot from 'react-plotly.js';
 import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
@@ -6,11 +6,11 @@ import { Select, MenuItem, FormControl, InputLabel, Box, Checkbox, useMediaQuery
 import '../styling/bitcoinChart.css';
 import useIsMobile from '../hooks/useIsMobile';
 import BitcoinFees from './BitcoinTransactionFees';
-import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import LastUpdated from '../hooks/LastUpdated';
 import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
 import ChartInfoSections from './ChartInfoSections';
+import { useChartData, useChartDataActions } from '../hooks/useChartData';
 import {
   AVG_DAYS_TOP_TO_BOTTOM,
   CYCLE_TOP_DATE,
@@ -24,7 +24,8 @@ const MarketCycles = ({ isDashboard = false }) => {
   const theme = useTheme();
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
   const isMobile = useIsMobile();
-  const { btcData, fetchBtcData } = useContext(DataContext);
+  const { btcData } = useChartData();
+  const { fetchBtcData } = useChartDataActions();
   const [cycleDataSets, setCycleDataSets] = useState([]);
   const [startPoint, setStartPoint] = useState('bottom');
   const [isLoading, setIsLoading] = useState(false);

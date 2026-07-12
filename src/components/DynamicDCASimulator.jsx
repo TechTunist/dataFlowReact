@@ -1,7 +1,6 @@
-import React, { useEffect, useState, useContext, useMemo, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
-import { DataContext } from '../DataContext';
 import { calculateRiskMetric } from '../utility/riskMetric';
 import {
   Box, Typography, Button, Slider, TextField, Select, MenuItem, FormControl, InputLabel,
@@ -28,6 +27,7 @@ import {
   getMarketHeatSmaLabel,
 } from '../utility/marketHeatUtils';
 import { calculateRunningRoiRiskSeries } from '../utility/runningRoiUtils';
+import { useChartData, useChartDataActions } from '../hooks/useChartData';
 
 const ROI_RISK_DEFAULT_BUY_STRONG = 0.09;
 const ROI_RISK_DEFAULT_SELL_STRONG = 0.95;
@@ -212,18 +212,8 @@ const DynamicDCASimulator = ({ isDashboard = false }) => {
   const { isSignedIn, getToken } = useAuth?.() || {};
   const { user } = useUser?.() || {};
 
-  const {
-    btcData: contextBtcData,
-    fetchBtcData,
-    txMvrvRatioDataBySmoothing,
-    fetchTxMvrvRatioData,
-    mvrvData,
-    fetchMvrvData,
-    fearAndGreedData,
-    fetchFearAndGreedData,
-    altcoinSeasonTimeseriesData,
-    fetchAltcoinSeasonTimeseriesData,
-  } = useContext(DataContext);
+  const { btcData: contextBtcData, txMvrvRatioDataBySmoothing, mvrvData, fearAndGreedData, altcoinSeasonTimeseriesData } = useChartData();
+  const { fetchBtcData, fetchTxMvrvRatioData, fetchMvrvData, fetchFearAndGreedData, fetchAltcoinSeasonTimeseriesData } = useChartDataActions();
 
   // Strategy selection
   const [strategy, setStrategy] = useState('risk'); // 'risk' | 'tx-tension' | 'heat-index' | 'running-roi-risk'

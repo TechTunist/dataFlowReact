@@ -195,7 +195,7 @@ export const chartSections = {
       {
         path: "/monthly-returns",
         title: "Bitcoin Monthly Returns",
-        description: "Monthly returns for Bitcoin.",
+        description: "Monthly BTC returns by year, with filters for pre-halving, halving, post-halving, and midterm cycle phases.",
         image: '/assets/monthlyReturns.png',
       },
       {

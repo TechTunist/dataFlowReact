@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext, useMemo, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import Plot from 'react-plotly.js';
 import { tokens } from '../theme';
 import { useTheme } from '@mui/material';
@@ -6,7 +6,6 @@ import { Box, FormControl, InputLabel, MenuItem, Select, useMediaQuery } from '@
 import '../styling/bitcoinChart.css';
 import LastUpdated from '../hooks/LastUpdated';
 import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
-import { DataContext } from '../DataContext';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import {
   calculateStockRiskMetricByVersion,
@@ -15,6 +14,7 @@ import {
 import { STOCKS, stockLoadingMessage, stockRiskInsufficientHistoryMessage } from '../config/stocksConfig';
 import StockGroupSelect from './StockGroupSelect';
 import ChartInfoSections from './ChartInfoSections';
+import { useChartData, useChartDataActions } from '../hooks/useChartData';
 
 const STOCK_RISK_VERSION_STORAGE_KEY = 'stockRiskMetricVersion';
 
@@ -22,7 +22,8 @@ const StockRiskColor = ({ isDashboard = false }) => {
   const theme = useTheme();
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
   const isNarrowScreen = useMediaQuery('(max-width:600px)');
-  const { altcoinData, fetchAltcoinData, isAltcoinDataFetched } = useContext(DataContext);
+  const { altcoinData, isAltcoinDataFetched } = useChartData();
+  const { fetchAltcoinData } = useChartDataActions();
   const plotRef = useRef(null);
   const containerRef = useRef(null);
   const [selectedStock, setSelectedStock] = useState('MSTR');

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext, useMemo, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import Plot from 'react-plotly.js';
 import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
@@ -8,7 +8,7 @@ import LastUpdated from '../hooks/LastUpdated';
 import BitcoinFees from './BitcoinTransactionFees';
 import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
 import ChartInfoSections from './ChartInfoSections';
-import { DataContext } from '../DataContext';
+import { useChartData, useChartDataActions } from '../hooks/useChartData';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import { calculateRiskMetric } from '../utility/riskMetric';
 
@@ -51,7 +51,8 @@ const BitcoinRiskColor = ({ isDashboard = false, riskData: propRiskData }) => {
   const theme = useTheme();
   const colors = useMemo(() => tokens(theme.palette.mode), [theme.palette.mode]);
   const isNarrowScreen = useMediaQuery('(max-width:600px)');
-  const { btcData, fetchBtcData, altcoinData, fetchAltcoinData } = useContext(DataContext);
+  const { btcData, altcoinData } = useChartData();
+  const { fetchBtcData, fetchAltcoinData } = useChartDataActions();
   const plotRef = useRef(null);
   const containerRef = useRef(null);
   const [selectedAsset, setSelectedAsset] = useState('BTC');
