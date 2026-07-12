@@ -17,6 +17,8 @@ import {
   Select,
   MenuItem,
   ListSubheader,
+  Checkbox,
+  ListItemText,
 } from "@mui/material";
 import '../styling/bitcoinChart.css';
 import useIsMobile from '../hooks/useIsMobile';
@@ -50,7 +52,7 @@ export function cyclePhaseForYear(year) {
     else break;
   }
   if (prev == null) {
-    // Before first halfving: treat 2011 as pre-halving; 2010 as midterm of prior era
+    // Before first halving: treat 2011 as pre-halving; 2010 as midterm of prior era
     if (y === 2011) return 'pre-halving';
     if (y === 2010) return 'midterm';
     return 'pre-halving';
@@ -73,12 +75,12 @@ function yearDisplayLabel(year) {
 }
 
 /**
- * Filter key:
+ * Filter keys (multi-select):
  *  - all
  *  - phase:pre-halving | phase:halving | phase:post-halving | phase:midterm
- *  - year:YYYY  (single calendar year)
+ *  - year:YYYY  (any number of individual years)
  */
-function yearsMatchingFilter(allYears, filterKey) {
+function yearsMatchingOneFilter(allYears, filterKey) {
   if (!filterKey || filterKey === 'all') return allYears;
   if (filterKey.startsWith('phase:')) {
     const phase = filterKey.slice('phase:'.length);
@@ -88,26 +90,48 @@ function yearsMatchingFilter(allYears, filterKey) {
     const y = filterKey.slice('year:'.length);
     return allYears.filter((yr) => String(yr) === String(y));
   }
-  // Legacy: bare year string meant "from that year onward"
   if (/^\d{4}$/.test(filterKey)) {
     const min = parseInt(filterKey, 10);
     return allYears.filter((y) => parseInt(y, 10) >= min);
   }
-  return allYears;
+  return [];
 }
 
-function filterDescription(filterKey) {
-  if (!filterKey || filterKey === 'all') return 'all available years (from 2010)';
-  if (filterKey.startsWith('phase:')) {
-    const phase = filterKey.slice('phase:'.length);
-    return `all ${phaseLabel(phase).toLowerCase()} years`;
+/** Union of years from every selected filter; preserves allYears order (newest first). */
+function yearsMatchingFilters(allYears, filterKeys) {
+  if (!filterKeys?.length || filterKeys.includes('all')) return allYears;
+  const wanted = new Set();
+  filterKeys.forEach((key) => {
+    yearsMatchingOneFilter(allYears, key).forEach((y) => wanted.add(String(y)));
+  });
+  return allYears.filter((y) => wanted.has(String(y)));
+}
+
+function filterDescription(filterKeys) {
+  const keys = Array.isArray(filterKeys) ? filterKeys : [filterKeys];
+  if (!keys.length || keys.includes('all')) return 'all available years';
+  const phases = keys.filter((k) => k.startsWith('phase:')).map((k) => phaseLabel(k.slice(6)).toLowerCase());
+  const years = keys
+    .filter((k) => k.startsWith('year:'))
+    .map((k) => k.slice(5))
+    .sort((a, b) => Number(b) - Number(a));
+  const parts = [];
+  if (phases.length) parts.push(phases.map((p) => `${p} years`).join(', '));
+  if (years.length) {
+    parts.push(years.length <= 4 ? years.join(', ') : `${years.length} individual years`);
   }
-  if (filterKey.startsWith('year:')) {
-    const y = filterKey.slice('year:'.length);
-    return yearDisplayLabel(y);
-  }
-  if (/^\d{4}$/.test(filterKey)) return `years from ${filterKey} onward`;
-  return filterKey;
+  return parts.join(' + ') || 'selected years';
+}
+
+function optionLabel(value, filterOptions) {
+  if (value === 'all') return 'All years';
+  const phase = filterOptions?.phases?.find((p) => p.value === value);
+  if (phase) return phase.label;
+  const year = filterOptions?.individual?.find((p) => p.value === value);
+  if (year) return year.label;
+  if (value.startsWith('year:')) return yearDisplayLabel(value.slice(5));
+  if (value.startsWith('phase:')) return phaseLabel(value.slice(6));
+  return value;
 }
 
 const selectControlSx = (colors) => ({
@@ -135,8 +159,28 @@ const BitcoinMonthlyReturnsTable = ({ isDashboard = false }) => {
   const { fetchBtcData } = useChartDataActions();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [yearFilter, setYearFilter] = useState('all');
+  /** Multi-select filter keys: 'all' | 'phase:…' | 'year:YYYY' */
+  const [yearFilters, setYearFilters] = useState(['all']);
   const tableRef = useRef(null);
+
+  const handleYearFiltersChange = (event) => {
+    const raw = event.target.value;
+    let next = typeof raw === 'string' ? raw.split(',') : [...raw];
+    const prev = yearFilters;
+
+    // Choosing "All years" is exclusive
+    if (next.includes('all') && !prev.includes('all')) {
+      setYearFilters(['all']);
+      return;
+    }
+    // Any other choice clears "all"
+    next = next.filter((v) => v !== 'all');
+    if (next.length === 0) {
+      setYearFilters(['all']);
+      return;
+    }
+    setYearFilters(next);
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -236,7 +280,7 @@ const BitcoinMonthlyReturnsTable = ({ isDashboard = false }) => {
     // Newest first for table
     allYears.sort((a, b) => b - a);
 
-    const years = yearsMatchingFilter(allYears, yearFilter);
+    const years = yearsMatchingFilters(allYears, yearFilters);
     const yearPhases = {};
     years.forEach((y) => {
       yearPhases[y] = cyclePhaseForYear(y);
@@ -297,21 +341,21 @@ const BitcoinMonthlyReturnsTable = ({ isDashboard = false }) => {
     }
 
     return { years, months, returns, averages, yearPhases };
-  }, [btcData, isMobile, yearFilter, dataYearRange]);
+  }, [btcData, isMobile, yearFilters, dataYearRange]);
 
   const { years, months, returns, averages, yearPhases } = monthlyReturnsData;
 
   const averageRowLabel = useMemo(() => {
-    if (yearFilter === 'all') return 'Average';
-    if (yearFilter.startsWith('phase:')) {
-      const phase = yearFilter.slice('phase:'.length);
-      return `Avg · ${phaseLabel(phase)}`;
+    if (yearFilters.includes('all') || yearFilters.length === 0) return 'Average';
+    if (yearFilters.length === 1 && yearFilters[0].startsWith('phase:')) {
+      return `Avg · ${phaseLabel(yearFilters[0].slice(6))}`;
     }
-    if (yearFilter.startsWith('year:')) {
-      return `Avg · ${yearFilter.slice(5)}`;
+    if (yearFilters.every((k) => k.startsWith('year:'))) {
+      if (yearFilters.length === 1) return `Avg · ${yearFilters[0].slice(5)}`;
+      return `Avg · ${yearFilters.length} years`;
     }
-    return 'Average';
-  }, [yearFilter]);
+    return `Avg · selection`;
+  }, [yearFilters]);
 
   return (
     <div style={{ height: '100%', position: 'relative' }}>
@@ -329,7 +373,7 @@ const BitcoinMonthlyReturnsTable = ({ isDashboard = false }) => {
             px: { xs: 1, sm: 0 },
           }}
         >
-          <FormControl sx={{ minWidth: '150px', width: { xs: '100%', sm: '320px' } }}>
+          <FormControl sx={{ minWidth: '150px', width: { xs: '100%', sm: '360px' } }}>
             <InputLabel
               id="monthly-returns-year-filter-label"
               shrink
@@ -338,12 +382,20 @@ const BitcoinMonthlyReturnsTable = ({ isDashboard = false }) => {
               Years
             </InputLabel>
             <Select
-              value={yearFilter}
-              onChange={(e) => setYearFilter(e.target.value)}
+              multiple
+              value={yearFilters}
+              onChange={handleYearFiltersChange}
               label="Years"
               labelId="monthly-returns-year-filter-label"
               sx={selectControlSx(colors)}
+              renderValue={(selected) => {
+                if (!selected?.length || selected.includes('all')) return 'All years';
+                if (selected.length === 1) return optionLabel(selected[0], filterOptions);
+                return `${selected.length} selected`;
+              }}
               MenuProps={{
+                // Keep menu open while multi-selecting years
+                autoFocus: false,
                 PaperProps: {
                   sx: {
                     maxHeight: 420,
@@ -353,7 +405,13 @@ const BitcoinMonthlyReturnsTable = ({ isDashboard = false }) => {
                 },
               }}
             >
-              <MenuItem value="all">All years</MenuItem>
+              <MenuItem value="all">
+                <Checkbox
+                  checked={yearFilters.includes('all')}
+                  sx={{ color: colors.grey[100], '&.Mui-checked': { color: colors.greenAccent[500] } }}
+                />
+                <ListItemText primary="All years" />
+              </MenuItem>
               <ListSubheader
                 sx={{
                   backgroundColor: colors.primary[600],
@@ -361,11 +419,15 @@ const BitcoinMonthlyReturnsTable = ({ isDashboard = false }) => {
                   lineHeight: '36px',
                 }}
               >
-                Cycle phases
+                Cycle phases (add all matching years)
               </ListSubheader>
               {filterOptions.phases.map((opt) => (
                 <MenuItem key={opt.value} value={opt.value}>
-                  {opt.label}
+                  <Checkbox
+                    checked={yearFilters.includes(opt.value)}
+                    sx={{ color: colors.grey[100], '&.Mui-checked': { color: colors.greenAccent[500] } }}
+                  />
+                  <ListItemText primary={opt.label} />
                 </MenuItem>
               ))}
               <ListSubheader
@@ -375,11 +437,15 @@ const BitcoinMonthlyReturnsTable = ({ isDashboard = false }) => {
                   lineHeight: '36px',
                 }}
               >
-                Individual years
+                Individual years (multi-select)
               </ListSubheader>
               {filterOptions.individual.map((opt) => (
                 <MenuItem key={opt.value} value={opt.value}>
-                  {opt.label}
+                  <Checkbox
+                    checked={yearFilters.includes(opt.value)}
+                    sx={{ color: colors.grey[100], '&.Mui-checked': { color: colors.greenAccent[500] } }}
+                  />
+                  <ListItemText primary={opt.label} />
                 </MenuItem>
               ))}
             </Select>
@@ -574,7 +640,7 @@ const BitcoinMonthlyReturnsTable = ({ isDashboard = false }) => {
             },
             {
               title: 'What this table shows',
-              content: `Positive returns are green, negative red. Current month values marked * are not final. Showing ${filterDescription(yearFilter)}. The average row uses only the years in the selection.`,
+              content: `Positive returns are green, negative red. Current month values marked * are not final. Showing ${filterDescription(yearFilters)}. The average row uses only the years in the selection. Tick multiple individual years (or phases) in the Years menu to combine them.`,
             },
           ]}
         />
@@ -582,5 +648,6 @@ const BitcoinMonthlyReturnsTable = ({ isDashboard = false }) => {
     </div>
   );
 };
+
 
 export default restrictToPaidSubscription(BitcoinMonthlyReturnsTable);
