@@ -224,13 +224,16 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
       return { range, xs, ysPrice, ysExt, customExt, customPrice };
     });
 
+    // Unique internal names so legend clicks don't hit hover traces first.
+    // legendgroup ties area/hover together for each range band.
     const rangeTraces = byRange.map(({ range, xs, ysPrice, customExt }) => ({
       x: xs,
       y: ysPrice,
       customdata: customExt,
       type: 'scatter',
       mode: 'none',
-      name: range.label,
+      name: `_hover_price_${range.label}`,
+      legendgroup: range.label,
       hovertemplate:
         '<b>Price:</b> $%{y:,.0f}<br>' +
         '<b>Extension:</b> %{customdata[0]:.2f}%<br>' +
@@ -246,7 +249,8 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
       customdata: customPrice,
       type: 'scatter',
       mode: 'none',
-      name: `${range.label} Extension`,
+      name: `_hover_ext_${range.label}`,
+      legendgroup: range.label,
       yaxis: 'y2',
       hovertemplate:
         '<b>Price:</b> $%{customdata[0]:,.0f}<br>' +
@@ -260,6 +264,7 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
     // Area polygons (merged runs) — visibility applied later
     const segmentTraces = areaPolygons.map(({ rangeLabel, trace }) => ({
       ...trace,
+      legendgroup: rangeLabel,
       _rangeLabel: rangeLabel,
     }));
 
@@ -307,20 +312,22 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
       showlegend: true,
     };
 
+    // Use false (not legendonly) so Plotly cannot "re-show" hidden geometry via stale UI state
+    const rangeOn = (label) => !!rangeVisibility[label];
+
     const rangeTracesVisible = rangeTraces.map((t) => ({
       ...t,
-      visible: rangeVisibility[t._rangeLabel] ? true : 'legendonly',
+      visible: rangeOn(t._rangeLabel),
     }));
 
     const extensionRangeTracesVisible = extensionRangeTraces.map((t) => ({
       ...t,
-      visible: rangeVisibility[t._rangeLabel] ? true : 'legendonly',
+      visible: rangeOn(t._rangeLabel),
     }));
 
     const segmentTracesVisible = segmentTraces.map((t) => ({
       ...t,
-      visible:
-        showExtensionArea && rangeVisibility[t._rangeLabel] ? true : 'legendonly',
+      visible: !!(showExtensionArea && rangeOn(t._rangeLabel)),
     }));
 
     const extensionAreaLegendTrace = {
@@ -332,6 +339,7 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
       name: 'Extension Area',
       showlegend: true,
       visible: true,
+      // Keep dummy legend entries always "on" so Plotly doesn't grey them out
     };
 
     const toggleAllLegendTrace = {
@@ -345,16 +353,18 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
       visible: true,
     };
 
+    // Legend swatches for each range (unique names; drive area via our state)
     const legendTraces = EXTENSION_RANGES.map((range) => ({
       x: [null],
       y: [null],
       type: 'scatter',
       mode: 'markers',
       marker: {
-        color: rangeVisibility[range.label] ? range.color : 'rgb(128, 128, 128)',
+        color: rangeOn(range.label) ? range.color : 'rgb(128, 128, 128)',
         size: 10,
       },
       name: range.label,
+      legendgroup: range.label,
       showlegend: true,
       visible: true,
     }));
@@ -370,6 +380,16 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
       ...legendTraces,
     ];
   }, [staticTraces, rangeVisibility, showExtensionArea, showExtensionPoints]);
+
+  const visibilityRevision = useMemo(
+    () =>
+      [
+        showExtensionArea ? 1 : 0,
+        showExtensionPoints ? 1 : 0,
+        ...EXTENSION_RANGES.map((r) => (rangeVisibility[r.label] ? 1 : 0)),
+      ].join(''),
+    [showExtensionArea, showExtensionPoints, rangeVisibility]
+  );
 
   const layout = useMemo(() => ({
     title: isDashboard ? '' : 'Bitcoin Price vs. 20-Week MA Extension',
@@ -413,9 +433,10 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
     showlegend: !isDashboard,
     hovermode: 'closest',
     hoverdistance: 10,
-    // Preserve user zoom if we set ranges via relayout state
-    uirevision: 'btc-20-ext',
-  }), [colors, isDashboard, isNarrowScreen, showExtensionArea]);
+    // Force Plotly to accept new visible flags when legend state changes
+    // (fixed uirevision was keeping stale legend visibility and ignoring our data.visible)
+    datarevision: visibilityRevision,
+  }), [colors, isDashboard, isNarrowScreen, showExtensionArea, visibilityRevision]);
 
   // Optional zoomed layout overrides (same behaviour as before, without remounting)
   const [axisOverride, setAxisOverride] = useState(null);
@@ -475,9 +496,22 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
     });
   }, [chartData]);
 
-  // Legend: only flip state — no Plot remount, no geometry rebuild
+  // Legend: only flip React state — geometry is memoized; Plotly default toggle is blocked
+  // so we fully control range/area/points visibility.
   const handleLegendClick = useCallback((event) => {
-    const name = event.data[event.curveNumber]?.name;
+    const idx = event.curveNumber;
+    const name =
+      event.fullData?.[idx]?.name ||
+      event.data?.[idx]?.name ||
+      event.node?.textContent?.trim?.();
+
+    if (!name) return false;
+
+    // Ignore internal hover-only traces if somehow clicked
+    if (name.startsWith('_hover_') || name.startsWith('_area_')) {
+      return false;
+    }
+
     if (name === 'Extension Area') {
       setShowExtensionArea((prev) => !prev);
       return false;
@@ -487,24 +521,33 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
       return false;
     }
     if (name === 'Deselect / Select All') {
+      // isSelectAll false → currently "all on" → next click turns all off
       setRangeVisibility(() => {
-        const newVisibility = isSelectAll;
+        const turnOn = isSelectAll;
         return EXTENSION_RANGES.reduce((acc, r) => {
-          acc[r.label] = newVisibility;
+          acc[r.label] = turnOn;
           return acc;
         }, {});
       });
       setIsSelectAll((prev) => !prev);
       return false;
     }
+    if (name === 'Price') {
+      // Let Plotly toggle the price line itself
+      return true;
+    }
     if (EXTENSION_RANGES.some((r) => r.label === name)) {
-      setRangeVisibility((prev) => ({
-        ...prev,
-        [name]: !prev[name],
-      }));
+      setRangeVisibility((prev) => {
+        const next = { ...prev, [name]: !prev[name] };
+        const allOn = EXTENSION_RANGES.every((r) => next[r.label]);
+        const allOff = EXTENSION_RANGES.every((r) => !next[r.label]);
+        if (allOn) setIsSelectAll(false);
+        else if (allOff) setIsSelectAll(true);
+        return next;
+      });
       return false;
     }
-    return true;
+    return false;
   }, [isSelectAll]);
 
   const handleDoubleClick = useCallback(() => {
@@ -561,8 +604,8 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
           onRelayout={handleRelayout}
           onLegendClick={handleLegendClick}
           onDoubleClick={handleDoubleClick}
-          // revision bumps only when underlying data geometry changes, not legend toggles
-          revision={chartData.length}
+          // Bump when visibility changes so react-plotly applies new data.visible flags
+          revision={visibilityRevision}
         />
       </div>
       <UnderChartRow>
