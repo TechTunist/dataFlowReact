@@ -26,6 +26,13 @@ const EXTENSION_RANGES = [
 const WINDOW_SIZE = 140; // 20 weeks * 7 days
 const DOWNSAMPLE_FACTOR = 5;
 
+/**
+ * Fixed extension (y2) axis window so the zero line stays put and ribbon height is bounded.
+ * True extension values still used for range colour / hover; only drawing is clipped.
+ */
+const EXT_AXIS_MIN = -100;
+const EXT_AXIS_MAX = 120;
+
 const INITIAL_RANGE_VISIBILITY = EXTENSION_RANGES.reduce((acc, r) => {
   acc[r.label] = true;
   return acc;
@@ -37,6 +44,13 @@ function findRangeForExtension(extension) {
     if (extension >= r.range[0] && extension < r.range[1]) return r;
   }
   return null;
+}
+
+function clipExtensionForDisplay(extension) {
+  if (!Number.isFinite(extension)) return 0;
+  if (extension < EXT_AXIS_MIN) return EXT_AXIS_MIN;
+  if (extension > EXT_AXIS_MAX) return EXT_AXIS_MAX;
+  return extension;
 }
 
 /** O(n) 20-week MA + extension (same formula as before, no per-point re-sum). */
@@ -105,12 +119,13 @@ function buildMergedAreaPolygons(chartData) {
 
   const flushRun = (endPointIdx) => {
     if (runStart == null || !runRange || endPointIdx < runStart) return;
-    // Points from runStart .. endPointIdx inclusive form the top of the ribbon
+    // Points from runStart .. endPointIdx inclusive form the top of the ribbon.
+    // Clip Y to fixed axis bounds so extreme extensions do not move the zero line.
     const xs = [chartData[runStart].time];
     const ys = [0];
     for (let i = runStart; i <= endPointIdx; i++) {
       xs.push(chartData[i].time);
-      ys.push(chartData[i].Extension);
+      ys.push(clipExtensionForDisplay(chartData[i].Extension));
     }
     xs.push(chartData[endPointIdx].time);
     ys.push(0);
@@ -293,27 +308,38 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
       segmentTraces,
     } = staticTraces;
 
+    // Points follow range legend: only draw markers for selected bands when Extension Points is on
+    const rangeOn = (label) => !!rangeVisibility[label];
+    const pointYs = [];
+    const pointColors = [];
+    for (let i = 0; i < prices.length; i++) {
+      const range = findRangeForExtension(extensions[i]);
+      if (showExtensionPoints && range && rangeOn(range.label)) {
+        pointYs.push(prices[i]);
+        pointColors.push(range.color);
+      } else {
+        // null removes the marker entirely (transparent alone is unreliable with Plotly updates)
+        pointYs.push(null);
+        pointColors.push('rgba(0,0,0,0)');
+      }
+    }
+
     const coloredPointsTrace = {
       x: times,
-      y: prices,
+      y: pointYs,
       type: 'scatter',
       mode: 'markers',
       marker: {
-        color: extensions.map((ext) => {
-          const range = findRangeForExtension(ext);
-          return range && rangeVisibility[range.label] ? range.color : 'rgba(0, 0, 0, 0)';
-        }),
+        color: pointColors,
         size: 6,
       },
       name: 'Extension Points',
       yaxis: 'y',
       hoverinfo: 'skip',
-      visible: showExtensionPoints ? true : 'legendonly',
+      // Stay "visible" so marker colours/nulls update; legend toggles our state instead
+      visible: true,
       showlegend: true,
     };
-
-    // Use false (not legendonly) so Plotly cannot "re-show" hidden geometry via stale UI state
-    const rangeOn = (label) => !!rangeVisibility[label];
 
     const rangeTracesVisible = rangeTraces.map((t) => ({
       ...t,
@@ -410,11 +436,13 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
       title: { text: 'Extension (%)', font: { color: colors.primary[100], size: 14 }, standoff: 5 },
       overlaying: 'y',
       side: 'right',
-      autorange: true,
+      // Fixed window: zero line stays put; areas clipped to this range in polygon builder
+      range: [EXT_AXIS_MIN, EXT_AXIS_MAX],
+      autorange: false,
       automargin: true,
-      zeroline: showExtensionArea,
-      zerolinecolor: showExtensionArea ? colors.primary[100] : undefined,
-      zerolinewidth: showExtensionArea ? 1 : undefined,
+      zeroline: true,
+      zerolinecolor: colors.primary[100],
+      zerolinewidth: 1,
       fixedrange: true,
     },
     legend: !isDashboard
@@ -447,7 +475,8 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
       ...layout,
       xaxis: { ...layout.xaxis, ...axisOverride.xaxis },
       yaxis: { ...layout.yaxis, ...axisOverride.yaxis },
-      yaxis2: { ...layout.yaxis2, ...axisOverride.yaxis2 },
+      // Never let zoom override the locked extension axis / zero line
+      yaxis2: { ...layout.yaxis2 },
     };
   }, [layout, axisOverride]);
 
@@ -475,11 +504,8 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
     const factor = 1.05;
     const clampedYMin = Math.max(yMin / factor, 1e-10);
     const clampedYMax = yMax * factor;
-    const extValues = visibleData.map((d) => d.Extension);
-    const extMin = Math.min(...extValues);
-    const extMax = Math.max(...extValues);
-    const extPadding = (extMax - extMin) * 0.05;
 
+    // Only re-fit price (left) axis on zoom; extension (right) axis stays locked
     setAxisOverride({
       xaxis: {
         range: [event['xaxis.range[0]'], event['xaxis.range[1]']],
@@ -487,10 +513,6 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
       },
       yaxis: {
         range: [Math.log10(clampedYMin), Math.log10(clampedYMax)],
-        autorange: false,
-      },
-      yaxis2: {
-        range: [extMin - extPadding, extMax + extPadding],
         autorange: false,
       },
     });
@@ -517,7 +539,11 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
       return false;
     }
     if (name === 'Extension Points') {
-      setShowExtensionPoints((prev) => !prev);
+      setShowExtensionPoints((prev) => {
+        // When turning points on, ensure at least selected ranges show colours;
+        // when off, all point y-values become null via datasets memo.
+        return !prev;
+      });
       return false;
     }
     if (name === 'Deselect / Select All') {
