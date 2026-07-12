@@ -280,6 +280,15 @@ const BitcoinMvrvZScoreChart = ({ isDashboard = false, txMvrvData: propTxMvrvDat
     });
     zScoreSeriesRef.current = zScoreSeries;
     zScoreSeries.setData(zScoreData);
+    // Zero baseline on the Z-score (right) scale — dotted horizontal reference
+    zScoreSeries.createPriceLine({
+      price: 0,
+      color: theme.palette.mode === 'dark' ? 'rgba(200, 200, 200, 0.65)' : 'rgba(80, 80, 80, 0.55)',
+      lineWidth: 1,
+      lineStyle: 1, // Dotted (lightweight-charts LineStyle.Dotted)
+      axisLabelVisible: true,
+      title: '0',
+    });
     chartRef.current = chart;
     // Handle cursor styling
     const container = chartContainerRef.current;
