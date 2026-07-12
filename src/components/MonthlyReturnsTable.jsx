@@ -793,48 +793,90 @@ const BitcoinMonthlyReturnsTable = ({ isDashboard = false }) => {
                     sx={{
                       ...headerCellSx,
                       minWidth: isMobile ? 56 : 90,
-                      width: `${100 / (PHASE_ORDER.length + 1)}%`,
+                      width: `${100 / (PHASE_ORDER.length + 2)}%`,
                     }}
                   >
                     {isMobile ? PHASE_META[phase].short : PHASE_META[phase].label}
                   </TableCell>
                 ))}
+                <TableCell
+                  sx={{
+                    ...headerCellSx,
+                    minWidth: isMobile ? 56 : 90,
+                    width: `${100 / (PHASE_ORDER.length + 2)}%`,
+                    fontWeight: 700,
+                  }}
+                >
+                  Average
+                </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {monthLabels.map((monthLabel, mIdx) => (
-                <TableRow key={monthLabel}>
-                  <TableCell
-                    sx={{
-                      backgroundColor: colors.primary[700],
-                      color: colors.primary[100],
-                      textAlign: 'left',
-                      pl: isMobile ? 1 : 1.5,
-                      fontWeight: 600,
-                    }}
-                  >
-                    {monthLabel}
-                  </TableCell>
-                  {PHASE_ORDER.map((phase) => {
-                    const cell = phaseMatrix.matrix[mIdx]?.[phase];
-                    if (!cell || cell.avg == null) {
+              {monthLabels.map((monthLabel, mIdx) => {
+                const phaseAvgs = PHASE_ORDER.map((phase) => phaseMatrix.matrix[mIdx]?.[phase]?.avg)
+                  .filter((v) => v != null && Number.isFinite(v));
+                const rowAverage =
+                  phaseAvgs.length > 0
+                    ? phaseAvgs.reduce((s, v) => s + v, 0) / phaseAvgs.length
+                    : null;
+
+                return (
+                  <TableRow key={monthLabel}>
+                    <TableCell
+                      sx={{
+                        backgroundColor: colors.primary[700],
+                        color: colors.primary[100],
+                        textAlign: 'left',
+                        pl: isMobile ? 1 : 1.5,
+                        fontWeight: 600,
+                      }}
+                    >
+                      {monthLabel}
+                    </TableCell>
+                    {PHASE_ORDER.map((phase) => {
+                      const cell = phaseMatrix.matrix[mIdx]?.[phase];
+                      if (!cell || cell.avg == null) {
+                        return (
+                          <TableCell
+                            key={phase}
+                            sx={{ backgroundColor: colors.primary[700], color: colors.grey[400] }}
+                          >
+                            —
+                          </TableCell>
+                        );
+                      }
+                      const display = cell.avg.toFixed(1);
+                      const bgColor = returnBgColor(cell.avg, colors);
+                      const yearsList = (cell.yearsUsed || []).join(', ');
+                      const tooltipTitle = `${monthLabel} · ${phaseLabel(phase)}: avg ${display}% over ${cell.count} year${cell.count === 1 ? '' : 's'}${yearsList ? ` (${yearsList})` : ''}`;
                       return (
-                        <TableCell
+                        <Tooltip
                           key={phase}
-                          sx={{ backgroundColor: colors.primary[700], color: colors.grey[400] }}
+                          title={tooltipTitle}
+                          enterDelay={isMobile ? 0 : 300}
+                          enterTouchDelay={0}
+                          PopperProps={{
+                            sx: {
+                              '& .MuiTooltip-tooltip': {
+                                fontSize: '1rem',
+                                padding: '8px 12px',
+                              },
+                            },
+                          }}
                         >
-                          —
-                        </TableCell>
+                          <TableCell sx={{ backgroundColor: bgColor }}>
+                            {`${display}%`}
+                          </TableCell>
+                        </Tooltip>
                       );
-                    }
-                    const display = cell.avg.toFixed(1);
-                    const bgColor = returnBgColor(cell.avg, colors);
-                    const yearsList = (cell.yearsUsed || []).join(', ');
-                    const tooltipTitle = `${monthLabel} · ${phaseLabel(phase)}: avg ${display}% over ${cell.count} year${cell.count === 1 ? '' : 's'}${yearsList ? ` (${yearsList})` : ''}`;
-                    return (
+                    })}
+                    {rowAverage == null ? (
+                      <TableCell sx={{ backgroundColor: colors.primary[700], color: colors.grey[400] }}>
+                        —
+                      </TableCell>
+                    ) : (
                       <Tooltip
-                        key={phase}
-                        title={tooltipTitle}
+                        title={`${monthLabel} · Average of phase columns: ${rowAverage.toFixed(1)}% (mean of ${phaseAvgs.length} phase average${phaseAvgs.length === 1 ? '' : 's'})`}
                         enterDelay={isMobile ? 0 : 300}
                         enterTouchDelay={0}
                         PopperProps={{
@@ -846,18 +888,23 @@ const BitcoinMonthlyReturnsTable = ({ isDashboard = false }) => {
                           },
                         }}
                       >
-                        <TableCell sx={{ backgroundColor: bgColor }}>
-                          {`${display}%`}
+                        <TableCell
+                          sx={{
+                            backgroundColor: returnBgColor(rowAverage, colors),
+                            fontWeight: 700,
+                          }}
+                        >
+                          {`${rowAverage.toFixed(1)}%`}
                         </TableCell>
                       </Tooltip>
-                    );
-                  })}
-                </TableRow>
-              ))}
+                    )}
+                  </TableRow>
+                );
+              })}
             </TableBody>
             <TableFooter>
               <TableRow>
-                <TableCell colSpan={PHASE_ORDER.length + 1} sx={{ height: '8px', backgroundColor: colors.primary[700], padding: 0 }} />
+                <TableCell colSpan={PHASE_ORDER.length + 2} sx={{ height: '8px', backgroundColor: colors.primary[700], padding: 0 }} />
               </TableRow>
               <TableRow>
                 <TableCell
@@ -893,6 +940,22 @@ const BitcoinMonthlyReturnsTable = ({ isDashboard = false }) => {
                     </Tooltip>
                   );
                 })}
+                <Tooltip
+                  title={`Total unique years in start-year range: ${(phaseMatrix.yearsInScope || []).length}`}
+                  enterDelay={isMobile ? 0 : 300}
+                  enterTouchDelay={0}
+                >
+                  <TableCell
+                    sx={{
+                      backgroundColor: colors.primary[700],
+                      color: colors.grey[100],
+                      fontSize: isMobile ? '0.7rem' : '0.8rem',
+                      fontWeight: 700,
+                    }}
+                  >
+                    n={(phaseMatrix.yearsInScope || []).length}
+                  </TableCell>
+                </Tooltip>
               </TableRow>
             </TableFooter>
           </Table>
