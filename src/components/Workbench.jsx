@@ -707,6 +707,7 @@ const WorkbenchChart = ({
       clearAllSeries={clearAllSeries}
       handleSaveWorkbench={handleSaveWorkbench}
       explanation={explanation}
+      createDialogSeriesIds={createDialogSeriesIds}
     />
   );
 };

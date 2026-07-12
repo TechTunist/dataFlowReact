@@ -92,7 +92,29 @@ export default function WorkbenchView(props) {
     clearAllSeries,
     handleSaveWorkbench,
     explanation,
+    createDialogSeriesIds: createDialogSeriesIdsProp,
   } = props;
+
+  // Active series ids for Create Derived dialog selects (base + already-created derived)
+  const createDialogSeriesIds = createDialogSeriesIdsProp || Array.from(new Set([
+    ...(mgmt?.activeMacroSeries || []),
+    ...(mgmt?.activeCryptoSeries || []),
+    ...(mgmt?.activeIndicatorSeries || []),
+    ...(mgmt?.activeStockSeries || []),
+    ...(mgmt?.activeDerivedSeries || []),
+  ]));
+
+  const getSeriesLabel = (id) => {
+    if (!id) return id;
+    const d = (derivedHook?.derivedSeriesDefs || []).find((dd) => dd.id === id);
+    if (d) return d.label;
+    return (
+      availableMacroSeries[id] ||
+      availableCryptoSeries[id] ||
+      availableIndicatorSeries[id] ||
+      availableStockSeries[id]
+    )?.label || id;
+  };
 
   return (
     <ErrorBoundary fallbackMessage="The custom indicator workbench failed to load. Try refreshing or selecting different series.">
