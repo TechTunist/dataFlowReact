@@ -260,6 +260,8 @@ const BitcoinMonthlyReturnsTable = ({ isDashboard = false }) => {
   const [analysisView, setAnalysisView] = useState('years');
   /** Multi-select filter keys: 'all' | 'phase:…' | 'year:YYYY' */
   const [yearFilters, setYearFilters] = useState(['all']);
+  /** Phase matrix only: include years >= this (or all history). */
+  const [phaseStartYear, setPhaseStartYear] = useState('All');
   const tableRef = useRef(null);
 
   const handleYearFiltersChange = (event) => {
@@ -381,13 +383,24 @@ const BitcoinMonthlyReturnsTable = ({ isDashboard = false }) => {
     return { years, yearPhases, returns, averages };
   }, [allYearsNewestFirst, returnsByYear, yearFilters]);
 
-  // --- Phase comparison matrix: month × phase ---
+  /** Calendar years available as phase "Start year" options (oldest first for a natural list). */
+  const phaseStartYearOptions = useMemo(() => {
+    const { minYear, maxYear } = dataYearRange;
+    const opts = ['All'];
+    for (let y = minYear; y <= maxYear; y++) opts.push(String(y));
+    return opts;
+  }, [dataYearRange]);
+
+  // --- Phase comparison matrix: month × phase (optional start year floor) ---
   const phaseMatrix = useMemo(() => {
+    const minY = phaseStartYear === 'All' ? -Infinity : parseInt(phaseStartYear, 10);
+    const yearsInScope = allYearsNewestFirst.filter((y) => parseInt(y, 10) >= minY);
+
     const phaseYears = {};
     PHASE_ORDER.forEach((p) => {
       phaseYears[p] = [];
     });
-    allYearsNewestFirst.forEach((y) => {
+    yearsInScope.forEach((y) => {
       const phase = cyclePhaseForYear(y);
       if (phase && phaseYears[phase]) phaseYears[phase].push(y);
     });
@@ -421,8 +434,8 @@ const BitcoinMonthlyReturnsTable = ({ isDashboard = false }) => {
       sampleSizes[phase] = phaseYears[phase].length;
     });
 
-    return { matrix, sampleSizes, phaseYears };
-  }, [allYearsNewestFirst, returnsByYear]);
+    return { matrix, sampleSizes, phaseYears, yearsInScope };
+  }, [allYearsNewestFirst, returnsByYear, phaseStartYear]);
 
   const averageRowLabel = useMemo(() => {
     if (yearFilters.includes('all') || yearFilters.length === 0) return 'Average';
@@ -573,16 +586,51 @@ const BitcoinMonthlyReturnsTable = ({ isDashboard = false }) => {
           )}
 
           {analysisView === 'phase' && (
-            <Box
-              sx={{
-                color: colors.grey[300],
-                fontSize: isMobile ? '0.75rem' : '0.85rem',
-                maxWidth: 420,
-                textAlign: { xs: 'center', sm: 'left' },
-              }}
-            >
-              Average return for each month across all years in that cycle phase
-            </Box>
+            <>
+              <FormControl sx={{ minWidth: '150px', width: { xs: '100%', sm: '200px' } }}>
+                <InputLabel
+                  id="phase-start-year-label"
+                  shrink
+                  sx={labelSx(colors)}
+                >
+                  Start year
+                </InputLabel>
+                <Select
+                  value={phaseStartYear}
+                  onChange={(e) => setPhaseStartYear(e.target.value)}
+                  label="Start year"
+                  labelId="phase-start-year-label"
+                  sx={selectControlSx(colors)}
+                  MenuProps={{
+                    PaperProps: {
+                      sx: {
+                        maxHeight: 360,
+                        backgroundColor: colors.primary[500],
+                        color: colors.grey[100],
+                      },
+                    },
+                  }}
+                >
+                  {phaseStartYearOptions.map((y) => (
+                    <MenuItem key={y} value={y}>
+                      {y === 'All' ? 'All years (full history)' : `From ${y}`}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <Box
+                sx={{
+                  color: colors.grey[300],
+                  fontSize: isMobile ? '0.75rem' : '0.85rem',
+                  maxWidth: 360,
+                  textAlign: { xs: 'center', sm: 'left' },
+                }}
+              >
+                {phaseStartYear === 'All'
+                  ? 'Month averages by cycle phase (full history)'
+                  : `Month averages by cycle phase (years from ${phaseStartYear} onward)`}
+              </Box>
+            </>
           )}
 
           {isLoading && <span style={{ color: colors.grey[100] }}>Loading...</span>}
@@ -887,7 +935,9 @@ const BitcoinMonthlyReturnsTable = ({ isDashboard = false }) => {
               content:
                 analysisView === 'years'
                   ? `Positive returns are green, negative red. Current month values marked * are not final. Showing ${filterDescription(yearFilters)}. The average row uses only the years in the selection.`
-                  : 'Each cell is the average monthly return for that month across all years in the phase. Green = positive average, red = negative. Use hover for year lists and sample counts.',
+                  : `Each cell is the average monthly return for that month across years in the phase${
+                      phaseStartYear === 'All' ? '' : ` from ${phaseStartYear} onward`
+                    }. Green = positive average, red = negative. Hover for year lists; n = sample size per phase.`,
             },
           ]}
         />
