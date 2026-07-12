@@ -1,14 +1,13 @@
 import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import Plot from 'react-plotly.js';
 import { tokens } from "../theme";
-import { useTheme, useMediaQuery } from "@mui/material";
+import { useTheme, useMediaQuery, Box } from "@mui/material";
 import '../styling/bitcoinChart.css';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import LastUpdated from '../hooks/LastUpdated';
 import { UnderChartRow, UnderChartValue } from './ChartUnderSection';
 import ChartInfoSections from './ChartInfoSections';
 import BitcoinFees from './BitcoinTransactionFees';
-import useIsMobile from '../hooks/useIsMobile';
 import { useChartData, useChartDataActions } from '../hooks/useChartData';
 
 /** Stable range definitions (same colours / labels as original). */
@@ -182,13 +181,12 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
   const { fetchBtcData } = useChartDataActions();
   const plotRef = useRef(null);
   const containerRef = useRef(null);
-  const isMobile = useIsMobile();
   const isNarrowScreen = useMediaQuery('(max-width:600px)');
 
   const [showExtensionArea, setShowExtensionArea] = useState(true);
   const [showExtensionPoints, setShowExtensionPoints] = useState(false);
+  const [showPriceLine, setShowPriceLine] = useState(true);
   const [rangeVisibility, setRangeVisibility] = useState(INITIAL_RANGE_VISIBILITY);
-  const [isSelectAll, setIsSelectAll] = useState(false);
 
   // Heavy math + geometry once when price data changes (not on every legend click)
   const chartData = useMemo(() => {
@@ -215,8 +213,7 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
       name: 'Price',
       yaxis: 'y',
       hoverinfo: 'skip',
-      visible: true,
-      showlegend: true,
+      showlegend: false,
     };
 
     // Pre-filter per range once (for hover traces)
@@ -294,7 +291,8 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
     };
   }, [chartData, areaPolygons]);
 
-  // Apply visibility only — cheap path when toggling legend ranges
+  // Apply visibility only — cheap path when toggling React controls
+  // Plotly.react often ignores `visible` alone on fill traces; clear geometry when off.
   const datasets = useMemo(() => {
     if (!staticTraces) return [];
 
@@ -308,27 +306,28 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
       segmentTraces,
     } = staticTraces;
 
-    // Points follow range legend: only draw markers for selected bands when Extension Points is on
     const rangeOn = (label) => !!rangeVisibility[label];
+
+    // Only include real points (null-padded arrays are unreliable with Plotly updates)
+    const pointXs = [];
     const pointYs = [];
     const pointColors = [];
-    for (let i = 0; i < prices.length; i++) {
-      const range = findRangeForExtension(extensions[i]);
-      if (showExtensionPoints && range && rangeOn(range.label)) {
-        pointYs.push(prices[i]);
-        pointColors.push(range.color);
-      } else {
-        // null removes the marker entirely (transparent alone is unreliable with Plotly updates)
-        pointYs.push(null);
-        pointColors.push('rgba(0,0,0,0)');
+    if (showExtensionPoints) {
+      for (let i = 0; i < prices.length; i++) {
+        const range = findRangeForExtension(extensions[i]);
+        if (range && rangeOn(range.label)) {
+          pointXs.push(times[i]);
+          pointYs.push(prices[i]);
+          pointColors.push(range.color);
+        }
       }
     }
 
     const coloredPointsTrace = {
-      x: times,
+      x: pointXs,
       y: pointYs,
       type: 'scatter',
-      mode: 'markers',
+      mode: showExtensionPoints && pointXs.length ? 'markers' : 'none',
       marker: {
         color: pointColors,
         size: 6,
@@ -336,9 +335,8 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
       name: 'Extension Points',
       yaxis: 'y',
       hoverinfo: 'skip',
-      // Stay "visible" so marker colours/nulls update; legend toggles our state instead
-      visible: true,
-      showlegend: true,
+      visible: !!(showExtensionPoints && pointXs.length),
+      showlegend: false,
     };
 
     const rangeTracesVisible = rangeTraces.map((t) => ({
@@ -351,70 +349,45 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
       visible: rangeOn(t._rangeLabel),
     }));
 
-    const segmentTracesVisible = segmentTraces.map((t) => ({
-      ...t,
-      visible: !!(showExtensionArea && rangeOn(t._rangeLabel)),
-    }));
-
-    const extensionAreaLegendTrace = {
-      x: [null],
-      y: [null],
-      type: 'scatter',
-      mode: 'markers',
-      marker: { color: 'rgba(0, 0, 0, 0)', size: 0 },
-      name: 'Extension Area',
-      showlegend: true,
-      visible: true,
-      // Keep dummy legend entries always "on" so Plotly doesn't grey them out
-    };
-
-    const toggleAllLegendTrace = {
-      x: [null],
-      y: [null],
-      type: 'scatter',
-      mode: 'markers',
-      marker: { color: 'rgba(0, 0, 0, 0)', size: 0 },
-      name: 'Deselect / Select All',
-      showlegend: true,
-      visible: true,
-    };
-
-    // Legend swatches for each range (unique names; drive area via our state)
-    const legendTraces = EXTENSION_RANGES.map((range) => ({
-      x: [null],
-      y: [null],
-      type: 'scatter',
-      mode: 'markers',
-      marker: {
-        color: rangeOn(range.label) ? range.color : 'rgb(128, 128, 128)',
-        size: 10,
-      },
-      name: range.label,
-      legendgroup: range.label,
-      showlegend: true,
-      visible: true,
-    }));
+    // Empty x/y when off so fill ribbons actually disappear (visible:false alone is flaky)
+    const segmentTracesVisible = segmentTraces.map((t) => {
+      const on = !!(showExtensionArea && rangeOn(t._rangeLabel));
+      if (!on) {
+        return {
+          ...t,
+          x: [],
+          y: [],
+          fill: 'none',
+          visible: false,
+        };
+      }
+      return {
+        ...t,
+        visible: true,
+      };
+    });
 
     return [
-      priceLineTrace,
+      {
+        ...priceLineTrace,
+        visible: !!showPriceLine,
+      },
       coloredPointsTrace,
       ...rangeTracesVisible,
       ...extensionRangeTracesVisible,
       ...segmentTracesVisible,
-      extensionAreaLegendTrace,
-      toggleAllLegendTrace,
-      ...legendTraces,
     ];
-  }, [staticTraces, rangeVisibility, showExtensionArea, showExtensionPoints]);
+  }, [staticTraces, rangeVisibility, showExtensionArea, showExtensionPoints, showPriceLine]);
 
   const visibilityRevision = useMemo(
     () =>
       [
+        showPriceLine ? 1 : 0,
         showExtensionArea ? 1 : 0,
         showExtensionPoints ? 1 : 0,
         ...EXTENSION_RANGES.map((r) => (rangeVisibility[r.label] ? 1 : 0)),
       ].join(''),
-    [showExtensionArea, showExtensionPoints, rangeVisibility]
+    [showPriceLine, showExtensionArea, showExtensionPoints, rangeVisibility]
   );
 
   const layout = useMemo(() => ({
@@ -440,31 +413,21 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
       range: [EXT_AXIS_MIN, EXT_AXIS_MAX],
       autorange: false,
       automargin: true,
-      zeroline: true,
+      // Zero line is part of the extension-area readout — hide when area is off
+      zeroline: !!showExtensionArea,
       zerolinecolor: colors.primary[100],
       zerolinewidth: 1,
       fixedrange: true,
     },
-    legend: !isDashboard
-      ? {
-          orientation: 'h',
-          x: 0.5,
-          xanchor: 'center',
-          y: isNarrowScreen ? -0.3 : -0.2,
-          yanchor: 'top',
-          font: { size: isNarrowScreen ? 10 : 12 },
-          itemwidth: isNarrowScreen ? 70 : undefined,
-          tracegroupgap: isNarrowScreen ? 2 : 10,
-          itemsizing: 'constant',
-        }
-      : {},
-    showlegend: !isDashboard,
+    // Legend is a custom React control bar (Plotly legend was unreliable for our multi-trace setup)
+    showlegend: false,
     hovermode: 'closest',
     hoverdistance: 10,
-    // Force Plotly to accept new visible flags when legend state changes
-    // (fixed uirevision was keeping stale legend visibility and ignoring our data.visible)
+    // datarevision forces Plotly.react to re-apply geometry when controls change
     datarevision: visibilityRevision,
-  }), [colors, isDashboard, isNarrowScreen, showExtensionArea, visibilityRevision]);
+    // Keep camera/zoom across control toggles; do not use uirevision on data
+    uirevision: 'btc-20-ext-controls',
+  }), [colors, isDashboard, isNarrowScreen, visibilityRevision, showExtensionArea]);
 
   // Optional zoomed layout overrides (same behaviour as before, without remounting)
   const [axisOverride, setAxisOverride] = useState(null);
@@ -518,67 +481,56 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
     });
   }, [chartData]);
 
-  // Legend: only flip React state — geometry is memoized; Plotly default toggle is blocked
-  // so we fully control range/area/points visibility.
-  const handleLegendClick = useCallback((event) => {
-    const idx = event.curveNumber;
-    const name =
-      event.fullData?.[idx]?.name ||
-      event.data?.[idx]?.name ||
-      event.node?.textContent?.trim?.();
+  const allRangesOn = useMemo(
+    () => EXTENSION_RANGES.every((r) => rangeVisibility[r.label]),
+    [rangeVisibility]
+  );
 
-    if (!name) return false;
+  const toggleRange = useCallback((label) => {
+    setRangeVisibility((prev) => ({ ...prev, [label]: !prev[label] }));
+  }, []);
 
-    // Ignore internal hover-only traces if somehow clicked
-    if (name.startsWith('_hover_') || name.startsWith('_area_')) {
-      return false;
-    }
+  /** Double-click a range chip: isolate that band (all others off). */
+  const isolateRange = useCallback((label) => {
+    setRangeVisibility(
+      EXTENSION_RANGES.reduce((acc, r) => {
+        acc[r.label] = r.label === label;
+        return acc;
+      }, {})
+    );
+  }, []);
 
-    if (name === 'Extension Area') {
-      setShowExtensionArea((prev) => !prev);
-      return false;
-    }
-    if (name === 'Extension Points') {
-      setShowExtensionPoints((prev) => {
-        // When turning points on, ensure at least selected ranges show colours;
-        // when off, all point y-values become null via datasets memo.
-        return !prev;
-      });
-      return false;
-    }
-    if (name === 'Deselect / Select All') {
-      // isSelectAll false → currently "all on" → next click turns all off
-      setRangeVisibility(() => {
-        const turnOn = isSelectAll;
-        return EXTENSION_RANGES.reduce((acc, r) => {
-          acc[r.label] = turnOn;
-          return acc;
-        }, {});
-      });
-      setIsSelectAll((prev) => !prev);
-      return false;
-    }
-    if (name === 'Price') {
-      // Let Plotly toggle the price line itself
-      return true;
-    }
-    if (EXTENSION_RANGES.some((r) => r.label === name)) {
-      setRangeVisibility((prev) => {
-        const next = { ...prev, [name]: !prev[name] };
-        const allOn = EXTENSION_RANGES.every((r) => next[r.label]);
-        const allOff = EXTENSION_RANGES.every((r) => !next[r.label]);
-        if (allOn) setIsSelectAll(false);
-        else if (allOff) setIsSelectAll(true);
-        return next;
-      });
-      return false;
-    }
-    return false;
-  }, [isSelectAll]);
+  const toggleSelectAllRanges = useCallback(() => {
+    // If every range is on → turn all off; otherwise turn all on (even if some are already on)
+    setRangeVisibility((prev) => {
+      const everyOn = EXTENSION_RANGES.every((r) => prev[r.label]);
+      return EXTENSION_RANGES.reduce((acc, r) => {
+        acc[r.label] = !everyOn;
+        return acc;
+      }, {});
+    });
+  }, []);
 
   const handleDoubleClick = useCallback(() => {
     resetChartView();
   }, [resetChartView]);
+
+  const legendChipSx = (active, accent) => ({
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    cursor: 'pointer',
+    userSelect: 'none',
+    padding: '4px 8px',
+    borderRadius: '4px',
+    border: `1px solid ${active ? (accent || colors.grey[300]) : colors.grey[600]}`,
+    backgroundColor: active ? colors.primary[600] : colors.primary[800],
+    opacity: active ? 1 : 0.55,
+    color: colors.primary[100],
+    fontSize: isNarrowScreen ? '10px' : '12px',
+    lineHeight: 1.2,
+    '&:hover': { opacity: 1, borderColor: colors.greenAccent[500] },
+  });
 
   useEffect(() => {
     const style = document.createElement('style');
@@ -615,7 +567,7 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
         ref={containerRef}
         className="chart-container"
         style={{
-          height: isDashboard ? '100%' : isNarrowScreen ? 'calc(100% + 250px)' : 'calc(100% - 40px)',
+          height: isDashboard ? '100%' : isNarrowScreen ? 'calc(100% + 180px)' : 'calc(100% - 40px)',
           width: '100%',
           border: '2px solid #a9a9a9',
         }}
@@ -628,12 +580,104 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
           useResizeHandler={true}
           style={{ width: '100%', height: '100%' }}
           onRelayout={handleRelayout}
-          onLegendClick={handleLegendClick}
           onDoubleClick={handleDoubleClick}
-          // Bump when visibility changes so react-plotly applies new data.visible flags
           revision={visibilityRevision}
         />
       </div>
+
+      {/* Reliable React legend — same controls/colours as before, without Plotly legend bugs */}
+      {!isDashboard && (
+        <Box
+          sx={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+            alignItems: 'center',
+            gap: 1,
+            mt: 1.5,
+            mb: 0.5,
+            px: 1,
+          }}
+        >
+          <Box
+            component="button"
+            type="button"
+            onClick={() => setShowPriceLine((v) => !v)}
+            sx={legendChipSx(showPriceLine, 'grey')}
+          >
+            <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: 'grey' }} />
+            Price
+          </Box>
+          <Box
+            component="button"
+            type="button"
+            onClick={() => setShowExtensionPoints((v) => !v)}
+            sx={legendChipSx(showExtensionPoints, colors.greenAccent[500])}
+          >
+            <Box
+              sx={{
+                width: 10,
+                height: 10,
+                borderRadius: '50%',
+                bgcolor: showExtensionPoints ? colors.greenAccent[500] : colors.grey[600],
+              }}
+            />
+            Extension Points
+          </Box>
+          <Box
+            component="button"
+            type="button"
+            onClick={() => setShowExtensionArea((v) => !v)}
+            sx={legendChipSx(showExtensionArea, colors.greenAccent[500])}
+          >
+            <Box
+              sx={{
+                width: 12,
+                height: 8,
+                bgcolor: showExtensionArea ? 'rgba(0, 255, 0, 0.7)' : colors.grey[600],
+              }}
+            />
+            Extension Area
+          </Box>
+          <Box
+            component="button"
+            type="button"
+            onClick={toggleSelectAllRanges}
+            sx={legendChipSx(true, colors.grey[300])}
+          >
+            {allRangesOn ? 'Deselect All' : 'Select All'}
+          </Box>
+          {EXTENSION_RANGES.map((range) => {
+            const on = !!rangeVisibility[range.label];
+            return (
+              <Box
+                key={range.label}
+                component="button"
+                type="button"
+                title="Click to toggle · Double-click to isolate"
+                onClick={() => toggleRange(range.label)}
+                onDoubleClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  isolateRange(range.label);
+                }}
+                sx={legendChipSx(on, range.color)}
+              >
+                <Box
+                  sx={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: '2px',
+                    bgcolor: on ? range.color : 'rgb(128,128,128)',
+                  }}
+                />
+                {range.label}
+              </Box>
+            );
+          })}
+        </Box>
+      )}
+
       <UnderChartRow>
         {!isDashboard && <LastUpdated storageKey="btcData" />}
         {!isDashboard && <BitcoinFees />}
@@ -655,7 +699,7 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
               {
                 title: 'What this chart shows',
                 content:
-                  "The chart is color-coded to indicate different ranges of extension. Toggle 'Extension Area' to show or hide the extension percentage visualization, 'Extension Points' to show or hide colored points on the price line, or 'Deselect / Select All' to toggle all ranges. Individual ranges can be toggled to show or hide their corresponding points and tooltips, with deselected ranges appearing greyed out in the legend.",
+                  'The chart is colour-coded by extension range. Use the controls under the chart to toggle Price, Extension Points, Extension Area, Select/Deselect All ranges, or individual bands. Deselected bands hide both their coloured area (when Extension Area is on) and matching points (when Extension Points is on).',
               },
             ]}
           />

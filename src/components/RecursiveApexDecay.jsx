@@ -39,10 +39,12 @@ const RecursiveApexDecay = ({ isDashboard = false }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [isInteractive, setIsInteractive] = useState(false);
-  /** Bump to clear Plotly zoom/pan UI state without calling Plotly.relayout (avoids drawing.tester errors). */
-  const [uiRevision, setUiRevision] = useState(0);
+  /** Zoom override after box-select on x; y is re-fit to visible data (same pattern as other charts). */
+  const [axisOverride, setAxisOverride] = useState(null);
   const plotRef = useRef(null);
   const containerRef = useRef(null);
+  /** Live Y-axis price label under the cursor (DOM-updated to avoid re-render thrash). */
+  const yReadoutRef = useRef(null);
 
   useEffect(() => {
     const load = async () => {
@@ -74,6 +76,11 @@ const RecursiveApexDecay = ({ isDashboard = false }) => {
   const setInteractivity = useCallback(() => {
     setIsInteractive((prev) => !prev);
   }, []);
+
+  // When interactivity turns off, drop any zoom override
+  useEffect(() => {
+    if (!isInteractive) setAxisOverride(null);
+  }, [isInteractive]);
 
   const currentPrice = useMemo(() => {
     if (!btcData.length) return null;
@@ -221,7 +228,7 @@ const RecursiveApexDecay = ({ isDashboard = false }) => {
     return traces;
   }, [btcData, apexes, t4, b4, t5, b4Unc, t5Unc, colors, isDashboard, isNarrow]);
 
-  const plotLayout = useMemo(
+  const baseLayout = useMemo(
     () => ({
       title: isDashboard ? '' : `${RAD_ABBREV}: cycle apexes and projection`,
       margin: {
@@ -238,9 +245,14 @@ const RecursiveApexDecay = ({ isDashboard = false }) => {
         title: !isDashboard && !isMobile ? 'Date' : '',
         gridcolor: colors.primary[500],
         zeroline: false,
+        // Full-pane crosshair that tracks the pointer (not only data points)
         showspikes: true,
         spikemode: 'across',
+        spikesnap: 'cursor',
         spikethickness: 1,
+        spikecolor: colors.grey[300] || '#c0c0c0',
+        spikedash: 'dot',
+        // X zoom only when interactive (box selects date range)
         fixedrange: isDashboard || !isInteractive,
         autorange: true,
       },
@@ -248,7 +260,16 @@ const RecursiveApexDecay = ({ isDashboard = false }) => {
         title: !isDashboard && !isMobile ? 'BTC price (log)' : '',
         type: 'log',
         gridcolor: colors.primary[500],
-        fixedrange: isDashboard || !isInteractive,
+        // Horizontal crosshair arm — read price level under the cursor
+        showspikes: true,
+        spikemode: 'across',
+        spikesnap: 'cursor',
+        spikethickness: 1,
+        spikecolor: colors.grey[300] || '#c0c0c0',
+        spikedash: 'dot',
+        // Always lock Y during drag so box zoom cannot stretch price axis freely.
+        // handleRelayout re-fits Y to visible min/max after each x zoom.
+        fixedrange: true,
         tickformat: '~s',
         tickprefix: '$',
         autorange: true,
@@ -263,16 +284,217 @@ const RecursiveApexDecay = ({ isDashboard = false }) => {
         font: { size: 11 },
       },
       hovermode: 'closest',
+      // Always draw spike/crosshair while pointer is over the plot
+      spikedistance: -1,
+      hoverdistance: 40,
       dragmode: isDashboard || !isInteractive ? false : 'zoom',
-      // Changing uirevision resets zoom/pan without calling Plotly.relayout (which can throw).
-      uirevision: `rad-${uiRevision}`,
+      uirevision: 'rad-chart',
     }),
-    [colors, isDashboard, isMobile, isNarrow, isInteractive, uiRevision],
+    [colors, isDashboard, isMobile, isNarrow, isInteractive],
   );
 
+  const plotLayout = useMemo(() => {
+    if (!axisOverride) return baseLayout;
+    return {
+      ...baseLayout,
+      xaxis: { ...baseLayout.xaxis, ...axisOverride.xaxis },
+      yaxis: { ...baseLayout.yaxis, ...axisOverride.yaxis },
+    };
+  }, [baseLayout, axisOverride]);
+
   const resetChartView = useCallback(() => {
-    setUiRevision((n) => n + 1);
+    setAxisOverride(null);
   }, []);
+
+  /** After x-range box zoom: pad log Y so lowest visible point sits near bottom, highest near top. */
+  const handleRelayout = useCallback(
+    (event) => {
+      if (event['xaxis.range[0]'] == null || event['xaxis.range[1]'] == null) return;
+
+      const newXMin = new Date(event['xaxis.range[0]']);
+      const newXMax = new Date(event['xaxis.range[1]']);
+      if (Number.isNaN(newXMin.getTime()) || Number.isNaN(newXMax.getTime())) return;
+
+      const inRange = (dateLike) => {
+        if (dateLike == null) return false;
+        const t = new Date(dateLike).getTime();
+        return Number.isFinite(t) && t >= newXMin.getTime() && t <= newXMax.getTime();
+      };
+
+      const yValues = [];
+
+      for (let i = 0; i < btcData.length; i++) {
+        const d = btcData[i];
+        if (!inRange(d.time)) continue;
+        const v = parseFloat(d.value);
+        if (Number.isFinite(v) && v > 0) yValues.push(v);
+      }
+
+      for (let i = 0; i < apexes.length; i++) {
+        const a = apexes[i];
+        if (!inRange(a.date)) continue;
+        if (Number.isFinite(a.price) && a.price > 0) yValues.push(a.price);
+      }
+
+      // Include projection path + ±1σ band extremes when their dates fall in the window
+      const projPoints = [
+        t4 && { date: t4.date, price: t4.price },
+        b4.date && { date: b4.date, price: b4.price },
+        t5.date && { date: t5.date, price: t5.price },
+      ].filter(Boolean);
+
+      for (let i = 0; i < projPoints.length; i++) {
+        const p = projPoints[i];
+        if (!inRange(p.date)) continue;
+        if (Number.isFinite(p.price) && p.price > 0) yValues.push(p.price);
+      }
+
+      if (b4Unc?.price?.sigma1 && inRange(b4.date)) {
+        const { low, high } = b4Unc.price.sigma1;
+        if (Number.isFinite(low) && low > 0) yValues.push(low);
+        if (Number.isFinite(high) && high > 0) yValues.push(high);
+      }
+      if (t5Unc?.price?.sigma1 && inRange(t5.date)) {
+        const { low, high } = t5Unc.price.sigma1;
+        if (Number.isFinite(low) && low > 0) yValues.push(low);
+        if (Number.isFinite(high) && high > 0) yValues.push(high);
+      }
+
+      if (yValues.length === 0) {
+        setAxisOverride({
+          xaxis: {
+            range: [event['xaxis.range[0]'], event['xaxis.range[1]']],
+            autorange: false,
+          },
+        });
+        return;
+      }
+
+      const yMin = Math.min(...yValues);
+      const yMax = Math.max(...yValues);
+      // Log scale: multiplicative padding (~5%) so series fills the pane without clipping
+      const factor = 1.05;
+      const clampedYMin = Math.max(yMin / factor, 1e-10);
+      const clampedYMax = Math.max(yMax * factor, clampedYMin * 1.01);
+
+      setAxisOverride({
+        xaxis: {
+          range: [event['xaxis.range[0]'], event['xaxis.range[1]']],
+          autorange: false,
+        },
+        yaxis: {
+          range: [Math.log10(clampedYMin), Math.log10(clampedYMax)],
+          autorange: false,
+          fixedrange: true,
+        },
+      });
+    },
+    [btcData, apexes, t4, b4, t5, b4Unc, t5Unc],
+  );
+
+  const handleDoubleClick = useCallback(() => {
+    resetChartView();
+  }, [resetChartView]);
+
+  // Hide Plotly axis-drag resize cursors (match other interactive charts)
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      .recursive-apex-decay .js-plotly-plot .plotly .cursor-ew-resize {
+        cursor: default !important;
+      }
+      .recursive-apex-decay .js-plotly-plot .plotly .cursor-ns-resize {
+        cursor: default !important;
+      }
+    `;
+    document.head.appendChild(style);
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
+
+  /**
+   * Show the Y price under the cursor on the axis.
+   * Must match Plotly's own hover math: p2d expects pixels relative to the
+   * plot area (.nsewdrag), 0.._length — not coordinates on the full graph div.
+   * Also map through the drag box CSS size so responsive scaling stays accurate.
+   */
+  useEffect(() => {
+    if (isDashboard) return undefined;
+
+    const container = containerRef.current;
+    const readout = yReadoutRef.current;
+    if (!container || !readout) return undefined;
+
+    const hideReadout = () => {
+      readout.style.display = 'none';
+    };
+
+    const onMove = (event) => {
+      const gd = plotRef.current?.el;
+      const fullLayout = gd?._fullLayout;
+      const ya = fullLayout?.yaxis;
+      const xa = fullLayout?.xaxis;
+      if (!ya || !xa || typeof ya.p2d !== 'function') {
+        hideReadout();
+        return;
+      }
+
+      // Same reference surface Plotly uses for hover/spikes
+      const drag =
+        gd.querySelector('.nsewdrag') ||
+        gd.querySelector('.draglayer .nsewdrag') ||
+        gd.querySelector('.xy .nsewdrag');
+      if (!drag) {
+        hideReadout();
+        return;
+      }
+
+      const dbb = drag.getBoundingClientRect();
+      if (dbb.width < 1 || dbb.height < 1) {
+        hideReadout();
+        return;
+      }
+
+      // CSS pixels relative to plot area → layout pixels (0.._length)
+      const fracX = (event.clientX - dbb.left) / dbb.width;
+      const fracY = (event.clientY - dbb.top) / dbb.height;
+      if (fracX < 0 || fracX > 1 || fracY < 0 || fracY > 1) {
+        hideReadout();
+        return;
+      }
+
+      const ypx = fracY * ya._length;
+      const yVal = ya.p2d(ypx);
+      if (!Number.isFinite(yVal) || yVal <= 0) {
+        hideReadout();
+        return;
+      }
+
+      // Badge sits in the left axis margin, level with the crosshair
+      const containerRect = container.getBoundingClientRect();
+      const gdRect = gd.getBoundingClientRect();
+      const topInContainer = event.clientY - containerRect.top;
+      // Axis margin midpoint in container coords (scale _offset from layout → CSS)
+      const layoutH = fullLayout.height || gdRect.height;
+      const scaleY = layoutH > 0 ? gdRect.height / layoutH : 1;
+      const axisMidX =
+        gdRect.left - containerRect.left + ((ya._offset || 0) * scaleY) / 2;
+
+      readout.textContent = formatRadPrice(yVal, { compact: yVal >= 1000 });
+      readout.style.display = 'block';
+      readout.style.top = `${topInContainer}px`;
+      readout.style.left = `${axisMidX}px`;
+      readout.style.transform = 'translate(-50%, -50%)';
+    };
+
+    container.addEventListener('mousemove', onMove);
+    container.addEventListener('mouseleave', hideReadout);
+    return () => {
+      container.removeEventListener('mousemove', onMove);
+      container.removeEventListener('mouseleave', hideReadout);
+    };
+  }, [isDashboard, plotData, plotLayout]);
 
   const fmtMult = (m) => {
     if (m == null || !Number.isFinite(m)) return 'n/a';
@@ -602,12 +824,13 @@ const RecursiveApexDecay = ({ isDashboard = false }) => {
         <Box
           ref={containerRef}
           sx={{
+            position: 'relative',
             height: 'var(--chart-area-min-height, clamp(360px, 55vh, 640px))',
             width: '100%',
             border: '2px solid #a9a9a9',
             borderRadius: 1,
             overflow: 'hidden',
-            cursor: isInteractive ? 'crosshair' : 'default',
+            cursor: 'crosshair',
           }}
         >
           <Plot
@@ -617,12 +840,38 @@ const RecursiveApexDecay = ({ isDashboard = false }) => {
             config={{
               displayModeBar: false,
               responsive: true,
-              // Zoom/scroll only when interactivity is on
-              scrollZoom: isInteractive,
-              doubleClick: isInteractive ? 'reset' : false,
+              // Box zoom on X only (Y is fixedrange; handleRelayout re-fits Y to visible data)
+              dragmode: isInteractive ? 'zoom' : false,
+              scrollZoom: false,
+              doubleClick: false,
             }}
             useResizeHandler
             style={{ width: '100%', height: '100%' }}
+            onRelayout={isInteractive ? handleRelayout : undefined}
+            onDoubleClick={isInteractive ? handleDoubleClick : undefined}
+          />
+          {/* Live Y-axis value at cursor (crosshair level) */}
+          <Box
+            ref={yReadoutRef}
+            component="span"
+            aria-hidden
+            sx={{
+              display: 'none',
+              position: 'absolute',
+              zIndex: 6,
+              pointerEvents: 'none',
+              px: 0.75,
+              py: 0.25,
+              borderRadius: '3px',
+              fontSize: isNarrow ? '10px' : '11px',
+              fontWeight: 700,
+              lineHeight: 1.2,
+              whiteSpace: 'nowrap',
+              color: colors.grey[100],
+              bgcolor: colors.primary[500],
+              border: `1px solid ${colors.grey[300]}`,
+              boxShadow: '0 1px 4px rgba(0,0,0,0.35)',
+            }}
           />
         </Box>
         <UnderChartRow>
