@@ -155,6 +155,7 @@ export function linearHeat(value, cold, hot) {
 /** Heat-scale anchors for overview gauges (experimental presentation). */
 export const MAYER_HEAT_RANGE = { cold: 0.6, hot: 2.1 };
 export const MVRV_HEAT_RANGE = { cold: 0.9, hot: 3.0 };
+export const PI_CYCLE_HEAT_RANGE = { cold: 0.27, hot: 0.8 };
 
 /**
  * Build all overview metrics from chart data. Same heat math as classic widgets.
@@ -349,15 +350,18 @@ export function buildMarketOverviewSnapshot({
     extra: mayerZ != null ? `Z vs 2.1: ${mayerZ.toFixed(2)}` : null,
   });
 
-  // —— Pi Cycle ——
+  // —— Pi Cycle —— heat 0–100 maps linearly to ratio 0.27–0.8
   let piRatio = null;
   let piPeak = null;
   let piHeat = null;
   if (btcData?.length > 350) {
     const ratioData = calculateRatioSeries(btcData);
     const latestRaw = ratioData[ratioData.length - 1]?.value;
-    const latest = latestRaw ? clamp(latestRaw, 0, 100) : 0;
-    piRatio = latest;
+    const latest = latestRaw != null && Number.isFinite(latestRaw) ? clamp(latestRaw, 0, 100) : null;
+    if (latest != null) {
+      piRatio = latest;
+      piHeat = linearHeat(latest, PI_CYCLE_HEAT_RANGE.cold, PI_CYCLE_HEAT_RANGE.hot);
+    }
     const historicalPeaks = [
       { timestamp: Date.parse('2017-12-17'), ratio: 1.05 },
       { timestamp: Date.parse('2021-04-12'), ratio: 1.00 },
@@ -370,11 +374,6 @@ export function buildMarketOverviewSnapshot({
     const m = (y2 - y1) / (t2 - t1);
     const b = y1 - m * t1;
     piPeak = m * targetDate + b;
-    if (latest < 0.65) piHeat = 1;
-    else {
-      const t = Math.min(1, (latest - 0.65) / 0.1);
-      piHeat = clamp(t ** 3.5 * 100, 0, 100);
-    }
   }
   metrics.push({
     id: 'piCycle',
@@ -383,18 +382,18 @@ export function buildMarketOverviewSnapshot({
     chartPath: '/pi-cycle',
     heat: piHeat,
     primary: piRatio != null ? piRatio.toFixed(4) : 'N/A',
-    secondary: piPeak != null ? `Peak ~${piPeak.toFixed(4)}` : '—',
+    secondary: piPeak != null ? `Peak ~${piPeak.toFixed(4)} · 0.27 → 0.8 heat` : '0.27 → 0.8 heat scale',
     unit: '',
     explanation:
-      '111DMA / (2×350DMA). Approaches ~1 near historical cycle tops; much lower mid-cycle.',
+      '111DMA / (2×350DMA). Heat scale: 0 at ratio 0.27 (cold) through 100 at 0.8 (hot). Historical tops near ~1.0 sit above the hot end of this scale.',
     reading:
       piRatio == null
         ? 'Waiting for data'
-        : piHeat >= 85
-          ? 'Pi Cycle is flashing elevated top risk'
-          : piRatio < 0.65
-            ? 'Well below top territory — not a Pi Cycle warning'
-            : 'Climbing toward the historical top band',
+        : piRatio >= PI_CYCLE_HEAT_RANGE.hot
+          ? 'At or above 0.8 — hot end of the Pi Cycle heat scale'
+          : piRatio <= PI_CYCLE_HEAT_RANGE.cold
+            ? 'At or below 0.27 — cold end of the Pi Cycle heat scale'
+            : 'Mid-band on the 0.27–0.8 Pi Cycle heat scale',
   });
 
   // —— ROI cycle comparison from peak ——
