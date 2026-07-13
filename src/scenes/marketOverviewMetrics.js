@@ -381,8 +381,9 @@ export function buildMarketOverviewSnapshot({
     title: 'Pi Cycle Top',
     chartPath: '/pi-cycle',
     heat: piHeat,
-    primary: piRatio != null ? piRatio.toFixed(4) : 'N/A',
-    secondary: piPeak != null ? `Peak ~${piPeak.toFixed(4)} · 0.27 → 0.8 heat` : '0.27 → 0.8 heat scale',
+    // Match MVRV/Mayer primary width (2 dp). Keep secondary short so layout columns stay aligned.
+    primary: piRatio != null ? piRatio.toFixed(2) : 'N/A',
+    secondary: piPeak != null ? `Peak ~${piPeak.toFixed(2)}` : '0.27 → 0.8 heat scale',
     unit: '',
     explanation:
       '111DMA / (2×350DMA). Heat scale: 0 at ratio 0.27 (cold) through 100 at 0.8 (hot). Historical tops near ~1.0 sit above the hot end of this scale.',

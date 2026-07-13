@@ -3,8 +3,11 @@ import { fetchLatestBuildId, getCurrentBuildId, reloadOnce } from './reloadOnce'
 
 const BOOT_WATCHDOG_MS = 20_000;
 const DEPLOY_CHECK_MIN_HIDDEN_MS = 120_000;
+/** After long background, if Clerk never finished loading, force a reload. */
+const CLERK_WAKE_UNLOADED_MS = 10_000;
 
 let bootWatchdogId = null;
+let clerkWakeWatchdogId = null;
 let hiddenSince = null;
 let deployCheckInFlight = false;
 
@@ -36,6 +39,28 @@ function scheduleBootWatchdog() {
   }, BOOT_WATCHDOG_MS);
 }
 
+function clearClerkWakeWatchdog() {
+  if (clerkWakeWatchdogId != null) {
+    window.clearTimeout(clerkWakeWatchdogId);
+    clerkWakeWatchdogId = null;
+  }
+}
+
+/**
+ * If React mounted but Clerk never reported loaded (tab sleep/wake soft-lock),
+ * reload after a short grace so we do not rely solely on React timers that may
+ * have been frozen while the tab was hidden.
+ */
+function scheduleClerkWakeWatchdog() {
+  clearClerkWakeWatchdog();
+  clerkWakeWatchdogId = window.setTimeout(() => {
+    clerkWakeWatchdogId = null;
+    if (!window.__CRYPTOLOGICAL_APP_MOUNTED__) return;
+    if (window.__CRYPTOLOGICAL_CLERK_LOADED__ !== false) return;
+    reloadOnce('clerk-still-unloaded-after-wake');
+  }, CLERK_WAKE_UNLOADED_MS);
+}
+
 async function checkForNewDeployment() {
   if (deployCheckInFlight) return;
   const currentBuildId = getCurrentBuildId();
@@ -61,7 +86,8 @@ function handleRecoverableError(error, source) {
 }
 
 /**
- * Register global handlers for stale assets, bfcache wake, and hung boots.
+ * Register global handlers for stale assets, bfcache wake, hung boots,
+ * and Clerk stuck-unloaded after tab resume.
  * Call once before React mounts.
  */
 export function registerAppRecovery() {
@@ -96,18 +122,33 @@ export function registerAppRecovery() {
       reloadOnce('bfcache-before-mount');
       return;
     }
+    // App was mounted but Clerk is mid-rehydrate or stuck unloaded.
+    if (window.__CRYPTOLOGICAL_CLERK_LOADED__ === false) {
+      reloadOnce('bfcache-clerk-unloaded');
+      return;
+    }
     void checkForNewDeployment();
   });
 
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') {
       hiddenSince = Date.now();
+      clearClerkWakeWatchdog();
       return;
     }
     if (document.visibilityState !== 'visible') return;
 
     const hiddenDuration = hiddenSince ? Date.now() - hiddenSince : 0;
     hiddenSince = null;
+
+    // Secondary safety net: React hook also times out; this covers cases where
+    // React effects did not re-run cleanly after a long freeze.
+    if (
+      window.__CRYPTOLOGICAL_APP_MOUNTED__ &&
+      window.__CRYPTOLOGICAL_CLERK_LOADED__ === false
+    ) {
+      scheduleClerkWakeWatchdog();
+    }
 
     if (hiddenDuration >= DEPLOY_CHECK_MIN_HIDDEN_MS) {
       void checkForNewDeployment();

@@ -3,6 +3,7 @@ import { memo } from "react";
 import { useAuth } from "@clerk/clerk-react";
 import { Navigate, useLocation } from "react-router-dom";
 import AppBootScreen from "./AppBootScreen";
+import { useClerkLoadRecovery } from "../hooks/useClerkLoadRecovery";
 
 const DEV_BYPASS_AUTH = process.env.REACT_APP_DEV_BYPASS_AUTH === 'true';
 
@@ -21,13 +22,20 @@ const ProtectedRoute = memo(({ children }) => {
   // Hooks must be called unconditionally at the top (rules-of-hooks).
   const { isLoaded, isSignedIn } = useAuth();
   const location = useLocation();
+  const { stuck: clerkLoadStuck, hardReload } = useClerkLoadRecovery(DEV_BYPASS_AUTH || isLoaded);
 
   if (DEV_BYPASS_AUTH) {
     return children;
   }
 
   if (!isLoaded) {
-    return <AppBootScreen message="Verifying session..." />;
+    return (
+      <AppBootScreen
+        message="Verifying session..."
+        stuck={clerkLoadStuck}
+        onReload={hardReload}
+      />
+    );
   }
 
   if (!isSignedIn) {

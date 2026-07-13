@@ -31,6 +31,7 @@ import { useMemo } from "react";
 import { FavoritesProvider } from './contexts/FavoritesContext';
 import restrictToPaidSubscription from './scenes/RestrictToPaid';
 import DataFreshnessBanner from './components/marketing/DataFreshnessBanner';
+import { useClerkLoadRecovery } from './hooks/useClerkLoadRecovery';
 
 // Core components still directly referenced (kept minimal after route refactor)
 import BitcoinPrice from "./components/BitcoinPrice";
@@ -318,6 +319,9 @@ const AuthWrapper = memo(() => {
   // to satisfy react-hooks/rules-of-hooks. We call them first, then decide what to render.
   const { isLoaded, isSignedIn, getToken } = useAuth();
   const location = useLocation();
+  // Soft-lock guard: browser wake / hung Clerk session revalidation used to leave
+  // this gate on AppBootScreen forever until a manual refresh.
+  const { stuck: clerkLoadStuck, hardReload } = useClerkLoadRecovery(DEV_BYPASS_AUTH || isLoaded);
 
   // Register token getter once on mount (reads live Clerk session each call).
   useEffect(() => {
@@ -344,7 +348,13 @@ const AuthWrapper = memo(() => {
   }
 
   if (!isLoaded) {
-    return <AppBootScreen message="Loading..." />;
+    return (
+      <AppBootScreen
+        message="Loading..."
+        stuck={clerkLoadStuck}
+        onReload={hardReload}
+      />
+    );
   }
   // Redirect to splash if not signed in and trying to access a protected route
   if (!isSignedIn && !PUBLIC_ROUTE_PATHS.includes(location.pathname)) {

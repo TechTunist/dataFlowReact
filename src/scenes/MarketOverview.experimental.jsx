@@ -148,7 +148,11 @@ const MetricRow = memo(function MetricRow({ metric, colors, isMobile }) {
     <Box
       sx={{
         display: 'grid',
-        gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 1.1fr) minmax(0, 1.4fr) auto',
+        // Fixed value column so heat tracks share the same horizontal start/end
+        // across rows (auto-sized labels were shifting Pi Cycle's track left).
+        gridTemplateColumns: isMobile
+          ? '1fr'
+          : 'minmax(0, 1.15fr) minmax(0, 1.45fr) 7.75rem',
         gap: isMobile ? 1.25 : 2,
         alignItems: 'center',
         px: { xs: 1.5, md: 2 },
@@ -213,7 +217,8 @@ const MetricRow = memo(function MetricRow({ metric, colors, isMobile }) {
       <Box
         sx={{
           textAlign: isMobile ? 'left' : 'right',
-          minWidth: isMobile ? 0 : 110,
+          minWidth: 0,
+          width: isMobile ? 'auto' : '100%',
           display: 'flex',
           flexDirection: isMobile ? 'row' : 'column',
           alignItems: isMobile ? 'baseline' : 'flex-end',
@@ -236,7 +241,18 @@ const MetricRow = memo(function MetricRow({ metric, colors, isMobile }) {
             </Box>
           )}
         </Typography>
-        <Typography sx={{ color: colors.grey[300], fontSize: '0.78rem', fontWeight: 500 }}>
+        <Typography
+          sx={{
+            color: colors.grey[300],
+            fontSize: '0.78rem',
+            fontWeight: 500,
+            maxWidth: '100%',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: isMobile ? 'normal' : 'nowrap',
+          }}
+          title={typeof metric.secondary === 'string' ? metric.secondary : undefined}
+        >
           {metric.secondary}
         </Typography>
       </Box>
