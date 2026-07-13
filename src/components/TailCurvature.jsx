@@ -6,7 +6,7 @@ import { useTheme } from '@mui/material';
 import useIsMobile from '../hooks/useIsMobile';
 import BitcoinFees from './BitcoinTransactionFees';
 import LastUpdated from '../hooks/LastUpdated';
-import { useChartData } from '../hooks/useChartData';
+import { useChartData, useChartDataActions, useEnsureSeries } from '../hooks/useChartData';
 
 // NOTE: IndexedDB caching + auth attachment for central path (and migrated bypasses) has been
 // hardened (auth helper, fetchAllPages, unified directs, inflight, TTL-primary freshness).
@@ -77,6 +77,7 @@ const TailCurvature = ({ isDashboard = false }) => {
   const isMobile = useIsMobile();
 
   const { btcData: contextBtcData, btcLastUpdated } = useChartData();
+  const { fetchBtcData } = useChartDataActions();
 
   const [tooltipData, setTooltipData] = useState(null);
   const [isInteractive, setIsInteractive] = useState(false);
@@ -99,6 +100,36 @@ const TailCurvature = ({ isDashboard = false }) => {
       })
       .sort((a, b) => new Date(a.time || a.date) - new Date(b.time || b.date));
   }, [contextBtcData]);
+
+  // Ensure BTC series is loaded (preload may still be in flight on first paint).
+  useEnsureSeries({
+    ready: btcData.length > 0,
+    load: fetchBtcData,
+  });
+
+  // Clear stale waiting/error banners once data is present; show loading only while empty.
+  useEffect(() => {
+    if (btcData.length > 0) {
+      setError(null);
+      setIsLoading(false);
+      return undefined;
+    }
+
+    setIsLoading(true);
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      if (cancelled) return;
+      // Still empty after a generous wait — network / cache issue, not auth.
+      // (Previous copy said "requires sign-in" and was never cleared when data arrived late.)
+      setError('Still loading BTC price data…');
+      setIsLoading(false);
+    }, 8000);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [btcData.length]);
 
   // Compute model quantile values for the historical data
   const modelData = useMemo(() => {
@@ -161,21 +192,6 @@ const TailCurvature = ({ isDashboard = false }) => {
 
     return closestLabel || 'N/A';
   }, [btcData, modelData]);
-
-  // Fetch is handled by parent DataContext (JWT is sent automatically)
-  useEffect(() => {
-    if (btcData.length > 0) return;
-    setIsLoading(true);
-    // The actual fetch is managed centrally in DataContext now
-    // We just wait for it
-    const timer = setTimeout(() => {
-      if (btcData.length === 0) {
-        setError('Waiting for BTC price data (requires sign-in)...');
-      }
-      setIsLoading(false);
-    }, 3000);
-    return () => clearTimeout(timer);
-  }, [btcData.length]);
 
   const setInteractivity = useCallback(() => setIsInteractive((prev) => !prev), []);
   const resetChartView = useCallback(() => {
@@ -391,7 +407,12 @@ const TailCurvature = ({ isDashboard = false }) => {
               >
                 {showQuantiles ? 'Hide Quantiles' : 'Show Quantiles'}
               </button>
-              {error && <span style={{ color: colors.redAccent[500] }}>{error}</span>}
+              {error && btcData.length === 0 && (
+                <span style={{ color: colors.redAccent[500] }}>{error}</span>
+              )}
+              {isLoading && btcData.length === 0 && !error && (
+                <span style={{ color: colors.grey[300] }}>Loading BTC price data…</span>
+              )}
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
