@@ -4,6 +4,27 @@ const RELOAD_COOLDOWN_MS = 60_000;
 const MAX_RELOADS_PER_SESSION = 2;
 
 /**
+ * Hard navigation that bypasses bfcache and soft-reload quirks.
+ * Always navigates (used by manual Reload buttons and exhausted recovery).
+ * @param {string} [reason]
+ */
+export function hardNavigateReload(reason = 'hard-navigate') {
+  if (typeof console !== 'undefined') {
+    console.warn(`[app-recovery] Hard navigate (${reason})`);
+  }
+  try {
+    const url = new URL(window.location.href);
+    // Strip prior boot tokens so the query does not grow forever.
+    url.searchParams.delete('_boot');
+    url.searchParams.set('_boot', String(Date.now()));
+    window.location.replace(url.toString());
+  } catch {
+    window.location.reload();
+  }
+  return true;
+}
+
+/**
  * Reload at most once per cooldown window to avoid infinite reload loops.
  * @param {string} reason - logged for debugging
  * @returns {boolean} whether a reload was triggered
@@ -21,6 +42,9 @@ export function reloadOnce(reason) {
     const last = sessionStorage.getItem(RELOAD_GUARD_KEY);
     const now = Date.now();
     if (last && now - Number.parseInt(last, 10) < RELOAD_COOLDOWN_MS) {
+      if (typeof console !== 'undefined') {
+        console.warn(`[app-recovery] Skipping reload (${reason}), cooldown active`);
+      }
       return false;
     }
     sessionStorage.setItem(RELOAD_GUARD_KEY, String(now));
@@ -32,7 +56,15 @@ export function reloadOnce(reason) {
   if (typeof console !== 'undefined') {
     console.warn(`[app-recovery] Reloading (${reason})`);
   }
-  window.location.reload();
+  // Prefer hard navigate so cold-boot / offline-restore pages do not soft-reload into the same hung state.
+  try {
+    const url = new URL(window.location.href);
+    url.searchParams.delete('_boot');
+    url.searchParams.set('_boot', String(Date.now()));
+    window.location.replace(url.toString());
+  } catch {
+    window.location.reload();
+  }
   return true;
 }
 

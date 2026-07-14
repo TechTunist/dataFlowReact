@@ -99,6 +99,64 @@
       </div>
     </div>
     <!--
+      Pre-React recovery: if the JS bundle never mounts (cold boot / offline /
+      discarded tab restore), replace the infinite spinner with a Reload button.
+      React clears this when markAppMounted runs.
+    -->
+    <script>
+      (function () {
+        var STUCK_MS = 15000;
+        var started = Date.now();
+        function stillBooting() {
+          if (window.__CRYPTOLOGICAL_APP_MOUNTED__) return false;
+          var root = document.getElementById('root');
+          if (!root) return false;
+          return !!root.querySelector('#app-boot-placeholder');
+        }
+        function showStuck() {
+          if (!stillBooting()) return;
+          var host = document.getElementById('app-boot-placeholder');
+          if (!host || host.getAttribute('data-boot-stuck') === '1') return;
+          host.setAttribute('data-boot-stuck', '1');
+          host.setAttribute('aria-live', 'assertive');
+          host.innerHTML =
+            '<p style="margin:0;font-size:1rem;color:#a3a3a3;text-align:center;max-width:22rem">This page is taking longer than expected to load.</p>' +
+            '<p style="margin:0;font-size:0.9rem;color:#737373;text-align:center;max-width:22rem">After a laptop boot, the network may not be ready yet. Reload usually fixes it.</p>' +
+            '<button type="button" id="app-boot-reload-btn" style="margin-top:0.25rem;padding:0.65rem 1.25rem;font-size:0.95rem;font-family:inherit;font-weight:600;color:#040509;background-color:#4cceac;border:none;border-radius:8px;cursor:pointer">Reload</button>';
+          var btn = document.getElementById('app-boot-reload-btn');
+          if (btn) {
+            btn.onclick = function () {
+              try {
+                var url = new URL(window.location.href);
+                url.searchParams.delete('_boot');
+                url.searchParams.set('_boot', String(Date.now()));
+                window.location.replace(url.toString());
+              } catch (e) {
+                window.location.reload();
+              }
+            };
+          }
+        }
+        setTimeout(showStuck, STUCK_MS);
+        // Backup if the first timer was frozen while the laptop was still booting.
+        setInterval(function () {
+          if (Date.now() - started >= STUCK_MS) showStuck();
+        }, 3000);
+        window.addEventListener('online', function () {
+          if (stillBooting() && Date.now() - started > 2000) {
+            try {
+              var url = new URL(window.location.href);
+              url.searchParams.delete('_boot');
+              url.searchParams.set('_boot', String(Date.now()));
+              window.location.replace(url.toString());
+            } catch (e) {
+              window.location.reload();
+            }
+          }
+        });
+      })();
+    </script>
+    <!--
       This HTML file is a template.
       If you open it directly in the browser, you will see an empty page.
 

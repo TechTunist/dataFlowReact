@@ -49,7 +49,8 @@ const AppBootScreen = ({
     {stuck && (
       <>
         <p style={{ margin: 0, fontSize: '0.9rem', color: '#737373', maxWidth: 360 }}>
-          The app may have woken from sleep before authentication finished. Reload to continue.
+          After a laptop boot or sleep, authentication can hang before the network is ready.
+          Reload usually fixes it.
         </p>
         <button
           type="button"

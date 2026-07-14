@@ -1,12 +1,15 @@
 import { isChunkLoadError } from './isChunkLoadError';
-import { fetchLatestBuildId, getCurrentBuildId, reloadOnce } from './reloadOnce';
+import { fetchLatestBuildId, getCurrentBuildId, hardNavigateReload, reloadOnce } from './reloadOnce';
+import { showStaticBootStuck } from './showStaticBootStuck';
 
-const BOOT_WATCHDOG_MS = 20_000;
+const BOOT_WATCHDOG_MS = 12_000;
+const BOOT_STUCK_UI_MS = 15_000;
 const DEPLOY_CHECK_MIN_HIDDEN_MS = 120_000;
 /** After long background, if Clerk never finished loading, force a reload. */
-const CLERK_WAKE_UNLOADED_MS = 10_000;
+const CLERK_WAKE_UNLOADED_MS = 6_000;
 
 let bootWatchdogId = null;
+let bootStuckUiId = null;
 let clerkWakeWatchdogId = null;
 let hiddenSince = null;
 let deployCheckInFlight = false;
@@ -15,6 +18,10 @@ function markAppMounted() {
   if (bootWatchdogId != null) {
     window.clearTimeout(bootWatchdogId);
     bootWatchdogId = null;
+  }
+  if (bootStuckUiId != null) {
+    window.clearTimeout(bootStuckUiId);
+    bootStuckUiId = null;
   }
   try {
     window.__CRYPTOLOGICAL_APP_MOUNTED__ = true;
@@ -26,17 +33,29 @@ function markAppMounted() {
 function isStillOnStaticBootPlaceholder() {
   const root = document.getElementById('root');
   if (!root) return false;
+  if (window.__CRYPTOLOGICAL_APP_MOUNTED__) return false;
   const placeholder = root.querySelector('#app-boot-placeholder');
-  if (!placeholder) return false;
-  return root.children.length <= 2;
+  if (placeholder) return true;
+  // React never took over: root still only has the static boot tree.
+  return root.children.length <= 2 && root.textContent.includes('Loading');
 }
 
 function scheduleBootWatchdog() {
   bootWatchdogId = window.setTimeout(() => {
     if (window.__CRYPTOLOGICAL_APP_MOUNTED__) return;
     if (!isStillOnStaticBootPlaceholder()) return;
-    reloadOnce('boot-watchdog');
+    const reloaded = reloadOnce('boot-watchdog');
+    if (!reloaded) {
+      showStaticBootStuck('The app failed to start after several attempts.');
+    }
   }, BOOT_WATCHDOG_MS);
+
+  // Independent of reload budget: always offer a manual way out if JS never mounts.
+  bootStuckUiId = window.setTimeout(() => {
+    if (window.__CRYPTOLOGICAL_APP_MOUNTED__) return;
+    if (!isStillOnStaticBootPlaceholder()) return;
+    showStaticBootStuck();
+  }, BOOT_STUCK_UI_MS);
 }
 
 function clearClerkWakeWatchdog() {
@@ -57,7 +76,10 @@ function scheduleClerkWakeWatchdog() {
     clerkWakeWatchdogId = null;
     if (!window.__CRYPTOLOGICAL_APP_MOUNTED__) return;
     if (window.__CRYPTOLOGICAL_CLERK_LOADED__ !== false) return;
-    reloadOnce('clerk-still-unloaded-after-wake');
+    const reloaded = reloadOnce('clerk-still-unloaded-after-wake');
+    if (!reloaded) {
+      showStaticBootStuck('Session restore is taking longer than expected.');
+    }
   }, CLERK_WAKE_UNLOADED_MS);
 }
 
@@ -81,7 +103,10 @@ async function checkForNewDeployment() {
 
 function handleRecoverableError(error, source) {
   if (!isChunkLoadError(error)) return false;
-  reloadOnce(source);
+  const reloaded = reloadOnce(source);
+  if (!reloaded) {
+    showStaticBootStuck('A required script failed to load.');
+  }
   return true;
 }
 
@@ -100,7 +125,8 @@ export function registerAppRecovery() {
       if (target && (target.tagName === 'SCRIPT' || target.tagName === 'LINK')) {
         const src = target.src || target.href || '';
         if (src.includes('/static/') && !window.__CRYPTOLOGICAL_APP_MOUNTED__) {
-          reloadOnce('asset-load-error');
+          const reloaded = reloadOnce('asset-load-error');
+          if (!reloaded) showStaticBootStuck('A required asset failed to load.');
         }
         return;
       }
@@ -122,8 +148,11 @@ export function registerAppRecovery() {
       reloadOnce('bfcache-before-mount');
       return;
     }
-    // App was mounted but Clerk is mid-rehydrate or stuck unloaded.
-    if (window.__CRYPTOLOGICAL_CLERK_LOADED__ === false) {
+    // App was mounted but a protected route is blocked on hung Clerk rehydrate.
+    if (
+      window.__CRYPTOLOGICAL_CLERK_BLOCKING__ === true &&
+      window.__CRYPTOLOGICAL_CLERK_LOADED__ === false
+    ) {
       reloadOnce('bfcache-clerk-unloaded');
       return;
     }
@@ -143,8 +172,10 @@ export function registerAppRecovery() {
 
     // Secondary safety net: React hook also times out; this covers cases where
     // React effects did not re-run cleanly after a long freeze.
+    // Only when a protected route is blocking on Clerk (public pages may idle unloaded).
     if (
       window.__CRYPTOLOGICAL_APP_MOUNTED__ &&
+      window.__CRYPTOLOGICAL_CLERK_BLOCKING__ === true &&
       window.__CRYPTOLOGICAL_CLERK_LOADED__ === false
     ) {
       scheduleClerkWakeWatchdog();
@@ -152,6 +183,25 @@ export function registerAppRecovery() {
 
     if (hiddenDuration >= DEPLOY_CHECK_MIN_HIDDEN_MS) {
       void checkForNewDeployment();
+    }
+  });
+
+  // Cold boot: tab may open offline; when network returns, force a clean load
+  // if we never finished mounting. Only force Clerk recovery when a protected
+  // route is actually gated on auth (not while public pages wait in the background).
+  window.addEventListener('online', () => {
+    if (!window.__CRYPTOLOGICAL_APP_MOUNTED__) {
+      hardNavigateReload('online-before-mount');
+      return;
+    }
+    if (
+      window.__CRYPTOLOGICAL_CLERK_BLOCKING__ === true &&
+      window.__CRYPTOLOGICAL_CLERK_LOADED__ === false
+    ) {
+      const reloaded = reloadOnce('online-clerk-unloaded');
+      if (!reloaded) {
+        showStaticBootStuck('Network restored, but the session did not finish loading.');
+      }
     }
   });
 

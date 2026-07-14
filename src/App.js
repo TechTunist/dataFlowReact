@@ -319,9 +319,14 @@ const AuthWrapper = memo(() => {
   // to satisfy react-hooks/rules-of-hooks. We call them first, then decide what to render.
   const { isLoaded, isSignedIn, getToken } = useAuth();
   const location = useLocation();
+  const isPublicRoute = PUBLIC_ROUTE_PATHS.includes(location.pathname);
   // Soft-lock guard: browser wake / hung Clerk session revalidation used to leave
   // this gate on AppBootScreen forever until a manual refresh.
-  const { stuck: clerkLoadStuck, hardReload } = useClerkLoadRecovery(DEV_BYPASS_AUTH || isLoaded);
+  // Public routes render without waiting for Clerk — do not auto-reload them.
+  const { stuck: clerkLoadStuck, hardReload } = useClerkLoadRecovery(
+    DEV_BYPASS_AUTH || isLoaded,
+    { enableAutoRecover: !isPublicRoute }
+  );
 
   // Register token getter once on mount (reads live Clerk session each call).
   useEffect(() => {
@@ -347,7 +352,11 @@ const AuthWrapper = memo(() => {
     return <AppContent />;
   }
 
-  if (!isLoaded) {
+  // Never hard-block public pages on Clerk. After laptop boot / Brave session
+  // restore, Clerk can hang for a long time (or forever if third-party scripts
+  // are delayed). Public marketing pages and free content should still render.
+  // Protected routes keep the boot gate + recovery UI.
+  if (!isLoaded && !isPublicRoute) {
     return (
       <AppBootScreen
         message="Loading..."
@@ -356,8 +365,9 @@ const AuthWrapper = memo(() => {
       />
     );
   }
-  // Redirect to splash if not signed in and trying to access a protected route
-  if (!isSignedIn && !PUBLIC_ROUTE_PATHS.includes(location.pathname)) {
+  // Only redirect after Clerk has finished loading so we do not bounce
+  // authenticated users to splash while session restore is still in flight.
+  if (isLoaded && !isSignedIn && !isPublicRoute) {
     return <Navigate to={HOME_PATH} replace state={{ from: location }} />;
   }
   return <AppContent />;

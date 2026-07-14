@@ -6,9 +6,11 @@ import {
 } from './useClerkLoadRecovery';
 
 const mockReloadOnce = jest.fn(() => true);
+const mockHardNavigateReload = jest.fn(() => true);
 
 jest.mock('../utils/reloadOnce', () => ({
   reloadOnce: (...args) => mockReloadOnce(...args),
+  hardNavigateReload: (...args) => mockHardNavigateReload(...args),
 }));
 
 describe('useClerkLoadRecovery', () => {
@@ -16,6 +18,7 @@ describe('useClerkLoadRecovery', () => {
     jest.useFakeTimers();
     mockReloadOnce.mockClear();
     mockReloadOnce.mockReturnValue(true);
+    mockHardNavigateReload.mockClear();
     delete window.__CRYPTOLOGICAL_CLERK_LOADED__;
     Object.defineProperty(document, 'visibilityState', {
       configurable: true,
@@ -102,5 +105,35 @@ describe('useClerkLoadRecovery', () => {
 
     expect(mockReloadOnce).not.toHaveBeenCalled();
     expect(window.__CRYPTOLOGICAL_CLERK_LOADED__).toBe(true);
+  });
+
+  test('shows stuck UI even when auto-reload is skipped', () => {
+    mockReloadOnce.mockReturnValue(false);
+    const { result } = renderHook(() => useClerkLoadRecovery(false));
+
+    act(() => {
+      jest.advanceTimersByTime(CLERK_LOAD_TIMEOUT_MS);
+    });
+
+    expect(result.current.stuck).toBe(true);
+    expect(mockReloadOnce).toHaveBeenCalled();
+  });
+
+  test('hardReload uses hard navigation', () => {
+    const { result } = renderHook(() => useClerkLoadRecovery(false));
+    act(() => {
+      result.current.hardReload();
+    });
+    expect(mockHardNavigateReload).toHaveBeenCalledWith('clerk-manual-reload');
+  });
+
+  test('recovers when browser comes online while clerk unloaded', () => {
+    renderHook(() => useClerkLoadRecovery(false));
+
+    act(() => {
+      window.dispatchEvent(new Event('online'));
+    });
+
+    expect(mockReloadOnce).toHaveBeenCalledWith('clerk-load-timeout-after-online');
   });
 });
