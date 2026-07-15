@@ -187,6 +187,9 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
   const [showExtensionPoints, setShowExtensionPoints] = useState(false);
   const [showPriceLine, setShowPriceLine] = useState(true);
   const [rangeVisibility, setRangeVisibility] = useState(INITIAL_RANGE_VISIBILITY);
+  // Bumped only on "Reset Chart" so Plotly drops preserved zoom (uirevision).
+  // Control toggles intentionally keep the same revision so camera stays put.
+  const [viewRevision, setViewRevision] = useState(0);
 
   // Heavy math + geometry once when price data changes (not on every legend click)
   const chartData = useMemo(() => {
@@ -425,9 +428,9 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
     hoverdistance: 10,
     // datarevision forces Plotly.react to re-apply geometry when controls change
     datarevision: visibilityRevision,
-    // Keep camera/zoom across control toggles; do not use uirevision on data
-    uirevision: 'btc-20-ext-controls',
-  }), [colors, isDashboard, isNarrowScreen, visibilityRevision, showExtensionArea]);
+    // Keep camera/zoom across control toggles; bump viewRevision only on reset
+    uirevision: `btc-20-ext-controls-${viewRevision}`,
+  }), [colors, isDashboard, isNarrowScreen, visibilityRevision, showExtensionArea, viewRevision]);
 
   // Optional zoomed layout overrides (same behaviour as before, without remounting)
   const [axisOverride, setAxisOverride] = useState(null);
@@ -448,7 +451,10 @@ const Bitcoin20WeekExtension = ({ isDashboard = false }) => {
   }, [fetchBtcData]);
 
   const resetChartView = useCallback(() => {
+    // Clear React zoom overrides and change uirevision so Plotly drops its
+    // preserved UI zoom (double-click already does this natively).
     setAxisOverride(null);
+    setViewRevision((v) => v + 1);
   }, []);
 
   const handleRelayout = useCallback((event) => {

@@ -1,7 +1,18 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import Plot from 'react-plotly.js';
 import { tokens } from "../theme";
-import { useTheme, Box, FormControl, InputLabel, Select, MenuItem, Checkbox, Button } from "@mui/material";
+import {
+    useTheme,
+    Box,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
+    ListSubheader,
+    Checkbox,
+    ListItemText,
+    Button,
+} from "@mui/material";
 import '../styling/bitcoinChart.css';
 import useIsMobile from '../hooks/useIsMobile';
 import restrictToPaidSubscription from '../scenes/RestrictToPaid';
@@ -10,30 +21,119 @@ import { useFavorites } from '../contexts/FavoritesContext';
 import ChartInfoSections from './ChartInfoSections';
 import { useChartData, useChartDataActions } from '../hooks/useChartData';
 
+/**
+ * US presidential cycle: years are tagged relative to election years (divisible by 4).
+ *   y % 4 === 0 → presidential election
+ *   y % 4 === 1 → post-election (year 1 of term)
+ *   y % 4 === 2 → midterm election
+ *   y % 4 === 3 → pre-election (year 3 of term; historically often strong for equities)
+ */
+const POLITICAL_PHASE_META = {
+    election: { id: 'election', label: 'Presidential election' },
+    'post-election': { id: 'post-election', label: 'Post-election' },
+    midterm: { id: 'midterm', label: 'Midterm election' },
+    'pre-election': { id: 'pre-election', label: 'Pre-election' },
+};
+
+/** Calendar years with major equity stress / NBER-adjacent recessions (for SP500 history). */
 const RECESSION_CRISIS_LABELS = {
     2000: 'Dot-com peak',
     2001: 'Dot-com bust',
     2002: 'Post-bubble bear',
     2008: 'Financial crisis',
     2009: 'GFC aftermath',
+    2011: 'Euro debt / US downgrade',
+    2018: 'QT / trade-war selloff',
     2020: 'COVID crash',
     2022: 'Inflation bear market',
 };
 
-const getSp500YearTags = (year) => {
+function politicalPhaseForYear(year) {
     const y = Number(year);
-    const tags = [];
-    if (RECESSION_CRISIS_LABELS[y]) tags.push(RECESSION_CRISIS_LABELS[y]);
-    if (y % 4 === 0) tags.push('Presidential election');
-    else if (y % 4 === 2) tags.push('Midterm election');
-    return tags;
-};
+    if (!Number.isFinite(y)) return null;
+    const mod = ((y % 4) + 4) % 4;
+    if (mod === 0) return 'election';
+    if (mod === 1) return 'post-election';
+    if (mod === 2) return 'midterm';
+    return 'pre-election';
+}
 
-const formatSp500YearLabel = (year) => {
-    const tags = getSp500YearTags(year);
-    const base = `Year ${year}`;
-    return tags.length > 0 ? `${base} (${tags.join(', ')})` : base;
-};
+function politicalPhaseLabel(phase) {
+    return POLITICAL_PHASE_META[phase]?.label || phase;
+}
+
+function crisisLabelForYear(year) {
+    return RECESSION_CRISIS_LABELS[Number(year)] || null;
+}
+
+function isCrisisYear(year) {
+    return Boolean(crisisLabelForYear(year));
+}
+
+/** Individual-year row label: "2024 — Presidential election" or crisis when present. */
+function yearDisplayLabel(year) {
+    const y = Number(year);
+    const crisis = crisisLabelForYear(y);
+    const political = politicalPhaseLabel(politicalPhaseForYear(y));
+    if (crisis) return `${y} — ${crisis}`;
+    return `${y} — ${political}`;
+}
+
+function yearsMatchingOneFilter(allYears, filterKey) {
+    if (!filterKey || filterKey === 'all') return allYears;
+    if (filterKey.startsWith('political:')) {
+        const phase = filterKey.slice('political:'.length);
+        return allYears.filter((y) => politicalPhaseForYear(y) === phase);
+    }
+    if (filterKey === 'crisis:all') {
+        return allYears.filter((y) => isCrisisYear(y));
+    }
+    if (filterKey.startsWith('year:')) {
+        const y = filterKey.slice('year:'.length);
+        return allYears.filter((yr) => String(yr) === String(y));
+    }
+    return [];
+}
+
+function yearsMatchingFilters(allYears, filterKeys) {
+    // Empty selection means no average (same as Bitcoin ROI)
+    if (!filterKeys?.length) return [];
+    if (filterKeys.includes('all')) return allYears;
+    const wanted = new Set();
+    filterKeys.forEach((key) => {
+        yearsMatchingOneFilter(allYears, key).forEach((y) => wanted.add(String(y)));
+    });
+    return allYears.filter((y) => wanted.has(String(y)));
+}
+
+function optionLabel(value, filterOptions) {
+    if (value === 'all') return 'All years';
+    if (value === 'crisis:all') return 'All recession / crisis years';
+    const political = filterOptions?.political?.find((p) => p.value === value);
+    if (political) return political.label;
+    const year = filterOptions?.individual?.find((p) => p.value === value);
+    if (year) return year.label;
+    if (value.startsWith('year:')) return yearDisplayLabel(value.slice(5));
+    if (value.startsWith('political:')) return politicalPhaseLabel(value.slice('political:'.length));
+    return value;
+}
+
+const selectControlSx = (colors) => ({
+    color: colors.grey[100],
+    backgroundColor: colors.primary[500],
+    borderRadius: '8px',
+    '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
+    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+    '& .MuiSelect-select': { py: 1.5, pl: 2 },
+});
+
+const labelSx = (colors) => ({
+    color: colors.grey[100],
+    '&.Mui-focused': { color: colors.greenAccent[500] },
+    top: 0,
+    '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' },
+});
 
 const getDefaultVisibleYear = (yearlyDatasets, currentYear) => {
     const yearNames = yearlyDatasets.map((dataset) => dataset.name);
@@ -55,7 +155,8 @@ const SP500ROI = ({ isDashboard = false }) => {
     const [visibilityMap, setVisibilityMap] = useState({});
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [selectedYears, setSelectedYears] = useState([]);
+    /** Multi-select filter keys for averaging: 'all' | 'political:…' | 'crisis:all' | 'year:YYYY' */
+    const [yearFilters, setYearFilters] = useState([]);
     const [isSelectAll, setIsSelectAll] = useState(false);
     const visibilityInitializedRef = useRef(false);
     const chartId = "sp500-roi";
@@ -134,10 +235,16 @@ const SP500ROI = ({ isDashboard = false }) => {
         fetchData();
     }, [fetchFredSeriesData, fredSeriesData]);
 
-    // Process yearly data and available years
-    const { yearlyDatasets, availableYears } = useMemo(() => {
+    // Process yearly data and filter options
+    const { yearlyDatasets, allYearStrings, filterOptions } = useMemo(() => {
         const sp500Data = fredSeriesData['SP500'] || [];
-        if (sp500Data.length === 0) return { yearlyDatasets: [], availableYears: [] };
+        if (sp500Data.length === 0) {
+            return {
+                yearlyDatasets: [],
+                allYearStrings: [],
+                filterOptions: { political: [], individual: [] },
+            };
+        }
         const years = [...new Set(sp500Data.map(d => new Date(d.time).getFullYear()))]
             .sort((a, b) => a - b);
         const processYearlyData = (year) => {
@@ -147,7 +254,7 @@ const SP500ROI = ({ isDashboard = false }) => {
                 const date = new Date(item.time);
                 return date >= new Date(yearStart) && date <= new Date(yearEnd);
             });
-           
+
             if (filteredData.length === 0) return null;
             const basePrice = filteredData[0].value;
             return {
@@ -162,16 +269,45 @@ const SP500ROI = ({ isDashboard = false }) => {
             };
         };
         const yearlyData = years.map(year => processYearlyData(year)).filter(year => year !== null);
-        const yearsAvailable = years.map(year => ({
-            value: `${year}`,
-            label: formatSp500YearLabel(year),
-        }));
-        return { yearlyDatasets: yearlyData, availableYears: yearsAvailable };
+        const yearStrings = years.map((y) => `${y}`);
+        const individual = [...years]
+            .sort((a, b) => b - a)
+            .map((y) => ({
+                value: `year:${y}`,
+                label: yearDisplayLabel(y),
+            }));
+
+        // Only show political categories that actually match at least one year in the series
+        const politicalAll = [
+            { value: 'political:election', label: 'All presidential election years', phase: 'election' },
+            { value: 'political:midterm', label: 'All midterm election years', phase: 'midterm' },
+            { value: 'political:pre-election', label: 'All pre-election years', phase: 'pre-election' },
+            { value: 'political:post-election', label: 'All post-election years', phase: 'post-election' },
+        ];
+        const political = politicalAll.filter((opt) =>
+            years.some((y) => politicalPhaseForYear(y) === opt.phase)
+        );
+
+        return {
+            yearlyDatasets: yearlyData,
+            allYearStrings: yearStrings,
+            filterOptions: {
+                political,
+                individual,
+                hasCrisisYears: years.some((y) => isCrisisYear(y)),
+            },
+        };
     }, [fredSeriesData]);
 
     const defaultVisibleYear = useMemo(
         () => getDefaultVisibleYear(yearlyDatasets, currentYear),
         [yearlyDatasets, currentYear]
+    );
+
+    // Resolve multi-select filters to concrete years for averaging
+    const selectedYears = useMemo(
+        () => yearsMatchingFilters(allYearStrings, yearFilters),
+        [allYearStrings, yearFilters]
     );
 
     // Compute average dataset
@@ -233,14 +369,23 @@ const SP500ROI = ({ isDashboard = false }) => {
         return datasets;
     }, [yearDataSets, isDashboard]);
 
-    // Handle year selection
-    const handleYearSelection = useCallback(e => {
-        setSelectedYears(e.target.value);
-    }, []);
+    // Handle year filter multi-select (same pattern as monthly-returns / bitcoin-roi)
+    const handleYearFiltersChange = useCallback((event) => {
+        const raw = event.target.value;
+        let next = typeof raw === 'string' ? raw.split(',') : [...raw];
+        const prev = yearFilters;
+
+        if (next.includes('all') && !prev.includes('all')) {
+            setYearFilters(['all']);
+            return;
+        }
+        next = next.filter((v) => v !== 'all');
+        setYearFilters(next);
+    }, [yearFilters]);
 
     // Deselect all years for averaging
     const deselectAllYears = useCallback(() => {
-        setSelectedYears([]);
+        setYearFilters([]);
     }, []);
 
     useEffect(() => {
@@ -270,18 +415,18 @@ const SP500ROI = ({ isDashboard = false }) => {
             return newMap;
         });
     }, [yearlyDatasets, averageDataset, defaultVisibleYear]);
-   
+
     useEffect(() => {
         const datasets = [...yearlyDatasets];
         if (averageDataset) {
             datasets.push(averageDataset);
         }
-   
+
         const updatedDatasets = datasets.map(dataset => ({
             ...dataset,
             visible: visibilityMap[dataset.name] !== undefined ? visibilityMap[dataset.name] : true
         }));
-   
+
         setYearDataSets(updatedDatasets);
     }, [yearlyDatasets, averageDataset, visibilityMap]);
 
@@ -304,7 +449,7 @@ const SP500ROI = ({ isDashboard = false }) => {
             });
             return newMap;
         });
-    }, [yearDataSets, defaultVisibleYear]);
+    }, [yearDataSets, defaultVisibleYear, isDashboard]);
 
     const handleRelayout = useCallback((event) => {
         if (event['xaxis.range[0]'] || event['yaxis.range[0]']) {
@@ -351,65 +496,125 @@ const SP500ROI = ({ isDashboard = false }) => {
                         sx={{
                             display: 'flex',
                             flexDirection: { xs: 'column', sm: 'row' },
-                            alignItems: 'center',
+                            alignItems: { xs: 'stretch', sm: 'center' },
                             justifyContent: 'space-between',
-                            gap: '20px',
+                            gap: { xs: '10px', sm: '12px' },
                             marginBottom: '10px',
                             marginTop: '8px',
+                            width: '100%',
+                            flexWrap: 'wrap',
                         }}
                     >
                         <Box
                             sx={{
                                 display: 'flex',
                                 flexDirection: { xs: 'column', sm: 'row' },
-                                alignItems: 'center',
-                                gap: '20px',
+                                alignItems: { xs: 'stretch', sm: 'center' },
+                                gap: { xs: '10px', sm: '8px' },
+                                flex: { xs: '1 1 100%', sm: '1 1 auto' },
+                                minWidth: 0,
                             }}
                         >
-                            <FormControl sx={{ minWidth: '100px', width: { xs: '100%', sm: '300px' } }}>
+                            <FormControl sx={{ minWidth: '150px', width: { xs: '100%', sm: '360px' }, flex: { xs: '1 1 auto', sm: '0 0 360px' } }}>
                                 <InputLabel
                                     id="years-label"
                                     shrink
-                                    sx={{
-                                        color: colors.grey[100],
-                                        '&.Mui-focused': { color: colors.greenAccent[500] },
-                                    }}
+                                    sx={labelSx(colors)}
                                 >
                                     Years to Average
                                 </InputLabel>
                                 <Select
                                     multiple
-                                    value={selectedYears}
-                                    onChange={handleYearSelection}
+                                    value={yearFilters}
+                                    onChange={handleYearFiltersChange}
                                     label="Years to Average"
                                     labelId="years-label"
                                     displayEmpty
-                                    renderValue={(selected) =>
-                                        selected.length > 0
-                                            ? selected.map(year => {
-                                                const item = availableYears.find(y => y.value === year);
-                                                return item ? item.label : year;
-                                            }).join(', ')
-                                            : 'Select Years'
-                                    }
+                                    renderValue={(selected) => {
+                                        if (!selected?.length) return 'Select years';
+                                        if (selected.includes('all')) return 'All years';
+                                        if (selected.length === 1) return optionLabel(selected[0], filterOptions);
+                                        return `${selected.length} selected`;
+                                    }}
                                     sx={{
-                                        color: colors.grey[100],
-                                        backgroundColor: colors.primary[500],
-                                        borderRadius: '8px',
-                                        '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
-                                        '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                                        '& .MuiSelect-select': { py: 1.5, pl: 2 },
+                                        ...selectControlSx(colors),
                                         '& .MuiSelect-select:empty': { color: colors.grey[500] },
                                     }}
+                                    MenuProps={{
+                                        autoFocus: false,
+                                        PaperProps: {
+                                            sx: {
+                                                maxHeight: 420,
+                                                backgroundColor: colors.primary[500],
+                                                color: colors.grey[100],
+                                            },
+                                        },
+                                    }}
                                 >
-                                    {availableYears.map(({ value, label }) => (
-                                        <MenuItem key={value} value={value}>
+                                    <MenuItem value="all">
+                                        <Checkbox
+                                            checked={yearFilters.includes('all')}
+                                            sx={{ color: colors.grey[100], '&.Mui-checked': { color: colors.greenAccent[500] } }}
+                                        />
+                                        <ListItemText primary="All years" />
+                                    </MenuItem>
+
+                                    <ListSubheader
+                                        sx={{
+                                            backgroundColor: colors.primary[600],
+                                            color: colors.greenAccent[400],
+                                            lineHeight: '36px',
+                                        }}
+                                    >
+                                        Political cycle (add all matching years)
+                                    </ListSubheader>
+                                    {filterOptions.political.map((opt) => (
+                                        <MenuItem key={opt.value} value={opt.value}>
                                             <Checkbox
-                                                checked={selectedYears.includes(value)}
+                                                checked={yearFilters.includes(opt.value)}
                                                 sx={{ color: colors.grey[100], '&.Mui-checked': { color: colors.greenAccent[500] } }}
                                             />
-                                            <span>{label}</span>
+                                            <ListItemText primary={opt.label} />
+                                        </MenuItem>
+                                    ))}
+
+                                    {filterOptions.hasCrisisYears && (
+                                        <>
+                                            <ListSubheader
+                                                sx={{
+                                                    backgroundColor: colors.primary[600],
+                                                    color: colors.greenAccent[400],
+                                                    lineHeight: '36px',
+                                                }}
+                                            >
+                                                Recessions &amp; market crises
+                                            </ListSubheader>
+                                            <MenuItem value="crisis:all">
+                                                <Checkbox
+                                                    checked={yearFilters.includes('crisis:all')}
+                                                    sx={{ color: colors.grey[100], '&.Mui-checked': { color: colors.greenAccent[500] } }}
+                                                />
+                                                <ListItemText primary="All recession / crisis years" />
+                                            </MenuItem>
+                                        </>
+                                    )}
+
+                                    <ListSubheader
+                                        sx={{
+                                            backgroundColor: colors.primary[600],
+                                            color: colors.greenAccent[400],
+                                            lineHeight: '36px',
+                                        }}
+                                    >
+                                        Individual years (multi-select)
+                                    </ListSubheader>
+                                    {filterOptions.individual.map((opt) => (
+                                        <MenuItem key={opt.value} value={opt.value}>
+                                            <Checkbox
+                                                checked={yearFilters.includes(opt.value)}
+                                                sx={{ color: colors.grey[100], '&.Mui-checked': { color: colors.greenAccent[500] } }}
+                                            />
+                                            <ListItemText primary={opt.label} />
                                         </MenuItem>
                                     ))}
                                 </Select>
@@ -430,7 +635,7 @@ const SP500ROI = ({ isDashboard = false }) => {
                                     },
                                 }}
                             >
-                                Deselect All
+                                {isMobile ? 'Deselect' : 'Deselect All'}
                             </Button>
                             <Button
                                 onClick={toggleLegend}
@@ -531,7 +736,7 @@ const SP500ROI = ({ isDashboard = false }) => {
                         {
                             title: 'How to interpret',
                             content:
-                                'Select years to average, use Deselect / Select All in the legend to toggle all years, or click legend items to toggle visibility. Significant years include recession/crisis years, presidential election years, and midterm election years.',
+                                'Select years or categories to average: political-cycle buckets (presidential election, midterm, pre-election, post-election), recession/crisis years, or individual years. Use Deselect / Select All in the legend to toggle series visibility. Pre-election years have historically been among the stronger equity years on average; midterms are often more mixed.',
                         },
                     ]}
                 />

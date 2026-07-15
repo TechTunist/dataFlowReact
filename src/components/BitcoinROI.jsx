@@ -1,7 +1,19 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import Plot from 'react-plotly.js';
 import { tokens } from "../theme";
-import { useTheme, Box, FormControl, InputLabel, Select, MenuItem, Checkbox, Button, useMediaQuery } from "@mui/material";
+import {
+  useTheme,
+  Box,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  ListSubheader,
+  Checkbox,
+  ListItemText,
+  Button,
+  useMediaQuery,
+} from "@mui/material";
 import '../styling/bitcoinChart.css';
 import useIsMobile from '../hooks/useIsMobile';
 import BitcoinFees from './BitcoinTransactionFees';
@@ -9,6 +21,102 @@ import restrictToPaidSubscription from '../scenes/RestrictToPaid';
 import LastUpdated from '../hooks/LastUpdated';
 import ChartInfoSections from './ChartInfoSections';
 import { useChartData, useChartDataActions } from '../hooks/useChartData';
+
+/**
+ * Known BTC halving calendar years. Cycle phases for a year Y use offset from the
+ * most recent halving year ≤ Y:
+ *   0 = halving year, 1 = post-halving, 2 = midterm, 3 = pre-halving
+ */
+const HALVING_YEARS = [2012, 2016, 2020, 2024, 2028, 2032];
+
+const PHASE_META = {
+  'pre-halving': { id: 'pre-halving', label: 'Pre-halving' },
+  halving: { id: 'halving', label: 'Halving year' },
+  'post-halving': { id: 'post-halving', label: 'Post-halving' },
+  midterm: { id: 'midterm', label: 'Midterm' },
+};
+
+function cyclePhaseForYear(year) {
+  const y = Number(year);
+  if (!Number.isFinite(y)) return null;
+  let prev = null;
+  for (const h of HALVING_YEARS) {
+    if (h <= y) prev = h;
+    else break;
+  }
+  if (prev == null) {
+    if (y === 2011) return 'pre-halving';
+    if (y === 2010) return 'midterm';
+    return 'pre-halving';
+  }
+  const offset = y - prev;
+  if (offset === 0) return 'halving';
+  if (offset === 1) return 'post-halving';
+  if (offset === 2) return 'midterm';
+  if (offset === 3) return 'pre-halving';
+  return 'pre-halving';
+}
+
+function phaseLabel(phase) {
+  return PHASE_META[phase]?.label || phase;
+}
+
+function yearDisplayLabel(year) {
+  const phase = cyclePhaseForYear(year);
+  return `${year} — ${phaseLabel(phase)}`;
+}
+
+function yearsMatchingOneFilter(allYears, filterKey) {
+  if (!filterKey || filterKey === 'all') return allYears;
+  if (filterKey.startsWith('phase:')) {
+    const phase = filterKey.slice('phase:'.length);
+    return allYears.filter((y) => cyclePhaseForYear(y) === phase);
+  }
+  if (filterKey.startsWith('year:')) {
+    const y = filterKey.slice('year:'.length);
+    return allYears.filter((yr) => String(yr) === String(y));
+  }
+  return [];
+}
+
+function yearsMatchingFilters(allYears, filterKeys) {
+  // Empty selection means no average (unlike monthly-returns, which defaults to 'all')
+  if (!filterKeys?.length) return [];
+  if (filterKeys.includes('all')) return allYears;
+  const wanted = new Set();
+  filterKeys.forEach((key) => {
+    yearsMatchingOneFilter(allYears, key).forEach((y) => wanted.add(String(y)));
+  });
+  return allYears.filter((y) => wanted.has(String(y)));
+}
+
+function optionLabel(value, filterOptions) {
+  if (value === 'all') return 'All years';
+  const phase = filterOptions?.phases?.find((p) => p.value === value);
+  if (phase) return phase.label;
+  const year = filterOptions?.individual?.find((p) => p.value === value);
+  if (year) return year.label;
+  if (value.startsWith('year:')) return yearDisplayLabel(value.slice(5));
+  if (value.startsWith('phase:')) return phaseLabel(value.slice(6));
+  return value;
+}
+
+const selectControlSx = (colors) => ({
+  color: colors.grey[100],
+  backgroundColor: colors.primary[500],
+  borderRadius: '8px',
+  '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
+  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+  '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
+  '& .MuiSelect-select': { py: 1.5, pl: 2 },
+});
+
+const labelSx = (colors) => ({
+  color: colors.grey[100],
+  '&.Mui-focused': { color: colors.greenAccent[500] },
+  top: 0,
+  '&.MuiInputLabel-shrink': { transform: 'translate(14px, -9px) scale(0.75)' },
+});
 
 const BitcoinROI = ({ isDashboard = false }) => {
   const theme = useTheme();
@@ -21,7 +129,8 @@ const BitcoinROI = ({ isDashboard = false }) => {
   const [visibilityMap, setVisibilityMap] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [selectedYears, setSelectedYears] = useState([]);
+  /** Multi-select filter keys for averaging: 'all' | 'phase:…' | 'year:YYYY' */
+  const [yearFilters, setYearFilters] = useState([]);
   const [isSelectAll, setIsSelectAll] = useState(false); // Track toggle state
   const plotRef = useRef(null);
   const containerRef = useRef(null);
@@ -95,10 +204,11 @@ const BitcoinROI = ({ isDashboard = false }) => {
     fetchData();
   }, [fetchBtcData, btcData.length]);
 
-  // Process yearly data and available years
-  const { yearlyDatasets, availableYears } = useMemo(() => {
-    if (btcData.length === 0) return { yearlyDatasets: [], availableYears: [] };
-    const halvingYears = ['2012', '2016', '2020', '2024'];
+  // Process yearly data and filter options
+  const { yearlyDatasets, allYearStrings, filterOptions } = useMemo(() => {
+    if (btcData.length === 0) {
+      return { yearlyDatasets: [], allYearStrings: [], filterOptions: { phases: [], individual: [] } };
+    }
     const years = [...new Set(btcData.map(d => new Date(d.time).getFullYear()))]
       .sort((a, b) => a - b);
     const processYearlyData = (year) => {
@@ -122,12 +232,33 @@ const BitcoinROI = ({ isDashboard = false }) => {
       };
     };
     const yearlyData = years.map(year => processYearlyData(year)).filter(year => year !== null);
-    const yearsAvailable = years.map(year => ({
-      value: `${year}`,
-      label: `Year ${year}${halvingYears.includes(`${year}`) ? ' (Halving)' : ''}`
-    }));
-    return { yearlyDatasets: yearlyData, availableYears: yearsAvailable };
+    const yearStrings = years.map((y) => `${y}`);
+    const individual = [...years]
+      .sort((a, b) => b - a)
+      .map((y) => ({
+        value: `year:${y}`,
+        label: yearDisplayLabel(y),
+      }));
+    return {
+      yearlyDatasets: yearlyData,
+      allYearStrings: yearStrings,
+      filterOptions: {
+        phases: [
+          { value: 'phase:pre-halving', label: 'All pre-halving years' },
+          { value: 'phase:halving', label: 'All halving years' },
+          { value: 'phase:post-halving', label: 'All post-halving years' },
+          { value: 'phase:midterm', label: 'All midterm years' },
+        ],
+        individual,
+      },
+    };
   }, [btcData]);
+
+  // Resolve multi-select filters to concrete years for averaging
+  const selectedYears = useMemo(
+    () => yearsMatchingFilters(allYearStrings, yearFilters),
+    [allYearStrings, yearFilters]
+  );
 
   // Compute average dataset
   const averageDataset = useMemo(() => {
@@ -188,14 +319,23 @@ const BitcoinROI = ({ isDashboard = false }) => {
     return datasets;
   }, [yearDataSets, isDashboard]);
 
-  // Handle year selection
-  const handleYearSelection = useCallback(e => {
-    setSelectedYears(e.target.value);
-  }, []);
+  // Handle year filter multi-select (same pattern as monthly-returns)
+  const handleYearFiltersChange = useCallback((event) => {
+    const raw = event.target.value;
+    let next = typeof raw === 'string' ? raw.split(',') : [...raw];
+    const prev = yearFilters;
+
+    if (next.includes('all') && !prev.includes('all')) {
+      setYearFilters(['all']);
+      return;
+    }
+    next = next.filter((v) => v !== 'all');
+    setYearFilters(next);
+  }, [yearFilters]);
 
   // Deselect all years for averaging
   const deselectAllYears = useCallback(() => {
-    setSelectedYears([]);
+    setYearFilters([]);
   }, []);
 
   useEffect(() => {
@@ -328,71 +468,94 @@ const BitcoinROI = ({ isDashboard = false }) => {
               alignItems: 'center',
               gap: { xs: '10px', sm: '8px' },
               width: { xs: '100%', sm: 'auto' },
-              '& > *': {
-                flexShrink: 0,
-              },
-              '& .MuiFormControl-root': {
-                flex: { xs: '2 1 66.67%', sm: '0 0 200px' },
-                minWidth: 0,
-                width: { xs: '66.67%', sm: '200px' },
-              },
+              flex: { xs: '1 1 100%', sm: '1 1 auto' },
+              minWidth: 0,
               '& .MuiButton-root': {
-                flex: { xs: '1 1 33.33%', sm: '0 0 100px' },
+                flex: { xs: '0 0 auto', sm: '0 0 100px' },
                 minWidth: 0,
-                width: { xs: '33.33%', sm: '100px' },
+                width: { xs: 'auto', sm: '100px' },
                 padding: { xs: '8px 16px', sm: '6px 12px' },
                 fontSize: { xs: '12px', sm: '14px' },
               },
             }}
           >
-            <FormControl>
+            <FormControl sx={{ minWidth: '150px', width: { xs: '100%', sm: '360px' }, flex: { xs: '1 1 auto', sm: '0 0 360px' } }}>
               <InputLabel
                 id="years-label"
                 shrink
-                sx={{
-                  color: colors.grey[100],
-                  '&.Mui-focused': { color: colors.greenAccent[500] },
-                }}
+                sx={labelSx(colors)}
               >
                 Years to Average
               </InputLabel>
               <Select
                 multiple
-                value={selectedYears}
-                onChange={handleYearSelection}
+                value={yearFilters}
+                onChange={handleYearFiltersChange}
                 label="Years to Average"
                 labelId="years-label"
                 displayEmpty
-                renderValue={(selected) =>
-                  selected.length > 0
-                    ? selected
-                        .map((year) => {
-                          const item = availableYears.find((y) => y.value === year);
-                          return item ? item.label : year;
-                        })
-                        .join(', ')
-                    : 'Select Years'
-                }
+                renderValue={(selected) => {
+                  if (!selected?.length) return 'Select years';
+                  if (selected.includes('all')) return 'All years';
+                  if (selected.length === 1) return optionLabel(selected[0], filterOptions);
+                  return `${selected.length} selected`;
+                }}
                 sx={{
-                  color: colors.grey[100],
-                  backgroundColor: colors.primary[500],
-                  borderRadius: '8px',
-                  '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[300] },
-                  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: colors.greenAccent[500] },
-                  '& .MuiSelect-select': { py: { xs: 1.5, sm: 1 }, pl: 2 },
+                  ...selectControlSx(colors),
                   '& .MuiSelect-select:empty': { color: colors.grey[500] },
-                  fontSize: { xs: '14px', sm: '16px' },
-                  textOverflow: 'ellipsis',
+                }}
+                MenuProps={{
+                  autoFocus: false,
+                  PaperProps: {
+                    sx: {
+                      maxHeight: 420,
+                      backgroundColor: colors.primary[500],
+                      color: colors.grey[100],
+                    },
+                  },
                 }}
               >
-                {availableYears.map(({ value, label }) => (
-                  <MenuItem key={value} value={value} sx={{ fontSize: { xs: '14px', sm: '16px' } }}>
+                <MenuItem value="all">
+                  <Checkbox
+                    checked={yearFilters.includes('all')}
+                    sx={{ color: colors.grey[100], '&.Mui-checked': { color: colors.greenAccent[500] } }}
+                  />
+                  <ListItemText primary="All years" />
+                </MenuItem>
+                <ListSubheader
+                  sx={{
+                    backgroundColor: colors.primary[600],
+                    color: colors.greenAccent[400],
+                    lineHeight: '36px',
+                  }}
+                >
+                  Cycle phases (add all matching years)
+                </ListSubheader>
+                {filterOptions.phases.map((opt) => (
+                  <MenuItem key={opt.value} value={opt.value}>
                     <Checkbox
-                      checked={selectedYears.includes(value)}
+                      checked={yearFilters.includes(opt.value)}
                       sx={{ color: colors.grey[100], '&.Mui-checked': { color: colors.greenAccent[500] } }}
                     />
-                    <span>{label}</span>
+                    <ListItemText primary={opt.label} />
+                  </MenuItem>
+                ))}
+                <ListSubheader
+                  sx={{
+                    backgroundColor: colors.primary[600],
+                    color: colors.greenAccent[400],
+                    lineHeight: '36px',
+                  }}
+                >
+                  Individual years (multi-select)
+                </ListSubheader>
+                {filterOptions.individual.map((opt) => (
+                  <MenuItem key={opt.value} value={opt.value}>
+                    <Checkbox
+                      checked={yearFilters.includes(opt.value)}
+                      sx={{ color: colors.grey[100], '&.Mui-checked': { color: colors.greenAccent[500] } }}
+                    />
+                    <ListItemText primary={opt.label} />
                   </MenuItem>
                 ))}
               </Select>
@@ -528,7 +691,7 @@ const BitcoinROI = ({ isDashboard = false }) => {
             },
             {
               title: 'How to interpret',
-              content: 'Select years to average, use \'Deselect / Select All\' in the legend to toggle all years, or click legend items to toggle visibility. Usage example: take the average of the post-halving years to compare against the current post-halving year ROI.',
+              content: 'Select years or cycle phases to average (e.g. all post-halving years), use \'Deselect / Select All\' in the legend to toggle all years, or click legend items to toggle visibility. Usage example: take the average of the post-halving years to compare against the current post-halving year ROI.',
             },
           ]}
         />
