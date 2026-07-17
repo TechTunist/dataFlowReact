@@ -7,55 +7,19 @@ import useIsMobile from '../hooks/useIsMobile';
 import BitcoinFees from './BitcoinTransactionFees';
 import LastUpdated from '../hooks/LastUpdated';
 import { useChartData, useChartDataActions, useEnsureSeries } from '../hooks/useChartData';
+import {
+  QUANTILE_PARAMS,
+  buildRearrangedModelSeries,
+  computeRearrangedQuantilePrices,
+} from '../utils/tailCurvatureModel';
 
 // NOTE: IndexedDB caching + auth attachment for central path (and migrated bypasses) has been
 // hardened (auth helper, fetchAllPages, unified directs, inflight, TTL-primary freshness).
 // The previous "renders from memory but does not repopulate IDB" and "always hit API" issues are fixed.
 
 // Asymmetric Tail Curvature Quantile Model (Cowen 2026)
-// Based on "Asymmetric Tail Curvature in Bitcoin Price Quantiles" working paper
-// Coefficients from Table 3 (full sample, rearranged asymmetric quadratic quantile regression) for the core quantiles.
-// Additional ultra-low "dislocation lines" / golden pocket quantiles (below the 1%) were added to match
-// Ben Cowen's full indicator/chart. These represent rare excursions (<<1% of time) that have historically
-// marked exceptional "golden opportunity" accumulation zones for Bitcoin.
-// b is shared within the lower tail group (~-0.0241) per the asymmetric specification.
-// Time: days since 2009-01-03 (genesis block), centered with μ ≈ 7.9914
-// Formula (log10 price space): Qτ(log10 P(t)) = cτ + aτ·x + b(τ)·x² where x = ln(t) - μ
-
-const GENESIS_DATE = '2009-01-03';
-const MU = 7.9914; // centering constant from the paper
-
-// Quantile parameters (τ, c, a, b)
-// Lower tail (incl. golden pocket) share shallow curvature b=-0.0241.
-// The four extra below 1% (0.5% and lower) model the "golden pocket" dislocation zones.
-const QUANTILE_PARAMS = [
-  { tau: 0.0005, label: '0.05%', c: 2.621, a: 2.605, b: -0.0241, color: '#facc15' },
-  { tau: 0.001,  label: '0.1%', c: 2.707, a: 2.595, b: -0.0241, color: '#dde022ff' },
-  { tau: 0.002,  label: '0.2%', c: 2.738, a: 2.59,  b: -0.0241, color: '#d7e611ff' },
-  { tau: 0.005,  label: '0.5%', c: 2.797, a: 2.585, b: -0.0241, color: '#d4eb0aff' },
-  { tau: 0.01,   label: '1%',  c: 2.837, a: 2.578, b: -0.0241, color: '#4ade80' },
-  { tau: 0.10,   label: '10%', c: 2.933, a: 2.552, b: -0.0241, color: '#22c55e' },
-  { tau: 0.25,   label: '25%', c: 3.004, a: 2.554, b: -0.0241, color: '#16a34a' },
-  { tau: 0.50,   label: '50% (Median)', c: 3.214, a: 2.482, b: -0.1126, color: '#08ead7ff' },
-  { tau: 0.75,   label: '75%', c: 3.562, a: 2.283, b: -0.3259, color: '#f97316' },
-  { tau: 0.95,   label: '95%', c: 3.897, a: 1.964, b: -0.3259, color: '#ef4444' },
-  { tau: 0.99,   label: '99%', c: 4.028, a: 1.904, b: -0.3259, color: '#b91c1c' },
-];
-
-// Helper: days since Bitcoin genesis block
-function getDaysSinceGenesis(dateStr) {
-  const genesis = new Date(GENESIS_DATE);
-  const d = new Date(dateStr);
-  return Math.max(1, Math.floor((d - genesis) / (1000 * 60 * 60 * 24)));
-}
-
-// Core model function: returns projected price for a given date and quantile parameters
-function computeProjectedPrice(dateStr, param) {
-  const t = getDaysSinceGenesis(dateStr);
-  const x = Math.log(t) - MU;
-  const log10P = param.c + param.a * x + param.b * x * x;
-  return Math.pow(10, log10P);
-}
+// Table 3 coefficients + Chernozhukov rearrangement (see utils/tailCurvatureModel.js).
+// Without per-date rearrangement, unconstrained 50%/75% fits cross above 95%/99% after ~2029.
 
 function formatCompactLogAxisPrice(price) {
   if (!Number.isFinite(price)) return '';
@@ -131,29 +95,10 @@ const TailCurvature = ({ isDashboard = false }) => {
     };
   }, [btcData.length]);
 
-  // Compute model quantile values for the historical data
+  // Compute rearranged (non-crossing) model quantile series for the historical data
   const modelData = useMemo(() => {
     if (btcData.length === 0) return {};
-
-    const genesis = new Date(GENESIS_DATE);
-    const result = {};
-
-    QUANTILE_PARAMS.forEach(param => {
-      const seriesData = btcData.map(point => {
-        const date = new Date(point.time || point.date);
-        const t = Math.max(1, Math.floor((date - genesis) / (1000 * 60 * 60 * 24)));
-        const x = Math.log(t) - MU;
-        const log10P = param.c + param.a * x + param.b * x * x;
-        const price = Math.pow(10, log10P);
-        return {
-          time: point.time || point.date,
-          value: price,
-        };
-      });
-      result[param.label] = seriesData;
-    });
-
-    return result;
+    return buildRearrangedModelSeries(btcData);
   }, [btcData]);
 
   // Determine the quantile model line that Bitcoin's current price is closest to
@@ -375,13 +320,9 @@ const TailCurvature = ({ isDashboard = false }) => {
 
     return years.map(year => {
       const dateStr = `${year}-01-01`;
-      const row = { year };
-
-      QUANTILE_PARAMS.forEach(param => {
-        row[param.label] = computeProjectedPrice(dateStr, param);
-      });
-
-      return row;
+      // Joint rearrangement at each projection date keeps τ-ordering (50% ≤ 75% ≤ 95% ≤ 99%, …)
+      const rearranged = computeRearrangedQuantilePrices(dateStr);
+      return { year, ...rearranged };
     });
   }, []);
 
@@ -557,7 +498,8 @@ const TailCurvature = ({ isDashboard = false }) => {
               </div>
 
               <div style={{ fontSize: '11px', color: '#888', margin: '12px 0 4px', textAlign: 'center' }}>
-                Values are pure model projections (no actual BTC price data).
+                Values are pure model projections (no actual BTC price data). Quantiles are
+                Chernozhukov-rearranged at each date so bands stay ordered (higher % ≥ lower %).
               </div>
             </div>
           </div>
